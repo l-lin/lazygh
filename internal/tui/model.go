@@ -53,10 +53,7 @@ func NewModel(seed SeedData) *Model {
 
 func DefaultSeedData() SeedData {
 	return SeedData{
-		Users: []Item{{
-			Title:  "connected-user",
-			Detail: "Dummy connected user. Real `gh api user` data arrives in TODO 03.",
-		}},
+		Users: []Item{connectedUserLoadingItem()},
 		MyPullRequests: []Item{
 			{Title: "lazygh#12 Add list rendering", Detail: "Dummy PR body for list rendering. Real PR descriptions arrive in TODO 04."},
 			{Title: "lazygh#18 Tighten keyboard flow", Detail: "Dummy PR body for keyboard flow. Press `enter` to focus the detail pane."},
@@ -87,6 +84,11 @@ func (model *Model) SelectedPullRequestIndex(tab PullRequestTab) int {
 
 func (model *Model) Users() []Item {
 	return copyItems(model.users)
+}
+
+func (model *Model) SetUsers(users []Item) {
+	model.users = copyItems(users)
+	model.selectedUserIndex = clampIndex(model.selectedUserIndex, len(model.users))
 }
 
 func (model *Model) PullRequests(tab PullRequestTab) []Item {

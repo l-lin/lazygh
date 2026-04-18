@@ -3,6 +3,7 @@ package tui
 import (
 	"github.com/jesseduffield/gocui"
 
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
@@ -12,8 +13,14 @@ const (
 	viewPullRequestsName = "pull-requests"
 )
 
+type ConnectedUserLoader interface {
+	GetConnectedUser() (githubcli.ConnectedUser, error)
+}
+
 type Program struct {
-	model *Model
+	model                    *Model
+	connectedUserLoader      ConnectedUserLoader
+	connectedUserLoadStarted bool
 }
 
 type keybindingSpec struct {
@@ -22,16 +29,23 @@ type keybindingSpec struct {
 	handler  func(*gocui.Gui, *gocui.View) error
 }
 
-func NewProgram() *Program {
-	return NewProgramWithModel(NewModel(DefaultSeedData()))
+func NewProgram(connectedUserLoader ConnectedUserLoader) *Program {
+	return NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), connectedUserLoader)
 }
 
 func NewProgramWithModel(model *Model) *Program {
+	return NewProgramWithModelAndLoader(model, nil)
+}
+
+func NewProgramWithModelAndLoader(model *Model, connectedUserLoader ConnectedUserLoader) *Program {
 	if model == nil {
 		model = NewModel(DefaultSeedData())
 	}
 
-	return &Program{model: model}
+	return &Program{
+		model:               model,
+		connectedUserLoader: connectedUserLoader,
+	}
 }
 
 func (program *Program) Run() error {
@@ -169,6 +183,55 @@ func (program *Program) syncCurrentView(gui *gocui.Gui) error {
 	}
 
 	return err
+}
+
+func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
+	if program.connectedUserLoader == nil || program.connectedUserLoadStarted {
+		return
+	}
+
+	program.connectedUserLoadStarted = true
+	go program.loadConnectedUser(gui)
+}
+
+func (program *Program) loadConnectedUser(gui *gocui.Gui) {
+	user, err := program.connectedUserLoader.GetConnectedUser()
+
+	gui.Update(func(gui *gocui.Gui) error {
+		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
+		return program.refreshViews(gui)
+	})
+}
+
+func (program *Program) refreshViews(gui *gocui.Gui) error {
+	userView, err := gui.View(viewUserName)
+	if err != nil && !isUnknownViewError(err) {
+		return err
+	}
+	if err == nil {
+		program.configureUserView(userView)
+		program.renderUserView(userView)
+	}
+
+	pullRequestsView, err := gui.View(viewPullRequestsName)
+	if err != nil && !isUnknownViewError(err) {
+		return err
+	}
+	if err == nil {
+		program.configurePullRequestsView(pullRequestsView)
+		program.renderPullRequestsView(pullRequestsView)
+	}
+
+	detailView, err := gui.View(viewDetailName)
+	if err != nil && !isUnknownViewError(err) {
+		return err
+	}
+	if err == nil {
+		program.configureDetailView(detailView)
+		program.renderDetailView(detailView)
+	}
+
+	return program.syncCurrentView(gui)
 }
 
 func (program *Program) currentViewName() string {
