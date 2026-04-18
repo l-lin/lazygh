@@ -3,6 +3,7 @@
 ## Project
 - Module path: `codeberg.org/l-lin/lazygh`
 - Language: Go
+- Go version: `1.25.x`
 - Task runner: `mise`
 - Binary entry point: `cmd/lazygh`
 
@@ -17,7 +18,7 @@
 - Keep rendering logic in `internal/tui`.
 - Keep palette values in `internal/theme`.
 - Prefer the standard library and small dependencies.
-- Default TUI choice is `gocui` because it stays close to lazygit.
+- Default TUI choice is `github.com/jesseduffield/gocui` because it stays close to lazygit.
 
 ## AI guidance
 - Update this file before adding repo-specific agent skills.

@@ -1,27 +1,42 @@
 package app
 
 import (
-	"bytes"
+	"errors"
 	"testing"
 )
 
-func TestRun_GivenAppWithBuffer_WhenRunning_ThenWritesBootstrapMessage(t *testing.T) {
-	stdout := given_buffer()
-	subject := New(stdout)
+func TestRun_GivenRunner_WhenRunning_ThenDelegatesToRunner(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := New(runner)
 
 	actualErr := when_running(subject)
 
 	then_noError(t, actualErr)
 
-	expected := "lazygh is bootstrapped. TUI work starts in TODO 02.\n"
-	actual := stdout.String()
-	if actual != expected {
-		t.Fatalf("expected %q, actual %q", expected, actual)
+	if !runner.runCalled {
+		t.Fatal("expected runner to be called")
 	}
 }
 
-func given_buffer() *bytes.Buffer {
-	return &bytes.Buffer{}
+func TestRun_GivenRunnerError_WhenRunning_ThenReturnsTheError(t *testing.T) {
+	expected := errors.New("boom")
+	runner := &fakeRunner{runErr: expected}
+	subject := New(runner)
+
+	actual := when_running(subject)
+	if !errors.Is(actual, expected) {
+		t.Fatalf("expected error %v, actual %v", expected, actual)
+	}
+}
+
+type fakeRunner struct {
+	runCalled bool
+	runErr    error
+}
+
+func (runner *fakeRunner) Run() error {
+	runner.runCalled = true
+	return runner.runErr
 }
 
 func when_running(subject *App) error {
