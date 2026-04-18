@@ -108,6 +108,27 @@ func TestCloseDetail_GivenDetailFocus_WhenPressingEscape_ThenFocusReturnsToPrevi
 	}
 }
 
+func TestCloseDetail_GivenRequestedPullRequestsDetail_WhenPressingEscape_ThenFocusReturnsToPullRequestsWithTheSameTabAndSelection(t *testing.T) {
+	subject := given_model()
+	subject.NextSideView()
+	subject.NextPullRequestTab()
+	subject.MoveSelectionDown()
+	subject.OpenDetail()
+
+	when_closingDetail(subject)
+
+	actualFocus := subject.Focus()
+	if actualFocus != FocusPullRequestsView {
+		t.Fatalf("expected focus %v, actual %v", FocusPullRequestsView, actualFocus)
+	}
+	if subject.ActivePullRequestTab() != RequestedPullRequestsTab {
+		t.Fatalf("expected tab %v, actual %v", RequestedPullRequestsTab, subject.ActivePullRequestTab())
+	}
+	if subject.SelectedPullRequestIndex(RequestedPullRequestsTab) != 1 {
+		t.Fatalf("expected requested selection 1, actual %d", subject.SelectedPullRequestIndex(RequestedPullRequestsTab))
+	}
+}
+
 func TestMoveSelection_GivenPullRequestsFocus_WhenMovingDownAndUp_ThenSelectionChangesWithinBounds(t *testing.T) {
 	subject := given_model()
 	subject.NextSideView()
@@ -201,6 +222,13 @@ func TestDetailContent_GivenFocusedSourceSelectionChanges_WhenRenderingDetail_Th
 	actual = subject.DetailContent()
 	if actual != "My PR detail 2" {
 		t.Fatalf("expected detail %q, actual %q", "My PR detail 2", actual)
+	}
+
+	subject.NextPullRequestTab()
+	subject.MoveSelectionDown()
+	actual = subject.DetailContent()
+	if actual != "Requested PR detail 2" {
+		t.Fatalf("expected detail %q, actual %q", "Requested PR detail 2", actual)
 	}
 }
 

@@ -6,9 +6,9 @@
 The repo now boots into a three-view TUI:
 - view `0`: detail pane
 - view `1`: connected user from `gh api user`
-- view `2`: authored pull requests from `gh search prs`, plus a still-dummy `Requested` tab
+- view `2`: pull requests from `gh search prs`, with live `My PRs` and `Requested` tabs
 
-The next milestone replaces the requested-review dummy data with `gh` output.
+The next milestones can focus on layout polish and extra navigation.
 
 ## Prerequisites
 - `mise`

@@ -53,12 +53,9 @@ func NewModel(seed SeedData) *Model {
 
 func DefaultSeedData() SeedData {
 	return SeedData{
-		Users:          []Item{connectedUserLoadingItem()},
-		MyPullRequests: []Item{myPullRequestsLoadingItem()},
-		RequestedPullRequests: []Item{
-			{Title: "core/api#91 Review auth cleanup", Detail: "Dummy requested review body. Real review requests arrive in TODO 05."},
-			{Title: "infra/cli#44 Review release notes", Detail: "Dummy requested review body. Use `[` and `]` in the PR view to switch tabs."},
-		},
+		Users:                 []Item{connectedUserLoadingItem()},
+		MyPullRequests:        []Item{myPullRequestsLoadingItem()},
+		RequestedPullRequests: []Item{requestedPullRequestsLoadingItem()},
 	}
 }
 

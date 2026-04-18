@@ -27,9 +27,21 @@ type PullRequest struct {
 }
 
 func (client *Client) ListMyPullRequests() ([]PullRequest, error) {
-	result, err := client.runner.Run(ghBinaryName, "search", "prs", "--author", "@me", "--state", "open", "--json", pullRequestJSONFields)
+	return client.listPullRequests("gh search prs", "--author", "@me")
+}
+
+func (client *Client) ListRequestedPullRequests() ([]PullRequest, error) {
+	return client.listPullRequests("gh search prs", "--review-requested", "@me")
+}
+
+func (client *Client) listPullRequests(commandName string, qualifiers ...string) ([]PullRequest, error) {
+	args := []string{"search", "prs"}
+	args = append(args, qualifiers...)
+	args = append(args, "--state", "open", "--json", pullRequestJSONFields)
+
+	result, err := client.runner.Run(ghBinaryName, args...)
 	if err != nil {
-		return nil, classifyCommandError("gh search prs", err, result.Stderr)
+		return nil, classifyCommandError(commandName, err, result.Stderr)
 	}
 
 	var pullRequests []PullRequest

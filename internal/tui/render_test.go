@@ -47,6 +47,26 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenCreatesThreeViewsAndPlacesDe
 	}
 }
 
+func TestPullRequestsTitle_GivenKnownCounts_WhenRendering_ThenItShowsCountsForBothTabs(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	subject.myPullRequestsCount = 3
+	subject.myPullRequestsCountKnown = true
+	subject.requestedPullRequestsCount = 12
+	subject.requestedPullRequestsCountKnown = true
+
+	actual := subject.pullRequestsTitle()
+	if actual != "[2]-[My PRs (3)] - Requested (12)" {
+		t.Fatalf("expected pull requests title %q, actual %q", "[2]-[My PRs (3)] - Requested (12)", actual)
+	}
+
+	subject.model.FocusPullRequestsView()
+	subject.model.NextPullRequestTab()
+	actual = subject.pullRequestsTitle()
+	if actual != "[2]-My PRs (3) - [Requested (12)]" {
+		t.Fatalf("expected pull requests title %q, actual %q", "[2]-My PRs (3) - [Requested (12)]", actual)
+	}
+}
+
 func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewColorsWithoutSelectionBackground(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
@@ -166,6 +186,33 @@ func TestOpenDetailAndCloseDetail_GivenPullRequestsFocus_WhenHandlingProgramActi
 	actualErr = subject.closeDetail(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
+}
+
+func TestOpenDetailAndCloseDetail_GivenRequestedPullRequestsTab_WhenHandlingProgramActions_ThenCurrentViewReturnsToPullRequestsWithTheRequestedTabSelected(t *testing.T) {
+	model := given_model()
+	model.NextSideView()
+	model.NextPullRequestTab()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	actualErr = subject.closeDetail(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if pullRequestsView.Title != "[2]-My PRs - [Requested]" {
+		t.Fatalf("expected pull requests title %q, actual %q", "[2]-My PRs - [Requested]", pullRequestsView.Title)
+	}
 }
 
 func TestSideViewCycling_GivenDetailFocus_WhenHandlingProgramActions_ThenCurrentViewStaysOnDetail(t *testing.T) {

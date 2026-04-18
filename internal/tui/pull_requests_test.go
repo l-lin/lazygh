@@ -94,3 +94,61 @@ func TestMyPullRequestsErrorItem_GivenAnAuthenticationError_WhenBuildingTheState
 		t.Fatalf("expected detail %q, actual %q", myPullRequestsUnauthenticatedDetail, actual.Detail)
 	}
 }
+
+func TestDefaultSeedData_GivenAFreshModel_WhenReadingRequestedPullRequests_ThenItStartsInALoadingState(t *testing.T) {
+	subject := NewModel(DefaultSeedData())
+
+	actualPullRequests := subject.PullRequests(RequestedPullRequestsTab)
+	if len(actualPullRequests) != 1 {
+		t.Fatalf("expected 1 pull request row, actual %d", len(actualPullRequests))
+	}
+	if actualPullRequests[0].Title != requestedPullRequestsLoadingTitle {
+		t.Fatalf("expected title %q, actual %q", requestedPullRequestsLoadingTitle, actualPullRequests[0].Title)
+	}
+	if actualPullRequests[0].Detail != requestedPullRequestsLoadingDetail {
+		t.Fatalf("expected detail %q, actual %q", requestedPullRequestsLoadingDetail, actualPullRequests[0].Detail)
+	}
+}
+
+func TestSetPullRequests_GivenRequestedPullRequests_WhenSelectingTheRequestedTab_ThenDetailContentShowsMetadataAndBody(t *testing.T) {
+	subject := NewModel(DefaultSeedData())
+	subject.SetPullRequests(RequestedPullRequestsTab, []Item{requestedPullRequestItem(githubcli.PullRequest{
+		Title:      "feat(doctolib-postmortems): integrate post-mortem writing guide",
+		Number:     845,
+		Repository: githubcli.Repository{NameWithOwner: "doctolib/prompts"},
+		URL:        "https://github.com/doctolib/prompts/pull/845",
+		Body:       "## Summary\n\n- Adds new skill",
+		State:      "open",
+		IsDraft:    false,
+		UpdatedAt:  "2026-04-17T20:35:05Z",
+	})})
+	subject.FocusPullRequestsView()
+	subject.NextPullRequestTab()
+
+	actualDetail := subject.DetailContent()
+	expectedFragments := []string{
+		"Repository: doctolib/prompts",
+		"Number: #845",
+		"State: open",
+		"Draft: no",
+		"Updated: 2026-04-17T20:35:05Z",
+		"URL: https://github.com/doctolib/prompts/pull/845",
+		"## Summary",
+	}
+	for _, expected := range expectedFragments {
+		if !strings.Contains(actualDetail, expected) {
+			t.Fatalf("expected detail to contain %q, actual %q", expected, actualDetail)
+		}
+	}
+}
+
+func TestRequestedPullRequestsErrorItem_GivenAnAuthenticationError_WhenBuildingTheState_ThenItShowsTheRecoveryMessage(t *testing.T) {
+	actual := requestedPullRequestsErrorItem(fmt.Errorf("wrap: %w", githubcli.ErrUnauthenticated))
+
+	if actual.Title != requestedPullRequestsUnauthenticatedTitle {
+		t.Fatalf("expected title %q, actual %q", requestedPullRequestsUnauthenticatedTitle, actual.Title)
+	}
+	if actual.Detail != requestedPullRequestsUnauthenticatedDetail {
+		t.Fatalf("expected detail %q, actual %q", requestedPullRequestsUnauthenticatedDetail, actual.Detail)
+	}
+}

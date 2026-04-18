@@ -75,3 +75,32 @@ func TestListMyPullRequests_GivenCommandFailure_WhenFetching_ThenReturnsTheSearc
 		t.Fatalf("expected error to mention %q, actual %v", "gh search prs", actualErr)
 	}
 }
+
+func TestListRequestedPullRequests_GivenValidGhResponse_WhenFetching_ThenReturnsPullRequests(t *testing.T) {
+	runner := &fakeRunner{
+		stdout: []byte(`[{"title":"feat(doctolib-postmortems): integrate post-mortem writing guide","number":845,"repository":{"name":"prompts","nameWithOwner":"doctolib/prompts"},"url":"https://github.com/doctolib/prompts/pull/845","body":"## Summary\n\n- Adds new skill","state":"open","isDraft":false,"updatedAt":"2026-04-17T20:35:05Z"}]`),
+	}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.ListRequestedPullRequests()
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"})
+
+	expected := []PullRequest{{
+		Title:  "feat(doctolib-postmortems): integrate post-mortem writing guide",
+		Number: 845,
+		Repository: Repository{
+			Name:          "prompts",
+			NameWithOwner: "doctolib/prompts",
+		},
+		URL:       "https://github.com/doctolib/prompts/pull/845",
+		Body:      "## Summary\n\n- Adds new skill",
+		State:     "open",
+		IsDraft:   false,
+		UpdatedAt: "2026-04-17T20:35:05Z",
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected pull requests %+v, actual %+v", expected, actual)
+	}
+}

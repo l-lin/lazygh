@@ -84,6 +84,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadMyPullRequests(gui)
+	program.maybeLoadRequestedPullRequests(gui)
 	return program.syncCurrentView(gui)
 }
 
@@ -175,14 +176,33 @@ func (program *Program) detailHeader(item Item) string {
 }
 
 func (program *Program) pullRequestsTitle() string {
-	myPullRequestsLabel := MyPullRequestsTab.Label()
-	requestedLabel := RequestedPullRequestsTab.Label()
+	myPullRequestsLabel := program.pullRequestsTabLabel(MyPullRequestsTab)
+	requestedLabel := program.pullRequestsTabLabel(RequestedPullRequestsTab)
 
 	if program.model.ActivePullRequestTab() == MyPullRequestsTab {
 		return fmt.Sprintf("[2]-[%s] - %s", myPullRequestsLabel, requestedLabel)
 	}
 
 	return fmt.Sprintf("[2]-%s - [%s]", myPullRequestsLabel, requestedLabel)
+}
+
+func (program *Program) pullRequestsTabLabel(tab PullRequestTab) string {
+	label := tab.Label()
+	count, ok := program.pullRequestsCount(tab)
+	if !ok {
+		return label
+	}
+
+	return fmt.Sprintf("%s (%d)", label, count)
+}
+
+func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
+	switch tab {
+	case RequestedPullRequestsTab:
+		return program.requestedPullRequestsCount, program.requestedPullRequestsCountKnown
+	default:
+		return program.myPullRequestsCount, program.myPullRequestsCountKnown
+	}
 }
 
 func (program *Program) selectListLine(view *gocui.View, selectedIndex int) {
