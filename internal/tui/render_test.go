@@ -88,7 +88,7 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 		t.Fatalf("expected inactive border color %v, actual %v", inactiveBorderColor, gui.FrameColor)
 	}
 	if gui.SelBgColor != gocui.ColorDefault {
-		t.Fatalf("expected no active selection background, actual %v", gui.SelBgColor)
+		t.Fatalf("expected no active frame background, actual %v", gui.SelBgColor)
 	}
 
 	userView, actualErr := gui.View(viewUserName)
@@ -116,8 +116,8 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 	if pullRequestsView.Highlight {
 		t.Fatal("expected the inactive pull requests view to avoid highlight background")
 	}
-	if userView.SelBgColor != gocui.ColorDefault {
-		t.Fatalf("expected no active line background color, actual %v", userView.SelBgColor)
+	if userView.SelBgColor != inactiveBorderColor {
+		t.Fatalf("expected active line background color %v, actual %v", inactiveBorderColor, userView.SelBgColor)
 	}
 }
 
