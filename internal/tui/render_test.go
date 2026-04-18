@@ -140,6 +140,22 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(
 	}
 }
 
+func TestLayout_GivenFreshProgram_WhenRendering_ThenConnectedUserViewHasOneContentLine(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	userView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	if userView.InnerHeight() != 1 {
+		t.Fatalf("expected connected user inner height 1, actual %d", userView.InnerHeight())
+	}
+}
+
 func TestLayout_GivenDetailFocusOnPullRequests_WhenRendering_ThenShowsTheSelectedPullRequestInTheDetailPane(t *testing.T) {
 	model := given_model()
 	model.NextSideView()

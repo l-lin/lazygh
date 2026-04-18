@@ -10,12 +10,11 @@ import (
 )
 
 const (
-	sidebarWidthPercent   = 46
-	userViewHeightPercent = 20
-	minimumSidebarWidth   = 32
-	minimumDetailWidth    = 40
-	minimumUserViewHeight = 6
-	detailKeyHint         = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · ctrl+d/u page · enter detail · esc back · ctrl+c quit"
+	sidebarWidthPercent = 46
+	minimumSidebarWidth = 32
+	minimumDetailWidth  = 40
+	userViewTotalHeight = 3
+	detailKeyHint       = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · ctrl+d/u page · enter detail · esc back · ctrl+c quit"
 )
 
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
@@ -46,17 +45,14 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		sidebarX1 = detailX0 - 1
 	}
 
-	userHeight := maxY * userViewHeightPercent / 100
-	if userHeight < minimumUserViewHeight {
-		userHeight = minimumUserViewHeight
-	}
+	userHeight := userViewTotalHeight
 	if userHeight >= maxY {
 		userHeight = maxY / 2
 	}
-	userY1 := userHeight - 1
-	if userY1 < 1 {
-		userY1 = 1
+	if userHeight < 2 {
+		userHeight = 2
 	}
+	userY1 := userHeight - 1
 	pullRequestsY0 := userY1 + 1
 	if pullRequestsY0 >= maxY {
 		pullRequestsY0 = maxY / 2
