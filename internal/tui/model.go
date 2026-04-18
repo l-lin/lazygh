@@ -181,6 +181,14 @@ func (model *Model) MoveSelectionUp() {
 	}
 }
 
+func (model *Model) PageDown(pageSize int) {
+	model.adjustSelectionBy(pageDelta(pageSize))
+}
+
+func (model *Model) PageUp(pageSize int) {
+	model.adjustSelectionBy(-pageDelta(pageSize))
+}
+
 func (model *Model) NextPullRequestTab() {
 	if model.focus != FocusPullRequestsView {
 		return
@@ -230,6 +238,15 @@ func (model *Model) setSideFocus(focus Focus) {
 	model.lastSideFocus = focus
 }
 
+func (model *Model) adjustSelectionBy(change int) {
+	switch model.focus {
+	case FocusUserView:
+		model.selectedUserIndex = clampIndex(model.selectedUserIndex+change, len(model.users))
+	case FocusPullRequestsView:
+		model.adjustPullRequestSelection(change)
+	}
+}
+
 func (model *Model) adjustPullRequestSelection(change int) {
 	items := model.CurrentPullRequests()
 	selectedIndex := model.selectedPullRequestIndexes[model.activePullRequestTab]
@@ -269,6 +286,14 @@ func clampIndex(index int, itemCount int) int {
 	}
 
 	return index
+}
+
+func pageDelta(pageSize int) int {
+	if pageSize <= 1 {
+		return 1
+	}
+
+	return pageSize
 }
 
 func copyItems(items []Item) []Item {

@@ -17,6 +17,17 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewSu
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: '[', handler: subject.previousPullRequestTab})
 }
 
+func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenControlDAndControlUAreAvailableInAllViews(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyCtrlD, handler: subject.pageDown})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyCtrlU, handler: subject.pageUp})
+	}
+}
+
 func then_bindingExists(t *testing.T, specs []keybindingSpec, expected keybindingSpec) {
 	t.Helper()
 

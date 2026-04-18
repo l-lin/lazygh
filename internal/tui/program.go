@@ -116,12 +116,18 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: "", key: '2', handler: program.focusPullRequestsView},
 		{viewName: viewUserName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewUserName, key: 'k', handler: program.moveSelectionUp},
+		{viewName: viewUserName, key: gocui.KeyCtrlD, handler: program.pageDown},
+		{viewName: viewUserName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewUserName, key: gocui.KeyEnter, handler: program.openDetail},
 		{viewName: viewPullRequestsName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewPullRequestsName, key: 'k', handler: program.moveSelectionUp},
+		{viewName: viewPullRequestsName, key: gocui.KeyCtrlD, handler: program.pageDown},
+		{viewName: viewPullRequestsName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewPullRequestsName, key: '[', handler: program.previousPullRequestTab},
 		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
+		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrl3, handler: program.closeDetail},
@@ -151,6 +157,26 @@ func (program *Program) moveSelectionDown(_ *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) moveSelectionUp(_ *gocui.Gui, _ *gocui.View) error {
 	program.model.MoveSelectionUp()
+	return nil
+}
+
+func (program *Program) pageDown(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.Focus() == FocusDetailView {
+		program.scrollDetailDown(view)
+		return nil
+	}
+
+	program.model.PageDown(viewPageSize(view))
+	return nil
+}
+
+func (program *Program) pageUp(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.Focus() == FocusDetailView {
+		program.scrollDetailUp(view)
+		return nil
+	}
+
+	program.model.PageUp(viewPageSize(view))
 	return nil
 }
 
@@ -313,4 +339,28 @@ func (program *Program) currentViewName() string {
 	default:
 		return viewUserName
 	}
+}
+
+func (program *Program) scrollDetailDown(view *gocui.View) {
+	if view == nil {
+		return
+	}
+
+	view.ScrollDown(pageDelta(view.InnerHeight()))
+}
+
+func (program *Program) scrollDetailUp(view *gocui.View) {
+	if view == nil {
+		return
+	}
+
+	view.ScrollUp(pageDelta(view.InnerHeight()))
+}
+
+func viewPageSize(view *gocui.View) int {
+	if view == nil {
+		return 1
+	}
+
+	return view.InnerHeight()
 }

@@ -151,6 +151,32 @@ func TestMoveSelection_GivenPullRequestsFocus_WhenMovingDownAndUp_ThenSelectionC
 	}
 }
 
+func TestPageSelection_GivenPullRequestsFocus_WhenPagingDownAndUp_ThenSelectionMovesByThePageSize(t *testing.T) {
+	subject := NewModel(SeedData{
+		Users: []Item{{Title: "user-1", Detail: "user detail 1"}},
+		MyPullRequests: []Item{
+			{Title: "my-pr-1", Detail: "My PR detail 1"},
+			{Title: "my-pr-2", Detail: "My PR detail 2"},
+			{Title: "my-pr-3", Detail: "My PR detail 3"},
+			{Title: "my-pr-4", Detail: "My PR detail 4"},
+			{Title: "my-pr-5", Detail: "My PR detail 5"},
+		},
+	})
+	subject.FocusPullRequestsView()
+
+	when_pagingDown(subject, 3)
+	actual := subject.SelectedPullRequestIndex(MyPullRequestsTab)
+	if actual != 3 {
+		t.Fatalf("expected selection 3, actual %d", actual)
+	}
+
+	when_pagingUp(subject, 2)
+	actual = subject.SelectedPullRequestIndex(MyPullRequestsTab)
+	if actual != 1 {
+		t.Fatalf("expected selection 1, actual %d", actual)
+	}
+}
+
 func TestMoveSelection_GivenUserFocus_WhenMovingDownAndUp_ThenSelectionChangesWithinBounds(t *testing.T) {
 	subject := given_model()
 
@@ -168,6 +194,30 @@ func TestMoveSelection_GivenUserFocus_WhenMovingDownAndUp_ThenSelectionChangesWi
 	actual = subject.SelectedUserIndex()
 	if actual != 0 {
 		t.Fatalf("expected selection 0, actual %d", actual)
+	}
+}
+
+func TestPageSelection_GivenUserFocus_WhenPagingDownAndUp_ThenSelectionMovesByThePageSize(t *testing.T) {
+	subject := NewModel(SeedData{
+		Users: []Item{
+			{Title: "user-1", Detail: "User detail 1"},
+			{Title: "user-2", Detail: "User detail 2"},
+			{Title: "user-3", Detail: "User detail 3"},
+			{Title: "user-4", Detail: "User detail 4"},
+			{Title: "user-5", Detail: "User detail 5"},
+		},
+	})
+
+	when_pagingDown(subject, 4)
+	actual := subject.SelectedUserIndex()
+	if actual != 4 {
+		t.Fatalf("expected selection 4, actual %d", actual)
+	}
+
+	when_pagingUp(subject, 2)
+	actual = subject.SelectedUserIndex()
+	if actual != 2 {
+		t.Fatalf("expected selection 2, actual %d", actual)
 	}
 }
 
@@ -314,6 +364,14 @@ func when_movingSelectionDown(subject *Model) {
 
 func when_movingSelectionUp(subject *Model) {
 	subject.MoveSelectionUp()
+}
+
+func when_pagingDown(subject *Model, pageSize int) {
+	subject.PageDown(pageSize)
+}
+
+func when_pagingUp(subject *Model, pageSize int) {
+	subject.PageUp(pageSize)
 }
 
 func when_switchingToNextTab(subject *Model) {

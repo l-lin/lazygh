@@ -15,7 +15,7 @@ const (
 	minimumSidebarWidth   = 32
 	minimumDetailWidth    = 40
 	minimumUserViewHeight = 6
-	detailKeyHint         = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · enter detail · esc back · ctrl+c quit"
+	detailKeyHint         = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · ctrl+d/u page · enter detail · esc back · ctrl+c quit"
 )
 
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
