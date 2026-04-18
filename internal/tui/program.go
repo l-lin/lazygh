@@ -11,6 +11,7 @@ const (
 	viewDetailName       = "detail"
 	viewUserName         = "user"
 	viewPullRequestsName = "pull-requests"
+	viewSearchName       = "search"
 )
 
 type GitHubLoader interface {
@@ -108,19 +109,33 @@ func (program *Program) setKeybindings(gui *gocui.Gui) error {
 func (program *Program) keybindingSpecs() []keybindingSpec {
 	return []keybindingSpec{
 		{viewName: "", key: gocui.KeyCtrlC, handler: program.quit},
-		{viewName: "", key: '?', handler: program.toggleHelp},
 		{viewName: "", key: gocui.KeyTab, handler: program.nextSideView},
 		{viewName: "", key: gocui.KeyBacktab, handler: program.previousSideView},
-		{viewName: "", key: 'l', handler: program.nextSideView},
-		{viewName: "", key: 'h', handler: program.previousSideView},
-		{viewName: "", key: '0', handler: program.focusDetailView},
-		{viewName: "", key: '1', handler: program.focusUserView},
-		{viewName: "", key: '2', handler: program.focusPullRequestsView},
+		{viewName: viewUserName, key: '?', handler: program.toggleHelp},
+		{viewName: viewPullRequestsName, key: '?', handler: program.toggleHelp},
+		{viewName: viewDetailName, key: '?', handler: program.toggleHelp},
+		{viewName: viewUserName, key: 'l', handler: program.nextSideView},
+		{viewName: viewPullRequestsName, key: 'l', handler: program.nextSideView},
+		{viewName: viewDetailName, key: 'l', handler: program.nextSideView},
+		{viewName: viewUserName, key: 'h', handler: program.previousSideView},
+		{viewName: viewPullRequestsName, key: 'h', handler: program.previousSideView},
+		{viewName: viewDetailName, key: 'h', handler: program.previousSideView},
+		{viewName: viewUserName, key: '0', handler: program.focusDetailView},
+		{viewName: viewPullRequestsName, key: '0', handler: program.focusDetailView},
+		{viewName: viewDetailName, key: '0', handler: program.focusDetailView},
+		{viewName: viewUserName, key: '1', handler: program.focusUserView},
+		{viewName: viewPullRequestsName, key: '1', handler: program.focusUserView},
+		{viewName: viewDetailName, key: '1', handler: program.focusUserView},
+		{viewName: viewUserName, key: '2', handler: program.focusPullRequestsView},
+		{viewName: viewPullRequestsName, key: '2', handler: program.focusPullRequestsView},
+		{viewName: viewDetailName, key: '2', handler: program.focusPullRequestsView},
+		{viewName: viewUserName, key: '/', handler: program.openSearch},
 		{viewName: viewUserName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewUserName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewUserName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewUserName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewUserName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewPullRequestsName, key: '/', handler: program.openSearch},
 		{viewName: viewPullRequestsName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewPullRequestsName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewPullRequestsName, key: gocui.KeyCtrlD, handler: program.pageDown},
@@ -128,6 +143,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewPullRequestsName, key: '[', handler: program.previousPullRequestTab},
 		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewDetailName, key: '/', handler: program.openSearch},
 		{viewName: viewDetailName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
@@ -135,6 +151,9 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewDetailName, key: '[', handler: program.closeDetail},
+		{viewName: viewSearchName, key: gocui.KeyEnter, handler: program.submitSearch},
+		{viewName: viewSearchName, key: gocui.KeyEsc, handler: program.cancelSearch},
+		{viewName: viewSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.cancelSearch},
 		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
 		{viewName: viewHelpName, key: gocui.KeyCtrlLsqBracket, handler: program.closeHelp},
 		{viewName: viewHelpName, key: '[', handler: program.closeHelp},
@@ -146,7 +165,7 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible {
+	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
 
@@ -155,7 +174,7 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible {
+	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
 
@@ -164,6 +183,9 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) moveSelectionDown(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
 	if program.model.Focus() == FocusDetailView {
 		program.scrollDetailDownLine(view)
 		return nil
@@ -174,6 +196,9 @@ func (program *Program) moveSelectionDown(_ *gocui.Gui, view *gocui.View) error 
 }
 
 func (program *Program) moveSelectionUp(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
 	if program.model.Focus() == FocusDetailView {
 		program.scrollDetailUpLine(view)
 		return nil
@@ -184,6 +209,9 @@ func (program *Program) moveSelectionUp(_ *gocui.Gui, view *gocui.View) error {
 }
 
 func (program *Program) pageDown(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
 	if program.model.Focus() == FocusDetailView {
 		program.scrollDetailDown(view)
 		return nil
@@ -194,6 +222,9 @@ func (program *Program) pageDown(_ *gocui.Gui, view *gocui.View) error {
 }
 
 func (program *Program) pageUp(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
 	if program.model.Focus() == FocusDetailView {
 		program.scrollDetailUp(view)
 		return nil
@@ -204,19 +235,27 @@ func (program *Program) pageUp(_ *gocui.Gui, view *gocui.View) error {
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
+
 	program.model.NextPullRequestTab()
 	program.reloadActivePullRequestsTab(gui)
 	return nil
 }
 
 func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
+
 	program.model.PreviousPullRequestTab()
 	program.reloadActivePullRequestsTab(gui)
 	return nil
 }
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible {
+	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
 
@@ -225,7 +264,7 @@ func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible {
+	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
 
@@ -234,7 +273,7 @@ func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible {
+	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
 
@@ -243,17 +282,55 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
+
 	program.model.OpenDetail()
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
+
 	program.model.CloseDetail()
 	return program.syncCurrentView(gui)
 }
 
+func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.helpVisible || program.model.SearchActive() {
+		return nil
+	}
+
+	program.model.StartSearch()
+	return program.layout(gui)
+}
+
+func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
+	program.model.SubmitSearch()
+	return program.closeSearch(gui)
+}
+
+func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
+	program.model.CancelSearch()
+	return program.closeSearch(gui)
+}
+
+func (program *Program) closeSearch(gui *gocui.Gui) error {
+	actualErr := gui.DeleteView(viewSearchName)
+	if actualErr != nil && !isUnknownViewError(actualErr) {
+		return actualErr
+	}
+
+	return program.refreshViews(gui)
+}
+
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {
+	gui.Cursor = program.model.SearchActive()
 	if program.helpVisible {
+		gui.Cursor = false
 		_, err := gui.SetCurrentView(viewHelpName)
 		if isUnknownViewError(err) {
 			return nil
@@ -386,10 +463,29 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		}
 	}
 
+	if program.model.SearchActive() {
+		searchView, err := gui.View(viewSearchName)
+		if err != nil && !isUnknownViewError(err) {
+			return err
+		}
+		if err == nil {
+			program.configureSearchView(searchView)
+			program.renderSearchView(searchView)
+			_, err = gui.SetViewOnTop(viewSearchName)
+			if err != nil && !isUnknownViewError(err) {
+				return err
+			}
+		}
+	}
+
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) currentViewName() string {
+	if program.model.SearchActive() {
+		return viewSearchName
+	}
+
 	switch program.model.Focus() {
 	case FocusPullRequestsView:
 		return viewPullRequestsName
@@ -401,6 +497,10 @@ func (program *Program) currentViewName() string {
 }
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
+	if program.model.SearchActive() {
+		return nil
+	}
+
 	program.helpVisible = !program.helpVisible
 	if !program.helpVisible {
 		return program.closeHelp(gui, nil)

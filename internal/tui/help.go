@@ -98,6 +98,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "k", Description: "Scroll up"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
+			{Key: "/", Description: "Search detail"},
 			{Key: "<esc>", Description: "Return to previous view"},
 		}
 	case FocusPullRequestsView:
@@ -106,6 +107,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "k", Description: "Move up"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
+			{Key: "/", Description: "Search pull requests"},
 			{Key: "[", Description: "Previous tab"},
 			{Key: "]", Description: "Next tab"},
 			{Key: "<enter>", Description: "Open detail"},
@@ -116,6 +118,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "k", Description: "Move up"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
+			{Key: "/", Description: "Search users"},
 			{Key: "<enter>", Description: "Open detail"},
 		}
 	}

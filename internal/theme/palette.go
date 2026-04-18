@@ -7,4 +7,5 @@ const (
 	InactiveTextHex           = "#000000"
 	InactiveTitleHex          = "#CCCCCC"
 	SelectedLineBackgroundHex = "#E6E6E6"
+	SearchHighlightHex        = "#F9EAB3"
 )

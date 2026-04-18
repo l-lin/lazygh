@@ -35,6 +35,13 @@ type Model struct {
 	selectedUserIndex          int
 	activePullRequestTab       PullRequestTab
 	selectedPullRequestIndexes map[PullRequestTab]int
+	searchActive               bool
+	searchTarget               Focus
+	searchTargetPullRequestTab PullRequestTab
+	searchDraft                string
+	userSearchQuery            string
+	detailSearchQuery          string
+	pullRequestSearchQueries   map[PullRequestTab]string
 }
 
 func NewModel(seed SeedData) *Model {
@@ -47,6 +54,10 @@ func NewModel(seed SeedData) *Model {
 		selectedPullRequestIndexes: map[PullRequestTab]int{
 			MyPullRequestsTab:        0,
 			RequestedPullRequestsTab: 0,
+		},
+		pullRequestSearchQueries: map[PullRequestTab]string{
+			MyPullRequestsTab:        "",
+			RequestedPullRequestsTab: "",
 		},
 	}
 }
@@ -82,6 +93,7 @@ func (model *Model) Users() []Item {
 func (model *Model) SetUsers(users []Item) {
 	model.users = copyItems(users)
 	model.selectedUserIndex = clampIndex(model.selectedUserIndex, len(model.users))
+	model.clampSearchSelectionForUserView()
 }
 
 func (model *Model) PullRequests(tab PullRequestTab) []Item {
@@ -102,6 +114,8 @@ func (model *Model) SetPullRequests(tab PullRequestTab, pullRequests []Item) {
 		model.myPullRequests = copyItems(pullRequests)
 		model.selectedPullRequestIndexes[MyPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[MyPullRequestsTab], len(model.myPullRequests))
 	}
+
+	model.clampSearchSelectionForPullRequestTab(tab)
 }
 
 func (model *Model) CurrentPullRequests() []Item {
@@ -166,7 +180,7 @@ func (model *Model) CloseDetail() {
 func (model *Model) MoveSelectionDown() {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = clampIndex(model.selectedUserIndex+1, len(model.users))
+		model.selectedUserIndex = model.adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), 1)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(1)
 	}
@@ -175,7 +189,7 @@ func (model *Model) MoveSelectionDown() {
 func (model *Model) MoveSelectionUp() {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = clampIndex(model.selectedUserIndex-1, len(model.users))
+		model.selectedUserIndex = model.adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), -1)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(-1)
 	}
@@ -241,16 +255,31 @@ func (model *Model) setSideFocus(focus Focus) {
 func (model *Model) adjustSelectionBy(change int) {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = clampIndex(model.selectedUserIndex+change, len(model.users))
+		model.selectedUserIndex = model.adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), change)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(change)
 	}
 }
 
 func (model *Model) adjustPullRequestSelection(change int) {
-	items := model.CurrentPullRequests()
-	selectedIndex := model.selectedPullRequestIndexes[model.activePullRequestTab]
-	model.selectedPullRequestIndexes[model.activePullRequestTab] = clampIndex(selectedIndex+change, len(items))
+	tab := model.activePullRequestTab
+	selectedIndex := model.selectedPullRequestIndexes[tab]
+	visibleIndexes := model.visiblePullRequestIndexes(tab)
+	model.selectedPullRequestIndexes[tab] = model.adjustVisibleSelection(selectedIndex, visibleIndexes, change)
+}
+
+func (model *Model) adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int) int {
+	if len(visibleIndexes) == 0 {
+		return selectedIndex
+	}
+
+	visibleSelectionIndex := indexOfInt(visibleIndexes, selectedIndex)
+	if visibleSelectionIndex < 0 {
+		visibleSelectionIndex = 0
+	}
+
+	visibleSelectionIndex = clampIndex(visibleSelectionIndex+change, len(visibleIndexes))
+	return visibleIndexes[visibleSelectionIndex]
 }
 
 func (tab PullRequestTab) Label() string {
@@ -300,4 +329,14 @@ func copyItems(items []Item) []Item {
 	copiedItems := make([]Item, len(items))
 	copy(copiedItems, items)
 	return copiedItems
+}
+
+func indexOfInt(items []int, expected int) int {
+	for index, item := range items {
+		if item == expected {
+			return index
+		}
+	}
+
+	return -1
 }

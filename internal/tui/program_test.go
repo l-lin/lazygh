@@ -37,12 +37,14 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDe
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'k', handler: subject.moveSelectionUp})
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingHelpBindings_ThenQuestionMarkTogglesThePopupAndEscapeVariantsCloseIt(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingHelpBindings_ThenQuestionMarkTogglesThePopupFromAnyMainPaneAndEscapeVariantsCloseIt(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: "", key: '?', handler: subject.toggleHelp})
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: '?', handler: subject.toggleHelp})
+	}
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: gocui.KeyEsc, handler: subject.closeHelp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: gocui.KeyCtrlLsqBracket, handler: subject.closeHelp})
 }

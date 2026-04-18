@@ -89,6 +89,16 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		}
 	}
 
+	if program.model.SearchActive() {
+		if err := program.layoutSearchView(gui); err != nil {
+			return err
+		}
+	} else {
+		if err := gui.DeleteView(viewSearchName); err != nil && !isUnknownViewError(err) {
+			return err
+		}
+	}
+
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadMyPullRequests(gui)
 	program.maybeLoadRequestedPullRequests(gui)
@@ -96,17 +106,17 @@ func (program *Program) layout(gui *gocui.Gui) error {
 }
 
 func (program *Program) configureDetailView(view *gocui.View) {
-	program.applyViewStyle(view, FocusDetailView, "[0]-Detail", false)
+	program.applyViewStyle(view, FocusDetailView, program.detailViewTitle(), false)
 	view.Wrap = true
 }
 
 func (program *Program) configureUserView(view *gocui.View) {
-	program.applyViewStyle(view, FocusUserView, "[1]-Connected user", true)
+	program.applyViewStyle(view, FocusUserView, program.userViewTitle(), true)
 	view.Wrap = false
 }
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
-	program.applyViewStyle(view, FocusPullRequestsView, "", true)
+	program.applyViewStyle(view, FocusPullRequestsView, program.pullRequestsViewTitle(), true)
 	view.TitlePrefix = "[2]"
 	view.Tabs = program.pullRequestsTabLabels()
 	view.TabIndex = int(program.model.ActivePullRequestTab())
@@ -143,30 +153,48 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 func (program *Program) renderUserView(view *gocui.View) {
 	view.Clear()
 
-	for _, item := range program.model.Users() {
+	visibleUsers := program.model.VisibleUsers()
+	if len(visibleUsers) == 0 && strings.TrimSpace(program.model.UserSearchQuery()) != "" {
+		fmt.Fprintln(view, searchNoMatchesMessage(program.model.UserSearchQuery()))
+		return
+	}
+
+	for _, item := range visibleUsers {
 		fmt.Fprintln(view, item.Title)
 	}
 
-	program.selectListLine(view, program.model.SelectedUserIndex())
+	program.selectListLine(view, program.model.SelectedVisibleUserIndex())
 }
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
 	view.Clear()
 
-	for _, item := range program.model.CurrentPullRequests() {
+	query := program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab())
+	visiblePullRequests := program.model.VisiblePullRequests()
+	if len(visiblePullRequests) == 0 && strings.TrimSpace(query) != "" {
+		fmt.Fprintln(view, searchNoMatchesMessage(query))
+		return
+	}
+
+	for _, item := range visiblePullRequests {
 		fmt.Fprintln(view, item.Title)
 	}
 
-	program.selectListLine(view, program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))
+	program.selectListLine(view, program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()))
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
 	view.Clear()
 
+	detailContent := program.detailViewContent()
+	highlightedContent, _ := highlightSearchMatches(detailContent, program.model.DetailSearchQuery())
+	fmt.Fprint(view, highlightedContent)
+}
+
+func (program *Program) detailViewContent() string {
 	item, ok := program.model.detailItem()
 	if !ok {
-		fmt.Fprintln(view, "No detail available.")
-		return
+		return "No detail available."
 	}
 
 	header := program.detailHeader(item)
@@ -175,9 +203,7 @@ func (program *Program) renderDetailView(view *gocui.View) {
 		body = "No description available. Even the dummy data is disappointed."
 	}
 
-	fmt.Fprintln(view, header)
-	fmt.Fprintln(view)
-	fmt.Fprintln(view, body)
+	return fmt.Sprintf("%s\n\n%s", header, body)
 }
 
 func (program *Program) detailHeader(item Item) string {
@@ -216,6 +242,10 @@ func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
 }
 
 func (program *Program) selectListLine(view *gocui.View, selectedIndex int) {
+	if view == nil || len(view.BufferLines()) == 0 {
+		return
+	}
+
 	visibleHeight := view.InnerHeight()
 	if visibleHeight < 1 {
 		visibleHeight = 1
@@ -245,4 +275,8 @@ func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) b
 	}
 
 	return program.model.Focus() == FocusDetailView && program.model.currentSideFocus() == focus
+}
+
+func searchNoMatchesMessage(query string) string {
+	return fmt.Sprintf("No matches for %q.", strings.TrimSpace(query))
 }
