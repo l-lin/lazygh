@@ -16,6 +16,12 @@ type Program struct {
 	model *Model
 }
 
+type keybindingSpec struct {
+	viewName string
+	key      any
+	handler  func(*gocui.Gui, *gocui.View) error
+}
+
 func NewProgram() *Program {
 	return NewProgramWithModel(NewModel(DefaultSeedData()))
 }
@@ -53,39 +59,48 @@ func (program *Program) configureGUI(gui *gocui.Gui) {
 	gui.Highlight = true
 	gui.InputEsc = true
 	gui.Cursor = false
+	gui.BgColor = gocui.ColorDefault
+	gui.FgColor = gocui.GetColor(theme.InactiveTextHex)
 	gui.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
+	gui.SelBgColor = gocui.ColorDefault
+	gui.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	gui.SelFrameColor = gocui.GetColor(theme.ActiveBorderHex)
-	gui.SelBgColor = gocui.GetColor(theme.ActiveSelectionBackgroundHex)
-	gui.SelFgColor = gocui.GetColor(theme.ActiveSelectionForegroundHex)
 }
 
 func (program *Program) setKeybindings(gui *gocui.Gui) error {
-	bindings := []struct {
-		key     any
-		handler func(*gocui.Gui, *gocui.View) error
-	}{
-		{key: gocui.KeyCtrlC, handler: program.quit},
-		{key: gocui.KeyTab, handler: program.nextSideView},
-		{key: gocui.KeyBacktab, handler: program.previousSideView},
-		{key: 'l', handler: program.nextSideView},
-		{key: 'h', handler: program.previousSideView},
-		{key: 'j', handler: program.moveSelectionDown},
-		{key: 'k', handler: program.moveSelectionUp},
-		{key: ']', handler: program.nextPullRequestTab},
-		{key: '[', handler: program.previousPullRequestTab},
-		{key: gocui.KeyEnter, handler: program.openDetail},
-		{key: gocui.KeyEsc, handler: program.closeDetail},
-		{key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
-		{key: gocui.KeyCtrl3, handler: program.closeDetail},
-	}
-
-	for _, binding := range bindings {
-		if err := gui.SetKeybinding("", binding.key, gocui.ModNone, binding.handler); err != nil {
+	for _, binding := range program.keybindingSpecs() {
+		if err := gui.SetKeybinding(binding.viewName, binding.key, gocui.ModNone, binding.handler); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (program *Program) keybindingSpecs() []keybindingSpec {
+	return []keybindingSpec{
+		{viewName: "", key: gocui.KeyCtrlC, handler: program.quit},
+		{viewName: "", key: gocui.KeyTab, handler: program.nextSideView},
+		{viewName: "", key: gocui.KeyBacktab, handler: program.previousSideView},
+		{viewName: "", key: 'l', handler: program.nextSideView},
+		{viewName: "", key: 'h', handler: program.previousSideView},
+		{viewName: "", key: '0', handler: program.focusDetailView},
+		{viewName: "", key: '1', handler: program.focusUserView},
+		{viewName: "", key: '2', handler: program.focusPullRequestsView},
+		{viewName: viewUserName, key: 'j', handler: program.moveSelectionDown},
+		{viewName: viewUserName, key: 'k', handler: program.moveSelectionUp},
+		{viewName: viewUserName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewPullRequestsName, key: 'j', handler: program.moveSelectionDown},
+		{viewName: viewPullRequestsName, key: 'k', handler: program.moveSelectionUp},
+		{viewName: viewPullRequestsName, key: '[', handler: program.previousPullRequestTab},
+		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
+		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
+		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
+		{viewName: viewDetailName, key: gocui.KeyCtrl3, handler: program.closeDetail},
+		// Some terminals collapse `ctrl+[` into `[` instead of exposing a dedicated control key.
+		{viewName: viewDetailName, key: '[', handler: program.closeDetail},
+	}
 }
 
 func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
@@ -120,6 +135,21 @@ func (program *Program) nextPullRequestTab(_ *gocui.Gui, _ *gocui.View) error {
 func (program *Program) previousPullRequestTab(_ *gocui.Gui, _ *gocui.View) error {
 	program.model.PreviousPullRequestTab()
 	return nil
+}
+
+func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
+	program.model.FocusDetailView()
+	return program.syncCurrentView(gui)
+}
+
+func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
+	program.model.FocusUserView()
+	return program.syncCurrentView(gui)
+}
+
+func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
+	program.model.FocusPullRequestsView()
+	return program.syncCurrentView(gui)
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {

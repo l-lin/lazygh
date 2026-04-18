@@ -5,12 +5,15 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestLayout_GivenFreshProgram_WhenRendering_ThenCreatesThreeViewsAndFocusesTheUserView(t *testing.T) {
+func TestLayout_GivenFreshProgram_WhenRendering_ThenCreatesThreeViewsAndPlacesDetailOnTheRight(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.configureGUI(gui)
 
 	actualErr := subject.layout(gui)
 
@@ -18,18 +21,84 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenCreatesThreeViewsAndFocusesT
 	then_viewExists(t, gui, viewDetailName)
 	then_viewExists(t, gui, viewUserName)
 	then_viewExists(t, gui, viewPullRequestsName)
+	then_currentViewNameIs(t, gui, viewUserName)
 
-	actual := gui.CurrentView()
-	if actual == nil || actual.Name() != viewUserName {
-		t.Fatalf("expected current view %q, actual %v", viewUserName, actual)
+	detailX0, _, _, _, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	userX0, userY0, userX1, userY1, actualErr := gui.ViewPosition(viewUserName)
+	then_noError(t, actualErr)
+	pullRequestsX0, pullRequestsY0, pullRequestsX1, _, actualErr := gui.ViewPosition(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	if detailX0 <= userX1 || detailX0 <= pullRequestsX1 {
+		t.Fatalf("expected detail view to be on the right, actual detailX0=%d userX1=%d pullRequestsX1=%d", detailX0, userX1, pullRequestsX1)
+	}
+	if userX0 != 0 || pullRequestsX0 != 0 || userY0 != 0 {
+		t.Fatalf("expected side views to start on the left edge, actual userX0=%d pullRequestsX0=%d userY0=%d", userX0, pullRequestsX0, userY0)
+	}
+	if userY1 >= pullRequestsY0 {
+		t.Fatalf("expected user view above pull requests view, actual userY1=%d pullRequestsY0=%d", userY1, pullRequestsY0)
 	}
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
+	if pullRequestsView.Title != "[2]-[My PRs] - Requested" {
+		t.Fatalf("expected pull requests title %q, actual %q", "[2]-[My PRs] - Requested", pullRequestsView.Title)
+	}
+}
 
-	actualBuffer := pullRequestsView.Buffer()
-	if !strings.Contains(actualBuffer, "[My PRs]") || !strings.Contains(actualBuffer, "Requested") {
-		t.Fatalf("expected pull request tabs in buffer, actual %q", actualBuffer)
+func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewColorsWithoutSelectionBackground(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+
+	then_noError(t, actualErr)
+
+	activeTextColor := gocui.GetColor(theme.ActiveTextHex)
+	inactiveTextColor := gocui.GetColor(theme.InactiveTextHex)
+	activeBorderColor := gocui.GetColor(theme.ActiveBorderHex)
+	inactiveBorderColor := gocui.GetColor(theme.InactiveBorderHex)
+
+	if gui.SelFrameColor != activeBorderColor {
+		t.Fatalf("expected active border color %v, actual %v", activeBorderColor, gui.SelFrameColor)
+	}
+	if gui.FrameColor != inactiveBorderColor {
+		t.Fatalf("expected inactive border color %v, actual %v", inactiveBorderColor, gui.FrameColor)
+	}
+	if gui.SelBgColor != gocui.ColorDefault {
+		t.Fatalf("expected no active selection background, actual %v", gui.SelBgColor)
+	}
+
+	userView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	if userView.FgColor != activeTextColor {
+		t.Fatalf("expected active user text color %v, actual %v", activeTextColor, userView.FgColor)
+	}
+	if detailView.FgColor != inactiveTextColor {
+		t.Fatalf("expected inactive detail text color %v, actual %v", inactiveTextColor, detailView.FgColor)
+	}
+	if pullRequestsView.FgColor != inactiveTextColor {
+		t.Fatalf("expected inactive pull request text color %v, actual %v", inactiveTextColor, pullRequestsView.FgColor)
+	}
+	if !userView.Highlight {
+		t.Fatal("expected the active side view to be highlighted")
+	}
+	if detailView.Highlight {
+		t.Fatal("expected the inactive detail view to avoid highlight background")
+	}
+	if pullRequestsView.Highlight {
+		t.Fatal("expected the inactive pull requests view to avoid highlight background")
+	}
+	if userView.SelBgColor != gocui.ColorDefault {
+		t.Fatalf("expected no active line background color, actual %v", userView.SelBgColor)
 	}
 }
 
@@ -41,15 +110,12 @@ func TestLayout_GivenDetailFocusOnPullRequests_WhenRendering_ThenShowsTheSelecte
 	subject := NewProgramWithModel(model)
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.configureGUI(gui)
 
 	actualErr := subject.layout(gui)
 
 	then_noError(t, actualErr)
-
-	actual := gui.CurrentView()
-	if actual == nil || actual.Name() != viewDetailName {
-		t.Fatalf("expected current view %q, actual %v", viewDetailName, actual)
-	}
+	then_currentViewNameIs(t, gui, viewDetailName)
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
@@ -60,12 +126,35 @@ func TestLayout_GivenDetailFocusOnPullRequests_WhenRendering_ThenShowsTheSelecte
 	}
 }
 
+func TestSwitchToSpecificView_GivenRenderedProgram_WhenHandlingViewShortcuts_ThenCurrentViewMatchesShortcut(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.focusPullRequestsView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewUserName)
+}
+
 func TestOpenDetailAndCloseDetail_GivenPullRequestsFocus_WhenHandlingProgramActions_ThenCurrentViewFollowsTheModel(t *testing.T) {
 	model := given_model()
 	model.NextSideView()
 	subject := NewProgramWithModel(model)
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.configureGUI(gui)
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)

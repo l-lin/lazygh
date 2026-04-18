@@ -192,6 +192,49 @@ func TestDetailContent_GivenFocusedSourceSelectionChanges_WhenRenderingDetail_Th
 	}
 }
 
+func TestFocusDetailView_GivenPullRequestsFocus_WhenJumpingToViewZero_ThenFocusMovesToDetailAndKeepsThePullRequestSource(t *testing.T) {
+	subject := given_model()
+	subject.NextSideView()
+	subject.MoveSelectionDown()
+
+	when_focusingDetailView(subject)
+
+	actual := subject.Focus()
+	if actual != FocusDetailView {
+		t.Fatalf("expected focus %v, actual %v", FocusDetailView, actual)
+	}
+
+	actualDetail := subject.DetailContent()
+	if actualDetail != "My PR detail 2" {
+		t.Fatalf("expected detail %q, actual %q", "My PR detail 2", actualDetail)
+	}
+}
+
+func TestFocusUserView_GivenDetailFocus_WhenJumpingToViewOne_ThenFocusMovesToTheUserView(t *testing.T) {
+	subject := given_model()
+	subject.NextSideView()
+	subject.OpenDetail()
+
+	when_focusingUserView(subject)
+
+	actual := subject.Focus()
+	if actual != FocusUserView {
+		t.Fatalf("expected focus %v, actual %v", FocusUserView, actual)
+	}
+}
+
+func TestFocusPullRequestsView_GivenDetailFocus_WhenJumpingToViewTwo_ThenFocusMovesToThePullRequestsView(t *testing.T) {
+	subject := given_model()
+	subject.OpenDetail()
+
+	when_focusingPullRequestsView(subject)
+
+	actual := subject.Focus()
+	if actual != FocusPullRequestsView {
+		t.Fatalf("expected focus %v, actual %v", FocusPullRequestsView, actual)
+	}
+}
+
 func given_model() *Model {
 	return NewModel(SeedData{
 		Users: []Item{
@@ -239,4 +282,16 @@ func when_switchingToNextTab(subject *Model) {
 
 func when_switchingToPreviousTab(subject *Model) {
 	subject.PreviousPullRequestTab()
+}
+
+func when_focusingDetailView(subject *Model) {
+	subject.FocusDetailView()
+}
+
+func when_focusingUserView(subject *Model) {
+	subject.FocusUserView()
+}
+
+func when_focusingPullRequestsView(subject *Model) {
+	subject.FocusPullRequestsView()
 }

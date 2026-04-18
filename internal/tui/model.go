@@ -125,12 +125,20 @@ func (model *Model) PreviousSideView() {
 }
 
 func (model *Model) OpenDetail() {
-	if model.focus == FocusDetailView {
-		return
-	}
+	model.FocusDetailView()
+}
 
+func (model *Model) FocusDetailView() {
 	model.lastSideFocus = model.currentSideFocus()
 	model.focus = FocusDetailView
+}
+
+func (model *Model) FocusUserView() {
+	model.setSideFocus(FocusUserView)
+}
+
+func (model *Model) FocusPullRequestsView() {
+	model.setSideFocus(FocusPullRequestsView)
 }
 
 func (model *Model) CloseDetail() {

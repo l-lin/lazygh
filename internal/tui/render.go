@@ -10,36 +10,41 @@ import (
 )
 
 const (
-	detailWidthRatio      = 2
-	sideWidthRatio        = 1
-	minimumSidebarWidth   = 30
-	minimumUserViewHeight = 7
-	detailKeyHint         = "tab/l next panel · shift+tab/h previous panel · j/k move · enter detail · esc back · ctrl+c quit"
+	sidebarWidthPercent   = 46
+	userViewHeightPercent = 20
+	minimumSidebarWidth   = 32
+	minimumDetailWidth    = 40
+	minimumUserViewHeight = 6
+	detailKeyHint         = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · enter detail · esc back · ctrl+c quit"
 )
 
 func (program *Program) layout(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 
-	detailWidth := maxX * detailWidthRatio / (detailWidthRatio + sideWidthRatio)
-	maxDetailWidth := maxX - minimumSidebarWidth
-	if maxDetailWidth > 0 && detailWidth > maxDetailWidth {
-		detailWidth = maxDetailWidth
+	sidebarWidth := maxX * sidebarWidthPercent / 100
+	maxSidebarWidth := maxX - minimumDetailWidth
+	if maxSidebarWidth < minimumSidebarWidth {
+		sidebarWidth = maxX / 2
+	} else {
+		if sidebarWidth < minimumSidebarWidth {
+			sidebarWidth = minimumSidebarWidth
+		}
+		if sidebarWidth > maxSidebarWidth {
+			sidebarWidth = maxSidebarWidth
+		}
 	}
-	if detailWidth < minimumSidebarWidth {
-		detailWidth = maxX / 2
-	}
-	if detailWidth < 1 {
-		detailWidth = 1
-	}
-
-	detailX1 := detailWidth - 1
-	sideX0 := detailX1 + 1
-	if sideX0 >= maxX {
-		sideX0 = maxX / 2
-		detailX1 = sideX0 - 1
+	if sidebarWidth < 1 {
+		sidebarWidth = 1
 	}
 
-	userHeight := maxY / 4
+	sidebarX1 := sidebarWidth - 1
+	detailX0 := sidebarX1 + 1
+	if detailX0 >= maxX {
+		detailX0 = maxX / 2
+		sidebarX1 = detailX0 - 1
+	}
+
+	userHeight := maxY * userViewHeightPercent / 100
 	if userHeight < minimumUserViewHeight {
 		userHeight = minimumUserViewHeight
 	}
@@ -56,48 +61,64 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		userY1 = pullRequestsY0 - 1
 	}
 
-	detailView, err := gui.SetView(viewDetailName, 0, 0, detailX1, maxY-1, 0)
+	userView, err := gui.SetView(viewUserName, 0, 0, sidebarX1, userY1, 0)
+	if err != nil && !isUnknownViewError(err) {
+		return err
+	}
+	program.configureUserView(userView)
+	program.renderUserView(userView)
+
+	pullRequestsView, err := gui.SetView(viewPullRequestsName, 0, pullRequestsY0, sidebarX1, maxY-1, 0)
+	if err != nil && !isUnknownViewError(err) {
+		return err
+	}
+	program.configurePullRequestsView(pullRequestsView)
+	program.renderPullRequestsView(pullRequestsView)
+
+	detailView, err := gui.SetView(viewDetailName, detailX0, 0, maxX-1, maxY-1, 0)
 	if err != nil && !isUnknownViewError(err) {
 		return err
 	}
 	program.configureDetailView(detailView)
 	program.renderDetailView(detailView)
 
-	userView, err := gui.SetView(viewUserName, sideX0, 0, maxX-1, userY1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return err
-	}
-	program.configureListView(userView, "1 · Connected user")
-	program.renderUserView(userView)
-
-	pullRequestsView, err := gui.SetView(viewPullRequestsName, sideX0, pullRequestsY0, maxX-1, maxY-1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return err
-	}
-	program.configureListView(pullRequestsView, "2 · Pull requests")
-	pullRequestsView.Tabs = nil
-	pullRequestsView.TabIndex = 0
-	program.renderPullRequestsView(pullRequestsView)
-
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) configureDetailView(view *gocui.View) {
-	view.Title = "0 · Detail"
+	program.applyViewStyle(view, FocusDetailView, "[0]-Detail", false)
 	view.Wrap = true
-	view.Frame = true
-	view.Highlight = false
-	view.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
 }
 
-func (program *Program) configureListView(view *gocui.View, title string) {
-	view.Title = title
+func (program *Program) configureUserView(view *gocui.View) {
+	program.applyViewStyle(view, FocusUserView, "[1]-Connected user", true)
 	view.Wrap = false
+}
+
+func (program *Program) configurePullRequestsView(view *gocui.View) {
+	program.applyViewStyle(view, FocusPullRequestsView, program.pullRequestsTitle(), true)
+	view.Wrap = false
+}
+
+func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title string, selectable bool) {
+	isActive := program.model.Focus() == focus
+
+	view.Title = title
 	view.Frame = true
-	view.Highlight = true
-	view.HighlightInactive = true
+	view.Highlight = selectable && isActive
+	view.HighlightInactive = false
 	view.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
-	view.InactiveViewSelBgColor = gocui.GetColor(theme.InactiveSelectionBackgroundHex)
+	view.TitleColor = gocui.GetColor(theme.InactiveTextHex)
+	view.SelBgColor = gocui.ColorDefault
+	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
+	view.InactiveViewSelBgColor = gocui.ColorDefault
+
+	if isActive {
+		view.FgColor = gocui.GetColor(theme.ActiveTextHex)
+		return
+	}
+
+	view.FgColor = gocui.GetColor(theme.InactiveTextHex)
 }
 
 func (program *Program) renderUserView(view *gocui.View) {
@@ -112,14 +133,12 @@ func (program *Program) renderUserView(view *gocui.View) {
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
 	view.Clear()
-	fmt.Fprintln(view, program.pullRequestTabsLine())
 
 	for _, item := range program.model.CurrentPullRequests() {
 		fmt.Fprintln(view, item.Title)
 	}
 
-	selectedIndex := program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()) + 1
-	program.selectListLine(view, selectedIndex)
+	program.selectListLine(view, program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
@@ -153,15 +172,15 @@ func (program *Program) detailHeader(item Item) string {
 	return fmt.Sprintf("%s\n%s", source, item.Title)
 }
 
-func (program *Program) pullRequestTabsLine() string {
+func (program *Program) pullRequestsTitle() string {
 	myPullRequestsLabel := MyPullRequestsTab.Label()
 	requestedLabel := RequestedPullRequestsTab.Label()
 
 	if program.model.ActivePullRequestTab() == MyPullRequestsTab {
-		return fmt.Sprintf("[%s]  %s", myPullRequestsLabel, requestedLabel)
+		return fmt.Sprintf("[2]-[%s] - %s", myPullRequestsLabel, requestedLabel)
 	}
 
-	return fmt.Sprintf("%s  [%s]", myPullRequestsLabel, requestedLabel)
+	return fmt.Sprintf("[2]-%s - [%s]", myPullRequestsLabel, requestedLabel)
 }
 
 func (program *Program) selectListLine(view *gocui.View, selectedIndex int) {
