@@ -73,30 +73,23 @@ func (program *Program) configureSearchView(view *gocui.View) {
 
 func (program *Program) renderSearchView(view *gocui.View) {
 	view.Clear()
-	fmt.Fprint(view, program.model.SearchDraft())
-	program.setInputCursor(view, program.model.SearchDraft())
+	searchText := program.currentSearchText()
+	fmt.Fprint(view, searchText)
+	program.setInputCursor(view, searchText, program.currentSearchCursor())
 }
 
 func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	currentQuery := program.model.SearchDraft()
-	updatedQuery := currentQuery
-
-	switch {
-	case key == gocui.KeyEnter || key == gocui.KeyEsc || key == gocui.KeyCtrlLsqBracket:
+	if key == gocui.KeyEnter || key == gocui.KeyCtrlJ || key == gocui.KeyEsc || key == gocui.KeyCtrlLsqBracket {
 		return false
-	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2 || key == gocui.KeyCtrlH:
-		updatedQuery = trimLastRune(currentQuery)
-	case key == gocui.KeyCtrlU:
-		updatedQuery = ""
-	case key == gocui.KeySpace:
-		updatedQuery += " "
-	case ch != 0 && mod == gocui.ModNone:
-		updatedQuery += string(ch)
-	default:
+	}
+	if program.searchEditor == nil {
+		program.searchEditor = newLineEditor(program.model.SearchDraft())
+	}
+	if !program.searchEditor.HandleKey(key, ch, mod) {
 		return false
 	}
 
-	program.model.UpdateSearchDraft(updatedQuery)
+	program.model.UpdateSearchDraft(program.searchEditor.Text())
 	program.configureSearchView(view)
 	program.renderSearchView(view)
 	return true
@@ -160,7 +153,7 @@ func (program *Program) searchSummarySuffix(query string, count int) string {
 	return fmt.Sprintf(" / %q (%d %s)", trimmedQuery, count, pluralize(count, "match", "matches"))
 }
 
-func (program *Program) setInputCursor(view *gocui.View, value string) {
+func (program *Program) setInputCursor(view *gocui.View, value string, cursorIndex int) {
 	if view == nil {
 		return
 	}
@@ -170,10 +163,23 @@ func (program *Program) setInputCursor(view *gocui.View, value string) {
 		innerWidth = 1
 	}
 
-	cursorX := utf8.RuneCountInString(value)
+	valueWidth := utf8.RuneCountInString(value)
+	if cursorIndex < 0 {
+		cursorIndex = 0
+	}
+	if cursorIndex > valueWidth {
+		cursorIndex = valueWidth
+	}
+
 	originX := 0
+	if cursorIndex >= innerWidth {
+		originX = cursorIndex - innerWidth + 1
+	}
+	cursorX := cursorIndex - originX
+	if cursorX < 0 {
+		cursorX = 0
+	}
 	if cursorX >= innerWidth {
-		originX = cursorX - innerWidth + 1
 		cursorX = innerWidth - 1
 	}
 
@@ -181,13 +187,20 @@ func (program *Program) setInputCursor(view *gocui.View, value string) {
 	view.SetCursor(cursorX, 0)
 }
 
-func trimLastRune(value string) string {
-	if value == "" {
-		return ""
+func (program *Program) currentSearchText() string {
+	if program.searchEditor != nil {
+		return program.searchEditor.Text()
 	}
 
-	runes := []rune(value)
-	return string(runes[:len(runes)-1])
+	return program.model.SearchDraft()
+}
+
+func (program *Program) currentSearchCursor() int {
+	if program.searchEditor != nil {
+		return program.searchEditor.Cursor()
+	}
+
+	return utf8.RuneCountInString(program.model.SearchDraft())
 }
 
 func pluralize(count int, singular string, plural string) string {

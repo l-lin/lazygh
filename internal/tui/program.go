@@ -31,6 +31,7 @@ type Program struct {
 	requestedPullRequestsCount       int
 	requestedPullRequestsCountKnown  bool
 	helpVisible                      bool
+	searchEditor                     *lineEditor
 }
 
 type keybindingSpec struct {
@@ -152,6 +153,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewDetailName, key: '[', handler: program.closeDetail},
 		{viewName: viewSearchName, key: gocui.KeyEnter, handler: program.submitSearch},
+		{viewName: viewSearchName, key: gocui.KeyCtrlJ, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyEsc, handler: program.cancelSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.cancelSearch},
 		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
@@ -305,6 +307,7 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.model.StartSearch()
+	program.searchEditor = newLineEditor(program.model.SearchDraft())
 	return program.layout(gui)
 }
 
@@ -319,6 +322,8 @@ func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) closeSearch(gui *gocui.Gui) error {
+	program.searchEditor = nil
+
 	actualErr := gui.DeleteView(viewSearchName)
 	if actualErr != nil && !isUnknownViewError(actualErr) {
 		return actualErr
