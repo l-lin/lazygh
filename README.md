@@ -4,11 +4,11 @@
 
 ## Status
 The repo now boots into a three-view TUI:
-- view `0`: detail pane
+- view `0`: detail pane, including rich PR metadata, markdown body rendering, and comments from `gh pr view`
 - view `1`: connected user from `gh api user`
 - view `2`: pull requests from `gh search prs`, with live `My PRs` and `Requested` tabs
 
-The next milestones can focus on layout polish and extra navigation.
+The next milestones can focus on layout polish and extra PR actions.
 
 ## Prerequisites
 - `mise`

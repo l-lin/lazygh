@@ -79,20 +79,36 @@ func requestedPullRequestsLoadingItem() Item {
 	return pullRequestLoadingItem(requestedPullRequestsState)
 }
 
+func myPullRequestsStateRows(pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+	return pullRequestStateRows(myPullRequestsState, pullRequests, err)
+}
+
+func requestedPullRequestsStateRows(pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+	return pullRequestStateRows(requestedPullRequestsState, pullRequests, err)
+}
+
 func myPullRequestsStateItems(pullRequests []githubcli.PullRequest, err error) []Item {
-	return pullRequestStateItems(myPullRequestsState, pullRequests, err)
+	return pullRequestItems(myPullRequestsStateRows(pullRequests, err))
 }
 
 func requestedPullRequestsStateItems(pullRequests []githubcli.PullRequest, err error) []Item {
-	return pullRequestStateItems(requestedPullRequestsState, pullRequests, err)
+	return pullRequestItems(requestedPullRequestsStateRows(pullRequests, err))
+}
+
+func myPullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
+	return pullRequestRow(pullRequest)
+}
+
+func requestedPullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
+	return pullRequestRow(pullRequest)
 }
 
 func myPullRequestItem(pullRequest githubcli.PullRequest) Item {
-	return pullRequestItem(pullRequest)
+	return myPullRequestRow(pullRequest).Item
 }
 
 func requestedPullRequestItem(pullRequest githubcli.PullRequest) Item {
-	return pullRequestItem(pullRequest)
+	return requestedPullRequestRow(pullRequest).Item
 }
 
 func myPullRequestsErrorItem(err error) Item {
@@ -107,22 +123,22 @@ func pullRequestLoadingItem(state pullRequestListState) Item {
 	return Item{Title: state.loadingTitle, Detail: state.loadingDetail}
 }
 
-func pullRequestStateItems(state pullRequestListState, pullRequests []githubcli.PullRequest, err error) []Item {
+func pullRequestStateRows(state pullRequestListState, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
 	if err != nil {
-		return []Item{pullRequestErrorItem(state, err)}
+		return []PullRequestRow{{Item: pullRequestErrorItem(state, err)}}
 	}
 	if len(pullRequests) == 0 {
-		return []Item{pullRequestEmptyItem(state)}
+		return []PullRequestRow{{Item: pullRequestEmptyItem(state)}}
 	}
 
-	items := make([]Item, 0, len(pullRequests))
+	rows := make([]PullRequestRow, 0, len(pullRequests))
 	for _, pullRequest := range pullRequests {
-		items = append(items, pullRequestItem(pullRequest))
+		rows = append(rows, pullRequestRow(pullRequest))
 	}
-	return items
+	return rows
 }
 
-func pullRequestItem(pullRequest githubcli.PullRequest) Item {
+func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 	repositoryName := pullRequestRepositoryName(pullRequest.Repository)
 	body := strings.TrimSpace(pullRequest.Body)
 	if body == "" {
@@ -140,9 +156,13 @@ func pullRequestItem(pullRequest githubcli.PullRequest) Item {
 		body,
 	}
 
-	return Item{
-		Title:  fmt.Sprintf("%s#%d %s", repositoryName, pullRequest.Number, valueOrDash(pullRequest.Title)),
-		Detail: strings.Join(detailLines, "\n"),
+	summaryCopy := pullRequest
+	return PullRequestRow{
+		Item: Item{
+			Title:  fmt.Sprintf("%s#%d %s", repositoryName, pullRequest.Number, valueOrDash(pullRequest.Title)),
+			Detail: strings.Join(detailLines, "\n"),
+		},
+		Summary: &summaryCopy,
 	}
 }
 

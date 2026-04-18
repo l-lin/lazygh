@@ -1,5 +1,7 @@
 package tui
 
+import "codeberg.org/l-lin/lazygh/internal/githubcli"
+
 type Focus int
 
 const (
@@ -20,6 +22,11 @@ type Item struct {
 	Detail string
 }
 
+type PullRequestRow struct {
+	Item    Item
+	Summary *githubcli.PullRequest
+}
+
 type SeedData struct {
 	Users                 []Item
 	MyPullRequests        []Item
@@ -30,8 +37,8 @@ type Model struct {
 	focus                      Focus
 	lastSideFocus              Focus
 	users                      []Item
-	myPullRequests             []Item
-	requestedPullRequests      []Item
+	myPullRequests             []PullRequestRow
+	requestedPullRequests      []PullRequestRow
 	selectedUserIndex          int
 	activePullRequestTab       PullRequestTab
 	selectedPullRequestIndexes map[PullRequestTab]int
@@ -49,8 +56,8 @@ func NewModel(seed SeedData) *Model {
 		focus:                 FocusUserView,
 		lastSideFocus:         FocusUserView,
 		users:                 copyItems(seed.Users),
-		myPullRequests:        copyItems(seed.MyPullRequests),
-		requestedPullRequests: copyItems(seed.RequestedPullRequests),
+		myPullRequests:        pullRequestRowsFromItems(seed.MyPullRequests),
+		requestedPullRequests: pullRequestRowsFromItems(seed.RequestedPullRequests),
 		selectedPullRequestIndexes: map[PullRequestTab]int{
 			MyPullRequestsTab:        0,
 			RequestedPullRequestsTab: 0,
@@ -97,21 +104,24 @@ func (model *Model) SetUsers(users []Item) {
 }
 
 func (model *Model) PullRequests(tab PullRequestTab) []Item {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return copyItems(model.requestedPullRequests)
-	default:
-		return copyItems(model.myPullRequests)
-	}
+	return pullRequestItems(model.pullRequestRows(tab))
+}
+
+func (model *Model) PullRequestRows(tab PullRequestTab) []PullRequestRow {
+	return copyPullRequestRows(model.pullRequestRows(tab))
 }
 
 func (model *Model) SetPullRequests(tab PullRequestTab, pullRequests []Item) {
+	model.SetPullRequestRows(tab, pullRequestRowsFromItems(pullRequests))
+}
+
+func (model *Model) SetPullRequestRows(tab PullRequestTab, pullRequests []PullRequestRow) {
 	switch tab {
 	case RequestedPullRequestsTab:
-		model.requestedPullRequests = copyItems(pullRequests)
+		model.requestedPullRequests = copyPullRequestRows(pullRequests)
 		model.selectedPullRequestIndexes[RequestedPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[RequestedPullRequestsTab], len(model.requestedPullRequests))
 	default:
-		model.myPullRequests = copyItems(pullRequests)
+		model.myPullRequests = copyPullRequestRows(pullRequests)
 		model.selectedPullRequestIndexes[MyPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[MyPullRequestsTab], len(model.myPullRequests))
 	}
 
@@ -120,6 +130,21 @@ func (model *Model) SetPullRequests(tab PullRequestTab, pullRequests []Item) {
 
 func (model *Model) CurrentPullRequests() []Item {
 	return model.PullRequests(model.activePullRequestTab)
+}
+
+func (model *Model) SelectedPullRequestRow() (PullRequestRow, bool) {
+	rows := model.pullRequestRows(model.activePullRequestTab)
+	selectedIndex := model.selectedPullRequestIndexes[model.activePullRequestTab]
+	return pullRequestRowAt(rows, selectedIndex)
+}
+
+func (model *Model) SelectedPullRequestSummary() (githubcli.PullRequest, bool) {
+	row, ok := model.SelectedPullRequestRow()
+	if !ok || row.Summary == nil {
+		return githubcli.PullRequest{}, false
+	}
+
+	return *row.Summary, true
 }
 
 func (model *Model) DetailContent() string {
@@ -223,9 +248,11 @@ func (model *Model) PreviousPullRequestTab() {
 func (model *Model) detailItem() (Item, bool) {
 	switch model.currentSideFocus() {
 	case FocusPullRequestsView:
-		items := model.CurrentPullRequests()
-		selectedIndex := model.selectedPullRequestIndexes[model.activePullRequestTab]
-		return itemAt(items, selectedIndex)
+		row, ok := model.SelectedPullRequestRow()
+		if !ok {
+			return Item{}, false
+		}
+		return row.Item, true
 	default:
 		return itemAt(model.users, model.selectedUserIndex)
 	}
@@ -300,6 +327,15 @@ func itemAt(items []Item, selectedIndex int) (Item, bool) {
 	return items[index], true
 }
 
+func pullRequestRowAt(rows []PullRequestRow, selectedIndex int) (PullRequestRow, bool) {
+	if len(rows) == 0 {
+		return PullRequestRow{}, false
+	}
+
+	index := clampIndex(selectedIndex, len(rows))
+	return rows[index], true
+}
+
 func clampIndex(index int, itemCount int) int {
 	if itemCount == 0 {
 		return 0
@@ -329,6 +365,44 @@ func copyItems(items []Item) []Item {
 	copiedItems := make([]Item, len(items))
 	copy(copiedItems, items)
 	return copiedItems
+}
+
+func copyPullRequestRows(rows []PullRequestRow) []PullRequestRow {
+	copiedRows := make([]PullRequestRow, 0, len(rows))
+	for _, row := range rows {
+		copiedRow := PullRequestRow{Item: row.Item}
+		if row.Summary != nil {
+			summaryCopy := *row.Summary
+			copiedRow.Summary = &summaryCopy
+		}
+		copiedRows = append(copiedRows, copiedRow)
+	}
+	return copiedRows
+}
+
+func pullRequestRowsFromItems(items []Item) []PullRequestRow {
+	rows := make([]PullRequestRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, PullRequestRow{Item: item})
+	}
+	return rows
+}
+
+func pullRequestItems(rows []PullRequestRow) []Item {
+	items := make([]Item, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, row.Item)
+	}
+	return items
+}
+
+func (model *Model) pullRequestRows(tab PullRequestTab) []PullRequestRow {
+	switch tab {
+	case RequestedPullRequestsTab:
+		return model.requestedPullRequests
+	default:
+		return model.myPullRequests
+	}
 }
 
 func indexOfInt(items []int, expected int) int {

@@ -102,10 +102,12 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadMyPullRequests(gui)
 	program.maybeLoadRequestedPullRequests(gui)
+	program.maybeLoadSelectedPullRequestDetail(gui)
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) configureDetailView(view *gocui.View) {
+	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	program.applyViewStyle(view, FocusDetailView, program.detailViewTitle(), false)
 	view.Wrap = true
 }
@@ -184,6 +186,8 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
+	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
+	program.resetDetailViewOriginIfNeeded(view)
 	view.Clear()
 
 	detailContent := program.detailViewContent()
@@ -192,11 +196,28 @@ func (program *Program) renderDetailView(view *gocui.View) {
 }
 
 func (program *Program) detailViewContent() string {
+	if program.model.currentSideFocus() == FocusPullRequestsView {
+		row, ok := program.model.SelectedPullRequestRow()
+		if ok && row.Summary != nil && pullRequestDetailKey(row.Summary.Repository, row.Summary.Number) != "" {
+			if result, ok := program.pullRequestDetailForSummary(*row.Summary); ok {
+				if result.err != nil {
+					return renderPullRequestDetailError(*row.Summary, result.err)
+				}
+				return renderPullRequestDetail(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
+			}
+			return renderPullRequestDetailLoading(*row.Summary)
+		}
+	}
+
 	item, ok := program.model.detailItem()
 	if !ok {
 		return "No detail available."
 	}
 
+	return program.fallbackDetailViewContent(item)
+}
+
+func (program *Program) fallbackDetailViewContent(item Item) string {
 	header := program.detailHeader(item)
 	body := strings.TrimSpace(item.Detail)
 	if body == "" {
@@ -213,6 +234,20 @@ func (program *Program) detailHeader(item Item) string {
 	}
 
 	return fmt.Sprintf("%s\n%s", source, item.Title)
+}
+
+func (program *Program) resetDetailViewOriginIfNeeded(view *gocui.View) {
+	if view == nil {
+		return
+	}
+
+	identity := program.currentDetailIdentity()
+	if identity == program.lastDetailIdentity {
+		return
+	}
+
+	program.lastDetailIdentity = identity
+	view.SetOrigin(0, 0)
 }
 
 func (program *Program) pullRequestsTabLabels() []string {
