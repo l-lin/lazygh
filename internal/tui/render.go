@@ -106,25 +106,33 @@ func (program *Program) configureUserView(view *gocui.View) {
 }
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
-	program.applyViewStyle(view, FocusPullRequestsView, program.pullRequestsTitle(), true)
+	program.applyViewStyle(view, FocusPullRequestsView, "", true)
+	view.TitlePrefix = "[2]"
+	view.Tabs = program.pullRequestsTabLabels()
+	view.TabIndex = int(program.model.ActivePullRequestTab())
+	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
 	view.Wrap = false
 }
 
 func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title string, selectable bool) {
-	isActive := program.model.Focus() == focus
+	isUnderlyingFocus := program.model.Focus() == focus
+	showsSelection := program.shouldHighlightSelection(focus, selectable)
 
 	view.Title = title
+	view.TitlePrefix = ""
+	view.Tabs = nil
+	view.TabIndex = 0
 	view.Frame = true
 	view.FrameRunes = roundFrameRunes
-	view.Highlight = selectable && isActive
-	view.HighlightInactive = false
+	view.Highlight = showsSelection
+	view.HighlightInactive = showsSelection && !isUnderlyingFocus
 	view.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
 	view.TitleColor = gocui.GetColor(theme.InactiveTitleHex)
-	view.SelBgColor = gocui.GetColor(theme.InactiveBorderHex)
+	view.SelBgColor = gocui.GetColor(theme.SelectedLineBackgroundHex)
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.InactiveViewSelBgColor = gocui.GetColor(theme.InactiveBorderHex)
+	view.InactiveViewSelBgColor = gocui.GetColor(theme.SelectedLineBackgroundHex)
 
-	if isActive {
+	if isUnderlyingFocus {
 		view.FgColor = gocui.GetColor(theme.ActiveTextHex)
 		return
 	}
@@ -181,15 +189,11 @@ func (program *Program) detailHeader(item Item) string {
 	return fmt.Sprintf("%s\n%s", source, item.Title)
 }
 
-func (program *Program) pullRequestsTitle() string {
-	myPullRequestsLabel := program.pullRequestsTabLabel(MyPullRequestsTab)
-	requestedLabel := program.pullRequestsTabLabel(RequestedPullRequestsTab)
-
-	if program.model.ActivePullRequestTab() == MyPullRequestsTab {
-		return fmt.Sprintf("[2]-[%s] - %s", myPullRequestsLabel, requestedLabel)
+func (program *Program) pullRequestsTabLabels() []string {
+	return []string{
+		program.pullRequestsTabLabel(MyPullRequestsTab),
+		program.pullRequestsTabLabel(RequestedPullRequestsTab),
 	}
-
-	return fmt.Sprintf("[2]-%s - [%s]", myPullRequestsLabel, requestedLabel)
 }
 
 func (program *Program) pullRequestsTabLabel(tab PullRequestTab) string {
@@ -229,4 +233,16 @@ func (program *Program) selectListLine(view *gocui.View, selectedIndex int) {
 
 	view.SetOrigin(0, originY)
 	view.SetCursor(0, cursorY)
+}
+
+func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) bool {
+	if !selectable {
+		return false
+	}
+
+	if program.model.Focus() == focus {
+		return true
+	}
+
+	return program.model.Focus() == FocusDetailView && program.model.currentSideFocus() == focus
 }

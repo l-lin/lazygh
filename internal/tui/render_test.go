@@ -42,9 +42,10 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenCreatesThreeViewsAndPlacesDe
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if pullRequestsView.Title != "[2]-[My PRs] - Requested" {
-		t.Fatalf("expected pull requests title %q, actual %q", "[2]-[My PRs] - Requested", pullRequestsView.Title)
+	if pullRequestsView.TitlePrefix != "[2]" {
+		t.Fatalf("expected pull requests title prefix %q, actual %q", "[2]", pullRequestsView.TitlePrefix)
 	}
+	then_tabsAre(t, pullRequestsView, []string{"My PRs", "Requested"}, 0)
 }
 
 func TestPullRequestsTitle_GivenKnownCounts_WhenRendering_ThenItShowsCountsForBothTabs(t *testing.T) {
@@ -54,16 +55,9 @@ func TestPullRequestsTitle_GivenKnownCounts_WhenRendering_ThenItShowsCountsForBo
 	subject.requestedPullRequestsCount = 12
 	subject.requestedPullRequestsCountKnown = true
 
-	actual := subject.pullRequestsTitle()
-	if actual != "[2]-[My PRs (3)] - Requested (12)" {
-		t.Fatalf("expected pull requests title %q, actual %q", "[2]-[My PRs (3)] - Requested (12)", actual)
-	}
-
-	subject.model.FocusPullRequestsView()
-	subject.model.NextPullRequestTab()
-	actual = subject.pullRequestsTitle()
-	if actual != "[2]-My PRs (3) - [Requested (12)]" {
-		t.Fatalf("expected pull requests title %q, actual %q", "[2]-My PRs (3) - [Requested (12)]", actual)
+	actual := subject.pullRequestsTabLabels()
+	if len(actual) != 2 || actual[0] != "My PRs (3)" || actual[1] != "Requested (12)" {
+		t.Fatalf("expected tab labels %v, actual %v", []string{"My PRs (3)", "Requested (12)"}, actual)
 	}
 }
 
@@ -116,8 +110,38 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 	if pullRequestsView.Highlight {
 		t.Fatal("expected the inactive pull requests view to avoid highlight background")
 	}
-	if userView.SelBgColor != inactiveBorderColor {
-		t.Fatalf("expected active line background color %v, actual %v", inactiveBorderColor, userView.SelBgColor)
+	selectedLineBackground := gocui.GetColor(theme.SelectedLineBackgroundHex)
+	if userView.SelBgColor != selectedLineBackground {
+		t.Fatalf("expected active line background color %v, actual %v", selectedLineBackground, userView.SelBgColor)
+	}
+}
+
+func TestLayout_GivenDetailFocus_WhenRendering_ThenTheSourceViewKeepsTheSelectedLineBackground(t *testing.T) {
+	model := given_model()
+	model.NextSideView()
+	model.MoveSelectionDown()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	userView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	if userView.Highlight {
+		t.Fatal("expected non-source view highlight to stay off")
+	}
+	if !pullRequestsView.Highlight {
+		t.Fatal("expected source view highlight to stay on while detail is focused")
+	}
+	if !pullRequestsView.HighlightInactive {
+		t.Fatal("expected source view to keep inactive highlight while detail is focused")
 	}
 }
 
@@ -312,9 +336,7 @@ func TestOpenDetailAndCloseDetail_GivenRequestedPullRequestsTab_WhenHandlingProg
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if pullRequestsView.Title != "[2]-My PRs - [Requested]" {
-		t.Fatalf("expected pull requests title %q, actual %q", "[2]-My PRs - [Requested]", pullRequestsView.Title)
-	}
+	then_tabsAre(t, pullRequestsView, []string{"My PRs", "Requested"}, 1)
 }
 
 func TestSideViewCycling_GivenDetailFocus_WhenHandlingProgramActions_ThenCurrentViewStaysOnDetail(t *testing.T) {
@@ -430,6 +452,20 @@ func then_viewExists(t *testing.T, gui *gocui.Gui, name string) {
 
 	_, actualErr := gui.View(name)
 	then_noError(t, actualErr)
+}
+
+func then_tabsAre(t *testing.T, view *gocui.View, expected []string, expectedIndex int) {
+	t.Helper()
+
+	if strings.Join(view.Tabs, "|") != strings.Join(expected, "|") {
+		t.Fatalf("expected tabs %v, actual %v", expected, view.Tabs)
+	}
+	if view.TabIndex != expectedIndex {
+		t.Fatalf("expected tab index %d, actual %d", expectedIndex, view.TabIndex)
+	}
+	if view.SelFgColor&gocui.AttrBold == 0 {
+		t.Fatalf("expected selected tab color to include bold, actual %v", view.SelFgColor)
+	}
 }
 
 func then_viewDoesNotExist(t *testing.T, gui *gocui.Gui, name string) {

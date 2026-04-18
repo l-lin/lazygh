@@ -133,11 +133,11 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
-		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
-		{viewName: viewDetailName, key: gocui.KeyCtrl3, handler: program.closeDetail},
-		// Some terminals collapse `ctrl+[` into `[` instead of exposing a dedicated control key.
 		{viewName: viewDetailName, key: '[', handler: program.closeDetail},
+		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
+		{viewName: viewHelpName, key: gocui.KeyCtrlLsqBracket, handler: program.closeHelp},
+		{viewName: viewHelpName, key: '[', handler: program.closeHelp},
 	}
 }
 
