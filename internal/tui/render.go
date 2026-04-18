@@ -111,7 +111,7 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 	view.Highlight = selectable && isActive
 	view.HighlightInactive = false
 	view.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
-	view.TitleColor = gocui.GetColor(theme.InactiveTextHex)
+	view.TitleColor = gocui.GetColor(theme.InactiveTitleHex)
 	view.SelBgColor = gocui.ColorDefault
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	view.InactiveViewSelBgColor = gocui.ColorDefault
