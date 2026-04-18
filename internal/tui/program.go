@@ -13,14 +13,16 @@ const (
 	viewPullRequestsName = "pull-requests"
 )
 
-type ConnectedUserLoader interface {
+type GitHubLoader interface {
 	GetConnectedUser() (githubcli.ConnectedUser, error)
+	ListMyPullRequests() ([]githubcli.PullRequest, error)
 }
 
 type Program struct {
-	model                    *Model
-	connectedUserLoader      ConnectedUserLoader
-	connectedUserLoadStarted bool
+	model                     *Model
+	githubLoader              GitHubLoader
+	connectedUserLoadStarted  bool
+	myPullRequestsLoadStarted bool
 }
 
 type keybindingSpec struct {
@@ -29,22 +31,27 @@ type keybindingSpec struct {
 	handler  func(*gocui.Gui, *gocui.View) error
 }
 
-func NewProgram(connectedUserLoader ConnectedUserLoader) *Program {
-	return NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), connectedUserLoader)
+func NewProgram(githubLoaders ...GitHubLoader) *Program {
+	var githubLoader GitHubLoader
+	if len(githubLoaders) > 0 {
+		githubLoader = githubLoaders[0]
+	}
+
+	return NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), githubLoader)
 }
 
 func NewProgramWithModel(model *Model) *Program {
 	return NewProgramWithModelAndLoader(model, nil)
 }
 
-func NewProgramWithModelAndLoader(model *Model, connectedUserLoader ConnectedUserLoader) *Program {
+func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Program {
 	if model == nil {
 		model = NewModel(DefaultSeedData())
 	}
 
 	return &Program{
-		model:               model,
-		connectedUserLoader: connectedUserLoader,
+		model:        model,
+		githubLoader: githubLoader,
 	}
 }
 
@@ -141,13 +148,15 @@ func (program *Program) moveSelectionUp(_ *gocui.Gui, _ *gocui.View) error {
 	return nil
 }
 
-func (program *Program) nextPullRequestTab(_ *gocui.Gui, _ *gocui.View) error {
+func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
 	program.model.NextPullRequestTab()
+	program.reloadMyPullRequestsIfActive(gui)
 	return nil
 }
 
-func (program *Program) previousPullRequestTab(_ *gocui.Gui, _ *gocui.View) error {
+func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
 	program.model.PreviousPullRequestTab()
+	program.reloadMyPullRequestsIfActive(gui)
 	return nil
 }
 
@@ -186,7 +195,7 @@ func (program *Program) syncCurrentView(gui *gocui.Gui) error {
 }
 
 func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
-	if program.connectedUserLoader == nil || program.connectedUserLoadStarted {
+	if gui == nil || program.githubLoader == nil || program.connectedUserLoadStarted {
 		return
 	}
 
@@ -194,11 +203,38 @@ func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
 	go program.loadConnectedUser(gui)
 }
 
+func (program *Program) maybeLoadMyPullRequests(gui *gocui.Gui) {
+	if gui == nil || program.githubLoader == nil || program.myPullRequestsLoadStarted || program.model.ActivePullRequestTab() != MyPullRequestsTab {
+		return
+	}
+
+	program.myPullRequestsLoadStarted = true
+	go program.loadMyPullRequests(gui)
+}
+
+func (program *Program) reloadMyPullRequestsIfActive(gui *gocui.Gui) {
+	if gui == nil || program.githubLoader == nil || program.model.ActivePullRequestTab() != MyPullRequestsTab {
+		return
+	}
+
+	program.myPullRequestsLoadStarted = true
+	go program.loadMyPullRequests(gui)
+}
+
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
-	user, err := program.connectedUserLoader.GetConnectedUser()
+	user, err := program.githubLoader.GetConnectedUser()
 
 	gui.Update(func(gui *gocui.Gui) error {
 		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
+		return program.refreshViews(gui)
+	})
+}
+
+func (program *Program) loadMyPullRequests(gui *gocui.Gui) {
+	pullRequests, err := program.githubLoader.ListMyPullRequests()
+
+	gui.Update(func(gui *gocui.Gui) error {
+		program.model.SetPullRequests(MyPullRequestsTab, myPullRequestsStateItems(pullRequests, err))
 		return program.refreshViews(gui)
 	})
 }

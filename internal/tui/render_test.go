@@ -168,6 +168,30 @@ func TestOpenDetailAndCloseDetail_GivenPullRequestsFocus_WhenHandlingProgramActi
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 }
 
+func TestSideViewCycling_GivenDetailFocus_WhenHandlingProgramActions_ThenCurrentViewStaysOnDetail(t *testing.T) {
+	model := given_model()
+	model.NextSideView()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	actualErr = subject.nextSideView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	actualErr = subject.previousSideView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+}
+
 func given_headlessGui(t *testing.T) *gocui.Gui {
 	t.Helper()
 

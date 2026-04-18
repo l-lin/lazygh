@@ -83,6 +83,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.renderDetailView(detailView)
 
 	program.maybeLoadConnectedUser(gui)
+	program.maybeLoadMyPullRequests(gui)
 	return program.syncCurrentView(gui)
 }
 

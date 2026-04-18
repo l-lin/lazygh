@@ -35,15 +35,27 @@ func TestPreviousSideView_GivenPullRequestsFocus_WhenCyclingBackward_ThenFocusMo
 	}
 }
 
-func TestNextSideView_GivenDetailFocus_WhenCycling_ThenFocusNeverStaysOnDetail(t *testing.T) {
+func TestNextSideView_GivenDetailFocus_WhenCycling_ThenFocusStaysOnDetail(t *testing.T) {
 	subject := given_model()
 	subject.OpenDetail()
 
 	when_movingToNextSideView(subject)
 
 	actual := subject.Focus()
-	if actual != FocusPullRequestsView {
-		t.Fatalf("expected focus %v, actual %v", FocusPullRequestsView, actual)
+	if actual != FocusDetailView {
+		t.Fatalf("expected focus %v, actual %v", FocusDetailView, actual)
+	}
+}
+
+func TestPreviousSideView_GivenDetailFocus_WhenCycling_ThenFocusStaysOnDetail(t *testing.T) {
+	subject := given_model()
+	subject.OpenDetail()
+
+	when_movingToPreviousSideView(subject)
+
+	actual := subject.Focus()
+	if actual != FocusDetailView {
+		t.Fatalf("expected focus %v, actual %v", FocusDetailView, actual)
 	}
 }
 

@@ -53,12 +53,8 @@ func NewModel(seed SeedData) *Model {
 
 func DefaultSeedData() SeedData {
 	return SeedData{
-		Users: []Item{connectedUserLoadingItem()},
-		MyPullRequests: []Item{
-			{Title: "lazygh#12 Add list rendering", Detail: "Dummy PR body for list rendering. Real PR descriptions arrive in TODO 04."},
-			{Title: "lazygh#18 Tighten keyboard flow", Detail: "Dummy PR body for keyboard flow. Press `enter` to focus the detail pane."},
-			{Title: "lazygh#24 Improve borders", Detail: "Dummy PR body for border styling. Yes, the border colors are somehow a feature now."},
-		},
+		Users:          []Item{connectedUserLoadingItem()},
+		MyPullRequests: []Item{myPullRequestsLoadingItem()},
 		RequestedPullRequests: []Item{
 			{Title: "core/api#91 Review auth cleanup", Detail: "Dummy requested review body. Real review requests arrive in TODO 05."},
 			{Title: "infra/cli#44 Review release notes", Detail: "Dummy requested review body. Use `[` and `]` in the PR view to switch tabs."},
@@ -100,6 +96,17 @@ func (model *Model) PullRequests(tab PullRequestTab) []Item {
 	}
 }
 
+func (model *Model) SetPullRequests(tab PullRequestTab, pullRequests []Item) {
+	switch tab {
+	case RequestedPullRequestsTab:
+		model.requestedPullRequests = copyItems(pullRequests)
+		model.selectedPullRequestIndexes[RequestedPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[RequestedPullRequestsTab], len(model.requestedPullRequests))
+	default:
+		model.myPullRequests = copyItems(pullRequests)
+		model.selectedPullRequestIndexes[MyPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[MyPullRequestsTab], len(model.myPullRequests))
+	}
+}
+
 func (model *Model) CurrentPullRequests() []Item {
 	return model.PullRequests(model.activePullRequestTab)
 }
@@ -114,6 +121,10 @@ func (model *Model) DetailContent() string {
 }
 
 func (model *Model) NextSideView() {
+	if model.focus == FocusDetailView {
+		return
+	}
+
 	switch model.currentSideFocus() {
 	case FocusPullRequestsView:
 		model.setSideFocus(FocusUserView)
@@ -123,6 +134,10 @@ func (model *Model) NextSideView() {
 }
 
 func (model *Model) PreviousSideView() {
+	if model.focus == FocusDetailView {
+		return
+	}
+
 	model.NextSideView()
 }
 

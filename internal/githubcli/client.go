@@ -59,7 +59,7 @@ func NewClientWithRunner(runner Runner) *Client {
 func (client *Client) GetConnectedUser() (ConnectedUser, error) {
 	result, err := client.runner.Run(ghBinaryName, "api", "user")
 	if err != nil {
-		return ConnectedUser{}, classifyCommandError(err, result.Stderr)
+		return ConnectedUser{}, classifyCommandError("gh api user", err, result.Stderr)
 	}
 
 	var user ConnectedUser
@@ -87,7 +87,7 @@ func (runner execRunner) Run(name string, args ...string) (CommandResult, error)
 	return CommandResult{Stdout: stdout.Bytes(), Stderr: stderr.Bytes()}, err
 }
 
-func classifyCommandError(err error, stderr []byte) error {
+func classifyCommandError(commandName string, err error, stderr []byte) error {
 	if errors.Is(err, exec.ErrNotFound) {
 		return fmt.Errorf("%w: install `gh` and ensure it is in PATH", ErrUnavailable)
 	}
@@ -98,10 +98,10 @@ func classifyCommandError(err error, stderr []byte) error {
 	}
 
 	if stderrText == "" {
-		return fmt.Errorf("run `gh api user`: %w", err)
+		return fmt.Errorf("run `%s`: %w", commandName, err)
 	}
 
-	return fmt.Errorf("run `gh api user`: %w: %s", err, strings.TrimSpace(string(stderr)))
+	return fmt.Errorf("run `%s`: %w: %s", commandName, err, strings.TrimSpace(string(stderr)))
 }
 
 func isUnauthenticatedMessage(stderr string) bool {
