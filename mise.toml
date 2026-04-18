@@ -1,0 +1,19 @@
+[tools]
+go = "1.24.4"
+
+[tasks.run]
+description = "Run the lazygh CLI"
+raw = true
+run = "go run ./cmd/lazygh"
+
+[tasks.test]
+description = "Run the Go test suite"
+run = "go test ./..."
+
+[tasks.fmt]
+description = "Format Go source files"
+run = "gofmt -w ."
+
+[tasks.tidy]
+description = "Tidy Go module files"
+run = "go mod tidy"
