@@ -28,6 +28,15 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenControlDAndC
 	}
 }
 
+func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsJAndKScrolling(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'j', handler: subject.moveSelectionDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'k', handler: subject.moveSelectionUp})
+}
+
 func then_bindingExists(t *testing.T, specs []keybindingSpec, expected keybindingSpec) {
 	t.Helper()
 

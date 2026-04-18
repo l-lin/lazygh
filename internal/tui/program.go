@@ -126,6 +126,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewPullRequestsName, key: '[', handler: program.previousPullRequestTab},
 		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewDetailName, key: 'j', handler: program.moveSelectionDown},
+		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
@@ -150,12 +152,22 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 	return program.syncCurrentView(gui)
 }
 
-func (program *Program) moveSelectionDown(_ *gocui.Gui, _ *gocui.View) error {
+func (program *Program) moveSelectionDown(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.Focus() == FocusDetailView {
+		program.scrollDetailDownLine(view)
+		return nil
+	}
+
 	program.model.MoveSelectionDown()
 	return nil
 }
 
-func (program *Program) moveSelectionUp(_ *gocui.Gui, _ *gocui.View) error {
+func (program *Program) moveSelectionUp(_ *gocui.Gui, view *gocui.View) error {
+	if program.model.Focus() == FocusDetailView {
+		program.scrollDetailUpLine(view)
+		return nil
+	}
+
 	program.model.MoveSelectionUp()
 	return nil
 }
@@ -355,6 +367,22 @@ func (program *Program) scrollDetailUp(view *gocui.View) {
 	}
 
 	view.ScrollUp(pageDelta(view.InnerHeight()))
+}
+
+func (program *Program) scrollDetailDownLine(view *gocui.View) {
+	if view == nil {
+		return
+	}
+
+	view.ScrollDown(1)
+}
+
+func (program *Program) scrollDetailUpLine(view *gocui.View) {
+	if view == nil {
+		return
+	}
+
+	view.ScrollUp(1)
 }
 
 func viewPageSize(view *gocui.View) int {

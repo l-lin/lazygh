@@ -307,6 +307,40 @@ func TestPaging_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewScr
 	}
 }
 
+func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewScrollsByLine(t *testing.T) {
+	model := NewModel(SeedData{
+		Users: []Item{{
+			Title:  "dummy-user-1",
+			Detail: strings.TrimSpace(strings.Repeat("detail line\n", 80)),
+		}},
+	})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+
+	actualErr = subject.moveSelectionDown(gui, detailView)
+	then_noError(t, actualErr)
+	_, originY := detailView.Origin()
+	if originY != 1 {
+		t.Fatalf("expected detail origin 1 after moving down, actual %d", originY)
+	}
+
+	actualErr = subject.moveSelectionUp(gui, detailView)
+	then_noError(t, actualErr)
+	_, originY = detailView.Origin()
+	if originY != 0 {
+		t.Fatalf("expected detail origin 0 after moving up, actual %d", originY)
+	}
+}
+
 func given_headlessGui(t *testing.T) *gocui.Gui {
 	t.Helper()
 
