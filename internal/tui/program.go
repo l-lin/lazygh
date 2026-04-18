@@ -29,6 +29,7 @@ type Program struct {
 	myPullRequestsCountKnown         bool
 	requestedPullRequestsCount       int
 	requestedPullRequestsCountKnown  bool
+	helpVisible                      bool
 }
 
 type keybindingSpec struct {
@@ -107,6 +108,7 @@ func (program *Program) setKeybindings(gui *gocui.Gui) error {
 func (program *Program) keybindingSpecs() []keybindingSpec {
 	return []keybindingSpec{
 		{viewName: "", key: gocui.KeyCtrlC, handler: program.quit},
+		{viewName: "", key: '?', handler: program.toggleHelp},
 		{viewName: "", key: gocui.KeyTab, handler: program.nextSideView},
 		{viewName: "", key: gocui.KeyBacktab, handler: program.previousSideView},
 		{viewName: "", key: 'l', handler: program.nextSideView},
@@ -131,6 +133,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
+		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrl3, handler: program.closeDetail},
 		// Some terminals collapse `ctrl+[` into `[` instead of exposing a dedicated control key.
@@ -143,11 +146,19 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
+	if program.helpVisible {
+		return nil
+	}
+
 	program.model.NextSideView()
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
+	if program.helpVisible {
+		return nil
+	}
+
 	program.model.PreviousSideView()
 	return program.syncCurrentView(gui)
 }
@@ -205,16 +216,28 @@ func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) er
 }
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
+	if program.helpVisible {
+		return nil
+	}
+
 	program.model.FocusDetailView()
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
+	if program.helpVisible {
+		return nil
+	}
+
 	program.model.FocusUserView()
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
+	if program.helpVisible {
+		return nil
+	}
+
 	program.model.FocusPullRequestsView()
 	return program.syncCurrentView(gui)
 }
@@ -230,6 +253,15 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {
+	if program.helpVisible {
+		_, err := gui.SetCurrentView(viewHelpName)
+		if isUnknownViewError(err) {
+			return nil
+		}
+
+		return err
+	}
+
 	_, err := gui.SetCurrentView(program.currentViewName())
 	if isUnknownViewError(err) {
 		return nil
@@ -339,6 +371,21 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		program.renderDetailView(detailView)
 	}
 
+	if program.helpVisible {
+		helpView, err := gui.View(viewHelpName)
+		if err != nil && !isUnknownViewError(err) {
+			return err
+		}
+		if err == nil {
+			program.configureHelpView(helpView)
+			program.renderHelpView(helpView)
+			_, err = gui.SetViewOnTop(viewHelpName)
+			if err != nil && !isUnknownViewError(err) {
+				return err
+			}
+		}
+	}
+
 	return program.syncCurrentView(gui)
 }
 
@@ -351,6 +398,25 @@ func (program *Program) currentViewName() string {
 	default:
 		return viewUserName
 	}
+}
+
+func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
+	program.helpVisible = !program.helpVisible
+	if !program.helpVisible {
+		return program.closeHelp(gui, nil)
+	}
+
+	return program.layout(gui)
+}
+
+func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
+	program.helpVisible = false
+	actualErr := gui.DeleteView(viewHelpName)
+	if actualErr != nil && !isUnknownViewError(actualErr) {
+		return actualErr
+	}
+
+	return program.syncCurrentView(gui)
 }
 
 func (program *Program) scrollDetailDown(view *gocui.View) {

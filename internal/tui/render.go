@@ -14,7 +14,6 @@ const (
 	minimumSidebarWidth = 32
 	minimumDetailWidth  = 40
 	userViewTotalHeight = 3
-	detailKeyHint       = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · ctrl+d/u page · enter detail · esc back · ctrl+c quit"
 )
 
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
@@ -79,6 +78,16 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	}
 	program.configureDetailView(detailView)
 	program.renderDetailView(detailView)
+
+	if program.helpVisible {
+		if err := program.layoutHelpView(gui); err != nil {
+			return err
+		}
+	} else {
+		if err := gui.DeleteView(viewHelpName); err != nil && !isUnknownViewError(err) {
+			return err
+		}
+	}
 
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadMyPullRequests(gui)
@@ -161,8 +170,6 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	fmt.Fprintln(view, header)
 	fmt.Fprintln(view)
 	fmt.Fprintln(view, body)
-	fmt.Fprintln(view)
-	fmt.Fprintln(view, detailKeyHint)
 }
 
 func (program *Program) detailHeader(item Item) string {

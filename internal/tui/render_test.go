@@ -178,6 +178,74 @@ func TestLayout_GivenDetailFocusOnPullRequests_WhenRendering_ThenShowsTheSelecte
 	if !strings.Contains(actualBuffer, "My PR detail 2") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "My PR detail 2", actualBuffer)
 	}
+	if strings.Contains(actualBuffer, "ctrl+c quit") {
+		t.Fatalf("expected detail buffer to omit the inline help text, actual %q", actualBuffer)
+	}
+}
+
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCurrentViewAndGlobalKeybindings(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewHelpName)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	for _, expected := range []string{"--- Local ---", "--- Global ---", "j", "Scroll down", "k", "Scroll up", "?", "Toggle help", "tab/l", "Switch side view"} {
+		if !strings.Contains(actualBuffer, expected) {
+			t.Fatalf("expected help buffer to contain %q, actual %q", expected, actualBuffer)
+		}
+	}
+}
+
+func TestHelpPopup_GivenVisibleHelp_WhenTogglingAgain_ThenThePopupClosesAndFocusReturnsToTheUnderlyingView(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewHelpName)
+
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewUserName)
+	then_viewDoesNotExist(t, gui, viewHelpName)
+}
+
+func TestHelpPopup_GivenVisibleHelp_WhenHandlingSideViewShortcuts_ThenTheUnderlyingFocusDoesNotChange(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewHelpName)
+
+	actualErr = subject.nextSideView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewHelpName)
+	if subject.model.Focus() != FocusUserView {
+		t.Fatalf("expected underlying focus %v, actual %v", FocusUserView, subject.model.Focus())
+	}
 }
 
 func TestSwitchToSpecificView_GivenRenderedProgram_WhenHandlingViewShortcuts_ThenCurrentViewMatchesShortcut(t *testing.T) {
@@ -362,6 +430,15 @@ func then_viewExists(t *testing.T, gui *gocui.Gui, name string) {
 
 	_, actualErr := gui.View(name)
 	then_noError(t, actualErr)
+}
+
+func then_viewDoesNotExist(t *testing.T, gui *gocui.Gui, name string) {
+	t.Helper()
+
+	_, actualErr := gui.View(name)
+	if !isUnknownViewError(actualErr) {
+		t.Fatalf("expected view %q to be absent, actual error %v", name, actualErr)
+	}
 }
 
 func then_currentViewNameIs(t *testing.T, gui *gocui.Gui, expected string) {
