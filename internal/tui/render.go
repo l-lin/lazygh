@@ -18,6 +18,8 @@ const (
 	detailKeyHint         = "tab/l next panel · shift+tab/h previous panel · 0/1/2 jump · j/k move · enter detail · esc back · ctrl+c quit"
 )
 
+var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
+
 func (program *Program) layout(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 
@@ -108,6 +110,7 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 
 	view.Title = title
 	view.Frame = true
+	view.FrameRunes = roundFrameRunes
 	view.Highlight = selectable && isActive
 	view.HighlightInactive = false
 	view.FrameColor = gocui.GetColor(theme.InactiveBorderHex)

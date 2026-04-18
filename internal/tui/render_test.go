@@ -121,6 +121,25 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 	}
 }
 
+func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	expected := []rune{'─', '│', '╭', '╮', '╰', '╯'}
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
+		view, actualErr := gui.View(viewName)
+		then_noError(t, actualErr)
+		if string(view.FrameRunes) != string(expected) {
+			t.Fatalf("expected round frame runes %q for %s, actual %q", string(expected), viewName, string(view.FrameRunes))
+		}
+	}
+}
+
 func TestLayout_GivenDetailFocusOnPullRequests_WhenRendering_ThenShowsTheSelectedPullRequestInTheDetailPane(t *testing.T) {
 	model := given_model()
 	model.NextSideView()
