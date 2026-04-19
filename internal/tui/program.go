@@ -3,6 +3,7 @@ package tui
 import (
 	"github.com/jesseduffield/gocui"
 
+	clip "codeberg.org/l-lin/lazygh/internal/clipboard"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
@@ -36,6 +37,9 @@ type Program struct {
 	detailWrapWidth                  int
 	activeDetailTab                  DetailTab
 	lastDetailIdentity               string
+	clipboardWriter                  clip.Writer
+	feedbackFocus                    Focus
+	feedbackMessage                  string
 	helpVisible                      bool
 	searchEditor                     *lineEditor
 	markdownRenderer                 MarkdownRenderer
@@ -77,6 +81,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		markdownRenderer:              glamourMarkdownRenderer{},
 		asyncRunner:                   goroutineAsyncRunner{},
 		uiUpdater:                     queuedUIUpdater{},
+		clipboardWriter:               clip.NewSystemWriter(),
 		detailWrapWidth:               defaultDetailWrapWidth,
 	}
 }
@@ -153,6 +158,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewUserName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewUserName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewUserName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewUserName, key: 'y', handler: program.copyPullRequestURL},
 		{viewName: viewPullRequestsName, key: '/', handler: program.openSearch},
 		{viewName: viewPullRequestsName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewPullRequestsName, key: 'k', handler: program.moveSelectionUp},
@@ -161,6 +167,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewPullRequestsName, key: '[', handler: program.previousPullRequestTab},
 		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
+		{viewName: viewPullRequestsName, key: 'y', handler: program.copyPullRequestURL},
 		{viewName: viewDetailName, key: '/', handler: program.openSearch},
 		{viewName: viewDetailName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
@@ -168,6 +175,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
 		{viewName: viewDetailName, key: '[', handler: program.previousDetailTab},
 		{viewName: viewDetailName, key: ']', handler: program.nextDetailTab},
+		{viewName: viewDetailName, key: 'y', handler: program.copyPullRequestURL},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewSearchName, key: gocui.KeyEnter, handler: program.submitSearch},

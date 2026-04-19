@@ -96,11 +96,11 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 }
 
 func (program *Program) userViewTitle() string {
-	return "[1]-Connected user" + program.searchSummarySuffix(program.model.UserSearchQuery(), len(program.model.VisibleUsers()))
+	return "[1]-Connected user" + program.feedbackSuffix(FocusUserView) + program.searchSummarySuffix(program.model.UserSearchQuery(), len(program.model.VisibleUsers()))
 }
 
 func (program *Program) detailViewTitle() string {
-	suffix := program.searchSummarySuffix(program.model.DetailSearchQuery(), countSearchMatches(program.detailViewContent(), program.model.DetailSearchQuery()))
+	suffix := program.feedbackSuffix(FocusDetailView) + program.searchSummarySuffix(program.model.DetailSearchQuery(), countSearchMatches(program.detailViewContent(), program.model.DetailSearchQuery()))
 	if program.shouldShowPullRequestDetailTabs() {
 		return suffix
 	}
@@ -109,7 +109,7 @@ func (program *Program) detailViewTitle() string {
 
 func (program *Program) pullRequestsViewTitle() string {
 	query := program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab())
-	return program.searchSummarySuffix(query, len(program.model.VisiblePullRequests()))
+	return program.feedbackSuffix(FocusPullRequestsView) + program.searchSummarySuffix(query, len(program.model.VisiblePullRequests()))
 }
 
 func (program *Program) searchViewTitle() string {

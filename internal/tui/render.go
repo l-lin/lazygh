@@ -110,7 +110,7 @@ func (program *Program) configureDetailView(view *gocui.View) {
 	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	program.applyViewStyle(view, FocusDetailView, program.detailViewTitle(), false)
 	if program.shouldShowPullRequestDetailTabs() {
-		view.TitlePrefix = "[0]"
+		view.TitlePrefix = "[0]" + program.feedbackSuffix(FocusDetailView)
 		view.Tabs = program.detailTabLabels()
 		view.TabIndex = int(program.activeDetailTab)
 		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
@@ -125,7 +125,7 @@ func (program *Program) configureUserView(view *gocui.View) {
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
 	program.applyViewStyle(view, FocusPullRequestsView, program.pullRequestsViewTitle(), true)
-	view.TitlePrefix = "[2]"
+	view.TitlePrefix = "[2]" + program.feedbackSuffix(FocusPullRequestsView)
 	view.Tabs = program.pullRequestsTabLabels()
 	view.TabIndex = int(program.model.ActivePullRequestTab())
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
