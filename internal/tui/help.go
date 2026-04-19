@@ -104,6 +104,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries,
 				pullRequestYankHelpEntry(),
+				pullRequestCommentHelpEntry(),
 				helpEntry{Key: "[", Description: "Previous detail tab"},
 				helpEntry{Key: "]", Description: "Next detail tab"},
 			)
@@ -117,6 +118,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "<c-u>", Description: "Page up"},
 			{Key: "/", Description: "Search pull requests"},
 			pullRequestYankHelpEntry(),
+			pullRequestCommentHelpEntry(),
 			{Key: "[", Description: "Previous tab"},
 			{Key: "]", Description: "Next tab"},
 			{Key: "<enter>", Description: "Open detail"},

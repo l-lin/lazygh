@@ -20,6 +20,7 @@ type GitHubLoader interface {
 	ListMyPullRequests() ([]githubcli.PullRequest, error)
 	ListRequestedPullRequests() ([]githubcli.PullRequest, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
+	CommentOnPullRequest(repository string, number int, body string) error
 }
 
 type Program struct {
@@ -42,6 +43,7 @@ type Program struct {
 	feedbackMessage                  string
 	helpVisible                      bool
 	searchEditor                     *lineEditor
+	modalEditor                      *modalEditorState
 	markdownRenderer                 MarkdownRenderer
 	asyncRunner                      asyncRunner
 	uiUpdater                        uiUpdater
@@ -168,6 +170,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
 		{viewName: viewPullRequestsName, key: 'y', handler: program.copyPullRequestURL},
+		{viewName: viewPullRequestsName, key: 'c', handler: program.openPullRequestCommentComposer},
 		{viewName: viewDetailName, key: '/', handler: program.openSearch},
 		{viewName: viewDetailName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
@@ -176,12 +179,16 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: '[', handler: program.previousDetailTab},
 		{viewName: viewDetailName, key: ']', handler: program.nextDetailTab},
 		{viewName: viewDetailName, key: 'y', handler: program.copyPullRequestURL},
+		{viewName: viewDetailName, key: 'c', handler: program.openPullRequestCommentComposer},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewSearchName, key: gocui.KeyEnter, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlJ, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyEsc, handler: program.cancelSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.cancelSearch},
+		{viewName: viewModalEditorName, key: gocui.KeyAltEnter, handler: program.submitModalEditor},
+		{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: program.closeModalEditor},
+		{viewName: viewModalEditorName, key: gocui.KeyCtrlLsqBracket, handler: program.closeModalEditor},
 		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
 		{viewName: viewHelpName, key: gocui.KeyCtrlLsqBracket, handler: program.closeHelp},
 	}
@@ -192,7 +199,7 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() {
+	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}
 
@@ -201,7 +208,7 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() {
+	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}
 
@@ -358,7 +365,7 @@ func (program *Program) closeSearch(gui *gocui.Gui) error {
 }
 
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {
-	gui.Cursor = program.model.SearchActive()
+	gui.Cursor = program.model.SearchActive() || program.modalEditorVisible()
 	if program.helpVisible {
 		gui.Cursor = false
 		_, err := gui.SetCurrentView(viewHelpName)
@@ -520,10 +527,28 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		}
 	}
 
+	if program.modalEditorVisible() {
+		modalView, err := gui.View(viewModalEditorName)
+		if err != nil && !isUnknownViewError(err) {
+			return err
+		}
+		if err == nil {
+			program.configureModalEditorView(modalView)
+			program.renderModalEditorView(modalView)
+			_, err = gui.SetViewOnTop(viewModalEditorName)
+			if err != nil && !isUnknownViewError(err) {
+				return err
+			}
+		}
+	}
+
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) currentViewName() string {
+	if program.modalEditorVisible() {
+		return viewModalEditorName
+	}
 	if program.model.SearchActive() {
 		return viewSearchName
 	}

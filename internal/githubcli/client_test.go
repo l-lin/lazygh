@@ -86,11 +86,20 @@ type fakeRunner struct {
 	err    error
 	name   string
 	args   []string
+	stdin  []byte
 }
 
 func (runner *fakeRunner) Run(name string, args ...string) (CommandResult, error) {
 	runner.name = name
 	runner.args = append([]string(nil), args...)
+	runner.stdin = nil
+	return CommandResult{Stdout: runner.stdout, Stderr: runner.stderr}, runner.err
+}
+
+func (runner *fakeRunner) RunWithInput(name string, input []byte, args ...string) (CommandResult, error) {
+	runner.name = name
+	runner.args = append([]string(nil), args...)
+	runner.stdin = append([]byte(nil), input...)
 	return CommandResult{Stdout: runner.stdout, Stderr: runner.stderr}, runner.err
 }
 
@@ -99,6 +108,14 @@ func then_commandIs(t *testing.T, runner *fakeRunner, expectedName string, expec
 
 	if runner.name != expectedName || !reflect.DeepEqual(runner.args, expectedArgs) {
 		t.Fatalf("expected command %s %v, actual %s %v", expectedName, expectedArgs, runner.name, runner.args)
+	}
+}
+
+func then_stdinIs(t *testing.T, runner *fakeRunner, expected string) {
+	t.Helper()
+
+	if string(runner.stdin) != expected {
+		t.Fatalf("expected stdin %q, actual %q", expected, string(runner.stdin))
 	}
 }
 

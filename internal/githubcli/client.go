@@ -25,6 +25,7 @@ type CommandResult struct {
 
 type Runner interface {
 	Run(name string, args ...string) (CommandResult, error)
+	RunWithInput(name string, input []byte, args ...string) (CommandResult, error)
 }
 
 type Client struct {
@@ -76,7 +77,18 @@ func (client *Client) GetConnectedUser() (ConnectedUser, error) {
 }
 
 func (runner execRunner) Run(name string, args ...string) (CommandResult, error) {
+	return runner.run(name, nil, args...)
+}
+
+func (runner execRunner) RunWithInput(name string, input []byte, args ...string) (CommandResult, error) {
+	return runner.run(name, input, args...)
+}
+
+func (runner execRunner) run(name string, input []byte, args ...string) (CommandResult, error) {
 	command := exec.Command(name, args...)
+	if input != nil {
+		command.Stdin = bytes.NewReader(input)
+	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

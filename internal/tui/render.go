@@ -99,6 +99,16 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		}
 	}
 
+	if program.modalEditorVisible() {
+		if err := program.layoutModalEditorView(gui); err != nil {
+			return err
+		}
+	} else {
+		if err := gui.DeleteView(viewModalEditorName); err != nil && !isUnknownViewError(err) {
+			return err
+		}
+	}
+
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadMyPullRequests(gui)
 	program.maybeLoadRequestedPullRequests(gui)

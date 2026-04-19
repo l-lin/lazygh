@@ -138,9 +138,12 @@ func TestLayout_GivenAnotherSelectedPullRequestAfterScrolling_WhenRendering_Then
 }
 
 type fakePullRequestDetailLoader struct {
-	details      map[string]githubcli.PullRequestDetail
-	detailErrors map[string]error
-	detailCalls  []string
+	details       map[string]githubcli.PullRequestDetail
+	detailErrors  map[string]error
+	detailCalls   []string
+	commentCalls  []string
+	commentBodies []string
+	commentErr    error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -169,6 +172,12 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository strin
 		}
 	}
 	return githubcli.PullRequestDetail{}, nil
+}
+
+func (loader *fakePullRequestDetailLoader) CommentOnPullRequest(repository string, number int, body string) error {
+	loader.commentCalls = append(loader.commentCalls, repository+"#"+strconv.Itoa(number))
+	loader.commentBodies = append(loader.commentBodies, body)
+	return loader.commentErr
 }
 
 type inlineAsyncRunner struct{}
