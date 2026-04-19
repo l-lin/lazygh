@@ -9,10 +9,12 @@ import (
 )
 
 const (
-	viewDetailName       = "detail"
-	viewUserName         = "user"
-	viewPullRequestsName = "pull-requests"
-	viewSearchName       = "search"
+	viewDetailName             = "detail"
+	viewUserName               = "user"
+	viewPullRequestsName       = "pull-requests"
+	viewSearchName             = "search"
+	viewActionsPopupName       = "actions-popup"
+	viewActionsPopupSearchName = "actions-popup-search"
 )
 
 type GitHubLoader interface {
@@ -21,6 +23,11 @@ type GitHubLoader interface {
 	ListRequestedPullRequests() ([]githubcli.PullRequest, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
 	CommentOnPullRequest(repository string, number int, body string) error
+	ApprovePullRequest(repository string, number int) error
+	ReviewPullRequestWithComment(repository string, number int, body string) error
+	RequestChangesOnPullRequest(repository string, number int, body string) error
+	EditPullRequestTitle(repository string, number int, title string) error
+	EditPullRequestDescription(repository string, number int, body string) error
 }
 
 type Program struct {
@@ -43,10 +50,14 @@ type Program struct {
 	feedbackMessage                  string
 	helpVisible                      bool
 	searchEditor                     *lineEditor
+	actionsPopupSearchEditor         *lineEditor
+	actionsPopupErrorMessage         string
 	modalEditor                      *modalEditorState
+	externalEditor                   externalEditor
 	markdownRenderer                 MarkdownRenderer
 	asyncRunner                      asyncRunner
 	uiUpdater                        uiUpdater
+	gui                              *gocui.Gui
 }
 
 type keybindingSpec struct {
@@ -80,6 +91,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		githubLoader:                  githubLoader,
 		pullRequestDetailCache:        map[string]pullRequestDetailResult{},
 		pullRequestDetailLoadInFlight: map[string]bool{},
+		externalEditor:                systemExternalEditor{},
 		markdownRenderer:              glamourMarkdownRenderer{},
 		asyncRunner:                   goroutineAsyncRunner{},
 		uiUpdater:                     queuedUIUpdater{},
@@ -171,6 +183,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
 		{viewName: viewPullRequestsName, key: 'y', handler: program.copyPullRequestURL},
 		{viewName: viewPullRequestsName, key: 'c', handler: program.openPullRequestCommentComposer},
+		{viewName: viewPullRequestsName, key: 'a', handler: program.openActionsPopup},
 		{viewName: viewDetailName, key: '/', handler: program.openSearch},
 		{viewName: viewDetailName, key: 'j', handler: program.moveSelectionDown},
 		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
@@ -180,12 +193,23 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: ']', handler: program.nextDetailTab},
 		{viewName: viewDetailName, key: 'y', handler: program.copyPullRequestURL},
 		{viewName: viewDetailName, key: 'c', handler: program.openPullRequestCommentComposer},
+		{viewName: viewDetailName, key: 'a', handler: program.openActionsPopup},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
 		{viewName: viewSearchName, key: gocui.KeyEnter, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlJ, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyEsc, handler: program.cancelSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.cancelSearch},
+		{viewName: viewActionsPopupName, key: '/', handler: program.focusActionsPopupSearch},
+		{viewName: viewActionsPopupName, key: 'j', handler: program.moveActionsPopupSelectionDown},
+		{viewName: viewActionsPopupName, key: 'k', handler: program.moveActionsPopupSelectionUp},
+		{viewName: viewActionsPopupName, key: gocui.KeyEnter, handler: program.executeSelectedActionsPopupAction},
+		{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: program.closeActionsPopup},
+		{viewName: viewActionsPopupName, key: gocui.KeyCtrlLsqBracket, handler: program.closeActionsPopup},
+		{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: program.executeSelectedActionsPopupAction},
+		{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: program.closeActionsPopup},
+		{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.closeActionsPopup},
+		{viewName: viewActionsPopupSearchName, key: gocui.KeyTab, handler: program.focusActionsPopupList},
 		{viewName: viewModalEditorName, key: gocui.KeyAltEnter, handler: program.submitModalEditor},
 		{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: program.closeModalEditor},
 		{viewName: viewModalEditorName, key: gocui.KeyCtrlLsqBracket, handler: program.closeModalEditor},
@@ -199,7 +223,7 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
 
@@ -208,7 +232,7 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
 
@@ -289,7 +313,7 @@ func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) er
 }
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -298,7 +322,7 @@ func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -307,7 +331,7 @@ func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -316,7 +340,7 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
-	if program.model.SearchActive() {
+	if program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -325,7 +349,7 @@ func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
-	if program.model.SearchActive() {
+	if program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -334,12 +358,12 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
-	if program.helpVisible || program.model.SearchActive() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 
 	program.model.StartSearch()
-	program.searchEditor = newLineEditor(program.model.SearchDraft())
+	program.searchEditor = newLineEditor("")
 	return program.layout(gui)
 }
 
@@ -365,7 +389,7 @@ func (program *Program) closeSearch(gui *gocui.Gui) error {
 }
 
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {
-	gui.Cursor = program.model.SearchActive() || program.modalEditorVisible()
+	gui.Cursor = program.model.SearchActive() || program.model.ActionsPopupSearchActive() || program.modalEditorVisible()
 	if program.helpVisible {
 		gui.Cursor = false
 		_, err := gui.SetCurrentView(viewHelpName)
@@ -468,6 +492,7 @@ func (program *Program) loadRequestedPullRequests(gui *gocui.Gui) {
 }
 
 func (program *Program) refreshViews(gui *gocui.Gui) error {
+	program.gui = gui
 	program.maybeLoadSelectedPullRequestDetail(gui)
 
 	userView, err := gui.View(viewUserName)
@@ -542,12 +567,53 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		}
 	}
 
+	if program.model.ActionsPopupVisible() {
+		popupView, err := gui.View(viewActionsPopupName)
+		if err != nil && !isUnknownViewError(err) {
+			return err
+		}
+		if err == nil {
+			program.configureActionsPopupView(popupView)
+			program.renderActionsPopupView(popupView)
+			_, err = gui.SetViewOnTop(viewActionsPopupName)
+			if err != nil && !isUnknownViewError(err) {
+				return err
+			}
+		}
+
+		if program.model.ActionsPopupSearchActive() {
+			popupSearchView, err := gui.View(viewActionsPopupSearchName)
+			if err != nil && !isUnknownViewError(err) {
+				return err
+			}
+			if err == nil {
+				program.configureActionsPopupSearchView(popupSearchView)
+				program.renderActionsPopupSearchView(popupSearchView)
+				_, err = gui.SetViewOnTop(viewActionsPopupSearchName)
+				if err != nil && !isUnknownViewError(err) {
+					return err
+				}
+			}
+		} else {
+			actualErr := gui.DeleteView(viewActionsPopupSearchName)
+			if actualErr != nil && !isUnknownViewError(actualErr) {
+				return actualErr
+			}
+		}
+	}
+
 	return program.syncCurrentView(gui)
 }
 
 func (program *Program) currentViewName() string {
 	if program.modalEditorVisible() {
 		return viewModalEditorName
+	}
+	if program.model.ActionsPopupVisible() {
+		if program.model.ActionsPopupSearchActive() {
+			return viewActionsPopupSearchName
+		}
+		return viewActionsPopupName
 	}
 	if program.model.SearchActive() {
 		return viewSearchName
@@ -564,7 +630,7 @@ func (program *Program) currentViewName() string {
 }
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
-	if program.model.SearchActive() {
+	if program.model.SearchActive() || program.model.ActionsPopupVisible() {
 		return nil
 	}
 

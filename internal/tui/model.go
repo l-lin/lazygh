@@ -49,6 +49,7 @@ type Model struct {
 	userSearchQuery            string
 	detailSearchQuery          string
 	pullRequestSearchQueries   map[PullRequestTab]string
+	actionsPopup               actionsPopupState
 }
 
 func NewModel(seed SeedData) *Model {

@@ -19,7 +19,9 @@ const (
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
 
 func (program *Program) layout(gui *gocui.Gui) error {
+	program.gui = gui
 	maxX, maxY := gui.Size()
+	contentMaxY := program.layoutContentHeight(maxY)
 
 	sidebarWidth := maxX * sidebarWidthPercent / 100
 	maxSidebarWidth := maxX - minimumDetailWidth
@@ -45,16 +47,16 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	}
 
 	userHeight := userViewTotalHeight
-	if userHeight >= maxY {
-		userHeight = maxY / 2
+	if userHeight >= contentMaxY {
+		userHeight = contentMaxY / 2
 	}
 	if userHeight < 2 {
 		userHeight = 2
 	}
 	userY1 := userHeight - 1
 	pullRequestsY0 := userY1 + 1
-	if pullRequestsY0 >= maxY {
-		pullRequestsY0 = maxY / 2
+	if pullRequestsY0 >= contentMaxY {
+		pullRequestsY0 = contentMaxY / 2
 		userY1 = pullRequestsY0 - 1
 	}
 
@@ -65,14 +67,14 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.configureUserView(userView)
 	program.renderUserView(userView)
 
-	pullRequestsView, err := gui.SetView(viewPullRequestsName, 0, pullRequestsY0, sidebarX1, maxY-1, 0)
+	pullRequestsView, err := gui.SetView(viewPullRequestsName, 0, pullRequestsY0, sidebarX1, contentMaxY-1, 0)
 	if err != nil && !isUnknownViewError(err) {
 		return err
 	}
 	program.configurePullRequestsView(pullRequestsView)
 	program.renderPullRequestsView(pullRequestsView)
 
-	detailView, err := gui.SetView(viewDetailName, detailX0, 0, maxX-1, maxY-1, 0)
+	detailView, err := gui.SetView(viewDetailName, detailX0, 0, maxX-1, contentMaxY-1, 0)
 	if err != nil && !isUnknownViewError(err) {
 		return err
 	}
@@ -106,6 +108,27 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	} else {
 		if err := gui.DeleteView(viewModalEditorName); err != nil && !isUnknownViewError(err) {
 			return err
+		}
+	}
+
+	if program.model.ActionsPopupVisible() {
+		if err := program.layoutActionsPopupViews(gui); err != nil {
+			return err
+		}
+		if program.model.ActionsPopupSearchActive() {
+			if err := program.layoutActionsPopupSearchView(gui); err != nil {
+				return err
+			}
+		} else {
+			if err := gui.DeleteView(viewActionsPopupSearchName); err != nil && !isUnknownViewError(err) {
+				return err
+			}
+		}
+	} else {
+		for _, viewName := range []string{viewActionsPopupSearchName, viewActionsPopupName} {
+			if err := gui.DeleteView(viewName); err != nil && !isUnknownViewError(err) {
+				return err
+			}
 		}
 	}
 
@@ -336,4 +359,18 @@ func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) b
 
 func searchNoMatchesMessage(query string) string {
 	return fmt.Sprintf("No matches for %q.", strings.TrimSpace(query))
+}
+
+func (program *Program) layoutContentHeight(maxY int) int {
+	if maxY < 1 {
+		return 1
+	}
+	if program.bottomPromptVisible() && maxY > 1 {
+		return maxY - 1
+	}
+	return maxY
+}
+
+func (program *Program) bottomPromptVisible() bool {
+	return program.model.SearchActive() || program.model.ActionsPopupSearchActive()
 }

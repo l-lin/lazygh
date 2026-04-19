@@ -1,0 +1,121 @@
+package tui
+
+import (
+	"errors"
+	"strings"
+
+	"github.com/jesseduffield/gocui"
+)
+
+const (
+	pullRequestTitleEditorTitle              = "Edit PR title"
+	pullRequestDescriptionEditorTitle        = "Edit PR description"
+	pullRequestTitleEditSuccessMessage       = "PR title updated"
+	pullRequestDescriptionEditSuccessMessage = "PR description updated"
+)
+
+func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) actionsPopupActionResult {
+	target, ok := program.selectedPullRequestActionTarget()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+
+	wasVisible := program.modalEditorVisible()
+	err := program.openLineModalEditor(gui, pullRequestTitleEditorTitle, target.title, func(title string) error {
+		return program.submitPullRequestTitleEdit(target, title)
+	})
+	if err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	if program.modalEditor != nil {
+		program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+			program.reloadActivePullRequestsTab(gui)
+		}
+	}
+	if !wasVisible && program.modalEditorVisible() {
+		return actionsPopupActionResult{closePopup: true}
+	}
+	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
+func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) actionsPopupActionResult {
+	target, ok := program.selectedPullRequestActionTarget()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+
+	wasVisible := program.modalEditorVisible()
+	err := program.openModalEditorWithKeyHandler(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
+		return program.submitPullRequestDescriptionEdit(target, body)
+	}, handlePullRequestDescriptionEditorKey)
+	if err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	if program.modalEditor != nil {
+		program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+			program.reloadActivePullRequestsTab(gui)
+		}
+	}
+	if !wasVisible && program.modalEditorVisible() {
+		return actionsPopupActionResult{closePopup: true}
+	}
+	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
+func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarget, title string) error {
+	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
+		return errors.New("missing pull request identity")
+	}
+	if program.githubLoader == nil {
+		return errors.New("github loader is unavailable")
+	}
+	if err := program.githubLoader.EditPullRequestTitle(target.repository, target.number, title); err != nil {
+		return err
+	}
+
+	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.setFeedback(program.model.Focus(), pullRequestTitleEditSuccessMessage)
+	return nil
+}
+
+func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActionTarget, body string) error {
+	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
+		return errors.New("missing pull request identity")
+	}
+	if program.githubLoader == nil {
+		return errors.New("github loader is unavailable")
+	}
+	if err := program.githubLoader.EditPullRequestDescription(target.repository, target.number, body); err != nil {
+		return err
+	}
+
+	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.setFeedback(program.model.Focus(), pullRequestDescriptionEditSuccessMessage)
+	return nil
+}
+
+func handlePullRequestDescriptionEditorKey(program *Program, view *gocui.View, key gocui.Key, _ rune, _ gocui.Modifier) bool {
+	if key != gocui.KeyCtrlG || program == nil || program.modalEditor == nil || program.modalEditor.editor == nil {
+		return false
+	}
+	if program.externalEditor == nil {
+		program.modalEditor.errorMessage = "external editor is unavailable"
+		program.configureModalEditorView(view)
+		program.renderModalEditorView(view)
+		return true
+	}
+
+	editedText, err := program.externalEditor.Edit(program.gui, program.modalEditor.Text())
+	if err != nil {
+		program.modalEditor.errorMessage = strings.TrimSpace(err.Error())
+		program.configureModalEditorView(view)
+		program.renderModalEditorView(view)
+		return true
+	}
+
+	program.modalEditor.errorMessage = ""
+	program.modalEditor.editor.SetText(editedText)
+	program.configureModalEditorView(view)
+	program.renderModalEditorView(view)
+	return true
+}

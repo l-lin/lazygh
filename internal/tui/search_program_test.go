@@ -20,7 +20,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSe
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyEsc, handler: subject.cancelSearch})
 }
 
-func TestSearchPrompt_GivenRenderedProgram_WhenOpeningSearch_ThenThePromptTakesFocus(t *testing.T) {
+func TestSearchPrompt_GivenRenderedProgram_WhenOpeningSearch_ThenThePromptRendersAsABorderlessSlashAtTheBottom(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -38,8 +38,27 @@ func TestSearchPrompt_GivenRenderedProgram_WhenOpeningSearch_ThenThePromptTakesF
 
 	searchView, actualErr := gui.View(viewSearchName)
 	then_noError(t, actualErr)
-	if !strings.Contains(searchView.Title, "Search connected user") {
-		t.Fatalf("expected search title to mention the connected user, actual %q", searchView.Title)
+	if searchView.Frame {
+		t.Fatal("expected the search prompt to be borderless")
+	}
+	if searchView.Title != "" {
+		t.Fatalf("expected an empty search title, actual %q", searchView.Title)
+	}
+	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
+		t.Fatalf("expected search buffer %q, actual %q", "/", actual)
+	}
+
+	if searchView.InnerHeight() != 1 {
+		t.Fatalf("expected the search prompt to expose one visible content row, actual %d", searchView.InnerHeight())
+	}
+	if searchView.InnerWidth() != 120 {
+		t.Fatalf("expected the search prompt to span the full width, actual %d", searchView.InnerWidth())
+	}
+
+	_, _, _, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	if detailY1 != 28 {
+		t.Fatalf("expected detail view to stop above the bottom prompt at y=%d, actual y=%d", 28, detailY1)
 	}
 }
 
@@ -70,6 +89,46 @@ func TestSearchPrompt_GivenOpenSearch_WhenHandlingNavigationActions_ThenUnderlyi
 	}
 	if subject.model.SelectedUserIndex() != 0 {
 		t.Fatalf("expected selected user index 0, actual %d", subject.model.SelectedUserIndex())
+	}
+}
+
+func TestSearchPrompt_GivenPreviouslyAppliedQuery_WhenOpeningSearchAgain_ThenItStartsEmpty(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewSearchName)
+	then_noError(t, actualErr)
+	actualHandled := subject.editSearch(searchView, 0, '1', gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected typing to be handled")
+	}
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewSearchName, gocui.KeyCtrlJ)
+	actualErr = actualHandler(gui, searchView)
+	then_noError(t, actualErr)
+
+	actualErr = subject.openSearch(gui, nil)
+	then_noError(t, actualErr)
+	searchView, actualErr = gui.View(viewSearchName)
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
+		t.Fatalf("expected search buffer %q, actual %q", "/", actual)
+	}
+	if subject.model.SearchDraft() != "" {
+		t.Fatalf("expected an empty search draft, actual %q", subject.model.SearchDraft())
+	}
+
+	actualErr = subject.cancelSearch(gui, nil)
+	then_noError(t, actualErr)
+	if subject.model.UserSearchQuery() != "1" {
+		t.Fatalf("expected applied query %q after canceling, actual %q", "1", subject.model.UserSearchQuery())
 	}
 }
 

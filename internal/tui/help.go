@@ -105,6 +105,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			entries = append(entries,
 				pullRequestYankHelpEntry(),
 				pullRequestCommentHelpEntry(),
+				helpEntry{Key: "a", Description: "PR actions"},
 				helpEntry{Key: "[", Description: "Previous detail tab"},
 				helpEntry{Key: "]", Description: "Next detail tab"},
 			)
@@ -119,6 +120,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "/", Description: "Search pull requests"},
 			pullRequestYankHelpEntry(),
 			pullRequestCommentHelpEntry(),
+			{Key: "a", Description: "PR actions"},
 			{Key: "[", Description: "Previous tab"},
 			{Key: "]", Description: "Next tab"},
 			{Key: "<enter>", Description: "Open detail"},

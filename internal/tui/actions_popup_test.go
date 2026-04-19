@@ -1,0 +1,378 @@
+package tui
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
+)
+
+func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpensItOnlyInPullRequestContextsAndThePopupSupportsSearchNavigationAndClose(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'a', handler: subject.openActionsPopup})
+	then_bindingDoesNotExist(t, actual, viewUserName, 'a')
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: '/', handler: subject.focusActionsPopupSearch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'j', handler: subject.moveActionsPopupSelectionDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'k', handler: subject.moveActionsPopupSelectionUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyTab, handler: subject.focusActionsPopupList})
+}
+
+func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedPullRequestActionsAndTakesFocus(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Title, "Actions") {
+		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
+	}
+	for _, expected := range []string{
+		"Comment on PR",
+		"Yank URL to clipboard",
+		"Review: Approve PR",
+		"Review: Comment on PR",
+		"Review: Request changes",
+		"Edit PR title",
+		"Edit PR description",
+	} {
+		if !strings.Contains(popupView.Buffer(), expected) {
+			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
+		}
+	}
+	if !strings.Contains(popupView.Buffer(), "7 of 7 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "7 of 7 actions", popupView.Buffer())
+	}
+
+	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+}
+
+func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItDoesNothing(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+}
+
+func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABorderlessBottomPromptAndFiltersTheActionsLive(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	if !gui.Cursor {
+		t.Fatal("expected the cursor to be visible while the popup search input is focused")
+	}
+	then_viewDoesNotExist(t, gui, viewSearchName)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	if searchView.Frame {
+		t.Fatal("expected the popup search prompt to be borderless")
+	}
+	if searchView.Title != "" {
+		t.Fatalf("expected an empty popup search title, actual %q", searchView.Title)
+	}
+	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
+		t.Fatalf("expected popup search buffer %q, actual %q", "/", actual)
+	}
+	if searchView.InnerHeight() != 1 {
+		t.Fatalf("expected the popup search prompt to expose one visible content row, actual %d", searchView.InnerHeight())
+	}
+	if searchView.InnerWidth() != 120 {
+		t.Fatalf("expected the popup search prompt to span the full width, actual %d", searchView.InnerWidth())
+	}
+
+	_, _, _, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	if detailY1 != 28 {
+		t.Fatalf("expected detail view to stop above the popup prompt at y=%d, actual y=%d", 28, detailY1)
+	}
+
+	for _, ch := range "clipboard" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "1 of 7 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "1 of 7 actions", popupView.Buffer())
+	}
+	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
+	}
+	for _, unexpected := range []string{"Comment on PR", "Edit PR title"} {
+		if strings.Contains(popupView.Buffer(), unexpected) {
+			t.Fatalf("expected popup buffer to hide %q, actual %q", unexpected, popupView.Buffer())
+		}
+	}
+}
+func TestActionsPopup_GivenKeywordSearch_WhenFiltering_ThenItCanFindReviewAndEditActions(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "lgtm" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "Review: Approve PR") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "Review: Approve PR", popupView.Buffer())
+	}
+	if strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
+	}
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+	searchView, actualErr = gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "rename" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "Edit PR title") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "Edit PR title", popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThePreviousPromptText(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "clip" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+
+	actualErr = subject.focusActionsPopupList(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr = gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
+		t.Fatalf("expected popup search buffer %q, actual %q", "/", actual)
+	}
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "7 of 7 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "7 of 7 actions", popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenFocusedSearchRow_WhenPressingTab_ThenItReturnsToTheActionList(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+
+	actualErr = subject.focusActionsPopupList(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	if subject.model.ActionsPopupSearchActive() {
+		t.Fatal("expected the popup search to be unfocused")
+	}
+}
+
+func TestActionsPopup_GivenFilteredActions_WhenMovingSelection_ThenJAndKFollowTheVisibleResults(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("review", []int{2, 3, 4})
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.moveActionsPopupSelectionDown(gui, nil)
+	then_noError(t, actualErr)
+	if subject.model.ActionsPopupSelectedActionIndex() != 3 {
+		t.Fatalf("expected selected action index 3, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	}
+
+	actualErr = subject.moveActionsPopupSelectionUp(gui, nil)
+	then_noError(t, actualErr)
+	if subject.model.ActionsPopupSelectedActionIndex() != 2 {
+		t.Fatalf("expected selected action index 2, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	}
+}
+
+func TestActionsPopup_GivenCommentActionSelected_WhenExecuting_ThenItReusesTheCommentComposer(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+	composerView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	if !strings.Contains(composerView.Title, pullRequestCommentComposerTitle) {
+		t.Fatalf("expected composer title to contain %q, actual %q", pullRequestCommentComposerTitle, composerView.Title)
+	}
+}
+
+func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyPathAndClosesThePopup(t *testing.T) {
+	model := given_pullRequestCommentModel()
+	clipboardWriter := &fakeClipboardWriter{}
+	subject := NewProgramWithModel(model)
+	subject.clipboardWriter = clipboardWriter
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.MoveActionsPopupSelectionDown()
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+	if len(clipboardWriter.writes) != 1 || clipboardWriter.writes[0] != "https://github.com/acme/widgets/pull/42" {
+		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
+	}
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.TitlePrefix, yankSuccessMessage) {
+		t.Fatalf("expected pull request title prefix to contain %q, actual %q", yankSuccessMessage, pullRequestsView.TitlePrefix)
+	}
+}
+
+func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheActionsShortcut(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	if !strings.Contains(helpView.Buffer(), "PR actions") {
+		t.Fatalf("expected help buffer to contain %q, actual %q", "PR actions", helpView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenDetailFocus_WhenClosing_ThenItReturnsToTheDetailPaneCleanly(t *testing.T) {
+	model := given_pullRequestCommentModel()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.closeActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+}
+
+func given_actionsPopupPullRequest() githubcli.PullRequest {
+	return githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Original body"}
+}

@@ -10,29 +10,102 @@ import (
 )
 
 const (
-	viewModalEditorName      = "modal-editor"
-	modalEditorTotalHeight   = 7
-	modalEditorFallbackWidth = 60
-	modalEditorMinWidth      = 40
+	viewModalEditorName        = "modal-editor"
+	modalEditorTotalHeight     = 7
+	lineModalEditorTotalHeight = 3
+	modalEditorFallbackWidth   = 60
+	modalEditorMinWidth        = 40
 )
+
+type modalEditorKeyHandler func(*Program, *gocui.View, gocui.Key, rune, gocui.Modifier) bool
 
 type modalEditorState struct {
 	title        string
 	editor       *multilineEditor
+	lineEditor   *lineEditor
 	errorMessage string
 	submit       func(string) error
+	afterSubmit  func(*gocui.Gui)
+	totalHeight  int
+	handleKey    modalEditorKeyHandler
 }
 
 func newModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
+	return newModalEditorStateWithOptions(title, initialText, submit, modalEditorTotalHeight, false, nil)
+}
+
+func newModalEditorStateWithKeyHandler(title string, initialText string, submit func(string) error, handleKey modalEditorKeyHandler) *modalEditorState {
+	return newModalEditorStateWithOptions(title, initialText, submit, modalEditorTotalHeight, false, handleKey)
+}
+
+func newLineModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
+	return newModalEditorStateWithOptions(title, initialText, submit, lineModalEditorTotalHeight, true, nil)
+}
+
+func newModalEditorStateWithOptions(title string, initialText string, submit func(string) error, totalHeight int, singleLine bool, handleKey modalEditorKeyHandler) *modalEditorState {
 	if submit == nil {
 		submit = func(string) error { return nil }
 	}
 
-	return &modalEditorState{
-		title:  strings.TrimSpace(title),
-		editor: newMultilineEditor(initialText),
-		submit: submit,
+	state := &modalEditorState{
+		title:       strings.TrimSpace(title),
+		submit:      submit,
+		totalHeight: totalHeight,
+		handleKey:   handleKey,
 	}
+	if singleLine {
+		state.lineEditor = newLineEditor(initialText)
+		return state
+	}
+
+	state.editor = newMultilineEditor(initialText)
+	return state
+}
+
+func (state *modalEditorState) Text() string {
+	if state == nil {
+		return ""
+	}
+	if state.lineEditor != nil {
+		return state.lineEditor.Text()
+	}
+	if state.editor != nil {
+		return state.editor.Text()
+	}
+	return ""
+}
+
+func (state *modalEditorState) CursorXY() (int, int) {
+	if state == nil {
+		return 0, 0
+	}
+	if state.lineEditor != nil {
+		return state.lineEditor.Cursor(), 0
+	}
+	if state.editor != nil {
+		return state.editor.CursorXY()
+	}
+	return 0, 0
+}
+
+func (state *modalEditorState) HandleKey(key gocui.Key, ch rune, mod gocui.Modifier) bool {
+	if state == nil {
+		return false
+	}
+	if state.lineEditor != nil {
+		return state.lineEditor.HandleKey(key, ch, mod)
+	}
+	if state.editor != nil {
+		return state.editor.HandleKey(key, ch, mod)
+	}
+	return false
+}
+
+func (state *modalEditorState) Height() int {
+	if state == nil || state.totalHeight < 1 {
+		return modalEditorTotalHeight
+	}
+	return state.totalHeight
 }
 
 func (program *Program) modalEditorVisible() bool {
@@ -41,6 +114,24 @@ func (program *Program) modalEditorVisible() bool {
 
 func (program *Program) openModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error) error {
 	program.modalEditor = newModalEditorState(title, initialText, submit)
+	if gui == nil {
+		return nil
+	}
+
+	return program.layout(gui)
+}
+
+func (program *Program) openModalEditorWithKeyHandler(gui *gocui.Gui, title string, initialText string, submit func(string) error, handleKey modalEditorKeyHandler) error {
+	program.modalEditor = newModalEditorStateWithKeyHandler(title, initialText, submit, handleKey)
+	if gui == nil {
+		return nil
+	}
+
+	return program.layout(gui)
+}
+
+func (program *Program) openLineModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error) error {
+	program.modalEditor = newLineModalEditorState(title, initialText, submit)
 	if gui == nil {
 		return nil
 	}
@@ -68,12 +159,15 @@ func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.modalEditor.errorMessage = ""
-	if err := program.modalEditor.submit(program.modalEditor.editor.Text()); err != nil {
+	if err := program.modalEditor.submit(program.modalEditor.Text()); err != nil {
 		program.modalEditor.errorMessage = strings.TrimSpace(err.Error())
 		if gui == nil {
 			return nil
 		}
 		return program.refreshViews(gui)
+	}
+	if program.modalEditor.afterSubmit != nil {
+		program.modalEditor.afterSubmit(gui)
 	}
 
 	return program.closeModalEditor(gui, nil)
@@ -96,6 +190,9 @@ func (program *Program) layoutModalEditorView(gui *gocui.Gui) error {
 	}
 
 	totalHeight := modalEditorTotalHeight
+	if program.modalEditor != nil {
+		totalHeight = program.modalEditor.Height()
+	}
 	if totalHeight > maxY {
 		totalHeight = maxY
 	}
@@ -151,9 +248,9 @@ func (program *Program) renderModalEditorView(view *gocui.View) {
 	}
 
 	view.Clear()
-	text := program.modalEditor.editor.Text()
+	text := program.modalEditor.Text()
 	fmt.Fprint(view, text)
-	column, row := program.modalEditor.editor.CursorXY()
+	column, row := program.modalEditor.CursorXY()
 	program.setMultilineInputCursor(view, column, row)
 }
 
@@ -164,7 +261,10 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 	if program.modalEditor == nil {
 		return false
 	}
-	if !program.modalEditor.editor.HandleKey(key, ch, mod) {
+	if program.modalEditor.handleKey != nil && program.modalEditor.handleKey(program, view, key, ch, mod) {
+		return true
+	}
+	if !program.modalEditor.HandleKey(key, ch, mod) {
 		return false
 	}
 

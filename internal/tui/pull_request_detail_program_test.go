@@ -138,12 +138,28 @@ func TestLayout_GivenAnotherSelectedPullRequestAfterScrolling_WhenRendering_Then
 }
 
 type fakePullRequestDetailLoader struct {
-	details       map[string]githubcli.PullRequestDetail
-	detailErrors  map[string]error
-	detailCalls   []string
-	commentCalls  []string
-	commentBodies []string
-	commentErr    error
+	details               map[string]githubcli.PullRequestDetail
+	detailErrors          map[string]error
+	detailCalls           []string
+	commentCalls          []string
+	commentBodies         []string
+	commentErr            error
+	myPullRequests        []githubcli.PullRequest
+	requestedPullRequests []githubcli.PullRequest
+	approveCalls          []string
+	approveErr            error
+	reviewCommentCalls    []string
+	reviewCommentBodies   []string
+	reviewCommentErr      error
+	requestChangesCalls   []string
+	requestChangesBodies  []string
+	requestChangesErr     error
+	editTitleCalls        []string
+	editTitleValues       []string
+	editTitleErr          error
+	editDescriptionCalls  []string
+	editDescriptionBodies []string
+	editDescriptionErr    error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -151,11 +167,11 @@ func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.Connect
 }
 
 func (loader *fakePullRequestDetailLoader) ListMyPullRequests() ([]githubcli.PullRequest, error) {
-	return nil, nil
+	return append([]githubcli.PullRequest(nil), loader.myPullRequests...), nil
 }
 
 func (loader *fakePullRequestDetailLoader) ListRequestedPullRequests() ([]githubcli.PullRequest, error) {
-	return nil, nil
+	return append([]githubcli.PullRequest(nil), loader.requestedPullRequests...), nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error) {
@@ -178,6 +194,81 @@ func (loader *fakePullRequestDetailLoader) CommentOnPullRequest(repository strin
 	loader.commentCalls = append(loader.commentCalls, repository+"#"+strconv.Itoa(number))
 	loader.commentBodies = append(loader.commentBodies, body)
 	return loader.commentErr
+}
+
+func (loader *fakePullRequestDetailLoader) ApprovePullRequest(repository string, number int) error {
+	loader.approveCalls = append(loader.approveCalls, repository+"#"+strconv.Itoa(number))
+	return loader.approveErr
+}
+
+func (loader *fakePullRequestDetailLoader) ReviewPullRequestWithComment(repository string, number int, body string) error {
+	loader.reviewCommentCalls = append(loader.reviewCommentCalls, repository+"#"+strconv.Itoa(number))
+	loader.reviewCommentBodies = append(loader.reviewCommentBodies, body)
+	return loader.reviewCommentErr
+}
+
+func (loader *fakePullRequestDetailLoader) RequestChangesOnPullRequest(repository string, number int, body string) error {
+	loader.requestChangesCalls = append(loader.requestChangesCalls, repository+"#"+strconv.Itoa(number))
+	loader.requestChangesBodies = append(loader.requestChangesBodies, body)
+	return loader.requestChangesErr
+}
+
+func (loader *fakePullRequestDetailLoader) EditPullRequestTitle(repository string, number int, title string) error {
+	loader.editTitleCalls = append(loader.editTitleCalls, repository+"#"+strconv.Itoa(number))
+	loader.editTitleValues = append(loader.editTitleValues, title)
+	if loader.editTitleErr != nil {
+		return loader.editTitleErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.Title = title
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.Title = title
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) EditPullRequestDescription(repository string, number int, body string) error {
+	loader.editDescriptionCalls = append(loader.editDescriptionCalls, repository+"#"+strconv.Itoa(number))
+	loader.editDescriptionBodies = append(loader.editDescriptionBodies, body)
+	if loader.editDescriptionErr != nil {
+		return loader.editDescriptionErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.Body = body
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.Body = body
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {
+	for index := range loader.myPullRequests {
+		if loader.myPullRequests[index].Repository.NameWithOwner == repository && loader.myPullRequests[index].Number == number {
+			update(&loader.myPullRequests[index])
+		}
+	}
+	for index := range loader.requestedPullRequests {
+		if loader.requestedPullRequests[index].Repository.NameWithOwner == repository && loader.requestedPullRequests[index].Number == number {
+			update(&loader.requestedPullRequests[index])
+		}
+	}
+}
+
+func (loader *fakePullRequestDetailLoader) updatePullRequestDetail(repository string, number int, update func(*githubcli.PullRequestDetail)) {
+	if loader.details == nil {
+		return
+	}
+	key := repository + "#" + strconv.Itoa(number)
+	detail, ok := loader.details[key]
+	if !ok {
+		return
+	}
+	update(&detail)
+	loader.details[key] = detail
 }
 
 type inlineAsyncRunner struct{}

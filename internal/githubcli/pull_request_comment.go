@@ -3,7 +3,6 @@ package githubcli
 import (
 	"errors"
 	"strconv"
-	"strings"
 )
 
 var (
@@ -12,12 +11,12 @@ var (
 )
 
 func (client *Client) CommentOnPullRequest(repository string, number int, body string) error {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || trimmedRepository == "-" || number <= 0 {
-		return ErrMissingPullRequestIdentity
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
 	}
-	if strings.TrimSpace(body) == "" {
-		return ErrEmptyPullRequestComment
+	if _, err := validateNonEmptyPullRequestField(body, ErrEmptyPullRequestComment); err != nil {
+		return err
 	}
 
 	result, err := client.runner.RunWithInput(ghBinaryName, []byte(body), "pr", "comment", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-")

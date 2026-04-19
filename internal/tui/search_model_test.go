@@ -23,6 +23,23 @@ func TestStartSearch_GivenPullRequestsFocusOnRequestedTab_WhenStartingSearch_The
 	}
 }
 
+func TestStartSearch_GivenExistingAppliedUserQuery_WhenStartingANewSearch_ThenTheDraftStartsEmpty(t *testing.T) {
+	subject := given_model()
+	subject.StartSearch()
+	subject.UpdateSearchDraft("1")
+	subject.SubmitSearch()
+
+	subject.StartSearch()
+
+	if subject.SearchDraft() != "" {
+		t.Fatalf("expected an empty search draft, actual %q", subject.SearchDraft())
+	}
+	subject.CancelSearch()
+	if subject.UserSearchQuery() != "1" {
+		t.Fatalf("expected the applied user query %q to remain intact after canceling, actual %q", "1", subject.UserSearchQuery())
+	}
+}
+
 func TestUpdateSearchDraft_GivenUserSearch_WhenFiltering_ThenVisibleUsersAndSelectionClampToMatches(t *testing.T) {
 	subject := given_model()
 	subject.MoveSelectionDown()

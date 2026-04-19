@@ -22,7 +22,7 @@ func (model *Model) StartSearch() {
 	model.searchActive = true
 	model.searchTarget = model.focus
 	model.searchTargetPullRequestTab = model.activePullRequestTab
-	model.searchDraft = model.appliedSearchQuery(model.searchTarget, model.searchTargetPullRequestTab)
+	model.searchDraft = ""
 	model.clampSearchSelectionForTarget(model.searchTarget, model.searchTargetPullRequestTab, model.searchDraft)
 }
 

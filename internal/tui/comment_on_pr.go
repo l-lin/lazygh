@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/jesseduffield/gocui"
 )
@@ -50,19 +49,10 @@ func (program *Program) submitPullRequestComment(target pullRequestCommentTarget
 }
 
 func (program *Program) selectedPullRequestCommentTarget() (pullRequestCommentTarget, bool) {
-	if !program.isPullRequestContext() {
-		return pullRequestCommentTarget{}, false
-	}
-
-	summary, ok := program.model.SelectedPullRequestSummary()
+	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
 		return pullRequestCommentTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return pullRequestCommentTarget{}, false
-	}
-
-	return pullRequestCommentTarget{repository: repository, number: summary.Number}, true
+	return pullRequestCommentTarget{repository: target.repository, number: target.number}, true
 }
