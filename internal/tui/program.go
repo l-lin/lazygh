@@ -34,6 +34,7 @@ type Program struct {
 	pullRequestDetailCache           map[string]pullRequestDetailResult
 	pullRequestDetailLoadInFlight    map[string]bool
 	detailWrapWidth                  int
+	activeDetailTab                  DetailTab
 	lastDetailIdentity               string
 	helpVisible                      bool
 	searchEditor                     *lineEditor
@@ -54,7 +55,9 @@ func NewProgram(githubLoaders ...GitHubLoader) *Program {
 		githubLoader = githubLoaders[0]
 	}
 
-	return NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), githubLoader)
+	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
+	return NewProgramWithModelAndLoader(model, githubLoader)
 }
 
 func NewProgramWithModel(model *Model) *Program {
@@ -163,16 +166,16 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
+		{viewName: viewDetailName, key: '[', handler: program.previousDetailTab},
+		{viewName: viewDetailName, key: ']', handler: program.nextDetailTab},
 		{viewName: viewDetailName, key: gocui.KeyEsc, handler: program.closeDetail},
 		{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
-		{viewName: viewDetailName, key: '[', handler: program.closeDetail},
 		{viewName: viewSearchName, key: gocui.KeyEnter, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlJ, handler: program.submitSearch},
 		{viewName: viewSearchName, key: gocui.KeyEsc, handler: program.cancelSearch},
 		{viewName: viewSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.cancelSearch},
 		{viewName: viewHelpName, key: gocui.KeyEsc, handler: program.closeHelp},
 		{viewName: viewHelpName, key: gocui.KeyCtrlLsqBracket, handler: program.closeHelp},
-		{viewName: viewHelpName, key: '[', handler: program.closeHelp},
 	}
 }
 

@@ -93,7 +93,7 @@ func (program *Program) helpSections() []helpSection {
 func (program *Program) localHelpEntries() []helpEntry {
 	switch program.model.Focus() {
 	case FocusDetailView:
-		return []helpEntry{
+		entries := []helpEntry{
 			{Key: "j", Description: "Scroll down"},
 			{Key: "k", Description: "Scroll up"},
 			{Key: "<c-d>", Description: "Page down"},
@@ -101,6 +101,13 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "/", Description: "Search detail"},
 			{Key: "<esc>", Description: "Return to previous view"},
 		}
+		if program.shouldShowPullRequestDetailTabs() {
+			entries = append(entries,
+				helpEntry{Key: "[", Description: "Previous detail tab"},
+				helpEntry{Key: "]", Description: "Next detail tab"},
+			)
+		}
+		return entries
 	case FocusPullRequestsView:
 		return []helpEntry{
 			{Key: "j", Description: "Move down"},

@@ -7,14 +7,24 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewSupportsBracketFallbackForControlLeftBracket(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUsesBracketsForItsOwnTabsAndEscapeVariantsToClose(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: '[', handler: subject.closeDetail})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: '[', handler: subject.previousDetailTab})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: ']', handler: subject.nextDetailTab})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEsc, handler: subject.closeDetail})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: subject.closeDetail})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: '[', handler: subject.previousPullRequestTab})
+}
+
+func TestNewProgram_GivenDefaultSeedData_WhenCreatingTheAppProgram_ThenItStartsOnPullRequestsView(t *testing.T) {
+	subject := NewProgram()
+
+	if subject.model.Focus() != FocusPullRequestsView {
+		t.Fatalf("expected focus %v, actual %v", FocusPullRequestsView, subject.model.Focus())
+	}
 }
 
 func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenControlDAndControlUAreAvailableInAllViews(t *testing.T) {

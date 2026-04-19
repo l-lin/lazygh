@@ -11,7 +11,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDetailAndCachesIt(t *testing.T) {
+func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDetailAndShowsDescriptionAndCommentsInSeparateTabs(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
@@ -20,8 +20,8 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	})
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#101": {Title: "First PR", Number: 101, Body: "Body 101", BaseRefName: "main", HeadRefName: "feature-101", State: "OPEN"},
-			"acme/widgets#102": {Title: "Second PR", Number: 102, Body: "Body 102", BaseRefName: "main", HeadRefName: "feature-102", State: "OPEN"},
+			"acme/widgets#101": {Title: "First PR", Number: 101, Body: "Body 101", BaseRefName: "main", HeadRefName: "feature-101", State: "OPEN", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Comment 101", CreatedAt: "2026-04-18T10:00:00Z"}}},
+			"acme/widgets#102": {Title: "Second PR", Number: 102, Body: "Body 102", BaseRefName: "main", HeadRefName: "feature-102", State: "OPEN", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, Body: "Comment 102", CreatedAt: "2026-04-18T11:00:00Z"}}},
 		},
 	}
 	subject := NewProgramWithModelAndLoader(model, loader)
@@ -30,7 +30,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 101": "Rendered body 101", "Body 102": "Rendered body 102"}}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 101": "Rendered body 101", "Body 102": "Rendered body 102", "Comment 101": "Rendered comment 101", "Comment 102": "Rendered comment 102"}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -43,9 +43,25 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	if !strings.Contains(detailView.Buffer(), "Rendered body 101") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered body 101", detailView.Buffer())
 	}
+	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
+		t.Fatalf("expected description tab to hide comments, actual %q", detailView.Buffer())
+	}
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 0)
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101"}, loader.detailCalls)
 	}
+
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered comment 101") {
+		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered comment 101", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered body 101") {
+		t.Fatalf("expected comments tab to hide description text, actual %q", detailView.Buffer())
+	}
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 1)
 
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
@@ -53,12 +69,14 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 		t.Fatalf("expected cached detail calls %v, actual %v", []string{"acme/widgets#101"}, loader.detailCalls)
 	}
 
+	actualErr = subject.closeDetail(gui, nil)
+	then_noError(t, actualErr)
 	actualErr = subject.moveSelectionDown(gui, nil)
 	then_noError(t, actualErr)
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Rendered body 102") {
-		t.Fatalf("expected detail buffer to contain %q after selection, actual %q", "Rendered body 102", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "Rendered comment 102") {
+		t.Fatalf("expected comments tab to contain %q after selection, actual %q", "Rendered comment 102", detailView.Buffer())
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101", "acme/widgets#102"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101", "acme/widgets#102"}, loader.detailCalls)

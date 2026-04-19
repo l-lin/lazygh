@@ -100,7 +100,11 @@ func (program *Program) userViewTitle() string {
 }
 
 func (program *Program) detailViewTitle() string {
-	return "[0]-Detail" + program.searchSummarySuffix(program.model.DetailSearchQuery(), countSearchMatches(program.detailViewContent(), program.model.DetailSearchQuery()))
+	suffix := program.searchSummarySuffix(program.model.DetailSearchQuery(), countSearchMatches(program.detailViewContent(), program.model.DetailSearchQuery()))
+	if program.shouldShowPullRequestDetailTabs() {
+		return suffix
+	}
+	return "[0]-Detail" + suffix
 }
 
 func (program *Program) pullRequestsViewTitle() string {

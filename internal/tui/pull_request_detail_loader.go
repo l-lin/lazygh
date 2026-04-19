@@ -74,7 +74,7 @@ func (program *Program) currentDetailIdentity() string {
 	case FocusPullRequestsView:
 		if summary, ok := program.model.SelectedPullRequestSummary(); ok {
 			if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-				return "pr:" + key
+				return fmt.Sprintf("pr:%s:tab:%d", key, program.activeDetailTab)
 			}
 		}
 		return fmt.Sprintf("pr-state:%d:%d", program.model.ActivePullRequestTab(), program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))

@@ -15,6 +15,21 @@ const (
 	defaultDetailWrapWidth      = 80
 	minimumMarkdownRenderWidth  = 20
 	markdownRenderFailurePrefix = "Markdown rendering failed. Showing source."
+	maximumBranchLabelWidth     = 28
+
+	detailDescriptionIcon = "󰈙"
+	detailCommentsIcon    = ""
+	detailRepositoryIcon  = ""
+	detailBranchIcon      = ""
+	detailStatusIcon      = ""
+	detailChecksIcon      = "󰄬"
+)
+
+type DetailTab int
+
+const (
+	DescriptionDetailTab DetailTab = iota
+	CommentsDetailTab
 )
 
 type MarkdownRenderer interface {
@@ -28,7 +43,19 @@ type pullRequestDetailResult struct {
 	err    error
 }
 
-var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+var (
+	ansiPattern       = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	rawHeadingPattern = regexp.MustCompile(`^\s*#{1,6}\s+`)
+)
+
+func (tab DetailTab) Label() string {
+	switch tab {
+	case CommentsDetailTab:
+		return fmt.Sprintf("%s Comments", detailCommentsIcon)
+	default:
+		return fmt.Sprintf("%s Description", detailDescriptionIcon)
+	}
+}
 
 func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
 	renderer, err := glamour.NewTermRenderer(
@@ -47,28 +74,34 @@ func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error
 	return normalizeRenderedMarkdown(rendered), nil
 }
 
-func renderPullRequestDetail(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int) string {
-	if renderer == nil {
-		renderer = glamourMarkdownRenderer{}
+func renderPullRequestDetailHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	headerLines := []string{
+		fmt.Sprintf("%s %s#%d", detailRepositoryIcon, pullRequestRepositoryName(summary.Repository), firstNonZero(detail.Number, summary.Number)),
+		pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title)),
+		renderPullRequestMetaLine(summary, detail),
 	}
 
-	body := renderMarkdownWithFallback(detailBody(detail, summary), renderer, width, "No description available.")
-	sections := []string{
-		renderPullRequestMetadata(summary, detail),
-		body,
-		renderPullRequestComments(detail.Comments, renderer, width),
+	return strings.Join(headerLines, "\n")
+}
+
+func renderPullRequestDescription(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int) string {
+	return renderMarkdownWithFallback(detailBody(detail, summary), renderer, width, "No description available.")
+}
+
+func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) string {
+	if len(comments) == 0 {
+		return "No comments yet."
 	}
 
+	sections := make([]string, 0, len(comments))
+	for _, comment := range comments {
+		sections = append(sections, fmt.Sprintf("%s %s · %s\n%s", detailCommentsIcon, pullRequestCommentAuthorLogin(comment.Author), formatTimestamp(comment.CreatedAt), renderMarkdownWithFallback(comment.Body, renderer, width, "No comment body.")))
+	}
 	return strings.Join(sections, "\n\n")
 }
 
 func renderPullRequestDetailLoading(summary githubcli.PullRequest) string {
-	repository := pullRequestRepositoryName(summary.Repository)
-	if strings.TrimSpace(repository) == "" {
-		repository = "-"
-	}
-
-	return fmt.Sprintf("%s\n\nLoading pull request detail...\nRunning `gh pr view %d -R %s --json ...`.", pullRequestTitleLine(summary.Title, summary.Number), summary.Number, repository)
+	return fmt.Sprintf("%s\n\nLoading pull request detail...\nRunning `gh pr view %d -R %s --json ...`.", renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}), summary.Number, pullRequestRepositoryName(summary.Repository))
 }
 
 func renderPullRequestDetailError(summary githubcli.PullRequest, err error) string {
@@ -82,43 +115,38 @@ func renderPullRequestDetailError(summary githubcli.PullRequest, err error) stri
 		fallback = "No fallback detail available."
 	}
 
-	return fmt.Sprintf("%s\n\nCould not load rich pull request detail.\n\n%s\n\n%s", pullRequestTitleLine(summary.Title, summary.Number), message, fallback)
+	return fmt.Sprintf("%s\n\nCould not load rich pull request detail.\n\n%s\n\n%s", renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}), message, fallback)
 }
 
-func renderPullRequestMetadata(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
-	lines := []string{
-		pullRequestTitleLine(firstNonEmpty(detail.Title, summary.Title), firstNonZero(detail.Number, summary.Number)),
-		fmt.Sprintf("Status: %s %s ← %s", detailStatus(detail, summary), valueOrDash(firstNonEmpty(detail.BaseRefName, "-")), valueOrDash(firstNonEmpty(detail.HeadRefName, "-"))),
-		fmt.Sprintf("Repo: %s", pullRequestRepositoryName(summary.Repository)),
-		fmt.Sprintf("Author: %s", pullRequestAuthorLogin(detail.Author)),
-		fmt.Sprintf("Created: %s", formatTimestamp(detail.CreatedAt)),
-		fmt.Sprintf("Updated: %s", formatTimestamp(firstNonEmpty(detail.UpdatedAt, summary.UpdatedAt))),
-		fmt.Sprintf("Labels: %s", formatPullRequestLabels(detail.Labels)),
-		fmt.Sprintf("Merge Status: %s", valueOrDash(detail.MergeStateStatus)),
-		fmt.Sprintf("Checks: %s", summarizeStatusChecks(detail.StatusCheckRollup)),
-		fmt.Sprintf("Mergeable: %s", mergeableText(detail.Mergeable)),
-		fmt.Sprintf("Changes: %s", formatChanges(detail.ChangedFiles, detail.Additions, detail.Deletions)),
+func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	parts := make([]string, 0, 4)
+
+	baseRefName := strings.TrimSpace(detail.BaseRefName)
+	headRefName := strings.TrimSpace(detail.HeadRefName)
+	if baseRefName != "" || headRefName != "" {
+		parts = append(parts, fmt.Sprintf("%s %s ← %s", detailBranchIcon, compactBranchLabel(valueOrDash(baseRefName)), compactBranchLabel(valueOrDash(headRefName))))
 	}
 
-	return strings.Join(lines, "\n")
-}
+	parts = append(parts, fmt.Sprintf("%s %s", detailStatusIcon, detailStatus(detail, summary)))
 
-func renderPullRequestComments(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) string {
-	if len(comments) == 0 {
-		return "Comments\nNo comments yet."
+	checkSummary := summarizeStatusChecks(detail.StatusCheckRollup)
+	if checkSummary != "-" {
+		parts = append(parts, fmt.Sprintf("%s %s", detailChecksIcon, checkSummary))
 	}
 
-	sections := []string{"Comments"}
-	for _, comment := range comments {
-		sections = append(sections, fmt.Sprintf("%s · %s\n%s", pullRequestCommentAuthorLogin(comment.Author), formatTimestamp(comment.CreatedAt), renderMarkdownWithFallback(comment.Body, renderer, width, "No comment body.")))
-	}
-	return strings.Join(sections, "\n\n")
+	commentCount := len(detail.Comments)
+	parts = append(parts, fmt.Sprintf("%s %s", detailCommentsIcon, formatCommentCount(commentCount)))
+
+	return strings.Join(parts, "  ·  ")
 }
 
 func renderMarkdownWithFallback(markdown string, renderer MarkdownRenderer, width int, emptyMessage string) string {
 	trimmedMarkdown := strings.TrimSpace(markdown)
 	if trimmedMarkdown == "" {
 		return emptyMessage
+	}
+	if renderer == nil {
+		renderer = glamourMarkdownRenderer{}
 	}
 
 	rendered, err := renderer.Render(trimmedMarkdown, width)
@@ -150,14 +178,19 @@ func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequ
 }
 
 func pullRequestTitleLine(title string, number int) string {
-	trimmedTitle := strings.TrimSpace(title)
-	if trimmedTitle == "" {
-		trimmedTitle = "Untitled pull request"
-	}
+	trimmedTitle := pullRequestTitleText(title)
 	if number <= 0 {
 		return trimmedTitle
 	}
 	return fmt.Sprintf("%s #%d", trimmedTitle, number)
+}
+
+func pullRequestTitleText(title string) string {
+	trimmedTitle := strings.TrimSpace(title)
+	if trimmedTitle == "" {
+		return "Untitled pull request"
+	}
+	return trimmedTitle
 }
 
 func pullRequestAuthorLogin(author *githubcli.PullRequestAuthor) string {
@@ -172,18 +205,6 @@ func pullRequestCommentAuthorLogin(author *githubcli.PullRequestCommentAuthor) s
 		return "-"
 	}
 	return formatLogin(author.Login)
-}
-
-func formatPullRequestLabels(labels []githubcli.PullRequestLabel) string {
-	if len(labels) == 0 {
-		return "-"
-	}
-
-	formattedLabels := make([]string, 0, len(labels))
-	for _, label := range labels {
-		formattedLabels = append(formattedLabels, valueOrDash(label.Name))
-	}
-	return strings.Join(formattedLabels, ", ")
 }
 
 func summarizeStatusChecks(checks []githubcli.PullRequestStatusCheck) string {
@@ -237,9 +258,8 @@ func mergeableText(mergeable string) string {
 	}
 }
 
-func formatChanges(changedFiles int, additions int, deletions int) string {
-	fileLabel := pluralize(changedFiles, "file", "files")
-	return fmt.Sprintf("%d %s +%d -%d", changedFiles, fileLabel, additions, deletions)
+func formatCommentCount(count int) string {
+	return fmt.Sprintf("%d %s", count, pluralize(count, "comment", "comments"))
 }
 
 func formatTimestamp(value string) string {
@@ -286,7 +306,20 @@ func normalizeRenderedMarkdown(rendered string) string {
 	withoutANSI := ansiPattern.ReplaceAllString(rendered, "")
 	lines := strings.Split(withoutANSI, "\n")
 	for index, line := range lines {
-		lines[index] = strings.TrimRight(line, " ")
+		trimmedRightLine := strings.TrimRight(line, " ")
+		trimmedRightLine = rawHeadingPattern.ReplaceAllString(trimmedRightLine, "")
+		lines[index] = trimmedRightLine
 	}
 	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func compactBranchLabel(label string) string {
+	runes := []rune(strings.TrimSpace(label))
+	if len(runes) <= maximumBranchLabelWidth {
+		return string(runes)
+	}
+
+	prefixWidth := maximumBranchLabelWidth/2 - 1
+	suffixWidth := maximumBranchLabelWidth - prefixWidth - 1
+	return string(runes[:prefixWidth]) + "…" + string(runes[len(runes)-suffixWidth:])
 }

@@ -109,6 +109,12 @@ func (program *Program) layout(gui *gocui.Gui) error {
 func (program *Program) configureDetailView(view *gocui.View) {
 	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	program.applyViewStyle(view, FocusDetailView, program.detailViewTitle(), false)
+	if program.shouldShowPullRequestDetailTabs() {
+		view.TitlePrefix = "[0]"
+		view.Tabs = program.detailTabLabels()
+		view.TabIndex = int(program.activeDetailTab)
+		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
+	}
 	view.Wrap = true
 }
 
@@ -203,7 +209,13 @@ func (program *Program) detailViewContent() string {
 				if result.err != nil {
 					return renderPullRequestDetailError(*row.Summary, result.err)
 				}
-				return renderPullRequestDetail(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
+
+				header := renderPullRequestDetailHeader(*row.Summary, result.detail)
+				content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
+				if program.activeDetailTab == CommentsDetailTab {
+					content = renderPullRequestCommentsTab(result.detail.Comments, program.markdownRenderer, program.detailWrapWidth)
+				}
+				return fmt.Sprintf("%s\n\n%s", header, content)
 			}
 			return renderPullRequestDetailLoading(*row.Summary)
 		}
