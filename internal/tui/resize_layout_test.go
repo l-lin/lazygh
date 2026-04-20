@@ -20,11 +20,18 @@ func TestCalculateMainPaneLayout_GivenHalfWidthResizeState_WhenCalculatingCoordi
 	then_paneFrameIs(t, actual.detail, 60, 0, 119, 29)
 }
 
-func TestCalculateMainPaneLayout_GivenFullscreenResizeState_WhenCalculatingCoordinates_ThenOnlyTheFullscreenPaneUsesTheWholeContentArea(t *testing.T) {
+func TestCalculateMainPaneLayout_GivenFullscreenResizeState_WhenCalculatingCoordinates_ThenOnlyTheFocusedSidePaneUsesTheWholeContentArea(t *testing.T) {
 	actual := calculateMainPaneLayout(120, 30, PaneLayoutFullscreen, FocusPullRequestsView)
 
 	then_paneVisibilityIs(t, actual, false, true, false)
 	then_paneFrameIs(t, actual.pullRequests, 0, 0, 119, 29)
+}
+
+func TestCalculateMainPaneLayout_GivenDetailFullscreenResizeState_WhenCalculatingCoordinates_ThenOnlyTheDetailPaneUsesTheWholeContentArea(t *testing.T) {
+	actual := calculateMainPaneLayout(120, 30, PaneLayoutFullscreen, FocusDetailView)
+
+	then_paneVisibilityIs(t, actual, false, false, true)
+	then_paneFrameIs(t, actual.detail, 0, 0, 119, 29)
 }
 
 func then_paneVisibilityIs(t *testing.T, actual mainPaneLayout, expectedUser bool, expectedPullRequests bool, expectedDetail bool) {

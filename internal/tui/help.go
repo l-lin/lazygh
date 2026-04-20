@@ -98,6 +98,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "k", Description: "Scroll up"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
+			{Key: "+/-", Description: "Toggle fullscreen"},
 			{Key: "/", Description: "Search detail"},
 			{Key: "<esc>", Description: "Return to previous view"},
 		}

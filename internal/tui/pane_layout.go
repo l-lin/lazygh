@@ -31,6 +31,9 @@ func calculateMainPaneLayout(maxX int, contentMaxY int, layoutSize PaneLayoutSiz
 		case FocusPullRequestsView:
 			layout.pullRequestsVisible = true
 			layout.pullRequests = fullscreenFrame
+		case FocusDetailView:
+			layout.detailVisible = true
+			layout.detail = fullscreenFrame
 		default:
 			layout.userVisible = true
 			layout.user = fullscreenFrame

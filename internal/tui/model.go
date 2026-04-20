@@ -44,6 +44,7 @@ type Model struct {
 	selectedPullRequestIndexes map[PullRequestTab]int
 	paneLayoutSize             PaneLayoutSize
 	fullscreenPane             Focus
+	detailFullscreenReturnSize PaneLayoutSize
 	searchActive               bool
 	searchTarget               Focus
 	searchTargetPullRequestTab PullRequestTab
@@ -185,7 +186,7 @@ func (model *Model) OpenDetail() {
 }
 
 func (model *Model) FocusDetailView() {
-	if model.paneLayoutSize == PaneLayoutFullscreen {
+	if model.paneLayoutSize == PaneLayoutFullscreen && model.fullscreenPane != FocusDetailView {
 		return
 	}
 
@@ -204,6 +205,9 @@ func (model *Model) FocusPullRequestsView() {
 func (model *Model) CloseDetail() {
 	if model.focus != FocusDetailView {
 		return
+	}
+	if model.paneLayoutSize == PaneLayoutFullscreen && model.fullscreenPane == FocusDetailView {
+		model.paneLayoutSize = model.detailFullscreenReturnSize
 	}
 
 	model.focus = model.currentSideFocus()

@@ -7,17 +7,17 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestKeybindingSpecs_GivenProgram_WhenListingResizeBindings_ThenPlusAndMinusExistOnlyInTheSideViews(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingResizeBindings_ThenPlusAndMinusExistInTheMainViewsOnly(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
-	for _, viewName := range []string{viewUserName, viewPullRequestsName} {
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: '+', handler: subject.growFocusedPane})
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: '-', handler: subject.shrinkFocusedPane})
 	}
 
-	for _, viewName := range []string{viewDetailName, viewSearchName, viewHelpName, viewActionsPopupName, viewActionsPopupSearchName, viewModalEditorName} {
+	for _, viewName := range []string{viewSearchName, viewHelpName, viewActionsPopupName, viewActionsPopupSearchName, viewModalEditorName} {
 		then_bindingDoesNotExist(t, actual, viewName, '+')
 		then_bindingDoesNotExist(t, actual, viewName, '-')
 	}
@@ -82,6 +82,69 @@ func TestPaneResize_GivenPullRequestsFocusWithAnAppliedSearch_WhenCyclingPlusThr
 	then_noError(t, actualErr)
 	if actual := strings.TrimSpace(pullRequestsFooterView.Buffer()); actual != "/2 (1 match)" {
 		t.Fatalf("expected pull requests footer %q after restoring the layout, actual %q", "/2 (1 match)", actual)
+	}
+}
+
+func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_ThenTheDetailPaneHidesTheSidePanesAndRestoresThemWithTheSameContext(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	model.StartSearch()
+	model.UpdateSearchDraft("detail 1")
+	model.SubmitSearch()
+
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	initialDetailX0, initialDetailY0, initialDetailX1, initialDetailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+
+	actualErr = subject.growFocusedPane(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewUserName)
+	then_viewDoesNotExist(t, gui, viewPullRequestsName)
+	then_viewExists(t, gui, viewDetailName)
+
+	detailX0, detailY0, detailX1, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	if detailX0 != 0 || detailY0 != 0 || detailX1 != 119 || detailY1 != 29 {
+		t.Fatalf("expected fullscreen detail frame (%d,%d)-(%d,%d), actual (%d,%d)-(%d,%d)", 0, 0, 119, 29, detailX0, detailY0, detailX1, detailY1)
+	}
+
+	detailFooterView, actualErr := gui.View(viewDetailFooterName)
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)" {
+		t.Fatalf("expected detail footer %q, actual %q", "/detail 1 (1 match)", actual)
+	}
+
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	if subject.model.Focus() != FocusDetailView {
+		t.Fatalf("expected focus %v while detail is fullscreen, actual %v", FocusDetailView, subject.model.Focus())
+	}
+
+	actualErr = subject.shrinkFocusedPane(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewExists(t, gui, viewUserName)
+	then_viewExists(t, gui, viewPullRequestsName)
+	then_viewExists(t, gui, viewDetailName)
+
+	detailX0, detailY0, detailX1, detailY1, actualErr = gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	if detailX0 != initialDetailX0 || detailY0 != initialDetailY0 || detailX1 != initialDetailX1 || detailY1 != initialDetailY1 {
+		t.Fatalf("expected restored detail frame (%d,%d)-(%d,%d), actual (%d,%d)-(%d,%d)", initialDetailX0, initialDetailY0, initialDetailX1, initialDetailY1, detailX0, detailY0, detailX1, detailY1)
+	}
+
+	detailFooterView, actualErr = gui.View(viewDetailFooterName)
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)" {
+		t.Fatalf("expected detail footer %q after restoring the layout, actual %q", "/detail 1 (1 match)", actual)
 	}
 }
 

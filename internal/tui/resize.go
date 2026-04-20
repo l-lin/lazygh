@@ -21,6 +21,10 @@ func (model *Model) GrowFocusedPane() {
 	if !ok {
 		return
 	}
+	if focus == FocusDetailView {
+		model.toggleDetailFullscreen()
+		return
+	}
 
 	switch model.paneLayoutSize {
 	case PaneLayoutHalfWidth:
@@ -36,6 +40,10 @@ func (model *Model) GrowFocusedPane() {
 func (model *Model) ShrinkFocusedPane() {
 	focus, ok := model.resizablePaneFocus()
 	if !ok {
+		return
+	}
+	if focus == FocusDetailView {
+		model.toggleDetailFullscreen()
 		return
 	}
 
@@ -55,11 +63,11 @@ func (model *Model) PaneVisible(focus Focus) bool {
 		return true
 	}
 
-	return focus == model.fullscreenPane && (focus == FocusUserView || focus == FocusPullRequestsView)
+	return focus == model.fullscreenPane && isMainPaneFocus(focus)
 }
 
 func (model *Model) resizablePaneFocus() (Focus, bool) {
-	if model.paneLayoutSize == PaneLayoutFullscreen && (model.fullscreenPane == FocusUserView || model.fullscreenPane == FocusPullRequestsView) {
+	if model.paneLayoutSize == PaneLayoutFullscreen && isMainPaneFocus(model.fullscreenPane) {
 		return model.fullscreenPane, true
 	}
 
@@ -68,7 +76,29 @@ func (model *Model) resizablePaneFocus() (Focus, bool) {
 		return FocusUserView, true
 	case FocusPullRequestsView:
 		return FocusPullRequestsView, true
+	case FocusDetailView:
+		return FocusDetailView, true
 	default:
 		return FocusUserView, false
+	}
+}
+
+func (model *Model) toggleDetailFullscreen() {
+	if model.paneLayoutSize == PaneLayoutFullscreen && model.fullscreenPane == FocusDetailView {
+		model.paneLayoutSize = model.detailFullscreenReturnSize
+		return
+	}
+
+	model.detailFullscreenReturnSize = model.paneLayoutSize
+	model.paneLayoutSize = PaneLayoutFullscreen
+	model.fullscreenPane = FocusDetailView
+}
+
+func isMainPaneFocus(focus Focus) bool {
+	switch focus {
+	case FocusUserView, FocusPullRequestsView, FocusDetailView:
+		return true
+	default:
+		return false
 	}
 }

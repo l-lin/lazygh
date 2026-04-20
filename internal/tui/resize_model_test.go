@@ -57,17 +57,46 @@ func TestShrinkFocusedPane_GivenPullRequestsFocus_WhenCyclingThroughTheResizeSta
 	}
 }
 
-func TestResizeFocusedPane_GivenDetailFocus_WhenGrowingOrShrinking_ThenTheLayoutStateDoesNotChange(t *testing.T) {
+func TestResizeFocusedPane_GivenDetailFocus_WhenGrowingOrShrinking_ThenItTogglesBetweenTheCurrentSplitAndFullscreenDetail(t *testing.T) {
 	subject := given_model()
 	subject.OpenDetail()
 
 	subject.GrowFocusedPane()
-	subject.ShrinkFocusedPane()
+	if subject.PaneLayoutSize() != PaneLayoutFullscreen {
+		t.Fatalf("expected layout size %v after growing the detail pane, actual %v", PaneLayoutFullscreen, subject.PaneLayoutSize())
+	}
+	if subject.FullscreenPane() != FocusDetailView {
+		t.Fatalf("expected fullscreen pane %v, actual %v", FocusDetailView, subject.FullscreenPane())
+	}
 
+	subject.ShrinkFocusedPane()
 	if subject.PaneLayoutSize() != PaneLayoutDefault {
-		t.Fatalf("expected layout size %v, actual %v", PaneLayoutDefault, subject.PaneLayoutSize())
+		t.Fatalf("expected layout size %v after shrinking the detail pane, actual %v", PaneLayoutDefault, subject.PaneLayoutSize())
 	}
 	if subject.Focus() != FocusDetailView {
 		t.Fatalf("expected focus %v, actual %v", FocusDetailView, subject.Focus())
+	}
+}
+
+func TestResizeFocusedPane_GivenHalfWidthLayoutAndDetailFocus_WhenTogglingFullscreen_ThenItRestoresTheHalfWidthSplit(t *testing.T) {
+	subject := given_model()
+	subject.FocusPullRequestsView()
+	subject.GrowFocusedPane()
+	subject.OpenDetail()
+
+	subject.GrowFocusedPane()
+	if subject.PaneLayoutSize() != PaneLayoutFullscreen {
+		t.Fatalf("expected layout size %v after growing the detail pane, actual %v", PaneLayoutFullscreen, subject.PaneLayoutSize())
+	}
+	if subject.FullscreenPane() != FocusDetailView {
+		t.Fatalf("expected fullscreen pane %v, actual %v", FocusDetailView, subject.FullscreenPane())
+	}
+
+	subject.GrowFocusedPane()
+	if subject.PaneLayoutSize() != PaneLayoutHalfWidth {
+		t.Fatalf("expected layout size %v after toggling the detail fullscreen off, actual %v", PaneLayoutHalfWidth, subject.PaneLayoutSize())
+	}
+	if subject.Focus() != FocusDetailView {
+		t.Fatalf("expected focus %v after restoring the split layout, actual %v", FocusDetailView, subject.Focus())
 	}
 }

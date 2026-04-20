@@ -195,6 +195,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewDetailName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewDetailName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewDetailName, key: gocui.KeyCtrlU, handler: program.pageUp},
+		{viewName: viewDetailName, key: '+', handler: program.growFocusedPane},
+		{viewName: viewDetailName, key: '-', handler: program.shrinkFocusedPane},
 		{viewName: viewDetailName, key: '[', handler: program.previousDetailTab},
 		{viewName: viewDetailName, key: ']', handler: program.nextDetailTab},
 		{viewName: viewDetailName, key: 'y', handler: program.copyPullRequestURL},
