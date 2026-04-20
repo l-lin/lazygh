@@ -1,10 +1,8 @@
 package tui
 
 import (
-	"regexp"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
@@ -54,12 +52,14 @@ type detailDocument struct {
 }
 
 type detailViewState struct {
-	cursor          detailPosition
-	originRow       int
-	preferredColumn int
-	mode            detailMode
-	visualAnchor    detailPosition
-	pendingGoToTop  bool
+	cursor             detailPosition
+	originRow          int
+	preferredColumn    int
+	mode               detailMode
+	visualAnchor       detailPosition
+	pendingGoToTop     bool
+	searchMatches      []detailSearchMatch
+	currentSearchMatch int
 }
 
 type detailCellStyle struct {
@@ -486,35 +486,8 @@ func (document detailDocument) rowSelectionText(startRow int, endRow int) string
 	return strings.Join(selectedRows, "\n")
 }
 
-func (document detailDocument) searchMatchRanges(query string) map[int][]detailColumnRange {
-	trimmedQuery := strings.TrimSpace(query)
-	if trimmedQuery == "" {
-		return nil
-	}
-
-	pattern := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(trimmedQuery))
-	matchRanges := map[int][]detailColumnRange{}
-	for lineIndex, line := range document.lines {
-		lineText := string(line)
-		matches := pattern.FindAllStringIndex(lineText, -1)
-		if len(matches) == 0 {
-			continue
-		}
-
-		lineRanges := make([]detailColumnRange, 0, len(matches))
-		for _, match := range matches {
-			start := utf8.RuneCountInString(lineText[:match[0]])
-			end := start + utf8.RuneCountInString(lineText[match[0]:match[1]])
-			lineRanges = append(lineRanges, detailColumnRange{start: start, end: end})
-		}
-		matchRanges[lineIndex] = lineRanges
-	}
-
-	return matchRanges
-}
-
 func newDetailViewState() detailViewState {
-	return detailViewState{}
+	return detailViewState{currentSearchMatch: -1}
 }
 
 func (state *detailViewState) sync(document detailDocument, viewportHeight int) {
@@ -552,7 +525,7 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 }
 
 func (state *detailViewState) reset() {
-	*state = detailViewState{}
+	*state = detailViewState{currentSearchMatch: -1}
 }
 
 func (state *detailViewState) clearPendingPrefix() {

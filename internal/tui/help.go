@@ -98,6 +98,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "0/$", Description: "Line start/end"},
 			{Key: "gg/G", Description: "First/last line"},
 			{Key: "w/e/b", Description: "Next/end/previous word"},
+			{Key: "n/N", Description: "Next/previous match"},
 			{Key: "v/V", Description: "Start char/line visual selection"},
 			{Key: "y", Description: "Yank selection / PR URL"},
 			{Key: "<c-d>", Description: "Page down"},

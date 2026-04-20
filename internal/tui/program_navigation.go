@@ -232,8 +232,21 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
+	target := program.model.SearchTarget()
 	program.model.SubmitSearch()
-	return program.closeSearch(gui)
+	program.searchEditor = nil
+
+	actualErr := gui.DeleteView(viewSearchName)
+	if actualErr != nil && !isUnknownViewError(actualErr) {
+		return actualErr
+	}
+	if target == FocusDetailView {
+		if actualErr := program.followSubmittedDetailSearch(gui); actualErr != nil {
+			return actualErr
+		}
+	}
+
+	return program.refreshViews(gui)
 }
 
 func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
@@ -276,6 +289,14 @@ func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
+	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, view, mutate); actualErr != nil {
+		return actualErr
+	}
+
+	return program.refreshDetailView(gui)
+}
+
+func (program *Program) mutateDetailViewStateWithoutRefresh(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
 	actualView := view
 	if actualView == nil && gui != nil {
 		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {
@@ -288,7 +309,7 @@ func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, 
 	program.syncDetailViewState(detailDocument, viewportHeight)
 	mutate(detailDocument, viewportHeight)
 	program.syncDetailViewState(detailDocument, viewportHeight)
-	return program.refreshDetailView(gui)
+	return nil
 }
 
 func (program *Program) refreshDetailView(gui *gocui.Gui) error {

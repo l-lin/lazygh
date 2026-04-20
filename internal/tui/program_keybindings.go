@@ -95,6 +95,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		keybindingDefinition{key: 'w', handler: program.moveDetailCursorToNextWord},
 		keybindingDefinition{key: 'e', handler: program.moveDetailCursorToWordEnd},
 		keybindingDefinition{key: 'b', handler: program.moveDetailCursorToPreviousWord},
+		keybindingDefinition{key: 'n', handler: program.nextDetailSearchMatch},
+		keybindingDefinition{key: 'N', handler: program.previousDetailSearchMatch},
 		keybindingDefinition{key: 'v', handler: program.enterDetailVisualMode},
 		keybindingDefinition{key: 'V', handler: program.enterDetailLineVisualMode},
 		keybindingDefinition{key: '[', handler: program.previousDetailTab},

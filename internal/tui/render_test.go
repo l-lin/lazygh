@@ -273,7 +273,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCurrentViewAndGl
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
-	for _, expected := range []string{"--- Local ---", "--- Global ---", "h/j/k/l", "Move cursor", "w/e/b", "Next/end/previous word", "v/V", "Start char/line visual selection", "?", "Toggle help", "tab", "Switch side view"} {
+	for _, expected := range []string{"--- Local ---", "--- Global ---", "h/j/k/l", "Move cursor", "w/e/b", "Next/end/previous word", "n/N", "Next/previous match", "v/V", "Start char/line visual selection", "?", "Toggle help", "tab", "Switch side view"} {
 		if !strings.Contains(actualBuffer, expected) {
 			t.Fatalf("expected help buffer to contain %q, actual %q", expected, actualBuffer)
 		}

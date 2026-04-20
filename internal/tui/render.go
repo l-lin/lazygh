@@ -191,7 +191,7 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	program.syncDetailViewState(detailDocument, view.InnerHeight())
 	view.Clear()
 
-	searchMatchRanges := detailDocument.searchMatchRanges(program.model.DetailSearchQuery())
+	searchMatchRanges := detailSearchMatchRanges(program.detailViewState.searchMatches)
 	for rowIndex, row := range detailDocument.rows {
 		if rowIndex > 0 {
 			fmt.Fprint(view, "\n")
@@ -271,6 +271,7 @@ func (program *Program) syncDetailViewState(detailDocument detailDocument, viewp
 	}
 
 	program.detailViewState.sync(detailDocument, viewportHeight)
+	program.detailViewState.syncSearch(detailDocument, program.model.DetailSearchQuery())
 }
 
 func (program *Program) pullRequestsTabLabels() []string {
