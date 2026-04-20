@@ -63,9 +63,9 @@ type PullRequestStatusCheck struct {
 }
 
 func (client *Client) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
-	result, err := client.runner.Run(ghBinaryName, "pr", "view", strconv.Itoa(number), "-R", strings.TrimSpace(repository), "--json", pullRequestDetailJSONFields)
+	result, err := client.runGH("gh pr view", "pr", "view", strconv.Itoa(number), "-R", strings.TrimSpace(repository), "--json", pullRequestDetailJSONFields)
 	if err != nil {
-		return PullRequestDetail{}, classifyCommandError("gh pr view", err, result.Stderr)
+		return PullRequestDetail{}, err
 	}
 
 	var detail PullRequestDetail

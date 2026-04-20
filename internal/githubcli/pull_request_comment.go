@@ -19,9 +19,8 @@ func (client *Client) CommentOnPullRequest(repository string, number int, body s
 		return err
 	}
 
-	result, err := client.runner.RunWithInput(ghBinaryName, []byte(body), "pr", "comment", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-")
-	if err != nil {
-		return classifyCommandError("gh pr comment", err, result.Stderr)
+	if _, err := client.runGHWithInput("gh pr comment", []byte(body), "pr", "comment", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-"); err != nil {
+		return err
 	}
 
 	return nil

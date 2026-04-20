@@ -7,6 +7,35 @@ import (
 	"testing"
 )
 
+func TestRunGH_GivenRunnerFailure_WhenExecutingTheCommand_ThenItReturnsTheClassifiedError(t *testing.T) {
+	runner := &fakeRunner{
+		stderr: []byte("To get started with GitHub CLI, please run: gh auth login"),
+		err:    errors.New("exit status 4"),
+	}
+	subject := NewClientWithRunner(runner)
+
+	_, actualErr := subject.runGH("gh api user", "api", "user")
+
+	then_commandIs(t, runner, "gh", []string{"api", "user"})
+	if !errors.Is(actualErr, ErrUnauthenticated) {
+		t.Fatalf("expected error %v, actual %v", ErrUnauthenticated, actualErr)
+	}
+}
+
+func TestRunGHWithInput_GivenStandardInput_WhenExecutingTheCommand_ThenItDelegatesToTheInputRunner(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte("ok")}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.runGHWithInput("gh pr comment", []byte("Ship it"), "pr", "comment", "42")
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"pr", "comment", "42"})
+	then_stdinIs(t, runner, "Ship it")
+	if string(actual.Stdout) != "ok" {
+		t.Fatalf("expected stdout %q, actual %q", "ok", string(actual.Stdout))
+	}
+}
+
 func TestGetConnectedUser_GivenValidGhResponse_WhenFetching_ThenReturnsTheConnectedUser(t *testing.T) {
 	runner := &fakeRunner{
 		stdout: []byte(`{"login":"octocat","name":"Mona Lisa Octocat","bio":"Mascot on call","company":"GitHub","location":"The Internet","public_repos":8,"followers":42,"html_url":"https://github.com/octocat"}`),

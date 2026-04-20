@@ -13,9 +13,8 @@ func (client *Client) ApprovePullRequest(repository string, number int) error {
 		return err
 	}
 
-	result, err := client.runner.Run(ghBinaryName, "pr", "review", strconv.Itoa(number), "-R", trimmedRepository, "--approve")
-	if err != nil {
-		return classifyCommandError("gh pr review", err, result.Stderr)
+	if _, err := client.runGH("gh pr review", "pr", "review", strconv.Itoa(number), "-R", trimmedRepository, "--approve"); err != nil {
+		return err
 	}
 
 	return nil
@@ -38,9 +37,8 @@ func (client *Client) submitPullRequestReviewWithBody(repository string, number 
 		return err
 	}
 
-	result, err := client.runner.RunWithInput(ghBinaryName, []byte(body), "pr", "review", strconv.Itoa(number), "-R", trimmedRepository, reviewArgument, "--body-file", "-")
-	if err != nil {
-		return classifyCommandError("gh pr review", err, result.Stderr)
+	if _, err := client.runGHWithInput("gh pr review", []byte(body), "pr", "review", strconv.Itoa(number), "-R", trimmedRepository, reviewArgument, "--body-file", "-"); err != nil {
+		return err
 	}
 
 	return nil

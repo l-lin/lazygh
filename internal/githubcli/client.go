@@ -58,9 +58,9 @@ func NewClientWithRunner(runner Runner) *Client {
 }
 
 func (client *Client) GetConnectedUser() (ConnectedUser, error) {
-	result, err := client.runner.Run(ghBinaryName, "api", "user")
+	result, err := client.runGH("gh api user", "api", "user")
 	if err != nil {
-		return ConnectedUser{}, classifyCommandError("gh api user", err, result.Stderr)
+		return ConnectedUser{}, err
 	}
 
 	var user ConnectedUser

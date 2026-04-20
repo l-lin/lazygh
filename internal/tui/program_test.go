@@ -7,6 +7,32 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
+func TestBindingsForViews_GivenMultipleViewsAndDefinitions_WhenExpanding_ThenItCreatesOneBindingPerCombinationInOrder(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := bindingsForViews(
+		[]string{viewUserName, viewDetailName},
+		keybindingDefinition{key: 'x', handler: subject.quit},
+		keybindingDefinition{key: gocui.KeyEnter, handler: subject.openDetail},
+	)
+
+	expected := []keybindingSpec{
+		{viewName: viewUserName, key: 'x', handler: subject.quit},
+		{viewName: viewUserName, key: gocui.KeyEnter, handler: subject.openDetail},
+		{viewName: viewDetailName, key: 'x', handler: subject.quit},
+		{viewName: viewDetailName, key: gocui.KeyEnter, handler: subject.openDetail},
+	}
+	if len(actual) != len(expected) {
+		t.Fatalf("expected %d bindings, actual %d", len(expected), len(actual))
+	}
+	for index, expectedBinding := range expected {
+		actualBinding := actual[index]
+		if actualBinding.viewName != expectedBinding.viewName || !reflect.DeepEqual(actualBinding.key, expectedBinding.key) || !sameHandler(actualBinding.handler, expectedBinding.handler) {
+			t.Fatalf("expected binding %+v at index %d, actual %+v", expectedBinding, index, actualBinding)
+		}
+	}
+}
+
 func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUsesBracketsForItsOwnTabsAndEscapeVariantsToClose(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 

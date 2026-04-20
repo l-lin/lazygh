@@ -128,25 +128,15 @@ func (program *Program) configureDetailView(view *gocui.View) {
 }
 
 func (program *Program) configureUserView(view *gocui.View) {
-	program.applyViewStyle(view, FocusUserView, program.userViewTitle(), true)
-	if program.usesManualSelectedLineRendering(program.model.UserSearchQuery()) {
-		view.Highlight = false
-		view.HighlightInactive = false
-	}
-	view.Wrap = false
+	program.configureSelectableListView(view, FocusUserView, program.userViewTitle(), program.model.UserSearchQuery())
 }
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
-	program.applyViewStyle(view, FocusPullRequestsView, program.pullRequestsViewTitle(), true)
-	if program.usesManualSelectedLineRendering(program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab())) {
-		view.Highlight = false
-		view.HighlightInactive = false
-	}
+	program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()))
 	view.TitlePrefix = "[2]"
 	view.Tabs = program.pullRequestsTabLabels()
 	view.TabIndex = int(program.model.ActivePullRequestTab())
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
-	view.Wrap = false
 }
 
 func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title string, selectable bool) {
@@ -176,41 +166,21 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 }
 
 func (program *Program) renderUserView(view *gocui.View) {
-	view.Clear()
-
-	query := program.model.UserSearchQuery()
-	visibleUsers := program.model.VisibleUsers()
-	if len(visibleUsers) == 0 && strings.TrimSpace(query) != "" {
-		fmt.Fprintln(view, searchNoMatchesMessage(query))
-		return
-	}
-
-	selectedVisibleIndex := program.model.SelectedVisibleUserIndex()
-	showSelectedLine := program.usesManualSelectedLineRendering(query) && program.shouldHighlightSelection(FocusUserView, true)
-	for visibleIndex, item := range visibleUsers {
-		program.renderHighlightedLine(view, item.Title, query, showSelectedLine && visibleIndex == selectedVisibleIndex)
-	}
-
-	program.selectListLine(view, selectedVisibleIndex)
+	program.renderSelectableListView(view, selectableListViewState{
+		focus:               FocusUserView,
+		query:               program.model.UserSearchQuery(),
+		items:               program.model.VisibleUsers(),
+		selectedVisibleLine: program.model.SelectedVisibleUserIndex(),
+	})
 }
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
-	view.Clear()
-
-	query := program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab())
-	visiblePullRequests := program.model.VisiblePullRequests()
-	if len(visiblePullRequests) == 0 && strings.TrimSpace(query) != "" {
-		fmt.Fprintln(view, searchNoMatchesMessage(query))
-		return
-	}
-
-	selectedVisibleIndex := program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab())
-	showSelectedLine := program.usesManualSelectedLineRendering(query) && program.shouldHighlightSelection(FocusPullRequestsView, true)
-	for visibleIndex, item := range visiblePullRequests {
-		program.renderHighlightedLine(view, item.Title, query, showSelectedLine && visibleIndex == selectedVisibleIndex)
-	}
-
-	program.selectListLine(view, selectedVisibleIndex)
+	program.renderSelectableListView(view, selectableListViewState{
+		focus:               FocusPullRequestsView,
+		query:               program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()),
+		items:               program.model.VisiblePullRequests(),
+		selectedVisibleLine: program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()),
+	})
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
@@ -221,20 +191,6 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	detailContent := program.detailViewContent()
 	highlightedContent, _ := highlightSearchMatches(detailContent, program.model.DetailSearchQuery())
 	fmt.Fprint(view, highlightedContent)
-}
-
-func (program *Program) renderHighlightedLine(view *gocui.View, text string, query string, selected bool) {
-	var highlightedText string
-	if selected {
-		highlightedText, _ = highlightSearchMatchesOnSelectedLine(text, query)
-	} else {
-		highlightedText, _ = highlightSearchMatches(text, query)
-	}
-	fmt.Fprintln(view, highlightedText)
-}
-
-func (program *Program) usesManualSelectedLineRendering(query string) bool {
-	return strings.TrimSpace(query) != ""
 }
 
 func (program *Program) detailViewContent() string {
@@ -322,30 +278,6 @@ func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
 	default:
 		return program.myPullRequestsCount, program.myPullRequestsCountKnown
 	}
-}
-
-func (program *Program) selectListLine(view *gocui.View, selectedIndex int) {
-	if view == nil || len(view.BufferLines()) == 0 {
-		return
-	}
-
-	visibleHeight := view.InnerHeight()
-	if visibleHeight < 1 {
-		visibleHeight = 1
-	}
-
-	originY := 0
-	cursorY := selectedIndex
-	if cursorY >= visibleHeight {
-		originY = cursorY - visibleHeight + 1
-		cursorY = visibleHeight - 1
-	}
-	if cursorY < 0 {
-		cursorY = 0
-	}
-
-	view.SetOrigin(0, originY)
-	view.SetCursor(0, cursorY)
 }
 
 func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) bool {

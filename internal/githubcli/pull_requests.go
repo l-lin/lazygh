@@ -39,9 +39,9 @@ func (client *Client) listPullRequests(commandName string, qualifiers ...string)
 	args = append(args, qualifiers...)
 	args = append(args, "--state", "open", "--json", pullRequestJSONFields)
 
-	result, err := client.runner.Run(ghBinaryName, args...)
+	result, err := client.runGH(commandName, args...)
 	if err != nil {
-		return nil, classifyCommandError(commandName, err, result.Stderr)
+		return nil, err
 	}
 
 	var pullRequests []PullRequest
