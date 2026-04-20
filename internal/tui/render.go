@@ -28,63 +28,34 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadRequestedPullRequests(gui)
 	program.maybeLoadSelectedPullRequestDetail(gui)
 
-	sidebarWidth := maxX * sidebarWidthPercent / 100
-	maxSidebarWidth := maxX - minimumDetailWidth
-	if maxSidebarWidth < minimumSidebarWidth {
-		sidebarWidth = maxX / 2
-	} else {
-		if sidebarWidth < minimumSidebarWidth {
-			sidebarWidth = minimumSidebarWidth
-		}
-		if sidebarWidth > maxSidebarWidth {
-			sidebarWidth = maxSidebarWidth
-		}
-	}
-	if sidebarWidth < 1 {
-		sidebarWidth = 1
-	}
+	mainPaneLayout := calculateMainPaneLayout(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane())
 
-	sidebarX1 := sidebarWidth - 1
-	detailX0 := sidebarX1 + 1
-	if detailX0 >= maxX {
-		detailX0 = maxX / 2
-		sidebarX1 = detailX0 - 1
-	}
-
-	userHeight := userViewTotalHeight
-	if userHeight >= contentMaxY {
-		userHeight = contentMaxY / 2
-	}
-	if userHeight < 2 {
-		userHeight = 2
-	}
-	userY1 := userHeight - 1
-	pullRequestsY0 := userY1 + 1
-	if pullRequestsY0 >= contentMaxY {
-		pullRequestsY0 = contentMaxY / 2
-		userY1 = pullRequestsY0 - 1
-	}
-
-	userView, err := gui.SetView(viewUserName, 0, 0, sidebarX1, userY1, 0)
-	if err != nil && !isUnknownViewError(err) {
+	userView, err := setPaneView(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user)
+	if err != nil {
 		return err
 	}
-	program.configureUserView(userView)
-	program.renderUserView(userView)
+	if userView != nil {
+		program.configureUserView(userView)
+		program.renderUserView(userView)
+	}
 
-	pullRequestsView, err := gui.SetView(viewPullRequestsName, 0, pullRequestsY0, sidebarX1, contentMaxY-1, 0)
-	if err != nil && !isUnknownViewError(err) {
+	pullRequestsView, err := setPaneView(gui, viewPullRequestsName, mainPaneLayout.pullRequestsVisible, mainPaneLayout.pullRequests)
+	if err != nil {
 		return err
 	}
-	program.configurePullRequestsView(pullRequestsView)
-	program.renderPullRequestsView(pullRequestsView)
+	if pullRequestsView != nil {
+		program.configurePullRequestsView(pullRequestsView)
+		program.renderPullRequestsView(pullRequestsView)
+	}
 
-	detailView, err := gui.SetView(viewDetailName, detailX0, 0, maxX-1, contentMaxY-1, 0)
-	if err != nil && !isUnknownViewError(err) {
+	detailView, err := setPaneView(gui, viewDetailName, mainPaneLayout.detailVisible, mainPaneLayout.detail)
+	if err != nil {
 		return err
 	}
-	program.configureDetailView(detailView)
-	program.renderDetailView(detailView)
+	if detailView != nil {
+		program.configureDetailView(detailView)
+		program.renderDetailView(detailView)
+	}
 
 	if err := program.layoutPaneFooterViews(gui); err != nil {
 		return err

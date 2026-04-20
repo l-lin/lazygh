@@ -42,6 +42,8 @@ type Model struct {
 	selectedUserIndex          int
 	activePullRequestTab       PullRequestTab
 	selectedPullRequestIndexes map[PullRequestTab]int
+	paneLayoutSize             PaneLayoutSize
+	fullscreenPane             Focus
 	searchActive               bool
 	searchTarget               Focus
 	searchTargetPullRequestTab PullRequestTab
@@ -158,7 +160,7 @@ func (model *Model) DetailContent() string {
 }
 
 func (model *Model) NextSideView() {
-	if model.focus == FocusDetailView {
+	if model.focus == FocusDetailView || model.paneLayoutSize == PaneLayoutFullscreen {
 		return
 	}
 
@@ -183,6 +185,10 @@ func (model *Model) OpenDetail() {
 }
 
 func (model *Model) FocusDetailView() {
+	if model.paneLayoutSize == PaneLayoutFullscreen {
+		return
+	}
+
 	model.lastSideFocus = model.currentSideFocus()
 	model.focus = FocusDetailView
 }
@@ -273,6 +279,9 @@ func (model *Model) currentSideFocus() Focus {
 
 func (model *Model) setSideFocus(focus Focus) {
 	if focus != FocusUserView && focus != FocusPullRequestsView {
+		return
+	}
+	if model.paneLayoutSize == PaneLayoutFullscreen && focus != model.fullscreenPane {
 		return
 	}
 

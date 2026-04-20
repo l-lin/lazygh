@@ -117,6 +117,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "k", Description: "Move up"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
+			{Key: "+/-", Description: "Resize panes"},
 			{Key: "/", Description: "Search pull requests"},
 			pullRequestYankHelpEntry(),
 			pullRequestCommentHelpEntry(),
@@ -131,6 +132,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "k", Description: "Move up"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
+			{Key: "+/-", Description: "Resize panes"},
 			{Key: "/", Description: "Search users"},
 			{Key: "<enter>", Description: "Open detail"},
 		}

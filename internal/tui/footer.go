@@ -34,13 +34,14 @@ func (program *Program) layoutPaneFooterViews(gui *gocui.Gui) error {
 }
 
 func (program *Program) layoutPaneFooterView(gui *gocui.Gui, focus Focus) error {
-	state := program.paneFooterStateFor(focus)
 	viewName := paneFooterViewName(focus)
+	if !program.model.PaneVisible(focus) {
+		return deleteViewIfPresent(gui, viewName)
+	}
+
+	state := program.paneFooterStateFor(focus)
 	if !state.Visible() {
-		if err := gui.DeleteView(viewName); err != nil && !isUnknownViewError(err) {
-			return err
-		}
-		return nil
+		return deleteViewIfPresent(gui, viewName)
 	}
 
 	view, err := program.layoutPaneBottomOverlayView(gui, viewName, paneViewName(focus))

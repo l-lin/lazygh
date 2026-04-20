@@ -173,6 +173,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewUserName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewUserName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewUserName, key: gocui.KeyCtrlU, handler: program.pageUp},
+		{viewName: viewUserName, key: '+', handler: program.growFocusedPane},
+		{viewName: viewUserName, key: '-', handler: program.shrinkFocusedPane},
 		{viewName: viewUserName, key: gocui.KeyEnter, handler: program.openDetail},
 		{viewName: viewUserName, key: 'y', handler: program.copyPullRequestURL},
 		{viewName: viewPullRequestsName, key: '/', handler: program.openSearch},
@@ -180,6 +182,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewPullRequestsName, key: 'k', handler: program.moveSelectionUp},
 		{viewName: viewPullRequestsName, key: gocui.KeyCtrlD, handler: program.pageDown},
 		{viewName: viewPullRequestsName, key: gocui.KeyCtrlU, handler: program.pageUp},
+		{viewName: viewPullRequestsName, key: '+', handler: program.growFocusedPane},
+		{viewName: viewPullRequestsName, key: '-', handler: program.shrinkFocusedPane},
 		{viewName: viewPullRequestsName, key: '[', handler: program.previousPullRequestTab},
 		{viewName: viewPullRequestsName, key: ']', handler: program.nextPullRequestTab},
 		{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: program.openDetail},
@@ -633,7 +637,12 @@ func (program *Program) currentViewName() string {
 		return viewSearchName
 	}
 
-	switch program.model.Focus() {
+	focus := program.model.Focus()
+	if !program.model.PaneVisible(focus) {
+		return paneViewName(program.model.FullscreenPane())
+	}
+
+	switch focus {
 	case FocusPullRequestsView:
 		return viewPullRequestsName
 	case FocusDetailView:
