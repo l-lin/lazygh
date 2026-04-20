@@ -18,7 +18,7 @@ const (
 	maximumBranchLabelWidth     = 28
 
 	detailDescriptionIcon = "󰈙"
-	detailCommentsIcon    = ""
+	detailCommentsIcon    = " "
 	detailRepositoryIcon  = ""
 	detailBranchIcon      = ""
 	detailStatusIcon      = ""
