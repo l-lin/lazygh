@@ -37,3 +37,42 @@ func TestLayout_GivenSubmittedUserSearchWithNoMatches_WhenRendering_ThenTheUserV
 		t.Fatalf("expected user view to show the no matches message, actual %q", userView.Buffer())
 	}
 }
+
+func TestLayout_GivenSubmittedUserSearchOnTheSelectedRow_WhenRendering_ThenTheUserViewKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
+	model := given_model()
+	model.MoveSelectionDown()
+	model.StartSearch()
+	model.UpdateSearchDraft("2")
+	model.SubmitSearch()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewUserName, 0, "dummy-user-")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewUserName, 0, "2")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewUserName, 0, "2")
+}
+
+func TestLayout_GivenSubmittedPullRequestsSearchOnTheSelectedRow_WhenRendering_ThenThePullRequestsViewKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.MoveSelectionDown()
+	model.StartSearch()
+	model.UpdateSearchDraft("2")
+	model.SubmitSearch()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, 0, "my-pr-")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewPullRequestsName, 0, "2")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewPullRequestsName, 0, "2")
+}

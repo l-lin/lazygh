@@ -95,6 +95,10 @@ func (program *Program) configureActionsPopupView(view *gocui.View) {
 	view.Editable = false
 	view.Highlight = true
 	view.HighlightInactive = true
+	if program.usesManualSelectedLineRendering(program.model.ActionsPopupSearchQuery()) {
+		view.Highlight = false
+		view.HighlightInactive = false
+	}
 	view.SelBgColor = gocui.GetColor(theme.SelectedLineBackgroundHex)
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	view.InactiveViewSelBgColor = gocui.GetColor(theme.SelectedLineBackgroundHex)
@@ -108,6 +112,7 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	view.Clear()
 	actions := program.currentActionsPopupActions()
 	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
+	query := program.model.ActionsPopupSearchQuery()
 	fmt.Fprintf(view, "%d of %d actions\n\n", len(filteredIndexes), len(actions))
 	if len(filteredIndexes) == 0 {
 		fmt.Fprintln(view, "No matching actions.")
@@ -116,14 +121,15 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 		return
 	}
 
-	for _, index := range filteredIndexes {
+	selectedVisibleIndex := program.model.ActionsPopupSelectedVisibleIndex()
+	showSelectedLine := program.usesManualSelectedLineRendering(query)
+	for visibleIndex, index := range filteredIndexes {
 		if index < 0 || index >= len(actions) {
 			continue
 		}
-		fmt.Fprintln(view, actions[index].title)
+		program.renderHighlightedLine(view, actions[index].title, query, showSelectedLine && visibleIndex == selectedVisibleIndex)
 	}
 
-	selectedVisibleIndex := program.model.ActionsPopupSelectedVisibleIndex()
 	if selectedVisibleIndex < 0 {
 		selectedVisibleIndex = 0
 	}

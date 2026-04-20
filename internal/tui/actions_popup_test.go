@@ -195,6 +195,36 @@ func TestActionsPopup_GivenKeywordSearch_WhenFiltering_ThenItCanFindReviewAndEdi
 	}
 }
 
+func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "review" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 2, "Review")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 2, ": Approve PR")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 2, "Review")
+}
+
 func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThePreviousPromptText(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)

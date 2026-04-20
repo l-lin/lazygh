@@ -11,28 +11,43 @@ import (
 const ansiReset = "\x1b[0m"
 
 func highlightSearchMatches(text string, query string) (string, int) {
+	return highlightSearchMatchesWithBasePrefix(text, query, "")
+}
+
+func highlightSearchMatchesOnSelectedLine(text string, query string) (string, int) {
+	return highlightSearchMatchesWithBasePrefix(text, query, backgroundColorEscape(theme.SelectedLineBackgroundHex))
+}
+
+func highlightSearchMatchesWithBasePrefix(text string, query string, basePrefix string) (string, int) {
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" {
-		return text, 0
+		return applyPrefix(text, basePrefix), 0
 	}
 
 	pattern := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(trimmedQuery))
 	matches := pattern.FindAllStringIndex(text, -1)
 	if len(matches) == 0 {
-		return text, 0
+		return applyPrefix(text, basePrefix), 0
 	}
 
+	matchPrefix := backgroundColorEscape(theme.SearchHighlightHex)
 	var builder strings.Builder
 	previousIndex := 0
 	for _, match := range matches {
-		builder.WriteString(text[previousIndex:match[0]])
-		builder.WriteString(backgroundColorEscape(theme.SearchHighlightHex))
-		builder.WriteString(text[match[0]:match[1]])
-		builder.WriteString(ansiReset)
+		builder.WriteString(applyPrefix(text[previousIndex:match[0]], basePrefix))
+		builder.WriteString(applyPrefix(text[match[0]:match[1]], matchPrefix))
 		previousIndex = match[1]
 	}
-	builder.WriteString(text[previousIndex:])
+	builder.WriteString(applyPrefix(text[previousIndex:], basePrefix))
 	return builder.String(), len(matches)
+}
+
+func applyPrefix(text string, prefix string) string {
+	if text == "" || prefix == "" {
+		return text
+	}
+
+	return prefix + text + ansiReset
 }
 
 func countSearchMatches(text string, query string) int {
