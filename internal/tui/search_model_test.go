@@ -101,6 +101,30 @@ func TestCancelSearch_GivenExistingAppliedUserQuery_WhenCancelingNewDraft_ThenTh
 	}
 }
 
+func TestStartSearch_GivenAppliedQueriesInOtherViews_WhenStartingPullRequestsSearch_ThenItClearsTheOtherViewQueries(t *testing.T) {
+	subject := given_model()
+	subject.userSearchQuery = "dummy"
+	subject.detailSearchQuery = "detail"
+	subject.pullRequestSearchQueries[MyPullRequestsTab] = "mine"
+	subject.pullRequestSearchQueries[RequestedPullRequestsTab] = "requested"
+	subject.FocusPullRequestsView()
+
+	subject.StartSearch()
+
+	if subject.UserSearchQuery() != "" {
+		t.Fatalf("expected the user search query to be cleared, actual %q", subject.UserSearchQuery())
+	}
+	if subject.DetailSearchQuery() != "" {
+		t.Fatalf("expected the detail search query to be cleared, actual %q", subject.DetailSearchQuery())
+	}
+	if subject.pullRequestSearchQueries[MyPullRequestsTab] != "mine" {
+		t.Fatalf("expected my PR query %q, actual %q", "mine", subject.pullRequestSearchQueries[MyPullRequestsTab])
+	}
+	if subject.pullRequestSearchQueries[RequestedPullRequestsTab] != "requested" {
+		t.Fatalf("expected requested PR query %q, actual %q", "requested", subject.pullRequestSearchQueries[RequestedPullRequestsTab])
+	}
+}
+
 func given_titles(items []Item) []string {
 	titles := make([]string, 0, len(items))
 	for _, item := range items {

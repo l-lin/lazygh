@@ -22,6 +22,7 @@ func (model *Model) StartSearch() {
 	model.searchActive = true
 	model.searchTarget = model.focus
 	model.searchTargetPullRequestTab = model.activePullRequestTab
+	model.clearAppliedSearchQueriesForOtherViews(model.searchTarget)
 	model.searchDraft = ""
 	model.clampSearchSelectionForTarget(model.searchTarget, model.searchTargetPullRequestTab, model.searchDraft)
 }
@@ -173,6 +174,32 @@ func (model *Model) appliedSearchQuery(target Focus, tab PullRequestTab) string 
 		return model.detailSearchQuery
 	default:
 		return model.userSearchQuery
+	}
+}
+
+func (model *Model) ClearPaneSearchQueries() {
+	model.userSearchQuery = ""
+	model.detailSearchQuery = ""
+	for tab := range model.pullRequestSearchQueries {
+		model.pullRequestSearchQueries[tab] = ""
+	}
+}
+
+func (model *Model) clearAppliedSearchQueriesForOtherViews(target Focus) {
+	switch target {
+	case FocusPullRequestsView:
+		model.userSearchQuery = ""
+		model.detailSearchQuery = ""
+	case FocusDetailView:
+		model.userSearchQuery = ""
+		for tab := range model.pullRequestSearchQueries {
+			model.pullRequestSearchQueries[tab] = ""
+		}
+	default:
+		model.detailSearchQuery = ""
+		for tab := range model.pullRequestSearchQueries {
+			model.pullRequestSearchQueries[tab] = ""
+		}
 	}
 }
 

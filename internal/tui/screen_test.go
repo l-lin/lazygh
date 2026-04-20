@@ -50,6 +50,19 @@ func then_viewLineSegmentIsNotUnderlined(t *testing.T, gui *gocui.Gui, viewName 
 	}
 }
 
+func then_viewLineSegmentIsBold(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) {
+	t.Helper()
+
+	cells, width, x, y := given_screenCellsForViewSegment(t, gui, viewName, lineIndex, segment)
+	for offset := range utf8.RuneCountInString(segment) {
+		actualCell := cells[(y*width)+(x+offset)]
+		_, _, attributes := actualCell.Style.Decompose()
+		if attributes&tcell.AttrBold == 0 {
+			t.Fatalf("expected bold text at %s line %d offset %d, actual attributes %#x", viewName, lineIndex, offset, attributes)
+		}
+	}
+}
+
 func given_screenCellsForViewSegment(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) ([]tcell.SimCell, int, int, int) {
 	t.Helper()
 

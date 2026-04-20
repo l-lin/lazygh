@@ -214,7 +214,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		{viewName: viewActionsPopupName, key: gocui.KeyEnter, handler: program.executeSelectedActionsPopupAction},
 		{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: program.closeActionsPopup},
 		{viewName: viewActionsPopupName, key: gocui.KeyCtrlLsqBracket, handler: program.closeActionsPopup},
-		{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: program.executeSelectedActionsPopupAction},
+		{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: program.focusActionsPopupList},
 		{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: program.closeActionsPopup},
 		{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlLsqBracket, handler: program.closeActionsPopup},
 		{viewName: viewActionsPopupSearchName, key: gocui.KeyTab, handler: program.focusActionsPopupList},

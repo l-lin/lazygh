@@ -55,6 +55,8 @@ func TestLayout_GivenSubmittedUserSearchOnTheSelectedRow_WhenRendering_ThenTheUs
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewUserName, 0, "dummy-user-")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewUserName, 0, "2")
 	then_viewLineSegmentIsNotUnderlined(t, gui, viewUserName, 0, "2")
+	then_viewLineSegmentIsBold(t, gui, viewUserName, 0, "dummy-user-")
+	then_viewLineSegmentIsBold(t, gui, viewUserName, 0, "2")
 }
 
 func TestLayout_GivenSubmittedPullRequestsSearchOnTheSelectedRow_WhenRendering_ThenThePullRequestsViewKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
@@ -75,4 +77,6 @@ func TestLayout_GivenSubmittedPullRequestsSearchOnTheSelectedRow_WhenRendering_T
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, 0, "my-pr-")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewPullRequestsName, 0, "2")
 	then_viewLineSegmentIsNotUnderlined(t, gui, viewPullRequestsName, 0, "2")
+	then_viewLineSegmentIsBold(t, gui, viewPullRequestsName, 0, "my-pr-")
+	then_viewLineSegmentIsBold(t, gui, viewPullRequestsName, 0, "2")
 }

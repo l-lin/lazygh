@@ -64,6 +64,7 @@ func (program *Program) focusActionsPopupSearch(gui *gocui.Gui, _ *gocui.View) e
 		return nil
 	}
 
+	program.model.ClearPaneSearchQueries()
 	program.actionsPopupSearchEditor = newLineEditor("")
 	program.updateActionsPopupSearch("")
 	program.model.FocusActionsPopupSearch()

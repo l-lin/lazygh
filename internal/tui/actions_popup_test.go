@@ -22,7 +22,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'k', handler: subject.moveActionsPopupSelectionUp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.focusActionsPopupList})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyTab, handler: subject.focusActionsPopupList})
 }
@@ -223,6 +223,78 @@ func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeeps
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 2, "Review")
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 2, ": Approve PR")
 	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 2, "Review")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, "Review")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, ": Approve PR")
+}
+
+func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSearchingWithoutExecutingTheAction(t *testing.T) {
+	clipboardWriter := &fakeClipboardWriter{}
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.clipboardWriter = clipboardWriter
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "clipboard" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	actualErr = actualHandler(gui, searchView)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+	if subject.model.ActionsPopupSearchActive() {
+		t.Fatal("expected the popup search to stop")
+	}
+	if subject.model.ActionsPopupSelectedActionIndex() != 1 {
+		t.Fatalf("expected selected action index 1, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	}
+	if len(clipboardWriter.writes) != 0 {
+		t.Fatalf("expected no clipboard writes, actual %v", clipboardWriter.writes)
+	}
+}
+
+func TestActionsPopupSearch_GivenAppliedViewSearches_WhenStartingThePopupSearch_ThenItClearsTheOtherViewHighlights(t *testing.T) {
+	model := given_pullRequestCommentModel()
+	model.userSearchQuery = "dummy"
+	model.pullRequestSearchQueries[MyPullRequestsTab] = "widgets"
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	then_viewExists(t, gui, viewUserFooterName)
+	then_viewExists(t, gui, viewPullRequestsFooterName)
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	if subject.model.UserSearchQuery() != "" {
+		t.Fatalf("expected the user search query to be cleared, actual %q", subject.model.UserSearchQuery())
+	}
+	if subject.model.PullRequestSearchQuery(MyPullRequestsTab) != "" {
+		t.Fatalf("expected the pull request search query to be cleared, actual %q", subject.model.PullRequestSearchQuery(MyPullRequestsTab))
+	}
+	then_viewDoesNotExist(t, gui, viewUserFooterName)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThePreviousPromptText(t *testing.T) {

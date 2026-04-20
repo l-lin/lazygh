@@ -8,17 +8,26 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-const ansiReset = "\x1b[0m"
+const (
+	ansiReset = "\x1b[0m"
+	ansiBold  = "\x1b[1m"
+)
 
 func highlightSearchMatches(text string, query string) (string, int) {
 	return highlightSearchMatchesWithBasePrefix(text, query, "")
 }
 
 func highlightSearchMatchesOnSelectedLine(text string, query string) (string, int) {
-	return highlightSearchMatchesWithBasePrefix(text, query, backgroundColorEscape(theme.SelectedLineBackgroundHex))
+	selectedLinePrefix := ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+	selectedMatchPrefix := ansiBold + backgroundColorEscape(theme.SearchHighlightHex)
+	return highlightSearchMatchesWithPrefixes(text, query, selectedLinePrefix, selectedMatchPrefix)
 }
 
 func highlightSearchMatchesWithBasePrefix(text string, query string, basePrefix string) (string, int) {
+	return highlightSearchMatchesWithPrefixes(text, query, basePrefix, backgroundColorEscape(theme.SearchHighlightHex))
+}
+
+func highlightSearchMatchesWithPrefixes(text string, query string, basePrefix string, matchPrefix string) (string, int) {
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" {
 		return applyPrefix(text, basePrefix), 0
@@ -30,7 +39,6 @@ func highlightSearchMatchesWithBasePrefix(text string, query string, basePrefix 
 		return applyPrefix(text, basePrefix), 0
 	}
 
-	matchPrefix := backgroundColorEscape(theme.SearchHighlightHex)
 	var builder strings.Builder
 	previousIndex := 0
 	for _, match := range matches {
