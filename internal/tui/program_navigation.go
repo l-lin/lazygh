@@ -122,6 +122,12 @@ func (program *Program) moveDetailCursorToNextWord(gui *gocui.Gui, view *gocui.V
 	})
 }
 
+func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToWordEnd(document, viewportHeight)
+	})
+}
+
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.moveToPreviousWord(document, viewportHeight)
@@ -131,6 +137,13 @@ func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *goc
 func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.enterVisualMode()
+		program.detailViewState.sync(document, viewportHeight)
+	})
+}
+
+func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.enterLineVisualMode(document)
 		program.detailViewState.sync(document, viewportHeight)
 	})
 }
@@ -197,7 +210,7 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 	if program.detailTransitionBlocked() {
 		return nil
 	}
-	if program.model.Focus() == FocusDetailView && program.detailViewState.mode == detailVisualMode {
+	if program.model.Focus() == FocusDetailView && program.detailViewState.mode.isVisual() {
 		program.detailViewState.exitVisualMode()
 		return program.refreshDetailView(gui)
 	}

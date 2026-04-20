@@ -64,13 +64,16 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenControlDAndC
 	}
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsJAndKScrolling(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsWordAndLineVisualMotions(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'j', handler: subject.moveSelectionDown})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'k', handler: subject.moveSelectionUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'e', handler: subject.moveDetailCursorToWordEnd})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'b', handler: subject.moveDetailCursorToPreviousWord})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'V', handler: subject.enterDetailLineVisualMode})
 }
 
 func TestKeybindingSpecs_GivenProgram_WhenListingHelpBindings_ThenQuestionMarkTogglesThePopupFromAnyMainPaneAndEscapeVariantsCloseIt(t *testing.T) {

@@ -22,7 +22,7 @@ func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) err
 	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
-	if program.model.Focus() == FocusDetailView && program.detailViewState.mode == detailVisualMode {
+	if program.model.Focus() == FocusDetailView && program.detailViewState.mode.isVisual() {
 		return program.copySelectedDetailText(gui, view)
 	}
 

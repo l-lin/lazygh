@@ -48,8 +48,11 @@ func TestDetailViewState_GivenRenderedDetailText_WhenUsingVimMotions_ThenItNavig
 	document := newDetailDocument("abc def\nghi jkl", 4)
 	subject := newDetailViewState()
 
-	subject.moveToNextWord(document, 3)
-	then_detailCursorIs(t, subject, detailPosition{line: 0, column: 4})
+	subject.moveToWordEnd(document, 3)
+	then_detailCursorIs(t, subject, detailPosition{line: 0, column: 2})
+
+	subject.moveToWordEnd(document, 3)
+	then_detailCursorIs(t, subject, detailPosition{line: 0, column: 6})
 
 	subject.moveToNextWord(document, 3)
 	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 0})
@@ -107,6 +110,26 @@ func TestDetailViewState_GivenVisualMode_WhenMovingTheCursor_ThenTheAnchorStaysF
 	then_detailSelectionIs(t, document, subject, detailPosition{line: 0, column: 1}, detailPosition{line: 0, column: 2})
 }
 
+func TestDetailViewState_GivenLinewiseVisualMode_WhenMovingTheCursor_ThenItSelectsEntireRenderedRows(t *testing.T) {
+	document := newDetailDocument("abcd1234\nefgh", 4)
+	subject := newDetailViewState()
+
+	subject.moveDown(document, 2)
+	subject.enterLineVisualMode(document)
+	if subject.mode != detailLineVisualMode {
+		t.Fatalf("expected mode %v, actual %v", detailLineVisualMode, subject.mode)
+	}
+	if actual := subject.selectedText(document); actual != "1234" {
+		t.Fatalf("expected selected text %q, actual %q", "1234", actual)
+	}
+
+	subject.moveDown(document, 2)
+	then_detailSelectedRowsAre(t, document, subject, 1, 2)
+	if actual := subject.selectedText(document); actual != "1234\nefgh" {
+		t.Fatalf("expected selected text %q, actual %q", "1234\nefgh", actual)
+	}
+}
+
 func TestLayout_GivenDetailFocus_WhenRendering_ThenItShowsTheCursorInTheDetailPane(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha Beta"}}})
 	model.OpenDetail()
@@ -158,6 +181,47 @@ func TestLayout_GivenDetailVisualSelectionOverASearchMatch_WhenRendering_ThenThe
 	}
 
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewDetailName, 3, "Alpha")
+}
+
+func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha\nBeta\nGamma"}}})
+	model.OpenDetail()
+	clipboardWriter := &fakeClipboardWriter{}
+	subject := NewProgramWithModel(model)
+	subject.clipboardWriter = clipboardWriter
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+
+	for range 4 {
+		actualErr = subject.moveSelectionDown(gui, detailView)
+		then_noError(t, actualErr)
+	}
+	actualErr = subject.enterDetailLineVisualMode(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = subject.moveSelectionDown(gui, detailView)
+	then_noError(t, actualErr)
+
+	actualErr = subject.copyPullRequestURL(gui, detailView)
+	then_noError(t, actualErr)
+
+	if actual := clipboardWriter.writes; len(actual) != 1 || actual[0] != "Beta\nGamma" {
+		t.Fatalf("expected clipboard writes %v, actual %v", []string{"Beta\nGamma"}, actual)
+	}
+	if subject.detailViewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailViewState.mode)
+	}
+
+	detailFooterView, actualErr := gui.View(viewDetailFooterName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailFooterView.Buffer(), detailYankSuccessMessage) {
+		t.Fatalf("expected detail footer to contain %q, actual %q", detailYankSuccessMessage, detailFooterView.Buffer())
+	}
 }
 
 func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
@@ -295,5 +359,17 @@ func then_detailSelectionIs(t *testing.T, document detailDocument, subject detai
 	}
 	if actualStart != expectedStart || actualEnd != expectedEnd {
 		t.Fatalf("expected detail selection %+v..%+v, actual %+v..%+v", expectedStart, expectedEnd, actualStart, actualEnd)
+	}
+}
+
+func then_detailSelectedRowsAre(t *testing.T, document detailDocument, subject detailViewState, expectedStart int, expectedEnd int) {
+	t.Helper()
+
+	actualStart, actualEnd, actualOk := subject.visualRowSelection(document)
+	if !actualOk {
+		t.Fatal("expected a linewise visual selection")
+	}
+	if actualStart != expectedStart || actualEnd != expectedEnd {
+		t.Fatalf("expected selected rows %d..%d, actual %d..%d", expectedStart, expectedEnd, actualStart, actualEnd)
 	}
 }

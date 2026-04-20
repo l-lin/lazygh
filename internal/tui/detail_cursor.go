@@ -19,7 +19,12 @@ type detailMode int
 const (
 	detailNormalMode detailMode = iota
 	detailVisualMode
+	detailLineVisualMode
 )
+
+func (mode detailMode) isVisual() bool {
+	return mode == detailVisualMode || mode == detailLineVisualMode
+}
 
 type detailPosition struct {
 	line   int
@@ -353,6 +358,40 @@ func (document detailDocument) moveToNextWord(position detailPosition) detailPos
 	return document.positionForGlobalIndex(cursor)
 }
 
+func (document detailDocument) moveToWordEnd(position detailPosition) detailPosition {
+	if len(document.text) == 0 {
+		return position
+	}
+
+	cursor := document.globalIndex(position)
+	if cursor >= len(document.text) {
+		return document.lastPosition()
+	}
+
+	if unicode.IsSpace(document.text[cursor]) {
+		for cursor < len(document.text) && unicode.IsSpace(document.text[cursor]) {
+			cursor++
+		}
+		if cursor >= len(document.text) {
+			return document.lastPosition()
+		}
+	} else if cursor+1 < len(document.text) && unicode.IsSpace(document.text[cursor+1]) {
+		cursor++
+		for cursor < len(document.text) && unicode.IsSpace(document.text[cursor]) {
+			cursor++
+		}
+		if cursor >= len(document.text) {
+			return document.lastPosition()
+		}
+	}
+
+	for cursor+1 < len(document.text) && !unicode.IsSpace(document.text[cursor+1]) {
+		cursor++
+	}
+
+	return document.positionForGlobalIndex(cursor)
+}
+
 func (document detailDocument) moveToPreviousWord(position detailPosition) detailPosition {
 	if len(document.text) == 0 {
 		return position
@@ -429,6 +468,24 @@ func (document detailDocument) selectionText(start detailPosition, end detailPos
 	return builder.String()
 }
 
+func (document detailDocument) rowSelectionText(startRow int, endRow int) string {
+	if len(document.rows) == 0 {
+		return ""
+	}
+	if startRow > endRow {
+		startRow, endRow = endRow, startRow
+	}
+
+	startRow = clampIndex(startRow, len(document.rows))
+	endRow = clampIndex(endRow, len(document.rows))
+	selectedRows := make([]string, 0, endRow-startRow+1)
+	for rowIndex := startRow; rowIndex <= endRow; rowIndex++ {
+		selectedRows = append(selectedRows, document.rows[rowIndex].text)
+	}
+
+	return strings.Join(selectedRows, "\n")
+}
+
 func (document detailDocument) searchMatchRanges(query string) map[int][]detailColumnRange {
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" {
@@ -466,7 +523,7 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 	}
 
 	state.cursor = document.clampPosition(state.cursor)
-	if state.mode == detailVisualMode {
+	if state.mode.isVisual() {
 		state.visualAnchor = document.clampPosition(state.visualAnchor)
 	} else {
 		state.visualAnchor = state.cursor
@@ -510,6 +567,16 @@ func (state *detailViewState) enterVisualMode() {
 
 	state.mode = detailVisualMode
 	state.visualAnchor = state.cursor
+}
+
+func (state *detailViewState) enterLineVisualMode(document detailDocument) {
+	state.clearPendingPrefix()
+	if state.mode == detailLineVisualMode {
+		return
+	}
+
+	state.mode = detailLineVisualMode
+	state.visualAnchor = document.moveToRowStart(state.cursor)
 }
 
 func (state *detailViewState) exitVisualMode() {
@@ -604,6 +671,13 @@ func (state *detailViewState) moveToNextWord(document detailDocument, viewportHe
 	state.sync(document, viewportHeight)
 }
 
+func (state *detailViewState) moveToWordEnd(document detailDocument, viewportHeight int) {
+	state.clearPendingPrefix()
+	state.cursor = document.moveToWordEnd(state.cursor)
+	state.preferredColumn = document.screenColumnForPosition(state.cursor)
+	state.sync(document, viewportHeight)
+}
+
 func (state *detailViewState) moveToPreviousWord(document detailDocument, viewportHeight int) {
 	state.clearPendingPrefix()
 	state.cursor = document.moveToPreviousWord(state.cursor)
@@ -625,7 +699,25 @@ func (state detailViewState) visualSelection(document detailDocument) (detailPos
 	return start, end, true
 }
 
+func (state detailViewState) visualRowSelection(document detailDocument) (int, int, bool) {
+	if state.mode != detailLineVisualMode {
+		return 0, 0, false
+	}
+
+	startRow := document.rowIndexForPosition(state.visualAnchor)
+	endRow := document.rowIndexForPosition(state.cursor)
+	if startRow > endRow {
+		startRow, endRow = endRow, startRow
+	}
+
+	return startRow, endRow, true
+}
+
 func (state detailViewState) selectedText(document detailDocument) string {
+	if startRow, endRow, ok := state.visualRowSelection(document); ok {
+		return document.rowSelectionText(startRow, endRow)
+	}
+
 	start, end, ok := state.visualSelection(document)
 	if !ok {
 		return ""
@@ -635,6 +727,11 @@ func (state detailViewState) selectedText(document detailDocument) string {
 }
 
 func (state detailViewState) isPositionSelected(document detailDocument, position detailPosition) bool {
+	if startRow, endRow, ok := state.visualRowSelection(document); ok {
+		rowIndex := document.rowIndexForPosition(position)
+		return startRow <= rowIndex && rowIndex <= endRow
+	}
+
 	start, end, ok := state.visualSelection(document)
 	if !ok {
 		return false
@@ -655,7 +752,7 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 	line := document.lines[row.line]
 	rowRunes := line[row.startColumn : row.endColumn+1]
 	lineMatchRanges := searchMatchRanges[row.line]
-	if len(lineMatchRanges) == 0 && state.mode != detailVisualMode {
+	if len(lineMatchRanges) == 0 && !state.mode.isVisual() {
 		return row.text
 	}
 
