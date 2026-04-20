@@ -30,10 +30,16 @@ func TestCopyPullRequestURL_GivenPullRequestsView_WhenHandlingTheAction_ThenItCo
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
 	}
 
+	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), yankSuccessMessage) {
+		t.Fatalf("expected pull request footer to contain %q, actual %q", yankSuccessMessage, pullRequestsFooterView.Buffer())
+	}
+
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.TitlePrefix, yankSuccessMessage) {
-		t.Fatalf("expected pull request title prefix to contain %q, actual %q", yankSuccessMessage, pullRequestsView.TitlePrefix)
+	if strings.Contains(pullRequestsView.TitlePrefix, yankSuccessMessage) || strings.Contains(pullRequestsView.Title, yankSuccessMessage) {
+		t.Fatalf("expected pull request titles to stay stable, actual title=%q prefix=%q", pullRequestsView.Title, pullRequestsView.TitlePrefix)
 	}
 }
 
@@ -61,10 +67,16 @@ func TestCopyPullRequestURL_GivenDetailViewAndCachedDetailURL_WhenHandlingTheAct
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/canonical"}, clipboardWriter.writes)
 	}
 
+	detailFooterView, actualErr := gui.View("detail-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(detailFooterView.Buffer(), yankSuccessMessage) {
+		t.Fatalf("expected detail footer to contain %q, actual %q", yankSuccessMessage, detailFooterView.Buffer())
+	}
+
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.TitlePrefix, yankSuccessMessage) {
-		t.Fatalf("expected detail title prefix to contain %q, actual %q", yankSuccessMessage, detailView.TitlePrefix)
+	if strings.Contains(detailView.TitlePrefix, yankSuccessMessage) || strings.Contains(detailView.Title, yankSuccessMessage) {
+		t.Fatalf("expected detail titles to stay stable, actual title=%q prefix=%q", detailView.Title, detailView.TitlePrefix)
 	}
 }
 
@@ -85,10 +97,16 @@ func TestCopyPullRequestURL_GivenUserView_WhenHandlingTheAction_ThenItShowsHarml
 		t.Fatalf("expected no clipboard writes, actual %v", clipboardWriter.writes)
 	}
 
+	userFooterView, actualErr := gui.View("user-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(userFooterView.Buffer(), yankUnavailableMessage) {
+		t.Fatalf("expected user footer to contain %q, actual %q", yankUnavailableMessage, userFooterView.Buffer())
+	}
+
 	userView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
-	if !strings.Contains(userView.Title, yankUnavailableMessage) {
-		t.Fatalf("expected user title to contain %q, actual %q", yankUnavailableMessage, userView.Title)
+	if strings.Contains(userView.Title, yankUnavailableMessage) || strings.Contains(userView.TitlePrefix, yankUnavailableMessage) {
+		t.Fatalf("expected user titles to stay stable, actual title=%q prefix=%q", userView.Title, userView.TitlePrefix)
 	}
 }
 
@@ -110,10 +128,16 @@ func TestCopyPullRequestURL_GivenClipboardFailure_WhenHandlingTheAction_ThenItSh
 	actualErr = subject.copyPullRequestURL(gui, nil)
 	then_noError(t, actualErr)
 
+	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), yankFailureMessage) {
+		t.Fatalf("expected pull request footer to contain %q, actual %q", yankFailureMessage, pullRequestsFooterView.Buffer())
+	}
+
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.TitlePrefix, yankFailureMessage) {
-		t.Fatalf("expected pull request title prefix to contain %q, actual %q", yankFailureMessage, pullRequestsView.TitlePrefix)
+	if strings.Contains(pullRequestsView.TitlePrefix, yankFailureMessage) || strings.Contains(pullRequestsView.Title, yankFailureMessage) {
+		t.Fatalf("expected pull request titles to stay stable, actual title=%q prefix=%q", pullRequestsView.Title, pullRequestsView.TitlePrefix)
 	}
 }
 

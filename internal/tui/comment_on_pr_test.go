@@ -141,10 +141,10 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
 
-	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.TitlePrefix, pullRequestCommentSuccessMessage) {
-		t.Fatalf("expected title prefix to contain %q, actual %q", pullRequestCommentSuccessMessage, pullRequestsView.TitlePrefix)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), pullRequestCommentSuccessMessage) {
+		t.Fatalf("expected pull requests footer to contain %q, actual %q", pullRequestCommentSuccessMessage, pullRequestsFooterView.Buffer())
 	}
 }
 
@@ -199,10 +199,10 @@ func TestPullRequestCommentComposer_GivenPullRequestDetail_WhenSubmitting_ThenIt
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
 
-	detailView, actualErr := gui.View(viewDetailName)
+	detailFooterView, actualErr := gui.View("detail-footer")
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.TitlePrefix, pullRequestCommentSuccessMessage) {
-		t.Fatalf("expected detail title prefix to contain %q, actual %q", pullRequestCommentSuccessMessage, detailView.TitlePrefix)
+	if !strings.Contains(detailFooterView.Buffer(), pullRequestCommentSuccessMessage) {
+		t.Fatalf("expected detail footer to contain %q, actual %q", pullRequestCommentSuccessMessage, detailFooterView.Buffer())
 	}
 }
 

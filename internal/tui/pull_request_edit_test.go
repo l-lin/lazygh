@@ -129,8 +129,10 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefresh
 	if !strings.Contains(detailView.Buffer(), "Renamed PR") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Renamed PR", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.TitlePrefix, pullRequestTitleEditSuccessMessage) {
-		t.Fatalf("expected detail title prefix to contain %q, actual %q", pullRequestTitleEditSuccessMessage, detailView.TitlePrefix)
+	detailFooterView, actualErr := gui.View("detail-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(detailFooterView.Buffer(), pullRequestTitleEditSuccessMessage) {
+		t.Fatalf("expected detail footer to contain %q, actual %q", pullRequestTitleEditSuccessMessage, detailFooterView.Buffer())
 	}
 }
 
@@ -341,8 +343,10 @@ func TestEditPullRequestDescription_GivenSuccessfulSubmit_WhenSubmitting_ThenItR
 	if !strings.Contains(detailView.Buffer(), "Updated body") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Updated body", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.TitlePrefix, pullRequestDescriptionEditSuccessMessage) {
-		t.Fatalf("expected detail title prefix to contain %q, actual %q", pullRequestDescriptionEditSuccessMessage, detailView.TitlePrefix)
+	detailFooterView, actualErr := gui.View("detail-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(detailFooterView.Buffer(), pullRequestDescriptionEditSuccessMessage) {
+		t.Fatalf("expected detail footer to contain %q, actual %q", pullRequestDescriptionEditSuccessMessage, detailFooterView.Buffer())
 	}
 }
 

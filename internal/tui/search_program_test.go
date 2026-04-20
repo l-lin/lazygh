@@ -20,13 +20,17 @@ func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSe
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyEsc, handler: subject.cancelSearch})
 }
 
-func TestSearchPrompt_GivenRenderedProgram_WhenOpeningSearch_ThenThePromptRendersAsABorderlessSlashAtTheBottom(t *testing.T) {
-	subject := NewProgramWithModel(given_model())
+func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptStaysOnThePaneBottomLineWithoutShrinkingTheLayout(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := NewProgramWithModel(model)
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
 	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	pullRequestsX0, _, pullRequestsX1, pullRequestsY1, actualErr := gui.ViewPosition(viewPullRequestsName)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openSearch(gui, nil)
@@ -47,18 +51,112 @@ func TestSearchPrompt_GivenRenderedProgram_WhenOpeningSearch_ThenThePromptRender
 	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
 		t.Fatalf("expected search buffer %q, actual %q", "/", actual)
 	}
-
 	if searchView.InnerHeight() != 1 {
 		t.Fatalf("expected the search prompt to expose one visible content row, actual %d", searchView.InnerHeight())
 	}
-	if searchView.InnerWidth() != 120 {
-		t.Fatalf("expected the search prompt to span the full width, actual %d", searchView.InnerWidth())
+
+	searchX0, searchY0, searchX1, _, actualErr := gui.ViewPosition(viewSearchName)
+	then_noError(t, actualErr)
+	if searchX0 != pullRequestsX0 || searchX1 != pullRequestsX1 {
+		t.Fatalf("expected the search prompt to align with the pull requests pane, actual x0=%d x1=%d expected x0=%d x1=%d", searchX0, searchX1, pullRequestsX0, pullRequestsX1)
+	}
+	if searchY0 != pullRequestsY1-1 {
+		t.Fatalf("expected the search prompt to hug the pull requests pane bottom line at y0=%d, actual y0=%d", pullRequestsY1-1, searchY0)
 	}
 
-	_, _, _, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	_, _, _, actualPullRequestsY1, actualErr := gui.ViewPosition(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if detailY1 != 28 {
-		t.Fatalf("expected detail view to stop above the bottom prompt at y=%d, actual y=%d", 28, detailY1)
+	if actualPullRequestsY1 != pullRequestsY1 {
+		t.Fatalf("expected the pull requests pane height to stay unchanged, actual y1=%d expected y1=%d", actualPullRequestsY1, pullRequestsY1)
+	}
+}
+
+func TestSearchPrompt_GivenDetailFocus_WhenOpeningSearch_ThenThePromptStaysOnThePaneBottomLineWithoutShrinkingTheLayout(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	detailX0, _, detailX1, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+
+	actualErr = subject.openSearch(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewSearchName)
+
+	searchX0, searchY0, searchX1, _, actualErr := gui.ViewPosition(viewSearchName)
+	then_noError(t, actualErr)
+	if searchX0 != detailX0 || searchX1 != detailX1 {
+		t.Fatalf("expected the search prompt to align with the detail pane, actual x0=%d x1=%d expected x0=%d x1=%d", searchX0, searchX1, detailX0, detailX1)
+	}
+	if searchY0 != detailY1-1 {
+		t.Fatalf("expected the search prompt to hug the detail pane bottom line at y0=%d, actual y0=%d", detailY1-1, searchY0)
+	}
+
+	_, _, _, actualDetailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	if actualDetailY1 != detailY1 {
+		t.Fatalf("expected the detail pane height to stay unchanged, actual y1=%d expected y1=%d", actualDetailY1, detailY1)
+	}
+}
+
+func TestSearchFooter_GivenSubmittedPullRequestsSearch_WhenRendering_ThenTheAppliedQueryMovesToThePaneFooter(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.StartSearch()
+	model.UpdateSearchDraft("2")
+	model.SubmitSearch()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	footerView, actualErr := gui.View("pull-requests-footer")
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/2 (1 match)" {
+		t.Fatalf("expected pull requests footer %q, actual %q", "/2 (1 match)", actual)
+	}
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if strings.Contains(pullRequestsView.Title, "/2") || strings.Contains(pullRequestsView.TitlePrefix, "/2") {
+		t.Fatalf("expected the pull requests title to stay stable, actual title=%q prefix=%q", pullRequestsView.Title, pullRequestsView.TitlePrefix)
+	}
+}
+
+func TestSearchFooter_GivenSubmittedDetailSearch_WhenRendering_ThenTheAppliedQueryMovesToThePaneFooter(t *testing.T) {
+	model := NewModel(SeedData{
+		Users: []Item{{Title: "dummy-user-1", Detail: "Alpha detail line"}},
+	})
+	model.OpenDetail()
+	model.StartSearch()
+	model.UpdateSearchDraft("Alpha")
+	model.SubmitSearch()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	footerView, actualErr := gui.View("detail-footer")
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/Alpha (1 match)" {
+		t.Fatalf("expected detail footer %q, actual %q", "/Alpha (1 match)", actual)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Title, "/Alpha") || strings.Contains(detailView.TitlePrefix, "/Alpha") {
+		t.Fatalf("expected the detail title to stay stable, actual title=%q prefix=%q", detailView.Title, detailView.TitlePrefix)
 	}
 }
 

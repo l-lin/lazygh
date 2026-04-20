@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/jesseduffield/gocui"
@@ -13,7 +12,7 @@ import (
 const bottomPromptPrefix = "/"
 
 func (program *Program) layoutSearchView(gui *gocui.Gui) error {
-	view, err := program.layoutBottomPromptView(gui, viewSearchName)
+	view, err := program.layoutPaneBottomOverlayView(gui, viewSearchName, paneViewName(program.model.SearchTarget()))
 	if err != nil {
 		return err
 	}
@@ -26,6 +25,20 @@ func (program *Program) layoutSearchView(gui *gocui.Gui) error {
 	}
 
 	return err
+}
+
+func (program *Program) layoutPaneBottomOverlayView(gui *gocui.Gui, viewName string, parentViewName string) (*gocui.View, error) {
+	x0, _, x1, y1, err := gui.ViewPosition(parentViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	view, err := gui.SetView(viewName, x0, y1-1, x1, y1+1, 0)
+	if err != nil && !isUnknownViewError(err) {
+		return nil, err
+	}
+
+	return view, nil
 }
 
 func (program *Program) layoutBottomPromptView(gui *gocui.Gui, viewName string) (*gocui.View, error) {
@@ -100,29 +113,18 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 }
 
 func (program *Program) userViewTitle() string {
-	return "[1]-Connected user" + program.feedbackSuffix(FocusUserView) + program.searchSummarySuffix(program.model.UserSearchQuery(), len(program.model.VisibleUsers()))
+	return "[1]-Connected user"
 }
 
 func (program *Program) detailViewTitle() string {
-	suffix := program.feedbackSuffix(FocusDetailView) + program.searchSummarySuffix(program.model.DetailSearchQuery(), countSearchMatches(program.detailViewContent(), program.model.DetailSearchQuery()))
 	if program.shouldShowPullRequestDetailTabs() {
-		return suffix
+		return ""
 	}
-	return "[0]-Detail" + suffix
+	return "[0]-Detail"
 }
 
 func (program *Program) pullRequestsViewTitle() string {
-	query := program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab())
-	return program.feedbackSuffix(FocusPullRequestsView) + program.searchSummarySuffix(query, len(program.model.VisiblePullRequests()))
-}
-
-func (program *Program) searchSummarySuffix(query string, count int) string {
-	trimmedQuery := strings.TrimSpace(query)
-	if trimmedQuery == "" {
-		return ""
-	}
-
-	return fmt.Sprintf(" / %q (%d %s)", trimmedQuery, count, pluralize(count, "match", "matches"))
+	return ""
 }
 
 func (program *Program) setInputCursor(view *gocui.View, value string, cursorIndex int) {

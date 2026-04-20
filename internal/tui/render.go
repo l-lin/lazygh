@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	sidebarWidthPercent = 46
+	sidebarWidthPercent = 35
 	minimumSidebarWidth = 32
 	minimumDetailWidth  = 40
 	userViewTotalHeight = 3
@@ -22,6 +22,11 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.gui = gui
 	maxX, maxY := gui.Size()
 	contentMaxY := program.layoutContentHeight(maxY)
+
+	program.maybeLoadConnectedUser(gui)
+	program.maybeLoadMyPullRequests(gui)
+	program.maybeLoadRequestedPullRequests(gui)
+	program.maybeLoadSelectedPullRequestDetail(gui)
 
 	sidebarWidth := maxX * sidebarWidthPercent / 100
 	maxSidebarWidth := maxX - minimumDetailWidth
@@ -81,6 +86,10 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.configureDetailView(detailView)
 	program.renderDetailView(detailView)
 
+	if err := program.layoutPaneFooterViews(gui); err != nil {
+		return err
+	}
+
 	if program.helpVisible {
 		if err := program.layoutHelpView(gui); err != nil {
 			return err
@@ -132,10 +141,6 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		}
 	}
 
-	program.maybeLoadConnectedUser(gui)
-	program.maybeLoadMyPullRequests(gui)
-	program.maybeLoadRequestedPullRequests(gui)
-	program.maybeLoadSelectedPullRequestDetail(gui)
 	return program.syncCurrentView(gui)
 }
 
@@ -143,7 +148,7 @@ func (program *Program) configureDetailView(view *gocui.View) {
 	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	program.applyViewStyle(view, FocusDetailView, program.detailViewTitle(), false)
 	if program.shouldShowPullRequestDetailTabs() {
-		view.TitlePrefix = "[0]" + program.feedbackSuffix(FocusDetailView)
+		view.TitlePrefix = "[0]"
 		view.Tabs = program.detailTabLabels()
 		view.TabIndex = int(program.activeDetailTab)
 		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
@@ -158,7 +163,7 @@ func (program *Program) configureUserView(view *gocui.View) {
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
 	program.applyViewStyle(view, FocusPullRequestsView, program.pullRequestsViewTitle(), true)
-	view.TitlePrefix = "[2]" + program.feedbackSuffix(FocusPullRequestsView)
+	view.TitlePrefix = "[2]"
 	view.Tabs = program.pullRequestsTabLabels()
 	view.TabIndex = int(program.model.ActivePullRequestTab())
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
@@ -372,5 +377,5 @@ func (program *Program) layoutContentHeight(maxY int) int {
 }
 
 func (program *Program) bottomPromptVisible() bool {
-	return program.model.SearchActive() || program.model.ActionsPopupSearchActive()
+	return program.model.ActionsPopupSearchActive()
 }

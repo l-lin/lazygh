@@ -37,10 +37,10 @@ func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesT
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.TitlePrefix, pullRequestReviewSuccessMessage) {
-		t.Fatalf("expected title prefix to contain %q, actual %q", pullRequestReviewSuccessMessage, pullRequestsView.TitlePrefix)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), pullRequestReviewSuccessMessage) {
+		t.Fatalf("expected pull requests footer to contain %q, actual %q", pullRequestReviewSuccessMessage, pullRequestsFooterView.Buffer())
 	}
 }
 

@@ -7,11 +7,11 @@ func (program *Program) setFeedback(focus Focus, message string) {
 	program.feedbackMessage = strings.TrimSpace(message)
 }
 
-func (program *Program) feedbackSuffix(focus Focus) string {
+func (program *Program) feedbackMessageFor(focus Focus) string {
 	message := strings.TrimSpace(program.feedbackMessage)
 	if message == "" || program.feedbackFocus != focus {
 		return ""
 	}
 
-	return " · " + message
+	return message
 }

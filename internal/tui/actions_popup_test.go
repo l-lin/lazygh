@@ -328,10 +328,10 @@ func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyP
 	if len(clipboardWriter.writes) != 1 || clipboardWriter.writes[0] != "https://github.com/acme/widgets/pull/42" {
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
 	}
-	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.TitlePrefix, yankSuccessMessage) {
-		t.Fatalf("expected pull request title prefix to contain %q, actual %q", yankSuccessMessage, pullRequestsView.TitlePrefix)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), yankSuccessMessage) {
+		t.Fatalf("expected pull request footer to contain %q, actual %q", yankSuccessMessage, pullRequestsFooterView.Buffer())
 	}
 }
 

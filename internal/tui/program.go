@@ -36,6 +36,8 @@ type Program struct {
 	connectedUserLoadStarted         bool
 	myPullRequestsLoadStarted        bool
 	requestedPullRequestsLoadStarted bool
+	myPullRequestsLoading            bool
+	requestedPullRequestsLoading     bool
 	myPullRequestsCount              int
 	myPullRequestsCountKnown         bool
 	requestedPullRequestsCount       int
@@ -425,6 +427,7 @@ func (program *Program) maybeLoadMyPullRequests(gui *gocui.Gui) {
 	}
 
 	program.myPullRequestsLoadStarted = true
+	program.myPullRequestsLoading = true
 	program.asyncRunner.Go(func() {
 		program.loadMyPullRequests(gui)
 	})
@@ -436,6 +439,7 @@ func (program *Program) maybeLoadRequestedPullRequests(gui *gocui.Gui) {
 	}
 
 	program.requestedPullRequestsLoadStarted = true
+	program.requestedPullRequestsLoading = true
 	program.asyncRunner.Go(func() {
 		program.loadRequestedPullRequests(gui)
 	})
@@ -449,15 +453,19 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 	switch program.model.ActivePullRequestTab() {
 	case RequestedPullRequestsTab:
 		program.requestedPullRequestsLoadStarted = true
+		program.requestedPullRequestsLoading = true
 		program.asyncRunner.Go(func() {
 			program.loadRequestedPullRequests(gui)
 		})
 	default:
 		program.myPullRequestsLoadStarted = true
+		program.myPullRequestsLoading = true
 		program.asyncRunner.Go(func() {
 			program.loadMyPullRequests(gui)
 		})
 	}
+
+	_ = program.refreshViews(gui)
 }
 
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
@@ -473,6 +481,7 @@ func (program *Program) loadMyPullRequests(gui *gocui.Gui) {
 	pullRequests, err := program.githubLoader.ListMyPullRequests()
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+		program.myPullRequestsLoading = false
 		program.myPullRequestsCount = len(pullRequests)
 		program.myPullRequestsCountKnown = err == nil
 		program.model.SetPullRequestRows(MyPullRequestsTab, myPullRequestsStateRows(pullRequests, err))
@@ -484,6 +493,7 @@ func (program *Program) loadRequestedPullRequests(gui *gocui.Gui) {
 	pullRequests, err := program.githubLoader.ListRequestedPullRequests()
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+		program.requestedPullRequestsLoading = false
 		program.requestedPullRequestsCount = len(pullRequests)
 		program.requestedPullRequestsCountKnown = err == nil
 		program.model.SetPullRequestRows(RequestedPullRequestsTab, requestedPullRequestsStateRows(pullRequests, err))
@@ -520,6 +530,10 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	if err == nil {
 		program.configureDetailView(detailView)
 		program.renderDetailView(detailView)
+	}
+
+	if err := program.layoutPaneFooterViews(gui); err != nil {
+		return err
 	}
 
 	if program.helpVisible {

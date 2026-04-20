@@ -48,6 +48,54 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenCreatesThreeViewsAndPlacesDe
 	then_tabsAre(t, pullRequestsView, []string{"My PRs", "Requested"}, 0)
 }
 
+func TestLayout_GivenWideTerminal_WhenRendering_ThenTheDetailPaneGetsAboutSixtyFivePercentOfTheWidth(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGuiWithSize(t, 100, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	_, _, userX1, _, actualErr := gui.ViewPosition(viewUserName)
+	then_noError(t, actualErr)
+	detailX0, _, detailX1, _, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+
+	sidebarWidth := userX1 + 1
+	detailWidth := detailX1 - detailX0 + 1
+	if sidebarWidth != 35 {
+		t.Fatalf("expected sidebar width %d, actual %d", 35, sidebarWidth)
+	}
+	if detailWidth != 65 {
+		t.Fatalf("expected detail width %d, actual %d", 65, detailWidth)
+	}
+}
+
+func TestLayout_GivenNarrowTerminal_WhenRendering_ThenThePaneWidthsStillRespectTheMinimums(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGuiWithSize(t, 80, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	_, _, userX1, _, actualErr := gui.ViewPosition(viewUserName)
+	then_noError(t, actualErr)
+	detailX0, _, detailX1, _, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+
+	sidebarWidth := userX1 + 1
+	detailWidth := detailX1 - detailX0 + 1
+	if sidebarWidth != 32 {
+		t.Fatalf("expected sidebar width %d, actual %d", 32, sidebarWidth)
+	}
+	if detailWidth < 40 {
+		t.Fatalf("expected detail width to stay at least %d, actual %d", 40, detailWidth)
+	}
+}
+
 func TestPullRequestsTitle_GivenKnownCounts_WhenRendering_ThenItShowsCountsForBothTabs(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	subject.myPullRequestsCount = 3
@@ -434,11 +482,17 @@ func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetai
 func given_headlessGui(t *testing.T) *gocui.Gui {
 	t.Helper()
 
+	return given_headlessGuiWithSize(t, 120, 30)
+}
+
+func given_headlessGuiWithSize(t *testing.T, width int, height int) *gocui.Gui {
+	t.Helper()
+
 	gui, err := gocui.NewGui(gocui.NewGuiOpts{
 		OutputMode: gocui.OutputTrue,
 		Headless:   true,
-		Width:      120,
-		Height:     30,
+		Width:      width,
+		Height:     height,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, actual %v", err)

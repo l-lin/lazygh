@@ -137,6 +137,87 @@ func TestLayout_GivenAnotherSelectedPullRequestAfterScrolling_WhenRendering_Then
 	}
 }
 
+func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_ThenTheDetailPaneShowsALoadingState(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "First PR", Number: 301, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#301"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 301, Body: "Cached detail body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	subject.invalidatePullRequestDetail("acme/widgets", 301)
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued detail reload, actual %d", len(asyncRunner.runs))
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Loading pull request detail...") {
+		t.Fatalf("expected detail body to show a loading message, actual %q", detailView.Buffer())
+	}
+
+	detailFooterView, actualErr := gui.View("detail-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(detailFooterView.Buffer(), "Loading pull request detail...") {
+		t.Fatalf("expected detail footer to show a loading message, actual %q", detailFooterView.Buffer())
+	}
+}
+
+func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotReturnedYet_ThenThePaneFooterShowsALoadingState(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequests(MyPullRequestsTab, []Item{{Title: "my-pr-1", Detail: "body-1"}, {Title: "my-pr-2", Detail: "body-2"}})
+	loader := &fakePullRequestDetailLoader{}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	subject.reloadActivePullRequestsTab(gui)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued pull request reload, actual %d", len(asyncRunner.runs))
+	}
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.Buffer(), "my-pr-1") {
+		t.Fatalf("expected the existing pull request list to stay visible, actual %q", pullRequestsView.Buffer())
+	}
+
+	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), myPullRequestsLoadingTitle) {
+		t.Fatalf("expected pull request footer to show %q, actual %q", myPullRequestsLoadingTitle, pullRequestsFooterView.Buffer())
+	}
+}
+
 type fakePullRequestDetailLoader struct {
 	details               map[string]githubcli.PullRequestDetail
 	detailErrors          map[string]error
@@ -275,6 +356,14 @@ type inlineAsyncRunner struct{}
 
 func (inlineAsyncRunner) Go(run func()) {
 	run()
+}
+
+type capturingAsyncRunner struct {
+	runs []func()
+}
+
+func (runner *capturingAsyncRunner) Go(run func()) {
+	runner.runs = append(runner.runs, run)
 }
 
 type immediateUIUpdater struct{}
