@@ -14,6 +14,7 @@ type keybindingDefinition struct {
 }
 
 var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewDetailName}
+var sidePaneViewNames = []string{viewUserName, viewPullRequestsName}
 
 func bindingsForView(viewName string, definitions ...keybindingDefinition) []keybindingSpec {
 	return bindingsForViews([]string{viewName}, definitions...)
@@ -53,9 +54,6 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 
 	specs = append(specs, bindingsForViews(mainPaneViewNames,
 		keybindingDefinition{key: '?', handler: program.toggleHelp},
-		keybindingDefinition{key: 'l', handler: program.nextSideView},
-		keybindingDefinition{key: 'h', handler: program.previousSideView},
-		keybindingDefinition{key: '0', handler: program.focusDetailView},
 		keybindingDefinition{key: '1', handler: program.focusUserView},
 		keybindingDefinition{key: '2', handler: program.focusPullRequestsView},
 		keybindingDefinition{key: '/', handler: program.openSearch},
@@ -65,6 +63,12 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		keybindingDefinition{key: gocui.KeyCtrlU, handler: program.pageUp},
 		keybindingDefinition{key: '+', handler: program.growFocusedPane},
 		keybindingDefinition{key: '-', handler: program.shrinkFocusedPane},
+	)...)
+
+	specs = append(specs, bindingsForViews(sidePaneViewNames,
+		keybindingDefinition{key: 'l', handler: program.nextSideView},
+		keybindingDefinition{key: 'h', handler: program.previousSideView},
+		keybindingDefinition{key: '0', handler: program.focusDetailView},
 	)...)
 
 	specs = append(specs, bindingsForView(viewUserName,
@@ -82,6 +86,15 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 	)...)
 
 	specs = append(specs, bindingsForView(viewDetailName,
+		keybindingDefinition{key: 'h', handler: program.moveDetailCursorLeft},
+		keybindingDefinition{key: 'l', handler: program.moveDetailCursorRight},
+		keybindingDefinition{key: '0', handler: program.moveDetailCursorToRowStart},
+		keybindingDefinition{key: '$', handler: program.moveDetailCursorToRowEnd},
+		keybindingDefinition{key: 'g', handler: program.moveDetailCursorToTop},
+		keybindingDefinition{key: 'G', handler: program.moveDetailCursorToBottom},
+		keybindingDefinition{key: 'w', handler: program.moveDetailCursorToNextWord},
+		keybindingDefinition{key: 'b', handler: program.moveDetailCursorToPreviousWord},
+		keybindingDefinition{key: 'v', handler: program.enterDetailVisualMode},
 		keybindingDefinition{key: '[', handler: program.previousDetailTab},
 		keybindingDefinition{key: ']', handler: program.nextDetailTab},
 		keybindingDefinition{key: 'y', handler: program.copyPullRequestURL},

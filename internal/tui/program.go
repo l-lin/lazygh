@@ -47,6 +47,7 @@ type Program struct {
 	detailWrapWidth                  int
 	activeDetailTab                  DetailTab
 	lastDetailIdentity               string
+	detailViewState                  detailViewState
 	clipboardWriter                  clip.Writer
 	feedbackFocus                    Focus
 	feedbackMessage                  string
@@ -92,6 +93,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		asyncRunner:                   goroutineAsyncRunner{},
 		uiUpdater:                     queuedUIUpdater{},
 		clipboardWriter:               clip.NewSystemWriter(),
+		detailViewState:               newDetailViewState(),
 		detailWrapWidth:               defaultDetailWrapWidth,
 	}
 }

@@ -94,17 +94,20 @@ func (program *Program) localHelpEntries() []helpEntry {
 	switch program.model.Focus() {
 	case FocusDetailView:
 		entries := []helpEntry{
-			{Key: "j", Description: "Scroll down"},
-			{Key: "k", Description: "Scroll up"},
+			{Key: "h/j/k/l", Description: "Move cursor"},
+			{Key: "0/$", Description: "Line start/end"},
+			{Key: "gg/G", Description: "First/last line"},
+			{Key: "w/b", Description: "Next/previous word"},
+			{Key: "v", Description: "Start visual selection"},
+			{Key: "y", Description: "Yank selection / PR URL"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
 			{Key: "+/-", Description: "Toggle fullscreen"},
 			{Key: "/", Description: "Search detail"},
-			{Key: "<esc>", Description: "Return to previous view"},
+			{Key: "<esc>", Description: "Exit visual / return"},
 		}
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries,
-				pullRequestYankHelpEntry(),
 				pullRequestCommentHelpEntry(),
 				helpEntry{Key: "a", Description: "PR actions"},
 				helpEntry{Key: "[", Description: "Previous detail tab"},
@@ -116,6 +119,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		return []helpEntry{
 			{Key: "j", Description: "Move down"},
 			{Key: "k", Description: "Move up"},
+			{Key: "h/l", Description: "Switch side view"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
 			{Key: "+/-", Description: "Resize panes"},
@@ -131,6 +135,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		return []helpEntry{
 			{Key: "j", Description: "Move down"},
 			{Key: "k", Description: "Move up"},
+			{Key: "h/l", Description: "Switch side view"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
 			{Key: "+/-", Description: "Resize panes"},
@@ -143,8 +148,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 func globalHelpEntries() []helpEntry {
 	return []helpEntry{
 		{Key: "?", Description: "Toggle help"},
-		{Key: "tab/l", Description: "Switch side view"},
-		{Key: "shift+tab/h", Description: "Switch side view backwards"},
+		{Key: "tab", Description: "Switch side view"},
+		{Key: "shift+tab", Description: "Switch side view backwards"},
 		{Key: "0/1/2", Description: "Jump to a view"},
 		{Key: "<c-c>", Description: "Quit"},
 	}

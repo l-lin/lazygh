@@ -124,7 +124,9 @@ func (program *Program) configureDetailView(view *gocui.View) {
 		view.TabIndex = int(program.activeDetailTab)
 		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
 	}
-	view.Wrap = true
+	view.Wrap = false
+	view.Editable = false
+	view.Editor = nil
 }
 
 func (program *Program) configureUserView(view *gocui.View) {
@@ -185,12 +187,21 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 
 func (program *Program) renderDetailView(view *gocui.View) {
 	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
-	program.resetDetailViewOriginIfNeeded(view)
+	detailDocument := program.currentDetailDocument(view)
+	program.syncDetailViewState(detailDocument, view.InnerHeight())
 	view.Clear()
 
-	detailContent := program.detailViewContent()
-	highlightedContent, _ := highlightSearchMatches(detailContent, program.model.DetailSearchQuery())
-	fmt.Fprint(view, highlightedContent)
+	searchMatchRanges := detailDocument.searchMatchRanges(program.model.DetailSearchQuery())
+	for rowIndex, row := range detailDocument.rows {
+		if rowIndex > 0 {
+			fmt.Fprint(view, "\n")
+		}
+		fmt.Fprint(view, renderDetailRow(detailDocument, row, searchMatchRanges, program.detailViewState))
+	}
+
+	cursorRow, cursorColumn := program.detailViewState.screenPosition(detailDocument)
+	view.SetOrigin(0, program.detailViewState.originRow)
+	view.SetCursor(cursorColumn, cursorRow-program.detailViewState.originRow)
 }
 
 func (program *Program) detailViewContent() string {
@@ -240,18 +251,26 @@ func (program *Program) detailHeader(item Item) string {
 	return fmt.Sprintf("%s\n%s", source, item.Title)
 }
 
-func (program *Program) resetDetailViewOriginIfNeeded(view *gocui.View) {
-	if view == nil {
-		return
+func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
+	width := program.detailWrapWidth
+	if view != nil && view.InnerWidth() > 0 {
+		width = view.InnerWidth()
+	}
+	if width < 1 {
+		width = 1
 	}
 
+	return newDetailDocument(program.detailViewContent(), width)
+}
+
+func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
 	identity := program.currentDetailIdentity()
-	if identity == program.lastDetailIdentity {
-		return
+	if identity != program.lastDetailIdentity {
+		program.lastDetailIdentity = identity
+		program.detailViewState.reset()
 	}
 
-	program.lastDetailIdentity = identity
-	view.SetOrigin(0, 0)
+	program.detailViewState.sync(detailDocument, viewportHeight)
 }
 
 func (program *Program) pullRequestsTabLabels() []string {

@@ -98,7 +98,18 @@ func (program *Program) syncCurrentView(gui *gocui.Gui) error {
 }
 
 func (program *Program) shouldShowCursor() bool {
-	return program.model.SearchActive() || program.model.ActionsPopupSearchActive() || program.modalEditorVisible()
+	switch {
+	case program.modalEditorVisible():
+		return true
+	case program.model.ActionsPopupSearchActive():
+		return true
+	case program.model.SearchActive():
+		return true
+	case program.model.ActionsPopupVisible():
+		return false
+	default:
+		return program.model.Focus() == FocusDetailView
+	}
 }
 
 func (program *Program) setCurrentViewIfPresent(gui *gocui.Gui, viewName string) error {

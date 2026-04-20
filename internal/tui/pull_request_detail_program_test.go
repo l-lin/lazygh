@@ -115,7 +115,7 @@ func TestLayout_GivenAnotherSelectedPullRequestAfterScrolling_WhenRendering_Then
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	for range 4 {
+	for range detailView.InnerHeight() + 4 {
 		actualErr = subject.moveSelectionDown(gui, detailView)
 		then_noError(t, actualErr)
 	}
@@ -134,6 +134,10 @@ func TestLayout_GivenAnotherSelectedPullRequestAfterScrolling_WhenRendering_Then
 	_, originY = detailView.Origin()
 	if originY != 0 {
 		t.Fatalf("expected detail origin to reset to 0, actual %d", originY)
+	}
+	cursorX, cursorY := detailView.Cursor()
+	if cursorX != 0 || cursorY != 0 {
+		t.Fatalf("expected detail cursor 0,0 after resetting, actual %d,%d", cursorX, cursorY)
 	}
 }
 

@@ -24,56 +24,115 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 	return program.syncCurrentView(gui)
 }
 
-func (program *Program) moveSelectionDown(_ *gocui.Gui, view *gocui.View) error {
+func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
 	if program.selectionChangeBlocked() {
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		program.scrollDetailDownLine(view)
-		return nil
+		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+			program.detailViewState.moveDown(document, viewportHeight)
+		})
 	}
 
 	program.model.MoveSelectionDown()
 	return nil
 }
 
-func (program *Program) moveSelectionUp(_ *gocui.Gui, view *gocui.View) error {
+func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error {
 	if program.selectionChangeBlocked() {
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		program.scrollDetailUpLine(view)
-		return nil
+		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+			program.detailViewState.moveUp(document, viewportHeight)
+		})
 	}
 
 	program.model.MoveSelectionUp()
 	return nil
 }
 
-func (program *Program) pageDown(_ *gocui.Gui, view *gocui.View) error {
+func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
 	if program.selectionChangeBlocked() {
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		program.scrollDetailDown(view)
-		return nil
+		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+			program.detailViewState.pageDown(document, viewportHeight)
+		})
 	}
 
 	program.model.PageDown(viewPageSize(view))
 	return nil
 }
 
-func (program *Program) pageUp(_ *gocui.Gui, view *gocui.View) error {
+func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 	if program.selectionChangeBlocked() {
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		program.scrollDetailUp(view)
-		return nil
+		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+			program.detailViewState.pageUp(document, viewportHeight)
+		})
 	}
 
 	program.model.PageUp(viewPageSize(view))
 	return nil
+}
+
+func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveLeft(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorRight(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveRight(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToRowStart(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToRowStart(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToRowEnd(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToRowEnd(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToTop(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.handleGoToTopPrefix(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToBottom(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToBottom(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToNextWord(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToNextWord(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToPreviousWord(document, viewportHeight)
+	})
+}
+
+func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.enterVisualMode()
+		program.detailViewState.sync(document, viewportHeight)
+	})
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
@@ -110,6 +169,7 @@ func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
+	program.detailViewState.clearPendingPrefix()
 	program.model.FocusUserView()
 	return program.syncCurrentView(gui)
 }
@@ -119,6 +179,7 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 		return nil
 	}
 
+	program.detailViewState.clearPendingPrefix()
 	program.model.FocusPullRequestsView()
 	return program.syncCurrentView(gui)
 }
@@ -136,7 +197,12 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 	if program.detailTransitionBlocked() {
 		return nil
 	}
+	if program.model.Focus() == FocusDetailView && program.detailViewState.mode == detailVisualMode {
+		program.detailViewState.exitVisualMode()
+		return program.refreshDetailView(gui)
+	}
 
+	program.detailViewState.clearPendingPrefix()
 	program.model.CloseDetail()
 	return program.syncCurrentView(gui)
 }
@@ -146,6 +212,7 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
+	program.detailViewState.clearPendingPrefix()
 	program.model.StartSearch()
 	program.searchEditor = newLineEditor("")
 	return program.layout(gui)
@@ -195,36 +262,31 @@ func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
 	return program.syncCurrentView(gui)
 }
 
-func (program *Program) scrollDetailDown(view *gocui.View) {
-	if view == nil {
-		return
+func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
+	actualView := view
+	if actualView == nil && gui != nil {
+		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {
+			actualView = detailView
+		}
 	}
 
-	view.ScrollDown(pageDelta(view.InnerHeight()))
+	viewportHeight := viewPageSize(actualView)
+	detailDocument := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(detailDocument, viewportHeight)
+	mutate(detailDocument, viewportHeight)
+	program.syncDetailViewState(detailDocument, viewportHeight)
+	return program.refreshDetailView(gui)
 }
 
-func (program *Program) scrollDetailUp(view *gocui.View) {
-	if view == nil {
-		return
+func (program *Program) refreshDetailView(gui *gocui.Gui) error {
+	if gui == nil {
+		return nil
+	}
+	if actualErr := program.refreshExistingView(gui, viewDetailName, program.configureDetailView, program.renderDetailView); actualErr != nil {
+		return actualErr
 	}
 
-	view.ScrollUp(pageDelta(view.InnerHeight()))
-}
-
-func (program *Program) scrollDetailDownLine(view *gocui.View) {
-	if view == nil {
-		return
-	}
-
-	view.ScrollDown(1)
-}
-
-func (program *Program) scrollDetailUpLine(view *gocui.View) {
-	if view == nil {
-		return
-	}
-
-	view.ScrollUp(1)
+	return program.syncCurrentView(gui)
 }
 
 func (program *Program) sideViewCyclingBlocked() bool {

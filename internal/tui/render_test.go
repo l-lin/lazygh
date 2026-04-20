@@ -273,7 +273,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCurrentViewAndGl
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
-	for _, expected := range []string{"--- Local ---", "--- Global ---", "j", "Scroll down", "k", "Scroll up", "?", "Toggle help", "tab/l", "Switch side view"} {
+	for _, expected := range []string{"--- Local ---", "--- Global ---", "h/j/k/l", "Move cursor", "v", "Start visual selection", "?", "Toggle help", "tab", "Switch side view"} {
 		if !strings.Contains(actualBuffer, expected) {
 			t.Fatalf("expected help buffer to contain %q, actual %q", expected, actualBuffer)
 		}
@@ -445,7 +445,7 @@ func TestPaging_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewScr
 	}
 }
 
-func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewScrollsByLine(t *testing.T) {
+func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailCursorMovesByLineBeforeTheViewportScrolls(t *testing.T) {
 	model := NewModel(SeedData{
 		Users: []Item{{
 			Title:  "dummy-user-1",
@@ -466,16 +466,24 @@ func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetai
 
 	actualErr = subject.moveSelectionDown(gui, detailView)
 	then_noError(t, actualErr)
-	_, originY := detailView.Origin()
-	if originY != 1 {
-		t.Fatalf("expected detail origin 1 after moving down, actual %d", originY)
+	originX, originY := detailView.Origin()
+	cursorX, cursorY := detailView.Cursor()
+	if originX != 0 || originY != 0 {
+		t.Fatalf("expected detail origin 0,0 after one downward move, actual %d,%d", originX, originY)
+	}
+	if cursorX != 0 || cursorY != 1 {
+		t.Fatalf("expected detail cursor 0,1 after one downward move, actual %d,%d", cursorX, cursorY)
 	}
 
 	actualErr = subject.moveSelectionUp(gui, detailView)
 	then_noError(t, actualErr)
-	_, originY = detailView.Origin()
-	if originY != 0 {
-		t.Fatalf("expected detail origin 0 after moving up, actual %d", originY)
+	originX, originY = detailView.Origin()
+	cursorX, cursorY = detailView.Cursor()
+	if originX != 0 || originY != 0 {
+		t.Fatalf("expected detail origin 0,0 after moving back up, actual %d,%d", originX, originY)
+	}
+	if cursorX != 0 || cursorY != 0 {
+		t.Fatalf("expected detail cursor 0,0 after moving back up, actual %d,%d", cursorX, cursorY)
 	}
 }
 

@@ -18,11 +18,15 @@ const (
 	yankUnavailableMessage = "󰌑 No PR URL"
 )
 
-func (program *Program) copyPullRequestURL(gui *gocui.Gui, _ *gocui.View) error {
+func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) error {
 	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
+	if program.model.Focus() == FocusDetailView && program.detailViewState.mode == detailVisualMode {
+		return program.copySelectedDetailText(gui, view)
+	}
 
+	program.detailViewState.clearPendingPrefix()
 	err := program.copySelectedPullRequestURL()
 	switch {
 	case err == nil:
@@ -31,6 +35,41 @@ func (program *Program) copyPullRequestURL(gui *gocui.Gui, _ *gocui.View) error 
 		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
 	default:
 		program.setFeedback(program.model.Focus(), yankFailureMessage)
+	}
+
+	if gui == nil {
+		return nil
+	}
+
+	return program.refreshViews(gui)
+}
+
+func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View) error {
+	actualView := view
+	if actualView == nil && gui != nil {
+		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {
+			actualView = detailView
+		}
+	}
+
+	detailDocument := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(detailDocument, viewPageSize(actualView))
+	selectedText := program.detailViewState.selectedText(detailDocument)
+
+	var err error
+	switch {
+	case program.clipboardWriter == nil:
+		err = ErrClipboardUnavailable
+	default:
+		err = program.clipboardWriter.WriteText(selectedText)
+	}
+
+	program.detailViewState.exitVisualMode()
+	switch {
+	case err == nil:
+		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
+	default:
+		program.setFeedback(program.model.Focus(), detailYankFailureMessage)
 	}
 
 	if gui == nil {

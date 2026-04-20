@@ -7,6 +7,7 @@ func (program *Program) nextDetailTab(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
+	program.detailViewState.clearPendingPrefix()
 	switch program.activeDetailTab {
 	case CommentsDetailTab:
 		program.activeDetailTab = DescriptionDetailTab
