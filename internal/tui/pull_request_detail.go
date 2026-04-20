@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -43,11 +42,6 @@ type pullRequestDetailResult struct {
 	err    error
 }
 
-var (
-	ansiPattern       = regexp.MustCompile(`\x1b\[[0-9;]*m`)
-	rawHeadingPattern = regexp.MustCompile(`^\s*#{1,6}\s+`)
-)
-
 func (tab DetailTab) Label() string {
 	switch tab {
 	case CommentsDetailTab:
@@ -59,7 +53,7 @@ func (tab DetailTab) Label() string {
 
 func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStandardStyle("dark"),
+		glamour.WithStyles(prettyMarkdownStyle()),
 		glamour.WithWordWrap(effectiveMarkdownWidth(width)),
 	)
 	if err != nil {
@@ -71,7 +65,7 @@ func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error
 		return "", err
 	}
 
-	return normalizeRenderedMarkdown(rendered), nil
+	return strings.TrimSpace(rendered), nil
 }
 
 func renderPullRequestDetailHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
@@ -94,8 +88,10 @@ func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, rende
 	}
 
 	sections := make([]string, 0, len(comments))
+	commentBodyWidth := commentBoxInnerWidth(width)
 	for _, comment := range comments {
-		sections = append(sections, fmt.Sprintf("%s %s · %s\n%s", detailCommentsIcon, pullRequestCommentAuthorLogin(comment.Author), formatTimestamp(comment.CreatedAt), renderMarkdownWithFallback(comment.Body, renderer, width, "No comment body.")))
+		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
+		sections = append(sections, renderPullRequestCommentSection(comment, body, width))
 	}
 	return strings.Join(sections, "\n\n")
 }
@@ -300,17 +296,6 @@ func effectiveMarkdownWidth(width int) int {
 		return defaultDetailWrapWidth
 	}
 	return width
-}
-
-func normalizeRenderedMarkdown(rendered string) string {
-	withoutANSI := ansiPattern.ReplaceAllString(rendered, "")
-	lines := strings.Split(withoutANSI, "\n")
-	for index, line := range lines {
-		trimmedRightLine := strings.TrimRight(line, " ")
-		trimmedRightLine = rawHeadingPattern.ReplaceAllString(trimmedRightLine, "")
-		lines[index] = trimmedRightLine
-	}
-	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
 func compactBranchLabel(label string) string {

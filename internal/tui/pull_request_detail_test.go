@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItShowsACompactHeaderWithIcons(t *testing.T) {
@@ -81,20 +82,58 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItKeepsUs
 	}
 }
 
-func TestGlamourMarkdownRenderer_GivenMarkdownAndNarrowWidth_WhenRendering_ThenItWrapsAndRemovesRawMarkdownMarkers(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRendersEachCommentInsideAGreyRoundedBox(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
+	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}}
+
+	actual := renderPullRequestCommentsTab(comments, renderer, 30)
+	actualDocument := newDetailDocument(actual, 30)
+
+	if actualHeader := string(actualDocument.lines[0]); actualHeader != detailCommentsIcon+" @reviewer-one · 2026-04-18 13:00 UTC" {
+		t.Fatalf("expected comment header %q, actual %q", detailCommentsIcon+" @reviewer-one · 2026-04-18 13:00 UTC", actualHeader)
+	}
+	if actualTopBorder := string(actualDocument.lines[1]); !strings.HasPrefix(actualTopBorder, "╭") || !strings.HasSuffix(actualTopBorder, "╮") {
+		t.Fatalf("expected a rounded top border, actual %q", actualTopBorder)
+	}
+	if actualBodyLine := string(actualDocument.lines[2]); !strings.HasPrefix(actualBodyLine, "│ Rendered comment one") {
+		t.Fatalf("expected boxed comment body, actual %q", actualBodyLine)
+	}
+	if actualBottomBorder := string(actualDocument.lines[3]); !strings.HasPrefix(actualBottomBorder, "╰") || !strings.HasSuffix(actualBottomBorder, "╯") {
+		t.Fatalf("expected a rounded bottom border, actual %q", actualBottomBorder)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[1][0]; actualStylePrefix != foregroundColorEscape(theme.InactiveBorderHex) {
+		t.Fatalf("expected the comment border prefix %q, actual %q", foregroundColorEscape(theme.InactiveBorderHex), actualStylePrefix)
+	}
+}
+
+func TestRenderRoundedCommentBox_GivenMultiLineStyledText_WhenFormatting_ThenItReappliesTheVisibleStyleAtEachContentLineStart(t *testing.T) {
+	styledBody := foregroundColorEscape(theme.MarkdownHeadingHex) + "Styled line one\nline two" + ansiReset
+
+	actual := renderRoundedCommentBox(styledBody, 32)
+	actualDocument := newDetailDocument(actual, 32)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[1][2]; actualStylePrefix != foregroundColorEscape(theme.MarkdownHeadingHex) {
+		t.Fatalf("expected the first content line style prefix %q, actual %q", foregroundColorEscape(theme.MarkdownHeadingHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[2][2]; actualStylePrefix != foregroundColorEscape(theme.MarkdownHeadingHex) {
+		t.Fatalf("expected the second content line style prefix %q, actual %q", foregroundColorEscape(theme.MarkdownHeadingHex), actualStylePrefix)
+	}
+}
+
+func TestGlamourMarkdownRenderer_GivenHeadingMarkdown_WhenRendering_ThenItKeepsHeadingStyledAndDoesNotAddDocumentIndent(t *testing.T) {
 	renderer := glamourMarkdownRenderer{}
 
-	actual, actualErr := renderer.Render("### Heading\n\n- one two three four five six seven", 18)
+	actual, actualErr := renderer.Render("## Why\n\nParagraph body", 40)
 
 	then_noError(t, actualErr)
-	if strings.Contains(actual, "### Heading") {
-		t.Fatalf("expected rendered markdown to omit raw heading markers, actual %q", actual)
+	actualDocument := newDetailDocument(actual, 40)
+	if actualHeading := string(actualDocument.lines[0]); actualHeading != "Why" {
+		t.Fatalf("expected visible heading %q, actual %q", "Why", actualHeading)
 	}
-	if !strings.Contains(actual, "Heading") {
-		t.Fatalf("expected rendered markdown to contain heading text, actual %q", actual)
+	if actualParagraph := string(actualDocument.lines[2]); actualParagraph != "Paragraph body" {
+		t.Fatalf("expected visible paragraph %q, actual %q", "Paragraph body", actualParagraph)
 	}
-	if !strings.Contains(actual, "\n") {
-		t.Fatalf("expected wrapped output to contain a newline, actual %q", actual)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[0][0]; actualStylePrefix == "" {
+		t.Fatal("expected the heading to keep a style prefix")
 	}
 }
 

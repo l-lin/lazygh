@@ -43,12 +43,13 @@ type detailWrappedRow struct {
 }
 
 type detailDocument struct {
-	text             []rune
-	lines            [][]rune
-	width            int
-	lineStartOffsets []int
-	lineStartRows    []int
-	rows             []detailWrappedRow
+	text              []rune
+	lines             [][]rune
+	lineStylePrefixes [][]string
+	width             int
+	lineStartOffsets  []int
+	lineStartRows     []int
+	rows              []detailWrappedRow
 }
 
 type detailViewState struct {
@@ -72,24 +73,28 @@ func newDetailDocument(text string, width int) detailDocument {
 		width = 1
 	}
 
-	lineTexts := strings.Split(text, "\n")
-	if len(lineTexts) == 0 {
-		lineTexts = []string{""}
+	styledLines := splitStyledTextLines(text)
+	visibleLines := make([]string, 0, len(styledLines))
+	for _, styledLine := range styledLines {
+		visibleLines = append(visibleLines, string(styledLine.runes))
 	}
 
 	document := detailDocument{
-		text:             []rune(strings.Join(lineTexts, "\n")),
-		lines:            make([][]rune, 0, len(lineTexts)),
-		width:            width,
-		lineStartOffsets: make([]int, 0, len(lineTexts)),
-		lineStartRows:    make([]int, 0, len(lineTexts)),
+		text:              []rune(strings.Join(visibleLines, "\n")),
+		lines:             make([][]rune, 0, len(styledLines)),
+		lineStylePrefixes: make([][]string, 0, len(styledLines)),
+		width:             width,
+		lineStartOffsets:  make([]int, 0, len(styledLines)),
+		lineStartRows:     make([]int, 0, len(styledLines)),
 	}
 
 	offset := 0
 	rowIndex := 0
-	for lineIndex, lineText := range lineTexts {
-		lineRunes := []rune(lineText)
+	for lineIndex, styledLine := range styledLines {
+		lineRunes := append([]rune(nil), styledLine.runes...)
+		lineStylePrefixes := append([]string(nil), styledLine.stylePrefixes...)
 		document.lines = append(document.lines, lineRunes)
+		document.lineStylePrefixes = append(document.lineStylePrefixes, lineStylePrefixes)
 		document.lineStartOffsets = append(document.lineStartOffsets, offset)
 		document.lineStartRows = append(document.lineStartRows, rowIndex)
 
@@ -110,7 +115,7 @@ func newDetailDocument(text string, width int) detailDocument {
 		}
 
 		offset += len(lineRunes)
-		if lineIndex < len(lineTexts)-1 {
+		if lineIndex < len(styledLines)-1 {
 			offset++
 		}
 	}
@@ -724,8 +729,9 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 
 	line := document.lines[row.line]
 	rowRunes := line[row.startColumn : row.endColumn+1]
+	lineStylePrefixes := document.lineStylePrefixes[row.line]
 	lineMatchRanges := searchMatchRanges[row.line]
-	if len(lineMatchRanges) == 0 && !state.mode.isVisual() {
+	if len(lineMatchRanges) == 0 && !state.mode.isVisual() && !detailLineHasStylePrefixes(lineStylePrefixes, row.startColumn, row.endColumn) {
 		return row.text
 	}
 
@@ -736,7 +742,7 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 		prefix := detailCellStylePrefix(detailCellStyle{
 			selected: state.isPositionSelected(document, detailPosition{line: row.line, column: column}),
 			search:   detailColumnInRanges(column, lineMatchRanges),
-		})
+		}, detailLineStylePrefix(lineStylePrefixes, column))
 		if prefix != currentPrefix {
 			if currentPrefix != "" {
 				builder.WriteString(ansiReset)
@@ -755,15 +761,37 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 	return builder.String()
 }
 
-func detailCellStylePrefix(style detailCellStyle) string {
+func detailCellStylePrefix(style detailCellStyle, basePrefix string) string {
 	if style.selected {
-		return ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+		return basePrefix + ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
 	}
 	if style.search {
-		return backgroundColorEscape(theme.SearchHighlightHex)
+		return basePrefix + backgroundColorEscape(theme.SearchHighlightHex)
 	}
 
-	return ""
+	return basePrefix
+}
+
+func detailLineHasStylePrefixes(prefixes []string, startColumn int, endColumn int) bool {
+	if len(prefixes) == 0 {
+		return false
+	}
+
+	for column := startColumn; column <= endColumn && column < len(prefixes); column++ {
+		if prefixes[column] != "" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func detailLineStylePrefix(prefixes []string, column int) string {
+	if column < 0 || column >= len(prefixes) {
+		return ""
+	}
+
+	return prefixes[column]
 }
 
 func detailColumnInRanges(column int, ranges []detailColumnRange) bool {

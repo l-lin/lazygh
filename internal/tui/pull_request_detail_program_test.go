@@ -9,6 +9,7 @@ import (
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDetailAndShowsDescriptionAndCommentsInSeparateTabs(t *testing.T) {
@@ -80,6 +81,77 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101", "acme/widgets#102"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101", "acme/widgets#102"}, loader.detailCalls)
+	}
+}
+
+func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailPaneShowsAStyledHeadingAndGreyCommentBorder(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 110, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#110": {Title: "Styled PR", Number: 110, Body: "## Why\n\nParagraph body", BaseRefName: "main", HeadRefName: "feature-110", State: "OPEN", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Ship it", CreatedAt: "2026-04-18T10:00:00Z"}}},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	headingLineIndex := given_viewLineIndexContaining(t, detailView, "Why")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headingLineIndex, "Why", given_themeColorHex(t, theme.MarkdownHeadingHex), "markdown heading")
+
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	commentBorderLineIndex := given_viewLineIndexContaining(t, detailView, "╭")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, commentBorderLineIndex, "╭", given_themeColorHex(t, theme.InactiveBorderHex), "comment border")
+}
+
+func TestLayout_GivenRenderedMarkdownDescription_WhenRendering_ThenVisibleLinesDoNotLeakRawANSISequences(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 111, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#111": {Title: "Styled PR", Number: 111, Body: "No need to deploy the docker image and publish the doc to S3.\n\nFor now, we are just testing deploying the runtime on GCP, not AWS.", BaseRefName: "main", HeadRefName: "feature-111", State: "OPEN"},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	for _, actualLine := range detailView.BufferLines() {
+		if strings.Contains(actualLine, "[38;") || strings.Contains(actualLine, "[3;") || strings.Contains(actualLine, "[0m") {
+			t.Fatalf("expected the visible detail lines to hide ANSI sequences, actual %q", actualLine)
+		}
 	}
 }
 
@@ -220,6 +292,19 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 	if !strings.Contains(pullRequestsFooterView.Buffer(), myPullRequestsLoadingTitle) {
 		t.Fatalf("expected pull request footer to show %q, actual %q", myPullRequestsLoadingTitle, pullRequestsFooterView.Buffer())
 	}
+}
+
+func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment string) int {
+	t.Helper()
+
+	for lineIndex, line := range view.BufferLines() {
+		if strings.Contains(line, segment) {
+			return lineIndex
+		}
+	}
+
+	t.Fatalf("expected a detail line containing %q, actual %q", segment, strings.Join(view.BufferLines(), "\n"))
+	return -1
 }
 
 type fakePullRequestDetailLoader struct {

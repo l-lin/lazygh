@@ -37,6 +37,20 @@ func then_viewLineSegmentHasBackgroundColor(t *testing.T, gui *gocui.Gui, viewNa
 	}
 }
 
+func then_viewLineSegmentHasForegroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string, expected int32, label string) {
+	t.Helper()
+
+	cells, width, x, y := given_screenCellsForViewSegment(t, gui, viewName, lineIndex, segment)
+	for offset := range utf8.RuneCountInString(segment) {
+		actualCell := cells[(y*width)+(x+offset)]
+		foregroundColor, _, _ := actualCell.Style.Decompose()
+		actual := foregroundColor.TrueColor().Hex()
+		if actual != expected {
+			t.Fatalf("expected %s color %#x at %s line %d offset %d, actual %#x", label, expected, viewName, lineIndex, offset, actual)
+		}
+	}
+}
+
 func then_viewLineSegmentIsNotUnderlined(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) {
 	t.Helper()
 

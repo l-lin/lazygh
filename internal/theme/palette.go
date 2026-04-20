@@ -8,4 +8,7 @@ const (
 	InactiveTitleHex          = "#CCCCCC"
 	SelectedLineBackgroundHex = "#E6E6E6"
 	SearchHighlightHex        = "#F9EAB3"
+	MarkdownHeadingHex        = "#1D4ED8"
+	MarkdownLinkHex           = "#0F766E"
+	MarkdownCodeHex           = "#B45309"
 )
