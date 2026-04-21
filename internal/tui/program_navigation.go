@@ -33,6 +33,12 @@ func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) erro
 			program.detailViewState.moveDown(document, viewportHeight)
 		})
 	}
+	if program.reviewSession.active {
+		if program.model.Focus() == FocusPullRequestsView {
+			program.adjustReviewSessionSelection(1)
+		}
+		return nil
+	}
 
 	program.model.MoveSelectionDown()
 	return nil
@@ -46,6 +52,12 @@ func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error 
 		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 			program.detailViewState.moveUp(document, viewportHeight)
 		})
+	}
+	if program.reviewSession.active {
+		if program.model.Focus() == FocusPullRequestsView {
+			program.adjustReviewSessionSelection(-1)
+		}
+		return nil
 	}
 
 	program.model.MoveSelectionUp()
@@ -61,6 +73,12 @@ func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
 			program.detailViewState.pageDown(document, viewportHeight)
 		})
 	}
+	if program.reviewSession.active {
+		if program.model.Focus() == FocusPullRequestsView {
+			program.adjustReviewSessionSelection(pageDelta(viewPageSize(view)))
+		}
+		return nil
+	}
 
 	program.model.PageDown(viewPageSize(view))
 	return nil
@@ -74,6 +92,12 @@ func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 			program.detailViewState.pageUp(document, viewportHeight)
 		})
+	}
+	if program.reviewSession.active {
+		if program.model.Focus() == FocusPullRequestsView {
+			program.adjustReviewSessionSelection(-pageDelta(viewPageSize(view)))
+		}
+		return nil
 	}
 
 	program.model.PageUp(viewPageSize(view))
@@ -149,7 +173,7 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
-	if program.selectionChangeBlocked() {
+	if program.selectionChangeBlocked() || program.reviewSession.active {
 		return nil
 	}
 
@@ -159,7 +183,7 @@ func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error 
 }
 
 func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
-	if program.selectionChangeBlocked() {
+	if program.selectionChangeBlocked() || program.reviewSession.active {
 		return nil
 	}
 
@@ -221,7 +245,7 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
-	if program.mainPaneActionBlocked() {
+	if program.mainPaneActionBlocked() || (program.reviewSession.active && program.model.Focus() != FocusDetailView) {
 		return nil
 	}
 

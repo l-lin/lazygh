@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -50,6 +51,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		"Comment on PR",
 		"Yank URL to clipboard",
 		"Open PR in browser",
+		"Start review",
 		"Review: Approve PR",
 		"Review: Comment on PR",
 		"Review: Request changes",
@@ -60,8 +62,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
 		}
 	}
-	if !strings.Contains(popupView.Buffer(), "8 of 8 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "8 of 8 actions", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "9 of 9 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "9 of 9 actions", popupView.Buffer())
 	}
 
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
@@ -136,8 +138,8 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "1 of 8 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "1 of 8 actions", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "1 of 9 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "1 of 9 actions", popupView.Buffer())
 	}
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
@@ -198,6 +200,35 @@ func TestActionsPopup_GivenKeywordSearch_WhenFiltering_ThenItCanFindReviewAndEdi
 	}
 }
 
+func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenThePendingReview_ThenItKeepsThePopupOpenAndShowsTheFailure(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{startReviewErr: errors.New("review refused")}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("start review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "start review"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Title, "review refused") {
+		t.Fatalf("expected popup title to contain %q, actual %q", "review refused", popupView.Title)
+	}
+	if subject.reviewSession.active {
+		t.Fatal("expected review mode to stay inactive after the error")
+	}
+}
+
 func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
@@ -213,7 +244,7 @@ func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeeps
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	for _, ch := range "review" {
+	for _, ch := range "approve" {
 		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
 		if !actualHandled {
 			t.Fatalf("expected typing %q to be handled", string(ch))
@@ -223,11 +254,11 @@ func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeeps
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 2, "Review")
-	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 2, ": Approve PR")
-	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 2, "Review")
-	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, "Review")
-	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, ": Approve PR")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 2, "Approve")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 2, "Review: ")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 2, "Approve")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, "Approve")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, "Review: ")
 }
 
 func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSearchingWithoutExecutingTheAction(t *testing.T) {
@@ -334,8 +365,8 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "8 of 8 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "8 of 8 actions", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "9 of 9 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "9 of 9 actions", popupView.Buffer())
 	}
 }
 

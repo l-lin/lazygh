@@ -130,10 +130,23 @@ func (program *Program) configureDetailView(view *gocui.View) {
 }
 
 func (program *Program) configureUserView(view *gocui.View) {
+	if program.reviewSession.active {
+		program.applyViewStyle(view, FocusUserView, program.userViewTitle(), false)
+		view.Wrap = false
+		view.Editable = false
+		view.Editor = nil
+		return
+	}
+
 	program.configureSelectableListView(view, FocusUserView, program.userViewTitle(), program.model.UserSearchQuery())
 }
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
+	if program.reviewSession.active {
+		program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), "")
+		return
+	}
+
 	program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()))
 	view.TitlePrefix = "[2]"
 	view.Tabs = program.pullRequestsTabLabels()
@@ -168,6 +181,11 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 }
 
 func (program *Program) renderUserView(view *gocui.View) {
+	if program.reviewSession.active {
+		renderReadOnlyTextView(view, program.reviewSessionMetadataContent())
+		return
+	}
+
 	program.renderSelectableListView(view, selectableListViewState{
 		focus:               FocusUserView,
 		query:               program.model.UserSearchQuery(),
@@ -177,6 +195,16 @@ func (program *Program) renderUserView(view *gocui.View) {
 }
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
+	if program.reviewSession.active {
+		program.renderSelectableListView(view, selectableListViewState{
+			focus:               FocusPullRequestsView,
+			query:               "",
+			items:               program.reviewSessionFiles(),
+			selectedVisibleLine: program.reviewSession.selectedFileIdx,
+		})
+		return
+	}
+
 	program.renderSelectableListView(view, selectableListViewState{
 		focus:               FocusPullRequestsView,
 		query:               program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()),
@@ -205,6 +233,9 @@ func (program *Program) renderDetailView(view *gocui.View) {
 }
 
 func (program *Program) detailViewContent() string {
+	if program.reviewSession.active {
+		return program.reviewSessionDetailContent()
+	}
 	if program.model.currentSideFocus() == FocusPullRequestsView {
 		row, ok := program.model.SelectedPullRequestRow()
 		if ok && row.Summary != nil && pullRequestDetailKey(row.Summary.Repository, row.Summary.Number) != "" {

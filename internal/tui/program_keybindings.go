@@ -71,6 +71,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		keybindingDefinition{key: 'l', handler: program.nextSideView},
 		keybindingDefinition{key: 'h', handler: program.previousSideView},
 		keybindingDefinition{key: '0', handler: program.focusDetailView},
+		keybindingDefinition{key: gocui.KeyEsc, handler: program.exitReviewMode},
+		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.exitReviewMode},
 	)...)
 
 	specs = append(specs, bindingsForView(viewUserName,

@@ -29,6 +29,7 @@ type GitHubLoader interface {
 	OpenPullRequestInBrowser(repository string, number int) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
+	StartPendingPullRequestReview(repository string, number int) (string, error)
 }
 
 type Program struct {
@@ -56,6 +57,7 @@ type Program struct {
 	searchEditor                     *lineEditor
 	actionsPopupSearchEditor         *lineEditor
 	actionsPopupErrorMessage         string
+	reviewSession                    reviewSessionState
 	modalEditor                      *modalEditorState
 	externalEditor                   externalEditor
 	markdownRenderer                 MarkdownRenderer

@@ -113,10 +113,16 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 }
 
 func (program *Program) userViewTitle() string {
+	if program.reviewSession.active {
+		return reviewModeMetadataTitle
+	}
 	return "[1]-Connected user"
 }
 
 func (program *Program) detailViewTitle() string {
+	if program.reviewSession.active {
+		return reviewModeDiffTitle
+	}
 	if program.shouldShowPullRequestDetailTabs() {
 		return ""
 	}
@@ -124,6 +130,9 @@ func (program *Program) detailViewTitle() string {
 }
 
 func (program *Program) pullRequestsViewTitle() string {
+	if program.reviewSession.active {
+		return reviewModeFilesTitle
+	}
 	return ""
 }
 

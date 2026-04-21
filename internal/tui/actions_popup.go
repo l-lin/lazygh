@@ -56,7 +56,7 @@ func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 		}
 	}
 
-	return program.refreshViews(gui)
+	return program.layout(gui)
 }
 
 func (program *Program) focusActionsPopupSearch(gui *gocui.Gui, _ *gocui.View) error {
@@ -170,7 +170,7 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 }
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
-	if !program.isPullRequestContext() {
+	if program.reviewSession.active || !program.isPullRequestContext() {
 		return nil
 	}
 
@@ -178,6 +178,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 		{id: "comment-on-pr", title: pullRequestCommentComposerTitle, keywords: []string{"comment", "reply", "discussion"}, execute: program.executeCommentOnPullRequestAction},
 		{id: "yank-pull-request-url", title: "Yank URL to clipboard", keywords: []string{"yank", "copy", "clipboard", "url", "link"}, execute: program.executeYankPullRequestURLAction},
 		{id: "open-pull-request-in-browser", title: "Open PR in browser", keywords: []string{"open", "browser", "web", "url", "link"}, execute: program.executeOpenPullRequestInBrowserAction},
+		{id: "start-review", title: "Start review", keywords: []string{"start", "review", "pending", "session", "inline"}, execute: program.executeStartReviewAction},
 		{id: "review-approve", title: "Review: Approve PR", keywords: []string{"review", "approve", "lgtm", "shipit"}, execute: program.executeApprovePullRequestAction},
 		{id: "review-comment", title: pullRequestReviewCommentComposerTitle, keywords: []string{"review", "comment", "feedback"}, execute: program.executeReviewCommentAction},
 		{id: "review-request-changes", title: pullRequestRequestChangesComposerTitle, keywords: []string{"review", "request", "changes", "block"}, execute: program.executeRequestChangesAction},

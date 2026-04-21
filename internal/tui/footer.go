@@ -80,6 +80,14 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 }
 
 func (program *Program) appliedSearchFooterText(focus Focus) string {
+	if program.reviewSession.active {
+		if focus != FocusDetailView {
+			return ""
+		}
+		query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
+		return searchSummaryText(query, countSearchMatches(program.detailViewContent(), query))
+	}
+
 	switch focus {
 	case FocusPullRequestsView:
 		query := program.model.appliedSearchQuery(FocusPullRequestsView, program.model.ActivePullRequestTab())
@@ -103,6 +111,13 @@ func searchSummaryText(query string, count int) string {
 }
 
 func (program *Program) loadingFooterText(focus Focus) string {
+	if program.reviewSession.active {
+		if focus == FocusDetailView && program.selectedPullRequestDetailLoading() {
+			return pullRequestDetailLoadingTitle
+		}
+		return ""
+	}
+
 	switch focus {
 	case FocusPullRequestsView:
 		return program.activePullRequestsLoadingText()

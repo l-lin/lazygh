@@ -452,6 +452,9 @@ type fakePullRequestDetailLoader struct {
 	editDescriptionCalls  []string
 	editDescriptionBodies []string
 	editDescriptionErr    error
+	startReviewCalls      []string
+	startReviewID         string
+	startReviewErr        error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -540,6 +543,17 @@ func (loader *fakePullRequestDetailLoader) EditPullRequestDescription(repository
 		detail.Body = body
 	})
 	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) StartPendingPullRequestReview(repository string, number int) (string, error) {
+	loader.startReviewCalls = append(loader.startReviewCalls, repository+"#"+strconv.Itoa(number))
+	if loader.startReviewErr != nil {
+		return "", loader.startReviewErr
+	}
+	if strings.TrimSpace(loader.startReviewID) != "" {
+		return strings.TrimSpace(loader.startReviewID), nil
+	}
+	return "PRR_pending", nil
 }
 
 func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {

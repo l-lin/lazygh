@@ -49,6 +49,13 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 }
 
 func (program *Program) selectedPullRequestSummaryForDetail() (githubcli.PullRequest, bool) {
+	if program.reviewSession.active {
+		summary := program.reviewSession.summary
+		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+			return githubcli.PullRequest{}, false
+		}
+		return summary, true
+	}
 	if program.model.currentSideFocus() != FocusPullRequestsView {
 		return githubcli.PullRequest{}, false
 	}
@@ -70,6 +77,10 @@ func (program *Program) pullRequestDetailForSummary(summary githubcli.PullReques
 }
 
 func (program *Program) currentDetailIdentity() string {
+	if program.reviewSession.active {
+		return program.reviewSessionDetailIdentity()
+	}
+
 	switch program.model.currentSideFocus() {
 	case FocusPullRequestsView:
 		if summary, ok := program.model.SelectedPullRequestSummary(); ok {

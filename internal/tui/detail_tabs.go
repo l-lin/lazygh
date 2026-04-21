@@ -23,7 +23,7 @@ func (program *Program) previousDetailTab(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) shouldShowPullRequestDetailTabs() bool {
-	if program.model.currentSideFocus() != FocusPullRequestsView {
+	if program.reviewSession.active || program.model.currentSideFocus() != FocusPullRequestsView {
 		return false
 	}
 

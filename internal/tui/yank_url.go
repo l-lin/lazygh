@@ -117,6 +117,10 @@ func (program *Program) selectedPullRequestURL() (string, bool) {
 }
 
 func (program *Program) isPullRequestContext() bool {
+	if program.reviewSession.active {
+		return true
+	}
+
 	switch program.model.Focus() {
 	case FocusPullRequestsView:
 		return true

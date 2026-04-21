@@ -91,6 +91,46 @@ func (program *Program) helpSections() []helpSection {
 }
 
 func (program *Program) localHelpEntries() []helpEntry {
+	if program.reviewSession.active {
+		switch program.model.Focus() {
+		case FocusDetailView:
+			return []helpEntry{
+				{Key: "h/j/k/l/<up>/<down>", Description: "Move cursor"},
+				{Key: "0/$", Description: "Line start/end"},
+				{Key: "gg/G", Description: "First/last line"},
+				{Key: "w/e/b", Description: "Next/end/previous word"},
+				{Key: "n/N", Description: "Next/previous match"},
+				{Key: "v/V", Description: "Start char/line visual selection"},
+				{Key: "y", Description: "Yank selection / PR URL"},
+				{Key: "<c-d>", Description: "Page down"},
+				{Key: "<c-u>", Description: "Page up"},
+				{Key: "+/-", Description: "Toggle fullscreen"},
+				{Key: "/", Description: "Search diff"},
+				{Key: "<esc>", Description: "Exit visual / return"},
+			}
+		case FocusPullRequestsView:
+			return []helpEntry{
+				{Key: "j/k/<up>/<down>", Description: "Move down/up"},
+				{Key: "h/l", Description: "Switch side view"},
+				{Key: "<c-d>", Description: "Page down"},
+				{Key: "<c-u>", Description: "Page up"},
+				{Key: "+/-", Description: "Resize panes"},
+				pullRequestYankHelpEntry(),
+				pullRequestCommentHelpEntry(),
+				{Key: "<enter>", Description: "Open diff"},
+				{Key: "<esc>", Description: "Exit review mode"},
+			}
+		default:
+			return []helpEntry{
+				{Key: "h/l", Description: "Switch side view"},
+				pullRequestYankHelpEntry(),
+				pullRequestCommentHelpEntry(),
+				{Key: "0", Description: "Focus diff"},
+				{Key: "<esc>", Description: "Exit review mode"},
+			}
+		}
+	}
+
 	switch program.model.Focus() {
 	case FocusDetailView:
 		entries := []helpEntry{
