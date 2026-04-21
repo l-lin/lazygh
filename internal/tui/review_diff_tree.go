@@ -1,0 +1,119 @@
+package tui
+
+import "strings"
+
+type reviewDiffTreeNode struct {
+	name         string
+	fileIndex    int
+	children     []*reviewDiffTreeNode
+	childrenByID map[string]*reviewDiffTreeNode
+}
+
+func buildReviewDiffFileTree(files []reviewDiffFile) reviewDiffTree {
+	root := &reviewDiffTreeNode{fileIndex: -1, childrenByID: map[string]*reviewDiffTreeNode{}}
+	for fileIndex, file := range files {
+		path := strings.TrimSpace(file.Path)
+		if path == "" {
+			continue
+		}
+
+		segments := strings.Split(path, "/")
+		currentNode := root
+		for segmentIndex, segment := range segments {
+			isLeaf := segmentIndex == len(segments)-1
+			childNode, ok := currentNode.childrenByID[segment]
+			if !ok {
+				childNode = &reviewDiffTreeNode{name: segment, fileIndex: -1, childrenByID: map[string]*reviewDiffTreeNode{}}
+				currentNode.childrenByID[segment] = childNode
+				currentNode.children = append(currentNode.children, childNode)
+			}
+			if isLeaf {
+				childNode.fileIndex = fileIndex
+			}
+			currentNode = childNode
+		}
+	}
+
+	rows := make([]reviewDiffTreeRow, 0)
+	for _, childNode := range root.children {
+		appendReviewDiffTreeRows(childNode, 0, &rows)
+	}
+	return reviewDiffTree{Rows: rows}
+}
+
+func appendReviewDiffTreeRows(node *reviewDiffTreeNode, depth int, rows *[]reviewDiffTreeRow) {
+	if node == nil {
+		return
+	}
+
+	pathSegments := []string{node.name}
+	currentNode := node
+	for currentNode.isDirectory() && len(currentNode.children) == 1 {
+		onlyChild := currentNode.children[0]
+		pathSegments = append(pathSegments, onlyChild.name)
+		if onlyChild.isFile() {
+			appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/"), onlyChild.fileIndex)
+			return
+		}
+		currentNode = onlyChild
+	}
+
+	if currentNode.isFile() {
+		appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/"), currentNode.fileIndex)
+		return
+	}
+
+	appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1)
+	for _, childNode := range currentNode.children {
+		appendReviewDiffTreeRows(childNode, depth+1, rows)
+	}
+}
+
+func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string, fileIndex int) {
+	if rows == nil {
+		return
+	}
+	*rows = append(*rows, reviewDiffTreeRow{
+		VisibleRowIndex: len(*rows),
+		Depth:           depth,
+		Label:           label,
+		FileIndex:       fileIndex,
+	})
+}
+
+func reviewDiffTreeItems(tree reviewDiffTree) []Item {
+	items := make([]Item, 0, len(tree.Rows))
+	for _, row := range tree.Rows {
+		items = append(items, Item{Title: strings.Repeat("  ", row.Depth) + row.Label})
+	}
+	return items
+}
+
+func reviewDiffSelectableRowIndexes(tree reviewDiffTree) []int {
+	indexes := make([]int, 0, len(tree.Rows))
+	for _, row := range tree.Rows {
+		if row.FileIndex >= 0 {
+			indexes = append(indexes, row.VisibleRowIndex)
+		}
+	}
+	return indexes
+}
+
+func reviewDiffFileIndexAtRow(tree reviewDiffTree, rowIndex int) (int, bool) {
+	if len(tree.Rows) == 0 {
+		return 0, false
+	}
+	clampedRowIndex := clampIndex(rowIndex, len(tree.Rows))
+	if tree.Rows[clampedRowIndex].FileIndex >= 0 {
+		return tree.Rows[clampedRowIndex].FileIndex, true
+	}
+	return 0, false
+}
+
+func (node *reviewDiffTreeNode) isFile() bool {
+	return node != nil && node.fileIndex >= 0
+}
+
+func (node *reviewDiffTreeNode) isDirectory() bool {
+	return node != nil && node.fileIndex < 0
+}

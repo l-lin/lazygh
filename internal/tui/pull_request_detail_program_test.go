@@ -431,6 +431,9 @@ type fakePullRequestDetailLoader struct {
 	details               map[string]githubcli.PullRequestDetail
 	detailErrors          map[string]error
 	detailCalls           []string
+	diffs                 map[string]githubcli.PullRequestDiff
+	diffErrors            map[string]error
+	diffCalls             []string
 	commentCalls          []string
 	commentBodies         []string
 	commentErr            error
@@ -483,6 +486,22 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository strin
 		}
 	}
 	return githubcli.PullRequestDetail{}, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error) {
+	key := repository + "#" + strconv.Itoa(number)
+	loader.diffCalls = append(loader.diffCalls, key)
+	if loader.diffErrors != nil {
+		if err, ok := loader.diffErrors[key]; ok {
+			return githubcli.PullRequestDiff{}, err
+		}
+	}
+	if loader.diffs != nil {
+		if diff, ok := loader.diffs[key]; ok {
+			return diff, nil
+		}
+	}
+	return githubcli.PullRequestDiff{}, nil
 }
 
 func (loader *fakePullRequestDetailLoader) CommentOnPullRequest(repository string, number int, body string) error {

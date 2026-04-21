@@ -26,6 +26,7 @@ func (program *Program) executeApprovePullRequestAction(_ *gocui.Gui) actionsPop
 	}
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.invalidatePullRequestDiff(target.repository, target.number)
 	program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
 	return actionsPopupActionResult{closePopup: true}
 }
@@ -80,6 +81,7 @@ func (program *Program) submitPullRequestReviewComment(target pullRequestActionT
 	}
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.invalidatePullRequestDiff(target.repository, target.number)
 	program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
 	return nil
 }
@@ -96,6 +98,7 @@ func (program *Program) submitPullRequestRequestChanges(target pullRequestAction
 	}
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.invalidatePullRequestDiff(target.repository, target.number)
 	program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
 	return nil
 }

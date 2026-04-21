@@ -8,6 +8,7 @@ type viewRenderer func(*gocui.View)
 func (program *Program) refreshViews(gui *gocui.Gui) error {
 	program.gui = gui
 	program.maybeLoadSelectedPullRequestDetail(gui)
+	program.maybeLoadSelectedPullRequestDiff(gui)
 
 	if err := program.refreshExistingView(gui, viewUserName, program.configureUserView, program.renderUserView); err != nil {
 		return err

@@ -36,6 +36,10 @@ func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) erro
 	if program.reviewSession.active {
 		if program.model.Focus() == FocusPullRequestsView {
 			program.adjustReviewSessionSelection(1)
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
 		}
 		return nil
 	}
@@ -56,6 +60,10 @@ func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error 
 	if program.reviewSession.active {
 		if program.model.Focus() == FocusPullRequestsView {
 			program.adjustReviewSessionSelection(-1)
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
 		}
 		return nil
 	}
@@ -76,6 +84,10 @@ func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
 	if program.reviewSession.active {
 		if program.model.Focus() == FocusPullRequestsView {
 			program.adjustReviewSessionSelection(pageDelta(viewPageSize(view)))
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
 		}
 		return nil
 	}
@@ -96,6 +108,10 @@ func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 	if program.reviewSession.active {
 		if program.model.Focus() == FocusPullRequestsView {
 			program.adjustReviewSessionSelection(-pageDelta(viewPageSize(view)))
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
 		}
 		return nil
 	}

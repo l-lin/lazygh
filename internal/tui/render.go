@@ -27,6 +27,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadMyPullRequests(gui)
 	program.maybeLoadRequestedPullRequests(gui)
 	program.maybeLoadSelectedPullRequestDetail(gui)
+	program.maybeLoadSelectedPullRequestDiff(gui)
 
 	mainPaneLayout := calculateMainPaneLayout(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane())
 
@@ -200,7 +201,7 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 			focus:               FocusPullRequestsView,
 			query:               "",
 			items:               program.reviewSessionFiles(),
-			selectedVisibleLine: program.reviewSession.selectedFileIdx,
+			selectedVisibleLine: program.reviewSessionSelectedVisibleLine(),
 		})
 		return
 	}

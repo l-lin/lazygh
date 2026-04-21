@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurposesTheExistingThreePanesForReviewWork(t *testing.T) {
+func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurposesTheExistingThreePanesAndLoadsTheFileTreeAndFirstDiff(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
@@ -20,8 +21,11 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 				BaseRefName:  "main",
 				HeadRefName:  "feature/review",
 				State:        "OPEN",
-				ChangedFiles: 5,
+				ChangedFiles: 2,
 			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
 		},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
@@ -50,8 +54,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if metadataView.Title != "[1]-Metadata" {
 		t.Fatalf("expected metadata view title %q, actual %q", "[1]-Metadata", metadataView.Title)
 	}
-	if !strings.Contains(metadataView.Buffer(), "Pending review: PRR_pending") {
-		t.Fatalf("expected metadata view to contain %q, actual %q", "Pending review: PRR_pending", metadataView.Buffer())
+	if !strings.Contains(metadataView.Buffer(), "Pending review: PRR_pending") || !strings.Contains(metadataView.Buffer(), "Changed files: 2") || !strings.Contains(metadataView.Buffer(), "Additions: +3") || !strings.Contains(metadataView.Buffer(), "Deletions: -2") {
+		t.Fatalf("expected metadata view to contain review stats, actual %q", metadataView.Buffer())
 	}
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
@@ -59,8 +63,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if filesView.Title != "[2]-Files" {
 		t.Fatalf("expected files view title %q, actual %q", "[2]-Files", filesView.Title)
 	}
-	if !strings.Contains(filesView.Buffer(), "5 files pending diff load") {
-		t.Fatalf("expected files view to contain %q, actual %q", "5 files pending diff load", filesView.Buffer())
+	if !strings.Contains(filesView.Buffer(), "internal/tui/") || !strings.Contains(filesView.Buffer(), "render.go") || !strings.Contains(filesView.Buffer(), "model.go") {
+		t.Fatalf("expected files view to contain the collapsed file tree, actual %q", filesView.Buffer())
 	}
 	if len(filesView.Tabs) != 0 {
 		t.Fatalf("expected review files view to hide pull request tabs, actual %v", filesView.Tabs)
@@ -71,11 +75,58 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if detailView.Title != "[0]-Diff" {
 		t.Fatalf("expected detail view title %q, actual %q", "[0]-Diff", detailView.Title)
 	}
-	if !strings.Contains(detailView.Buffer(), "TODO 19 will replace this placeholder") {
-		t.Fatalf("expected detail view to explain the placeholder diff, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
+		t.Fatalf("expected detail view to contain the first parsed diff file, actual %q", detailView.Buffer())
 	}
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected review diff view to hide browser detail tabs, actual %v", detailView.Tabs)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42"}, loader.diffCalls)
+	}
+}
+
+func TestReviewMode_GivenMovingTheViewTwoSelection_WhenRefreshingTheReviewPane_ThenViewZeroRendersTheSelectedFileDiff(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	actualErr = subject.moveSelectionDown(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "internal/tui/model.go") || !strings.Contains(detailView.Buffer(), "+new model") {
+		t.Fatalf("expected detail view to switch to the selected file diff, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "+another line") {
+		t.Fatalf("expected the first file diff to disappear after selection changed, actual %q", detailView.Buffer())
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected diff calls to stay cached at %v, actual %v", []string{"acme/widgets#42"}, loader.diffCalls)
 	}
 }
 
@@ -178,6 +229,33 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "No comments yet.") {
 		t.Fatalf("expected browser detail content to be restored, actual %q", detailView.Buffer())
+	}
+}
+
+func given_reviewSessionPullRequestDiff() githubcli.PullRequestDiff {
+	return githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/internal/tui/render.go b/internal/tui/render.go",
+			"index 1111111..2222222 100644",
+			"--- a/internal/tui/render.go",
+			"+++ b/internal/tui/render.go",
+			"@@ -1,2 +1,3 @@",
+			" context",
+			"-old line",
+			"+new line",
+			"+another line",
+			"diff --git a/internal/tui/model.go b/internal/tui/model.go",
+			"index 3333333..4444444 100644",
+			"--- a/internal/tui/model.go",
+			"+++ b/internal/tui/model.go",
+			"@@ -10,1 +10,1 @@",
+			"-old model",
+			"+new model",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{
+			{Path: "internal/tui/render.go", ChangeType: "modified", Additions: 2, Deletions: 1},
+			{Path: "internal/tui/model.go", ChangeType: "modified", Additions: 1, Deletions: 1},
+		},
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesTheReviewHandlerRefreshesTheDetailAndShowsFeedback(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDiffCache = map[string]pullRequestDiffResult{"acme/widgets#42": {}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -34,6 +35,9 @@ func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesT
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the cached pull request diff to be invalidated after review submission")
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)

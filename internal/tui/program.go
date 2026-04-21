@@ -22,6 +22,7 @@ type GitHubLoader interface {
 	ListMyPullRequests() ([]githubcli.PullRequest, error)
 	ListRequestedPullRequests() ([]githubcli.PullRequest, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
+	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
 	CommentOnPullRequest(repository string, number int, body string) error
 	ApprovePullRequest(repository string, number int) error
 	ReviewPullRequestWithComment(repository string, number int, body string) error
@@ -46,6 +47,8 @@ type Program struct {
 	requestedPullRequestsCountKnown  bool
 	pullRequestDetailCache           map[string]pullRequestDetailResult
 	pullRequestDetailLoadInFlight    map[string]bool
+	pullRequestDiffCache             map[string]pullRequestDiffResult
+	pullRequestDiffLoadInFlight      map[string]bool
 	detailWrapWidth                  int
 	activeDetailTab                  DetailTab
 	lastDetailIdentity               string
@@ -91,6 +94,8 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		githubLoader:                  githubLoader,
 		pullRequestDetailCache:        map[string]pullRequestDetailResult{},
 		pullRequestDetailLoadInFlight: map[string]bool{},
+		pullRequestDiffCache:          map[string]pullRequestDiffResult{},
+		pullRequestDiffLoadInFlight:   map[string]bool{},
 		externalEditor:                systemExternalEditor{},
 		markdownRenderer:              glamourMarkdownRenderer{},
 		asyncRunner:                   goroutineAsyncRunner{},

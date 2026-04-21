@@ -13,6 +13,7 @@ const (
 	viewDetailFooterName       = "detail-footer"
 
 	pullRequestDetailLoadingTitle = "Loading pull request detail..."
+	pullRequestDiffLoadingTitle   = "Loading pull request diff..."
 )
 
 type paneFooterState struct {
@@ -112,8 +113,11 @@ func searchSummaryText(query string, count int) string {
 
 func (program *Program) loadingFooterText(focus Focus) string {
 	if program.reviewSession.active {
-		if focus == FocusDetailView && program.selectedPullRequestDetailLoading() {
+		if focus == FocusUserView && program.selectedPullRequestDetailLoading() {
 			return pullRequestDetailLoadingTitle
+		}
+		if (focus == FocusPullRequestsView || focus == FocusDetailView) && program.selectedPullRequestDiffLoading() {
+			return pullRequestDiffLoadingTitle
 		}
 		return ""
 	}

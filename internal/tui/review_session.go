@@ -25,7 +25,7 @@ type reviewSessionState struct {
 	sourceDetailFullscreenReturn PaneLayoutSize
 	summary                      githubcli.PullRequest
 	pendingReviewID              string
-	selectedFileIdx              int
+	selectedFileTreeRow          int
 }
 
 func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActionResult {
@@ -114,27 +114,81 @@ func (program *Program) reviewSessionFiles() []Item {
 		return nil
 	}
 
-	changedFiles := program.reviewSessionChangedFileCount()
-	title := "Diff preview unavailable"
-	if changedFiles > 0 {
-		title = fmt.Sprintf("%d %s pending diff load", changedFiles, pluralize(changedFiles, "file", "files"))
+	result, ok := program.reviewSessionDiffResult()
+	if !ok {
+		return []Item{{Title: "Loading file tree...", Detail: program.reviewSessionLoadingDetail()}}
+	}
+	if result.err != nil {
+		return []Item{{Title: "Could not load file tree", Detail: program.reviewSessionDiffErrorDetail(result.err)}}
+	}
+	if len(result.data.FileTree.Rows) == 0 {
+		return []Item{{Title: "No changed files", Detail: program.reviewSessionNoDiffDetail()}}
 	}
 
-	return []Item{{Title: title, Detail: program.reviewSessionPlaceholderDetail()}}
+	program.clampReviewSessionSelection()
+	return reviewDiffTreeItems(result.data.FileTree)
 }
 
-func (program *Program) selectedReviewSessionFile() (Item, bool) {
-	return itemAt(program.reviewSessionFiles(), program.reviewSession.selectedFileIdx)
+func (program *Program) reviewSessionSelectedVisibleLine() int {
+	result, ok := program.reviewSessionDiffResult()
+	if !ok || result.err != nil {
+		return 0
+	}
+	program.clampReviewSessionSelection()
+	return program.reviewSession.selectedFileTreeRow
 }
 
-func (program *Program) adjustReviewSessionSelection(change int) {
-	files := program.reviewSessionFiles()
-	if len(files) == 0 {
-		program.reviewSession.selectedFileIdx = 0
+func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
+	result, ok := program.reviewSessionDiffResult()
+	if !ok || result.err != nil {
+		return reviewDiffFile{}, false
+	}
+	program.clampReviewSessionSelection()
+	fileIndex, ok := reviewDiffFileIndexAtRow(result.data.FileTree, program.reviewSession.selectedFileTreeRow)
+	if !ok || fileIndex < 0 || fileIndex >= len(result.data.Files) {
+		return reviewDiffFile{}, false
+	}
+	return result.data.Files[fileIndex], true
+}
+
+func (program *Program) clampReviewSessionSelection() {
+	result, ok := program.reviewSessionDiffResult()
+	if !ok || result.err != nil {
+		program.reviewSession.selectedFileTreeRow = 0
 		return
 	}
 
-	program.reviewSession.selectedFileIdx = clampIndex(program.reviewSession.selectedFileIdx+change, len(files))
+	selectableRows := reviewDiffSelectableRowIndexes(result.data.FileTree)
+	if len(selectableRows) == 0 {
+		program.reviewSession.selectedFileTreeRow = 0
+		return
+	}
+	if indexOfInt(selectableRows, program.reviewSession.selectedFileTreeRow) >= 0 {
+		return
+	}
+	program.reviewSession.selectedFileTreeRow = selectableRows[0]
+}
+
+func (program *Program) adjustReviewSessionSelection(change int) {
+	result, ok := program.reviewSessionDiffResult()
+	if !ok || result.err != nil {
+		program.reviewSession.selectedFileTreeRow = 0
+		return
+	}
+
+	selectableRows := reviewDiffSelectableRowIndexes(result.data.FileTree)
+	if len(selectableRows) == 0 {
+		program.reviewSession.selectedFileTreeRow = 0
+		return
+	}
+
+	program.clampReviewSessionSelection()
+	selectedIndex := indexOfInt(selectableRows, program.reviewSession.selectedFileTreeRow)
+	if selectedIndex < 0 {
+		selectedIndex = 0
+	}
+	selectedIndex = clampIndex(selectedIndex+change, len(selectableRows))
+	program.reviewSession.selectedFileTreeRow = selectableRows[selectedIndex]
 }
 
 func (program *Program) reviewSessionMetadataContent() string {
@@ -147,32 +201,76 @@ func (program *Program) reviewSessionMetadataContent() string {
 			bodyLines = append(bodyLines, "", "Could not load richer pull request metadata.", strings.TrimSpace(result.err.Error()))
 		} else {
 			detail = result.detail
-			bodyLines = append(bodyLines, fmt.Sprintf("Changed files: %d", detail.ChangedFiles))
 		}
 	} else {
 		bodyLines = append(bodyLines, "", "Loading richer pull request metadata...")
 	}
-	bodyLines = append(bodyLines, "", "Review mode is active. The real file tree lands in TODO 19.")
+
+	if result, ok := program.reviewSessionDiffResult(); ok {
+		if result.err != nil {
+			bodyLines = append(bodyLines, "", "Could not load changed files.", strings.TrimSpace(result.err.Error()))
+		} else {
+			bodyLines = append(bodyLines,
+				fmt.Sprintf("Changed files: %d", result.data.Stats.ChangedFiles),
+				fmt.Sprintf("Additions: +%d", result.data.Stats.Additions),
+				fmt.Sprintf("Deletions: -%d", result.data.Stats.Deletions),
+			)
+		}
+	} else {
+		bodyLines = append(bodyLines, "", "Loading changed files...")
+	}
 
 	return renderPullRequestDetailContent(renderPullRequestDetailHeader(summary, detail), strings.Join(bodyLines, "\n"))
 }
 
 func (program *Program) reviewSessionDetailContent() string {
-	selectedFile, ok := program.selectedReviewSessionFile()
-	if !ok {
-		return program.reviewSessionPlaceholderDetail()
+	if !program.reviewSession.active {
+		return ""
 	}
 
-	return selectedFile.Detail
+	result, ok := program.reviewSessionDiffResult()
+	if !ok {
+		return program.reviewSessionLoadingDetail()
+	}
+	if result.err != nil {
+		return program.reviewSessionDiffErrorDetail(result.err)
+	}
+	selectedFile, ok := program.selectedReviewSessionDiffFile()
+	if !ok {
+		return program.reviewSessionNoDiffDetail()
+	}
+	return renderReviewDiffFile(selectedFile)
 }
 
-func (program *Program) reviewSessionPlaceholderDetail() string {
+func (program *Program) reviewSessionLoadingDetail() string {
 	summary := program.reviewSession.summary
 	repository := pullRequestRepositoryName(summary.Repository)
 	lines := []string{
 		fmt.Sprintf("Pending review %s is open for %s#%d.", valueOrDash(program.reviewSession.pendingReviewID), repository, summary.Number),
 		"",
-		"TODO 19 will replace this placeholder with the selected file diff and collapsed file tree.",
+		"Loading pull request diff...",
+		fmt.Sprintf("Running `gh api repos/%s/pulls/%d -H 'Accept: application/vnd.github.v3.diff'`.", repository, summary.Number),
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (program *Program) reviewSessionDiffErrorDetail(err error) string {
+	message := strings.TrimSpace(err.Error())
+	if message == "" {
+		message = "Unknown error. GitHub misplaced the diff again."
+	}
+
+	lines := []string{program.reviewSessionLoadingDetail(), "", message}
+	return strings.Join(lines, "\n")
+}
+
+func (program *Program) reviewSessionNoDiffDetail() string {
+	summary := program.reviewSession.summary
+	repository := pullRequestRepositoryName(summary.Repository)
+	lines := []string{
+		fmt.Sprintf("Pending review %s is open for %s#%d.", valueOrDash(program.reviewSession.pendingReviewID), repository, summary.Number),
+		"",
+		"No changed files are available for this review.",
 	}
 	return strings.Join(lines, "\n")
 }
@@ -180,6 +278,9 @@ func (program *Program) reviewSessionPlaceholderDetail() string {
 func (program *Program) reviewSessionChangedFileCount() int {
 	if !program.reviewSession.active {
 		return 0
+	}
+	if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil {
+		return result.data.Stats.ChangedFiles
 	}
 	if result, ok := program.pullRequestDetailForSummary(program.reviewSession.summary); ok && result.err == nil {
 		return result.detail.ChangedFiles
@@ -191,13 +292,24 @@ func (program *Program) reviewSessionDetailIdentity() string {
 	if !program.reviewSession.active {
 		return ""
 	}
+	selectedFilePath := fmt.Sprintf("row:%d", program.reviewSession.selectedFileTreeRow)
+	if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
+		selectedFilePath = selectedFile.Path
+	}
 	return fmt.Sprintf(
-		"review:%s:%d:%s:file:%d",
+		"review:%s:%d:%s:file:%s",
 		pullRequestRepositoryName(program.reviewSession.summary.Repository),
 		program.reviewSession.summary.Number,
 		program.reviewSession.pendingReviewID,
-		program.reviewSession.selectedFileIdx,
+		selectedFilePath,
 	)
+}
+
+func (program *Program) reviewSessionDiffResult() (pullRequestDiffResult, bool) {
+	if !program.reviewSession.active {
+		return pullRequestDiffResult{}, false
+	}
+	return program.pullRequestDiffForSummary(program.reviewSession.summary)
 }
 
 func renderReadOnlyTextView(view *gocui.View, text string) {
