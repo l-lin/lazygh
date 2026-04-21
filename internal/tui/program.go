@@ -26,6 +26,7 @@ type GitHubLoader interface {
 	ApprovePullRequest(repository string, number int) error
 	ReviewPullRequestWithComment(repository string, number int, body string) error
 	RequestChangesOnPullRequest(repository string, number int, body string) error
+	OpenPullRequestInBrowser(repository string, number int) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
 }

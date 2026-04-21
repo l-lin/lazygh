@@ -64,13 +64,24 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenControlDAndC
 	}
 }
 
+func TestKeybindingSpecs_GivenProgram_WhenListingVerticalNavigationBindings_ThenMainPanesSupportJKAndArrowKeys(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'j', handler: subject.moveSelectionDown})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyArrowDown, handler: subject.moveSelectionDown})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'k', handler: subject.moveSelectionUp})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyArrowUp, handler: subject.moveSelectionUp})
+	}
+}
+
 func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsWordAndLineVisualMotions(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'j', handler: subject.moveSelectionDown})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'k', handler: subject.moveSelectionUp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'e', handler: subject.moveDetailCursorToWordEnd})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'b', handler: subject.moveDetailCursorToPreviousWord})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'V', handler: subject.enterDetailLineVisualMode})

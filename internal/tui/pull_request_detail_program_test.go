@@ -444,6 +444,8 @@ type fakePullRequestDetailLoader struct {
 	requestChangesCalls   []string
 	requestChangesBodies  []string
 	requestChangesErr     error
+	openBrowserCalls      []string
+	openBrowserErr        error
 	editTitleCalls        []string
 	editTitleValues       []string
 	editTitleErr          error
@@ -501,6 +503,11 @@ func (loader *fakePullRequestDetailLoader) RequestChangesOnPullRequest(repositor
 	loader.requestChangesCalls = append(loader.requestChangesCalls, repository+"#"+strconv.Itoa(number))
 	loader.requestChangesBodies = append(loader.requestChangesBodies, body)
 	return loader.requestChangesErr
+}
+
+func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository string, number int) error {
+	loader.openBrowserCalls = append(loader.openBrowserCalls, repository+"#"+strconv.Itoa(number))
+	return loader.openBrowserErr
 }
 
 func (loader *fakePullRequestDetailLoader) EditPullRequestTitle(repository string, number int, title string) error {

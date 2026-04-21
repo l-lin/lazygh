@@ -19,7 +19,9 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 	then_bindingDoesNotExist(t, actual, viewUserName, 'a')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: '/', handler: subject.focusActionsPopupSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'j', handler: subject.moveActionsPopupSelectionDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyArrowDown, handler: subject.moveActionsPopupSelectionDown})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'k', handler: subject.moveActionsPopupSelectionUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyArrowUp, handler: subject.moveActionsPopupSelectionUp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.focusActionsPopupList})
@@ -47,6 +49,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 	for _, expected := range []string{
 		"Comment on PR",
 		"Yank URL to clipboard",
+		"Open PR in browser",
 		"Review: Approve PR",
 		"Review: Comment on PR",
 		"Review: Request changes",
@@ -57,8 +60,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
 		}
 	}
-	if !strings.Contains(popupView.Buffer(), "7 of 7 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "7 of 7 actions", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "8 of 8 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "8 of 8 actions", popupView.Buffer())
 	}
 
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
@@ -133,8 +136,8 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "1 of 7 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "1 of 7 actions", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "1 of 8 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "1 of 8 actions", popupView.Buffer())
 	}
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
@@ -331,8 +334,8 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "7 of 7 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "7 of 7 actions", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "8 of 8 actions") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "8 of 8 actions", popupView.Buffer())
 	}
 }
 
@@ -358,7 +361,7 @@ func TestActionsPopup_GivenFocusedSearchRow_WhenPressingTab_ThenItReturnsToTheAc
 	}
 }
 
-func TestActionsPopup_GivenFilteredActions_WhenMovingSelection_ThenJAndKFollowTheVisibleResults(t *testing.T) {
+func TestActionsPopup_GivenFilteredActions_WhenHandlingArrowBindings_ThenTheyFollowTheVisibleResults(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -368,20 +371,23 @@ func TestActionsPopup_GivenFilteredActions_WhenMovingSelection_ThenJAndKFollowTh
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("review", []int{2, 3, 4})
+	reviewIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "review")
+	subject.model.UpdateActionsPopupSearch("review", reviewIndexes)
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 
-	actualErr = subject.moveActionsPopupSelectionDown(gui, nil)
+	downHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyArrowDown)
+	actualErr = downHandler(gui, nil)
 	then_noError(t, actualErr)
-	if subject.model.ActionsPopupSelectedActionIndex() != 3 {
-		t.Fatalf("expected selected action index 3, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	if subject.model.ActionsPopupSelectedActionIndex() != reviewIndexes[1] {
+		t.Fatalf("expected selected action index %d, actual %d", reviewIndexes[1], subject.model.ActionsPopupSelectedActionIndex())
 	}
 
-	actualErr = subject.moveActionsPopupSelectionUp(gui, nil)
+	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyArrowUp)
+	actualErr = upHandler(gui, nil)
 	then_noError(t, actualErr)
-	if subject.model.ActionsPopupSelectedActionIndex() != 2 {
-		t.Fatalf("expected selected action index 2, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	if subject.model.ActionsPopupSelectedActionIndex() != reviewIndexes[0] {
+		t.Fatalf("expected selected action index %d, actual %d", reviewIndexes[0], subject.model.ActionsPopupSelectedActionIndex())
 	}
 }
 

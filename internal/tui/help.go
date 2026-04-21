@@ -94,7 +94,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 	switch program.model.Focus() {
 	case FocusDetailView:
 		entries := []helpEntry{
-			{Key: "h/j/k/l", Description: "Move cursor"},
+			{Key: "h/j/k/l/<up>/<down>", Description: "Move cursor"},
 			{Key: "0/$", Description: "Line start/end"},
 			{Key: "gg/G", Description: "First/last line"},
 			{Key: "w/e/b", Description: "Next/end/previous word"},
@@ -118,8 +118,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		return entries
 	case FocusPullRequestsView:
 		return []helpEntry{
-			{Key: "j", Description: "Move down"},
-			{Key: "k", Description: "Move up"},
+			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 			{Key: "h/l", Description: "Switch side view"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},
@@ -134,8 +133,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		}
 	default:
 		return []helpEntry{
-			{Key: "j", Description: "Move down"},
-			{Key: "k", Description: "Move up"},
+			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 			{Key: "h/l", Description: "Switch side view"},
 			{Key: "<c-d>", Description: "Page down"},
 			{Key: "<c-u>", Description: "Page up"},

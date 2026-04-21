@@ -85,7 +85,7 @@ func TestListRequestedPullRequests_GivenValidGhResponse_WhenFetching_ThenReturns
 	actual, actualErr := subject.ListRequestedPullRequests()
 
 	then_noError(t, actualErr)
-	then_commandIs(t, runner, "gh", []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"})
+	then_commandIs(t, runner, "gh", []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"})
 
 	expected := []PullRequest{{
 		Title:  "feat(doctolib-postmortems): integrate post-mortem writing guide",

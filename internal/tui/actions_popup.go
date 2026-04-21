@@ -177,6 +177,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	return []actionsPopupAction{
 		{id: "comment-on-pr", title: pullRequestCommentComposerTitle, keywords: []string{"comment", "reply", "discussion"}, execute: program.executeCommentOnPullRequestAction},
 		{id: "yank-pull-request-url", title: "Yank URL to clipboard", keywords: []string{"yank", "copy", "clipboard", "url", "link"}, execute: program.executeYankPullRequestURLAction},
+		{id: "open-pull-request-in-browser", title: "Open PR in browser", keywords: []string{"open", "browser", "web", "url", "link"}, execute: program.executeOpenPullRequestInBrowserAction},
 		{id: "review-approve", title: "Review: Approve PR", keywords: []string{"review", "approve", "lgtm", "shipit"}, execute: program.executeApprovePullRequestAction},
 		{id: "review-comment", title: pullRequestReviewCommentComposerTitle, keywords: []string{"review", "comment", "feedback"}, execute: program.executeReviewCommentAction},
 		{id: "review-request-changes", title: pullRequestRequestChangesComposerTitle, keywords: []string{"review", "request", "changes", "block"}, execute: program.executeRequestChangesAction},
