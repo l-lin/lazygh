@@ -101,12 +101,12 @@ func reviewDiffTreeRowText(row reviewDiffTreeRow) string {
 }
 
 func reviewDiffTreeRowStyledText(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	text := reviewDiffTreeRowText(row)
+	icon := reviewDiffTreeRowIcon(row)
 	foregroundHex := reviewDiffTreeRowForegroundHex(row, files)
-	if strings.TrimSpace(foregroundHex) != "" {
-		text = styleText(text, foregroundColorEscape(foregroundHex))
+	if strings.TrimSpace(foregroundHex) != "" && foregroundHex != theme.ActiveTextHex {
+		icon = styleText(icon, foregroundColorEscape(foregroundHex))
 	}
-	return strings.Repeat("  ", row.Depth) + text
+	return strings.Repeat("  ", row.Depth) + icon + " " + row.Label
 }
 
 func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFile) string {

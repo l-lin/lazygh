@@ -171,16 +171,20 @@ func TestReviewMode_GivenColoredFileTreeRows_WhenRendering_ThenDirectoriesAreGra
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
 	directoryLineIndex := given_viewLineIndexContaining(t, filesView, "internal/tui/")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/", given_themeColorHex(t, theme.DiffLineNumberHex), "review tree directory")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "󰝰", given_themeColorHex(t, theme.DiffLineNumberHex), "review tree directory icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/", given_themeColorHex(t, theme.ActiveTextHex), "review tree directory label")
 
 	changedLineIndex := given_viewLineIndexContaining(t, filesView, "changed.go")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, changedLineIndex, "changed.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree modified file")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, changedLineIndex, "", given_themeColorHex(t, theme.ActiveTextHex), "review tree modified file icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, changedLineIndex, "changed.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree modified file label")
 
 	addedLineIndex := given_viewLineIndexContaining(t, filesView, "added.go")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "added.go", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review tree added file")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review tree added file icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "added.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree added file label")
 
 	deletedLineIndex := given_viewLineIndexContaining(t, filesView, "deleted.go")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "deleted.go", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review tree deleted file")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review tree deleted file icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "deleted.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree deleted file label")
 }
 
 func TestReviewMode_GivenMovingTheViewTwoSelection_WhenRefreshingTheReviewPane_ThenViewZeroRendersTheSelectedFileDiff(t *testing.T) {
