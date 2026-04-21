@@ -1,6 +1,13 @@
 package tui
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
+)
 
 type reviewDiffTreeNode struct {
 	name         string
@@ -84,9 +91,52 @@ func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string,
 func reviewDiffTreeItems(tree reviewDiffTree) []Item {
 	items := make([]Item, 0, len(tree.Rows))
 	for _, row := range tree.Rows {
-		items = append(items, Item{Title: strings.Repeat("  ", row.Depth) + row.Label})
+		items = append(items, Item{Title: strings.Repeat("  ", row.Depth) + reviewDiffTreeRowText(row)})
 	}
 	return items
+}
+
+func reviewDiffTreeRowText(row reviewDiffTreeRow) string {
+	return reviewDiffTreeRowIcon(row) + " " + row.Label
+}
+
+func reviewDiffTreeRowStyledText(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	text := reviewDiffTreeRowText(row)
+	foregroundHex := reviewDiffTreeRowForegroundHex(row, files)
+	if strings.TrimSpace(foregroundHex) != "" {
+		text = styleText(text, foregroundColorEscape(foregroundHex))
+	}
+	return strings.Repeat("  ", row.Depth) + text
+}
+
+func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	if row.FileIndex < 0 {
+		return theme.DiffLineNumberHex
+	}
+	if row.FileIndex >= len(files) {
+		return theme.ActiveTextHex
+	}
+
+	switch files[row.FileIndex].ChangeType {
+	case reviewDiffChangeTypeAdded:
+		return theme.DiffAdditionForegroundHex
+	case reviewDiffChangeTypeRemoved:
+		return theme.DiffDeletionForegroundHex
+	default:
+		return theme.ActiveTextHex
+	}
+}
+
+func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDiffTree, files []reviewDiffFile, selectedVisibleLine int) {
+	if view == nil {
+		return
+	}
+
+	view.Clear()
+	for _, row := range tree.Rows {
+		fmt.Fprintln(view, reviewDiffTreeRowStyledText(row, files))
+	}
+	program.selectListLine(view, selectedVisibleLine)
 }
 
 func reviewDiffSelectableRowIndexes(tree reviewDiffTree) []int {

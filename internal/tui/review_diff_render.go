@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func renderReviewDiffFile(file reviewDiffFile) string {
@@ -21,7 +23,7 @@ func renderReviewDiffFile(file reviewDiffFile) string {
 		if hunkIndex > 0 {
 			lines = append(lines, "")
 		}
-		lines = append(lines, hunk.Header)
+		lines = append(lines, renderReviewDiffHunkHeader(hunk.Header))
 		for _, line := range hunk.Lines {
 			lines = append(lines, renderReviewDiffLine(line, numberWidth))
 		}
@@ -30,24 +32,38 @@ func renderReviewDiffFile(file reviewDiffFile) string {
 }
 
 func renderReviewDiffFileHeader(file reviewDiffFile) string {
-	parts := []string{valueOrDash(strings.TrimSpace(file.Path))}
+	parts := []string{
+		styleText(reviewDiffHeaderPathIcon, foregroundColorEscape(theme.DiffLineNumberHex)) + " " + valueOrDash(strings.TrimSpace(file.Path)),
+	}
 	if file.ChangeType == reviewDiffChangeTypeRenamed && strings.TrimSpace(file.PreviousPath) != "" {
 		parts = append(parts, fmt.Sprintf("renamed from %s", strings.TrimSpace(file.PreviousPath)))
 	}
-	parts = append(parts, fmt.Sprintf("+%d", file.Additions), fmt.Sprintf("-%d", file.Deletions))
-	return strings.Join(parts, "  ·  ")
+	parts = append(parts,
+		styleText(fmt.Sprintf("+%d", file.Additions), foregroundColorEscape(theme.DiffAdditionForegroundHex)),
+		styleText(fmt.Sprintf("-%d", file.Deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex)),
+	)
+	return strings.Join(parts, "  ")
+}
+
+func renderReviewDiffHunkHeader(header string) string {
+	return styleText(header, foregroundColorEscape(theme.DiffHunkHeaderHex))
 }
 
 func renderReviewDiffLine(line reviewDiffLine, numberWidth int) string {
-	prefix := fmt.Sprintf("%s : %s │ ", diffPreviewLineNumberText(line.LeftLine, numberWidth), diffPreviewLineNumberText(line.RightLine, numberWidth))
-	marker := " "
+	numberPrefix := foregroundColorEscape(theme.DiffLineNumberHex)
+	prefix := styleText(
+		fmt.Sprintf("%s : %s │ ", diffPreviewLineNumberText(line.LeftLine, numberWidth), diffPreviewLineNumberText(line.RightLine, numberWidth)),
+		numberPrefix,
+	)
+	content := " " + line.Text
 	switch line.Kind {
 	case reviewDiffDeletionLine:
-		marker = "-"
+		return prefix + styleText("-"+line.Text, foregroundColorEscape(theme.DiffDeletionForegroundHex), backgroundColorEscape(theme.DiffDeletionBackgroundHex))
 	case reviewDiffAdditionLine:
-		marker = "+"
+		return prefix + styleText("+"+line.Text, foregroundColorEscape(theme.DiffAdditionForegroundHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex))
+	default:
+		return prefix + content
 	}
-	return prefix + marker + line.Text
 }
 
 func reviewDiffLineNumberWidth(hunks []reviewDiffHunk) int {

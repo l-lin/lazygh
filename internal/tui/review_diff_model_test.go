@@ -182,6 +182,62 @@ func TestBuildReviewDiffFileTree_GivenMixedSiblingDirectories_WhenProjecting_The
 	}
 }
 
+func TestReviewDiffTreeItems_GivenDirectoriesAndFiles_WhenFormatting_ThenItPrefixesRowsWithIcons(t *testing.T) {
+	tree := reviewDiffTree{Rows: []reviewDiffTreeRow{
+		{VisibleRowIndex: 0, Depth: 0, Label: "internal/", FileIndex: -1},
+		{VisibleRowIndex: 1, Depth: 1, Label: "tui/", FileIndex: -1},
+		{VisibleRowIndex: 2, Depth: 2, Label: "notes.txt", FileIndex: 0},
+	}}
+
+	actual := reviewDiffTreeItems(tree)
+
+	expected := []Item{
+		{Title: "󰝰 internal/"},
+		{Title: "  󰝰 tui/"},
+		{Title: "     notes.txt"},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected items %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestReviewDiffTreeItems_GivenKnownFileTypes_WhenFormatting_ThenItUsesSpecificFileIcons(t *testing.T) {
+	tree := reviewDiffTree{Rows: []reviewDiffTreeRow{
+		{VisibleRowIndex: 0, Depth: 0, Label: "main.go", FileIndex: 0},
+		{VisibleRowIndex: 1, Depth: 0, Label: "complete_health_reminders_job.rb", FileIndex: 1},
+		{VisibleRowIndex: 2, Depth: 0, Label: "patient-context.yaml", FileIndex: 2},
+	}}
+
+	actual := reviewDiffTreeItems(tree)
+
+	expected := []Item{
+		{Title: " main.go"},
+		{Title: " complete_health_reminders_job.rb"},
+		{Title: " patient-context.yaml"},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected items %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestRenderReviewDiffFile_GivenChangedFile_WhenRendering_ThenItPrefixesTheHeaderWithTheFileIcon(t *testing.T) {
+	file := reviewDiffFile{
+		Path:        "engines/preventive_continuous_care/app/jobs/preventive_continuous_care/complete_health_reminders_job.rb:43",
+		Additions:   1,
+		Deletions:   1,
+		ChangeType:  reviewDiffChangeTypeModified,
+		Placeholder: "No textual diff is available.",
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file), 160)
+	actualHeader := string(actualDocument.lines[0])
+
+	expected := "󰈔 engines/preventive_continuous_care/app/jobs/preventive_continuous_care/complete_health_reminders_job.rb:43  +1  -1"
+	if actualHeader != expected {
+		t.Fatalf("expected review diff header %q, actual %q", expected, actualHeader)
+	}
+}
+
 func TestRenderReviewDiffFile_GivenPatchlessBinaryRenamedAndDeletedFiles_WhenRendering_ThenItShowsReadablePlaceholders(t *testing.T) {
 	files := []reviewDiffFile{
 		{Path: "assets/logo.png", ChangeType: reviewDiffChangeTypeAdded, Placeholder: reviewDiffPlaceholder(reviewDiffFile{Path: "assets/logo.png", ChangeType: reviewDiffChangeTypeAdded})},

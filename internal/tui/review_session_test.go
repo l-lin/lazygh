@@ -8,6 +8,7 @@ import (
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurposesTheExistingThreePanesAndLoadsTheFileTreeAndFirstDiff(t *testing.T) {
@@ -63,8 +64,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if filesView.Title != "[2]-Files" {
 		t.Fatalf("expected files view title %q, actual %q", "[2]-Files", filesView.Title)
 	}
-	if !strings.Contains(filesView.Buffer(), "internal/tui/") || !strings.Contains(filesView.Buffer(), "render.go") || !strings.Contains(filesView.Buffer(), "model.go") {
-		t.Fatalf("expected files view to contain the collapsed file tree, actual %q", filesView.Buffer())
+	if !strings.Contains(filesView.Buffer(), "󰝰 internal/tui/") || !strings.Contains(filesView.Buffer(), " render.go") || !strings.Contains(filesView.Buffer(), " model.go") {
+		t.Fatalf("expected files view to contain the iconified collapsed file tree, actual %q", filesView.Buffer())
 	}
 	if len(filesView.Tabs) != 0 {
 		t.Fatalf("expected review files view to hide pull request tabs, actual %v", filesView.Tabs)
@@ -75,8 +76,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if detailView.Title != "[0]-Diff" {
 		t.Fatalf("expected detail view title %q, actual %q", "[0]-Diff", detailView.Title)
 	}
-	if !strings.Contains(detailView.Buffer(), "internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
-		t.Fatalf("expected detail view to contain the first parsed diff file, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), detailInlineCommentLocationIcon+" internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
+		t.Fatalf("expected detail view to contain the iconified first parsed diff file, actual %q", detailView.Buffer())
 	}
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected review diff view to hide browser detail tabs, actual %v", detailView.Tabs)
@@ -84,6 +85,102 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42"}, loader.diffCalls)
 	}
+}
+
+func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffColorsForCountsHunksAndChangedLines(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	headerLineIndex := given_viewLineIndexContaining(t, detailView, "internal/tui/render.go")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "+2", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review diff addition count")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review diff deletion count")
+
+	hunkHeaderLineIndex := given_viewLineIndexContaining(t, detailView, "@@ -1,2 +1,3 @@")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, hunkHeaderLineIndex, "@@ -1,2 +1,3 @@", given_themeColorHex(t, theme.DiffHunkHeaderHex), "review diff hunk header")
+
+	contextLineIndex := given_viewLineIndexContaining(t, detailView, "context")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, contextLineIndex, "1 : 1 │", given_themeColorHex(t, theme.DiffLineNumberHex), "review diff line numbers")
+
+	deletionLineIndex := given_viewLineIndexContaining(t, detailView, "old line")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "old line", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review diff deletion text")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "old line", given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "review diff deletion background")
+
+	additionLineIndex := given_viewLineIndexContaining(t, detailView, "new line")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review diff addition text")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "review diff addition background")
+}
+
+func TestReviewMode_GivenColoredFileTreeRows_WhenRendering_ThenDirectoriesAreGrayAndFilesReflectTheirChangeType(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#77": {
+				Title:        "Colorful Tree PR",
+				Number:       77,
+				Body:         "Body 77",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review-tree-colors",
+				State:        "OPEN",
+				ChangedFiles: 3,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#77": given_reviewSessionColoredTreePullRequestDiff(),
+		},
+	}
+	model := given_pullRequestCommentModel()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Colorful Tree PR", Number: 77, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/77"}),
+	})
+	subject := given_pullRequestCommentProgram(model, loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	directoryLineIndex := given_viewLineIndexContaining(t, filesView, "internal/tui/")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/", given_themeColorHex(t, theme.DiffLineNumberHex), "review tree directory")
+
+	changedLineIndex := given_viewLineIndexContaining(t, filesView, "changed.go")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, changedLineIndex, "changed.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree modified file")
+
+	addedLineIndex := given_viewLineIndexContaining(t, filesView, "added.go")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "added.go", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review tree added file")
+
+	deletedLineIndex := given_viewLineIndexContaining(t, filesView, "deleted.go")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "deleted.go", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review tree deleted file")
 }
 
 func TestReviewMode_GivenMovingTheViewTwoSelection_WhenRefreshingTheReviewPane_ThenViewZeroRendersTheSelectedFileDiff(t *testing.T) {
@@ -229,6 +326,37 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "No comments yet.") {
 		t.Fatalf("expected browser detail content to be restored, actual %q", detailView.Buffer())
+	}
+}
+
+func given_reviewSessionColoredTreePullRequestDiff() githubcli.PullRequestDiff {
+	return githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/internal/tui/changed.go b/internal/tui/changed.go",
+			"index 1111111..2222222 100644",
+			"--- a/internal/tui/changed.go",
+			"+++ b/internal/tui/changed.go",
+			"@@ -1,1 +1,1 @@",
+			"-old changed content",
+			"+new changed content",
+			"diff --git a/internal/tui/added.go b/internal/tui/added.go",
+			"new file mode 100644",
+			"--- /dev/null",
+			"+++ b/internal/tui/added.go",
+			"@@ -0,0 +1,1 @@",
+			"+added content",
+			"diff --git a/internal/tui/deleted.go b/internal/tui/deleted.go",
+			"deleted file mode 100644",
+			"--- a/internal/tui/deleted.go",
+			"+++ /dev/null",
+			"@@ -1,1 +0,0 @@",
+			"-deleted content",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{
+			{Path: "internal/tui/changed.go", ChangeType: "modified", Additions: 1, Deletions: 1},
+			{Path: "internal/tui/added.go", ChangeType: "added", Additions: 1, Deletions: 0},
+			{Path: "internal/tui/deleted.go", ChangeType: "removed", Additions: 0, Deletions: 1},
+		},
 	}
 }
 

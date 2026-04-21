@@ -197,6 +197,10 @@ func (program *Program) renderUserView(view *gocui.View) {
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
 	if program.reviewSession.active {
+		if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil && len(result.data.FileTree.Rows) > 0 {
+			program.renderReviewDiffTreeView(view, result.data.FileTree, result.data.Files, program.reviewSessionSelectedVisibleLine())
+			return
+		}
 		program.renderSelectableListView(view, selectableListViewState{
 			focus:               FocusPullRequestsView,
 			query:               "",
