@@ -31,7 +31,7 @@ func (client *Client) ListMyPullRequests() ([]PullRequest, error) {
 }
 
 func (client *Client) ListRequestedPullRequests() ([]PullRequest, error) {
-	return client.listPullRequests("gh search prs", "--review-requested", "@me")
+	return client.listPullRequests("gh search prs", "--review-requested", "@me", "--limit", "100")
 }
 
 func (client *Client) listPullRequests(commandName string, qualifiers ...string) ([]PullRequest, error) {

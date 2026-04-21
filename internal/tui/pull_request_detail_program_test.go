@@ -13,16 +13,64 @@ import (
 )
 
 func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDetailAndShowsDescriptionAndCommentsInSeparateTabs(t *testing.T) {
+	firstSummary := githubcli.PullRequest{Title: "First PR", Number: 101, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-1"}
+	secondSummary := githubcli.PullRequest{Title: "Second PR", Number: 102, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-2"}
+	firstDetail := githubcli.PullRequestDetail{
+		Title:       "First PR",
+		Number:      101,
+		Body:        "Body 101",
+		BaseRefName: "main",
+		HeadRefName: "feature-101",
+		State:       "OPEN",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Comment 101",
+			CreatedAt: "2026-04-18T10:00:00Z",
+		}},
+		InlineComments: []githubcli.PullRequestInlineComment{{
+			Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			Body:         "Inline 101",
+			CreatedAt:    "2026-04-18T10:30:00Z",
+			Path:         "internal/tui/render.go",
+			Line:         43,
+			OriginalLine: 43,
+			Side:         "RIGHT",
+			DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+		}},
+	}
+	secondDetail := githubcli.PullRequestDetail{
+		Title:       "Second PR",
+		Number:      102,
+		Body:        "Body 102",
+		BaseRefName: "main",
+		HeadRefName: "feature-102",
+		State:       "OPEN",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"},
+			Body:      "Comment 102",
+			CreatedAt: "2026-04-18T11:00:00Z",
+		}},
+		InlineComments: []githubcli.PullRequestInlineComment{{
+			Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline-two"},
+			Body:         "Inline 102",
+			CreatedAt:    "2026-04-18T11:30:00Z",
+			Path:         "internal/tui/pull_request_detail_program_test.go",
+			Line:         19,
+			OriginalLine: 19,
+			Side:         "RIGHT",
+			DiffHunk:     "@@ -18,2 +18,2 @@\n actualErr := subject.layout(gui)\n-if !strings.Contains(detailView.Buffer(), \"Rendered comment 102\") {\n+if !strings.Contains(detailView.Buffer(), \"Rendered inline 102\") {",
+		}},
+	}
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
-		myPullRequestRow(githubcli.PullRequest{Title: "First PR", Number: 101, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-1"}),
-		myPullRequestRow(githubcli.PullRequest{Title: "Second PR", Number: 102, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-2"}),
+		myPullRequestRow(firstSummary),
+		myPullRequestRow(secondSummary),
 	})
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#101": {Title: "First PR", Number: 101, Body: "Body 101", BaseRefName: "main", HeadRefName: "feature-101", State: "OPEN", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Comment 101", CreatedAt: "2026-04-18T10:00:00Z"}}},
-			"acme/widgets#102": {Title: "Second PR", Number: 102, Body: "Body 102", BaseRefName: "main", HeadRefName: "feature-102", State: "OPEN", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, Body: "Comment 102", CreatedAt: "2026-04-18T11:00:00Z"}}},
+			"acme/widgets#101": firstDetail,
+			"acme/widgets#102": secondDetail,
 		},
 	}
 	subject := NewProgramWithModelAndLoader(model, loader)
@@ -31,7 +79,14 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 101": "Rendered body 101", "Body 102": "Rendered body 102", "Comment 101": "Rendered comment 101", "Comment 102": "Rendered comment 102"}}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 101":    "Rendered body 101",
+		"Body 102":    "Rendered body 102",
+		"Comment 101": "Rendered comment 101",
+		"Comment 102": "Rendered comment 102",
+		"Inline 101":  "Rendered inline 101",
+		"Inline 102":  "Rendered inline 102",
+	}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -41,8 +96,11 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Rendered body 101") {
-		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered body 101", detailView.Buffer())
+	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != "" {
+		t.Fatalf("expected the description tab to keep an empty line after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
+	}
+	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n\nRendered body 101") {
+		t.Fatalf("expected the description tab to keep a blank line after metadata, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected description tab to hide comments, actual %q", detailView.Buffer())
@@ -56,8 +114,23 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	then_noError(t, actualErr)
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
+	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != "" {
+		t.Fatalf("expected the comments tab to keep an empty line after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
+	}
+	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n\n"+detailCommentsIcon+" @reviewer-one") {
+		t.Fatalf("expected the comments tab to keep a blank line after metadata, actual %q", detailView.Buffer())
+	}
 	if !strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered comment 101", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), detailInlineCommentLocationIcon+" internal/tui/render.go:43  +1  -1") {
+		t.Fatalf("expected comments tab to contain the inline comment location and diff counts, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "   : 43 │ \"model\": \"opus\",") {
+		t.Fatalf("expected comments tab to contain the inline diff line, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered inline 101") {
+		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered inline 101", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered body 101") {
 		t.Fatalf("expected comments tab to hide description text, actual %q", detailView.Buffer())
@@ -79,9 +152,56 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	if !strings.Contains(detailView.Buffer(), "Rendered comment 102") {
 		t.Fatalf("expected comments tab to contain %q after selection, actual %q", "Rendered comment 102", detailView.Buffer())
 	}
+	if !strings.Contains(detailView.Buffer(), "Rendered inline 102") {
+		t.Fatalf("expected comments tab to contain %q after selection, actual %q", "Rendered inline 102", detailView.Buffer())
+	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101", "acme/widgets#102"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101", "acme/widgets#102"}, loader.detailCalls)
 	}
+}
+
+func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesBatLikeDiffColorsAndColoredChangeCounts(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 109, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#109": {Title: "Styled PR", Number: 109, Body: "Body 109", BaseRefName: "main", HeadRefName: "feature-109", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline diff body", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\","}}},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 109": "Rendered body 109", "Inline diff body": "Rendered inline diff body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	locationLineIndex := given_viewLineIndexContaining(t, detailView, detailInlineCommentLocationIcon+" internal/tui/render.go:43")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "+1", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "inline addition count")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "inline deletion count")
+
+	deletionLineIndex := given_viewLineIndexContaining(t, detailView, "\"model\": \"opusplan\",")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "\"model\": \"opusplan\",", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "inline deletion text")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "\"model\": \"opusplan\",", given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "inline deletion background")
+
+	additionLineIndex := given_viewLineIndexContaining(t, detailView, "\"model\": \"opus\",")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "\"model\": \"opus\",", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "inline addition text")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "\"model\": \"opus\",", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "inline addition background")
 }
 
 func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailPaneShowsAStyledHeadingAndGreyCommentBorder(t *testing.T) {

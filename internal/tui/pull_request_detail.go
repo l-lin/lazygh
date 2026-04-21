@@ -16,12 +16,13 @@ const (
 	markdownRenderFailurePrefix = "Markdown rendering failed. Showing source."
 	maximumBranchLabelWidth     = 28
 
-	detailDescriptionIcon = "󰈙"
-	detailCommentsIcon    = " "
-	detailRepositoryIcon  = ""
-	detailBranchIcon      = ""
-	detailStatusIcon      = ""
-	detailChecksIcon      = "󰄬"
+	detailDescriptionIcon           = "󰈙"
+	detailCommentsIcon              = " "
+	detailRepositoryIcon            = ""
+	detailBranchIcon                = ""
+	detailStatusIcon                = ""
+	detailChecksIcon                = "󰄬"
+	detailInlineCommentLocationIcon = "󰈔"
 )
 
 type DetailTab int
@@ -82,22 +83,29 @@ func renderPullRequestDescription(summary githubcli.PullRequest, detail githubcl
 	return renderMarkdownWithFallback(detailBody(detail, summary), renderer, width, "No description available.")
 }
 
-func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) string {
-	if len(comments) == 0 {
+func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
+	if len(comments) == 0 && len(inlineComments) == 0 {
 		return "No comments yet."
 	}
 
-	sections := make([]string, 0, len(comments))
+	sections := make([]string, 0, len(comments)+len(inlineComments))
 	commentBodyWidth := commentBoxInnerWidth(width)
 	for _, comment := range comments {
 		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
 		sections = append(sections, renderPullRequestCommentSection(comment, body, width))
 	}
+	for _, inlineComment := range inlineComments {
+		body := renderMarkdownWithFallback(inlineComment.Body, renderer, commentBodyWidth, "No comment body.")
+		sections = append(sections, renderPullRequestInlineCommentSection(inlineComment, body, width))
+	}
 	return strings.Join(sections, "\n\n")
 }
 
 func renderPullRequestDetailLoading(summary githubcli.PullRequest) string {
-	return fmt.Sprintf("%s\n\nLoading pull request detail...\nRunning `gh pr view %d -R %s --json ...`.", renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}), summary.Number, pullRequestRepositoryName(summary.Repository))
+	return renderPullRequestDetailContent(
+		renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
+		fmt.Sprintf("Loading pull request detail...\nRunning `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository)),
+	)
 }
 
 func renderPullRequestDetailError(summary githubcli.PullRequest, err error) string {
@@ -111,7 +119,10 @@ func renderPullRequestDetailError(summary githubcli.PullRequest, err error) stri
 		fallback = "No fallback detail available."
 	}
 
-	return fmt.Sprintf("%s\n\nCould not load rich pull request detail.\n\n%s\n\n%s", renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}), message, fallback)
+	return renderPullRequestDetailContent(
+		renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
+		fmt.Sprintf("Could not load rich pull request detail.\n\n%s\n\n%s", message, fallback),
+	)
 }
 
 func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
@@ -130,10 +141,22 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 		parts = append(parts, fmt.Sprintf("%s %s", detailChecksIcon, checkSummary))
 	}
 
-	commentCount := len(detail.Comments)
+	commentCount := len(detail.Comments) + len(detail.InlineComments)
 	parts = append(parts, fmt.Sprintf("%s %s", detailCommentsIcon, formatCommentCount(commentCount)))
 
 	return strings.Join(parts, "  ·  ")
+}
+
+func renderPullRequestDetailContent(header string, content string) string {
+	trimmedHeader := strings.TrimRight(header, "\n")
+	trimmedContent := strings.TrimLeft(content, "\n")
+	if trimmedHeader == "" {
+		return trimmedContent
+	}
+	if trimmedContent == "" {
+		return trimmedHeader
+	}
+	return strings.Join([]string{trimmedHeader, "", trimmedContent}, "\n")
 }
 
 func renderMarkdownWithFallback(markdown string, renderer MarkdownRenderer, width int, emptyMessage string) string {

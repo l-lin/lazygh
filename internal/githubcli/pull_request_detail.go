@@ -9,28 +9,32 @@ import (
 
 const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,baseRefName,headRefName,mergeStateStatus,mergeable,comments,additions,deletions,changedFiles,statusCheckRollup"
 
-var ErrInvalidPullRequestDetailResponse = fmt.Errorf("invalid pull request detail response")
+var (
+	ErrInvalidPullRequestDetailResponse        = fmt.Errorf("invalid pull request detail response")
+	ErrInvalidPullRequestInlineCommentResponse = fmt.Errorf("invalid pull request inline comment response")
+)
 
 type PullRequestDetail struct {
-	Title             string                   `json:"title"`
-	Number            int                      `json:"number"`
-	URL               string                   `json:"url"`
-	Body              string                   `json:"body"`
-	Author            *PullRequestAuthor       `json:"author"`
-	State             string                   `json:"state"`
-	IsDraft           bool                     `json:"isDraft"`
-	CreatedAt         string                   `json:"createdAt"`
-	UpdatedAt         string                   `json:"updatedAt"`
-	Labels            []PullRequestLabel       `json:"labels"`
-	BaseRefName       string                   `json:"baseRefName"`
-	HeadRefName       string                   `json:"headRefName"`
-	MergeStateStatus  string                   `json:"mergeStateStatus"`
-	Mergeable         string                   `json:"mergeable"`
-	Comments          []PullRequestComment     `json:"comments"`
-	Additions         int                      `json:"additions"`
-	Deletions         int                      `json:"deletions"`
-	ChangedFiles      int                      `json:"changedFiles"`
-	StatusCheckRollup []PullRequestStatusCheck `json:"statusCheckRollup"`
+	Title             string                     `json:"title"`
+	Number            int                        `json:"number"`
+	URL               string                     `json:"url"`
+	Body              string                     `json:"body"`
+	Author            *PullRequestAuthor         `json:"author"`
+	State             string                     `json:"state"`
+	IsDraft           bool                       `json:"isDraft"`
+	CreatedAt         string                     `json:"createdAt"`
+	UpdatedAt         string                     `json:"updatedAt"`
+	Labels            []PullRequestLabel         `json:"labels"`
+	BaseRefName       string                     `json:"baseRefName"`
+	HeadRefName       string                     `json:"headRefName"`
+	MergeStateStatus  string                     `json:"mergeStateStatus"`
+	Mergeable         string                     `json:"mergeable"`
+	Comments          []PullRequestComment       `json:"comments"`
+	InlineComments    []PullRequestInlineComment `json:"-"`
+	Additions         int                        `json:"additions"`
+	Deletions         int                        `json:"deletions"`
+	ChangedFiles      int                        `json:"changedFiles"`
+	StatusCheckRollup []PullRequestStatusCheck   `json:"statusCheckRollup"`
 }
 
 type PullRequestAuthor struct {
@@ -50,6 +54,22 @@ type PullRequestComment struct {
 	URL       string                    `json:"url"`
 }
 
+type PullRequestInlineComment struct {
+	Author            *PullRequestCommentAuthor `json:"user"`
+	Body              string                    `json:"body"`
+	CreatedAt         string                    `json:"created_at"`
+	URL               string                    `json:"html_url"`
+	Path              string                    `json:"path"`
+	DiffHunk          string                    `json:"diff_hunk"`
+	Line              int                       `json:"line"`
+	OriginalLine      int                       `json:"original_line"`
+	StartLine         int                       `json:"start_line"`
+	OriginalStartLine int                       `json:"original_start_line"`
+	Side              string                    `json:"side"`
+	StartSide         string                    `json:"start_side"`
+	SubjectType       string                    `json:"subject_type"`
+}
+
 type PullRequestCommentAuthor struct {
 	Login string `json:"login"`
 }
@@ -63,7 +83,8 @@ type PullRequestStatusCheck struct {
 }
 
 func (client *Client) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
-	result, err := client.runGH("gh pr view", "pr", "view", strconv.Itoa(number), "-R", strings.TrimSpace(repository), "--json", pullRequestDetailJSONFields)
+	trimmedRepository := strings.TrimSpace(repository)
+	result, err := client.runGH("gh pr view", "pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestDetailJSONFields)
 	if err != nil {
 		return PullRequestDetail{}, err
 	}
@@ -73,7 +94,37 @@ func (client *Client) GetPullRequestDetail(repository string, number int) (PullR
 		return PullRequestDetail{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestDetailResponse, err)
 	}
 
+	inlineComments, err := client.listPullRequestInlineComments(trimmedRepository, number)
+	if err != nil {
+		return PullRequestDetail{}, err
+	}
+	if len(inlineComments) > 0 {
+		detail.InlineComments = inlineComments
+	}
+
 	return detail.normalized(), nil
+}
+
+func (client *Client) listPullRequestInlineComments(repository string, number int) ([]PullRequestInlineComment, error) {
+	result, err := client.runGH("gh api pull request inline comments", "api", fmt.Sprintf("repos/%s/pulls/%d/comments?per_page=100", strings.TrimSpace(repository), number), "--paginate", "--slurp")
+	if err != nil {
+		return nil, err
+	}
+
+	var pagedComments [][]PullRequestInlineComment
+	if err := json.Unmarshal(result.Stdout, &pagedComments); err != nil {
+		var comments []PullRequestInlineComment
+		if err := json.Unmarshal(result.Stdout, &comments); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestInlineCommentResponse, err)
+		}
+		return comments, nil
+	}
+
+	flattenedComments := make([]PullRequestInlineComment, 0)
+	for _, page := range pagedComments {
+		flattenedComments = append(flattenedComments, page...)
+	}
+	return flattenedComments, nil
 }
 
 func (detail PullRequestDetail) normalized() PullRequestDetail {
@@ -105,6 +156,13 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		}
 		detail.Comments = normalizedComments
 	}
+	if len(detail.InlineComments) > 0 {
+		normalizedInlineComments := make([]PullRequestInlineComment, 0, len(detail.InlineComments))
+		for _, comment := range detail.InlineComments {
+			normalizedInlineComments = append(normalizedInlineComments, comment.normalized())
+		}
+		detail.InlineComments = normalizedInlineComments
+	}
 	if len(detail.StatusCheckRollup) > 0 {
 		normalizedChecks := make([]PullRequestStatusCheck, 0, len(detail.StatusCheckRollup))
 		for _, check := range detail.StatusCheckRollup {
@@ -130,6 +188,22 @@ func (comment PullRequestComment) normalized() PullRequestComment {
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)
+	if comment.Author != nil {
+		normalizedAuthor := comment.Author.normalized()
+		comment.Author = &normalizedAuthor
+	}
+	return comment
+}
+
+func (comment PullRequestInlineComment) normalized() PullRequestInlineComment {
+	comment.Body = strings.TrimSpace(comment.Body)
+	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
+	comment.URL = strings.TrimSpace(comment.URL)
+	comment.Path = strings.TrimSpace(comment.Path)
+	comment.DiffHunk = strings.TrimSpace(comment.DiffHunk)
+	comment.Side = strings.TrimSpace(comment.Side)
+	comment.StartSide = strings.TrimSpace(comment.StartSide)
+	comment.SubjectType = strings.TrimSpace(comment.SubjectType)
 	if comment.Author != nil {
 		normalizedAuthor := comment.Author.normalized()
 		comment.Author = &normalizedAuthor

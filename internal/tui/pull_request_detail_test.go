@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
@@ -73,7 +74,7 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItKeepsUs
 	}}
 	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}, {Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, CreatedAt: "2026-04-18T14:15:00Z", Body: "Needs changes"}}
 
-	actual := renderPullRequestCommentsTab(comments, renderer, 60)
+	actual := renderPullRequestCommentsTab(comments, nil, renderer, 60)
 
 	for _, expected := range []string{detailCommentsIcon + " @reviewer-one", "2026-04-18 13:00 UTC", "Rendered comment one", detailCommentsIcon + " @reviewer-two", "2026-04-18 14:15 UTC", "Rendered comment two"} {
 		if !strings.Contains(actual, expected) {
@@ -86,7 +87,7 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRenders
 	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
 	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}}
 
-	actual := renderPullRequestCommentsTab(comments, renderer, 30)
+	actual := renderPullRequestCommentsTab(comments, nil, renderer, 30)
 	actualDocument := newDetailDocument(actual, 30)
 
 	if actualHeader := string(actualDocument.lines[0]); actualHeader != detailCommentsIcon+" @reviewer-one · 2026-04-18 13:00 UTC" {
@@ -103,6 +104,71 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRenders
 	}
 	if actualStylePrefix := actualDocument.lineStylePrefixes[1][0]; actualStylePrefix != foregroundColorEscape(theme.InactiveBorderHex) {
 		t.Fatalf("expected the comment border prefix %q, actual %q", foregroundColorEscape(theme.InactiveBorderHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItShowsAFileIconLineRangeAndColoredChangeCounts(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
+	inlineComments := []githubcli.PullRequestInlineComment{{
+		Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+		CreatedAt:    "2026-04-18T14:15:00Z",
+		Body:         "Needs more spacing",
+		Path:         "internal/tui/render.go",
+		Line:         43,
+		OriginalLine: 43,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+	}}
+
+	actual := renderPullRequestCommentsTab(nil, inlineComments, renderer, 120)
+	actualDocument := newDetailDocument(actual, 120)
+	locationLineIndex, locationLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43")
+
+	expectedVisibleLine := detailInlineCommentLocationIcon + " internal/tui/render.go:43  +1  -1"
+	if locationLine != expectedVisibleLine {
+		t.Fatalf("expected inline comment location %q, actual %q", expectedVisibleLine, locationLine)
+	}
+	additionIndex := given_runeIndexInString(t, locationLine, "+1")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[locationLineIndex][additionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionForegroundHex) {
+		t.Fatalf("expected inline addition count prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	}
+	deletionIndex := given_runeIndexInString(t, locationLine, "-1")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[locationLineIndex][deletionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionForegroundHex) {
+		t.Fatalf("expected inline deletion count prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionForegroundHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItRendersABatLikeDiffPreview(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
+	inlineComments := []githubcli.PullRequestInlineComment{{
+		Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+		CreatedAt:    "2026-04-18T14:15:00Z",
+		Body:         "Needs more spacing",
+		Path:         "internal/tui/render.go",
+		Line:         43,
+		OriginalLine: 43,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+	}}
+
+	actual := renderPullRequestCommentsTab(nil, inlineComments, renderer, 120)
+	actualDocument := newDetailDocument(actual, 120)
+
+	_, actualHunkHeader := given_detailDocumentLineContaining(t, actualDocument, "@@ -42,2 +42,2 @@")
+	if actualHunkHeader != "@@ -42,2 +42,2 @@" {
+		t.Fatalf("expected diff hunk header %q, actual %q", "@@ -42,2 +42,2 @@", actualHunkHeader)
+	}
+	_, actualContextLine := given_detailDocumentLineContaining(t, actualDocument, "\"deny\": []")
+	if actualContextLine != "42 : 42 │ \"deny\": []" {
+		t.Fatalf("expected diff context line %q, actual %q", "42 : 42 │ \"deny\": []", actualContextLine)
+	}
+	_, actualDeletionLine := given_detailDocumentLineContaining(t, actualDocument, "\"opusplan\"")
+	if actualDeletionLine != "43 :    │ \"model\": \"opusplan\"," {
+		t.Fatalf("expected diff deletion line %q, actual %q", "43 :    │ \"model\": \"opusplan\",", actualDeletionLine)
+	}
+	_, actualAdditionLine := given_detailDocumentLineContaining(t, actualDocument, "\"opus\"")
+	if actualAdditionLine != "   : 43 │ \"model\": \"opus\"," {
+		t.Fatalf("expected diff addition line %q, actual %q", "   : 43 │ \"model\": \"opus\",", actualAdditionLine)
 	}
 }
 
@@ -171,4 +237,28 @@ func (renderer *fakeMarkdownRenderer) Render(markdown string, width int) (string
 		}
 	}
 	return renderer.output, nil
+}
+
+func given_detailDocumentLineContaining(t *testing.T, document detailDocument, segment string) (int, string) {
+	t.Helper()
+
+	for lineIndex, line := range document.lines {
+		visibleLine := string(line)
+		if strings.Contains(visibleLine, segment) {
+			return lineIndex, visibleLine
+		}
+	}
+
+	t.Fatalf("expected detail document to contain %q, actual %q", segment, document.text)
+	return -1, ""
+}
+
+func given_runeIndexInString(t *testing.T, text string, segment string) int {
+	t.Helper()
+
+	byteIndex := strings.Index(text, segment)
+	if byteIndex < 0 {
+		t.Fatalf("expected %q to contain %q", text, segment)
+	}
+	return utf8.RuneCountInString(text[:byteIndex])
 }

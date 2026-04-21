@@ -216,9 +216,9 @@ func (program *Program) detailViewContent() string {
 				header := renderPullRequestDetailHeader(*row.Summary, result.detail)
 				content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
 				if program.activeDetailTab == CommentsDetailTab {
-					content = renderPullRequestCommentsTab(result.detail.Comments, program.markdownRenderer, program.detailWrapWidth)
+					content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)
 				}
-				return fmt.Sprintf("%s\n\n%s", header, content)
+				return renderPullRequestDetailContent(header, content)
 			}
 			return renderPullRequestDetailLoading(*row.Summary)
 		}
@@ -239,7 +239,7 @@ func (program *Program) fallbackDetailViewContent(item Item) string {
 		body = "No description available. Even the dummy data is disappointed."
 	}
 
-	return fmt.Sprintf("%s\n\n%s", header, body)
+	return renderPullRequestDetailContent(header, body)
 }
 
 func (program *Program) detailHeader(item Item) string {

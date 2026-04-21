@@ -11,4 +11,10 @@ const (
 	MarkdownHeadingHex        = "#1D4ED8"
 	MarkdownLinkHex           = "#0F766E"
 	MarkdownCodeHex           = "#B45309"
+	DiffAdditionForegroundHex = "#1A7F37"
+	DiffAdditionBackgroundHex = "#DFF3E4"
+	DiffDeletionForegroundHex = "#CF222E"
+	DiffDeletionBackgroundHex = "#FFE2E5"
+	DiffLineNumberHex         = "#656D76"
+	DiffHunkHeaderHex         = "#656D76"
 )
