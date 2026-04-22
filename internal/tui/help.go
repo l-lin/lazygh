@@ -5,8 +5,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/jesseduffield/gocui"
-
-	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 const viewHelpName = "help"
@@ -56,13 +54,7 @@ func (program *Program) layoutHelpView(gui *gocui.Gui) error {
 }
 
 func (program *Program) configureHelpView(view *gocui.View) {
-	view.Title = "Keybindings"
-	view.Frame = true
-	view.FrameRunes = roundFrameRunes
-	view.FrameColor = gocui.GetColor(theme.ActiveBorderHex)
-	view.TitleColor = gocui.GetColor(theme.ActiveTextHex)
-	view.FgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.BgColor = gocui.ColorDefault
+	configureFramedOverlayView(view, "Keybindings", "")
 	view.Wrap = false
 	view.Highlight = false
 }

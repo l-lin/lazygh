@@ -11,7 +11,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsOnlyThePendingReviewSubmitActions(t *testing.T) {
+func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavigationActions(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending"}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -28,7 +28,7 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsOnlyThePendingRevie
 	then_currentViewNameIs(t, gui, viewActionsPopupName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	for _, expected := range []string{"Review: Submit comment", "Review: Submit approval", "Review: Submit request changes"} {
+	for _, expected := range []string{"Review: Submit comment", "Review: Submit approval", "Review: Submit request changes", "Yank URL to clipboard", "Open PR in browser"} {
 		if !strings.Contains(popupView.Buffer(), expected) {
 			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
 		}
@@ -36,8 +36,11 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsOnlyThePendingRevie
 	if strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Start review", popupView.Buffer())
 	}
-	if !strings.Contains(popupView.Buffer(), "3 of 3 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "3 of 3 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "5 of 5 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "5 of 5 actions", popupView.Buffer())
+	}
+	if popupView.Footer != "" {
+		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
 	}
 }
 

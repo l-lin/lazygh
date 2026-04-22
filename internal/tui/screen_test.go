@@ -77,6 +77,42 @@ func then_viewLineSegmentIsBold(t *testing.T, gui *gocui.Gui, viewName string, l
 	}
 }
 
+func then_viewFooterIsRenderedOnBottomBorder(t *testing.T, gui *gocui.Gui, viewName string, expected string) {
+	t.Helper()
+
+	actualErr := gui.ForceLayoutAndRedraw()
+	then_noError(t, actualErr)
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	if view.Footer != expected {
+		t.Fatalf("expected view %q footer %q, actual %q", viewName, expected, view.Footer)
+	}
+
+	x0, _, x1, y1, actualErr := gui.ViewPosition(viewName)
+	then_noError(t, actualErr)
+	screen, ok := gocui.Screen.(tcell.SimulationScreen)
+	if !ok {
+		t.Fatal("expected a simulation screen")
+	}
+	cells, width, _ := screen.GetContents()
+	startX := x1 - 1 - utf8.RuneCountInString(expected)
+	if startX < x0 {
+		t.Fatalf("expected footer %q to fit in view %q", expected, viewName)
+	}
+
+	for offset, expectedRune := range expected {
+		actualCell := cells[(y1*width)+(startX+offset)]
+		if len(actualCell.Runes) == 0 || actualCell.Runes[0] != expectedRune {
+			actualRune := rune(0)
+			if len(actualCell.Runes) > 0 {
+				actualRune = actualCell.Runes[0]
+			}
+			t.Fatalf("expected footer rune %q at %s bottom border offset %d, actual %q", string(expectedRune), viewName, offset, string(actualRune))
+		}
+	}
+}
+
 func given_screenCellsForViewSegment(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) ([]tcell.SimCell, int, int, int) {
 	t.Helper()
 

@@ -14,7 +14,6 @@ const (
 	actionsPopupFallbackWidth = 60
 	actionsPopupMinWidth      = 40
 	actionsPopupMinHeight     = 6
-	actionsPopupTopPadding    = 2
 )
 
 func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
@@ -34,7 +33,7 @@ func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 		totalWidth = 1
 	}
 
-	totalHeight := max(actionsPopupMinHeight, len(program.currentActionsPopupActions())+4)
+	totalHeight := max(actionsPopupMinHeight, len(program.currentActionsPopupActions())+2)
 	if totalHeight > contentMaxY-2 {
 		totalHeight = max(3, contentMaxY-2)
 	}
@@ -84,13 +83,7 @@ func (program *Program) layoutActionsPopupSearchView(gui *gocui.Gui) error {
 }
 
 func (program *Program) configureActionsPopupView(view *gocui.View) {
-	view.Title = program.actionsPopupTitle()
-	view.Frame = true
-	view.FrameRunes = roundFrameRunes
-	view.FrameColor = gocui.GetColor(theme.ActiveBorderHex)
-	view.TitleColor = gocui.GetColor(theme.ActiveTextHex)
-	view.FgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.BgColor = gocui.ColorDefault
+	configureFramedOverlayView(view, program.actionsPopupTitle(), program.actionsPopupFooter())
 	view.Wrap = false
 	view.Editable = false
 	view.Highlight = true
@@ -113,7 +106,6 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	actions := program.currentActionsPopupActions()
 	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
 	query := program.model.ActionsPopupSearchQuery()
-	fmt.Fprintf(view, "%d of %d actions\n\n", len(filteredIndexes), len(actions))
 	if len(filteredIndexes) == 0 {
 		fmt.Fprintln(view, "No matching actions.")
 		view.SetOrigin(0, 0)
@@ -134,7 +126,7 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 		selectedVisibleIndex = 0
 	}
 	view.SetOrigin(0, 0)
-	view.SetCursor(0, actionsPopupTopPadding+selectedVisibleIndex)
+	view.SetCursor(0, selectedVisibleIndex)
 }
 
 func (program *Program) configureActionsPopupSearchView(view *gocui.View) {
@@ -151,6 +143,17 @@ func (program *Program) actionsPopupTitle() string {
 		return "Actions"
 	}
 	return fmt.Sprintf("Actions · %s", message)
+}
+
+func (program *Program) actionsPopupFooter() string {
+	query := strings.TrimSpace(program.model.ActionsPopupSearchQuery())
+	if query == "" {
+		return ""
+	}
+
+	actions := program.currentActionsPopupActions()
+	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
+	return fmt.Sprintf("%d of %d actions", len(filteredIndexes), len(actions))
 }
 
 func (program *Program) currentActionsPopupSearchText() string {

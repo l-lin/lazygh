@@ -62,8 +62,11 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
 		}
 	}
-	if !strings.Contains(popupView.Buffer(), "9 of 9 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "9 of 9 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "9 of 9 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "9 of 9 actions", popupView.Buffer())
+	}
+	if popupView.Footer != "" {
+		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
 	}
 
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
@@ -138,9 +141,10 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "1 of 9 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "1 of 9 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "1 of 9 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 9 actions", popupView.Buffer())
 	}
+	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 9 actions")
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
 	}
@@ -254,11 +258,11 @@ func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeeps
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 2, "Approve")
-	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 2, "Review: ")
-	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 2, "Approve")
-	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, "Approve")
-	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 2, "Review: ")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 0, "Approve")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 0, "Review: ")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 0, "Approve")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 0, "Approve")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 0, "Review: ")
 }
 
 func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSearchingWithoutExecutingTheAction(t *testing.T) {
@@ -365,8 +369,11 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "9 of 9 actions") {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", "9 of 9 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "9 of 9 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "9 of 9 actions", popupView.Buffer())
+	}
+	if popupView.Footer != "" {
+		t.Fatalf("expected popup footer to stay empty when the query is cleared, actual %q", popupView.Footer)
 	}
 }
 

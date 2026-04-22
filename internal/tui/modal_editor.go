@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
-
-	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 const (
@@ -228,13 +226,7 @@ func (program *Program) layoutModalEditorView(gui *gocui.Gui) error {
 }
 
 func (program *Program) configureModalEditorView(view *gocui.View) {
-	view.Title = program.modalEditorTitle()
-	view.Frame = true
-	view.FrameRunes = roundFrameRunes
-	view.FrameColor = gocui.GetColor(theme.ActiveBorderHex)
-	view.TitleColor = gocui.GetColor(theme.ActiveTextHex)
-	view.FgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.BgColor = gocui.ColorDefault
+	configureFramedOverlayView(view, program.modalEditorTitle(), "")
 	view.Wrap = false
 	view.Highlight = false
 	view.Editable = true
