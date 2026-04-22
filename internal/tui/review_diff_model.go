@@ -94,14 +94,7 @@ type reviewDiffData struct {
 	FileTree reviewDiffTree
 }
 
-type reviewDiffThreadTarget struct {
-	Path        string
-	Line        int
-	Side        string
-	StartLine   int
-	StartSide   string
-	SubjectType string
-}
+type reviewDiffThreadTarget = githubcli.PullRequestReviewThreadTarget
 
 func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
 	parsedFiles := parseUnifiedReviewDiff(raw.UnifiedDiff)

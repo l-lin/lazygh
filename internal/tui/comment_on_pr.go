@@ -16,9 +16,12 @@ type pullRequestCommentTarget struct {
 	number     int
 }
 
-func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
+func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, view *gocui.View) error {
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
+	}
+	if program.reviewSession.active && program.model.Focus() == FocusDetailView {
+		return program.openInlineReviewCommentComposer(gui, view)
 	}
 
 	target, ok := program.selectedPullRequestCommentTarget()

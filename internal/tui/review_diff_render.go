@@ -20,8 +20,9 @@ const (
 )
 
 type reviewDiffRenderedRow struct {
-	Kind reviewDiffRenderedRowKind
-	Text string
+	Kind   reviewDiffRenderedRowKind
+	Text   string
+	Anchor *reviewDiffRenderedRowAnchor
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
@@ -59,7 +60,14 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 		}
 		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindHunkHeader, Text: renderReviewDiffHunkHeader(hunk.Header)})
 		for _, line := range hunk.Lines {
-			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindDiffLine, Text: renderReviewDiffLine(line, numberWidth)})
+			rows = append(rows, reviewDiffRenderedRow{
+				Kind: reviewDiffRenderedRowKindDiffLine,
+				Text: renderReviewDiffLine(line, numberWidth),
+				Anchor: &reviewDiffRenderedRowAnchor{
+					Path: strings.TrimSpace(file.Path),
+					Line: line,
+				},
+			})
 			for threadIndex, thread := range file.Threads {
 				if matchedThreadIndexes[threadIndex] || !reviewDiffThreadMatchesLine(thread, line) {
 					continue

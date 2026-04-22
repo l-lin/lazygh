@@ -447,6 +447,11 @@ type fakePullRequestDetailLoader struct {
 	requestChangesCalls   []string
 	requestChangesBodies  []string
 	requestChangesErr     error
+	reviewThreadReviewIDs []string
+	reviewThreadBodies    []string
+	reviewThreadTargets   []githubcli.PullRequestReviewThreadTarget
+	reviewThreadErr       error
+	reviewKeyByPendingID  map[string]string
 	openBrowserCalls      []string
 	openBrowserErr        error
 	editTitleCalls        []string
@@ -527,6 +532,36 @@ func (loader *fakePullRequestDetailLoader) RequestChangesOnPullRequest(repositor
 	return loader.requestChangesErr
 }
 
+func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error {
+	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
+	loader.reviewThreadReviewIDs = append(loader.reviewThreadReviewIDs, trimmedReviewID)
+	loader.reviewThreadBodies = append(loader.reviewThreadBodies, body)
+	loader.reviewThreadTargets = append(loader.reviewThreadTargets, target)
+	if loader.reviewThreadErr != nil {
+		return loader.reviewThreadErr
+	}
+	if loader.diffs != nil {
+		if key, ok := loader.reviewKeyByPendingID[trimmedReviewID]; ok {
+			diff := loader.diffs[key]
+			diff.Threads = append(diff.Threads, githubcli.PullRequestReviewThread{
+				ID:            "thread-" + strconv.Itoa(len(loader.reviewThreadReviewIDs)),
+				Path:          target.Path,
+				Line:          target.Line,
+				StartLine:     target.StartLine,
+				DiffSide:      target.Side,
+				StartDiffSide: target.StartSide,
+				Comments: []githubcli.PullRequestComment{{
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+					Body:      body,
+					CreatedAt: "2026-04-20T12:00:00Z",
+				}},
+			})
+			loader.diffs[key] = diff
+		}
+	}
+	return nil
+}
+
 func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository string, number int) error {
 	loader.openBrowserCalls = append(loader.openBrowserCalls, repository+"#"+strconv.Itoa(number))
 	return loader.openBrowserErr
@@ -569,10 +604,15 @@ func (loader *fakePullRequestDetailLoader) StartPendingPullRequestReview(reposit
 	if loader.startReviewErr != nil {
 		return "", loader.startReviewErr
 	}
-	if strings.TrimSpace(loader.startReviewID) != "" {
-		return strings.TrimSpace(loader.startReviewID), nil
+	reviewID := strings.TrimSpace(loader.startReviewID)
+	if reviewID == "" {
+		reviewID = "PRR_pending"
 	}
-	return "PRR_pending", nil
+	if loader.reviewKeyByPendingID == nil {
+		loader.reviewKeyByPendingID = map[string]string{}
+	}
+	loader.reviewKeyByPendingID[reviewID] = repository + "#" + strconv.Itoa(number)
+	return reviewID, nil
 }
 
 func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {
