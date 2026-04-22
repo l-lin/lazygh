@@ -309,6 +309,31 @@ func TestBuildReviewDiffData_GivenReviewThreads_WhenParsing_ThenItKeepsThemGroup
 	}
 }
 
+func TestBuildReviewDiffData_GivenAThreadWithoutAMatchingFile_WhenParsing_ThenItCreatesAPlaceholderFileForTheThread(t *testing.T) {
+	raw := githubcli.PullRequestDiff{Threads: []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "docs/spec.md",
+		Line:     7,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Missing patch context", CreatedAt: "2026-04-20T10:00:00Z"}},
+	}}}
+
+	actual := buildReviewDiffData(raw)
+
+	if len(actual.Files) != 1 {
+		t.Fatalf("expected 1 file, actual %d", len(actual.Files))
+	}
+	if actual.Files[0].Path != "docs/spec.md" {
+		t.Fatalf("expected placeholder file path %q, actual %q", "docs/spec.md", actual.Files[0].Path)
+	}
+	if len(actual.Files[0].Threads) != 1 {
+		t.Fatalf("expected 1 grouped thread, actual %+v", actual.Files[0].Threads)
+	}
+	if !strings.Contains(actual.Files[0].Placeholder, "No textual diff is available for docs/spec.md.") {
+		t.Fatalf("expected placeholder to mention the thread-only path, actual %q", actual.Files[0].Placeholder)
+	}
+}
+
 func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlacesTheThreadBoxesAfterTheMatchingDiffLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered thread body"}
 	file := reviewDiffFile{

@@ -217,6 +217,25 @@ func TestRenderPullRequestDescription_GivenMarkdownRendererFailure_WhenFormattin
 	}
 }
 
+func TestDetailStatus_GivenDraftMetadata_WhenFormatting_ThenItPrefersDRAFT(t *testing.T) {
+	summary := githubcli.PullRequest{State: "OPEN"}
+	detail := githubcli.PullRequestDetail{State: "MERGED", IsDraft: true}
+
+	actual := detailStatus(detail, summary)
+
+	if actual != "DRAFT" {
+		t.Fatalf("expected status %q, actual %q", "DRAFT", actual)
+	}
+}
+
+func TestCompactBranchLabel_GivenALongBranchName_WhenFormatting_ThenItKeepsBothEndsWithAnEllipsis(t *testing.T) {
+	actual := compactBranchLabel("1234567890123ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	if actual != "1234567890123…MNOPQRSTUVWXYZ" {
+		t.Fatalf("expected branch label %q, actual %q", "1234567890123…MNOPQRSTUVWXYZ", actual)
+	}
+}
+
 type fakeMarkdownRenderer struct {
 	output       string
 	outputs      map[string]string

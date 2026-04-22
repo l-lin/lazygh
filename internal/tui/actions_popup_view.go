@@ -19,42 +19,14 @@ const (
 func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 	contentMaxY := program.layoutContentHeight(maxY)
-	totalWidth := maxX / 2
-	if totalWidth < actionsPopupMinWidth {
-		totalWidth = actionsPopupFallbackWidth
-	}
-	if totalWidth > maxX-4 {
-		totalWidth = max(10, maxX-4)
-	}
-	if totalWidth > maxX {
-		totalWidth = maxX
-	}
-	if totalWidth < 1 {
-		totalWidth = 1
-	}
-
-	totalHeight := max(actionsPopupMinHeight, len(program.currentActionsPopupActions())+2)
+	totalWidth := boundedHalfWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
+	totalHeight := maxInt(actionsPopupMinHeight, len(program.currentActionsPopupActions())+2)
 	if totalHeight > contentMaxY-2 {
-		totalHeight = max(3, contentMaxY-2)
+		totalHeight = maxInt(3, contentMaxY-2)
 	}
-	if totalHeight > contentMaxY {
-		totalHeight = contentMaxY
-	}
+	frame := centeredOverlayFrame(maxX, contentMaxY, totalWidth, totalHeight)
 
-	x0 := clampCoordinate((maxX-totalWidth)/2, maxX)
-	y0 := clampCoordinate((contentMaxY-totalHeight)/2, contentMaxY)
-	x1 := x0 + totalWidth - 1
-	y1 := y0 + totalHeight - 1
-	if x1 >= maxX {
-		x1 = maxX - 1
-		x0 = clampCoordinate(x1-totalWidth+1, maxX)
-	}
-	if y1 >= contentMaxY {
-		y1 = contentMaxY - 1
-		y0 = clampCoordinate(y1-totalHeight+1, contentMaxY)
-	}
-
-	popupView, err := gui.SetView(viewActionsPopupName, x0, y0, x1, y1, 0)
+	popupView, err := gui.SetView(viewActionsPopupName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
 	if err != nil && !isUnknownViewError(err) {
 		return err
 	}

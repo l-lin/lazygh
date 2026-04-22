@@ -22,23 +22,9 @@ type helpEntry struct {
 func (program *Program) layoutHelpView(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 	innerWidth, innerHeight := program.helpViewSize(maxX, maxY)
-	totalWidth := innerWidth + 2
-	totalHeight := innerHeight + 2
+	frame := centeredOverlayFrame(maxX, maxY, innerWidth+2, innerHeight+2)
 
-	x0 := clampCoordinate((maxX-totalWidth)/2, maxX)
-	y0 := clampCoordinate((maxY-totalHeight)/2, maxY)
-	x1 := x0 + totalWidth - 1
-	y1 := y0 + totalHeight - 1
-	if x1 >= maxX {
-		x1 = maxX - 1
-		x0 = clampCoordinate(x1-totalWidth+1, maxX)
-	}
-	if y1 >= maxY {
-		y1 = maxY - 1
-		y0 = clampCoordinate(y1-totalHeight+1, maxY)
-	}
-
-	view, err := gui.SetView(viewHelpName, x0, y0, x1, y1, 0)
+	view, err := gui.SetView(viewHelpName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
 	if err != nil && !isUnknownViewError(err) {
 		return err
 	}
@@ -224,31 +210,11 @@ func (program *Program) helpViewSize(maxX int, maxY int) (int, int) {
 	}
 
 	if contentWidth > maxX-6 {
-		contentWidth = max(20, maxX-6)
+		contentWidth = maxInt(20, maxX-6)
 	}
 	if contentHeight > maxY-6 {
-		contentHeight = max(5, maxY-6)
+		contentHeight = maxInt(5, maxY-6)
 	}
 
 	return contentWidth, contentHeight
-}
-
-func clampCoordinate(value int, maxValue int) int {
-	if maxValue <= 0 {
-		return 0
-	}
-	if value < 0 {
-		return 0
-	}
-	if value >= maxValue {
-		return maxValue - 1
-	}
-	return value
-}
-
-func max(a int, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
