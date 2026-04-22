@@ -28,11 +28,13 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 	then_currentViewNameIs(t, gui, viewActionsPopupName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	for _, expected := range []string{"Review: Submit comment", "Review: Submit approval", "Review: Submit request changes", "Yank URL to clipboard", "Open PR in browser"} {
-		if !strings.Contains(popupView.Buffer(), expected) {
-			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
-		}
-	}
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		" Yank URL to clipboard",
+		" Open PR in browser",
+		" Review: Submit approval",
+		" Review: Submit comment",
+		" Review: Submit request changes",
+	})
 	if strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Start review", popupView.Buffer())
 	}

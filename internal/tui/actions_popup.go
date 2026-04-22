@@ -15,6 +15,7 @@ const (
 	actionsPopupReviewCommentIcon          = ""
 	actionsPopupReviewRequestChangesIcon   = ""
 	actionsPopupCommentOnPullRequestIcon   = ""
+	actionsPopupEditPullRequestIcon        = ""
 )
 
 type actionsPopupAction struct {
@@ -193,11 +194,11 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	}
 	if program.reviewSession.active {
 		return []actionsPopupAction{
-			{id: "submit-pending-review-comment", title: pullRequestReviewSubmitCommentTitle, keywords: []string{"review", "submit", "comment", "finish", "pending"}, execute: program.executeSubmitPendingReviewCommentAction},
-			{id: "submit-pending-review-approval", title: pullRequestReviewSubmitApprovalTitle, keywords: []string{"review", "submit", "approve", "approval", "lgtm", "pending"}, execute: program.executeSubmitPendingReviewApprovalAction},
-			{id: "submit-pending-review-request-changes", title: pullRequestReviewSubmitRequestChangesTitle, keywords: []string{"review", "submit", "request", "changes", "block", "pending"}, execute: program.executeSubmitPendingReviewRequestChangesAction},
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
+			{id: "submit-pending-review-approval", title: pullRequestReviewSubmitApprovalTitle, icon: actionsPopupReviewApproveIcon, keywords: []string{"review", "submit", "approve", "approval", "lgtm", "pending"}, execute: program.executeSubmitPendingReviewApprovalAction},
+			{id: "submit-pending-review-comment", title: pullRequestReviewSubmitCommentTitle, icon: actionsPopupReviewCommentIcon, keywords: []string{"review", "submit", "comment", "finish", "pending"}, execute: program.executeSubmitPendingReviewCommentAction},
+			{id: "submit-pending-review-request-changes", title: pullRequestReviewSubmitRequestChangesTitle, icon: actionsPopupReviewRequestChangesIcon, keywords: []string{"review", "submit", "request", "changes", "block", "pending"}, execute: program.executeSubmitPendingReviewRequestChangesAction},
 		}
 	}
 
@@ -209,8 +210,8 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 		{id: "review-comment", title: pullRequestReviewCommentComposerTitle, icon: actionsPopupReviewCommentIcon, keywords: []string{"review", "comment", "feedback"}, execute: program.executeReviewCommentAction},
 		{id: "review-request-changes", title: pullRequestRequestChangesComposerTitle, icon: actionsPopupReviewRequestChangesIcon, keywords: []string{"review", "request", "changes", "block"}, execute: program.executeRequestChangesAction},
 		{id: "comment-on-pr", title: pullRequestCommentComposerTitle, icon: actionsPopupCommentOnPullRequestIcon, keywords: []string{"comment", "reply", "discussion"}, execute: program.executeCommentOnPullRequestAction},
-		{id: "edit-pull-request-title", title: pullRequestTitleEditorTitle, keywords: []string{"edit", "title", "rename", "subject"}, execute: program.executeEditPullRequestTitleAction},
-		{id: "edit-pull-request-description", title: pullRequestDescriptionEditorTitle, keywords: []string{"edit", "description", "body", "summary"}, execute: program.executeEditPullRequestDescriptionAction},
+		{id: "edit-pull-request-title", title: pullRequestTitleEditorTitle, icon: actionsPopupEditPullRequestIcon, keywords: []string{"edit", "title", "rename", "subject"}, execute: program.executeEditPullRequestTitleAction},
+		{id: "edit-pull-request-description", title: pullRequestDescriptionEditorTitle, icon: actionsPopupEditPullRequestIcon, keywords: []string{"edit", "description", "body", "summary"}, execute: program.executeEditPullRequestDescriptionAction},
 	}
 }
 

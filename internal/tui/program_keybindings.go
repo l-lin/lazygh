@@ -16,6 +16,17 @@ type keybindingDefinition struct {
 var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewDetailName}
 var sidePaneViewNames = []string{viewUserName, viewPullRequestsName}
 
+func escapeKeybindingDefinitions(handler func(*gocui.Gui, *gocui.View) error) []keybindingDefinition {
+	return []keybindingDefinition{
+		{key: gocui.KeyEsc, handler: handler},
+		{key: gocui.KeyCtrlLsqBracket, handler: handler},
+	}
+}
+
+func dismissKeybindingDefinitions(handler func(*gocui.Gui, *gocui.View) error) []keybindingDefinition {
+	return append(escapeKeybindingDefinitions(handler), keybindingDefinition{key: 'q', handler: handler})
+}
+
 func bindingsForView(viewName string, definitions ...keybindingDefinition) []keybindingSpec {
 	return bindingsForViews([]string{viewName}, definitions...)
 }
@@ -68,11 +79,11 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 	)...)
 
 	specs = append(specs, bindingsForViews(sidePaneViewNames,
-		keybindingDefinition{key: 'l', handler: program.nextSideView},
-		keybindingDefinition{key: 'h', handler: program.previousSideView},
-		keybindingDefinition{key: '0', handler: program.focusDetailView},
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.exitReviewMode},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.exitReviewMode},
+		append([]keybindingDefinition{
+			{key: 'l', handler: program.nextSideView},
+			{key: 'h', handler: program.previousSideView},
+			{key: '0', handler: program.focusDetailView},
+		}, dismissKeybindingDefinitions(program.exitReviewMode)...)...,
 	)...)
 
 	specs = append(specs, bindingsForView(viewUserName,
@@ -90,62 +101,61 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 	)...)
 
 	specs = append(specs, bindingsForView(viewDetailName,
-		keybindingDefinition{key: 'h', handler: program.moveDetailCursorLeft},
-		keybindingDefinition{key: 'l', handler: program.moveDetailCursorRight},
-		keybindingDefinition{key: '0', handler: program.moveDetailCursorToRowStart},
-		keybindingDefinition{key: '$', handler: program.moveDetailCursorToRowEnd},
-		keybindingDefinition{key: 'g', handler: program.moveDetailCursorToTop},
-		keybindingDefinition{key: 'G', handler: program.moveDetailCursorToBottom},
-		keybindingDefinition{key: 'w', handler: program.moveDetailCursorToNextWord},
-		keybindingDefinition{key: 'e', handler: program.moveDetailCursorToWordEnd},
-		keybindingDefinition{key: 'b', handler: program.moveDetailCursorToPreviousWord},
-		keybindingDefinition{key: 'n', handler: program.nextDetailSearchMatch},
-		keybindingDefinition{key: 'N', handler: program.previousDetailSearchMatch},
-		keybindingDefinition{key: 'v', handler: program.enterDetailVisualMode},
-		keybindingDefinition{key: 'V', handler: program.enterDetailLineVisualMode},
-		keybindingDefinition{key: '[', handler: program.previousDetailTab},
-		keybindingDefinition{key: ']', handler: program.nextDetailTab},
-		keybindingDefinition{key: 'y', handler: program.copyPullRequestURL},
-		keybindingDefinition{key: 'c', handler: program.openPullRequestCommentComposer},
-		keybindingDefinition{key: 'a', handler: program.openActionsPopup},
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.closeDetail},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.closeDetail},
+		append([]keybindingDefinition{
+			{key: 'h', handler: program.moveDetailCursorLeft},
+			{key: 'l', handler: program.moveDetailCursorRight},
+			{key: '0', handler: program.moveDetailCursorToRowStart},
+			{key: '$', handler: program.moveDetailCursorToRowEnd},
+			{key: 'g', handler: program.moveDetailCursorToTop},
+			{key: 'G', handler: program.moveDetailCursorToBottom},
+			{key: 'w', handler: program.moveDetailCursorToNextWord},
+			{key: 'e', handler: program.moveDetailCursorToWordEnd},
+			{key: 'b', handler: program.moveDetailCursorToPreviousWord},
+			{key: 'n', handler: program.nextDetailSearchMatch},
+			{key: 'N', handler: program.previousDetailSearchMatch},
+			{key: 'v', handler: program.enterDetailVisualMode},
+			{key: 'V', handler: program.enterDetailLineVisualMode},
+			{key: '[', handler: program.previousDetailTab},
+			{key: ']', handler: program.nextDetailTab},
+			{key: 'y', handler: program.copyPullRequestURL},
+			{key: 'c', handler: program.openPullRequestCommentComposer},
+			{key: 'a', handler: program.openActionsPopup},
+		}, dismissKeybindingDefinitions(program.closeDetail)...)...,
 	)...)
 
 	specs = append(specs, bindingsForView(viewSearchName,
-		keybindingDefinition{key: gocui.KeyEnter, handler: program.submitSearch},
-		keybindingDefinition{key: gocui.KeyCtrlJ, handler: program.submitSearch},
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.cancelSearch},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.cancelSearch},
+		append([]keybindingDefinition{
+			{key: gocui.KeyEnter, handler: program.submitSearch},
+			{key: gocui.KeyCtrlJ, handler: program.submitSearch},
+		}, escapeKeybindingDefinitions(program.cancelSearch)...)...,
 	)...)
 
 	specs = append(specs, bindingsForView(viewActionsPopupName,
-		keybindingDefinition{key: '/', handler: program.focusActionsPopupSearch},
-		keybindingDefinition{key: 'j', handler: program.moveActionsPopupSelectionDown},
-		keybindingDefinition{key: gocui.KeyArrowDown, handler: program.moveActionsPopupSelectionDown},
-		keybindingDefinition{key: 'k', handler: program.moveActionsPopupSelectionUp},
-		keybindingDefinition{key: gocui.KeyArrowUp, handler: program.moveActionsPopupSelectionUp},
-		keybindingDefinition{key: gocui.KeyEnter, handler: program.executeSelectedActionsPopupAction},
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.closeActionsPopup},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.closeActionsPopup},
+		append([]keybindingDefinition{
+			{key: '/', handler: program.focusActionsPopupSearch},
+			{key: 'j', handler: program.moveActionsPopupSelectionDown},
+			{key: gocui.KeyArrowDown, handler: program.moveActionsPopupSelectionDown},
+			{key: 'k', handler: program.moveActionsPopupSelectionUp},
+			{key: gocui.KeyArrowUp, handler: program.moveActionsPopupSelectionUp},
+			{key: gocui.KeyEnter, handler: program.executeSelectedActionsPopupAction},
+		}, dismissKeybindingDefinitions(program.closeActionsPopup)...)...,
 	)...)
 
 	specs = append(specs, bindingsForView(viewActionsPopupSearchName,
-		keybindingDefinition{key: gocui.KeyEnter, handler: program.focusActionsPopupList},
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.closeActionsPopup},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.closeActionsPopup},
-		keybindingDefinition{key: gocui.KeyTab, handler: program.focusActionsPopupList},
+		append([]keybindingDefinition{
+			{key: gocui.KeyEnter, handler: program.focusActionsPopupList},
+			{key: gocui.KeyTab, handler: program.focusActionsPopupList},
+		}, escapeKeybindingDefinitions(program.closeActionsPopup)...)...,
 	)...)
 
 	specs = append(specs, bindingsForView(viewModalEditorName,
-		keybindingDefinition{key: gocui.KeyAltEnter, handler: program.submitModalEditor},
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.closeModalEditor},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.closeModalEditor},
+		append([]keybindingDefinition{
+			{key: gocui.KeyAltEnter, handler: program.submitModalEditor},
+		}, escapeKeybindingDefinitions(program.closeModalEditor)...)...,
 	)...)
 
 	specs = append(specs, bindingsForView(viewHelpName,
-		keybindingDefinition{key: gocui.KeyEsc, handler: program.closeHelp},
-		keybindingDefinition{key: gocui.KeyCtrlLsqBracket, handler: program.closeHelp},
+		dismissKeybindingDefinitions(program.closeHelp)...,
 	)...)
 
 	return specs

@@ -42,6 +42,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUs
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: ']', handler: subject.nextDetailTab})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEsc, handler: subject.closeDetail})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyCtrlLsqBracket, handler: subject.closeDetail})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'q', handler: subject.closeDetail})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: '[', handler: subject.previousPullRequestTab})
 }
 
@@ -97,6 +98,21 @@ func TestKeybindingSpecs_GivenProgram_WhenListingHelpBindings_ThenQuestionMarkTo
 	}
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: gocui.KeyEsc, handler: subject.closeHelp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: gocui.KeyCtrlLsqBracket, handler: subject.closeHelp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: 'q', handler: subject.closeHelp})
+}
+
+func TestKeybindingSpecs_GivenProgram_WhenListingDismissBindings_ThenQMirrorsEscapeOutsideTextInputs(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewUserName, viewPullRequestsName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'q', handler: subject.exitReviewMode})
+	}
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'q', handler: subject.closeActionsPopup})
+	for _, viewName := range []string{viewSearchName, viewActionsPopupSearchName, viewModalEditorName} {
+		then_bindingDoesNotExist(t, actual, viewName, 'q')
+	}
 }
 
 func then_bindingExists(t *testing.T, specs []keybindingSpec, expected keybindingSpec) {

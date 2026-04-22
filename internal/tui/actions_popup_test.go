@@ -25,6 +25,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyArrowUp, handler: subject.moveActionsPopupSelectionUp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'q', handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.focusActionsPopupList})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyTab, handler: subject.focusActionsPopupList})
@@ -55,8 +56,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		" Review: Comment on PR",
 		" Review: Request changes",
 		" Comment on PR",
-		"Edit PR title",
-		"Edit PR description",
+		" Edit PR title",
+		" Edit PR description",
 	})
 	if strings.Contains(popupView.Buffer(), "9 of 9 actions") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "9 of 9 actions", popupView.Buffer())
@@ -498,7 +499,7 @@ func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheAction
 	}
 }
 
-func TestActionsPopup_GivenDetailFocus_WhenClosing_ThenItReturnsToTheDetailPaneCleanly(t *testing.T) {
+func TestActionsPopup_GivenDetailFocus_WhenPressingQ_ThenItReturnsToTheDetailPaneCleanly(t *testing.T) {
 	model := given_pullRequestCommentModel()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -510,7 +511,8 @@ func TestActionsPopup_GivenDetailFocus_WhenClosing_ThenItReturnsToTheDetailPaneC
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	actualErr = subject.closeActionsPopup(gui, nil)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, 'q')
+	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
 
 	then_currentViewNameIs(t, gui, viewDetailName)

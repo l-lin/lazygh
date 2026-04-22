@@ -433,6 +433,32 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpe
 	}
 }
 
+func TestReviewMode_GivenAnOpenPendingReview_WhenPressingQFromTheFileTree_ThenItKeepsTheReviewOpenAndShowsResumeFeedback(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending"}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	exitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'q')
+	actualErr = exitHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	if subject.reviewSession.active {
+		t.Fatal("expected review mode to be inactive after exiting")
+	}
+	pullRequestsFooterView, actualErr := gui.View(viewPullRequestsFooterName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), pendingPullRequestReviewKeptOpenMessage) {
+		t.Fatalf("expected pull requests footer to contain %q, actual %q", pendingPullRequestReviewKeptOpenMessage, pullRequestsFooterView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestoresThePriorBrowserFocusSelectionAndDetailTab(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

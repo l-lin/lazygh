@@ -100,7 +100,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "<c-u>", Description: "Page up"},
 				{Key: "+/-", Description: "Toggle fullscreen"},
 				{Key: "/", Description: "Search diff"},
-				{Key: "<esc>", Description: "Exit visual / return"},
+				{Key: "<esc>/q", Description: "Exit visual / return"},
 			}
 		case FocusPullRequestsView:
 			return []helpEntry{
@@ -113,7 +113,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				pullRequestCommentHelpEntry(),
 				{Key: "a", Description: "Review actions"},
 				{Key: "<enter>", Description: "Open diff"},
-				{Key: "<esc>", Description: "Exit review mode"},
+				{Key: "<esc>/q", Description: "Exit review mode"},
 			}
 		default:
 			return []helpEntry{
@@ -121,7 +121,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				pullRequestYankHelpEntry(),
 				pullRequestCommentHelpEntry(),
 				{Key: "0", Description: "Focus diff"},
-				{Key: "<esc>", Description: "Exit review mode"},
+				{Key: "<esc>/q", Description: "Exit review mode"},
 			}
 		}
 	}
@@ -140,7 +140,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "<c-u>", Description: "Page up"},
 			{Key: "+/-", Description: "Toggle fullscreen"},
 			{Key: "/", Description: "Search detail"},
-			{Key: "<esc>", Description: "Exit visual / return"},
+			{Key: "<esc>/q", Description: "Exit visual / return"},
 		}
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries,

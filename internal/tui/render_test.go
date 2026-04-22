@@ -273,7 +273,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCurrentViewAndGl
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
-	for _, expected := range []string{"--- Local ---", "--- Global ---", "h/j/k/l/<up>/<down>", "Move cursor", "w/e/b", "Next/end/previous word", "n/N", "Next/previous match", "v/V", "Start char/line visual selection", "?", "Toggle help", "tab", "Switch side view"} {
+	for _, expected := range []string{"--- Local ---", "--- Global ---", "h/j/k/l/<up>/<down>", "Move cursor", "w/e/b", "Next/end/previous word", "n/N", "Next/previous match", "v/V", "Start char/line visual selection", "<esc>/q", "Exit visual / return", "?", "Toggle help", "tab", "Switch side view"} {
 		if !strings.Contains(actualBuffer, expected) {
 			t.Fatalf("expected help buffer to contain %q, actual %q", expected, actualBuffer)
 		}
@@ -294,6 +294,25 @@ func TestHelpPopup_GivenVisibleHelp_WhenTogglingAgain_ThenThePopupClosesAndFocus
 	then_currentViewNameIs(t, gui, viewHelpName)
 
 	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewUserName)
+	then_viewDoesNotExist(t, gui, viewHelpName)
+}
+
+func TestHelpPopup_GivenVisibleHelp_WhenPressingQ_ThenThePopupClosesAndFocusReturnsToTheUnderlyingView(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewHelpName)
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewHelpName, 'q')
+	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewUserName)
 	then_viewDoesNotExist(t, gui, viewHelpName)
@@ -358,6 +377,26 @@ func TestOpenDetailAndCloseDetail_GivenPullRequestsFocus_WhenHandlingProgramActi
 	then_currentViewNameIs(t, gui, viewDetailName)
 
 	actualErr = subject.closeDetail(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+}
+
+func TestOpenDetailAndCloseDetail_GivenPullRequestsFocus_WhenPressingQ_ThenCurrentViewReturnsToPullRequests(t *testing.T) {
+	model := given_model()
+	model.NextSideView()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'q')
+	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 }
