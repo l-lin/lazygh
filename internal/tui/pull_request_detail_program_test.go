@@ -447,6 +447,10 @@ type fakePullRequestDetailLoader struct {
 	requestChangesCalls   []string
 	requestChangesBodies  []string
 	requestChangesErr     error
+	submitReviewIDs       []string
+	submitReviewEvents    []githubcli.PullRequestReviewEvent
+	submitReviewBodies    []string
+	submitReviewErr       error
 	reviewThreadReviewIDs []string
 	reviewThreadBodies    []string
 	reviewThreadTargets   []githubcli.PullRequestReviewThreadTarget
@@ -530,6 +534,13 @@ func (loader *fakePullRequestDetailLoader) RequestChangesOnPullRequest(repositor
 	loader.requestChangesCalls = append(loader.requestChangesCalls, repository+"#"+strconv.Itoa(number))
 	loader.requestChangesBodies = append(loader.requestChangesBodies, body)
 	return loader.requestChangesErr
+}
+
+func (loader *fakePullRequestDetailLoader) SubmitPullRequestReview(pullRequestReviewID string, event githubcli.PullRequestReviewEvent, body string) error {
+	loader.submitReviewIDs = append(loader.submitReviewIDs, strings.TrimSpace(pullRequestReviewID))
+	loader.submitReviewEvents = append(loader.submitReviewEvents, event)
+	loader.submitReviewBodies = append(loader.submitReviewBodies, body)
+	return loader.submitReviewErr
 }
 
 func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error {

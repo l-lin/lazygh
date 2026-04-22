@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	reviewModeMetadataTitle = "[1]-Metadata"
-	reviewModeFilesTitle    = "[2]-Files"
-	reviewModeDiffTitle     = "[0]-Diff"
+	reviewModeMetadataTitle                 = "[1]-Metadata"
+	reviewModeFilesTitle                    = "[2]-Files"
+	reviewModeDiffTitle                     = "[0]-Diff"
+	pendingPullRequestReviewKeptOpenMessage = "Pending review kept open; start review to resume"
 )
 
 type reviewSessionState struct {
@@ -74,6 +75,24 @@ func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	sourceFocus := program.reviewSession.sourceFocus
+	pendingReviewID := strings.TrimSpace(program.reviewSession.pendingReviewID)
+	program.restorePullRequestBrowserFromReviewMode()
+	if pendingReviewID != "" {
+		program.setFeedback(sourceFocus, pendingPullRequestReviewKeptOpenMessage)
+	}
+	if gui == nil {
+		return nil
+	}
+
+	return program.layout(gui)
+}
+
+func (program *Program) restorePullRequestBrowserFromReviewMode() {
+	if !program.reviewSession.active {
+		return
+	}
+
+	sourceFocus := program.reviewSession.sourceFocus
 	sourceDetailTab := program.reviewSession.sourceDetailTab
 	sourcePaneLayoutSize := program.reviewSession.sourcePaneLayoutSize
 	sourceFullscreenPane := program.reviewSession.sourceFullscreenPane
@@ -92,12 +111,6 @@ func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {
 	default:
 		program.model.FocusPullRequestsView()
 	}
-
-	if gui == nil {
-		return nil
-	}
-
-	return program.layout(gui)
 }
 
 func (program *Program) reviewModePaneLayoutSize() PaneLayoutSize {

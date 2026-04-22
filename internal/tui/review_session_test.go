@@ -401,6 +401,38 @@ func TestReviewMode_GivenFullscreenPullRequestBrowser_WhenStartingAndExiting_The
 	then_viewDoesNotExist(t, gui, viewDetailName)
 }
 
+func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpenAndShowsResumeFeedback(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending"}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	exitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEsc)
+	actualErr = exitHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	if subject.reviewSession.active {
+		t.Fatal("expected review mode to be inactive after exiting")
+	}
+	pullRequestsFooterView, actualErr := gui.View(viewPullRequestsFooterName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsFooterView.Buffer(), pendingPullRequestReviewKeptOpenMessage) {
+		t.Fatalf("expected pull requests footer to contain %q, actual %q", pendingPullRequestReviewKeptOpenMessage, pullRequestsFooterView.Buffer())
+	}
+
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	if subject.reviewSession.pendingReviewID != "PRR_pending" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.reviewSession.pendingReviewID)
+	}
+}
+
 func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestoresThePriorBrowserFocusSelectionAndDetailTab(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

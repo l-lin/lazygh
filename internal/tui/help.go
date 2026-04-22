@@ -102,6 +102,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				reviewInlineCommentHelpEntry(),
+				{Key: "a", Description: "Review actions"},
 				{Key: "y", Description: "Yank selection / PR URL"},
 				{Key: "<c-d>", Description: "Page down"},
 				{Key: "<c-u>", Description: "Page up"},
@@ -118,6 +119,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "+/-", Description: "Resize panes"},
 				pullRequestYankHelpEntry(),
 				pullRequestCommentHelpEntry(),
+				{Key: "a", Description: "Review actions"},
 				{Key: "<enter>", Description: "Open diff"},
 				{Key: "<esc>", Description: "Exit review mode"},
 			}

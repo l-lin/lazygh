@@ -170,8 +170,15 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 }
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
-	if program.reviewSession.active || !program.isPullRequestContext() {
+	if !program.isPullRequestContext() {
 		return nil
+	}
+	if program.reviewSession.active {
+		return []actionsPopupAction{
+			{id: "submit-pending-review-comment", title: pullRequestReviewSubmitCommentTitle, keywords: []string{"review", "submit", "comment", "finish", "pending"}, execute: program.executeSubmitPendingReviewCommentAction},
+			{id: "submit-pending-review-approval", title: pullRequestReviewSubmitApprovalTitle, keywords: []string{"review", "submit", "approve", "approval", "lgtm", "pending"}, execute: program.executeSubmitPendingReviewApprovalAction},
+			{id: "submit-pending-review-request-changes", title: pullRequestReviewSubmitRequestChangesTitle, keywords: []string{"review", "submit", "request", "changes", "block", "pending"}, execute: program.executeSubmitPendingReviewRequestChangesAction},
+		}
 	}
 
 	return []actionsPopupAction{
