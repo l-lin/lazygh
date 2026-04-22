@@ -7,11 +7,29 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
+const (
+	actionsPopupStartReviewIcon            = ""
+	actionsPopupYankPullRequestURLIcon     = ""
+	actionsPopupOpenPullRequestBrowserIcon = ""
+	actionsPopupReviewApproveIcon          = ""
+	actionsPopupReviewCommentIcon          = ""
+	actionsPopupReviewRequestChangesIcon   = ""
+	actionsPopupCommentOnPullRequestIcon   = ""
+)
+
 type actionsPopupAction struct {
 	id       string
 	title    string
+	icon     string
 	keywords []string
 	execute  func(*gocui.Gui) actionsPopupActionResult
+}
+
+func (action actionsPopupAction) label() string {
+	if strings.TrimSpace(action.icon) == "" {
+		return action.title
+	}
+	return action.icon + " " + action.title
 }
 
 type actionsPopupActionResult struct {
@@ -184,13 +202,13 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	}
 
 	return []actionsPopupAction{
-		{id: "comment-on-pr", title: pullRequestCommentComposerTitle, keywords: []string{"comment", "reply", "discussion"}, execute: program.executeCommentOnPullRequestAction},
+		{id: "start-review", title: "Start review", icon: actionsPopupStartReviewIcon, keywords: []string{"start", "review", "pending", "session", "inline"}, execute: program.executeStartReviewAction},
 		program.yankPullRequestURLActionsPopupAction(),
 		program.openPullRequestInBrowserActionsPopupAction(),
-		{id: "start-review", title: "Start review", keywords: []string{"start", "review", "pending", "session", "inline"}, execute: program.executeStartReviewAction},
-		{id: "review-approve", title: "Review: Approve PR", keywords: []string{"review", "approve", "lgtm", "shipit"}, execute: program.executeApprovePullRequestAction},
-		{id: "review-comment", title: pullRequestReviewCommentComposerTitle, keywords: []string{"review", "comment", "feedback"}, execute: program.executeReviewCommentAction},
-		{id: "review-request-changes", title: pullRequestRequestChangesComposerTitle, keywords: []string{"review", "request", "changes", "block"}, execute: program.executeRequestChangesAction},
+		{id: "review-approve", title: "Review: Approve PR", icon: actionsPopupReviewApproveIcon, keywords: []string{"review", "approve", "lgtm", "shipit"}, execute: program.executeApprovePullRequestAction},
+		{id: "review-comment", title: pullRequestReviewCommentComposerTitle, icon: actionsPopupReviewCommentIcon, keywords: []string{"review", "comment", "feedback"}, execute: program.executeReviewCommentAction},
+		{id: "review-request-changes", title: pullRequestRequestChangesComposerTitle, icon: actionsPopupReviewRequestChangesIcon, keywords: []string{"review", "request", "changes", "block"}, execute: program.executeRequestChangesAction},
+		{id: "comment-on-pr", title: pullRequestCommentComposerTitle, icon: actionsPopupCommentOnPullRequestIcon, keywords: []string{"comment", "reply", "discussion"}, execute: program.executeCommentOnPullRequestAction},
 		{id: "edit-pull-request-title", title: pullRequestTitleEditorTitle, keywords: []string{"edit", "title", "rename", "subject"}, execute: program.executeEditPullRequestTitleAction},
 		{id: "edit-pull-request-description", title: pullRequestDescriptionEditorTitle, keywords: []string{"edit", "description", "body", "summary"}, execute: program.executeEditPullRequestDescriptionAction},
 	}
@@ -249,11 +267,11 @@ func actionsPopupActionMatchesQuery(action actionsPopupAction, query string) boo
 }
 
 func (program *Program) yankPullRequestURLActionsPopupAction() actionsPopupAction {
-	return actionsPopupAction{id: "yank-pull-request-url", title: "Yank URL to clipboard", keywords: []string{"yank", "copy", "clipboard", "url", "link"}, execute: program.executeYankPullRequestURLAction}
+	return actionsPopupAction{id: "yank-pull-request-url", title: "Yank URL to clipboard", icon: actionsPopupYankPullRequestURLIcon, keywords: []string{"yank", "copy", "clipboard", "url", "link"}, execute: program.executeYankPullRequestURLAction}
 }
 
 func (program *Program) openPullRequestInBrowserActionsPopupAction() actionsPopupAction {
-	return actionsPopupAction{id: "open-pull-request-in-browser", title: "Open PR in browser", keywords: []string{"open", "browser", "web", "url", "link"}, execute: program.executeOpenPullRequestInBrowserAction}
+	return actionsPopupAction{id: "open-pull-request-in-browser", title: "Open PR in browser", icon: actionsPopupOpenPullRequestBrowserIcon, keywords: []string{"open", "browser", "web", "url", "link"}, execute: program.executeOpenPullRequestInBrowserAction}
 }
 
 func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {

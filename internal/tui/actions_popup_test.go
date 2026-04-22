@@ -47,21 +47,17 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 	if !strings.Contains(popupView.Title, "Actions") {
 		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
 	}
-	for _, expected := range []string{
-		"Comment on PR",
-		"Yank URL to clipboard",
-		"Open PR in browser",
-		"Start review",
-		"Review: Approve PR",
-		"Review: Comment on PR",
-		"Review: Request changes",
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		" Start review",
+		" Yank URL to clipboard",
+		" Open PR in browser",
+		" Review: Approve PR",
+		" Review: Comment on PR",
+		" Review: Request changes",
+		" Comment on PR",
 		"Edit PR title",
 		"Edit PR description",
-	} {
-		if !strings.Contains(popupView.Buffer(), expected) {
-			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
-		}
-	}
+	})
 	if strings.Contains(popupView.Buffer(), "9 of 9 actions") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "9 of 9 actions", popupView.Buffer())
 	}
@@ -440,6 +436,9 @@ func TestActionsPopup_GivenCommentActionSelected_WhenExecuting_ThenItReusesTheCo
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("discussion", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "discussion"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
@@ -517,6 +516,20 @@ func TestActionsPopup_GivenDetailFocus_WhenClosing_ThenItReturnsToTheDetailPaneC
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+}
+
+func then_popupBufferContainsOrderedActionLines(t *testing.T, buffer string, expected []string) {
+	t.Helper()
+
+	actual := strings.Split(strings.TrimSpace(buffer), "\n")
+	if len(actual) != len(expected) {
+		t.Fatalf("expected %d popup action lines, actual %d: %q", len(expected), len(actual), buffer)
+	}
+	for index, expectedLine := range expected {
+		if actual[index] != expectedLine {
+			t.Fatalf("expected popup action line %d to be %q, actual %q", index, expectedLine, actual[index])
+		}
+	}
 }
 
 func given_actionsPopupPullRequest() githubcli.PullRequest {

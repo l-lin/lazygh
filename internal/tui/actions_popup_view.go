@@ -119,7 +119,7 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 		if index < 0 || index >= len(actions) {
 			continue
 		}
-		program.renderHighlightedLine(view, actions[index].title, query, showSelectedLine && visibleIndex == selectedVisibleIndex)
+		program.renderHighlightedLine(view, actions[index].label(), query, showSelectedLine && visibleIndex == selectedVisibleIndex)
 	}
 
 	if selectedVisibleIndex < 0 {
