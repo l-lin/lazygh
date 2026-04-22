@@ -46,6 +46,20 @@ type reviewDiffHunk struct {
 	Lines  []reviewDiffLine
 }
 
+type reviewDiffThread struct {
+	ID                string
+	Path              string
+	IsResolved        bool
+	IsOutdated        bool
+	Line              int
+	OriginalLine      int
+	StartLine         int
+	OriginalStartLine int
+	Side              reviewDiffLineSide
+	StartSide         reviewDiffLineSide
+	Comments          []githubcli.PullRequestComment
+}
+
 type reviewDiffFile struct {
 	Path         string
 	PreviousPath string
@@ -53,6 +67,7 @@ type reviewDiffFile struct {
 	Additions    int
 	Deletions    int
 	Hunks        []reviewDiffHunk
+	Threads      []reviewDiffThread
 	Placeholder  string
 }
 
@@ -95,8 +110,9 @@ func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
 		parsedFilesByPath[file.Path] = file
 	}
 
-	files := make([]reviewDiffFile, 0, max(len(raw.Files), len(parsedFiles)))
-	usedPaths := make(map[string]bool, len(raw.Files))
+	threadsByPath := buildReviewDiffThreadsByPath(raw.Threads)
+	files := make([]reviewDiffFile, 0, max(len(raw.Files), len(parsedFiles))+len(threadsByPath))
+	usedPaths := make(map[string]bool, len(raw.Files)+len(parsedFiles))
 	for _, rawFile := range raw.Files {
 		file := reviewDiffFile{
 			Path:         strings.TrimSpace(rawFile.Path),
@@ -113,22 +129,35 @@ func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
 			if file.ChangeType == "" {
 				file.ChangeType = parsedFile.ChangeType
 			}
-			usedPaths[file.Path] = true
 		}
+		file.Threads = append(file.Threads, threadsByPath[file.Path]...)
 		if len(file.Hunks) == 0 {
 			file.Placeholder = reviewDiffPlaceholder(file)
 		}
 		files = append(files, file)
+		usedPaths[file.Path] = true
 	}
 
 	for _, parsedFile := range parsedFiles {
 		if usedPaths[parsedFile.Path] {
 			continue
 		}
+		parsedFile.Threads = append(parsedFile.Threads, threadsByPath[parsedFile.Path]...)
 		if len(parsedFile.Hunks) == 0 {
 			parsedFile.Placeholder = reviewDiffPlaceholder(parsedFile)
 		}
 		files = append(files, parsedFile)
+		usedPaths[parsedFile.Path] = true
+	}
+
+	for path, threads := range threadsByPath {
+		if usedPaths[path] || strings.TrimSpace(path) == "" {
+			continue
+		}
+		file := reviewDiffFile{Path: path, Threads: append([]reviewDiffThread(nil), threads...)}
+		file.Placeholder = reviewDiffPlaceholder(file)
+		files = append(files, file)
+		usedPaths[path] = true
 	}
 
 	stats := reviewDiffStats{ChangedFiles: len(files)}
@@ -141,6 +170,45 @@ func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
 		Stats:    stats,
 		Files:    files,
 		FileTree: buildReviewDiffFileTree(files),
+	}
+}
+
+func buildReviewDiffThreadsByPath(rawThreads []githubcli.PullRequestReviewThread) map[string][]reviewDiffThread {
+	threadsByPath := make(map[string][]reviewDiffThread, len(rawThreads))
+	for _, rawThread := range rawThreads {
+		thread := buildReviewDiffThread(rawThread)
+		if strings.TrimSpace(thread.Path) == "" {
+			continue
+		}
+		threadsByPath[thread.Path] = append(threadsByPath[thread.Path], thread)
+	}
+	return threadsByPath
+}
+
+func buildReviewDiffThread(rawThread githubcli.PullRequestReviewThread) reviewDiffThread {
+	return reviewDiffThread{
+		ID:                strings.TrimSpace(rawThread.ID),
+		Path:              strings.TrimSpace(rawThread.Path),
+		IsResolved:        rawThread.IsResolved,
+		IsOutdated:        rawThread.IsOutdated,
+		Line:              rawThread.Line,
+		OriginalLine:      rawThread.OriginalLine,
+		StartLine:         rawThread.StartLine,
+		OriginalStartLine: rawThread.OriginalStartLine,
+		Side:              reviewDiffLineSideFromGitHub(rawThread.DiffSide),
+		StartSide:         reviewDiffLineSideFromGitHub(rawThread.StartDiffSide),
+		Comments:          append([]githubcli.PullRequestComment(nil), rawThread.Comments...),
+	}
+}
+
+func reviewDiffLineSideFromGitHub(side string) reviewDiffLineSide {
+	switch strings.ToUpper(strings.TrimSpace(side)) {
+	case string(reviewDiffLineSideLeft):
+		return reviewDiffLineSideLeft
+	case string(reviewDiffLineSideRight):
+		return reviewDiffLineSideRight
+	default:
+		return reviewDiffLineSideNone
 	}
 }
 

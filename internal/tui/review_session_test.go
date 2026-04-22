@@ -55,7 +55,7 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if metadataView.Title != "[1]-Metadata" {
 		t.Fatalf("expected metadata view title %q, actual %q", "[1]-Metadata", metadataView.Title)
 	}
-	if !strings.Contains(metadataView.Buffer(), "Pending review: PRR_pending") || !strings.Contains(metadataView.Buffer(), "Changed files: 2") || !strings.Contains(metadataView.Buffer(), "Additions: +3") || !strings.Contains(metadataView.Buffer(), "Deletions: -2") {
+	if !strings.Contains(metadataView.Buffer(), "Pending review: PRR_pending") || !strings.Contains(metadataView.Buffer(), "Changed files: 2") || !strings.Contains(metadataView.Buffer(), "+3") || !strings.Contains(metadataView.Buffer(), "-2") {
 		t.Fatalf("expected metadata view to contain review stats, actual %q", metadataView.Buffer())
 	}
 
@@ -134,6 +134,137 @@ func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffC
 	additionLineIndex := given_viewLineIndexContaining(t, detailView, "new line")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review diff addition text")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "review diff addition background")
+}
+
+func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullRequestContextAndColoredDiffCounts(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	metadataView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	if !strings.Contains(metadataView.Buffer(), "First PR") || !strings.Contains(metadataView.Buffer(), detailRepositoryIcon+" acme/widgets#42") || !strings.Contains(metadataView.Buffer(), detailBranchIcon+" main ← feature/review") || !strings.Contains(metadataView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected review metadata to contain the pull request context, actual %q", metadataView.Buffer())
+	}
+
+	countsLineIndex := given_viewLineIndexContaining(t, metadataView, "Changed files:")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "+3", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review metadata additions")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "-2", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review metadata deletions")
+}
+
+func TestReviewMode_GivenTheSelectedFileTreeRow_WhenRendering_ThenViewTwoKeepsItVisiblyMarked(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	selectedLineIndex := given_viewLineIndexContaining(t, filesView, "render.go")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
+}
+
+func TestBrowserMode_GivenReviewRenderingSupport_WhenRefreshingThePullRequestDetail_ThenItKeepsTheExistingCommentsTabOutput(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/review",
+				State:       "OPEN",
+				InlineComments: []githubcli.PullRequestInlineComment{{
+					Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+					Body:         "Inline body",
+					CreatedAt:    "2026-04-20T10:00:00Z",
+					Path:         "internal/tui/render.go",
+					Line:         43,
+					OriginalLine: 43,
+					Side:         "RIGHT",
+					DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+				}},
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": {
+				Threads: []githubcli.PullRequestReviewThread{{
+					ID:         "thread-1",
+					Path:       "internal/tui/render.go",
+					Line:       43,
+					DiffSide:   "RIGHT",
+					IsResolved: true,
+					Comments:   []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline body", CreatedAt: "2026-04-20T10:00:00Z"}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.activeDetailTab = CommentsDetailTab
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline body": "Rendered inline body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 1)
+	if strings.Contains(detailView.Buffer(), "Conversation · resolved") {
+		t.Fatalf("expected browser mode to keep the existing comments-tab formatter, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), detailInlineCommentLocationIcon+" internal/tui/render.go:43") || !strings.Contains(detailView.Buffer(), "Rendered inline body") {
+		t.Fatalf("expected browser mode comments tab to remain unchanged, actual %q", detailView.Buffer())
+	}
 }
 
 func TestReviewMode_GivenColoredFileTreeRows_WhenRendering_ThenDirectoriesAreGrayAndFilesReflectTheirChangeType(t *testing.T) {

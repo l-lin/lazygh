@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	sidebarWidthPercent = 35
-	minimumSidebarWidth = 32
-	minimumDetailWidth  = 40
-	userViewTotalHeight = 3
+	sidebarWidthPercent          = 35
+	minimumSidebarWidth          = 32
+	minimumDetailWidth           = 40
+	userViewTotalHeight          = 3
+	reviewModeMetadataViewHeight = 8
 )
 
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
@@ -29,7 +30,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
 
-	mainPaneLayout := calculateMainPaneLayout(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane())
+	mainPaneLayout := calculateMainPaneLayoutWithUserViewHeight(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.sidebarTopPaneHeight())
 
 	userView, err := setPaneView(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user)
 	if err != nil {
@@ -114,6 +115,13 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	}
 
 	return program.syncCurrentView(gui)
+}
+
+func (program *Program) sidebarTopPaneHeight() int {
+	if program.reviewSession.active {
+		return reviewModeMetadataViewHeight
+	}
+	return userViewTotalHeight
 }
 
 func (program *Program) configureDetailView(view *gocui.View) {

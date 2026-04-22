@@ -8,6 +8,7 @@ import (
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 const (
@@ -210,17 +211,21 @@ func (program *Program) reviewSessionMetadataContent() string {
 		if result.err != nil {
 			bodyLines = append(bodyLines, "", "Could not load changed files.", strings.TrimSpace(result.err.Error()))
 		} else {
-			bodyLines = append(bodyLines,
-				fmt.Sprintf("Changed files: %d", result.data.Stats.ChangedFiles),
-				fmt.Sprintf("Additions: +%d", result.data.Stats.Additions),
-				fmt.Sprintf("Deletions: -%d", result.data.Stats.Deletions),
-			)
+			bodyLines = append(bodyLines, renderReviewSessionMetadataStats(result.data.Stats))
 		}
 	} else {
 		bodyLines = append(bodyLines, "", "Loading changed files...")
 	}
 
 	return renderPullRequestDetailContent(renderPullRequestDetailHeader(summary, detail), strings.Join(bodyLines, "\n"))
+}
+
+func renderReviewSessionMetadataStats(stats reviewDiffStats) string {
+	return strings.Join([]string{
+		fmt.Sprintf("Changed files: %d", stats.ChangedFiles),
+		styleText(fmt.Sprintf("+%d", stats.Additions), foregroundColorEscape(theme.DiffAdditionForegroundHex)),
+		styleText(fmt.Sprintf("-%d", stats.Deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex)),
+	}, "  ")
 }
 
 func (program *Program) reviewSessionDetailContent() string {
@@ -239,7 +244,7 @@ func (program *Program) reviewSessionDetailContent() string {
 	if !ok {
 		return program.reviewSessionNoDiffDetail()
 	}
-	return renderReviewDiffFile(selectedFile)
+	return renderReviewDiffFile(selectedFile, program.markdownRenderer, program.detailWrapWidth)
 }
 
 func (program *Program) reviewSessionLoadingDetail() string {

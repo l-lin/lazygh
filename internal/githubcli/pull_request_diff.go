@@ -12,6 +12,7 @@ var ErrInvalidPullRequestDiffFilesResponse = fmt.Errorf("invalid pull request di
 type PullRequestDiff struct {
 	UnifiedDiff string
 	Files       []PullRequestDiffFile
+	Threads     []PullRequestReviewThread
 }
 
 type PullRequestDiffFile struct {
@@ -39,7 +40,12 @@ func (client *Client) GetPullRequestDiff(repository string, number int) (PullReq
 		return PullRequestDiff{}, err
 	}
 
-	return PullRequestDiff{UnifiedDiff: unifiedDiff, Files: files}, nil
+	threads, err := client.listPullRequestReviewThreads(trimmedRepository, number)
+	if err != nil {
+		return PullRequestDiff{}, err
+	}
+
+	return PullRequestDiff{UnifiedDiff: unifiedDiff, Files: files, Threads: threads}, nil
 }
 
 func (client *Client) getPullRequestUnifiedDiff(repository string, number int) (string, error) {

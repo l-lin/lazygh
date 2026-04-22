@@ -17,6 +17,10 @@ type mainPaneLayout struct {
 }
 
 func calculateMainPaneLayout(maxX int, contentMaxY int, layoutSize PaneLayoutSize, fullscreenPane Focus) mainPaneLayout {
+	return calculateMainPaneLayoutWithUserViewHeight(maxX, contentMaxY, layoutSize, fullscreenPane, userViewTotalHeight)
+}
+
+func calculateMainPaneLayoutWithUserViewHeight(maxX int, contentMaxY int, layoutSize PaneLayoutSize, fullscreenPane Focus, userHeight int) mainPaneLayout {
 	if maxX < 1 {
 		maxX = 1
 	}
@@ -49,7 +53,7 @@ func calculateMainPaneLayout(maxX int, contentMaxY int, layoutSize PaneLayoutSiz
 		sidebarWidth = 1
 	}
 
-	userFrame, pullRequestsFrame, detailFrame := calculateSidebarFrames(maxX, contentMaxY, sidebarWidth)
+	userFrame, pullRequestsFrame, detailFrame := calculateSidebarFrames(maxX, contentMaxY, sidebarWidth, userHeight)
 	return mainPaneLayout{
 		user:                userFrame,
 		userVisible:         true,
@@ -76,7 +80,7 @@ func defaultSidebarWidth(maxX int) int {
 	return sidebarWidth
 }
 
-func calculateSidebarFrames(maxX int, contentMaxY int, sidebarWidth int) (paneFrame, paneFrame, paneFrame) {
+func calculateSidebarFrames(maxX int, contentMaxY int, sidebarWidth int, userHeight int) (paneFrame, paneFrame, paneFrame) {
 	sidebarX1 := sidebarWidth - 1
 	detailX0 := sidebarX1 + 1
 	if detailX0 >= maxX {
@@ -84,12 +88,11 @@ func calculateSidebarFrames(maxX int, contentMaxY int, sidebarWidth int) (paneFr
 		sidebarX1 = detailX0 - 1
 	}
 
-	userY1, pullRequestsY0 := calculateSidebarSplitY(contentMaxY)
+	userY1, pullRequestsY0 := calculateSidebarSplitY(contentMaxY, userHeight)
 	return paneFrame{x0: 0, y0: 0, x1: sidebarX1, y1: userY1}, paneFrame{x0: 0, y0: pullRequestsY0, x1: sidebarX1, y1: contentMaxY - 1}, paneFrame{x0: detailX0, y0: 0, x1: maxX - 1, y1: contentMaxY - 1}
 }
 
-func calculateSidebarSplitY(contentMaxY int) (int, int) {
-	userHeight := userViewTotalHeight
+func calculateSidebarSplitY(contentMaxY int, userHeight int) (int, int) {
 	if userHeight >= contentMaxY {
 		userHeight = contentMaxY / 2
 	}
