@@ -216,7 +216,7 @@ func (model *Model) CloseDetail() {
 func (model *Model) MoveSelectionDown() {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = model.adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), 1)
+		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), 1)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(1)
 	}
@@ -225,7 +225,7 @@ func (model *Model) MoveSelectionDown() {
 func (model *Model) MoveSelectionUp() {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = model.adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), -1)
+		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), -1)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(-1)
 	}
@@ -254,177 +254,4 @@ func (model *Model) NextPullRequestTab() {
 
 func (model *Model) PreviousPullRequestTab() {
 	model.NextPullRequestTab()
-}
-
-func (model *Model) detailItem() (Item, bool) {
-	switch model.currentSideFocus() {
-	case FocusPullRequestsView:
-		row, ok := model.SelectedPullRequestRow()
-		if !ok {
-			return Item{}, false
-		}
-		return row.Item, true
-	default:
-		return itemAt(model.users, model.selectedUserIndex)
-	}
-}
-
-func (model *Model) currentSideFocus() Focus {
-	if model.focus == FocusDetailView {
-		return model.lastSideFocus
-	}
-
-	if model.focus == FocusPullRequestsView {
-		return FocusPullRequestsView
-	}
-
-	return FocusUserView
-}
-
-func (model *Model) setSideFocus(focus Focus) {
-	if focus != FocusUserView && focus != FocusPullRequestsView {
-		return
-	}
-	if model.paneLayoutSize == PaneLayoutFullscreen && focus != model.fullscreenPane {
-		return
-	}
-
-	model.focus = focus
-	model.lastSideFocus = focus
-}
-
-func (model *Model) adjustSelectionBy(change int) {
-	switch model.focus {
-	case FocusUserView:
-		model.selectedUserIndex = model.adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), change)
-	case FocusPullRequestsView:
-		model.adjustPullRequestSelection(change)
-	}
-}
-
-func (model *Model) adjustPullRequestSelection(change int) {
-	tab := model.activePullRequestTab
-	selectedIndex := model.selectedPullRequestIndexes[tab]
-	visibleIndexes := model.visiblePullRequestIndexes(tab)
-	model.selectedPullRequestIndexes[tab] = model.adjustVisibleSelection(selectedIndex, visibleIndexes, change)
-}
-
-func (model *Model) adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int) int {
-	if len(visibleIndexes) == 0 {
-		return selectedIndex
-	}
-
-	visibleSelectionIndex := indexOfInt(visibleIndexes, selectedIndex)
-	if visibleSelectionIndex < 0 {
-		visibleSelectionIndex = 0
-	}
-
-	visibleSelectionIndex = clampIndex(visibleSelectionIndex+change, len(visibleIndexes))
-	return visibleIndexes[visibleSelectionIndex]
-}
-
-func (tab PullRequestTab) Label() string {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return "Requested"
-	default:
-		return "My PRs"
-	}
-}
-
-func itemAt(items []Item, selectedIndex int) (Item, bool) {
-	if len(items) == 0 {
-		return Item{}, false
-	}
-
-	index := clampIndex(selectedIndex, len(items))
-	return items[index], true
-}
-
-func pullRequestRowAt(rows []PullRequestRow, selectedIndex int) (PullRequestRow, bool) {
-	if len(rows) == 0 {
-		return PullRequestRow{}, false
-	}
-
-	index := clampIndex(selectedIndex, len(rows))
-	return rows[index], true
-}
-
-func clampIndex(index int, itemCount int) int {
-	if itemCount == 0 {
-		return 0
-	}
-
-	if index < 0 {
-		return 0
-	}
-
-	maxIndex := itemCount - 1
-	if index > maxIndex {
-		return maxIndex
-	}
-
-	return index
-}
-
-func pageDelta(pageSize int) int {
-	if pageSize <= 1 {
-		return 1
-	}
-
-	return pageSize
-}
-
-func copyItems(items []Item) []Item {
-	copiedItems := make([]Item, len(items))
-	copy(copiedItems, items)
-	return copiedItems
-}
-
-func copyPullRequestRows(rows []PullRequestRow) []PullRequestRow {
-	copiedRows := make([]PullRequestRow, 0, len(rows))
-	for _, row := range rows {
-		copiedRow := PullRequestRow{Item: row.Item}
-		if row.Summary != nil {
-			summaryCopy := *row.Summary
-			copiedRow.Summary = &summaryCopy
-		}
-		copiedRows = append(copiedRows, copiedRow)
-	}
-	return copiedRows
-}
-
-func pullRequestRowsFromItems(items []Item) []PullRequestRow {
-	rows := make([]PullRequestRow, 0, len(items))
-	for _, item := range items {
-		rows = append(rows, PullRequestRow{Item: item})
-	}
-	return rows
-}
-
-func pullRequestItems(rows []PullRequestRow) []Item {
-	items := make([]Item, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, row.Item)
-	}
-	return items
-}
-
-func (model *Model) pullRequestRows(tab PullRequestTab) []PullRequestRow {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return model.requestedPullRequests
-	default:
-		return model.myPullRequests
-	}
-}
-
-func indexOfInt(items []int, expected int) int {
-	for index, item := range items {
-		if item == expected {
-			return index
-		}
-	}
-
-	return -1
 }

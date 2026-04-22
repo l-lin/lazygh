@@ -138,16 +138,7 @@ func (program *Program) openLineModalEditor(gui *gocui.Gui, title string, initia
 
 func (program *Program) closeModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 	program.modalEditor = nil
-	if gui == nil {
-		return nil
-	}
-
-	actualErr := gui.DeleteView(viewModalEditorName)
-	if actualErr != nil && !isUnknownViewError(actualErr) {
-		return actualErr
-	}
-
-	return program.refreshViews(gui)
+	return program.refreshViewsIfGUI(gui)
 }
 
 func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {

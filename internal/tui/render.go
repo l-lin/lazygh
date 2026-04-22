@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/jesseduffield/gocui"
 
@@ -32,89 +31,63 @@ func (program *Program) layout(gui *gocui.Gui) error {
 
 	mainPaneLayout := calculateMainPaneLayoutWithUserViewHeight(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.sidebarTopPaneHeight())
 
-	userView, err := setPaneView(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user)
-	if err != nil {
+	if err := program.layoutMainPane(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user, program.configureUserView, program.renderUserView); err != nil {
 		return err
 	}
-	if userView != nil {
-		program.configureUserView(userView)
-		program.renderUserView(userView)
-	}
-
-	pullRequestsView, err := setPaneView(gui, viewPullRequestsName, mainPaneLayout.pullRequestsVisible, mainPaneLayout.pullRequests)
-	if err != nil {
+	if err := program.layoutMainPane(gui, viewPullRequestsName, mainPaneLayout.pullRequestsVisible, mainPaneLayout.pullRequests, program.configurePullRequestsView, program.renderPullRequestsView); err != nil {
 		return err
 	}
-	if pullRequestsView != nil {
-		program.configurePullRequestsView(pullRequestsView)
-		program.renderPullRequestsView(pullRequestsView)
-	}
-
-	detailView, err := setPaneView(gui, viewDetailName, mainPaneLayout.detailVisible, mainPaneLayout.detail)
-	if err != nil {
+	if err := program.layoutMainPane(gui, viewDetailName, mainPaneLayout.detailVisible, mainPaneLayout.detail, program.configureDetailView, program.renderDetailView); err != nil {
 		return err
-	}
-	if detailView != nil {
-		program.configureDetailView(detailView)
-		program.renderDetailView(detailView)
 	}
 
 	if err := program.layoutPaneFooterViews(gui); err != nil {
 		return err
 	}
 
-	if program.helpVisible {
-		if err := program.layoutHelpView(gui); err != nil {
-			return err
-		}
-	} else {
-		if err := gui.DeleteView(viewHelpName); err != nil && !isUnknownViewError(err) {
-			return err
-		}
+	if err := syncOverlayLayout(gui, program.helpVisible, program.layoutHelpView, viewHelpName); err != nil {
+		return err
 	}
-
-	if program.model.SearchActive() {
-		if err := program.layoutSearchView(gui); err != nil {
-			return err
-		}
-	} else {
-		if err := gui.DeleteView(viewSearchName); err != nil && !isUnknownViewError(err) {
-			return err
-		}
+	if err := syncOverlayLayout(gui, program.model.SearchActive(), program.layoutSearchView, viewSearchName); err != nil {
+		return err
 	}
-
-	if program.modalEditorVisible() {
-		if err := program.layoutModalEditorView(gui); err != nil {
-			return err
-		}
-	} else {
-		if err := gui.DeleteView(viewModalEditorName); err != nil && !isUnknownViewError(err) {
-			return err
-		}
+	if err := syncOverlayLayout(gui, program.modalEditorVisible(), program.layoutModalEditorView, viewModalEditorName); err != nil {
+		return err
 	}
-
+	if err := syncOverlayLayout(gui, program.model.ActionsPopupVisible(), program.layoutActionsPopupViews, viewActionsPopupSearchName, viewActionsPopupName); err != nil {
+		return err
+	}
 	if program.model.ActionsPopupVisible() {
-		if err := program.layoutActionsPopupViews(gui); err != nil {
+		if err := syncOverlayLayout(gui, program.model.ActionsPopupSearchActive(), program.layoutActionsPopupSearchView, viewActionsPopupSearchName); err != nil {
 			return err
-		}
-		if program.model.ActionsPopupSearchActive() {
-			if err := program.layoutActionsPopupSearchView(gui); err != nil {
-				return err
-			}
-		} else {
-			if err := gui.DeleteView(viewActionsPopupSearchName); err != nil && !isUnknownViewError(err) {
-				return err
-			}
-		}
-	} else {
-		for _, viewName := range []string{viewActionsPopupSearchName, viewActionsPopupName} {
-			if err := gui.DeleteView(viewName); err != nil && !isUnknownViewError(err) {
-				return err
-			}
 		}
 	}
 
 	return program.syncCurrentView(gui)
+}
+
+func (program *Program) layoutMainPane(gui *gocui.Gui, viewName string, visible bool, frame paneFrame, configure viewConfigurator, render viewRenderer) error {
+	view, err := setPaneView(gui, viewName, visible, frame)
+	if err != nil {
+		return err
+	}
+	if view == nil {
+		return nil
+	}
+
+	configure(view)
+	render(view)
+	return nil
+}
+
+type guiLayouter func(*gocui.Gui) error
+
+func syncOverlayLayout(gui *gocui.Gui, visible bool, layout guiLayouter, viewNames ...string) error {
+	if visible {
+		return layout(gui)
+	}
+
+	return deleteViewsIfPresent(gui, viewNames...)
 }
 
 func (program *Program) sidebarTopPaneHeight() int {
@@ -243,133 +216,4 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	cursorRow, cursorColumn := program.detailViewState.screenPosition(detailDocument)
 	view.SetOrigin(0, program.detailViewState.originRow)
 	view.SetCursor(cursorColumn, cursorRow-program.detailViewState.originRow)
-}
-
-func (program *Program) detailViewContent() string {
-	if program.reviewSession.active {
-		return program.reviewSessionDetailContent()
-	}
-	if program.model.currentSideFocus() == FocusPullRequestsView {
-		row, ok := program.model.SelectedPullRequestRow()
-		if ok && row.Summary != nil && pullRequestDetailKey(row.Summary.Repository, row.Summary.Number) != "" {
-			if result, ok := program.pullRequestDetailForSummary(*row.Summary); ok {
-				if result.err != nil {
-					return renderPullRequestDetailError(*row.Summary, result.err)
-				}
-
-				header := renderPullRequestDetailHeader(*row.Summary, result.detail)
-				content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
-				if program.activeDetailTab == CommentsDetailTab {
-					content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)
-				}
-				return renderPullRequestDetailContent(header, content)
-			}
-			return renderPullRequestDetailLoading(*row.Summary)
-		}
-	}
-
-	item, ok := program.model.detailItem()
-	if !ok {
-		return "No detail available."
-	}
-
-	return program.fallbackDetailViewContent(item)
-}
-
-func (program *Program) fallbackDetailViewContent(item Item) string {
-	header := program.detailHeader(item)
-	body := strings.TrimSpace(item.Detail)
-	if body == "" {
-		body = "No description available. Even the dummy data is disappointed."
-	}
-
-	return renderPullRequestDetailContent(header, body)
-}
-
-func (program *Program) detailHeader(item Item) string {
-	source := "Connected user"
-	if program.model.currentSideFocus() == FocusPullRequestsView {
-		source = fmt.Sprintf("%s tab", program.model.ActivePullRequestTab().Label())
-	}
-
-	return fmt.Sprintf("%s\n%s", source, item.Title)
-}
-
-func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
-	width := program.detailWrapWidth
-	if view != nil && view.InnerWidth() > 0 {
-		width = view.InnerWidth()
-	}
-	if width < 1 {
-		width = 1
-	}
-
-	return newDetailDocument(program.detailViewContent(), width)
-}
-
-func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
-	identity := program.currentDetailIdentity()
-	if identity != program.lastDetailIdentity {
-		program.lastDetailIdentity = identity
-		program.detailViewState.reset()
-	}
-
-	program.detailViewState.sync(detailDocument, viewportHeight)
-	program.detailViewState.syncSearch(detailDocument, program.model.DetailSearchQuery())
-}
-
-func (program *Program) pullRequestsTabLabels() []string {
-	return []string{
-		program.pullRequestsTabLabel(MyPullRequestsTab),
-		program.pullRequestsTabLabel(RequestedPullRequestsTab),
-	}
-}
-
-func (program *Program) pullRequestsTabLabel(tab PullRequestTab) string {
-	label := tab.Label()
-	count, ok := program.pullRequestsCount(tab)
-	if !ok {
-		return label
-	}
-
-	return fmt.Sprintf("%s (%d)", label, count)
-}
-
-func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return program.requestedPullRequestsCount, program.requestedPullRequestsCountKnown
-	default:
-		return program.myPullRequestsCount, program.myPullRequestsCountKnown
-	}
-}
-
-func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) bool {
-	if !selectable {
-		return false
-	}
-
-	if program.model.Focus() == focus {
-		return true
-	}
-
-	return program.model.Focus() == FocusDetailView && program.model.currentSideFocus() == focus
-}
-
-func searchNoMatchesMessage(query string) string {
-	return fmt.Sprintf("No matches for %q.", strings.TrimSpace(query))
-}
-
-func (program *Program) layoutContentHeight(maxY int) int {
-	if maxY < 1 {
-		return 1
-	}
-	if program.bottomPromptVisible() && maxY > 1 {
-		return maxY - 1
-	}
-	return maxY
-}
-
-func (program *Program) bottomPromptVisible() bool {
-	return program.model.ActionsPopupSearchActive()
 }

@@ -25,99 +25,29 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.moveDown(document, viewportHeight)
-		})
-	}
-	if program.reviewSession.active {
-		if program.model.Focus() == FocusPullRequestsView {
-			program.adjustReviewSessionSelection(1)
-			if gui == nil {
-				return nil
-			}
-			return program.refreshViews(gui)
-		}
-		return nil
-	}
-
-	program.model.MoveSelectionDown()
-	return nil
+	return program.handleSelectionChange(gui, view, 1, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveDown(document, viewportHeight)
+	})
 }
 
 func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.moveUp(document, viewportHeight)
-		})
-	}
-	if program.reviewSession.active {
-		if program.model.Focus() == FocusPullRequestsView {
-			program.adjustReviewSessionSelection(-1)
-			if gui == nil {
-				return nil
-			}
-			return program.refreshViews(gui)
-		}
-		return nil
-	}
-
-	program.model.MoveSelectionUp()
-	return nil
+	return program.handleSelectionChange(gui, view, -1, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveUp(document, viewportHeight)
+	})
 }
 
 func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.pageDown(document, viewportHeight)
-		})
-	}
-	if program.reviewSession.active {
-		if program.model.Focus() == FocusPullRequestsView {
-			program.adjustReviewSessionSelection(pageDelta(viewPageSize(view)))
-			if gui == nil {
-				return nil
-			}
-			return program.refreshViews(gui)
-		}
-		return nil
-	}
-
-	program.model.PageDown(viewPageSize(view))
-	return nil
+	pageSize := viewPageSize(view)
+	return program.handleSelectionChange(gui, view, pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
+		program.detailViewState.pageDown(document, viewportHeight)
+	})
 }
 
 func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.pageUp(document, viewportHeight)
-		})
-	}
-	if program.reviewSession.active {
-		if program.model.Focus() == FocusPullRequestsView {
-			program.adjustReviewSessionSelection(-pageDelta(viewPageSize(view)))
-			if gui == nil {
-				return nil
-			}
-			return program.refreshViews(gui)
-		}
-		return nil
-	}
-
-	program.model.PageUp(viewPageSize(view))
-	return nil
+	pageSize := viewPageSize(view)
+	return program.handleSelectionChange(gui, view, -pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
+		program.detailViewState.pageUp(document, viewportHeight)
+	})
 }
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
@@ -276,17 +206,13 @@ func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
 	program.model.SubmitSearch()
 	program.searchEditor = nil
 
-	actualErr := gui.DeleteView(viewSearchName)
-	if actualErr != nil && !isUnknownViewError(actualErr) {
-		return actualErr
-	}
 	if target == FocusDetailView {
 		if actualErr := program.followSubmittedDetailSearch(gui); actualErr != nil {
 			return actualErr
 		}
 	}
 
-	return program.refreshViews(gui)
+	return program.refreshViewsIfGUI(gui)
 }
 
 func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
@@ -296,13 +222,7 @@ func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) closeSearch(gui *gocui.Gui) error {
 	program.searchEditor = nil
-
-	actualErr := gui.DeleteView(viewSearchName)
-	if actualErr != nil && !isUnknownViewError(actualErr) {
-		return actualErr
-	}
-
-	return program.refreshViews(gui)
+	return program.refreshViewsIfGUI(gui)
 }
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
@@ -320,73 +240,5 @@ func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
 	program.helpVisible = false
-	actualErr := gui.DeleteView(viewHelpName)
-	if actualErr != nil && !isUnknownViewError(actualErr) {
-		return actualErr
-	}
-
-	return program.syncCurrentView(gui)
-}
-
-func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
-	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, view, mutate); actualErr != nil {
-		return actualErr
-	}
-
-	return program.refreshDetailView(gui)
-}
-
-func (program *Program) mutateDetailViewStateWithoutRefresh(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
-	actualView := view
-	if actualView == nil && gui != nil {
-		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {
-			actualView = detailView
-		}
-	}
-
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-	mutate(detailDocument, viewportHeight)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-	return nil
-}
-
-func (program *Program) refreshDetailView(gui *gocui.Gui) error {
-	if gui == nil {
-		return nil
-	}
-	if actualErr := program.refreshExistingView(gui, viewDetailName, program.configureDetailView, program.renderDetailView); actualErr != nil {
-		return actualErr
-	}
-
-	return program.syncCurrentView(gui)
-}
-
-func (program *Program) sideViewCyclingBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible()
-}
-
-func (program *Program) mainPaneActionBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible()
-}
-
-func (program *Program) detailTransitionBlocked() bool {
-	return program.model.SearchActive() || program.model.ActionsPopupVisible()
-}
-
-func (program *Program) helpToggleBlocked() bool {
-	return program.model.SearchActive() || program.model.ActionsPopupVisible()
-}
-
-func (program *Program) selectionChangeBlocked() bool {
-	return program.model.SearchActive()
-}
-
-func viewPageSize(view *gocui.View) int {
-	if view == nil {
-		return 1
-	}
-
-	return view.InnerHeight()
+	return program.refreshViewsIfGUI(gui)
 }

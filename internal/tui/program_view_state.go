@@ -55,7 +55,7 @@ func (program *Program) refreshExistingView(gui *gocui.Gui, viewName string, con
 
 func (program *Program) refreshOverlayView(gui *gocui.Gui, visible bool, viewName string, configure viewConfigurator, render viewRenderer) error {
 	if !visible {
-		return nil
+		return deleteViewIfPresent(gui, viewName)
 	}
 	if err := program.refreshExistingView(gui, viewName, configure, render); err != nil {
 		return err
@@ -71,21 +71,13 @@ func (program *Program) refreshOverlayView(gui *gocui.Gui, visible bool, viewNam
 
 func (program *Program) refreshActionsPopupViews(gui *gocui.Gui) error {
 	if !program.model.ActionsPopupVisible() {
-		return nil
+		return deleteViewsIfPresent(gui, viewActionsPopupSearchName, viewActionsPopupName)
 	}
 	if err := program.refreshOverlayView(gui, true, viewActionsPopupName, program.configureActionsPopupView, program.renderActionsPopupView); err != nil {
 		return err
 	}
-	if program.model.ActionsPopupSearchActive() {
-		return program.refreshOverlayView(gui, true, viewActionsPopupSearchName, program.configureActionsPopupSearchView, program.renderActionsPopupSearchView)
-	}
 
-	actualErr := gui.DeleteView(viewActionsPopupSearchName)
-	if actualErr != nil && !isUnknownViewError(actualErr) {
-		return actualErr
-	}
-
-	return nil
+	return program.refreshOverlayView(gui, program.model.ActionsPopupSearchActive(), viewActionsPopupSearchName, program.configureActionsPopupSearchView, program.renderActionsPopupSearchView)
 }
 
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {

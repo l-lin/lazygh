@@ -80,7 +80,7 @@ func (model *Model) MoveActionsPopupSelectionDown() {
 		return
 	}
 
-	model.actionsPopup.selectedActionIndex = model.adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, 1)
+	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, 1)
 }
 
 func (model *Model) MoveActionsPopupSelectionUp() {
@@ -88,7 +88,7 @@ func (model *Model) MoveActionsPopupSelectionUp() {
 		return
 	}
 
-	model.actionsPopup.selectedActionIndex = model.adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -1)
+	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -1)
 }
 
 type actionsPopupState struct {

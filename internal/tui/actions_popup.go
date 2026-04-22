@@ -68,13 +68,6 @@ func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	for _, viewName := range []string{viewActionsPopupSearchName, viewActionsPopupName} {
-		actualErr := gui.DeleteView(viewName)
-		if actualErr != nil && !isUnknownViewError(actualErr) {
-			return actualErr
-		}
-	}
-
 	return program.layout(gui)
 }
 

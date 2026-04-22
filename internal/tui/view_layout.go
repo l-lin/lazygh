@@ -26,3 +26,13 @@ func deleteViewIfPresent(gui *gocui.Gui, viewName string) error {
 
 	return nil
 }
+
+func deleteViewsIfPresent(gui *gocui.Gui, viewNames ...string) error {
+	for _, viewName := range viewNames {
+		if err := deleteViewIfPresent(gui, viewName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
