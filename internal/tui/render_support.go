@@ -39,6 +39,10 @@ func (program *Program) detailViewContent() string {
 }
 
 func (program *Program) fallbackDetailViewContent(item Item) string {
+	if isPullRequestLoadingTitle(item.Title) {
+		return program.loadingSpinnerFrame()
+	}
+
 	header := program.detailHeader(item)
 	body := strings.TrimSpace(item.Detail)
 	if body == "" {
@@ -126,12 +130,8 @@ func (program *Program) layoutContentHeight(maxY int) int {
 	if maxY < 1 {
 		return 1
 	}
-	if program.bottomPromptVisible() && maxY > 1 {
+	if maxY > 1 {
 		return maxY - 1
 	}
 	return maxY
-}
-
-func (program *Program) bottomPromptVisible() bool {
-	return program.model.ActionsPopupSearchActive()
 }

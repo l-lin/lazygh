@@ -13,6 +13,7 @@ const (
 	viewUserName               = "user"
 	viewPullRequestsName       = "pull-requests"
 	viewSearchName             = "search"
+	viewStatusLineName         = "status-line"
 	viewActionsPopupName       = "actions-popup"
 	viewActionsPopupSearchName = "actions-popup-search"
 )
@@ -57,7 +58,6 @@ type Program struct {
 	lastDetailIdentity               string
 	detailViewState                  detailViewState
 	clipboardWriter                  clip.Writer
-	feedbackFocus                    Focus
 	feedbackMessage                  string
 	helpVisible                      bool
 	searchEditor                     *lineEditor

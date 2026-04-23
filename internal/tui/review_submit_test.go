@@ -91,11 +91,8 @@ func TestActionsPopup_GivenReviewModeSubmitCommentActionSelected_WhenSubmitting_
 	}
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 
-	pullRequestsFooterView, actualErr := gui.View(viewPullRequestsFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), pullRequestReviewSuccessMessage) {
-		t.Fatalf("expected pull requests footer to contain %q, actual %q", pullRequestReviewSuccessMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pullRequestReviewSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)

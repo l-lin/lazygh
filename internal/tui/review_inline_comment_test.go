@@ -117,11 +117,8 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 	if !strings.Contains(detailView.Buffer(), "Please add context") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Please add context", detailView.Buffer())
 	}
-	detailFooterView, actualErr := gui.View(viewDetailFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), pullRequestReviewInlineCommentSuccessMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", pullRequestReviewInlineCommentSuccessMessage, detailFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pullRequestReviewInlineCommentSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestReviewMode_GivenTheDetailCursorOnAnInvalidRow_WhenOpeningTheInlineCommentComposer_ThenItShowsAnErrorAndKeepsFocusOnViewZero(t *testing.T) {
@@ -151,11 +148,8 @@ func TestReviewMode_GivenTheDetailCursorOnAnInvalidRow_WhenOpeningTheInlineComme
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
-	detailFooterView, actualErr := gui.View(viewDetailFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), reviewThreadTargetUnavailableMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", reviewThreadTargetUnavailableMessage, detailFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, reviewThreadTargetUnavailableMessage)
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeepsTheDraftVisibleAndShowsTheError(t *testing.T) {

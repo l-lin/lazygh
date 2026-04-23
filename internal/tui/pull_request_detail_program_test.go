@@ -373,21 +373,20 @@ func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_
 	if strings.Contains(detailView.Buffer(), pullRequestDetailLoadingTitle) {
 		t.Fatalf("expected detail body to hide %q, actual %q", pullRequestDetailLoadingTitle, detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), "Running `gh pr view 301 -R acme/widgets --json ...`.") {
-		t.Fatalf("expected detail body to keep the gh command context, actual %q", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), "Running `gh pr view 301 -R acme/widgets --json ...`.") {
+		t.Fatalf("expected detail body to keep only the spinner, actual %q", detailView.Buffer())
 	}
 
-	detailFooterView, actualErr := gui.View("detail-footer")
+	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), string(loadingSpinnerFrames[0])) {
-		t.Fatalf("expected detail footer to show spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailFooterView.Buffer())
+	expectedStatus := string(loadingSpinnerFrames[0]) + " Running `gh pr view 301 -R acme/widgets --json ...`."
+	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
+		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}
-	if strings.Contains(detailFooterView.Buffer(), pullRequestDetailLoadingTitle) {
-		t.Fatalf("expected detail footer to hide %q, actual %q", pullRequestDetailLoadingTitle, detailFooterView.Buffer())
-	}
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
-func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotReturnedYet_ThenThePaneFooterShowsALoadingState(t *testing.T) {
+func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotReturnedYet_ThenTheStatusLineShowsTheLoadingCommand(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequests(MyPullRequestsTab, []Item{{Title: "my-pr-1", Detail: "body-1"}, {Title: "my-pr-2", Detail: "body-2"}})
@@ -418,14 +417,13 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 		t.Fatalf("expected the existing pull request list to stay visible, actual %q", pullRequestsView.Buffer())
 	}
 
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
+	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), string(loadingSpinnerFrames[0])) {
-		t.Fatalf("expected pull request footer to show spinner %q, actual %q", string(loadingSpinnerFrames[0]), pullRequestsFooterView.Buffer())
+	expectedStatus := string(loadingSpinnerFrames[0]) + " " + myPullRequestsLoadingDetail
+	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
+		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}
-	if strings.Contains(pullRequestsFooterView.Buffer(), myPullRequestsLoadingTitle) {
-		t.Fatalf("expected pull request footer to hide %q, actual %q", myPullRequestsLoadingTitle, pullRequestsFooterView.Buffer())
-	}
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment string) int {

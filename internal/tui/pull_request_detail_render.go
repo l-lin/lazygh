@@ -42,7 +42,7 @@ func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlin
 func renderPullRequestDetailLoading(summary githubcli.PullRequest, spinner string) string {
 	return renderPullRequestDetailContent(
 		renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
-		renderLoadingBody(spinner, fmt.Sprintf("Running `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository))),
+		strings.TrimSpace(spinner),
 	)
 }
 

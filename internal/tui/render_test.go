@@ -228,10 +228,33 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenConnectedUserViewHasOneConte
 	}
 }
 
-func TestLayout_GivenPullRequestsLoadingState_WhenRendering_ThenThePullRequestsPaneAndDetailPaneShowASpinnerInsteadOfTheLoadingTitle(t *testing.T) {
+func TestLayout_GivenFreshProgram_WhenRendering_ThenItReservesTheLastTerminalLineForTheGlobalStatusLine(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	statusView, actualErr := gui.View("status-line")
+	then_noError(t, actualErr)
+	if statusView.InnerHeight() != 1 {
+		t.Fatalf("expected status line inner height 1, actual %d", statusView.InnerHeight())
+	}
+
+	_, statusY0, _, _, actualErr := gui.ViewPosition("status-line")
+	then_noError(t, actualErr)
+	if statusY0 != 28 {
+		t.Fatalf("expected status line y0 %d, actual %d", 28, statusY0)
+	}
+}
+
+func TestLayout_GivenPullRequestsLoadingState_WhenRendering_ThenThePanesShowOnlyASpinnerAndTheStatusLineShowsTheGhCommand(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModel(model)
+	subject.myPullRequestsLoading = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -250,12 +273,23 @@ func TestLayout_GivenPullRequestsLoadingState_WhenRendering_ThenThePullRequestsP
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "My PRs tab\n"+string(loadingSpinnerFrames[0])) {
-		t.Fatalf("expected detail buffer to contain the loading spinner, actual %q", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), "My PRs tab") {
+		t.Fatalf("expected detail buffer to hide the tab loading label, actual %q", detailView.Buffer())
 	}
-	if strings.Contains(detailView.Buffer(), myPullRequestsLoadingTitle) {
-		t.Fatalf("expected detail buffer to hide %q, actual %q", myPullRequestsLoadingTitle, detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), myPullRequestsLoadingDetail) {
+		t.Fatalf("expected detail buffer to hide the loading command, actual %q", detailView.Buffer())
 	}
+	if strings.TrimSpace(detailView.Buffer()) != string(loadingSpinnerFrames[0]) {
+		t.Fatalf("expected detail buffer %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
+	}
+
+	statusView, actualErr := gui.View("status-line")
+	then_noError(t, actualErr)
+	expectedStatus := string(loadingSpinnerFrames[0]) + " " + myPullRequestsLoadingDetail
+	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
+		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
+	}
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestRefreshViews_GivenALoadingPullRequestsSpinner_WhenAdvancingTheFrame_ThenTheRenderedSpinnerChanges(t *testing.T) {

@@ -474,11 +474,8 @@ func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyP
 	if len(clipboardWriter.writes) != 1 || clipboardWriter.writes[0] != "https://github.com/acme/widgets/pull/42" {
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
 	}
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), yankSuccessMessage) {
-		t.Fatalf("expected pull request footer to contain %q, actual %q", yankSuccessMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, yankSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheActionsShortcut(t *testing.T) {

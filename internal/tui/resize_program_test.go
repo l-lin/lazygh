@@ -111,8 +111,8 @@ func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_T
 
 	detailX0, detailY0, detailX1, detailY1, actualErr := gui.ViewPosition(viewDetailName)
 	then_noError(t, actualErr)
-	if detailX0 != 0 || detailY0 != 0 || detailX1 != 119 || detailY1 != 29 {
-		t.Fatalf("expected fullscreen detail frame (%d,%d)-(%d,%d), actual (%d,%d)-(%d,%d)", 0, 0, 119, 29, detailX0, detailY0, detailX1, detailY1)
+	if detailX0 != 0 || detailY0 != 0 || detailX1 != 119 || detailY1 != 28 {
+		t.Fatalf("expected fullscreen detail frame (%d,%d)-(%d,%d), actual (%d,%d)-(%d,%d)", 0, 0, 119, 28, detailX0, detailY0, detailX1, detailY1)
 	}
 
 	detailFooterView, actualErr := gui.View(viewDetailFooterName)

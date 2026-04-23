@@ -41,11 +41,8 @@ func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesT
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), pullRequestReviewSuccessMessage) {
-		t.Fatalf("expected pull requests footer to contain %q, actual %q", pullRequestReviewSuccessMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pullRequestReviewSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestActionsPopup_GivenReviewCommentActionSelected_WhenExecuting_ThenItOpensTheReviewCommentComposerAndSubmitsThroughTheReviewHandler(t *testing.T) {

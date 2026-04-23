@@ -30,11 +30,12 @@ func TestCopyPullRequestURL_GivenPullRequestsView_WhenHandlingTheAction_ThenItCo
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
 	}
 
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
+	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), yankSuccessMessage) {
-		t.Fatalf("expected pull request footer to contain %q, actual %q", yankSuccessMessage, pullRequestsFooterView.Buffer())
+	if !strings.Contains(statusView.Buffer(), yankSuccessMessage) {
+		t.Fatalf("expected status line to contain %q, actual %q", yankSuccessMessage, statusView.Buffer())
 	}
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
@@ -67,11 +68,12 @@ func TestCopyPullRequestURL_GivenDetailViewAndCachedDetailURL_WhenHandlingTheAct
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/canonical"}, clipboardWriter.writes)
 	}
 
-	detailFooterView, actualErr := gui.View("detail-footer")
+	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), yankSuccessMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", yankSuccessMessage, detailFooterView.Buffer())
+	if !strings.Contains(statusView.Buffer(), yankSuccessMessage) {
+		t.Fatalf("expected status line to contain %q, actual %q", yankSuccessMessage, statusView.Buffer())
 	}
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
@@ -97,11 +99,12 @@ func TestCopyPullRequestURL_GivenUserView_WhenHandlingTheAction_ThenItShowsHarml
 		t.Fatalf("expected no clipboard writes, actual %v", clipboardWriter.writes)
 	}
 
-	userFooterView, actualErr := gui.View("user-footer")
+	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	if !strings.Contains(userFooterView.Buffer(), yankUnavailableMessage) {
-		t.Fatalf("expected user footer to contain %q, actual %q", yankUnavailableMessage, userFooterView.Buffer())
+	if !strings.Contains(statusView.Buffer(), yankUnavailableMessage) {
+		t.Fatalf("expected status line to contain %q, actual %q", yankUnavailableMessage, statusView.Buffer())
 	}
+	then_viewDoesNotExist(t, gui, viewUserFooterName)
 
 	userView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
@@ -128,11 +131,12 @@ func TestCopyPullRequestURL_GivenClipboardFailure_WhenHandlingTheAction_ThenItSh
 	actualErr = subject.copyPullRequestURL(gui, nil)
 	then_noError(t, actualErr)
 
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
+	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), yankFailureMessage) {
-		t.Fatalf("expected pull request footer to contain %q, actual %q", yankFailureMessage, pullRequestsFooterView.Buffer())
+	if !strings.Contains(statusView.Buffer(), yankFailureMessage) {
+		t.Fatalf("expected status line to contain %q, actual %q", yankFailureMessage, statusView.Buffer())
 	}
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)

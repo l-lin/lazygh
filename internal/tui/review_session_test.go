@@ -420,11 +420,8 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpe
 	if subject.reviewSession.active {
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
-	pullRequestsFooterView, actualErr := gui.View(viewPullRequestsFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), pendingPullRequestReviewKeptOpenMessage) {
-		t.Fatalf("expected pull requests footer to contain %q, actual %q", pendingPullRequestReviewKeptOpenMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	actualErr = given_startingReviewMode(t, gui, subject)
 	then_noError(t, actualErr)
@@ -452,11 +449,8 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenPressingQFromTheFileTree_ThenIt
 	if subject.reviewSession.active {
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
-	pullRequestsFooterView, actualErr := gui.View(viewPullRequestsFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), pendingPullRequestReviewKeptOpenMessage) {
-		t.Fatalf("expected pull requests footer to contain %q, actual %q", pendingPullRequestReviewKeptOpenMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestoresThePriorBrowserFocusSelectionAndDetailTab(t *testing.T) {

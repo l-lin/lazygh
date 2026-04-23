@@ -56,6 +56,15 @@ func (program *Program) activePullRequestsLoading() bool {
 	}
 }
 
+func (program *Program) selectedPullRequestDetailLoading() bool {
+	summary, ok := program.selectedPullRequestSummaryForDetail()
+	if !ok {
+		return false
+	}
+
+	return program.pullRequestDetailLoadInFlight[pullRequestDetailKey(summary.Repository, summary.Number)]
+}
+
 func (program *Program) loadingSpinnerFrame() string {
 	if len(loadingSpinnerFrames) == 0 {
 		return ""
@@ -100,16 +109,4 @@ func isPullRequestLoadingTitle(title string) bool {
 	default:
 		return false
 	}
-}
-
-func renderLoadingBody(spinner string, message string) string {
-	sections := make([]string, 0, 2)
-	if trimmedSpinner := strings.TrimSpace(spinner); trimmedSpinner != "" {
-		sections = append(sections, trimmedSpinner)
-	}
-	if trimmedMessage := strings.TrimSpace(message); trimmedMessage != "" {
-		sections = append(sections, trimmedMessage)
-	}
-
-	return strings.Join(sections, "\n\n")
 }

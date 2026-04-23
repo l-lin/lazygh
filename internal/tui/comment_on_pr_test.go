@@ -141,11 +141,8 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
 
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), pullRequestCommentSuccessMessage) {
-		t.Fatalf("expected pull requests footer to contain %q, actual %q", pullRequestCommentSuccessMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisibleAndShowsTheError(t *testing.T) {
@@ -199,11 +196,8 @@ func TestPullRequestCommentComposer_GivenPullRequestDetail_WhenSubmitting_ThenIt
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
 
-	detailFooterView, actualErr := gui.View("detail-footer")
-	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), pullRequestCommentSuccessMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", pullRequestCommentSuccessMessage, detailFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheCommentShortcut(t *testing.T) {

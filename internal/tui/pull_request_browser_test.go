@@ -2,7 +2,6 @@ package tui
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -29,9 +28,6 @@ func TestActionsPopup_GivenOpenBrowserActionSelected_WhenExecuting_ThenItUsesThe
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
-	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), pullRequestBrowserOpenSuccessMessage) {
-		t.Fatalf("expected pull requests footer to contain %q, actual %q", pullRequestBrowserOpenSuccessMessage, pullRequestsFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, pullRequestBrowserOpenSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }

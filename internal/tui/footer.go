@@ -12,9 +12,7 @@ const (
 	viewPullRequestsFooterName = "pull-requests-footer"
 	viewDetailFooterName       = "detail-footer"
 
-	pullRequestDetailLoadingTitle       = "Loading pull request detail..."
-	pullRequestDetailLoadingFooterLabel = "Pull request detail"
-	pullRequestDiffLoadingTitle         = "Loading pull request diff..."
+	pullRequestDetailLoadingTitle = "Loading pull request detail..."
 )
 
 type paneFooterState struct {
@@ -66,14 +64,6 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 		return paneFooterState{}
 	}
 
-	if message := strings.TrimSpace(program.feedbackMessageFor(focus)); message != "" {
-		return paneFooterState{text: message}
-	}
-
-	if message := strings.TrimSpace(program.loadingFooterText(focus)); message != "" {
-		return paneFooterState{text: message}
-	}
-
 	if message := strings.TrimSpace(program.appliedSearchFooterText(focus)); message != "" {
 		return paneFooterState{text: message}
 	}
@@ -110,46 +100,6 @@ func searchSummaryText(query string, count int) string {
 	}
 
 	return fmt.Sprintf("/%s (%d %s)", trimmedQuery, count, pluralize(count, "match", "matches"))
-}
-
-func (program *Program) loadingFooterText(focus Focus) string {
-	if program.reviewSession.active {
-		if focus == FocusUserView && program.selectedPullRequestDetailLoading() {
-			return pullRequestDetailLoadingTitle
-		}
-		if (focus == FocusPullRequestsView || focus == FocusDetailView) && program.selectedPullRequestDiffLoading() {
-			return pullRequestDiffLoadingTitle
-		}
-		return ""
-	}
-
-	switch focus {
-	case FocusPullRequestsView:
-		return program.activePullRequestsLoadingText()
-	case FocusDetailView:
-		if program.selectedPullRequestDetailLoading() {
-			return program.loadingSpinnerStatus(pullRequestDetailLoadingFooterLabel)
-		}
-	}
-
-	return ""
-}
-
-func (program *Program) activePullRequestsLoadingText() string {
-	if !program.activePullRequestsLoading() {
-		return ""
-	}
-
-	return program.loadingSpinnerStatus(program.model.ActivePullRequestTab().Label())
-}
-
-func (program *Program) selectedPullRequestDetailLoading() bool {
-	summary, ok := program.selectedPullRequestSummaryForDetail()
-	if !ok {
-		return false
-	}
-
-	return program.pullRequestDetailLoadInFlight[pullRequestDetailKey(summary.Repository, summary.Number)]
 }
 
 func (program *Program) configurePaneFooterView(view *gocui.View) {

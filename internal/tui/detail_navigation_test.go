@@ -1,9 +1,6 @@
 package tui
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
 func TestDetailViewState_GivenWrappedDetailText_WhenMovingWithHJKL_ThenItMovesAcrossRenderedRowsAndClampsTheViewport(t *testing.T) {
 	document := newDetailDocument("abcd1234\nefgh\nijkl", 4)
@@ -217,11 +214,8 @@ func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_Th
 		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailViewState.mode)
 	}
 
-	detailFooterView, actualErr := gui.View(viewDetailFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), detailYankSuccessMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", detailYankSuccessMessage, detailFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, detailYankSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
@@ -260,11 +254,8 @@ func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenIt
 		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailViewState.mode)
 	}
 
-	detailFooterView, actualErr := gui.View(viewDetailFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), detailYankSuccessMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", detailYankSuccessMessage, detailFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, detailYankSuccessMessage)
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestCopyPullRequestURL_GivenDetailVisualModeAndClipboardFailure_WhenYankingSelectedText_ThenItShowsFailureFeedbackAndReturnsToNormalMode(t *testing.T) {
@@ -300,11 +291,8 @@ func TestCopyPullRequestURL_GivenDetailVisualModeAndClipboardFailure_WhenYanking
 		t.Fatalf("expected mode %v after a failed yank, actual %v", detailNormalMode, subject.detailViewState.mode)
 	}
 
-	detailFooterView, actualErr := gui.View(viewDetailFooterName)
-	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), detailYankFailureMessage) {
-		t.Fatalf("expected detail footer to contain %q, actual %q", detailYankFailureMessage, detailFooterView.Buffer())
-	}
+	then_statusLineContains(t, gui, detailYankFailureMessage)
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestCloseDetail_GivenDetailVisualMode_WhenHandlingEscape_ThenItLeavesVisualModeBeforeClosingThePane(t *testing.T) {
