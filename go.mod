@@ -3,13 +3,15 @@ module codeberg.org/l-lin/lazygh
 go 1.25
 
 require (
+	github.com/BurntSushi/toml v1.5.0
+	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/glamour v1.0.0
+	github.com/gdamore/tcell/v2 v2.13.5
 	github.com/jesseduffield/gocui v0.3.1-0.20260327132312-944dab3bc980
 )
 
 require (
 	github.com/alecthomas/chroma/v2 v2.20.0 // indirect
-	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
@@ -20,7 +22,6 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.13.5 // indirect
 	github.com/go-errors/errors v1.0.2 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect

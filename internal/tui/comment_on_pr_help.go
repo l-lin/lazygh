@@ -1,5 +1,8 @@
 package tui
 
-func pullRequestCommentHelpEntry() helpEntry {
-	return helpEntry{Key: "c", Description: "Comment on PR"}
+func (program *Program) pullRequestCommentHelpEntry(scope string) helpEntry {
+	return helpEntry{
+		Key:         program.helpKeysOrFallback("c", keybindingActionID{scope: scope, action: "comment_on_pull_request"}),
+		Description: "Comment on PR",
+	}
 }

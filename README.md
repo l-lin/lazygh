@@ -27,3 +27,94 @@ mise run test
 mise run fmt
 mise run tidy
 ```
+
+## Config
+`lazygh` looks for `~/.config/lazygh/config.toml`.
+
+If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, and invalid keymap value types are ignored, because apparently survival is preferable to drama.
+
+### Keymap overrides
+Use scoped tables under `[keymaps]`.
+
+This example mirrors the built-in defaults.
+
+```toml
+[keymaps.global]
+quit = "ctrl+c"
+next_side_view = "tab"
+previous_side_view = "shift+tab"
+
+[keymaps.main]
+toggle_help = "?"
+focus_user_view = "1"
+focus_pull_requests_view = "2"
+open_search = "/"
+move_selection_down = ["j", "down"]
+move_selection_up = ["k", "up"]
+page_down = "ctrl+d"
+page_up = "ctrl+u"
+grow_focused_pane = "+"
+shrink_focused_pane = "-"
+
+[keymaps.side]
+next_side_view = "l"
+previous_side_view = "h"
+focus_detail_view = "0"
+exit_review_mode = ["esc", "ctrl+[", "q"]
+
+[keymaps.user]
+open_detail = "enter"
+copy_pull_request_url = "y"
+
+[keymaps.pull_requests]
+previous_tab = "["
+next_tab = "]"
+open_detail = "enter"
+copy_pull_request_url = "y"
+comment_on_pull_request = "c"
+open_actions_popup = "a"
+
+[keymaps.detail]
+move_cursor_left = "h"
+move_cursor_right = "l"
+move_cursor_to_row_start = "0"
+move_cursor_to_row_end = "$"
+move_cursor_to_top = "g"
+move_cursor_to_bottom = "G"
+move_cursor_to_next_word = "w"
+move_cursor_to_word_end = "e"
+move_cursor_to_previous_word = "b"
+next_search_match = "n"
+previous_search_match = "N"
+enter_visual_mode = "v"
+enter_line_visual_mode = "V"
+previous_tab = "["
+next_tab = "]"
+copy_pull_request_url = "y"
+comment_on_pull_request = "c"
+open_actions_popup = "a"
+close = ["esc", "ctrl+[", "q"]
+
+[keymaps.search]
+submit = ["enter", "ctrl+j"]
+cancel = ["esc", "ctrl+["]
+
+[keymaps.actions_popup]
+focus_search = "/"
+move_selection_down = ["j", "down"]
+move_selection_up = ["k", "up"]
+execute_selected_action = "enter"
+close = ["esc", "ctrl+[", "q"]
+
+[keymaps.actions_popup_search]
+focus_list = ["enter", "tab"]
+close = ["esc", "ctrl+["]
+
+[keymaps.modal_editor]
+submit = "alt+enter"
+close = ["esc", "ctrl+["]
+
+[keymaps.help]
+close = ["esc", "ctrl+[", "q"]
+```
+

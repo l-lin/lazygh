@@ -4,6 +4,7 @@ import (
 	"github.com/jesseduffield/gocui"
 
 	clip "codeberg.org/l-lin/lazygh/internal/clipboard"
+	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
@@ -70,6 +71,7 @@ type Program struct {
 	asyncRunner                      asyncRunner
 	uiUpdater                        uiUpdater
 	gui                              *gocui.Gui
+	keymapOverrides                  appconfig.KeymapOverrides
 }
 
 func NewProgram(githubLoaders ...GitHubLoader) *Program {
