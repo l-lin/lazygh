@@ -49,6 +49,15 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 	}
 }
 
+func TestRenderPullRequestDetailContentWithSeparator_GivenHeaderAndBody_WhenFormatting_ThenItPlacesAHorizontalRuleBetweenMetadataAndContent(t *testing.T) {
+	actual := renderPullRequestDetailContentWithSeparator("repo\ntitle\nmeta", "Body", 12)
+
+	expected := strings.Join([]string{"repo", "title", "meta", "------------", "Body"}, "\n")
+	if actual != expected {
+		t.Fatalf("expected detail content %q, actual %q", expected, actual)
+	}
+}
+
 func TestRenderPullRequestDescription_GivenMarkdownBody_WhenFormatting_ThenItUsesTheMarkdownRendererAndWrapWidth(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered markdown body"}
 	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}

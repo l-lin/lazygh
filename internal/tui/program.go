@@ -51,6 +51,7 @@ type Program struct {
 	pullRequestDetailLoadInFlight    map[string]bool
 	pullRequestDiffCache             map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight      map[string]bool
+	loadingSpinnerFrameIndex         int
 	detailWrapWidth                  int
 	activeDetailTab                  DetailTab
 	lastDetailIdentity               string
@@ -116,6 +117,8 @@ func (program *Program) Run() error {
 	defer gui.Close()
 
 	program.configureGUI(gui)
+	stopLoadingSpinner := program.startLoadingSpinner(gui)
+	defer stopLoadingSpinner()
 	gui.SetManagerFunc(program.layout)
 
 	if err := program.setKeybindings(gui); err != nil {

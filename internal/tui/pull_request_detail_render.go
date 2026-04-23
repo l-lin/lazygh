@@ -39,10 +39,10 @@ func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlin
 	return strings.Join(sections, "\n\n")
 }
 
-func renderPullRequestDetailLoading(summary githubcli.PullRequest) string {
+func renderPullRequestDetailLoading(summary githubcli.PullRequest, spinner string) string {
 	return renderPullRequestDetailContent(
 		renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
-		fmt.Sprintf("Loading pull request detail...\nRunning `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository)),
+		renderLoadingBody(spinner, fmt.Sprintf("Running `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository))),
 	)
 }
 
@@ -95,6 +95,27 @@ func renderPullRequestDetailContent(header string, content string) string {
 		return trimmedHeader
 	}
 	return strings.Join([]string{trimmedHeader, "", trimmedContent}, "\n")
+}
+
+func renderPullRequestDetailContentWithSeparator(header string, content string, width int) string {
+	trimmedHeader := strings.TrimRight(header, "\n")
+	trimmedContent := strings.TrimLeft(content, "\n")
+	if trimmedHeader == "" {
+		return trimmedContent
+	}
+	if trimmedContent == "" {
+		return trimmedHeader
+	}
+
+	return strings.Join([]string{trimmedHeader, renderPullRequestDetailSectionSeparator(width), trimmedContent}, "\n")
+}
+
+func renderPullRequestDetailSectionSeparator(width int) string {
+	if width < 1 {
+		width = defaultDetailWrapWidth
+	}
+
+	return strings.Repeat("-", width)
 }
 
 func renderMarkdownWithFallback(markdown string, renderer MarkdownRenderer, width int, emptyMessage string) string {

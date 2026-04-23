@@ -228,6 +228,61 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenConnectedUserViewHasOneConte
 	}
 }
 
+func TestLayout_GivenPullRequestsLoadingState_WhenRendering_ThenThePullRequestsPaneAndDetailPaneShowASpinnerInsteadOfTheLoadingTitle(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected pull requests buffer to contain spinner %q, actual %q", string(loadingSpinnerFrames[0]), pullRequestsView.Buffer())
+	}
+	if strings.Contains(pullRequestsView.Buffer(), myPullRequestsLoadingTitle) {
+		t.Fatalf("expected pull requests buffer to hide %q, actual %q", myPullRequestsLoadingTitle, pullRequestsView.Buffer())
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "My PRs tab\n"+string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected detail buffer to contain the loading spinner, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), myPullRequestsLoadingTitle) {
+		t.Fatalf("expected detail buffer to hide %q, actual %q", myPullRequestsLoadingTitle, detailView.Buffer())
+	}
+}
+
+func TestRefreshViews_GivenALoadingPullRequestsSpinner_WhenAdvancingTheFrame_ThenTheRenderedSpinnerChanges(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	subject.advanceLoadingSpinnerFrame()
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.Buffer(), string(loadingSpinnerFrames[1])) {
+		t.Fatalf("expected pull requests buffer to contain spinner %q after advancing, actual %q", string(loadingSpinnerFrames[1]), pullRequestsView.Buffer())
+	}
+	if strings.Contains(pullRequestsView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected pull requests buffer to drop spinner %q after advancing, actual %q", string(loadingSpinnerFrames[0]), pullRequestsView.Buffer())
+	}
+}
+
 func TestLayout_GivenDetailFocusOnPullRequests_WhenRendering_ThenShowsTheSelectedPullRequestInTheDetailPane(t *testing.T) {
 	model := given_model()
 	model.NextSideView()

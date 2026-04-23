@@ -96,11 +96,12 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != "" {
-		t.Fatalf("expected the description tab to keep an empty line after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
+	expectedSeparator := renderPullRequestDetailSectionSeparator(detailView.InnerWidth())
+	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
+		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}
-	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n\nRendered body 101") {
-		t.Fatalf("expected the description tab to keep a blank line after metadata, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n"+expectedSeparator+"\nRendered body 101") {
+		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected description tab to hide comments, actual %q", detailView.Buffer())
@@ -114,11 +115,12 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	then_noError(t, actualErr)
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != "" {
-		t.Fatalf("expected the comments tab to keep an empty line after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
+	expectedSeparator = renderPullRequestDetailSectionSeparator(detailView.InnerWidth())
+	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
+		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}
-	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n\n"+detailCommentsIcon+" @reviewer-one") {
-		t.Fatalf("expected the comments tab to keep a blank line after metadata, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n"+expectedSeparator+"\n"+detailCommentsIcon+" @reviewer-one") {
+		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered comment 101", detailView.Buffer())
@@ -365,14 +367,23 @@ func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Loading pull request detail...") {
-		t.Fatalf("expected detail body to show a loading message, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected detail body to show spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), pullRequestDetailLoadingTitle) {
+		t.Fatalf("expected detail body to hide %q, actual %q", pullRequestDetailLoadingTitle, detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Running `gh pr view 301 -R acme/widgets --json ...`.") {
+		t.Fatalf("expected detail body to keep the gh command context, actual %q", detailView.Buffer())
 	}
 
 	detailFooterView, actualErr := gui.View("detail-footer")
 	then_noError(t, actualErr)
-	if !strings.Contains(detailFooterView.Buffer(), "Loading pull request detail...") {
-		t.Fatalf("expected detail footer to show a loading message, actual %q", detailFooterView.Buffer())
+	if !strings.Contains(detailFooterView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected detail footer to show spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailFooterView.Buffer())
+	}
+	if strings.Contains(detailFooterView.Buffer(), pullRequestDetailLoadingTitle) {
+		t.Fatalf("expected detail footer to hide %q, actual %q", pullRequestDetailLoadingTitle, detailFooterView.Buffer())
 	}
 }
 
@@ -409,8 +420,11 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 
 	pullRequestsFooterView, actualErr := gui.View("pull-requests-footer")
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsFooterView.Buffer(), myPullRequestsLoadingTitle) {
-		t.Fatalf("expected pull request footer to show %q, actual %q", myPullRequestsLoadingTitle, pullRequestsFooterView.Buffer())
+	if !strings.Contains(pullRequestsFooterView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected pull request footer to show spinner %q, actual %q", string(loadingSpinnerFrames[0]), pullRequestsFooterView.Buffer())
+	}
+	if strings.Contains(pullRequestsFooterView.Buffer(), myPullRequestsLoadingTitle) {
+		t.Fatalf("expected pull request footer to hide %q, actual %q", myPullRequestsLoadingTitle, pullRequestsFooterView.Buffer())
 	}
 }
 

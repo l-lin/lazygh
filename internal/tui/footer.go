@@ -12,8 +12,9 @@ const (
 	viewPullRequestsFooterName = "pull-requests-footer"
 	viewDetailFooterName       = "detail-footer"
 
-	pullRequestDetailLoadingTitle = "Loading pull request detail..."
-	pullRequestDiffLoadingTitle   = "Loading pull request diff..."
+	pullRequestDetailLoadingTitle       = "Loading pull request detail..."
+	pullRequestDetailLoadingFooterLabel = "Pull request detail"
+	pullRequestDiffLoadingTitle         = "Loading pull request diff..."
 )
 
 type paneFooterState struct {
@@ -127,7 +128,7 @@ func (program *Program) loadingFooterText(focus Focus) string {
 		return program.activePullRequestsLoadingText()
 	case FocusDetailView:
 		if program.selectedPullRequestDetailLoading() {
-			return pullRequestDetailLoadingTitle
+			return program.loadingSpinnerStatus(pullRequestDetailLoadingFooterLabel)
 		}
 	}
 
@@ -135,18 +136,11 @@ func (program *Program) loadingFooterText(focus Focus) string {
 }
 
 func (program *Program) activePullRequestsLoadingText() string {
-	switch program.model.ActivePullRequestTab() {
-	case RequestedPullRequestsTab:
-		if program.requestedPullRequestsLoading {
-			return requestedPullRequestsLoadingTitle
-		}
-	default:
-		if program.myPullRequestsLoading {
-			return myPullRequestsLoadingTitle
-		}
+	if !program.activePullRequestsLoading() {
+		return ""
 	}
 
-	return ""
+	return program.loadingSpinnerStatus(program.model.ActivePullRequestTab().Label())
 }
 
 func (program *Program) selectedPullRequestDetailLoading() bool {

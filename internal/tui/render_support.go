@@ -24,9 +24,9 @@ func (program *Program) detailViewContent() string {
 				if program.activeDetailTab == CommentsDetailTab {
 					content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)
 				}
-				return renderPullRequestDetailContent(header, content)
+				return renderPullRequestDetailContentWithSeparator(header, content, program.detailWrapWidth)
 			}
-			return renderPullRequestDetailLoading(*row.Summary)
+			return renderPullRequestDetailLoading(*row.Summary, program.loadingSpinnerFrame())
 		}
 	}
 
@@ -54,7 +54,7 @@ func (program *Program) detailHeader(item Item) string {
 		source = fmt.Sprintf("%s tab", program.model.ActivePullRequestTab().Label())
 	}
 
-	return fmt.Sprintf("%s\n%s", source, item.Title)
+	return fmt.Sprintf("%s\n%s", source, program.displayItemTitle(item.Title))
 }
 
 func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
