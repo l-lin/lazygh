@@ -10,7 +10,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-func TestActionsPopup_GivenReviewPRFromURLActionSelected_WhenSubmittingAValidURL_ThenItStartsReviewModeForThatPullRequest(t *testing.T) {
+func TestReviewPRURLInput_GivenEnterPressedInTheURLPrompt_WhenSubmittingAValidURL_ThenItStartsReviewModeForThatPullRequest(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
@@ -54,9 +54,10 @@ func TestActionsPopup_GivenReviewPRFromURLActionSelected_WhenSubmittingAValidURL
 	}
 
 	subject.modalEditor.lineEditor.SetText(" https://github.com/acme/rocket/pull/77/files#diff-1 ")
-	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
-	actualErr = submitHandler(gui, nil)
-	then_noError(t, actualErr)
+	actualHandled := subject.editModalEditor(modalView, gocui.KeyEnter, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected enter to submit the pull request URL prompt")
+	}
 
 	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/rocket#77"}) {
 		t.Fatalf("expected review start calls %v, actual %v", []string{"acme/rocket#77"}, loader.startReviewCalls)
@@ -105,9 +106,12 @@ func TestActionsPopup_GivenReviewPRFromURLActionSelected_WhenSubmittingAnInvalid
 	then_noError(t, actualErr)
 
 	subject.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/issues/42")
-	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
-	actualErr = submitHandler(gui, nil)
+	modalView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
+	actualHandled := subject.editModalEditor(modalView, gocui.KeyEnter, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected enter to submit the pull request URL prompt")
+	}
 
 	if subject.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the validation error")
@@ -116,7 +120,7 @@ func TestActionsPopup_GivenReviewPRFromURLActionSelected_WhenSubmittingAnInvalid
 		t.Fatalf("expected no review start calls, actual %v", loader.startReviewCalls)
 	}
 	then_currentViewNameIs(t, gui, viewModalEditorName)
-	modalView, actualErr := gui.View(viewModalEditorName)
+	modalView, actualErr = gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
 	if !strings.Contains(modalView.Title, githubcli.ErrInvalidPullRequestURL.Error()) {
 		t.Fatalf("expected modal title to contain %q, actual %q", githubcli.ErrInvalidPullRequestURL.Error(), modalView.Title)

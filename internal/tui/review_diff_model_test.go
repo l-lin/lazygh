@@ -145,7 +145,7 @@ func TestReviewDiffThreadTargetForLines_GivenARightSideMultiLineSelection_WhenBu
 	}
 }
 
-func TestBuildReviewDiffFileTree_GivenSingleChildDirectoryChains_WhenProjecting_ThenItCollapsesThemIntoCompactRows(t *testing.T) {
+func TestBuildReviewDiffFileTree_GivenSingleChildDirectoryChains_WhenProjecting_ThenItCollapsesDirectoriesButKeepsFileRowsToBasenames(t *testing.T) {
 	files := []reviewDiffFile{
 		{Path: "internal/tui/render.go"},
 		{Path: "cmd/lazygh/main.go"},
@@ -154,15 +154,17 @@ func TestBuildReviewDiffFileTree_GivenSingleChildDirectoryChains_WhenProjecting_
 	actual := buildReviewDiffFileTree(files)
 
 	expected := []reviewDiffTreeRow{
-		{VisibleRowIndex: 0, Depth: 0, Label: "internal/tui/render.go", FileIndex: 0},
-		{VisibleRowIndex: 1, Depth: 0, Label: "cmd/lazygh/main.go", FileIndex: 1},
+		{VisibleRowIndex: 0, Depth: 0, Label: "internal/tui/", FileIndex: -1},
+		{VisibleRowIndex: 1, Depth: 1, Label: "render.go", FileIndex: 0},
+		{VisibleRowIndex: 2, Depth: 0, Label: "cmd/lazygh/", FileIndex: -1},
+		{VisibleRowIndex: 3, Depth: 1, Label: "main.go", FileIndex: 1},
 	}
 	if !reflect.DeepEqual(actual.Rows, expected) {
 		t.Fatalf("expected rows %+v, actual %+v", expected, actual.Rows)
 	}
 }
 
-func TestBuildReviewDiffFileTree_GivenMixedSiblingDirectories_WhenProjecting_ThenItKeepsBranchRowsAndStableVisibleIndexes(t *testing.T) {
+func TestBuildReviewDiffFileTree_GivenMixedSiblingDirectories_WhenProjecting_ThenItKeepsBranchRowsAndFileBasenamesWithStableVisibleIndexes(t *testing.T) {
 	files := []reviewDiffFile{
 		{Path: "internal/tui/render.go"},
 		{Path: "internal/tui/model.go"},
@@ -176,7 +178,8 @@ func TestBuildReviewDiffFileTree_GivenMixedSiblingDirectories_WhenProjecting_The
 		{VisibleRowIndex: 1, Depth: 1, Label: "tui/", FileIndex: -1},
 		{VisibleRowIndex: 2, Depth: 2, Label: "render.go", FileIndex: 0},
 		{VisibleRowIndex: 3, Depth: 2, Label: "model.go", FileIndex: 1},
-		{VisibleRowIndex: 4, Depth: 1, Label: "githubcli/client.go", FileIndex: 2},
+		{VisibleRowIndex: 4, Depth: 1, Label: "githubcli/", FileIndex: -1},
+		{VisibleRowIndex: 5, Depth: 2, Label: "client.go", FileIndex: 2},
 	}
 	if !reflect.DeepEqual(actual.Rows, expected) {
 		t.Fatalf("expected rows %+v, actual %+v", expected, actual.Rows)

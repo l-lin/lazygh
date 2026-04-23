@@ -52,22 +52,22 @@ func appendReviewDiffTreeRows(node *reviewDiffTreeNode, depth int, rows *[]revie
 	if node == nil {
 		return
 	}
+	if node.isFile() {
+		appendReviewDiffTreeRow(rows, depth, node.name, node.fileIndex)
+		return
+	}
 
 	pathSegments := []string{node.name}
 	currentNode := node
 	for currentNode.isDirectory() && len(currentNode.children) == 1 {
 		onlyChild := currentNode.children[0]
-		pathSegments = append(pathSegments, onlyChild.name)
 		if onlyChild.isFile() {
-			appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/"), onlyChild.fileIndex)
+			appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1)
+			appendReviewDiffTreeRow(rows, depth+1, onlyChild.name, onlyChild.fileIndex)
 			return
 		}
+		pathSegments = append(pathSegments, onlyChild.name)
 		currentNode = onlyChild
-	}
-
-	if currentNode.isFile() {
-		appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/"), currentNode.fileIndex)
-		return
 	}
 
 	appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1)

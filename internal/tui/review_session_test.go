@@ -175,6 +175,47 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullReq
 	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "-2", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review metadata deletions")
 }
 
+func TestReviewMode_GivenADeepSingleFilePath_WhenRenderingTheFilesPane_ThenTheFileRowShowsOnlyTheFilename(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 1,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionSingleDeepFilePullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(filesView.Buffer(), "󰝰 content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/") {
+		t.Fatalf("expected files view to contain the collapsed directory row, actual %q", filesView.Buffer())
+	}
+	if !strings.Contains(filesView.Buffer(), " RecommendationStoreAdapter.java") {
+		t.Fatalf("expected files view to contain the file basename row, actual %q", filesView.Buffer())
+	}
+	if strings.Contains(filesView.Buffer(), " content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java") {
+		t.Fatalf("expected files view to keep full paths out of file rows, actual %q", filesView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenTheSelectedFileTreeRow_WhenRendering_ThenViewTwoKeepsItVisiblyMarked(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
@@ -513,6 +554,23 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "No comments yet.") {
 		t.Fatalf("expected browser detail content to be restored, actual %q", detailView.Buffer())
+	}
+}
+
+func given_reviewSessionSingleDeepFilePullRequestDiff() githubcli.PullRequestDiff {
+	return githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java b/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java",
+			"index 1111111..2222222 100644",
+			"--- a/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java",
+			"+++ b/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java",
+			"@@ -1,1 +1,1 @@",
+			"-old recommendation",
+			"+new recommendation",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{
+			{Path: "content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java", ChangeType: "modified", Additions: 1, Deletions: 1},
+		},
 	}
 }
 

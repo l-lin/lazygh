@@ -36,6 +36,9 @@ func (program *Program) executeReviewPullRequestURLAction(gui *gocui.Gui) action
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}
+	if program.modalEditor != nil {
+		program.modalEditor.handleKey = handleReviewPullRequestURLEditorKey
+	}
 	if !wasVisible && program.modalEditorVisible() {
 		return actionsPopupActionResult{closePopup: true}
 	}
@@ -52,6 +55,14 @@ func (program *Program) OpenReviewByURL(rawURL string) error {
 		return err
 	}
 	return program.openPullRequestReview(summary)
+}
+
+func handleReviewPullRequestURLEditorKey(program *Program, view *gocui.View, key gocui.Key, _ rune, _ gocui.Modifier) bool {
+	if key != gocui.KeyEnter || program == nil {
+		return false
+	}
+	_ = program.submitModalEditor(program.gui, view)
+	return true
 }
 
 func (program *Program) openPullRequestReview(summary githubcli.PullRequest) error {
