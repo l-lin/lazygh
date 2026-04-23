@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -29,25 +28,13 @@ type reviewSessionState struct {
 }
 
 func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActionResult {
-	target, ok := program.selectedPullRequestActionTarget()
-	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
-	}
-	if program.githubLoader == nil {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
-	}
-
 	summary, ok := program.model.SelectedPullRequestSummary()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-
-	pendingReviewID, err := program.githubLoader.StartPendingPullRequestReview(target.repository, target.number)
-	if err != nil {
+	if err := program.openPullRequestReview(summary); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-
-	program.startReviewSession(summary, pendingReviewID)
 	return actionsPopupActionResult{closePopup: true}
 }
 

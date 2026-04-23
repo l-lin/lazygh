@@ -49,6 +49,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		" Review PR from URL",
 		" Start review",
 		" Yank URL to clipboard",
 		" Open PR in browser",
@@ -59,8 +60,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		" Edit PR title",
 		" Edit PR description",
 	})
-	if strings.Contains(popupView.Buffer(), "9 of 9 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "9 of 9 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "10 of 10 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "10 of 10 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
@@ -138,10 +139,10 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "1 of 9 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 9 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "1 of 10 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 10 actions", popupView.Buffer())
 	}
-	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 9 actions")
+	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 10 actions")
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
 	}
@@ -295,8 +296,8 @@ func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSe
 	if subject.model.ActionsPopupSearchActive() {
 		t.Fatal("expected the popup search to stop")
 	}
-	if subject.model.ActionsPopupSelectedActionIndex() != 1 {
-		t.Fatalf("expected selected action index 1, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	if subject.model.ActionsPopupSelectedActionIndex() != 2 {
+		t.Fatalf("expected selected action index 2, actual %d", subject.model.ActionsPopupSelectedActionIndex())
 	}
 	if len(clipboardWriter.writes) != 0 {
 		t.Fatalf("expected no clipboard writes, actual %v", clipboardWriter.writes)
@@ -366,8 +367,8 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "9 of 9 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "9 of 9 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "10 of 10 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "10 of 10 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty when the query is cleared, actual %q", popupView.Footer)
@@ -465,6 +466,7 @@ func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyP
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
+	subject.model.MoveActionsPopupSelectionDown()
 	subject.model.MoveActionsPopupSelectionDown()
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)

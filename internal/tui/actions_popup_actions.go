@@ -22,6 +22,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	}
 
 	return []actionsPopupAction{
+		program.reviewPullRequestURLActionsPopupAction(),
 		{id: "start-review", title: "Start review", icon: actionsPopupStartReviewIcon, keywords: []string{"start", "review", "pending", "session", "inline"}, execute: program.executeStartReviewAction},
 		program.yankPullRequestURLActionsPopupAction(),
 		program.openPullRequestInBrowserActionsPopupAction(),
