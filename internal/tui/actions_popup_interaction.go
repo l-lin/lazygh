@@ -7,6 +7,7 @@ import (
 )
 
 func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}
@@ -27,6 +28,7 @@ func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	program.model.CloseActionsPopup()
 	program.actionsPopupSearchEditor = nil
 	program.actionsPopupErrorMessage = ""
@@ -38,6 +40,7 @@ func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusActionsPopupSearch(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
@@ -55,6 +58,7 @@ func (program *Program) focusActionsPopupSearch(gui *gocui.Gui, _ *gocui.View) e
 }
 
 func (program *Program) focusActionsPopupList(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
@@ -68,6 +72,7 @@ func (program *Program) focusActionsPopupList(gui *gocui.Gui, _ *gocui.View) err
 }
 
 func (program *Program) moveActionsPopupSelectionDown(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
 		return nil
 	}
@@ -82,6 +87,7 @@ func (program *Program) moveActionsPopupSelectionDown(gui *gocui.Gui, _ *gocui.V
 }
 
 func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
 		return nil
 	}
@@ -95,7 +101,40 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 	return program.refreshViews(gui)
 }
 
+func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	return program.armOrHandleGoToTopPrefix(viewActionsPopupName, func() error {
+		program.model.MoveActionsPopupSelectionToTop()
+		program.actionsPopupErrorMessage = ""
+		if gui == nil {
+			return nil
+		}
+
+		return program.refreshViews(gui)
+	})
+}
+
+func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		return nil
+	}
+
+	program.model.MoveActionsPopupSelectionToBottom()
+	program.actionsPopupErrorMessage = ""
+	if gui == nil {
+		return nil
+	}
+
+	return program.refreshViews(gui)
+}
+
 func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}

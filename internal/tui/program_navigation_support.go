@@ -3,6 +3,7 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, sideChange int, mutateDetail func(detailDocument, int)) error {
+	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() {
 		return nil
 	}
@@ -19,6 +20,35 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 
 	program.model.adjustSelectionBy(sideChange)
 	return nil
+}
+
+func (program *Program) clearPendingSelectionPrefix() {
+	program.pendingGoToTopViewName = ""
+}
+
+func (program *Program) armOrHandleGoToTopPrefix(viewName string, moveToTop func() error) error {
+	if viewName == "" {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+	if program.pendingGoToTopViewName == viewName {
+		program.clearPendingSelectionPrefix()
+		return moveToTop()
+	}
+
+	program.pendingGoToTopViewName = viewName
+	return nil
+}
+
+func (program *Program) currentSideViewName() string {
+	switch program.model.Focus() {
+	case FocusUserView:
+		return viewUserName
+	case FocusPullRequestsView:
+		return viewPullRequestsName
+	default:
+		return ""
+	}
 }
 
 func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {

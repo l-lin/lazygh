@@ -7,6 +7,7 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.sideViewCyclingBlocked() {
 		return nil
 	}
@@ -16,6 +17,7 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.sideViewCyclingBlocked() {
 		return nil
 	}
@@ -48,6 +50,42 @@ func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 	return program.handleSelectionChange(gui, view, -pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
 		program.detailViewState.pageUp(document, viewportHeight)
 	})
+}
+
+func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
+	if program.selectionChangeBlocked() {
+		return nil
+	}
+
+	return program.armOrHandleGoToTopPrefix(program.currentSideViewName(), func() error {
+		if program.reviewSession.active {
+			if program.model.Focus() != FocusPullRequestsView {
+				return nil
+			}
+			program.moveReviewSessionSelectionToTop()
+			return program.refreshViewsIfGUI(gui)
+		}
+
+		program.model.MoveSelectionToTop()
+		return nil
+	})
+}
+
+func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return nil
+	}
+	if program.reviewSession.active {
+		if program.model.Focus() != FocusPullRequestsView {
+			return nil
+		}
+		program.moveReviewSessionSelectionToBottom()
+		return program.refreshViewsIfGUI(gui)
+	}
+
+	program.model.MoveSelectionToBottom()
+	return nil
 }
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
@@ -119,6 +157,7 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() || program.reviewSession.active {
 		return nil
 	}
@@ -129,6 +168,7 @@ func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error 
 }
 
 func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() || program.reviewSession.active {
 		return nil
 	}
@@ -139,6 +179,7 @@ func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) er
 }
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.mainPaneActionBlocked() {
 		return nil
 	}
@@ -148,6 +189,7 @@ func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.mainPaneActionBlocked() {
 		return nil
 	}
@@ -158,6 +200,7 @@ func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.mainPaneActionBlocked() {
 		return nil
 	}
@@ -168,6 +211,7 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.detailTransitionBlocked() {
 		return nil
 	}
@@ -177,6 +221,7 @@ func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.detailTransitionBlocked() {
 		return nil
 	}
@@ -191,6 +236,7 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.mainPaneActionBlocked() || (program.reviewSession.active && program.model.Focus() == FocusUserView) {
 		return nil
 	}
@@ -244,6 +290,7 @@ func (program *Program) closeSearch(gui *gocui.Gui) error {
 }
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.helpToggleBlocked() {
 		return nil
 	}
@@ -257,6 +304,7 @@ func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	program.helpVisible = false
 	return program.refreshViewsIfGUI(gui)
 }

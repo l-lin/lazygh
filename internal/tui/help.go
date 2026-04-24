@@ -93,6 +93,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		case FocusPullRequestsView:
 			return []helpEntry{
 				{Key: "j/k/<up>/<down>", Description: "Move down/up"},
+				{Key: "gg/G", Description: "First/last file"},
 				{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Page down"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Page up"},
@@ -144,6 +145,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 	case FocusPullRequestsView:
 		return []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
+			{Key: "gg/G", Description: "First/last pull request"},
 			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Page down"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Page up"},
@@ -159,6 +161,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 	default:
 		return []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
+			{Key: "gg/G", Description: "First/last user"},
 			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Page down"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Page up"},

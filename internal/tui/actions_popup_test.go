@@ -429,6 +429,42 @@ func TestActionsPopup_GivenFilteredActions_WhenHandlingArrowBindings_ThenTheyFol
 	}
 }
 
+func TestActionsPopup_GivenFilteredActions_WhenPressingGGOrG_ThenItMovesToTheFirstOrLastVisibleResult(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	reviewIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "review")
+	subject.model.UpdateActionsPopupSearch("review", reviewIndexes)
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	bottomHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, 'G')
+	actualErr = bottomHandler(gui, nil)
+	then_noError(t, actualErr)
+	if subject.model.ActionsPopupSelectedActionIndex() != reviewIndexes[len(reviewIndexes)-1] {
+		t.Fatalf("expected selected action index %d, actual %d", reviewIndexes[len(reviewIndexes)-1], subject.model.ActionsPopupSelectedActionIndex())
+	}
+
+	topHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, 'g')
+	actualErr = topHandler(gui, nil)
+	then_noError(t, actualErr)
+	if subject.model.ActionsPopupSelectedActionIndex() != reviewIndexes[len(reviewIndexes)-1] {
+		t.Fatalf("expected the first g to arm the motion without moving selection, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	}
+
+	actualErr = topHandler(gui, nil)
+	then_noError(t, actualErr)
+	if subject.model.ActionsPopupSelectedActionIndex() != reviewIndexes[0] {
+		t.Fatalf("expected selected action index %d, actual %d", reviewIndexes[0], subject.model.ActionsPopupSelectedActionIndex())
+	}
+}
+
 func TestActionsPopup_GivenCommentActionSelected_WhenExecuting_ThenItReusesTheCommentComposer(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)

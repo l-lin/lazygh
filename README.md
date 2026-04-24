@@ -63,6 +63,8 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--json", 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.
 
+For multi-key motions, configure the prefix key. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` mean `gg` goes to the top.
+
 This example mirrors the built-in defaults.
 
 ```toml
@@ -87,6 +89,8 @@ shrink_focused_pane = "-"
 next_side_view = "l"
 previous_side_view = "h"
 focus_detail_view = "0"
+move_selection_to_top = "g"
+move_selection_to_bottom = "G"
 exit_review_mode = ["esc", "ctrl+[", "q"]
 
 [keymaps.user]
@@ -130,6 +134,8 @@ cancel = ["esc", "ctrl+["]
 focus_search = "/"
 move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
+move_selection_to_top = "g"
+move_selection_to_bottom = "G"
 execute_selected_action = "enter"
 close = ["esc", "ctrl+[", "q"]
 

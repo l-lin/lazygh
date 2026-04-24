@@ -91,6 +91,22 @@ func (model *Model) MoveActionsPopupSelectionUp() {
 	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -1)
 }
 
+func (model *Model) MoveActionsPopupSelectionToTop() {
+	if !model.actionsPopup.visible {
+		return
+	}
+
+	model.actionsPopup.selectedActionIndex = firstVisibleIndex(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes)
+}
+
+func (model *Model) MoveActionsPopupSelectionToBottom() {
+	if !model.actionsPopup.visible {
+		return
+	}
+
+	model.actionsPopup.selectedActionIndex = lastVisibleIndex(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes)
+}
+
 type actionsPopupState struct {
 	visible               bool
 	searchActive          bool

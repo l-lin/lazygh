@@ -315,6 +315,24 @@ func (model *Model) MoveSelectionUp() {
 	}
 }
 
+func (model *Model) MoveSelectionToTop() {
+	switch model.focus {
+	case FocusUserView:
+		model.selectedUserIndex = firstVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
+	case FocusPullRequestsView:
+		model.selectedPullRequestIndexes[model.activePullRequestTab] = firstVisibleIndex(model.selectedPullRequestIndexes[model.activePullRequestTab], model.visiblePullRequestIndexes(model.activePullRequestTab))
+	}
+}
+
+func (model *Model) MoveSelectionToBottom() {
+	switch model.focus {
+	case FocusUserView:
+		model.selectedUserIndex = lastVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
+	case FocusPullRequestsView:
+		model.selectedPullRequestIndexes[model.activePullRequestTab] = lastVisibleIndex(model.selectedPullRequestIndexes[model.activePullRequestTab], model.visiblePullRequestIndexes(model.activePullRequestTab))
+	}
+}
+
 func (model *Model) PageDown(pageSize int) {
 	model.adjustSelectionBy(pageDelta(pageSize))
 }

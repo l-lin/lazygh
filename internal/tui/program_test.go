@@ -79,6 +79,70 @@ func TestKeybindingSpecs_GivenProgram_WhenListingVerticalNavigationBindings_Then
 	}
 }
 
+func TestKeybindingSpecs_GivenProgram_WhenListingEdgeNavigationBindings_ThenSideViewsAndTheActionsPopupSupportGGAndG(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewUserName, viewPullRequestsName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'g', handler: subject.moveSideSelectionToTop})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'G', handler: subject.moveSideSelectionToBottom})
+	}
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'g', handler: subject.moveActionsPopupSelectionToTop})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'G', handler: subject.moveActionsPopupSelectionToBottom})
+}
+
+func TestSideViewNavigation_GivenUserFocus_WhenPressingGGOrG_ThenItMovesToTheFirstOrLastVisibleRow(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "user-1", Detail: "User detail 1"}, {Title: "user-2", Detail: "User detail 2"}, {Title: "user-3", Detail: "User detail 3"}}})
+	subject := NewProgramWithModel(model)
+
+	bottomHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewUserName, 'G')
+	actualErr := bottomHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedUserIndex() != 2 {
+		t.Fatalf("expected selected user index %d, actual %d", 2, subject.model.SelectedUserIndex())
+	}
+
+	topHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewUserName, 'g')
+	actualErr = topHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedUserIndex() != 2 {
+		t.Fatalf("expected the first g to arm the motion without moving selection, actual %d", subject.model.SelectedUserIndex())
+	}
+
+	actualErr = topHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedUserIndex() != 0 {
+		t.Fatalf("expected selected user index %d, actual %d", 0, subject.model.SelectedUserIndex())
+	}
+}
+
+func TestSideViewNavigation_GivenPullRequestsFocus_WhenPressingGGOrG_ThenItMovesToTheFirstOrLastVisibleRow(t *testing.T) {
+	model := NewModel(SeedData{PullRequestTabs: []PullRequestTabSeed{{Label: "My PRs", PullRequests: []Item{{Title: "pr-1", Detail: "PR detail 1"}, {Title: "pr-2", Detail: "PR detail 2"}, {Title: "pr-3", Detail: "PR detail 3"}}}}})
+	model.FocusPullRequestsView()
+	subject := NewProgramWithModel(model)
+
+	bottomHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'G')
+	actualErr := bottomHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedPullRequestIndex(MyPullRequestsTab) != 2 {
+		t.Fatalf("expected selected pull request index %d, actual %d", 2, subject.model.SelectedPullRequestIndex(MyPullRequestsTab))
+	}
+
+	topHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'g')
+	actualErr = topHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedPullRequestIndex(MyPullRequestsTab) != 2 {
+		t.Fatalf("expected the first g to arm the motion without moving selection, actual %d", subject.model.SelectedPullRequestIndex(MyPullRequestsTab))
+	}
+
+	actualErr = topHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedPullRequestIndex(MyPullRequestsTab) != 0 {
+		t.Fatalf("expected selected pull request index %d, actual %d", 0, subject.model.SelectedPullRequestIndex(MyPullRequestsTab))
+	}
+}
+
 func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsWordAndLineVisualMotions(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 

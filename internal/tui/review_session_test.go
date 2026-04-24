@@ -663,6 +663,49 @@ func TestReviewMode_GivenMovingTheViewTwoSelection_WhenRefreshingTheReviewPane_T
 	}
 }
 
+func TestReviewMode_GivenTheFilesPane_WhenPressingGGOrG_ThenItMovesToTheFirstOrLastSelectableFile(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	selectableRows, ok := subject.reviewSessionSelectableRows()
+	if !ok || len(selectableRows) < 2 {
+		t.Fatalf("expected at least two selectable review rows, actual %v", selectableRows)
+	}
+
+	bottomHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'G')
+	actualErr = bottomHandler(gui, nil)
+	then_noError(t, actualErr)
+	if subject.reviewSession.selectedFileTreeRow != selectableRows[len(selectableRows)-1] {
+		t.Fatalf("expected selected review row %d, actual %d", selectableRows[len(selectableRows)-1], subject.reviewSession.selectedFileTreeRow)
+	}
+
+	topHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'g')
+	actualErr = topHandler(gui, nil)
+	then_noError(t, actualErr)
+	if subject.reviewSession.selectedFileTreeRow != selectableRows[len(selectableRows)-1] {
+		t.Fatalf("expected the first g to arm the motion without moving selection, actual %d", subject.reviewSession.selectedFileTreeRow)
+	}
+
+	actualErr = topHandler(gui, nil)
+	then_noError(t, actualErr)
+	if subject.reviewSession.selectedFileTreeRow != selectableRows[0] {
+		t.Fatalf("expected selected review row %d, actual %d", selectableRows[0], subject.reviewSession.selectedFileTreeRow)
+	}
+}
+
 func TestReviewMode_GivenFullscreenPullRequestBrowser_WhenStartingAndExiting_ThenItUsesThreePanesInReviewModeAndRestoresThePreviousFullscreenLayout(t *testing.T) {
 	model := given_pullRequestCommentModel()
 	model.FocusPullRequestsView()

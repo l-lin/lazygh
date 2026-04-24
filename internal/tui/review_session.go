@@ -183,6 +183,26 @@ func (program *Program) adjustReviewSessionSelection(change int) {
 	program.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.reviewSession.selectedFileTreeRow, selectableRows, change)
 }
 
+func (program *Program) moveReviewSessionSelectionToTop() {
+	selectableRows, ok := program.reviewSessionSelectableRows()
+	if !ok || len(selectableRows) == 0 {
+		program.reviewSession.selectedFileTreeRow = 0
+		return
+	}
+
+	program.reviewSession.selectedFileTreeRow = selectableRows[0]
+}
+
+func (program *Program) moveReviewSessionSelectionToBottom() {
+	selectableRows, ok := program.reviewSessionSelectableRows()
+	if !ok || len(selectableRows) == 0 {
+		program.reviewSession.selectedFileTreeRow = 0
+		return
+	}
+
+	program.reviewSession.selectedFileTreeRow = selectableRows[len(selectableRows)-1]
+}
+
 func (program *Program) reviewSessionSelectableRows() ([]int, bool) {
 	result, ok := program.reviewSessionDiffResult()
 	if !ok || result.err != nil {

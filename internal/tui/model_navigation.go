@@ -67,6 +67,22 @@ func adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int)
 	return visibleIndexes[visibleSelectionIndex]
 }
 
+func firstVisibleIndex(selectedIndex int, visibleIndexes []int) int {
+	if len(visibleIndexes) == 0 {
+		return selectedIndex
+	}
+
+	return visibleIndexes[0]
+}
+
+func lastVisibleIndex(selectedIndex int, visibleIndexes []int) int {
+	if len(visibleIndexes) == 0 {
+		return selectedIndex
+	}
+
+	return visibleIndexes[len(visibleIndexes)-1]
+}
+
 func (tab PullRequestTab) Label() string {
 	switch tab {
 	case RequestedPullRequestsTab:
