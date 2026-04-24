@@ -176,3 +176,65 @@ func TestOpenReviewByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_ThenIt
 		t.Fatalf("expected metadata view to contain %q, actual %q", "Rocket PR", metadataView.Buffer())
 	}
 }
+
+func TestOpenReviewByURL_GivenAValidGitHubPRURLBeforeLayout_WhenYankingFromTheActionsPopup_ThenItUsesTheReviewedPullRequestURL(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/rocket#77": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	clipboardWriter := &fakeClipboardWriter{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.clipboardWriter = clipboardWriter
+
+	actualErr := subject.OpenReviewByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("clipboard", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "clipboard"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(clipboardWriter.writes, []string{"https://github.com/acme/rocket/pull/77"}) {
+		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/rocket/pull/77"}, clipboardWriter.writes)
+	}
+}
+
+func TestOpenReviewByURL_GivenAValidGitHubPRURLBeforeLayout_WhenOpeningInBrowserFromTheActionsPopup_ThenItUsesTheReviewedPullRequestIdentity(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/rocket#77": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+
+	actualErr := subject.OpenReviewByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("browser", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "browser"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.openBrowserCalls, []string{"acme/rocket#77"}) {
+		t.Fatalf("expected open browser calls %v, actual %v", []string{"acme/rocket#77"}, loader.openBrowserCalls)
+	}
+}

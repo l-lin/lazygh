@@ -2,6 +2,8 @@ package tui
 
 import (
 	"strings"
+
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 type pullRequestActionTarget struct {
@@ -11,12 +13,18 @@ type pullRequestActionTarget struct {
 	body       string
 }
 
-func (program *Program) selectedPullRequestActionTarget() (pullRequestActionTarget, bool) {
+func (program *Program) currentPullRequestSummary() (githubcli.PullRequest, bool) {
 	if !program.isPullRequestContext() {
-		return pullRequestActionTarget{}, false
+		return githubcli.PullRequest{}, false
 	}
+	if program.reviewSession.active {
+		return program.reviewSession.summary, true
+	}
+	return program.model.SelectedPullRequestSummary()
+}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+func (program *Program) selectedPullRequestActionTarget() (pullRequestActionTarget, bool) {
+	summary, ok := program.currentPullRequestSummary()
 	if !ok {
 		return pullRequestActionTarget{}, false
 	}

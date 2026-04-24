@@ -93,11 +93,7 @@ func (program *Program) copySelectedPullRequestURL() error {
 }
 
 func (program *Program) selectedPullRequestURL() (string, bool) {
-	if !program.isPullRequestContext() {
-		return "", false
-	}
-
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.currentPullRequestSummary()
 	if !ok {
 		return "", false
 	}
