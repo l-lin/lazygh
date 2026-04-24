@@ -104,14 +104,14 @@ func (state *detailViewState) pageDown(document detailDocument, viewportHeight i
 	state.clearPendingPrefix()
 	state.sync(document, viewportHeight)
 	state.cursor = document.moveVertical(state.cursor, pageDelta(viewportHeight), state.preferredColumn)
-	state.sync(document, viewportHeight)
+	state.recenter(document, viewportHeight)
 }
 
 func (state *detailViewState) pageUp(document detailDocument, viewportHeight int) {
 	state.clearPendingPrefix()
 	state.sync(document, viewportHeight)
 	state.cursor = document.moveVertical(state.cursor, -pageDelta(viewportHeight), state.preferredColumn)
-	state.sync(document, viewportHeight)
+	state.recenter(document, viewportHeight)
 }
 
 func (state *detailViewState) recenter(document detailDocument, viewportHeight int) {

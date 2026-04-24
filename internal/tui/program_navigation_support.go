@@ -22,6 +22,27 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 	return nil
 }
 
+func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideChange int, mutateDetail func(detailDocument, int)) error {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return nil
+	}
+	if program.model.Focus() == FocusDetailView {
+		return program.mutateDetailViewState(gui, view, mutateDetail)
+	}
+	if program.reviewSession.active {
+		if program.model.Focus() != FocusPullRequestsView {
+			return nil
+		}
+		program.adjustReviewSessionSelection(sideChange)
+	} else {
+		program.model.adjustSelectionBy(sideChange)
+	}
+
+	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
+	return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
+}
+
 func (program *Program) clearPendingSelectionPrefix() {
 	program.pendingSelectionKeySequence.clear()
 }

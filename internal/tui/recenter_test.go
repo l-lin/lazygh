@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/jesseduffield/gocui"
 )
 
 func TestKeybindingSpecs_GivenProgram_WhenListingRecenterBindings_ThenUserPullRequestsDetailAndActionsPopupSupportZZ(t *testing.T) {
@@ -142,6 +144,153 @@ func TestRecenter_GivenActionsPopupSelection_WhenPressingZZ_ThenTheSelectionMove
 	}
 	if actualCursorY != expectedCursorY {
 		t.Fatalf("expected actions popup cursor y %d, actual %d", expectedCursorY, actualCursorY)
+	}
+}
+
+func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupPagingBindings_ThenControlDAndControlUAreAvailableInTheActionsPopup(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyCtrlD, handler: subject.pageActionsPopupDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyCtrlU, handler: subject.pageActionsPopupUp})
+}
+
+func TestPaging_GivenUserViewSelection_WhenPressingControlDAndControlU_ThenItMovesHalfAPageAndRecentersTheSelection(t *testing.T) {
+	model := NewModel(SeedData{Users: given_manyItems("user", 40)})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGuiWithSize(t, 120, 12)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	userView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+
+	initialIndex := userView.InnerHeight() + 1
+	for range initialIndex {
+		subject.model.MoveSelectionDown()
+	}
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+	userView, actualErr = gui.View(viewUserName)
+	then_noError(t, actualErr)
+	step := maxInt(1, userView.InnerHeight()/2)
+
+	actualErr = subject.pageDown(gui, userView)
+	then_noError(t, actualErr)
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+	userView, actualErr = gui.View(viewUserName)
+	then_noError(t, actualErr)
+	then_listViewIsCenteredOnSelection(t, userView, initialIndex+step, len(subject.model.VisibleUsers()))
+
+	actualErr = subject.pageUp(gui, userView)
+	then_noError(t, actualErr)
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+	userView, actualErr = gui.View(viewUserName)
+	then_noError(t, actualErr)
+	then_listViewIsCenteredOnSelection(t, userView, initialIndex, len(subject.model.VisibleUsers()))
+}
+
+func TestPaging_GivenDetailCursor_WhenPressingControlDAndControlU_ThenItMovesHalfAPageAndRecentersTheCursor(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "user-1", Detail: given_multilineDetail(40)}}})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGuiWithSize(t, 120, 12)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+
+	initialLine := detailView.InnerHeight() + 1
+	for range initialLine {
+		actualErr = subject.moveSelectionDown(gui, detailView)
+		then_noError(t, actualErr)
+	}
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	step := maxInt(1, detailView.InnerHeight()/2)
+
+	actualErr = subject.pageDown(gui, detailView)
+	then_noError(t, actualErr)
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_detailViewIsCenteredOnCursor(t, detailView, initialLine+step, 40)
+
+	actualErr = subject.pageUp(gui, detailView)
+	then_noError(t, actualErr)
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_detailViewIsCenteredOnCursor(t, detailView, initialLine, 40)
+}
+
+func TestPaging_GivenActionsPopupSelection_WhenPressingControlDAndControlU_ThenItMovesHalfAPageAndRecentersTheSelection(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGuiWithSize(t, 120, 12)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	step := maxInt(1, popupView.InnerHeight()/2)
+	initialIndex := 1
+	for range initialIndex {
+		actualErr = subject.moveActionsPopupSelectionDown(gui, popupView)
+		then_noError(t, actualErr)
+	}
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+
+	actualErr = subject.pageActionsPopupDown(gui, popupView)
+	then_noError(t, actualErr)
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_listViewIsCenteredOnSelection(t, popupView, initialIndex+step, len(subject.currentActionsPopupActions()))
+
+	actualErr = subject.pageActionsPopupUp(gui, popupView)
+	then_noError(t, actualErr)
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_listViewIsCenteredOnSelection(t, popupView, initialIndex, len(subject.currentActionsPopupActions()))
+}
+
+func then_listViewIsCenteredOnSelection(t *testing.T, view *gocui.View, expectedSelectedIndex int, lineCount int) {
+	t.Helper()
+
+	_, actualOriginY := view.Origin()
+	_, actualCursorY := view.Cursor()
+	expectedOriginY := centeredViewportOrigin(expectedSelectedIndex, view.InnerHeight(), lineCount)
+	expectedCursorY := expectedSelectedIndex - expectedOriginY
+	if actualOriginY != expectedOriginY {
+		t.Fatalf("expected origin y %d, actual %d", expectedOriginY, actualOriginY)
+	}
+	if actualCursorY != expectedCursorY {
+		t.Fatalf("expected cursor y %d, actual %d", expectedCursorY, actualCursorY)
+	}
+}
+
+func then_detailViewIsCenteredOnCursor(t *testing.T, view *gocui.View, expectedLine int, lineCount int) {
+	t.Helper()
+
+	_, actualOriginY := view.Origin()
+	_, actualCursorY := view.Cursor()
+	expectedOriginY := centeredViewportOrigin(expectedLine, view.InnerHeight(), lineCount)
+	expectedCursorY := expectedLine - expectedOriginY
+	if actualOriginY != expectedOriginY {
+		t.Fatalf("expected detail origin y %d, actual %d", expectedOriginY, actualOriginY)
+	}
+	if actualCursorY != expectedCursorY {
+		t.Fatalf("expected detail cursor y %d, actual %d", expectedCursorY, actualCursorY)
 	}
 }
 

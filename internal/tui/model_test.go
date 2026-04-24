@@ -151,7 +151,7 @@ func TestMoveSelection_GivenPullRequestsFocus_WhenMovingDownAndUp_ThenSelectionC
 	}
 }
 
-func TestPageSelection_GivenPullRequestsFocus_WhenPagingDownAndUp_ThenSelectionMovesByThePageSize(t *testing.T) {
+func TestPageSelection_GivenPullRequestsFocus_WhenPagingDownAndUp_ThenSelectionMovesByHalfAPage(t *testing.T) {
 	subject := NewModel(SeedData{
 		Users: []Item{{Title: "user-1", Detail: "user detail 1"}},
 		MyPullRequests: []Item{
@@ -164,16 +164,16 @@ func TestPageSelection_GivenPullRequestsFocus_WhenPagingDownAndUp_ThenSelectionM
 	})
 	subject.FocusPullRequestsView()
 
-	when_pagingDown(subject, 3)
+	when_pagingDown(subject, 4)
 	actual := subject.SelectedPullRequestIndex(MyPullRequestsTab)
-	if actual != 3 {
-		t.Fatalf("expected selection 3, actual %d", actual)
+	if actual != 2 {
+		t.Fatalf("expected selection 2, actual %d", actual)
 	}
 
-	when_pagingUp(subject, 2)
+	when_pagingUp(subject, 4)
 	actual = subject.SelectedPullRequestIndex(MyPullRequestsTab)
-	if actual != 1 {
-		t.Fatalf("expected selection 1, actual %d", actual)
+	if actual != 0 {
+		t.Fatalf("expected selection 0, actual %d", actual)
 	}
 }
 
@@ -197,7 +197,7 @@ func TestMoveSelection_GivenUserFocus_WhenMovingDownAndUp_ThenSelectionChangesWi
 	}
 }
 
-func TestPageSelection_GivenUserFocus_WhenPagingDownAndUp_ThenSelectionMovesByThePageSize(t *testing.T) {
+func TestPageSelection_GivenUserFocus_WhenPagingDownAndUp_ThenSelectionMovesByHalfAPage(t *testing.T) {
 	subject := NewModel(SeedData{
 		Users: []Item{
 			{Title: "user-1", Detail: "User detail 1"},
@@ -210,14 +210,14 @@ func TestPageSelection_GivenUserFocus_WhenPagingDownAndUp_ThenSelectionMovesByTh
 
 	when_pagingDown(subject, 4)
 	actual := subject.SelectedUserIndex()
-	if actual != 4 {
-		t.Fatalf("expected selection 4, actual %d", actual)
-	}
-
-	when_pagingUp(subject, 2)
-	actual = subject.SelectedUserIndex()
 	if actual != 2 {
 		t.Fatalf("expected selection 2, actual %d", actual)
+	}
+
+	when_pagingUp(subject, 4)
+	actual = subject.SelectedUserIndex()
+	if actual != 0 {
+		t.Fatalf("expected selection 0, actual %d", actual)
 	}
 }
 

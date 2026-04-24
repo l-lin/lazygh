@@ -427,6 +427,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeActionsPopup, "focus_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch, runeBinding('/')),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_down", []string{viewActionsPopupName}, program.moveActionsPopupSelectionDown, runeBinding('j'), namedBinding(gocui.KeyArrowDown, "<down>")),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_up", []string{viewActionsPopupName}, program.moveActionsPopupSelectionUp, runeBinding('k'), namedBinding(gocui.KeyArrowUp, "<up>")),
+		keybindingActionFor(keymapScopeActionsPopup, "page_down", []string{viewActionsPopupName}, program.pageActionsPopupDown, namedBinding(gocui.KeyCtrlD, "<c-d>")),
+		keybindingActionFor(keymapScopeActionsPopup, "page_up", []string{viewActionsPopupName}, program.pageActionsPopupUp, namedBinding(gocui.KeyCtrlU, "<c-u>")),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_to_top", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToTop, runeBinding('g')),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_to_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToBottom, runeBinding('G')),
 		keybindingActionFor(keymapScopeActionsPopup, "recenter_selection", []string{viewActionsPopupName}, program.recenterActionsPopupSelection, runeBinding('z')),

@@ -91,6 +91,22 @@ func (model *Model) MoveActionsPopupSelectionUp() {
 	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -1)
 }
 
+func (model *Model) PageActionsPopupDown(pageSize int) {
+	if !model.actionsPopup.visible {
+		return
+	}
+
+	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, pageDelta(pageSize))
+}
+
+func (model *Model) PageActionsPopupUp(pageSize int) {
+	if !model.actionsPopup.visible {
+		return
+	}
+
+	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -pageDelta(pageSize))
+}
+
 func (model *Model) MoveActionsPopupSelectionToTop() {
 	if !model.actionsPopup.visible {
 		return

@@ -106,6 +106,30 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 	return program.refreshViews(gui)
 }
 
+func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		return nil
+	}
+
+	actualView := program.resolveView(gui, view, viewActionsPopupName)
+	program.model.PageActionsPopupDown(viewPageSize(actualView))
+	program.actionsPopupErrorMessage = ""
+	return program.recenterListSelection(gui, actualView, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+}
+
+func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		return nil
+	}
+
+	actualView := program.resolveView(gui, view, viewActionsPopupName)
+	program.model.PageActionsPopupUp(viewPageSize(actualView))
+	program.actionsPopupErrorMessage = ""
+	return program.recenterListSelection(gui, actualView, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+}
+
 func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocui.View) error {
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
 		program.clearPendingSelectionPrefix()

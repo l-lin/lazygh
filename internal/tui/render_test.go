@@ -539,7 +539,7 @@ func TestSideViewCycling_GivenDetailFocus_WhenHandlingProgramActions_ThenCurrent
 	then_currentViewNameIs(t, gui, viewDetailName)
 }
 
-func TestPaging_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewScrollsByPage(t *testing.T) {
+func TestPaging_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewMovesHalfAPageAndRecenters(t *testing.T) {
 	model := NewModel(SeedData{
 		Users: []Item{{
 			Title:  "dummy-user-1",
@@ -557,20 +557,19 @@ func TestPaging_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewScr
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
+	step := maxInt(1, detailView.InnerHeight()/2)
 
 	actualErr = subject.pageDown(gui, detailView)
 	then_noError(t, actualErr)
-	_, originY := detailView.Origin()
-	if originY < 1 {
-		t.Fatalf("expected detail origin to move down, actual %d", originY)
-	}
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_detailViewIsCenteredOnCursor(t, detailView, step, 80)
 
 	actualErr = subject.pageUp(gui, detailView)
 	then_noError(t, actualErr)
-	_, originY = detailView.Origin()
-	if originY != 0 {
-		t.Fatalf("expected detail origin to return to 0, actual %d", originY)
-	}
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_detailViewIsCenteredOnCursor(t, detailView, 0, 80)
 }
 
 func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailCursorMovesByLineBeforeTheViewportScrolls(t *testing.T) {

@@ -40,7 +40,7 @@ func pageDelta(pageSize int) int {
 		return 1
 	}
 
-	return pageSize
+	return maxInt(1, pageSize/2)
 }
 
 func copyItems(items []Item) []Item {

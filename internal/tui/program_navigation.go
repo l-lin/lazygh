@@ -41,15 +41,17 @@ func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error 
 }
 
 func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
-	pageSize := viewPageSize(view)
-	return program.handleSelectionChange(gui, view, pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
+	actualView := program.resolveView(gui, view, program.currentViewName())
+	pageSize := viewPageSize(actualView)
+	return program.handlePageChange(gui, actualView, pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
 		program.detailViewState.pageDown(document, viewportHeight)
 	})
 }
 
 func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
-	pageSize := viewPageSize(view)
-	return program.handleSelectionChange(gui, view, -pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
+	actualView := program.resolveView(gui, view, program.currentViewName())
+	pageSize := viewPageSize(actualView)
+	return program.handlePageChange(gui, actualView, -pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
 		program.detailViewState.pageUp(document, viewportHeight)
 	})
 }
