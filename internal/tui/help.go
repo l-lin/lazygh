@@ -77,6 +77,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "h/j/k/l/<up>/<down>", Description: "Move cursor"},
 				{Key: "0/$", Description: "Line start/end"},
 				{Key: "gg/G", Description: "First/last line"},
+				{Key: program.reviewFileMotionHelpKeys(keymapScopeDetail), Description: "Previous/next file"},
+				{Key: program.reviewCommentMotionHelpKeys(keymapScopeDetail), Description: "Previous/next comment"},
 				{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Recenter cursor"},
 				{Key: "w/e/b", Description: "Next/end/previous word"},
 				{Key: "n/N", Description: "Next/previous match"},
@@ -95,6 +97,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 			return []helpEntry{
 				{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 				{Key: "gg/G", Description: "First/last file"},
+				{Key: program.reviewFileMotionHelpKeys(keymapScopePullRequests), Description: "Previous/next file"},
+				{Key: program.reviewCommentMotionHelpKeys(keymapScopePullRequests), Description: "Previous/next comment"},
 				{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Recenter selection"},
 				{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
@@ -236,6 +240,18 @@ func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybind
 func (program *Program) helpRepeatedKeyOrFallback(fallback string, actionID keybindingActionID) string {
 	key := program.helpKeysOrFallback(fallback, actionID)
 	return key + key
+}
+
+func (program *Program) helpKeyChordOrFallback(prefixFallback string, suffixFallback string, prefixActionID keybindingActionID, suffixActionID keybindingActionID) string {
+	return program.helpKeysOrFallback(prefixFallback, prefixActionID) + program.helpKeysOrFallback(suffixFallback, suffixActionID)
+}
+
+func (program *Program) reviewFileMotionHelpKeys(scope string) string {
+	return program.helpKeyChordOrFallback("[", "[", keybindingActionID{scope: scope, action: "previous_tab"}, keybindingActionID{scope: scope, action: "previous_tab"}) + "/" + program.helpKeyChordOrFallback("]", "]", keybindingActionID{scope: scope, action: "next_tab"}, keybindingActionID{scope: scope, action: "next_tab"})
+}
+
+func (program *Program) reviewCommentMotionHelpKeys(scope string) string {
+	return program.helpKeyChordOrFallback("[", "c", keybindingActionID{scope: scope, action: "previous_tab"}, keybindingActionID{scope: scope, action: "comment_on_pull_request"}) + "/" + program.helpKeyChordOrFallback("]", "c", keybindingActionID{scope: scope, action: "next_tab"}, keybindingActionID{scope: scope, action: "comment_on_pull_request"})
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {

@@ -63,7 +63,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--json", 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.
 
-For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zz` recenter the selected row in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zz` recenter the cursor. `page_down` and `page_up` move half a page and recenter on every supported view.
+For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zz` recenter the selected row in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zz` recenter the cursor. `page_down` and `page_up` move half a page and recenter on every supported view. In review mode on views `0` and `2`, `previous_tab` and `next_tab` become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments.
 
 This example mirrors the built-in defaults.
 
@@ -99,6 +99,7 @@ open_detail = "enter"
 copy_pull_request_url = "y"
 
 [keymaps.pull_requests]
+# In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
 previous_tab = "["
 next_tab = "]"
 open_detail = "enter"
@@ -120,6 +121,7 @@ next_search_match = "n"
 previous_search_match = "N"
 enter_visual_mode = "v"
 enter_line_visual_mode = "V"
+# In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
 previous_tab = "["
 next_tab = "]"
 copy_pull_request_url = "y"

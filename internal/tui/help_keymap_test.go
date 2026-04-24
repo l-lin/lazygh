@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheConfiguredKeys(t *testing.T) {
@@ -72,6 +73,60 @@ func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecen
 	then_helpEntryUsesKey(t, actualBuffer, "Recenter selection", "zz")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
+}
+
+func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithComments(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
+}
+
+func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithComments(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
 }
 
 func then_helpEntryUsesKey(t *testing.T, buffer string, description string, expectedKey string) {
