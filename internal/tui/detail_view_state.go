@@ -43,8 +43,7 @@ func (state *detailViewState) reset() {
 }
 
 func (state *detailViewState) clearPendingPrefix() {
-	state.pendingGoToTop = false
-	state.pendingToggleInlineConversation = false
+	state.pendingKeySequence.clear()
 }
 
 func (state *detailViewState) enterVisualMode() {
@@ -130,27 +129,20 @@ func (state *detailViewState) moveToRowEnd(document detailDocument, viewportHeig
 }
 
 func (state *detailViewState) handleGoToTopPrefix(document detailDocument, viewportHeight int) {
-	if state.pendingGoToTop {
-		state.moveToTop(document, viewportHeight)
+	target := keySequenceTargetFor(viewDetailName, keymapScopeDetail, "move_cursor_to_top")
+	if !state.pendingKeySequence.armOrConsume(target) {
 		return
 	}
 
-	state.pendingToggleInlineConversation = false
-	state.pendingGoToTop = true
+	state.moveToTop(document, viewportHeight)
 }
 
 func (state *detailViewState) armInlineConversationTogglePrefix() {
-	state.pendingGoToTop = false
-	state.pendingToggleInlineConversation = true
+	state.pendingKeySequence.arm(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup"))
 }
 
 func (state *detailViewState) consumeInlineConversationTogglePrefix() bool {
-	if !state.pendingToggleInlineConversation {
-		return false
-	}
-
-	state.clearPendingPrefix()
-	return true
+	return state.pendingKeySequence.consume(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup"))
 }
 
 func (state *detailViewState) moveToTop(document detailDocument, viewportHeight int) {

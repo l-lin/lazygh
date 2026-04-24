@@ -77,7 +77,7 @@ type Program struct {
 	gui                               *gocui.Gui
 	keymapOverrides                   appconfig.KeymapOverrides
 	pullRequestSearches               []appconfig.PullRequestSearch
-	pendingGoToTopViewName            string
+	pendingSelectionKeySequence       keySequenceState
 }
 
 func NewProgram(githubLoaders ...GitHubLoader) *Program {

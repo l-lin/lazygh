@@ -112,7 +112,8 @@ func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.
 		return nil
 	}
 
-	return program.armOrHandleGoToTopPrefix(viewActionsPopupName, func() error {
+	target := keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "move_selection_to_top")
+	return program.armOrHandleSelectionKeySequence(target, func() error {
 		program.model.MoveActionsPopupSelectionToTop()
 		program.actionsPopupErrorMessage = ""
 		if gui == nil {

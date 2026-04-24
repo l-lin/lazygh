@@ -68,15 +68,10 @@ func TestDetailViewState_GivenRenderedDetailText_WhenUsingVimMotions_ThenItNavig
 	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 4})
 
 	subject.handleGoToTopPrefix(document, 3)
-	if !subject.pendingGoToTop {
-		t.Fatal("expected the first g to arm the gg motion")
-	}
+	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 4})
 
 	subject.handleGoToTopPrefix(document, 3)
 	then_detailCursorIs(t, subject, detailPosition{line: 0, column: 0})
-	if subject.pendingGoToTop {
-		t.Fatal("expected gg to clear the pending g prefix")
-	}
 
 	subject.moveToBottom(document, 3)
 	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 4})

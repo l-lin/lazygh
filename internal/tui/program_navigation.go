@@ -59,7 +59,8 @@ func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) er
 		return nil
 	}
 
-	return program.armOrHandleGoToTopPrefix(program.currentSideViewName(), func() error {
+	target := keySequenceTargetFor(program.currentSideViewName(), keymapScopeSide, "move_selection_to_top")
+	return program.armOrHandleSelectionKeySequence(target, func() error {
 		if program.reviewSession.active {
 			if program.model.Focus() != FocusPullRequestsView {
 				return nil

@@ -23,21 +23,19 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 }
 
 func (program *Program) clearPendingSelectionPrefix() {
-	program.pendingGoToTopViewName = ""
+	program.pendingSelectionKeySequence.clear()
 }
 
-func (program *Program) armOrHandleGoToTopPrefix(viewName string, moveToTop func() error) error {
-	if viewName == "" {
+func (program *Program) armOrHandleSelectionKeySequence(target keySequenceTarget, handle func() error) error {
+	if target.viewName == "" {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}
-	if program.pendingGoToTopViewName == viewName {
-		program.clearPendingSelectionPrefix()
-		return moveToTop()
+	if !program.pendingSelectionKeySequence.armOrConsume(target) {
+		return nil
 	}
 
-	program.pendingGoToTopViewName = viewName
-	return nil
+	return handle()
 }
 
 func (program *Program) currentSideViewName() string {
