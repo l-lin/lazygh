@@ -417,7 +417,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeDetail, "close", []string{viewDetailName}, program.closeDetail, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
-		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, namedBinding(gocui.KeyEnter, "<enter>"), namedBinding(gocui.KeyCtrlJ, "<c-j>")),
+		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, namedBinding(gocui.KeyEnter, "<enter>"), namedBinding(gocui.KeyCtrlJ, "<c-j>"), namedBinding(gocui.KeyCtrlS, "<c-s>")),
 		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>")),
 
 		keybindingActionFor(keymapScopeActionsPopup, "focus_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch, runeBinding('/')),
@@ -426,10 +426,10 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeActionsPopup, "close", []string{viewActionsPopupName}, program.closeActionsPopup, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
-		keybindingActionFor(keymapScopeActionsPopupSearch, "focus_list", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, namedBinding(gocui.KeyEnter, "<enter>"), namedBinding(gocui.KeyTab, "tab")),
+		keybindingActionFor(keymapScopeActionsPopupSearch, "focus_list", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, namedBinding(gocui.KeyEnter, "<enter>"), namedBinding(gocui.KeyTab, "tab"), namedBinding(gocui.KeyCtrlS, "<c-s>")),
 		keybindingActionFor(keymapScopeActionsPopupSearch, "close", []string{viewActionsPopupSearchName}, program.closeActionsPopup, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>")),
 
-		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, namedBinding(gocui.KeyAltEnter, "alt+enter")),
+		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, namedBinding(gocui.KeyAltEnter, "alt+enter"), namedBinding(gocui.KeyCtrlS, "<c-s>")),
 		keybindingActionFor(keymapScopeModalEditor, "close", []string{viewModalEditorName}, program.closeModalEditor, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>")),
 
 		keybindingActionFor(keymapScopeHelp, "close", []string{viewHelpName}, program.closeHelp, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),

@@ -20,6 +20,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPullRequestCommentBindings_Then
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'c', handler: subject.openPullRequestCommentComposer})
 	then_bindingDoesNotExist(t, actual, viewUserName, 'c')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyAltEnter, handler: subject.submitModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlS, handler: subject.submitModalEditor})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: subject.closeModalEditor})
 }
 
@@ -116,6 +117,32 @@ func TestPullRequestCommentComposer_GivenOpenComposer_WhenSubmittingWithAltEnter
 	}
 	if !reflect.DeepEqual(loader.commentBodies, []string{"Ship it"}) {
 		t.Fatalf("expected comment bodies %v, actual %v", []string{"Ship it"}, loader.commentBodies)
+	}
+}
+
+func TestPullRequestCommentComposer_GivenOpenComposer_WhenSubmittingWithControlS_ThenItPostsTheCurrentBuffer(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestCommentComposer(gui, nil)
+	then_noError(t, actualErr)
+	given_commentComposer(t, gui, subject)
+	subject.modalEditor.editor.SetText("Ship it faster")
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlS)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.commentCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected comment calls %v, actual %v", []string{"acme/widgets#42"}, loader.commentCalls)
+	}
+	if !reflect.DeepEqual(loader.commentBodies, []string{"Ship it faster"}) {
+		t.Fatalf("expected comment bodies %v, actual %v", []string{"Ship it faster"}, loader.commentBodies)
 	}
 }
 

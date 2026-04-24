@@ -17,6 +17,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSe
 	}
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyEnter, handler: subject.submitSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyCtrlJ, handler: subject.submitSearch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyCtrlS, handler: subject.submitSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyEsc, handler: subject.cancelSearch})
 }
 
@@ -247,6 +248,34 @@ func TestSearchPrompt_GivenOpenSearch_WhenSubmittingWithControlJ_ThenItClosesThe
 	}
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewSearchName, gocui.KeyCtrlJ)
+	actualErr = actualHandler(gui, searchView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewUserName)
+	then_viewDoesNotExist(t, gui, viewSearchName)
+	if subject.model.UserSearchQuery() != "1" {
+		t.Fatalf("expected applied query %q, actual %q", "1", subject.model.UserSearchQuery())
+	}
+}
+
+func TestSearchPrompt_GivenOpenSearch_WhenSubmittingWithControlS_ThenItClosesThePromptAndAppliesTheQuery(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewSearchName)
+	then_noError(t, actualErr)
+	actualHandled := subject.editSearch(searchView, 0, '1', gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected typing to be handled")
+	}
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewSearchName, gocui.KeyCtrlS)
 	actualErr = actualHandler(gui, searchView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewUserName)

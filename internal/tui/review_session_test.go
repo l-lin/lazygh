@@ -215,8 +215,15 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	headerLineIndex := given_viewLineIndexContaining(t, detailView, " Comment on line R3")
+	if strings.Contains(detailView.BufferLines()[headerLineIndex], "│") {
+		t.Fatalf("expected the conversation header to hide the diff gutter, actual %q", detailView.BufferLines()[headerLineIndex])
+	}
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the expanded thread body to stay visible, actual %q", detailView.Buffer())
+	}
+	commentBoxLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	if strings.Contains(detailView.BufferLines()[commentBoxLineIndex], " : ") || strings.Contains(detailView.BufferLines()[commentBoxLineIndex], "│ │") {
+		t.Fatalf("expected the comment box line to hide the diff gutter, actual %q", detailView.BufferLines()[commentBoxLineIndex])
 	}
 	if strings.Contains(detailView.Buffer(), "Conversation") {
 		t.Fatalf("expected the old conversation label to disappear, actual %q", detailView.Buffer())
@@ -268,6 +275,9 @@ func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsC
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	headerLineIndex := given_viewLineIndexContaining(t, detailView, " Comment on line L2 · resolved")
+	if strings.Contains(detailView.BufferLines()[headerLineIndex], "│") {
+		t.Fatalf("expected the collapsed conversation header to hide the diff gutter, actual %q", detailView.BufferLines()[headerLineIndex])
+	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to stay hidden while collapsed, actual %q", detailView.Buffer())
 	}

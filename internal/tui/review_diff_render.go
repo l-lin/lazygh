@@ -163,16 +163,15 @@ func (thread reviewDiffThread) anchorLineNumbers() []int {
 	return lineNumbers
 }
 
-func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int, collapsed bool) []reviewDiffRenderedRow {
+func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, _ int, collapsed bool) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*8)
-	gutter := renderReviewDiffInlineCommentGutter(numberWidth)
-	threadWidth := reviewDiffInlineCommentWidth(width, numberWidth)
+	threadWidth := effectiveMarkdownWidth(width)
 	threadCopy := thread
 
 	rows = append(rows,
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy},
+		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy},
 	)
 	if collapsed {
 		rows = append(rows,
@@ -186,33 +185,17 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	for _, comment := range thread.Comments {
 		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
 		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
-			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + boxLine, Thread: &threadCopy})
+			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy})
 		}
 	}
 	if len(thread.Comments) == 0 {
-		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + "No comments in thread.", Thread: &threadCopy})
+		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: "No comments in thread.", Thread: &threadCopy})
 	}
 	rows = append(rows,
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
 	)
 	return rows
-}
-
-func renderReviewDiffInlineCommentGutter(numberWidth int) string {
-	prefix := fmt.Sprintf("%s : %s │ ", strings.Repeat(" ", numberWidth), strings.Repeat(" ", numberWidth))
-	return styleText(prefix, foregroundColorEscape(theme.DiffLineNumberHex))
-}
-
-func reviewDiffInlineCommentWidth(width int, numberWidth int) int {
-	if width < minimumMarkdownRenderWidth {
-		width = defaultDetailWrapWidth
-	}
-	availableWidth := width - runeCountInt(fmt.Sprintf("%s : %s │ ", strings.Repeat(" ", numberWidth), strings.Repeat(" ", numberWidth)))
-	if availableWidth < minimumMarkdownRenderWidth {
-		return minimumMarkdownRenderWidth
-	}
-	return availableWidth
 }
 
 func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) string {
