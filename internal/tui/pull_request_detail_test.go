@@ -33,7 +33,12 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 		},
 	}
 
-	actual := renderPullRequestDetailHeader(summary, detail)
+	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
+	actual := make([]string, 0, len(actualDocument.lines))
+	for _, line := range actualDocument.lines {
+		actual = append(actual, string(line))
+	}
+	actualText := strings.Join(actual, "\n")
 
 	for _, expected := range []string{
 		detailRepositoryIcon + " acme/widgets#42",
@@ -43,8 +48,8 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 		detailChecksIcon + " 1 passing, 1 failing",
 		detailCommentsIcon + " 1 comment",
 	} {
-		if !strings.Contains(actual, expected) {
-			t.Fatalf("expected header to contain %q, actual %q", expected, actual)
+		if !strings.Contains(actualText, expected) {
+			t.Fatalf("expected header to contain %q, actual %q", expected, actualText)
 		}
 	}
 }
@@ -356,6 +361,34 @@ func TestDetailStatus_GivenDraftMetadata_WhenFormatting_ThenItPrefersDRAFT(t *te
 
 	if actual != "DRAFT" {
 		t.Fatalf("expected status %q, actual %q", "DRAFT", actual)
+	}
+}
+
+func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_ThenItUsesStateSpecificStatusBadgeBackgrounds(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		summary               githubcli.PullRequest
+		detail                githubcli.PullRequestDetail
+		expectedStatus        string
+		expectedBackgroundHex string
+	}{
+		{name: "open", summary: githubcli.PullRequest{State: "OPEN"}, detail: githubcli.PullRequestDetail{State: "OPEN"}, expectedStatus: "OPEN", expectedBackgroundHex: theme.PullRequestStatusOpenBackgroundHex},
+		{name: "draft", summary: githubcli.PullRequest{State: "OPEN"}, detail: githubcli.PullRequestDetail{State: "OPEN", IsDraft: true}, expectedStatus: "DRAFT", expectedBackgroundHex: theme.PullRequestStatusDraftBackgroundHex},
+		{name: "closed", summary: githubcli.PullRequest{State: "CLOSED"}, detail: githubcli.PullRequestDetail{State: "CLOSED"}, expectedStatus: "CLOSED", expectedBackgroundHex: theme.PullRequestStatusClosedBackgroundHex},
+		{name: "merged", summary: githubcli.PullRequest{State: "MERGED"}, detail: githubcli.PullRequestDetail{State: "MERGED"}, expectedStatus: "MERGED", expectedBackgroundHex: theme.PullRequestStatusMergedBackgroundHex},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			header := renderPullRequestDetailHeader(githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: testCase.summary.State, IsDraft: testCase.summary.IsDraft}, githubcli.PullRequestDetail{Number: 42, State: testCase.detail.State, IsDraft: testCase.detail.IsDraft})
+			actualDocument := newDetailDocument(header, 120)
+			lineIndex, line := given_detailDocumentLineContaining(t, actualDocument, testCase.expectedStatus)
+			statusIndex := given_runeIndexInString(t, line, testCase.expectedStatus)
+
+			if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][statusIndex]; !strings.Contains(actualStylePrefix, backgroundColorEscape(testCase.expectedBackgroundHex)) {
+				t.Fatalf("expected status badge prefix to contain background %q, actual %q", backgroundColorEscape(testCase.expectedBackgroundHex), actualStylePrefix)
+			}
+		})
 	}
 }
 

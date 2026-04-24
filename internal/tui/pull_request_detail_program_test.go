@@ -97,10 +97,11 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	expectedSeparator := strings.Repeat("─", detailView.InnerWidth())
+	expectedMetaLine := string(newDetailDocument(renderPullRequestMetaLine(firstSummary, firstDetail), detailView.InnerWidth()).lines[0])
 	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
 		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}
-	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n"+expectedSeparator+"\nRendered body 101") {
+	if !strings.Contains(detailView.Buffer(), expectedMetaLine+"\n"+expectedSeparator+"\nRendered body 101") {
 		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
@@ -116,10 +117,11 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
 	expectedSeparator = strings.Repeat("─", detailView.InnerWidth())
+	expectedMetaLine = string(newDetailDocument(renderPullRequestMetaLine(firstSummary, firstDetail), detailView.InnerWidth()).lines[0])
 	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
 		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}
-	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n"+expectedSeparator+"\n╭") {
+	if !strings.Contains(detailView.Buffer(), expectedMetaLine+"\n"+expectedSeparator+"\n╭") {
 		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), detailCommentsIcon+" @reviewer-one") || !strings.Contains(detailView.Buffer(), "2026-04-18 10:00 UTC") {

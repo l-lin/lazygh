@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func detailBody(detail githubcli.PullRequestDetail, summary githubcli.PullRequest) string {
@@ -20,6 +21,30 @@ func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequ
 		return "DRAFT"
 	}
 	return state
+}
+
+func renderPullRequestStatusBadge(status string) string {
+	foregroundHex, backgroundHex := pullRequestStatusBadgeColors(status)
+	if foregroundHex == "" || backgroundHex == "" {
+		return status
+	}
+
+	return styleText(status, foregroundColorEscape(foregroundHex), backgroundColorEscape(backgroundHex))
+}
+
+func pullRequestStatusBadgeColors(status string) (string, string) {
+	switch strings.ToUpper(strings.TrimSpace(status)) {
+	case "OPEN":
+		return theme.PullRequestStatusOpenForegroundHex, theme.PullRequestStatusOpenBackgroundHex
+	case "DRAFT":
+		return theme.PullRequestStatusDraftForegroundHex, theme.PullRequestStatusDraftBackgroundHex
+	case "CLOSED":
+		return theme.PullRequestStatusClosedForegroundHex, theme.PullRequestStatusClosedBackgroundHex
+	case "MERGED":
+		return theme.PullRequestStatusMergedForegroundHex, theme.PullRequestStatusMergedBackgroundHex
+	default:
+		return "", ""
+	}
 }
 
 func pullRequestTitleLine(title string, number int) string {
