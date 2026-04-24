@@ -10,6 +10,7 @@ import (
 const (
 	pullRequestTitleEditorTitle              = "Edit PR title"
 	pullRequestDescriptionEditorTitle        = "Edit PR description"
+	pullRequestDescriptionEditorHeight       = 15
 	pullRequestTitleEditSuccessMessage       = "PR title updated"
 	pullRequestDescriptionEditSuccessMessage = "PR description updated"
 )
@@ -65,9 +66,9 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 	}
 
 	wasVisible := program.modalEditorVisible()
-	err := program.openModalEditorWithKeyHandler(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
+	err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
 		return program.submitPullRequestDescriptionEdit(target, body)
-	}, handlePullRequestDescriptionEditorKey)
+	}, pullRequestDescriptionEditorHeight, handlePullRequestDescriptionEditorKey)
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}

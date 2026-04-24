@@ -192,6 +192,11 @@ func TestActionsPopup_GivenEditDescriptionActionSelected_WhenExecuting_ThenItOpe
 	if !strings.Contains(descriptionView.Buffer(), "Rich body") {
 		t.Fatalf("expected description editor buffer to contain %q, actual %q", "Rich body", descriptionView.Buffer())
 	}
+	_, y0, _, y1, actualErr := gui.ViewPosition(viewModalEditorName)
+	then_noError(t, actualErr)
+	if actual := y1 - y0 + 1; actual != pullRequestDescriptionEditorHeight {
+		t.Fatalf("expected description editor height %d, actual %d", pullRequestDescriptionEditorHeight, actual)
+	}
 }
 
 func TestEditPullRequestDescription_GivenControlG_WhenOpeningTheExternalEditor_ThenItReplacesTheDraftWithTheSavedText(t *testing.T) {
