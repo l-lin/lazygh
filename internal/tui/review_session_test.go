@@ -123,7 +123,7 @@ func TestReviewMode_GivenFilesWithInlineComments_WhenRenderingViewTwo_ThenItShow
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), "render.go (2)") || !strings.Contains(filesView.Buffer(), "model.go (1)") {
+	if !strings.Contains(filesView.Buffer(), "render.go  2") || !strings.Contains(filesView.Buffer(), "model.go  1") {
 		t.Fatalf("expected files view to contain per-file comment counts, actual %q", filesView.Buffer())
 	}
 	if strings.Contains(filesView.Buffer(), "internal/tui/ (") {

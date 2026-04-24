@@ -104,12 +104,14 @@ func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile
 	return row.Label + reviewDiffTreeRowCommentSuffix(row, files)
 }
 
+const reviewDiffTreeCommentCountIcon = ""
+
 func reviewDiffTreeRowCommentSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
 	commentCount := reviewDiffTreeRowCommentCount(row, files)
 	if commentCount <= 0 {
 		return ""
 	}
-	return fmt.Sprintf(" (%d)", commentCount)
+	return fmt.Sprintf(" %s %d", reviewDiffTreeCommentCountIcon, commentCount)
 }
 
 func reviewDiffTreeRowCommentCount(row reviewDiffTreeRow, files []reviewDiffFile) int {
