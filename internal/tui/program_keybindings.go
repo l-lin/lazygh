@@ -414,6 +414,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeDetail, "copy_pull_request_url", []string{viewDetailName}, program.copyPullRequestURL, runeBinding('y')),
 		keybindingActionFor(keymapScopeDetail, "comment_on_pull_request", []string{viewDetailName}, program.openPullRequestCommentComposer, runeBinding('c')),
 		keybindingActionFor(keymapScopeDetail, "open_actions_popup", []string{viewDetailName}, program.openActionsPopup, runeBinding('a')),
+		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, runeBinding(' ')),
 		keybindingActionFor(keymapScopeDetail, "close", []string{viewDetailName}, program.closeDetail, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
 		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, namedBinding(gocui.KeyEnter, "<enter>"), namedBinding(gocui.KeyCtrlJ, "<c-j>")),

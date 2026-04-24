@@ -27,7 +27,11 @@ type reviewDiffRenderedRow struct {
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
-	rows := buildReviewDiffRenderedRows(file, renderer, width)
+	return renderReviewDiffFileWithCollapsedThreads(file, renderer, width, nil)
+}
+
+func renderReviewDiffFileWithCollapsedThreads(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) string {
+	rows := buildReviewDiffRenderedRowsWithCollapsedThreads(file, renderer, width, collapsedThreadIDs)
 	lines := make([]string, 0, len(rows))
 	for _, row := range rows {
 		lines = append(lines, row.Text)
@@ -36,8 +40,12 @@ func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width 
 }
 
 func buildReviewDiffRenderedRows(file reviewDiffFile, renderer MarkdownRenderer, width int) []reviewDiffRenderedRow {
+	return buildReviewDiffRenderedRowsWithCollapsedThreads(file, renderer, width, nil)
+}
+
+func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) []reviewDiffRenderedRow {
 	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderReviewDiffFileHeader(file)}}
-	contentRows := buildReviewDiffFileContentRows(file, renderer, width)
+	contentRows := buildReviewDiffFileContentRows(file, renderer, width, collapsedThreadIDs)
 	if len(contentRows) == 0 {
 		return rows
 	}
@@ -46,7 +54,7 @@ func buildReviewDiffRenderedRows(file reviewDiffFile, renderer MarkdownRenderer,
 	return rows
 }
 
-func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRenderer, width int) []reviewDiffRenderedRow {
+func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0)
 	placeholder := reviewDiffPlaceholderText(file)
 	if placeholder != "" {
@@ -74,7 +82,7 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 					continue
 				}
 				matchedThreadIndexes[threadIndex] = true
-				rows = append(rows, renderReviewDiffThreadRows(thread, renderer, width, numberWidth)...)
+				rows = append(rows, renderReviewDiffThreadRows(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs))...)
 			}
 		}
 	}
@@ -88,7 +96,7 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 	}
 	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindNote, Text: styleText("Inline discussion without visible diff context.", foregroundColorEscape(theme.DiffHunkHeaderHex))})
 	for _, thread := range unmatchedThreads {
-		rows = append(rows, renderReviewDiffThreadRows(thread, renderer, width, numberWidth)...)
+		rows = append(rows, renderReviewDiffThreadRows(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs))...)
 	}
 	return rows
 }
@@ -155,11 +163,14 @@ func (thread reviewDiffThread) anchorLineNumbers() []int {
 	return lineNumbers
 }
 
-func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int) []reviewDiffRenderedRow {
+func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int, collapsed bool) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*6)
 	gutter := renderReviewDiffInlineCommentGutter(numberWidth)
 	threadCopy := thread
-	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadStatus(thread), Thread: &threadCopy})
+	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy})
+	if collapsed {
+		return rows
+	}
 
 	threadWidth := reviewDiffInlineCommentWidth(width, numberWidth)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
@@ -191,15 +202,39 @@ func reviewDiffInlineCommentWidth(width int, numberWidth int) int {
 	return availableWidth
 }
 
-func renderReviewDiffThreadStatus(thread reviewDiffThread) string {
-	status := "Conversation"
-	switch {
-	case thread.IsOutdated:
-		status = "Conversation · outdated"
-	case thread.IsResolved:
-		status = "Conversation · resolved"
+func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) string {
+	chevron := ""
+	if collapsed {
+		chevron = ""
 	}
-	return styleText("↪ "+status, foregroundColorEscape(theme.DiffHunkHeaderHex))
+
+	status := fmt.Sprintf("%s Comment on line %s%d", chevron, reviewDiffThreadSideLabel(thread), reviewDiffThreadDisplayLine(thread))
+	if thread.IsResolved {
+		status += " · resolved"
+	}
+	return styleText(status, foregroundColorEscape(theme.DiffHunkHeaderHex))
+}
+
+func reviewDiffThreadSideLabel(thread reviewDiffThread) string {
+	switch thread.anchorSide() {
+	case reviewDiffLineSideLeft:
+		return "L"
+	case reviewDiffLineSideRight:
+		return "R"
+	default:
+		return "?"
+	}
+}
+
+func reviewDiffThreadDisplayLine(thread reviewDiffThread) int {
+	switch thread.anchorSide() {
+	case reviewDiffLineSideLeft:
+		return firstPositive(thread.OriginalStartLine, thread.OriginalLine, thread.StartLine, thread.Line)
+	case reviewDiffLineSideRight:
+		return firstPositive(thread.StartLine, thread.Line, thread.OriginalStartLine, thread.OriginalLine)
+	default:
+		return firstPositive(thread.StartLine, thread.Line, thread.OriginalStartLine, thread.OriginalLine)
+	}
 }
 
 func renderReviewDiffFileHeader(file reviewDiffFile) string {

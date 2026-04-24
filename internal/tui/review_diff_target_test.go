@@ -107,7 +107,7 @@ func TestReviewDiffThreadTargetForSelection_GivenOnlyInlineCommentDecorationRows
 	}
 	renderedRows := buildReviewDiffRenderedRows(file, nil, 96)
 	document := newDetailDocument(renderReviewDiffFile(file, nil, 96), 96)
-	commentLineIndex, _ := given_detailDocumentLineContaining(t, document, "Conversation")
+	commentLineIndex, _ := given_detailDocumentLineContaining(t, document, "Comment on line R11")
 	state := newDetailViewState()
 	state.cursor = detailPosition{line: commentLineIndex, column: 0}
 	state.sync(document, 20)

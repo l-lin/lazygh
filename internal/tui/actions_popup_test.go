@@ -714,7 +714,7 @@ func TestActionsPopup_GivenReviewModeCursorOnAResolvedInlineThread_WhenOpening_T
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Conversation · resolved")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Comment on line R3 · resolved")
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)

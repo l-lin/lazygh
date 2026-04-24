@@ -187,6 +187,130 @@ func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUse
 	}
 }
 
+func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsTheThreadChevronAndTheRightSideLineNumber(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
+		t.Fatalf("expected the expanded thread label to mention the right-side line, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the expanded thread body to stay visible, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Conversation") {
+		t.Fatalf("expected the old conversation label to disappear, actual %q", detailView.Buffer())
+	}
+}
+
+func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsCollapsedAndShowsTheLeftSideLineNumber(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:           "thread-1",
+		IsResolved:   true,
+		Path:         "internal/tui/render.go",
+		OriginalLine: 2,
+		DiffSide:     "LEFT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line L2 · resolved") {
+		t.Fatalf("expected the resolved thread label to mention the left-side line, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the resolved thread body to stay hidden while collapsed, actual %q", detailView.Buffer())
+	}
+}
+
+func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingSpace_ThenItTogglesTheConversationVisibility(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Comment on line R3")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, ' ')
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
+		t.Fatalf("expected the thread to collapse after pressing space, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the collapsed thread body to be hidden, actual %q", detailView.Buffer())
+	}
+
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
+		t.Fatalf("expected the thread to expand after pressing space again, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the expanded thread body to return, actual %q", detailView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullRequestContextAndColoredDiffCounts(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",

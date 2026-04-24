@@ -62,7 +62,7 @@ func (program *Program) selectedInlineReviewCommentTarget(gui *gocui.Gui, view *
 		return reviewInlineCommentTarget{}, errReviewThreadTargetUnavailable
 	}
 
-	renderedRows := buildReviewDiffRenderedRows(selectedFile, program.markdownRenderer, detailDocument.width)
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	threadTarget, err := reviewDiffThreadTargetForSelection(renderedRows, detailDocument, program.detailViewState)
 	if err != nil {
 		return reviewInlineCommentTarget{}, err

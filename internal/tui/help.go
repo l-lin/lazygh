@@ -81,6 +81,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				program.reviewInlineCommentHelpEntry(),
+				{Key: program.helpKeysOrFallback("space", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation"}), Description: "Expand/collapse conversation"},
 				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Review actions"},
 				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Page down"},

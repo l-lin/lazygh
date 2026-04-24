@@ -140,8 +140,8 @@ func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullReques
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	renderedRows := buildReviewDiffRenderedRows(selectedFile, program.markdownRenderer, program.detailWrapWidth)
-	document := newDetailDocument(renderReviewDiffFile(selectedFile, program.markdownRenderer, program.detailWrapWidth), program.detailWrapWidth)
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
+	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
 	thread, ok := reviewDiffThreadAtCursor(renderedRows, document, program.detailViewState)
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false

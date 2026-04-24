@@ -26,6 +26,7 @@ type reviewSessionState struct {
 	pendingReviewID              string
 	selectedFileTreeRow          int
 	fileTreeSearchQuery          string
+	collapsedThreadIDs           map[string]bool
 }
 
 func (program *Program) startReviewAction() actionsPopupAction {
@@ -60,6 +61,7 @@ func (program *Program) startReviewSession(summary githubcli.PullRequest, pendin
 		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
 		summary:                      summary,
 		pendingReviewID:              strings.TrimSpace(pendingReviewID),
+		collapsedThreadIDs:           map[string]bool{},
 	}
 	program.model.paneLayoutSize = program.reviewModePaneLayoutSize()
 	program.model.FocusPullRequestsView()
