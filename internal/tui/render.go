@@ -217,6 +217,12 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	}
 
 	cursorRow, cursorColumn := program.detailViewState.screenPosition(detailDocument)
-	view.SetOrigin(0, program.detailViewState.originRow)
+	originX := 0
+	innerWidth := view.InnerWidth()
+	if innerWidth > 0 && cursorColumn >= innerWidth {
+		originX = cursorColumn - innerWidth + 1
+		cursorColumn = innerWidth - 1
+	}
+	view.SetOrigin(originX, program.detailViewState.originRow)
 	view.SetCursor(cursorColumn, cursorRow-program.detailViewState.originRow)
 }

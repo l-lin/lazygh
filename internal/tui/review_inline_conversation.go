@@ -11,7 +11,7 @@ func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width
 }
 
 func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int) detailDocument {
-	return newDetailDocument(renderReviewDiffFileWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs), width)
+	return newDetailDocumentWithWrap(renderReviewDiffFileWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs), width, false)
 }
 
 func (program *Program) armInlineConversationTogglePrefix(gui *gocui.Gui, view *gocui.View) error {

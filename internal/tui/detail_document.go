@@ -3,6 +3,10 @@ package tui
 import "strings"
 
 func newDetailDocument(text string, width int) detailDocument {
+	return newDetailDocumentWithWrap(text, width, true)
+}
+
+func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument {
 	if width < 1 {
 		width = 1
 	}
@@ -18,6 +22,7 @@ func newDetailDocument(text string, width int) detailDocument {
 		lines:             make([][]rune, 0, len(styledLines)),
 		lineStylePrefixes: make([][]string, 0, len(styledLines)),
 		width:             width,
+		wrap:              wrap,
 		lineStartOffsets:  make([]int, 0, len(styledLines)),
 		lineStartRows:     make([]int, 0, len(styledLines)),
 	}
@@ -34,6 +39,9 @@ func newDetailDocument(text string, width int) detailDocument {
 
 		if len(lineRunes) == 0 {
 			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: 0, empty: true})
+			rowIndex++
+		} else if !wrap {
+			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: len(lineRunes) - 1, text: string(lineRunes)})
 			rowIndex++
 		} else {
 			for startColumn := 0; startColumn < len(lineRunes); startColumn += width {
@@ -122,7 +130,7 @@ func (document detailDocument) rowIndexForPosition(position detailPosition) int 
 	}
 
 	lineLength := document.lineLength(position.line)
-	if lineLength == 0 {
+	if lineLength == 0 || !document.wrap {
 		return document.lineStartRows[position.line]
 	}
 
@@ -133,6 +141,9 @@ func (document detailDocument) screenColumnForPosition(position detailPosition) 
 	position = document.clampPosition(position)
 	if document.lineLength(position.line) == 0 {
 		return 0
+	}
+	if !document.wrap {
+		return position.column
 	}
 
 	return position.column % document.width

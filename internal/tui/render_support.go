@@ -70,7 +70,11 @@ func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
 		width = 1
 	}
 
-	return newDetailDocument(program.detailViewContent(), width)
+	return newDetailDocumentWithWrap(program.detailViewContent(), width, program.detailViewWraps())
+}
+
+func (program *Program) detailViewWraps() bool {
+	return !(program.reviewSession.active && !program.reviewSessionShowsDescription())
 }
 
 func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {

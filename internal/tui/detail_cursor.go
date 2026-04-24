@@ -40,6 +40,7 @@ type detailDocument struct {
 	lines             [][]rune
 	lineStylePrefixes [][]string
 	width             int
+	wrap              bool
 	lineStartOffsets  []int
 	lineStartRows     []int
 	rows              []detailWrappedRow
