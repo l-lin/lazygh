@@ -23,6 +23,7 @@ type reviewDiffRenderedRow struct {
 	Kind   reviewDiffRenderedRowKind
 	Text   string
 	Anchor *reviewDiffRenderedRowAnchor
+	Thread *reviewDiffThread
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
@@ -157,18 +158,19 @@ func (thread reviewDiffThread) anchorLineNumbers() []int {
 func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*6)
 	gutter := renderReviewDiffInlineCommentGutter(numberWidth)
-	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadStatus(thread)})
+	threadCopy := thread
+	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadStatus(thread), Thread: &threadCopy})
 
 	threadWidth := reviewDiffInlineCommentWidth(width, numberWidth)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	for _, comment := range thread.Comments {
 		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
 		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
-			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + boxLine})
+			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + boxLine, Thread: &threadCopy})
 		}
 	}
 	if len(thread.Comments) == 0 {
-		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + "No comments in thread."})
+		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + "No comments in thread.", Thread: &threadCopy})
 	}
 	return rows
 }

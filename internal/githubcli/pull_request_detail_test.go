@@ -12,6 +12,7 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 		responses: []fakeCommandResponse{
 			{stdout: []byte(`{"title":"Add a real detail pane","number":42,"url":"https://github.com/acme/widgets/pull/42","body":"## Summary\n\n- render markdown\n- show comments","author":{"login":"octocat","name":"Octo Cat","is_bot":false},"state":"OPEN","isDraft":false,"createdAt":"2026-04-18T10:00:00Z","updatedAt":"2026-04-18T12:30:00Z","labels":[{"name":"bug"},{"name":"backend"}],"baseRefName":"main","headRefName":"feature/detail","mergeStateStatus":"CLEAN","mergeable":"MERGEABLE","comments":[{"author":{"login":"reviewer"},"body":"Looks good to me","createdAt":"2026-04-18T13:00:00Z","url":"https://github.com/acme/widgets/pull/42#issuecomment-1"}],"additions":12,"deletions":3,"changedFiles":5,"statusCheckRollup":[{"__typename":"CheckRun","name":"lint","status":"COMPLETED","conclusion":"SUCCESS","workflowName":"CI"}]}`)},
 			{stdout: []byte(`[[{"user":{"login":"reviewer-inline"},"body":"Please keep the blank line.","created_at":"2026-04-18T14:00:00Z","html_url":"https://github.com/acme/widgets/pull/42#discussion_r1","path":"internal/tui/render.go","line":252,"original_line":252,"side":"RIGHT","start_side":"RIGHT","subject_type":"LINE","diff_hunk":"@@ -250,3 +250,4 @@\n header := renderPullRequestDetailHeader(*row.Summary, result.detail)\n content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)\n-if program.activeDetailTab == CommentsDetailTab {\n+if program.activeDetailTab == CommentsDetailTab {\n  content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)"}]]`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":252,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"reviewer-inline"},"body":"Please keep the blank line.","createdAt":"2026-04-18T14:00:00Z","url":"https://github.com/acme/widgets/pull/42#discussion_r1","diffHunk":"@@ -250,3 +250,4 @@\n header := renderPullRequestDetailHeader(*row.Summary, result.detail)\n content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)\n-if program.activeDetailTab == CommentsDetailTab {\n+if program.activeDetailTab == CommentsDetailTab {\n  content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)"}]}}]}}}}}`)},
 		},
 	}
 	subject := NewClientWithRunner(runner)
@@ -22,6 +23,7 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 	then_commandsAre(t, runner, []fakeCommandCall{
 		{name: "gh", args: []string{"pr", "view", "42", "-R", "acme/widgets", "--json", "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,baseRefName,headRefName,mergeStateStatus,mergeable,comments,additions,deletions,changedFiles,statusCheckRollup"}},
 		{name: "gh", args: []string{"api", "repos/acme/widgets/pulls/42/comments?per_page=100", "--paginate", "--slurp"}},
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestReviewThreadsQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "number=42"}},
 	})
 
 	expected := PullRequestDetail{
@@ -58,6 +60,20 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 			SubjectType:  "LINE",
 			DiffHunk:     "@@ -250,3 +250,4 @@\n header := renderPullRequestDetailHeader(*row.Summary, result.detail)\n content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)\n-if program.activeDetailTab == CommentsDetailTab {\n+if program.activeDetailTab == CommentsDetailTab {\n  content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)",
 		}},
+		InlineCommentThreads: []PullRequestReviewThread{{
+			ID:         "thread-1",
+			IsResolved: false,
+			Path:       "internal/tui/render.go",
+			Line:       252,
+			DiffSide:   "RIGHT",
+			Comments: []PullRequestComment{{
+				Author:    &PullRequestCommentAuthor{Login: "reviewer-inline"},
+				Body:      "Please keep the blank line.",
+				CreatedAt: "2026-04-18T14:00:00Z",
+				URL:       "https://github.com/acme/widgets/pull/42#discussion_r1",
+				DiffHunk:  "@@ -250,3 +250,4 @@\n header := renderPullRequestDetailHeader(*row.Summary, result.detail)\n content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)\n-if program.activeDetailTab == CommentsDetailTab {\n+if program.activeDetailTab == CommentsDetailTab {\n  content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)",
+			}},
+		}},
 		Additions:    12,
 		Deletions:    3,
 		ChangedFiles: 5,
@@ -79,6 +95,7 @@ func TestGetPullRequestDetail_GivenMissingOptionalFields_WhenFetching_ThenItNorm
 		responses: []fakeCommandResponse{
 			{stdout: []byte(`{"title":"  Ship it  ","number":7,"url":"  https://github.com/acme/widgets/pull/7  ","body":"  body  ","author":null,"state":"  OPEN  ","createdAt":" 2026-04-18T10:00:00Z ","updatedAt":" 2026-04-18T12:30:00Z ","labels":[{"name":"  needs-review  "}],"baseRefName":"  main  ","headRefName":"  branch  ","mergeStateStatus":"  BLOCKED  ","mergeable":"  UNKNOWN  ","comments":[{"author":null,"body":"  first  ","createdAt":" 2026-04-18T13:00:00Z ","url":"  https://example.com/comment  "}],"additions":1,"deletions":2,"changedFiles":3,"statusCheckRollup":[{"__typename":"  CheckRun  ","name":"  lint  ","status":"  COMPLETED  ","conclusion":"  FAILURE  ","workflowName":"  CI  "}]}`)},
 			{stdout: []byte(`[[{"user":{"login":"  reviewer-inline  "},"body":"  inline body  ","created_at":" 2026-04-18T14:00:00Z ","html_url":"  https://example.com/discussion  ","path":"  internal/tui/pull_request_detail.go  ","line":19,"original_line":21,"side":"  LEFT  ","start_side":"  LEFT  ","subject_type":"  LINE  ","diff_hunk":"  @@ -19,1 +21,1 @@\n-old\n+new  "}]]`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"  thread-1  ","isResolved":true,"isOutdated":false,"path":"  internal/tui/pull_request_detail.go  ","originalLine":21,"diffSide":"  LEFT  ","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"  reviewer-inline  "},"body":"  inline body  ","createdAt":" 2026-04-18T14:00:00Z ","url":"  https://example.com/discussion  ","diffHunk":"  @@ -19,1 +21,1 @@\n-old\n+new  "}]}}]}}}}}`)},
 		},
 	}
 	subject := NewClientWithRunner(runner)
@@ -104,6 +121,13 @@ func TestGetPullRequestDetail_GivenMissingOptionalFields_WhenFetching_ThenItNorm
 	inlineComment := actual.InlineComments[0]
 	if inlineComment.Author == nil || inlineComment.Author.Login != "reviewer-inline" || inlineComment.Body != "inline body" || inlineComment.URL != "https://example.com/discussion" || inlineComment.Path != "internal/tui/pull_request_detail.go" || inlineComment.DiffHunk != "@@ -19,1 +21,1 @@\n-old\n+new" || inlineComment.Side != "LEFT" || inlineComment.StartSide != "LEFT" || inlineComment.SubjectType != "LINE" {
 		t.Fatalf("expected normalized inline comment, actual %+v", inlineComment)
+	}
+	if len(actual.InlineCommentThreads) != 1 {
+		t.Fatalf("expected 1 inline thread, actual %d", len(actual.InlineCommentThreads))
+	}
+	inlineThread := actual.InlineCommentThreads[0]
+	if inlineThread.ID != "thread-1" || !inlineThread.IsResolved || inlineThread.Path != "internal/tui/pull_request_detail.go" || inlineThread.OriginalLine != 21 || inlineThread.DiffSide != "LEFT" || len(inlineThread.Comments) != 1 || inlineThread.Comments[0].DiffHunk != "@@ -19,1 +21,1 @@\n-old\n+new" {
+		t.Fatalf("expected normalized inline thread, actual %+v", inlineThread)
 	}
 	if len(actual.StatusCheckRollup) != 1 {
 		t.Fatalf("expected 1 status check, actual %d", len(actual.StatusCheckRollup))

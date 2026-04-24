@@ -21,22 +21,17 @@ func renderPullRequestDescription(summary githubcli.PullRequest, detail githubcl
 	return renderMarkdownWithFallback(detailBody(detail, summary), renderer, width, "No description available.")
 }
 
-func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
-	if len(comments) == 0 && len(inlineComments) == 0 {
+func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlineThreads []githubcli.PullRequestReviewThread, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
+	sections := buildPullRequestCommentsRenderedSections(comments, inlineThreads, inlineComments, renderer, width)
+	if len(sections) == 0 {
 		return "No comments yet."
 	}
 
-	sections := make([]string, 0, len(comments)+len(inlineComments))
-	commentBodyWidth := commentBoxInnerWidth(width)
-	for _, comment := range comments {
-		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
-		sections = append(sections, renderPullRequestCommentSection(comment, body, width))
+	texts := make([]string, 0, len(sections))
+	for _, section := range sections {
+		texts = append(texts, section.text)
 	}
-	for _, inlineComment := range inlineComments {
-		body := renderMarkdownWithFallback(inlineComment.Body, renderer, commentBodyWidth, "No comment body.")
-		sections = append(sections, renderPullRequestInlineCommentSection(inlineComment, body, width))
-	}
-	return strings.Join(sections, "\n\n")
+	return strings.Join(texts, "\n\n")
 }
 
 func renderPullRequestDetailLoading(summary githubcli.PullRequest, spinner string) string {
@@ -79,7 +74,7 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 		parts = append(parts, fmt.Sprintf("%s %s", detailChecksIcon, checkSummary))
 	}
 
-	commentCount := len(detail.Comments) + len(detail.InlineComments)
+	commentCount := pullRequestDetailCommentCount(detail)
 	parts = append(parts, fmt.Sprintf("%s %s", detailCommentsIcon, formatCommentCount(commentCount)))
 
 	return strings.Join(parts, "  ·  ")
@@ -116,6 +111,43 @@ func renderPullRequestDetailSectionSeparator(width int) string {
 	}
 
 	return strings.Repeat("-", width)
+}
+
+type pullRequestCommentsRenderedSection struct {
+	text         string
+	inlineThread *githubcli.PullRequestReviewThread
+}
+
+func buildPullRequestCommentsRenderedSections(comments []githubcli.PullRequestComment, inlineThreads []githubcli.PullRequestReviewThread, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) []pullRequestCommentsRenderedSection {
+	sections := make([]pullRequestCommentsRenderedSection, 0, len(comments)+maxInt(len(inlineThreads), len(inlineComments)))
+	commentBodyWidth := commentBoxInnerWidth(width)
+	for _, comment := range comments {
+		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
+		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestCommentSection(comment, body, width)})
+	}
+	if len(inlineThreads) > 0 {
+		for _, inlineThread := range inlineThreads {
+			thread := inlineThread
+			sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentThreadSection(thread, renderer, width), inlineThread: &thread})
+		}
+		return sections
+	}
+	for _, inlineComment := range inlineComments {
+		body := renderMarkdownWithFallback(inlineComment.Body, renderer, commentBodyWidth, "No comment body.")
+		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentSection(inlineComment, body, width)})
+	}
+	return sections
+}
+
+func pullRequestDetailCommentCount(detail githubcli.PullRequestDetail) int {
+	count := len(detail.Comments)
+	if len(detail.InlineCommentThreads) > 0 {
+		for _, inlineThread := range detail.InlineCommentThreads {
+			count += len(inlineThread.Comments)
+		}
+		return count
+	}
+	return count + len(detail.InlineComments)
 }
 
 func renderMarkdownWithFallback(markdown string, renderer MarkdownRenderer, width int, emptyMessage string) string {

@@ -22,7 +22,7 @@ func (program *Program) detailViewContent() string {
 				header := renderPullRequestDetailHeader(*row.Summary, result.detail)
 				content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
 				if program.activeDetailTab == CommentsDetailTab {
-					content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)
+					content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineCommentThreads, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)
 				}
 				return renderPullRequestDetailContentWithSeparator(header, content, program.detailWrapWidth)
 			}

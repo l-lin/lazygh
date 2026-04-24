@@ -11,28 +11,34 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	if !program.isPullRequestContext() {
 		return nil
 	}
+
+	actions := []actionsPopupAction{}
 	if program.reviewSession.active {
-		return []actionsPopupAction{
+		actions = append(actions,
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
 			program.submitPendingReviewApprovalAction(),
 			program.submitPendingReviewCommentAction(),
 			program.submitPendingReviewRequestChangesAction(),
-		}
+		)
+	} else {
+		actions = append(actions,
+			program.startReviewAction(),
+			program.yankPullRequestURLActionsPopupAction(),
+			program.openPullRequestInBrowserActionsPopupAction(),
+			program.reviewApproveAction(),
+			program.reviewCommentAction(),
+			program.reviewRequestChangesAction(),
+			program.commendOnPrAction(),
+			program.editPullRequestTitleAction(),
+			program.editPullRequestDescriptionAction(),
+			program.reviewPullRequestURLActionsPopupAction(),
+		)
 	}
-
-	return []actionsPopupAction{
-		program.startReviewAction(),
-		program.yankPullRequestURLActionsPopupAction(),
-		program.openPullRequestInBrowserActionsPopupAction(),
-		program.reviewApproveAction(),
-		program.reviewCommentAction(),
-		program.reviewRequestChangesAction(),
-		program.commendOnPrAction(),
-		program.editPullRequestTitleAction(),
-		program.editPullRequestDescriptionAction(),
-		program.reviewPullRequestURLActionsPopupAction(),
+	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
+		actions = append(actions, inlineCommentAction)
 	}
+	return actions
 }
 
 func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) {

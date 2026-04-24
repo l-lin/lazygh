@@ -15,26 +15,27 @@ var (
 )
 
 type PullRequestDetail struct {
-	Title             string                     `json:"title"`
-	Number            int                        `json:"number"`
-	URL               string                     `json:"url"`
-	Body              string                     `json:"body"`
-	Author            *PullRequestAuthor         `json:"author"`
-	State             string                     `json:"state"`
-	IsDraft           bool                       `json:"isDraft"`
-	CreatedAt         string                     `json:"createdAt"`
-	UpdatedAt         string                     `json:"updatedAt"`
-	Labels            []PullRequestLabel         `json:"labels"`
-	BaseRefName       string                     `json:"baseRefName"`
-	HeadRefName       string                     `json:"headRefName"`
-	MergeStateStatus  string                     `json:"mergeStateStatus"`
-	Mergeable         string                     `json:"mergeable"`
-	Comments          []PullRequestComment       `json:"comments"`
-	InlineComments    []PullRequestInlineComment `json:"-"`
-	Additions         int                        `json:"additions"`
-	Deletions         int                        `json:"deletions"`
-	ChangedFiles      int                        `json:"changedFiles"`
-	StatusCheckRollup []PullRequestStatusCheck   `json:"statusCheckRollup"`
+	Title                string                     `json:"title"`
+	Number               int                        `json:"number"`
+	URL                  string                     `json:"url"`
+	Body                 string                     `json:"body"`
+	Author               *PullRequestAuthor         `json:"author"`
+	State                string                     `json:"state"`
+	IsDraft              bool                       `json:"isDraft"`
+	CreatedAt            string                     `json:"createdAt"`
+	UpdatedAt            string                     `json:"updatedAt"`
+	Labels               []PullRequestLabel         `json:"labels"`
+	BaseRefName          string                     `json:"baseRefName"`
+	HeadRefName          string                     `json:"headRefName"`
+	MergeStateStatus     string                     `json:"mergeStateStatus"`
+	Mergeable            string                     `json:"mergeable"`
+	Comments             []PullRequestComment       `json:"comments"`
+	InlineComments       []PullRequestInlineComment `json:"-"`
+	InlineCommentThreads []PullRequestReviewThread  `json:"-"`
+	Additions            int                        `json:"additions"`
+	Deletions            int                        `json:"deletions"`
+	ChangedFiles         int                        `json:"changedFiles"`
+	StatusCheckRollup    []PullRequestStatusCheck   `json:"statusCheckRollup"`
 }
 
 type PullRequestAuthor struct {
@@ -52,6 +53,7 @@ type PullRequestComment struct {
 	Body      string                    `json:"body"`
 	CreatedAt string                    `json:"createdAt"`
 	URL       string                    `json:"url"`
+	DiffHunk  string                    `json:"diffHunk"`
 }
 
 type PullRequestInlineComment struct {
@@ -100,6 +102,14 @@ func (client *Client) GetPullRequestDetail(repository string, number int) (PullR
 	}
 	if len(inlineComments) > 0 {
 		detail.InlineComments = inlineComments
+	}
+
+	inlineThreads, err := client.listPullRequestReviewThreads(trimmedRepository, number)
+	if err != nil {
+		return PullRequestDetail{}, err
+	}
+	if len(inlineThreads) > 0 {
+		detail.InlineCommentThreads = inlineThreads
 	}
 
 	return detail.normalized(), nil
@@ -163,6 +173,13 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		}
 		detail.InlineComments = normalizedInlineComments
 	}
+	if len(detail.InlineCommentThreads) > 0 {
+		normalizedInlineThreads := make([]PullRequestReviewThread, 0, len(detail.InlineCommentThreads))
+		for _, thread := range detail.InlineCommentThreads {
+			normalizedInlineThreads = append(normalizedInlineThreads, thread.normalized())
+		}
+		detail.InlineCommentThreads = normalizedInlineThreads
+	}
 	if len(detail.StatusCheckRollup) > 0 {
 		normalizedChecks := make([]PullRequestStatusCheck, 0, len(detail.StatusCheckRollup))
 		for _, check := range detail.StatusCheckRollup {
@@ -188,6 +205,7 @@ func (comment PullRequestComment) normalized() PullRequestComment {
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)
+	comment.DiffHunk = strings.TrimSpace(comment.DiffHunk)
 	if comment.Author != nil {
 		normalizedAuthor := comment.Author.normalized()
 		comment.Author = &normalizedAuthor

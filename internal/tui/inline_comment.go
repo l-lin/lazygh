@@ -19,6 +19,71 @@ func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineCo
 	return strings.Join(lines, "\n")
 }
 
+func renderPullRequestInlineCommentThreadSection(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+	comment := pullRequestInlineCommentFromThread(thread)
+	lines := []string{renderPullRequestInlineCommentLocationLine(comment), renderPullRequestInlineCommentThreadStatusLine(thread)}
+
+	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
+	if diffPreview != "" {
+		lines = append(lines, diffPreview)
+	}
+
+	threadWidth := width
+	if threadWidth < minimumMarkdownRenderWidth {
+		threadWidth = defaultDetailWrapWidth
+	}
+	commentBodyWidth := commentBoxInnerWidth(threadWidth)
+	if len(thread.Comments) == 0 {
+		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth))
+		return strings.Join(lines, "\n")
+	}
+
+	for _, threadComment := range thread.Comments {
+		body := renderMarkdownWithFallback(threadComment.Body, renderer, commentBodyWidth, "No comment body.")
+		lines = append(lines, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderPullRequestInlineCommentThreadStatusLine(thread githubcli.PullRequestReviewThread) string {
+	badges := []string{renderPullRequestInlineCommentResolutionBadge(thread.IsResolved)}
+	if thread.IsOutdated {
+		badges = append(badges, renderPullRequestInlineCommentOutdatedBadge())
+	}
+	return strings.Join(badges, " ")
+}
+
+func renderPullRequestInlineCommentResolutionBadge(resolved bool) string {
+	if resolved {
+		return styleText(" Resolved ", foregroundColorEscape(theme.DiffAdditionForegroundHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex))
+	}
+	return styleText(" Unresolved ", foregroundColorEscape(theme.DiffDeletionForegroundHex), backgroundColorEscape(theme.DiffDeletionBackgroundHex))
+}
+
+func renderPullRequestInlineCommentOutdatedBadge() string {
+	return styleText(" Outdated ", foregroundColorEscape(theme.DiffHunkHeaderHex), backgroundColorEscape(theme.SelectedLineBackgroundHex))
+}
+
+func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread) githubcli.PullRequestInlineComment {
+	comment := githubcli.PullRequestInlineComment{
+		Path:              strings.TrimSpace(thread.Path),
+		Line:              thread.Line,
+		OriginalLine:      thread.OriginalLine,
+		StartLine:         thread.StartLine,
+		OriginalStartLine: thread.OriginalStartLine,
+		Side:              strings.TrimSpace(thread.DiffSide),
+		StartSide:         strings.TrimSpace(thread.StartDiffSide),
+	}
+	for _, threadComment := range thread.Comments {
+		if strings.TrimSpace(threadComment.DiffHunk) == "" {
+			continue
+		}
+		comment.DiffHunk = threadComment.DiffHunk
+		break
+	}
+	return comment
+}
+
 func renderPullRequestInlineCommentLocationLine(comment githubcli.PullRequestInlineComment) string {
 	additions, deletions := diffHunkChangeCounts(comment.DiffHunk)
 	location := pullRequestInlineCommentLocation(comment)

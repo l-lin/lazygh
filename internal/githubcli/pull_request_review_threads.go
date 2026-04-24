@@ -6,23 +6,25 @@ import (
 	"strings"
 )
 
-const pullRequestReviewThreadsQuery = `query($owner:String!,$name:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id isResolved isOutdated path line originalLine startLine originalStartLine diffSide startDiffSide comments(first:100){pageInfo{hasNextPage endCursor}nodes{author{login} body createdAt}}}}}}}`
-const pullRequestReviewThreadCommentsQuery = `query($threadID:ID!,$cursor:String!){node(id:$threadID){... on PullRequestReviewThread{comments(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{author{login} body createdAt}}}}}`
+const pullRequestReviewThreadsQuery = `query($owner:String!,$name:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id isResolved isOutdated viewerCanResolve viewerCanUnresolve path line originalLine startLine originalStartLine diffSide startDiffSide comments(first:100){pageInfo{hasNextPage endCursor}nodes{author{login} body createdAt url diffHunk}}}}}}}`
+const pullRequestReviewThreadCommentsQuery = `query($threadID:ID!,$cursor:String!){node(id:$threadID){... on PullRequestReviewThread{comments(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{author{login} body createdAt url diffHunk}}}}}`
 
 var ErrInvalidPullRequestReviewThreadsResponse = fmt.Errorf("invalid pull request review threads response")
 
 type PullRequestReviewThread struct {
-	ID                string               `json:"id"`
-	IsResolved        bool                 `json:"isResolved"`
-	IsOutdated        bool                 `json:"isOutdated"`
-	Path              string               `json:"path"`
-	Line              int                  `json:"line"`
-	OriginalLine      int                  `json:"originalLine"`
-	StartLine         int                  `json:"startLine"`
-	OriginalStartLine int                  `json:"originalStartLine"`
-	DiffSide          string               `json:"diffSide"`
-	StartDiffSide     string               `json:"startDiffSide"`
-	Comments          []PullRequestComment `json:"-"`
+	ID                 string               `json:"id"`
+	IsResolved         bool                 `json:"isResolved"`
+	IsOutdated         bool                 `json:"isOutdated"`
+	ViewerCanResolve   bool                 `json:"viewerCanResolve"`
+	ViewerCanUnresolve bool                 `json:"viewerCanUnresolve"`
+	Path               string               `json:"path"`
+	Line               int                  `json:"line"`
+	OriginalLine       int                  `json:"originalLine"`
+	StartLine          int                  `json:"startLine"`
+	OriginalStartLine  int                  `json:"originalStartLine"`
+	DiffSide           string               `json:"diffSide"`
+	StartDiffSide      string               `json:"startDiffSide"`
+	Comments           []PullRequestComment `json:"-"`
 }
 
 type pullRequestReviewThreadsPage struct {
@@ -47,17 +49,19 @@ type pullRequestReviewThreadsResponse struct {
 						EndCursor   string `json:"endCursor"`
 					} `json:"pageInfo"`
 					Nodes []struct {
-						ID                string `json:"id"`
-						IsResolved        bool   `json:"isResolved"`
-						IsOutdated        bool   `json:"isOutdated"`
-						Path              string `json:"path"`
-						Line              int    `json:"line"`
-						OriginalLine      int    `json:"originalLine"`
-						StartLine         int    `json:"startLine"`
-						OriginalStartLine int    `json:"originalStartLine"`
-						DiffSide          string `json:"diffSide"`
-						StartDiffSide     string `json:"startDiffSide"`
-						Comments          struct {
+						ID                 string `json:"id"`
+						IsResolved         bool   `json:"isResolved"`
+						IsOutdated         bool   `json:"isOutdated"`
+						ViewerCanResolve   bool   `json:"viewerCanResolve"`
+						ViewerCanUnresolve bool   `json:"viewerCanUnresolve"`
+						Path               string `json:"path"`
+						Line               int    `json:"line"`
+						OriginalLine       int    `json:"originalLine"`
+						StartLine          int    `json:"startLine"`
+						OriginalStartLine  int    `json:"originalStartLine"`
+						DiffSide           string `json:"diffSide"`
+						StartDiffSide      string `json:"startDiffSide"`
+						Comments           struct {
 							PageInfo struct {
 								HasNextPage bool   `json:"hasNextPage"`
 								EndCursor   string `json:"endCursor"`
@@ -223,17 +227,19 @@ func parsePullRequestReviewThreadsPage(stdout []byte) (pullRequestReviewThreadsP
 	for _, node := range reviewThreads.Nodes {
 		page.Threads = append(page.Threads, pullRequestReviewThreadPageNode{
 			Thread: PullRequestReviewThread{
-				ID:                node.ID,
-				IsResolved:        node.IsResolved,
-				IsOutdated:        node.IsOutdated,
-				Path:              node.Path,
-				Line:              node.Line,
-				OriginalLine:      node.OriginalLine,
-				StartLine:         node.StartLine,
-				OriginalStartLine: node.OriginalStartLine,
-				DiffSide:          node.DiffSide,
-				StartDiffSide:     node.StartDiffSide,
-				Comments:          normalizePullRequestComments(node.Comments.Nodes),
+				ID:                 node.ID,
+				IsResolved:         node.IsResolved,
+				IsOutdated:         node.IsOutdated,
+				ViewerCanResolve:   node.ViewerCanResolve,
+				ViewerCanUnresolve: node.ViewerCanUnresolve,
+				Path:               node.Path,
+				Line:               node.Line,
+				OriginalLine:       node.OriginalLine,
+				StartLine:          node.StartLine,
+				OriginalStartLine:  node.OriginalStartLine,
+				DiffSide:           node.DiffSide,
+				StartDiffSide:      node.StartDiffSide,
+				Comments:           normalizePullRequestComments(node.Comments.Nodes),
 			},
 			CommentsHasNextPage: node.Comments.PageInfo.HasNextPage,
 			CommentsEndCursor:   strings.TrimSpace(node.Comments.PageInfo.EndCursor),

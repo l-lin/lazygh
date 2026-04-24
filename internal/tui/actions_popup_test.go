@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -497,6 +498,231 @@ func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheAction
 	then_noError(t, actualErr)
 	if !strings.Contains(helpView.Buffer(), "PR actions") {
 		t.Fatalf("expected help buffer to contain %q, actual %q", "PR actions", helpView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenBrowserCommentsTabCursorOnAnInlineThread_WhenOpening_ThenItShowsTheResolveInlineCommentAction(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/comments",
+				State:       "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:      "General feedback",
+					CreatedAt: "2026-04-18T10:00:00Z",
+				}},
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+					ID:       "thread-1",
+					Path:     "internal/tui/render.go",
+					Line:     43,
+					DiffSide: "RIGHT",
+					Comments: []githubcli.PullRequestComment{{
+						Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+						Body:      "Inline thread body",
+						CreatedAt: "2026-04-18T10:30:00Z",
+						DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+					}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42":            "Rendered body 42",
+		"General feedback":   "Rendered general feedback",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "Mark inline comment as resolved") {
+		t.Fatalf("expected the popup to contain the inline-thread resolve action, actual %q", popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenBrowserCommentsTabCursorOutsideInlineComments_WhenOpening_ThenItHidesTheResolveInlineCommentAction(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/comments",
+				State:       "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:      "General feedback",
+					CreatedAt: "2026-04-18T10:00:00Z",
+				}},
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+					ID:       "thread-1",
+					Path:     "internal/tui/render.go",
+					Line:     43,
+					DiffSide: "RIGHT",
+					Comments: []githubcli.PullRequestComment{{
+						Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+						Body:      "Inline thread body",
+						CreatedAt: "2026-04-18T10:30:00Z",
+						DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+					}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42":            "Rendered body 42",
+		"General feedback":   "Rendered general feedback",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered general feedback")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Buffer(), "Mark inline comment as") {
+		t.Fatalf("expected the popup to hide inline-thread resolution actions away from inline comments, actual %q", popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenExecuting_ThenItRefreshesTheThreadStateAndShowsFeedback(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/comments",
+				State:       "OPEN",
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+					ID:       "thread-1",
+					Path:     "internal/tui/render.go",
+					Line:     43,
+					DiffSide: "RIGHT",
+					Comments: []githubcli.PullRequestComment{{
+						Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+						Body:      "Inline thread body",
+						CreatedAt: "2026-04-18T10:30:00Z",
+						DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+					}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42":            "Rendered body 42",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("mark inline comment as resolved", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark inline comment as resolved"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-1"}) {
+		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
+	}
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected the detail buffer to refresh with the resolved state, actual %q", detailView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenReviewModeCursorOnAResolvedInlineThread_WhenOpening_ThenItShowsTheUnresolveInlineCommentAction(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:         "thread-1",
+		IsResolved: true,
+		Path:       "internal/tui/render.go",
+		Line:       3,
+		DiffSide:   "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+			DiffHunk:  "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Conversation · resolved")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "Mark inline comment as unresolved") {
+		t.Fatalf("expected the popup to contain the inline-thread unresolve action, actual %q", popupView.Buffer())
 	}
 }
 

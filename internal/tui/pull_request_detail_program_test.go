@@ -488,45 +488,49 @@ func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment strin
 }
 
 type fakePullRequestDetailLoader struct {
-	details               map[string]githubcli.PullRequestDetail
-	detailErrors          map[string]error
-	detailCalls           []string
-	diffs                 map[string]githubcli.PullRequestDiff
-	diffErrors            map[string]error
-	diffCalls             []string
-	commentCalls          []string
-	commentBodies         []string
-	commentErr            error
-	myPullRequests        []githubcli.PullRequest
-	requestedPullRequests []githubcli.PullRequest
-	approveCalls          []string
-	approveErr            error
-	reviewCommentCalls    []string
-	reviewCommentBodies   []string
-	reviewCommentErr      error
-	requestChangesCalls   []string
-	requestChangesBodies  []string
-	requestChangesErr     error
-	submitReviewIDs       []string
-	submitReviewEvents    []githubcli.PullRequestReviewEvent
-	submitReviewBodies    []string
-	submitReviewErr       error
-	reviewThreadReviewIDs []string
-	reviewThreadBodies    []string
-	reviewThreadTargets   []githubcli.PullRequestReviewThreadTarget
-	reviewThreadErr       error
-	reviewKeyByPendingID  map[string]string
-	openBrowserCalls      []string
-	openBrowserErr        error
-	editTitleCalls        []string
-	editTitleValues       []string
-	editTitleErr          error
-	editDescriptionCalls  []string
-	editDescriptionBodies []string
-	editDescriptionErr    error
-	startReviewCalls      []string
-	startReviewID         string
-	startReviewErr        error
+	details                  map[string]githubcli.PullRequestDetail
+	detailErrors             map[string]error
+	detailCalls              []string
+	diffs                    map[string]githubcli.PullRequestDiff
+	diffErrors               map[string]error
+	diffCalls                []string
+	commentCalls             []string
+	commentBodies            []string
+	commentErr               error
+	myPullRequests           []githubcli.PullRequest
+	requestedPullRequests    []githubcli.PullRequest
+	approveCalls             []string
+	approveErr               error
+	reviewCommentCalls       []string
+	reviewCommentBodies      []string
+	reviewCommentErr         error
+	requestChangesCalls      []string
+	requestChangesBodies     []string
+	requestChangesErr        error
+	submitReviewIDs          []string
+	submitReviewEvents       []githubcli.PullRequestReviewEvent
+	submitReviewBodies       []string
+	submitReviewErr          error
+	reviewThreadReviewIDs    []string
+	reviewThreadBodies       []string
+	reviewThreadTargets      []githubcli.PullRequestReviewThreadTarget
+	reviewThreadErr          error
+	resolveReviewThreadIDs   []string
+	resolveReviewThreadErr   error
+	unresolveReviewThreadIDs []string
+	unresolveReviewThreadErr error
+	reviewKeyByPendingID     map[string]string
+	openBrowserCalls         []string
+	openBrowserErr           error
+	editTitleCalls           []string
+	editTitleValues          []string
+	editTitleErr             error
+	editDescriptionCalls     []string
+	editDescriptionBodies    []string
+	editDescriptionErr       error
+	startReviewCalls         []string
+	startReviewID            string
+	startReviewErr           error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -635,6 +639,26 @@ func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullReques
 	return nil
 }
 
+func (loader *fakePullRequestDetailLoader) ResolvePullRequestReviewThread(threadID string) error {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	loader.resolveReviewThreadIDs = append(loader.resolveReviewThreadIDs, trimmedThreadID)
+	if loader.resolveReviewThreadErr != nil {
+		return loader.resolveReviewThreadErr
+	}
+	loader.updateReviewThreadState(trimmedThreadID, true)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) UnresolvePullRequestReviewThread(threadID string) error {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	loader.unresolveReviewThreadIDs = append(loader.unresolveReviewThreadIDs, trimmedThreadID)
+	if loader.unresolveReviewThreadErr != nil {
+		return loader.unresolveReviewThreadErr
+	}
+	loader.updateReviewThreadState(trimmedThreadID, false)
+	return nil
+}
+
 func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository string, number int) error {
 	loader.openBrowserCalls = append(loader.openBrowserCalls, repository+"#"+strconv.Itoa(number))
 	return loader.openBrowserErr
@@ -712,6 +736,39 @@ func (loader *fakePullRequestDetailLoader) updatePullRequestDetail(repository st
 	}
 	update(&detail)
 	loader.details[key] = detail
+}
+
+func (loader *fakePullRequestDetailLoader) updateReviewThreadState(threadID string, resolved bool) {
+	if trimmedThreadID := strings.TrimSpace(threadID); trimmedThreadID == "" {
+		return
+	} else {
+		for key, detail := range loader.details {
+			updated := false
+			for index := range detail.InlineCommentThreads {
+				if strings.TrimSpace(detail.InlineCommentThreads[index].ID) != trimmedThreadID {
+					continue
+				}
+				detail.InlineCommentThreads[index].IsResolved = resolved
+				updated = true
+			}
+			if updated {
+				loader.details[key] = detail
+			}
+		}
+		for key, diff := range loader.diffs {
+			updated := false
+			for index := range diff.Threads {
+				if strings.TrimSpace(diff.Threads[index].ID) != trimmedThreadID {
+					continue
+				}
+				diff.Threads[index].IsResolved = resolved
+				updated = true
+			}
+			if updated {
+				loader.diffs[key] = diff
+			}
+		}
+	}
 }
 
 type inlineAsyncRunner struct{}

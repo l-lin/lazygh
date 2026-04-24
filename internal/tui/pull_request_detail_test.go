@@ -49,6 +49,30 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 	}
 }
 
+func TestRenderPullRequestDetailHeader_GivenInlineCommentThreadsAndRestInlineComments_WhenFormatting_ThenItCountsThreadCommentsWithoutDoubleCounting(t *testing.T) {
+	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+	detail := githubcli.PullRequestDetail{
+		Number: 42,
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer"},
+			Body:      "General feedback",
+			CreatedAt: "2026-04-18T13:00:00Z",
+		}},
+		InlineComments: []githubcli.PullRequestInlineComment{{Body: "First inline"}, {Body: "Second inline"}},
+		InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+			ID:         "thread-1",
+			IsResolved: true,
+			Comments:   []githubcli.PullRequestComment{{Body: "First inline"}, {Body: "Second inline"}},
+		}},
+	}
+
+	actual := renderPullRequestDetailHeader(summary, detail)
+
+	if !strings.Contains(actual, detailCommentsIcon+" 3 comments") {
+		t.Fatalf("expected the header to count thread comments once, actual %q", actual)
+	}
+}
+
 func TestRenderPullRequestDetailContentWithSeparator_GivenHeaderAndBody_WhenFormatting_ThenItPlacesAHorizontalRuleBetweenMetadataAndContent(t *testing.T) {
 	actual := renderPullRequestDetailContentWithSeparator("repo\ntitle\nmeta", "Body", 12)
 
@@ -83,7 +107,7 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItKeepsUs
 	}}
 	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}, {Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, CreatedAt: "2026-04-18T14:15:00Z", Body: "Needs changes"}}
 
-	actual := renderPullRequestCommentsTab(comments, nil, renderer, 60)
+	actual := renderPullRequestCommentsTab(comments, nil, nil, renderer, 60)
 
 	for _, expected := range []string{detailCommentsIcon + " @reviewer-one", "2026-04-18 13:00 UTC", "Rendered comment one", detailCommentsIcon + " @reviewer-two", "2026-04-18 14:15 UTC", "Rendered comment two"} {
 		if !strings.Contains(actual, expected) {
@@ -96,7 +120,7 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRenders
 	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
 	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}}
 
-	actual := renderPullRequestCommentsTab(comments, nil, renderer, 60)
+	actual := renderPullRequestCommentsTab(comments, nil, nil, renderer, 60)
 	actualDocument := newDetailDocument(actual, 60)
 
 	if actualTopBorder := string(actualDocument.lines[0]); !strings.HasPrefix(actualTopBorder, "╭") || !strings.HasSuffix(actualTopBorder, "╮") {
@@ -136,7 +160,7 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItS
 		DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
 	}}
 
-	actual := renderPullRequestCommentsTab(nil, inlineComments, renderer, 120)
+	actual := renderPullRequestCommentsTab(nil, nil, inlineComments, renderer, 120)
 	actualDocument := newDetailDocument(actual, 120)
 	locationLineIndex, locationLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43")
 
@@ -167,7 +191,7 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 		DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
 	}}
 
-	actual := renderPullRequestCommentsTab(nil, inlineComments, renderer, 120)
+	actual := renderPullRequestCommentsTab(nil, nil, inlineComments, renderer, 120)
 	actualDocument := newDetailDocument(actual, 120)
 
 	_, actualHunkHeader := given_detailDocumentLineContaining(t, actualDocument, "@@ -42,2 +42,2 @@")
@@ -201,7 +225,7 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 		DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
 	}}
 
-	actual := renderPullRequestCommentsTab(nil, inlineComments, renderer, 120)
+	actual := renderPullRequestCommentsTab(nil, nil, inlineComments, renderer, 120)
 	actualDocument := newDetailDocument(actual, 120)
 	topBorderLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "╭")
 	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-inline")
@@ -221,6 +245,48 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 	}
 	if !strings.HasPrefix(metadataLine, "│ ") || !strings.HasSuffix(metadataLine, " │") {
 		t.Fatalf("expected the metadata line to render inside the rounded box, actual %q", metadataLine)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenFormatting_ThenItShowsTheResolvedStateAndRendersRepliesTogether(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Needs more spacing":     "Rendered inline comment",
+		"Fixed in the next push": "Rendered reply",
+	}}
+	inlineThreads := []githubcli.PullRequestReviewThread{{
+		ID:         "thread-1",
+		IsResolved: true,
+		Path:       "internal/tui/render.go",
+		Line:       43,
+		DiffSide:   "RIGHT",
+		Comments: []githubcli.PullRequestComment{
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+				CreatedAt: "2026-04-18T14:15:00Z",
+				Body:      "Needs more spacing",
+				DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+			},
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+				CreatedAt: "2026-04-18T14:45:00Z",
+				Body:      "Fixed in the next push",
+			},
+		},
+	}}
+
+	actual := renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120)
+	actualDocument := newDetailDocument(actual, 120)
+	statusLineIndex, statusLine := given_detailDocumentLineContaining(t, actualDocument, "Resolved")
+	resolvedIndex := given_runeIndexInString(t, statusLine, "Resolved")
+
+	if !strings.Contains(statusLine, "Resolved") {
+		t.Fatalf("expected the thread status to mention the resolved state, actual %q", statusLine)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[statusLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionForegroundHex)) {
+		t.Fatalf("expected the resolved state to use the addition color prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	}
+	if _, replyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered reply"); !strings.Contains(replyLine, "Rendered reply") {
+		t.Fatalf("expected the reply to render in the same inline thread section, actual %q", replyLine)
 	}
 }
 
