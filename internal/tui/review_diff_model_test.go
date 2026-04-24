@@ -363,15 +363,25 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlace
 
 	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
 	additionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "new line")
-	threadHeaderIndex, threadHeader := given_detailDocumentLineContaining(t, actualDocument, detailCommentsIcon+" @reviewer-one")
+	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-one")
+	bodyLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "Rendered thread body")
 	tailLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "tail line")
 	borderLineIndex, borderLine := given_detailDocumentLineContaining(t, actualDocument, "╭")
 
-	if threadHeaderIndex <= additionLineIndex || threadHeaderIndex >= tailLineIndex {
+	if metadataLineIndex <= additionLineIndex || metadataLineIndex >= tailLineIndex {
 		t.Fatalf("expected the inline thread to render after the matching diff line and before the next diff line, actual %q", string(actualDocument.text))
 	}
-	if !strings.Contains(threadHeader, "2026-04-20 10:00 UTC") {
-		t.Fatalf("expected the inline thread header to keep the comment timestamp, actual %q", threadHeader)
+	if metadataLineIndex != borderLineIndex+1 {
+		t.Fatalf("expected the metadata line to render inside the box immediately after the top border, actual %q", metadataLine)
+	}
+	if !strings.Contains(metadataLine, detailCommentsIcon+" @reviewer-one") {
+		t.Fatalf("expected the metadata line to contain the author badge, actual %q", metadataLine)
+	}
+	if !strings.Contains(metadataLine, "2026-04-20 10:00 UTC") {
+		t.Fatalf("expected the metadata line to keep the timestamp on the same line, actual %q", metadataLine)
+	}
+	if bodyLineIndex != metadataLineIndex+1 {
+		t.Fatalf("expected the thread body to render after the metadata line, actual %q", string(actualDocument.text))
 	}
 	borderIndex := given_runeIndexInString(t, borderLine, "╭")
 	if actualStylePrefix := actualDocument.lineStylePrefixes[borderLineIndex][borderIndex]; actualStylePrefix != foregroundColorEscape(theme.InactiveBorderHex) {

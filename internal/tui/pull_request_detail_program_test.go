@@ -119,8 +119,11 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
 		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}
-	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n"+expectedSeparator+"\n"+detailCommentsIcon+" @reviewer-one") {
+	if !strings.Contains(detailView.Buffer(), renderPullRequestMetaLine(firstSummary, firstDetail)+"\n"+expectedSeparator+"\n╭") {
 		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), detailCommentsIcon+" @reviewer-one") || !strings.Contains(detailView.Buffer(), "2026-04-18 10:00 UTC") {
+		t.Fatalf("expected the comments tab to render the comment author badge and timestamp inside the box, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered comment 101", detailView.Buffer())
@@ -206,7 +209,46 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesBatLi
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "\"model\": \"opus\",", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "inline addition background")
 }
 
-func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailPaneShowsAStyledHeadingAndGreyCommentBorder(t *testing.T) {
+func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlightedAuthorBadgeInsideTheCommentBox(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 110, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#110": {Title: "Styled PR", Number: 110, Body: "Body 110", BaseRefName: "main", HeadRefName: "feature-110", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline body", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\","}}},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 110": "Rendered body 110", "Inline body": "Rendered inline body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-inline")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-inline", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "inline comment author badge background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-inline", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "inline comment author badge foreground")
+	if !strings.Contains(detailView.BufferLines()[authorLineIndex], "2026-04-18 10:00 UTC") {
+		t.Fatalf("expected the inline comment timestamp to stay on the metadata line, actual %q", detailView.BufferLines()[authorLineIndex])
+	}
+}
+
+func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailPaneShowsAStyledHeadingGreyCommentBorderAndHighlightedCommentAuthorBadge(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
@@ -242,6 +284,12 @@ func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailP
 
 	commentBorderLineIndex := given_viewLineIndexContaining(t, detailView, "╭")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, commentBorderLineIndex, "╭", given_themeColorHex(t, theme.InactiveBorderHex), "comment border")
+	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author badge background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "comment author badge foreground")
+	if !strings.Contains(detailView.BufferLines()[authorLineIndex], "2026-04-18 10:00 UTC") {
+		t.Fatalf("expected the comment timestamp to stay on the metadata line, actual %q", detailView.BufferLines()[authorLineIndex])
+	}
 }
 
 func TestLayout_GivenRenderedMarkdownDescription_WhenRendering_ThenVisibleLinesDoNotLeakRawANSISequences(t *testing.T) {

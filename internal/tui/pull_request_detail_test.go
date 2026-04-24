@@ -92,18 +92,25 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItKeepsUs
 	}
 }
 
-func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRendersEachCommentInsideAGreyRoundedBox(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRendersEachCommentInsideAGreyRoundedBoxWithTheAuthorAndDateOnTheSameLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
 	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}}
 
-	actual := renderPullRequestCommentsTab(comments, nil, renderer, 30)
-	actualDocument := newDetailDocument(actual, 30)
+	actual := renderPullRequestCommentsTab(comments, nil, renderer, 60)
+	actualDocument := newDetailDocument(actual, 60)
 
-	if actualHeader := string(actualDocument.lines[0]); actualHeader != detailCommentsIcon+" @reviewer-one · 2026-04-18 13:00 UTC" {
-		t.Fatalf("expected comment header %q, actual %q", detailCommentsIcon+" @reviewer-one · 2026-04-18 13:00 UTC", actualHeader)
-	}
-	if actualTopBorder := string(actualDocument.lines[1]); !strings.HasPrefix(actualTopBorder, "╭") || !strings.HasSuffix(actualTopBorder, "╮") {
+	if actualTopBorder := string(actualDocument.lines[0]); !strings.HasPrefix(actualTopBorder, "╭") || !strings.HasSuffix(actualTopBorder, "╮") {
 		t.Fatalf("expected a rounded top border, actual %q", actualTopBorder)
+	}
+	metadataLine := string(actualDocument.lines[1])
+	if !strings.HasPrefix(metadataLine, "│ ") || !strings.HasSuffix(metadataLine, " │") {
+		t.Fatalf("expected the metadata line to stay inside the rounded box, actual %q", metadataLine)
+	}
+	if !strings.Contains(metadataLine, detailCommentsIcon+" @reviewer-one") {
+		t.Fatalf("expected the metadata line to contain the comment author badge, actual %q", metadataLine)
+	}
+	if !strings.Contains(metadataLine, "2026-04-18 13:00 UTC") {
+		t.Fatalf("expected the metadata line to contain the comment timestamp, actual %q", metadataLine)
 	}
 	if actualBodyLine := string(actualDocument.lines[2]); !strings.HasPrefix(actualBodyLine, "│ Rendered comment one") {
 		t.Fatalf("expected boxed comment body, actual %q", actualBodyLine)
@@ -111,7 +118,7 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRenders
 	if actualBottomBorder := string(actualDocument.lines[3]); !strings.HasPrefix(actualBottomBorder, "╰") || !strings.HasSuffix(actualBottomBorder, "╯") {
 		t.Fatalf("expected a rounded bottom border, actual %q", actualBottomBorder)
 	}
-	if actualStylePrefix := actualDocument.lineStylePrefixes[1][0]; actualStylePrefix != foregroundColorEscape(theme.InactiveBorderHex) {
+	if actualStylePrefix := actualDocument.lineStylePrefixes[0][0]; actualStylePrefix != foregroundColorEscape(theme.InactiveBorderHex) {
 		t.Fatalf("expected the comment border prefix %q, actual %q", foregroundColorEscape(theme.InactiveBorderHex), actualStylePrefix)
 	}
 }
@@ -178,6 +185,42 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 	_, actualAdditionLine := given_detailDocumentLineContaining(t, actualDocument, "\"opus\"")
 	if actualAdditionLine != "   : 43 │ \"model\": \"opus\"," {
 		t.Fatalf("expected diff addition line %q, actual %q", "   : 43 │ \"model\": \"opus\",", actualAdditionLine)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItRendersTheAuthorAndDateOnTheSameLineInsideTheCommentBox(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
+	inlineComments := []githubcli.PullRequestInlineComment{{
+		Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+		CreatedAt:    "2026-04-18T14:15:00Z",
+		Body:         "Needs more spacing",
+		Path:         "internal/tui/render.go",
+		Line:         43,
+		OriginalLine: 43,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+	}}
+
+	actual := renderPullRequestCommentsTab(nil, inlineComments, renderer, 120)
+	actualDocument := newDetailDocument(actual, 120)
+	topBorderLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "╭")
+	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-inline")
+	bodyLineIndex, bodyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered inline comment")
+
+	if metadataLineIndex != topBorderLineIndex+1 {
+		t.Fatalf("expected the metadata line to render inside the box immediately after the top border, actual %q", metadataLine)
+	}
+	if bodyLineIndex != metadataLineIndex+1 {
+		t.Fatalf("expected the body line to render after the metadata line, actual %q", bodyLine)
+	}
+	if !strings.Contains(metadataLine, detailCommentsIcon+" @reviewer-inline") {
+		t.Fatalf("expected the metadata line to contain the author badge, actual %q", metadataLine)
+	}
+	if !strings.Contains(metadataLine, "2026-04-18 14:15 UTC") {
+		t.Fatalf("expected the metadata line to keep the timestamp on the same line, actual %q", metadataLine)
+	}
+	if !strings.HasPrefix(metadataLine, "│ ") || !strings.HasSuffix(metadataLine, " │") {
+		t.Fatalf("expected the metadata line to render inside the rounded box, actual %q", metadataLine)
 	}
 }
 

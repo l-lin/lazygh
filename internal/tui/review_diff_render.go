@@ -163,9 +163,7 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	for _, comment := range thread.Comments {
 		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
-		header := detailCommentsIcon + " " + pullRequestCommentAuthorLogin(comment.Author) + " · " + formatTimestamp(comment.CreatedAt)
-		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + header})
-		for _, boxLine := range strings.Split(renderRoundedCommentBox(body, threadWidth), "\n") {
+		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + boxLine})
 		}
 	}

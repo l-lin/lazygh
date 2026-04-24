@@ -9,14 +9,13 @@ import (
 )
 
 func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineComment, body string, width int) string {
-	lines := []string{detailCommentsIcon + " " + pullRequestCommentAuthorLogin(comment.Author) + " · " + formatTimestamp(comment.CreatedAt)}
-	lines = append(lines, renderPullRequestInlineCommentLocationLine(comment))
+	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
 
 	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
 	if diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
-	lines = append(lines, renderRoundedCommentBox(body, width))
+	lines = append(lines, renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, width))
 	return strings.Join(lines, "\n")
 }
 

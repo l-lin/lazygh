@@ -136,6 +136,57 @@ func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffC
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "review diff addition background")
 }
 
+func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUsesTheInlineCommentHeaderColors(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "review thread author badge background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "review thread author badge foreground")
+	if !strings.Contains(detailView.BufferLines()[authorLineIndex], "2026-04-20 10:00 UTC") {
+		t.Fatalf("expected the review thread timestamp to stay on the metadata line, actual %q", detailView.BufferLines()[authorLineIndex])
+	}
+}
+
 func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullRequestContextAndColoredDiffCounts(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
