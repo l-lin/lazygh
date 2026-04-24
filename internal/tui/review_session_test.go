@@ -242,11 +242,13 @@ func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffC
 
 	deletionLineIndex := given_viewLineIndexContaining(t, detailView, "old line")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "old line", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review diff deletion text")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "old line", given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "review diff deletion background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "old", given_themeColorHex(t, theme.DiffDeletionHighlightBackgroundHex), "review diff deletion changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, " line", given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "review diff deletion unchanged background")
 
 	additionLineIndex := given_viewLineIndexContaining(t, detailView, "new line")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review diff addition text")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "review diff addition background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "new", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "review diff addition changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, " line", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "review diff addition unchanged background")
 }
 
 func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUsesTheInlineCommentHeaderColors(t *testing.T) {

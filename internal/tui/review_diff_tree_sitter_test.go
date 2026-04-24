@@ -32,6 +32,34 @@ func TestRenderReviewDiffFile_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSit
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"5.1.0"`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
 }
 
+func TestRenderReviewDiffFile_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHardBackgroundOnlyOnChangedSegments(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "src/main/java/com/acme/VersionParser.java",
+		Additions:  1,
+		Deletions:  1,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,1 @@",
+			Lines: []reviewDiffLine{
+				{Kind: reviewDiffDeletionLine, Text: `return Versions.fromString("5.0.1");`, LeftLine: 10, Side: reviewDiffLineSideLeft},
+				{Kind: reviewDiffAdditionLine, Text: `return Versions.fromString("5.1.0");`, RightLine: 10, Side: reviewDiffLineSideRight},
+			},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
+	deletionLineIndex, deletionVisibleLine := given_detailDocumentLineContaining(t, actualDocument, `return Versions.fromString("5.0.1");`)
+	additionLineIndex, additionVisibleLine := given_detailDocumentLineContaining(t, actualDocument, `return Versions.fromString("5.1.0");`)
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionVisibleLine, "0.1", backgroundColorEscape(theme.DiffDeletionHighlightBackgroundHex), "deletion changed segment background")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionVisibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffDeletionHighlightBackgroundHex), "deletion unchanged segment background")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionVisibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffDeletionBackgroundHex), "deletion base background")
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionVisibleLine, "1.0", backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "addition changed segment background")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionVisibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "addition unchanged segment background")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionVisibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "addition base background")
+}
+
 func TestRenderReviewDiffFile_GivenUnsupportedFileExtension_WhenFormatting_ThenItFallsBackToPlainDiffColors(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "notes/version.custom",
@@ -66,6 +94,18 @@ func then_linePrefixContainsColor(t *testing.T, linePrefixes []string, visibleLi
 		actualStylePrefix := linePrefixes[segmentStart+offset]
 		if !strings.Contains(actualStylePrefix, expectedColor) {
 			t.Fatalf("expected %s prefix to contain %q at offset %d, actual %q", label, expectedColor, offset, actualStylePrefix)
+		}
+	}
+}
+
+func then_linePrefixDoesNotContainColor(t *testing.T, linePrefixes []string, visibleLine string, segment string, unexpectedColor string, label string) {
+	t.Helper()
+
+	segmentStart := given_runeIndexInString(t, visibleLine, segment)
+	for offset := range len([]rune(segment)) {
+		actualStylePrefix := linePrefixes[segmentStart+offset]
+		if strings.Contains(actualStylePrefix, unexpectedColor) {
+			t.Fatalf("expected %s prefix to avoid %q at offset %d, actual %q", label, unexpectedColor, offset, actualStylePrefix)
 		}
 	}
 }

@@ -70,10 +70,11 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""})
 		}
 		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindHunkHeader, Text: renderReviewDiffHunkHeader(hunk.Header)})
-		for _, line := range hunk.Lines {
+		changedRangesByLine := reviewDiffChangedStyleRanges(hunk.Lines)
+		for lineIndex, line := range hunk.Lines {
 			rows = append(rows, reviewDiffRenderedRow{
 				Kind: reviewDiffRenderedRowKindDiffLine,
-				Text: renderReviewDiffLine(file.Path, line, numberWidth),
+				Text: renderReviewDiffLine(file.Path, line, numberWidth, changedRangesByLine[lineIndex]),
 				Anchor: &reviewDiffRenderedRowAnchor{
 					Path: strings.TrimSpace(file.Path),
 					Line: line,
@@ -262,7 +263,7 @@ func renderReviewDiffHunkHeader(header string) string {
 	return styleText(header, foregroundColorEscape(theme.DiffHunkHeaderHex))
 }
 
-func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int) string {
+func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int, changedRanges []styledRuneRange) string {
 	numberPrefix := foregroundColorEscape(theme.DiffLineNumberHex)
 	prefix := styleText(
 		fmt.Sprintf("%s : %s │ ", diffPreviewLineNumberText(line.LeftLine, numberWidth), diffPreviewLineNumberText(line.RightLine, numberWidth)),
@@ -279,7 +280,7 @@ func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int) str
 		sign = "+"
 	}
 
-	return prefix + styleText(sign, basePrefix) + renderSyntaxHighlightedCode(path, line.Text, basePrefix, nil)
+	return prefix + styleText(sign, basePrefix) + renderSyntaxHighlightedCode(path, line.Text, basePrefix, changedRanges)
 }
 
 func reviewDiffLineNumberWidth(hunks []reviewDiffHunk) int {
