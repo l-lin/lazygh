@@ -13,6 +13,9 @@ func renderPullRequestDetailHeader(summary githubcli.PullRequest, detail githubc
 		pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title)),
 		renderPullRequestMetaLine(summary, detail),
 	}
+	if approvalsLine := renderPullRequestApprovalsLine(detail.Reviews); approvalsLine != "" {
+		headerLines = append(headerLines, approvalsLine)
+	}
 
 	return strings.Join(headerLines, "\n")
 }

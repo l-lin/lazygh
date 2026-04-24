@@ -392,6 +392,38 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_T
 	}
 }
 
+func TestRenderPullRequestDetailHeader_GivenApprovalReviews_WhenFormatting_ThenItShowsTheCurrentApproversWithGreenCheckIcons(t *testing.T) {
+	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+	detail := githubcli.PullRequestDetail{
+		Number: 42,
+		Reviews: []githubcli.PullRequestReview{
+			{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"},
+			{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, State: "COMMENTED", SubmittedAt: "2026-04-21T11:00:00Z"},
+			{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, State: "APPROVED", SubmittedAt: "2026-04-21T12:00:00Z"},
+			{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-three"}, State: "APPROVED", SubmittedAt: "2026-04-21T09:00:00Z"},
+		},
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
+	lineIndex, approvalsLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-two")
+	firstIconIndex := given_runeIndexInString(t, approvalsLine, detailApprovalIcon+" @reviewer-two")
+	secondIconIndex := given_runeIndexInString(t, approvalsLine, detailApprovalIcon+" @reviewer-three")
+
+	for _, expected := range []string{detailApprovalIcon + " @reviewer-two", detailApprovalIcon + " @reviewer-three"} {
+		if !strings.Contains(approvalsLine, expected) {
+			t.Fatalf("expected approvals line to contain %q, actual %q", expected, approvalsLine)
+		}
+	}
+	if strings.Contains(approvalsLine, "@reviewer-one") {
+		t.Fatalf("expected approvals line to hide reviewers whose latest review is not an approval, actual %q", approvalsLine)
+	}
+	for _, iconIndex := range []int{firstIconIndex, secondIconIndex} {
+		if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][iconIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionForegroundHex)) {
+			t.Fatalf("expected approval icon prefix to contain the addition foreground %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+		}
+	}
+}
+
 func TestCompactBranchLabel_GivenALongBranchName_WhenFormatting_ThenItKeepsBothEndsWithAnEllipsis(t *testing.T) {
 	actual := compactBranchLabel("1234567890123ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 

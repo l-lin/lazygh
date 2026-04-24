@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,baseRefName,headRefName,mergeStateStatus,mergeable,comments,additions,deletions,changedFiles,statusCheckRollup"
+const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,baseRefName,headRefName,mergeStateStatus,mergeable,comments,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
 	ErrInvalidPullRequestDetailResponse        = fmt.Errorf("invalid pull request detail response")
@@ -30,6 +30,7 @@ type PullRequestDetail struct {
 	MergeStateStatus     string                     `json:"mergeStateStatus"`
 	Mergeable            string                     `json:"mergeable"`
 	Comments             []PullRequestComment       `json:"comments"`
+	Reviews              []PullRequestReview        `json:"reviews"`
 	InlineComments       []PullRequestInlineComment `json:"-"`
 	InlineCommentThreads []PullRequestReviewThread  `json:"-"`
 	Additions            int                        `json:"additions"`
@@ -74,6 +75,12 @@ type PullRequestInlineComment struct {
 
 type PullRequestCommentAuthor struct {
 	Login string `json:"login"`
+}
+
+type PullRequestReview struct {
+	Author      *PullRequestCommentAuthor `json:"author"`
+	State       string                    `json:"state"`
+	SubmittedAt string                    `json:"submittedAt"`
 }
 
 type PullRequestStatusCheck struct {
@@ -166,6 +173,13 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		}
 		detail.Comments = normalizedComments
 	}
+	if len(detail.Reviews) > 0 {
+		normalizedReviews := make([]PullRequestReview, 0, len(detail.Reviews))
+		for _, review := range detail.Reviews {
+			normalizedReviews = append(normalizedReviews, review.normalized())
+		}
+		detail.Reviews = normalizedReviews
+	}
 	if len(detail.InlineComments) > 0 {
 		normalizedInlineComments := make([]PullRequestInlineComment, 0, len(detail.InlineComments))
 		for _, comment := range detail.InlineComments {
@@ -232,6 +246,16 @@ func (comment PullRequestInlineComment) normalized() PullRequestInlineComment {
 func (author PullRequestCommentAuthor) normalized() PullRequestCommentAuthor {
 	author.Login = strings.TrimSpace(author.Login)
 	return author
+}
+
+func (review PullRequestReview) normalized() PullRequestReview {
+	review.State = strings.TrimSpace(review.State)
+	review.SubmittedAt = strings.TrimSpace(review.SubmittedAt)
+	if review.Author != nil {
+		normalizedAuthor := review.Author.normalized()
+		review.Author = &normalizedAuthor
+	}
+	return review
 }
 
 func (check PullRequestStatusCheck) normalized() PullRequestStatusCheck {

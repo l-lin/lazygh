@@ -2,7 +2,9 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
@@ -45,6 +47,78 @@ func pullRequestStatusBadgeColors(status string) (string, string) {
 	default:
 		return "", ""
 	}
+}
+
+func renderPullRequestApprovalsLine(reviews []githubcli.PullRequestReview) string {
+	approverLogins := approvedPullRequestReviewerLogins(reviews)
+	if len(approverLogins) == 0 {
+		return ""
+	}
+
+	approvals := make([]string, 0, len(approverLogins))
+	for _, login := range approverLogins {
+		approvals = append(approvals, styleText(detailApprovalIcon, foregroundColorEscape(theme.DiffAdditionForegroundHex))+" "+formatLogin(login))
+	}
+	return strings.Join(approvals, "  ")
+}
+
+func approvedPullRequestReviewerLogins(reviews []githubcli.PullRequestReview) []string {
+	if len(reviews) == 0 {
+		return nil
+	}
+
+	latestReviewByLogin := map[string]githubcli.PullRequestReview{}
+	latestReviewIndexes := map[string]int{}
+	for index, review := range reviews {
+		login := pullRequestReviewAuthorLogin(review.Author)
+		if login == "" {
+			continue
+		}
+
+		latestReview, ok := latestReviewByLogin[login]
+		if !ok || pullRequestReviewIsLater(review, index, latestReview, latestReviewIndexes[login]) {
+			latestReviewByLogin[login] = review
+			latestReviewIndexes[login] = index
+		}
+	}
+
+	approverLogins := make([]string, 0, len(latestReviewByLogin))
+	for login, review := range latestReviewByLogin {
+		if strings.EqualFold(strings.TrimSpace(review.State), "APPROVED") {
+			approverLogins = append(approverLogins, login)
+		}
+	}
+	sort.Strings(approverLogins)
+	return approverLogins
+}
+
+func pullRequestReviewIsLater(candidate githubcli.PullRequestReview, candidateIndex int, current githubcli.PullRequestReview, currentIndex int) bool {
+	candidateTime, candidateHasTime := parsePullRequestReviewSubmittedAt(candidate.SubmittedAt)
+	currentTime, currentHasTime := parsePullRequestReviewSubmittedAt(current.SubmittedAt)
+	if candidateHasTime && currentHasTime {
+		if candidateTime.After(currentTime) {
+			return true
+		}
+		if candidateTime.Before(currentTime) {
+			return false
+		}
+	}
+	return candidateIndex > currentIndex
+}
+
+func parsePullRequestReviewSubmittedAt(value string) (time.Time, bool) {
+	submittedAt, err := time.Parse(time.RFC3339, strings.TrimSpace(value))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return submittedAt, true
+}
+
+func pullRequestReviewAuthorLogin(author *githubcli.PullRequestCommentAuthor) string {
+	if author == nil {
+		return ""
+	}
+	return strings.TrimSpace(author.Login)
 }
 
 func pullRequestTitleLine(title string, number int) string {

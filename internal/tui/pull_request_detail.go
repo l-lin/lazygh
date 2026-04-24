@@ -21,6 +21,7 @@ const (
 	detailBranchIcon                = ""
 	detailStatusIcon                = ""
 	detailChecksIcon                = "󰄬"
+	detailApprovalIcon              = ""
 	detailInlineCommentLocationIcon = "󰈔"
 )
 
