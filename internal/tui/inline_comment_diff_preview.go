@@ -30,19 +30,14 @@ type diffPreviewLine struct {
 	target    bool
 }
 
-func renderDiffPreviewLine(previewLine diffPreviewLine, numberWidth int) string {
+func renderDiffPreviewLine(path string, previewLine diffPreviewLine, numberWidth int, changedRanges []styledRuneRange) string {
 	if previewLine.kind == diffPreviewHunkHeaderLine || previewLine.kind == diffPreviewNoteLine {
 		return styleText(previewLine.text, diffPreviewHunkHeaderPrefix(previewLine.target))
 	}
 
 	numberPrefix := diffPreviewLineNumberPrefix(previewLine.target)
 	prefix := styleText(diffPreviewLinePrefixText(previewLine, numberWidth), numberPrefix)
-
-	contentPrefix := diffPreviewLineContentPrefix(previewLine)
-	if contentPrefix == "" {
-		return prefix + previewLine.text
-	}
-	return prefix + styleText(previewLine.text, contentPrefix)
+	return prefix + renderSyntaxHighlightedCode(path, previewLine.text, diffPreviewLineContentPrefix(previewLine), changedRanges)
 }
 
 func diffPreviewLinePrefixText(previewLine diffPreviewLine, numberWidth int) string {
@@ -136,6 +131,45 @@ func markTargetDiffPreviewLines(previewLines []diffPreviewLine, comment githubcl
 			previewLines[index].target = true
 		}
 	}
+}
+
+func diffPreviewChangedStyleRanges(previewLines []diffPreviewLine) [][]styledRuneRange {
+	rangesByLine := make([][]styledRuneRange, len(previewLines))
+	for groupStart := 0; groupStart < len(previewLines); {
+		if !diffPreviewLineSupportsIntralineHighlight(previewLines[groupStart].kind) {
+			groupStart++
+			continue
+		}
+
+		groupEnd := groupStart
+		deletionIndexes := make([]int, 0)
+		additionIndexes := make([]int, 0)
+		for groupEnd < len(previewLines) && diffPreviewLineSupportsIntralineHighlight(previewLines[groupEnd].kind) {
+			switch previewLines[groupEnd].kind {
+			case diffPreviewDeletionLine:
+				deletionIndexes = append(deletionIndexes, groupEnd)
+			case diffPreviewAdditionLine:
+				additionIndexes = append(additionIndexes, groupEnd)
+			}
+			groupEnd++
+		}
+
+		pairCount := minInt(len(deletionIndexes), len(additionIndexes))
+		for pairIndex := range pairCount {
+			deletionLineIndex := deletionIndexes[pairIndex]
+			additionLineIndex := additionIndexes[pairIndex]
+			deletionRanges, additionRanges := reviewDiffLineChangedStyleRanges(previewLines[deletionLineIndex].text, previewLines[additionLineIndex].text)
+			rangesByLine[deletionLineIndex] = append(rangesByLine[deletionLineIndex], deletionRanges...)
+			rangesByLine[additionLineIndex] = append(rangesByLine[additionLineIndex], additionRanges...)
+		}
+
+		groupStart = groupEnd
+	}
+	return rangesByLine
+}
+
+func diffPreviewLineSupportsIntralineHighlight(kind diffPreviewLineKind) bool {
+	return kind == diffPreviewDeletionLine || kind == diffPreviewAdditionLine
 }
 
 func parseDiffPreviewLines(diffHunk string) []diffPreviewLine {

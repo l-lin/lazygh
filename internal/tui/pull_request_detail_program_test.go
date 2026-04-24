@@ -167,7 +167,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	}
 }
 
-func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesBatLikeDiffColorsAndColoredChangeCounts(t *testing.T) {
+func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeSitterSyntaxColorsAndExactChangeBackgrounds(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
@@ -175,7 +175,7 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesBatLi
 	})
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#109": {Title: "Styled PR", Number: 109, Body: "Body 109", BaseRefName: "main", HeadRefName: "feature-109", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline diff body", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\","}}},
+			"acme/widgets#109": {Title: "Styled PR", Number: 109, Body: "Body 109", BaseRefName: "main", HeadRefName: "feature-109", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline diff body", CreatedAt: "2026-04-18T10:00:00Z", Path: "src/main/java/com/acme/VersionParser.java", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -43,1 +43,1 @@\n-return Versions.fromString(\"5.0.1\");\n+return Versions.fromString(\"5.1.0\");"}}},
 		},
 	}
 	subject := NewProgramWithModelAndLoader(model, loader)
@@ -198,17 +198,23 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesBatLi
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	locationLineIndex := given_viewLineIndexContaining(t, detailView, detailInlineCommentLocationIcon+" internal/tui/render.go:43")
+	locationLineIndex := given_viewLineIndexContaining(t, detailView, detailInlineCommentLocationIcon+" src/main/java/com/acme/VersionParser.java:43")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "+1", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "inline addition count")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "inline deletion count")
 
-	deletionLineIndex := given_viewLineIndexContaining(t, detailView, "\"model\": \"opusplan\",")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "\"model\": \"opusplan\",", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "inline deletion text")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "\"model\": \"opusplan\",", given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "inline deletion background")
+	deletionLineIndex := given_viewLineIndexContaining(t, detailView, `return Versions.fromString("5.0.1");`)
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "return", given_themeColorHex(t, theme.SyntaxKeywordHex), "inline deletion keyword")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "fromString", given_themeColorHex(t, theme.SyntaxFunctionHex), "inline deletion method")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, `"5.0.1"`, given_themeColorHex(t, theme.SyntaxStringHex), "inline deletion string")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "0.1", given_themeColorHex(t, theme.DiffDeletionHighlightBackgroundHex), "inline deletion changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, `return Versions.fromString("5.`, given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "inline deletion unchanged background")
 
-	additionLineIndex := given_viewLineIndexContaining(t, detailView, "\"model\": \"opus\",")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "\"model\": \"opus\",", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "inline addition text")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "\"model\": \"opus\",", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "inline addition background")
+	additionLineIndex := given_viewLineIndexContaining(t, detailView, `return Versions.fromString("5.1.0");`)
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "return", given_themeColorHex(t, theme.SyntaxKeywordHex), "inline addition keyword")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "fromString", given_themeColorHex(t, theme.SyntaxFunctionHex), "inline addition method")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, `"5.1.0"`, given_themeColorHex(t, theme.SyntaxStringHex), "inline addition string")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "1.0", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "inline addition changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, `return Versions.fromString("5.`, given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "inline addition unchanged background")
 }
 
 func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlightedAuthorBadgeInsideTheCommentBox(t *testing.T) {

@@ -109,10 +109,11 @@ func renderPullRequestInlineCommentDiffPreview(comment githubcli.PullRequestInli
 	}
 
 	markTargetDiffPreviewLines(previewLines, comment)
+	changedRangesByLine := diffPreviewChangedStyleRanges(previewLines)
 	numberWidth := diffPreviewLineNumberWidth(previewLines)
 	renderedLines := make([]string, 0, len(previewLines))
-	for _, previewLine := range previewLines {
-		renderedLines = append(renderedLines, renderDiffPreviewLine(previewLine, numberWidth))
+	for lineIndex, previewLine := range previewLines {
+		renderedLines = append(renderedLines, renderDiffPreviewLine(comment.Path, previewLine, numberWidth, changedRangesByLine[lineIndex]))
 	}
 	return strings.Join(renderedLines, "\n")
 }
