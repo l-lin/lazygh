@@ -148,7 +148,7 @@ func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, quer
 		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel
 	}
 
-	selectedPrefix := ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+	selectedPrefix := ansiBold + foregroundColorEscape(theme.ActiveTextHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
 	highlightedLabel, _ := highlightSearchMatchesWithPrefixes(row.Label, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
 	prefix := renderSelectedReviewDiffTreeRowPrefix(row, files, selectedPrefix)
 	return prefix + highlightedLabel
@@ -172,7 +172,7 @@ func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDi
 	}
 
 	view.Clear()
-	showSelectedLine := program.usesManualSelectedLineRendering(query) && (program.reviewSession.active || program.shouldHighlightSelection(FocusPullRequestsView, true))
+	showSelectedLine := program.reviewSession.active || (program.usesManualSelectedLineRendering(query) && program.shouldHighlightSelection(FocusPullRequestsView, true))
 	for _, row := range tree.Rows {
 		fmt.Fprintln(view, renderReviewDiffTreeRow(row, files, query, showSelectedLine && row.VisibleRowIndex == selectedVisibleLine))
 	}

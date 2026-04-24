@@ -14,6 +14,9 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.model.NextSideView()
+	if program.reviewSession.active {
+		return program.refreshViewsIfGUI(gui)
+	}
 	return program.syncCurrentView(gui)
 }
 
@@ -25,6 +28,9 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.model.PreviousSideView()
+	if program.reviewSession.active {
+		return program.refreshViewsIfGUI(gui)
+	}
 	return program.syncCurrentView(gui)
 }
 
@@ -218,6 +224,9 @@ func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.model.FocusDetailView()
+	if program.reviewSession.active {
+		return program.refreshViewsIfGUI(gui)
+	}
 	return program.syncCurrentView(gui)
 }
 
@@ -229,6 +238,9 @@ func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
 
 	program.detailViewState.clearPendingPrefix()
 	program.model.FocusUserView()
+	if program.reviewSession.active {
+		return program.refreshViewsIfGUI(gui)
+	}
 	return program.syncCurrentView(gui)
 }
 
@@ -240,6 +252,9 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 
 	program.detailViewState.clearPendingPrefix()
 	program.model.FocusPullRequestsView()
+	if program.reviewSession.active {
+		return program.refreshViewsIfGUI(gui)
+	}
 	return program.syncCurrentView(gui)
 }
 

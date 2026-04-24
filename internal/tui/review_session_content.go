@@ -12,7 +12,7 @@ import (
 
 func (program *Program) reviewSessionMetadataContent() string {
 	summary := program.reviewSession.summary
-	detail := githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}
+	detail := githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, Body: summary.Body, State: summary.State, UpdatedAt: summary.UpdatedAt}
 	bodyLines := []string{fmt.Sprintf("Pending review: %s", valueOrDash(program.reviewSession.pendingReviewID))}
 
 	if result, ok := program.pullRequestDetailForSummary(summary); ok {
@@ -50,6 +50,9 @@ func (program *Program) reviewSessionDetailContent() string {
 	if !program.reviewSession.active {
 		return ""
 	}
+	if program.reviewSessionShowsDescription() {
+		return program.reviewSessionDescriptionContent()
+	}
 
 	result, ok := program.reviewSessionDiffResult()
 	if !ok {
@@ -63,6 +66,22 @@ func (program *Program) reviewSessionDetailContent() string {
 		return program.reviewSessionNoDiffDetail()
 	}
 	return renderReviewDiffFileWithCollapsedThreads(selectedFile, program.markdownRenderer, program.detailWrapWidth, program.reviewSession.collapsedThreadIDs)
+}
+
+func (program *Program) reviewSessionDescriptionContent() string {
+	summary := program.reviewSession.summary
+	detail := githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, Body: summary.Body, State: summary.State, UpdatedAt: summary.UpdatedAt}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+		detail = result.detail
+	}
+	return renderPullRequestDescription(summary, detail, program.markdownRenderer, program.detailWrapWidth)
+}
+
+func (program *Program) reviewSessionShowsDescription() bool {
+	if !program.reviewSession.active {
+		return false
+	}
+	return program.model.currentSideFocus() == FocusUserView
 }
 
 func (program *Program) reviewSessionLoadingDetail() string {
@@ -114,6 +133,14 @@ func (program *Program) reviewSessionChangedFileCount() int {
 func (program *Program) reviewSessionDetailIdentity() string {
 	if !program.reviewSession.active {
 		return ""
+	}
+	if program.reviewSessionShowsDescription() {
+		return fmt.Sprintf(
+			"review:%s:%d:%s:description",
+			pullRequestRepositoryName(program.reviewSession.summary.Repository),
+			program.reviewSession.summary.Number,
+			program.reviewSession.pendingReviewID,
+		)
 	}
 	selectedFilePath := fmt.Sprintf("row:%d", program.reviewSession.selectedFileTreeRow)
 	if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {

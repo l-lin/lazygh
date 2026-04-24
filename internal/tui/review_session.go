@@ -11,6 +11,7 @@ import (
 const (
 	reviewModeMetadataTitle                 = "[1]-Metadata"
 	reviewModeFilesTitle                    = "[2]-Files"
+	reviewModeDescriptionTitle              = "[0]-Description"
 	reviewModeDiffTitle                     = "[0]-Diff"
 	pendingPullRequestReviewKeptOpenMessage = "Pending review kept open; start review to resume"
 )

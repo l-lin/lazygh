@@ -121,6 +121,9 @@ func (program *Program) userViewTitle() string {
 
 func (program *Program) detailViewTitle() string {
 	if program.reviewSession.active {
+		if program.reviewSessionShowsDescription() {
+			return reviewModeDescriptionTitle
+		}
 		return reviewModeDiffTitle
 	}
 	if program.shouldShowPullRequestDetailTabs() {

@@ -87,6 +87,75 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	}
 }
 
+func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShowsThePullRequestDescription(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	model := given_pullRequestCommentModel()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "Body 42", URL: "https://github.com/acme/widgets/pull/42"}),
+	})
+	subject := given_pullRequestCommentProgram(model, loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 42": "Rendered body 42"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if detailView.Title != reviewModeDescriptionTitle {
+		t.Fatalf("expected detail view title %q, actual %q", reviewModeDescriptionTitle, detailView.Title)
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered body 42") {
+		t.Fatalf("expected the review detail pane to show the rendered description, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
+		t.Fatalf("expected the review detail pane to hide the diff while metadata is selected, actual %q", detailView.Buffer())
+	}
+
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	if detailView.Title != reviewModeDescriptionTitle {
+		t.Fatalf("expected detail view title %q when focusing view 0 from metadata, actual %q", reviewModeDescriptionTitle, detailView.Title)
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered body 42") {
+		t.Fatalf("expected the review detail pane to keep showing the rendered description, actual %q", detailView.Buffer())
+	}
+
+	actualErr = subject.focusPullRequestsView(gui, nil)
+	then_noError(t, actualErr)
+	if detailView.Title != reviewModeDiffTitle {
+		t.Fatalf("expected detail view title %q after returning to files, actual %q", reviewModeDiffTitle, detailView.Title)
+	}
+	if !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
+		t.Fatalf("expected the review detail pane to restore the diff after returning to files, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered body 42") {
+		t.Fatalf("expected the review detail pane to hide the description after returning to files, actual %q", detailView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffColorsForCountsHunksAndChangedLines(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
@@ -454,6 +523,42 @@ func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPre
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to hide again, actual %q", detailView.Buffer())
+	}
+}
+
+func TestReviewMode_GivenApprovalMetadata_WhenRendering_ThenTheMetadataPaneFitsAllVisibleLines(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+				Reviews:      []githubcli.PullRequestReview{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"}},
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	metadataView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	if metadataView.InnerHeight() < len(metadataView.BufferLines()) {
+		t.Fatalf("expected metadata pane height %d to fit %d rendered lines", metadataView.InnerHeight(), len(metadataView.BufferLines()))
 	}
 }
 
