@@ -88,20 +88,44 @@ func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string,
 	})
 }
 
-func reviewDiffTreeItems(tree reviewDiffTree) []Item {
+func reviewDiffTreeItems(tree reviewDiffTree, files []reviewDiffFile) []Item {
 	items := make([]Item, 0, len(tree.Rows))
 	for _, row := range tree.Rows {
-		items = append(items, Item{Title: strings.Repeat("  ", row.Depth) + reviewDiffTreeRowText(row)})
+		items = append(items, Item{Title: strings.Repeat("  ", row.Depth) + reviewDiffTreeRowText(row, files)})
 	}
 	return items
 }
 
-func reviewDiffTreeRowText(row reviewDiffTreeRow) string {
-	return reviewDiffTreeRowIcon(row) + " " + row.Label
+func reviewDiffTreeRowText(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	return reviewDiffTreeRowIcon(row) + " " + reviewDiffTreeRowDisplayLabel(row, files)
+}
+
+func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	return row.Label + reviewDiffTreeRowCommentSuffix(row, files)
+}
+
+func reviewDiffTreeRowCommentSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	commentCount := reviewDiffTreeRowCommentCount(row, files)
+	if commentCount <= 0 {
+		return ""
+	}
+	return fmt.Sprintf(" (%d)", commentCount)
+}
+
+func reviewDiffTreeRowCommentCount(row reviewDiffTreeRow, files []reviewDiffFile) int {
+	if row.FileIndex < 0 || row.FileIndex >= len(files) {
+		return 0
+	}
+
+	commentCount := 0
+	for _, thread := range files[row.FileIndex].Threads {
+		commentCount += len(thread.Comments)
+	}
+	return commentCount
 }
 
 func reviewDiffTreeRowStyledText(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowStyledPrefix(row, files) + row.Label
+	return reviewDiffTreeRowStyledPrefix(row, files) + reviewDiffTreeRowDisplayLabel(row, files)
 }
 
 func reviewDiffTreeRowStyledPrefix(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -143,15 +167,17 @@ func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, quer
 	if row.FileIndex < 0 {
 		query = ""
 	}
+
+	commentSuffix := reviewDiffTreeRowCommentSuffix(row, files)
 	if !selected {
 		highlightedLabel, _ := highlightSearchMatches(row.Label, query)
-		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel
+		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel + commentSuffix
 	}
 
 	selectedPrefix := ansiBold + foregroundColorEscape(theme.ActiveTextHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
 	highlightedLabel, _ := highlightSearchMatchesWithPrefixes(row.Label, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
 	prefix := renderSelectedReviewDiffTreeRowPrefix(row, files, selectedPrefix)
-	return prefix + highlightedLabel
+	return prefix + highlightedLabel + applyPrefix(commentSuffix, selectedPrefix)
 }
 
 func renderSelectedReviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile, selectedPrefix string) string {

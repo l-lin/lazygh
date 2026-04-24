@@ -193,7 +193,7 @@ func TestReviewDiffTreeItems_GivenDirectoriesAndFiles_WhenFormatting_ThenItPrefi
 		{VisibleRowIndex: 2, Depth: 2, Label: "notes.txt", FileIndex: 0},
 	}}
 
-	actual := reviewDiffTreeItems(tree)
+	actual := reviewDiffTreeItems(tree, nil)
 
 	expected := []Item{
 		{Title: "󰝰 internal/"},
@@ -212,7 +212,7 @@ func TestReviewDiffTreeItems_GivenKnownFileTypes_WhenFormatting_ThenItUsesSpecif
 		{VisibleRowIndex: 2, Depth: 0, Label: "patient-context.yaml", FileIndex: 2},
 	}}
 
-	actual := reviewDiffTreeItems(tree)
+	actual := reviewDiffTreeItems(tree, nil)
 
 	expected := []Item{
 		{Title: " main.go"},

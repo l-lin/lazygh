@@ -87,6 +87,50 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	}
 }
 
+func TestReviewMode_GivenFilesWithInlineComments_WhenRenderingViewTwo_ThenItShowsCommentCountsBesideFileNames(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{
+		{
+			ID:       "thread-1",
+			Path:     "internal/tui/render.go",
+			Line:     3,
+			DiffSide: "RIGHT",
+			Comments: []githubcli.PullRequestComment{{Body: "First reply"}, {Body: "Second reply"}},
+		},
+		{
+			ID:           "thread-2",
+			Path:         "internal/tui/model.go",
+			OriginalLine: 10,
+			DiffSide:     "LEFT",
+			Comments:     []githubcli.PullRequestComment{{Body: "Needs work"}},
+		},
+	}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(filesView.Buffer(), "render.go (2)") || !strings.Contains(filesView.Buffer(), "model.go (1)") {
+		t.Fatalf("expected files view to contain per-file comment counts, actual %q", filesView.Buffer())
+	}
+	if strings.Contains(filesView.Buffer(), "internal/tui/ (") {
+		t.Fatalf("expected directories to stay count-free, actual %q", filesView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShowsThePullRequestDescription(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",

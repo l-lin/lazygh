@@ -139,7 +139,7 @@ func (program *Program) reviewSessionFiles() []Item {
 	}
 
 	program.clampReviewSessionSelection()
-	return reviewDiffTreeItems(result.data.FileTree)
+	return reviewDiffTreeItems(result.data.FileTree, result.data.Files)
 }
 
 func (program *Program) reviewSessionSelectedVisibleLine() int {
