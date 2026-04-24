@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-)
 
-const pullRequestJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt"
+	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+)
 
 var ErrInvalidPullRequestResponse = fmt.Errorf("invalid pull request response")
 
@@ -27,19 +27,17 @@ type PullRequest struct {
 }
 
 func (client *Client) ListMyPullRequests() ([]PullRequest, error) {
-	return client.listPullRequests("gh search prs", "--author", "@me")
+	defaultSearches := appconfig.DefaultPullRequestSearches()
+	return client.ListPullRequests(defaultSearches[0].Command)
 }
 
 func (client *Client) ListRequestedPullRequests() ([]PullRequest, error) {
-	return client.listPullRequests("gh search prs", "--review-requested", "@me", "--limit", "100")
+	defaultSearches := appconfig.DefaultPullRequestSearches()
+	return client.ListPullRequests(defaultSearches[1].Command)
 }
 
-func (client *Client) listPullRequests(commandName string, qualifiers ...string) ([]PullRequest, error) {
-	args := []string{"search", "prs"}
-	args = append(args, qualifiers...)
-	args = append(args, "--state", "open", "--json", pullRequestJSONFields)
-
-	result, err := client.runGH(commandName, args...)
+func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
+	result, err := client.runGH(appconfig.FormatGHCommand(commandArguments), commandArguments...)
 	if err != nil {
 		return nil, err
 	}

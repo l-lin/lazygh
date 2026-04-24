@@ -24,8 +24,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	contentMaxY := program.layoutContentHeight(maxY)
 
 	program.maybeLoadConnectedUser(gui)
-	program.maybeLoadMyPullRequests(gui)
-	program.maybeLoadRequestedPullRequests(gui)
+	program.maybeLoadActivePullRequests(gui)
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
 

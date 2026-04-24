@@ -6,7 +6,7 @@
 The repo now boots into a three-view TUI:
 - view `0`: detail pane, including rich PR metadata, markdown body rendering, and comments from `gh pr view`
 - view `1`: connected user from `gh api user`
-- view `2`: pull requests from `gh search prs`, with live `My PRs` and `Requested` tabs
+- view `2`: pull requests from ordered, configurable `gh` searches, with tabs named from the config
 
 The next milestones can focus on layout polish and extra PR actions.
 
@@ -31,7 +31,34 @@ mise run tidy
 ## Config
 `lazygh` looks for `~/.config/lazygh/config.toml`.
 
-If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, and invalid keymap value types are ignored, because apparently survival is preferable to drama.
+If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+
+### Pull request searches
+Configure ordered tabs under `[[pull_requests.searches]]`.
+
+- The configured list fully defines the pull-request tabs.
+- You can rename or remove the built-in `My PRs` and `Requested` tabs by replacing them in the list.
+- You can add extra searches by appending more entries.
+- If the list is missing or ends up empty after validation, `lazygh` falls back to the built-in `My PRs` and `Requested` tabs.
+
+`lazygh` runs `gh` itself, so configure only the arguments after `gh`. A string value is split on whitespace. If one argument needs spaces, use an array instead. Each command must return a JSON array with the fields `title,number,repository,url,body,state,isDraft,updatedAt`.
+
+This example renames the default tabs and adds a third one.
+
+```toml
+[[pull_requests.searches]]
+label = "My PRs"
+command = ["search", "prs", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+
+[[pull_requests.searches]]
+label = "Requested"
+command = ["search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+
+# New search
+[[pull_requests.searches]]
+label = "Escalated"
+command = ["search", "prs", "--search", "label:escalated state:open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+```
 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.

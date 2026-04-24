@@ -65,14 +65,19 @@ func (program *Program) loadingStatusText() string {
 }
 
 func (program *Program) activePullRequestsLoadingStatus() string {
-	switch program.model.ActivePullRequestTab() {
+	tab := program.model.ActivePullRequestTab()
+	switch tab {
+	case MyPullRequestsTab:
+		if program.myPullRequestsLoading {
+			return program.pullRequestListState(tab).loadingDetail
+		}
 	case RequestedPullRequestsTab:
 		if program.requestedPullRequestsLoading {
-			return requestedPullRequestsLoadingDetail
+			return program.pullRequestListState(tab).loadingDetail
 		}
 	default:
-		if program.myPullRequestsLoading {
-			return myPullRequestsLoadingDetail
+		if program.additionalPullRequestsLoading[tab] {
+			return program.pullRequestListState(tab).loadingDetail
 		}
 	}
 

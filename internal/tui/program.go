@@ -21,8 +21,7 @@ const (
 
 type GitHubLoader interface {
 	GetConnectedUser() (githubcli.ConnectedUser, error)
-	ListMyPullRequests() ([]githubcli.PullRequest, error)
-	ListRequestedPullRequests() ([]githubcli.PullRequest, error)
+	ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
 	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
 	CommentOnPullRequest(repository string, number int, body string) error
@@ -38,40 +37,44 @@ type GitHubLoader interface {
 }
 
 type Program struct {
-	model                            *Model
-	githubLoader                     GitHubLoader
-	connectedUserLoadStarted         bool
-	myPullRequestsLoadStarted        bool
-	requestedPullRequestsLoadStarted bool
-	myPullRequestsLoading            bool
-	requestedPullRequestsLoading     bool
-	myPullRequestsCount              int
-	myPullRequestsCountKnown         bool
-	requestedPullRequestsCount       int
-	requestedPullRequestsCountKnown  bool
-	pullRequestDetailCache           map[string]pullRequestDetailResult
-	pullRequestDetailLoadInFlight    map[string]bool
-	pullRequestDiffCache             map[string]pullRequestDiffResult
-	pullRequestDiffLoadInFlight      map[string]bool
-	loadingSpinnerFrameIndex         int
-	detailWrapWidth                  int
-	activeDetailTab                  DetailTab
-	lastDetailIdentity               string
-	detailViewState                  detailViewState
-	clipboardWriter                  clip.Writer
-	feedbackMessage                  string
-	helpVisible                      bool
-	searchEditor                     *lineEditor
-	actionsPopupSearchEditor         *lineEditor
-	actionsPopupErrorMessage         string
-	reviewSession                    reviewSessionState
-	modalEditor                      *modalEditorState
-	externalEditor                   externalEditor
-	markdownRenderer                 MarkdownRenderer
-	asyncRunner                      asyncRunner
-	uiUpdater                        uiUpdater
-	gui                              *gocui.Gui
-	keymapOverrides                  appconfig.KeymapOverrides
+	model                             *Model
+	githubLoader                      GitHubLoader
+	connectedUserLoadStarted          bool
+	myPullRequestsLoadStarted         bool
+	requestedPullRequestsLoadStarted  bool
+	myPullRequestsLoading             bool
+	requestedPullRequestsLoading      bool
+	myPullRequestsCount               int
+	myPullRequestsCountKnown          bool
+	requestedPullRequestsCount        int
+	requestedPullRequestsCountKnown   bool
+	additionalPullRequestsLoadStarted map[PullRequestTab]bool
+	additionalPullRequestsLoading     map[PullRequestTab]bool
+	additionalPullRequestsCounts      map[PullRequestTab]pullRequestCountState
+	pullRequestDetailCache            map[string]pullRequestDetailResult
+	pullRequestDetailLoadInFlight     map[string]bool
+	pullRequestDiffCache              map[string]pullRequestDiffResult
+	pullRequestDiffLoadInFlight       map[string]bool
+	loadingSpinnerFrameIndex          int
+	detailWrapWidth                   int
+	activeDetailTab                   DetailTab
+	lastDetailIdentity                string
+	detailViewState                   detailViewState
+	clipboardWriter                   clip.Writer
+	feedbackMessage                   string
+	helpVisible                       bool
+	searchEditor                      *lineEditor
+	actionsPopupSearchEditor          *lineEditor
+	actionsPopupErrorMessage          string
+	reviewSession                     reviewSessionState
+	modalEditor                       *modalEditorState
+	externalEditor                    externalEditor
+	markdownRenderer                  MarkdownRenderer
+	asyncRunner                       asyncRunner
+	uiUpdater                         uiUpdater
+	gui                               *gocui.Gui
+	keymapOverrides                   appconfig.KeymapOverrides
+	pullRequestSearches               []appconfig.PullRequestSearch
 }
 
 func NewProgram(githubLoaders ...GitHubLoader) *Program {
@@ -95,19 +98,23 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 	}
 
 	return &Program{
-		model:                         model,
-		githubLoader:                  githubLoader,
-		pullRequestDetailCache:        map[string]pullRequestDetailResult{},
-		pullRequestDetailLoadInFlight: map[string]bool{},
-		pullRequestDiffCache:          map[string]pullRequestDiffResult{},
-		pullRequestDiffLoadInFlight:   map[string]bool{},
-		externalEditor:                systemExternalEditor{},
-		markdownRenderer:              glamourMarkdownRenderer{},
-		asyncRunner:                   goroutineAsyncRunner{},
-		uiUpdater:                     queuedUIUpdater{},
-		clipboardWriter:               clip.NewSystemWriter(),
-		detailViewState:               newDetailViewState(),
-		detailWrapWidth:               defaultDetailWrapWidth,
+		model:                             model,
+		githubLoader:                      githubLoader,
+		pullRequestDetailCache:            map[string]pullRequestDetailResult{},
+		pullRequestDetailLoadInFlight:     map[string]bool{},
+		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
+		pullRequestDiffLoadInFlight:       map[string]bool{},
+		additionalPullRequestsLoadStarted: map[PullRequestTab]bool{},
+		additionalPullRequestsLoading:     map[PullRequestTab]bool{},
+		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},
+		externalEditor:                    systemExternalEditor{},
+		markdownRenderer:                  glamourMarkdownRenderer{},
+		asyncRunner:                       goroutineAsyncRunner{},
+		uiUpdater:                         queuedUIUpdater{},
+		clipboardWriter:                   clip.NewSystemWriter(),
+		detailViewState:                   newDetailViewState(),
+		detailWrapWidth:                   defaultDetailWrapWidth,
+		pullRequestSearches:               appconfig.DefaultPullRequestSearches(),
 	}
 }
 

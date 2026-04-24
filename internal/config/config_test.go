@@ -75,6 +75,67 @@ comment_on_pull_request = "c"
 	}
 }
 
+func TestLoad_GivenPullRequestSearches_WhenLoading_ThenItPreservesConfiguredLabelsAndCommands(t *testing.T) {
+	configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "Mine"
+command = ["pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+
+[[pull_requests.searches]]
+label = "Team Review"
+command = "search prs --review-requested @me --limit 50 --state open --json title,number,repository,url,body,state,isDraft,updatedAt"
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{PullRequests: []PullRequestSearch{
+		{Label: "Mine", Command: []string{"pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+		{Label: "Team Review", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "50", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoad_GivenInvalidPullRequestSearchEntries_WhenLoading_ThenItIgnoresOnlyTheBadEntries(t *testing.T) {
+	configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "   "
+command = ["search", "prs", "--author", "@me"]
+
+[[pull_requests.searches]]
+label = "Valid"
+command = ["search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+
+[[pull_requests.searches]]
+label = "Broken"
+command = 1
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{PullRequests: []PullRequestSearch{{
+		Label:   "Valid",
+		Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"},
+	}}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedPullRequestSearches_GivenAnEmptyConfiguredList_WhenResolving_ThenItFallsBackToDefaults(t *testing.T) {
+	subject := Config{}
+
+	actual := subject.ResolvedPullRequestSearches()
+
+	expected := DefaultPullRequestSearches()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected searches %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenMalformedTOML_WhenLoading_ThenItReturnsTheParseError(t *testing.T) {
 	configPath := given_configFile(t, "[keymaps.pull_requests\nopen_detail = \"o\"\n")
 

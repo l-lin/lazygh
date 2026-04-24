@@ -27,18 +27,28 @@ type PullRequestRow struct {
 	Summary *githubcli.PullRequest
 }
 
+type PullRequestTabSeed struct {
+	Label        string
+	PullRequests []Item
+}
+
 type SeedData struct {
 	Users                 []Item
 	MyPullRequests        []Item
 	RequestedPullRequests []Item
+	PullRequestTabs       []PullRequestTabSeed
+}
+
+type pullRequestTabState struct {
+	label string
+	rows  []PullRequestRow
 }
 
 type Model struct {
 	focus                      Focus
 	lastSideFocus              Focus
 	users                      []Item
-	myPullRequests             []PullRequestRow
-	requestedPullRequests      []PullRequestRow
+	pullRequestTabs            []pullRequestTabState
 	selectedUserIndex          int
 	activePullRequestTab       PullRequestTab
 	selectedPullRequestIndexes map[PullRequestTab]int
@@ -56,29 +66,89 @@ type Model struct {
 }
 
 func NewModel(seed SeedData) *Model {
-	return &Model{
-		focus:                 FocusUserView,
-		lastSideFocus:         FocusUserView,
-		users:                 copyItems(seed.Users),
-		myPullRequests:        pullRequestRowsFromItems(seed.MyPullRequests),
-		requestedPullRequests: pullRequestRowsFromItems(seed.RequestedPullRequests),
-		selectedPullRequestIndexes: map[PullRequestTab]int{
-			MyPullRequestsTab:        0,
-			RequestedPullRequestsTab: 0,
-		},
-		pullRequestSearchQueries: map[PullRequestTab]string{
-			MyPullRequestsTab:        "",
-			RequestedPullRequestsTab: "",
-		},
+	model := &Model{
+		focus:                      FocusUserView,
+		lastSideFocus:              FocusUserView,
+		users:                      copyItems(seed.Users),
+		selectedPullRequestIndexes: map[PullRequestTab]int{},
+		pullRequestSearchQueries:   map[PullRequestTab]string{},
 	}
+	model.SetPullRequestTabs(seed.pullRequestTabs())
+	return model
 }
 
 func DefaultSeedData() SeedData {
 	return SeedData{
-		Users:                 []Item{connectedUserLoadingItem()},
-		MyPullRequests:        []Item{myPullRequestsLoadingItem()},
-		RequestedPullRequests: []Item{requestedPullRequestsLoadingItem()},
+		Users: []Item{connectedUserLoadingItem()},
+		PullRequestTabs: []PullRequestTabSeed{
+			{Label: "My PRs", PullRequests: []Item{myPullRequestsLoadingItem()}},
+			{Label: "Requested", PullRequests: []Item{requestedPullRequestsLoadingItem()}},
+		},
 	}
+}
+
+func (seed SeedData) pullRequestTabs() []PullRequestTabSeed {
+	if len(seed.PullRequestTabs) > 0 {
+		return copyPullRequestTabSeeds(seed.PullRequestTabs)
+	}
+
+	return []PullRequestTabSeed{
+		{Label: "My PRs", PullRequests: copyItems(seed.MyPullRequests)},
+		{Label: "Requested", PullRequests: copyItems(seed.RequestedPullRequests)},
+	}
+}
+
+func copyPullRequestTabSeeds(seeds []PullRequestTabSeed) []PullRequestTabSeed {
+	copied := make([]PullRequestTabSeed, 0, len(seeds))
+	for _, seed := range seeds {
+		copied = append(copied, PullRequestTabSeed{Label: seed.Label, PullRequests: copyItems(seed.PullRequests)})
+	}
+	return copied
+}
+
+func (model *Model) SetPullRequestTabs(seeds []PullRequestTabSeed) {
+	normalizedSeeds := normalizePullRequestTabSeeds(seeds)
+	if len(normalizedSeeds) == 0 {
+		normalizedSeeds = DefaultSeedData().pullRequestTabs()
+	}
+
+	previousSelectedIndexes := model.selectedPullRequestIndexes
+	previousSearchQueries := model.pullRequestSearchQueries
+	previousActiveTab := model.activePullRequestTab
+	previousSearchTargetTab := model.searchTargetPullRequestTab
+
+	model.pullRequestTabs = make([]pullRequestTabState, 0, len(normalizedSeeds))
+	model.selectedPullRequestIndexes = make(map[PullRequestTab]int, len(normalizedSeeds))
+	model.pullRequestSearchQueries = make(map[PullRequestTab]string, len(normalizedSeeds))
+	for index, seed := range normalizedSeeds {
+		tab := PullRequestTab(index)
+		rows := pullRequestRowsFromItems(seed.PullRequests)
+		model.pullRequestTabs = append(model.pullRequestTabs, pullRequestTabState{label: seed.Label, rows: rows})
+		model.selectedPullRequestIndexes[tab] = clampIndex(previousSelectedIndexes[tab], len(rows))
+		model.pullRequestSearchQueries[tab] = previousSearchQueries[tab]
+	}
+
+	model.activePullRequestTab = PullRequestTab(clampIndex(int(previousActiveTab), len(model.pullRequestTabs)))
+	model.searchTargetPullRequestTab = PullRequestTab(clampIndex(int(previousSearchTargetTab), len(model.pullRequestTabs)))
+	for _, tab := range model.PullRequestTabs() {
+		model.clampSearchSelectionForPullRequestTab(tab)
+	}
+}
+
+func normalizePullRequestTabSeeds(seeds []PullRequestTabSeed) []PullRequestTabSeed {
+	if len(seeds) == 0 {
+		return nil
+	}
+
+	normalized := make([]PullRequestTabSeed, 0, len(seeds))
+	for _, seed := range seeds {
+		if seed.Label == "" {
+			continue
+		}
+		normalized = append(normalized, PullRequestTabSeed{Label: seed.Label, PullRequests: copyItems(seed.PullRequests)})
+	}
+
+	return normalized
 }
 
 func (model *Model) Focus() Focus {
@@ -87,6 +157,22 @@ func (model *Model) Focus() Focus {
 
 func (model *Model) ActivePullRequestTab() PullRequestTab {
 	return model.activePullRequestTab
+}
+
+func (model *Model) PullRequestTabs() []PullRequestTab {
+	tabs := make([]PullRequestTab, 0, len(model.pullRequestTabs))
+	for index := range model.pullRequestTabs {
+		tabs = append(tabs, PullRequestTab(index))
+	}
+	return tabs
+}
+
+func (model *Model) PullRequestTabLabel(tab PullRequestTab) string {
+	index := int(tab)
+	if index < 0 || index >= len(model.pullRequestTabs) {
+		return tab.Label()
+	}
+	return model.pullRequestTabs[index].label
 }
 
 func (model *Model) SelectedUserIndex() int {
@@ -120,15 +206,13 @@ func (model *Model) SetPullRequests(tab PullRequestTab, pullRequests []Item) {
 }
 
 func (model *Model) SetPullRequestRows(tab PullRequestTab, pullRequests []PullRequestRow) {
-	switch tab {
-	case RequestedPullRequestsTab:
-		model.requestedPullRequests = copyPullRequestRows(pullRequests)
-		model.selectedPullRequestIndexes[RequestedPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[RequestedPullRequestsTab], len(model.requestedPullRequests))
-	default:
-		model.myPullRequests = copyPullRequestRows(pullRequests)
-		model.selectedPullRequestIndexes[MyPullRequestsTab] = clampIndex(model.selectedPullRequestIndexes[MyPullRequestsTab], len(model.myPullRequests))
+	index := int(tab)
+	if index < 0 || index >= len(model.pullRequestTabs) {
+		return
 	}
 
+	model.pullRequestTabs[index].rows = copyPullRequestRows(pullRequests)
+	model.selectedPullRequestIndexes[tab] = clampIndex(model.selectedPullRequestIndexes[tab], len(model.pullRequestTabs[index].rows))
 	model.clampSearchSelectionForPullRequestTab(tab)
 }
 
@@ -240,18 +324,21 @@ func (model *Model) PageUp(pageSize int) {
 }
 
 func (model *Model) NextPullRequestTab() {
-	if model.focus != FocusPullRequestsView {
+	if model.focus != FocusPullRequestsView || len(model.pullRequestTabs) <= 1 {
 		return
 	}
 
-	switch model.activePullRequestTab {
-	case RequestedPullRequestsTab:
-		model.activePullRequestTab = MyPullRequestsTab
-	default:
-		model.activePullRequestTab = RequestedPullRequestsTab
-	}
+	model.activePullRequestTab = PullRequestTab((int(model.activePullRequestTab) + 1) % len(model.pullRequestTabs))
 }
 
 func (model *Model) PreviousPullRequestTab() {
-	model.NextPullRequestTab()
+	if model.focus != FocusPullRequestsView || len(model.pullRequestTabs) <= 1 {
+		return
+	}
+
+	activeIndex := int(model.activePullRequestTab) - 1
+	if activeIndex < 0 {
+		activeIndex = len(model.pullRequestTabs) - 1
+	}
+	model.activePullRequestTab = PullRequestTab(activeIndex)
 }

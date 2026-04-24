@@ -12,6 +12,7 @@ import (
 
 type configurableRunner interface {
 	ApplyKeymapOverrides(appconfig.KeymapOverrides)
+	ApplyPullRequestSearches([]appconfig.PullRequestSearch)
 	OpenReviewByURL(string) error
 	Run() error
 }
@@ -38,6 +39,7 @@ func run(args []string, loadConfig func() (appconfig.Config, error), newRunner f
 
 	runner := newRunner()
 	runner.ApplyKeymapOverrides(configuration.Keymaps)
+	runner.ApplyPullRequestSearches(configuration.PullRequests)
 	if startupOptions.reviewURL != "" {
 		if actualErr := runner.OpenReviewByURL(startupOptions.reviewURL); actualErr != nil {
 			return actualErr

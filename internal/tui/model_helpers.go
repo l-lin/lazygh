@@ -79,12 +79,12 @@ func pullRequestItems(rows []PullRequestRow) []Item {
 }
 
 func (model *Model) pullRequestRows(tab PullRequestTab) []PullRequestRow {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return model.requestedPullRequests
-	default:
-		return model.myPullRequests
+	index := int(tab)
+	if index < 0 || index >= len(model.pullRequestTabs) {
+		return nil
 	}
+
+	return model.pullRequestTabs[index].rows
 }
 
 func indexOfInt(items []int, expected int) int {

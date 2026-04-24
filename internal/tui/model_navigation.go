@@ -71,7 +71,9 @@ func (tab PullRequestTab) Label() string {
 	switch tab {
 	case RequestedPullRequestsTab:
 		return "Requested"
-	default:
+	case MyPullRequestsTab:
 		return "My PRs"
+	default:
+		return "Pull Requests"
 	}
 }

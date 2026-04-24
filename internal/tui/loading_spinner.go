@@ -48,11 +48,14 @@ func (program *Program) shouldAnimateLoadingSpinner() bool {
 }
 
 func (program *Program) activePullRequestsLoading() bool {
-	switch program.model.ActivePullRequestTab() {
+	tab := program.model.ActivePullRequestTab()
+	switch tab {
+	case MyPullRequestsTab:
+		return program.myPullRequestsLoading
 	case RequestedPullRequestsTab:
 		return program.requestedPullRequestsLoading
 	default:
-		return program.myPullRequestsLoading
+		return program.additionalPullRequestsLoading[tab]
 	}
 }
 
@@ -94,19 +97,10 @@ func (program *Program) loadingSpinnerStatus(label string) string {
 	}
 }
 
-func (program *Program) displayItemTitle(title string) string {
-	if isPullRequestLoadingTitle(title) {
+func (program *Program) displayItemTitle(item Item) string {
+	if program.isPullRequestLoadingItem(item) {
 		return program.loadingSpinnerFrame()
 	}
 
-	return title
-}
-
-func isPullRequestLoadingTitle(title string) bool {
-	switch strings.TrimSpace(title) {
-	case myPullRequestsLoadingTitle, requestedPullRequestsLoadingTitle:
-		return true
-	default:
-		return false
-	}
+	return item.Title
 }

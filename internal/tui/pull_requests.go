@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 const (
 	myPullRequestsLoadingTitle                 = "Loading my pull requests..."
-	myPullRequestsLoadingDetail                = "Running `gh search prs --author @me --state open` to load authored pull requests."
 	myPullRequestsEmptyTitle                   = "No open pull requests"
 	myPullRequestsEmptyDetail                  = "GitHub returned no open pull requests authored by the authenticated user."
 	myPullRequestsUnauthenticatedTitle         = "GitHub authentication required"
@@ -18,9 +18,7 @@ const (
 	myPullRequestsUnavailableTitle             = "`gh` not found"
 	myPullRequestsUnavailableDetail            = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
 	myPullRequestsGenericErrorTitle            = "Could not load my pull requests"
-	myPullRequestsGenericErrorPrefix           = "Failed to run `gh search prs --author @me --state open`."
 	requestedPullRequestsLoadingTitle          = "Loading requested pull requests..."
-	requestedPullRequestsLoadingDetail         = "Running `gh search prs --review-requested @me --state open` to load review requests."
 	requestedPullRequestsEmptyTitle            = "No requested pull requests"
 	requestedPullRequestsEmptyDetail           = "GitHub returned no open pull requests requesting review from the authenticated user."
 	requestedPullRequestsUnauthenticatedTitle  = "GitHub authentication required"
@@ -28,7 +26,6 @@ const (
 	requestedPullRequestsUnavailableTitle      = "`gh` not found"
 	requestedPullRequestsUnavailableDetail     = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
 	requestedPullRequestsGenericErrorTitle     = "Could not load requested pull requests"
-	requestedPullRequestsGenericErrorPrefix    = "Failed to run `gh search prs --review-requested @me --state open`."
 )
 
 type pullRequestListState struct {
@@ -45,31 +42,60 @@ type pullRequestListState struct {
 }
 
 var (
-	myPullRequestsState = pullRequestListState{
-		loadingTitle:          myPullRequestsLoadingTitle,
-		loadingDetail:         myPullRequestsLoadingDetail,
-		emptyTitle:            myPullRequestsEmptyTitle,
-		emptyDetail:           myPullRequestsEmptyDetail,
-		unauthenticatedTitle:  myPullRequestsUnauthenticatedTitle,
-		unauthenticatedDetail: myPullRequestsUnauthenticatedDetail,
-		unavailableTitle:      myPullRequestsUnavailableTitle,
-		unavailableDetail:     myPullRequestsUnavailableDetail,
-		genericErrorTitle:     myPullRequestsGenericErrorTitle,
-		genericErrorPrefix:    myPullRequestsGenericErrorPrefix,
-	}
-	requestedPullRequestsState = pullRequestListState{
-		loadingTitle:          requestedPullRequestsLoadingTitle,
-		loadingDetail:         requestedPullRequestsLoadingDetail,
-		emptyTitle:            requestedPullRequestsEmptyTitle,
-		emptyDetail:           requestedPullRequestsEmptyDetail,
-		unauthenticatedTitle:  requestedPullRequestsUnauthenticatedTitle,
-		unauthenticatedDetail: requestedPullRequestsUnauthenticatedDetail,
-		unavailableTitle:      requestedPullRequestsUnavailableTitle,
-		unavailableDetail:     requestedPullRequestsUnavailableDetail,
-		genericErrorTitle:     requestedPullRequestsGenericErrorTitle,
-		genericErrorPrefix:    requestedPullRequestsGenericErrorPrefix,
-	}
+	defaultPullRequestSearches              = appconfig.DefaultPullRequestSearches()
+	myPullRequestsLoadingDetail             = buildPullRequestListState(defaultPullRequestSearches[0]).loadingDetail
+	myPullRequestsGenericErrorPrefix        = buildPullRequestListState(defaultPullRequestSearches[0]).genericErrorPrefix
+	requestedPullRequestsLoadingDetail      = buildPullRequestListState(defaultPullRequestSearches[1]).loadingDetail
+	requestedPullRequestsGenericErrorPrefix = buildPullRequestListState(defaultPullRequestSearches[1]).genericErrorPrefix
+	myPullRequestsState                     = buildPullRequestListState(defaultPullRequestSearches[0])
+	requestedPullRequestsState              = buildPullRequestListState(defaultPullRequestSearches[1])
 )
+
+func buildPullRequestListState(search appconfig.PullRequestSearch) pullRequestListState {
+	commandLine := appconfig.FormatGHCommand(search.Command)
+	label := strings.TrimSpace(search.Label)
+	switch label {
+	case "Requested":
+		return pullRequestListState{
+			loadingTitle:          requestedPullRequestsLoadingTitle,
+			loadingDetail:         fmt.Sprintf("Running `%s` to load review requests.", commandLine),
+			emptyTitle:            requestedPullRequestsEmptyTitle,
+			emptyDetail:           requestedPullRequestsEmptyDetail,
+			unauthenticatedTitle:  requestedPullRequestsUnauthenticatedTitle,
+			unauthenticatedDetail: requestedPullRequestsUnauthenticatedDetail,
+			unavailableTitle:      requestedPullRequestsUnavailableTitle,
+			unavailableDetail:     requestedPullRequestsUnavailableDetail,
+			genericErrorTitle:     requestedPullRequestsGenericErrorTitle,
+			genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
+		}
+	case "My PRs":
+		return pullRequestListState{
+			loadingTitle:          myPullRequestsLoadingTitle,
+			loadingDetail:         fmt.Sprintf("Running `%s` to load authored pull requests.", commandLine),
+			emptyTitle:            myPullRequestsEmptyTitle,
+			emptyDetail:           myPullRequestsEmptyDetail,
+			unauthenticatedTitle:  myPullRequestsUnauthenticatedTitle,
+			unauthenticatedDetail: myPullRequestsUnauthenticatedDetail,
+			unavailableTitle:      myPullRequestsUnavailableTitle,
+			unavailableDetail:     myPullRequestsUnavailableDetail,
+			genericErrorTitle:     myPullRequestsGenericErrorTitle,
+			genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
+		}
+	default:
+		return pullRequestListState{
+			loadingTitle:          fmt.Sprintf("Loading %s...", label),
+			loadingDetail:         fmt.Sprintf("Running `%s` to load pull requests for %s.", commandLine, label),
+			emptyTitle:            fmt.Sprintf("No pull requests for %s", label),
+			emptyDetail:           fmt.Sprintf("GitHub returned no open pull requests for %s.", label),
+			unauthenticatedTitle:  requestedPullRequestsUnauthenticatedTitle,
+			unauthenticatedDetail: requestedPullRequestsUnauthenticatedDetail,
+			unavailableTitle:      requestedPullRequestsUnavailableTitle,
+			unavailableDetail:     requestedPullRequestsUnavailableDetail,
+			genericErrorTitle:     fmt.Sprintf("Could not load %s", label),
+			genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
+		}
+	}
+}
 
 func myPullRequestsLoadingItem() Item {
 	return pullRequestLoadingItem(myPullRequestsState)

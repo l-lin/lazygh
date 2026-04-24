@@ -33,7 +33,7 @@ func (program *Program) renderSelectableListView(view *gocui.View, state selecta
 
 	showSelectedLine := program.usesManualSelectedLineRendering(state.query) && program.shouldHighlightSelection(state.focus, true)
 	for visibleIndex, item := range state.items {
-		program.renderHighlightedLine(view, program.displayItemTitle(item.Title), state.query, showSelectedLine && visibleIndex == state.selectedVisibleLine)
+		program.renderHighlightedLine(view, program.displayItemTitle(item), state.query, showSelectedLine && visibleIndex == state.selectedVisibleLine)
 	}
 
 	program.selectListLine(view, state.selectedVisibleLine)

@@ -17,12 +17,8 @@ func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
 	})
 }
 
-func (program *Program) maybeLoadMyPullRequests(gui *gocui.Gui) {
-	program.maybeLoadPullRequests(gui, MyPullRequestsTab)
-}
-
-func (program *Program) maybeLoadRequestedPullRequests(gui *gocui.Gui) {
-	program.maybeLoadPullRequests(gui, RequestedPullRequestsTab)
+func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
+	program.maybeLoadPullRequests(gui, program.model.ActivePullRequestTab())
 }
 
 func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
@@ -73,57 +69,55 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 }
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubcli.PullRequest, error) {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return program.githubLoader.ListRequestedPullRequests()
-	default:
-		return program.githubLoader.ListMyPullRequests()
-	}
+	return program.githubLoader.ListPullRequests(program.pullRequestSearch(tab).Command)
 }
 
 func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return requestedPullRequestsStateRows(pullRequests, err)
-	default:
-		return myPullRequestsStateRows(pullRequests, err)
-	}
+	return pullRequestStateRows(program.pullRequestListState(tab), pullRequests, err)
 }
 
 func (program *Program) pullRequestsLoadStarted(tab PullRequestTab) bool {
 	switch tab {
+	case MyPullRequestsTab:
+		return program.myPullRequestsLoadStarted
 	case RequestedPullRequestsTab:
 		return program.requestedPullRequestsLoadStarted
 	default:
-		return program.myPullRequestsLoadStarted
+		return program.additionalPullRequestsLoadStarted[tab]
 	}
 }
 
 func (program *Program) setPullRequestsLoadStarted(tab PullRequestTab, value bool) {
 	switch tab {
+	case MyPullRequestsTab:
+		program.myPullRequestsLoadStarted = value
 	case RequestedPullRequestsTab:
 		program.requestedPullRequestsLoadStarted = value
 	default:
-		program.myPullRequestsLoadStarted = value
+		program.additionalPullRequestsLoadStarted[tab] = value
 	}
 }
 
 func (program *Program) setPullRequestsLoading(tab PullRequestTab, value bool) {
 	switch tab {
+	case MyPullRequestsTab:
+		program.myPullRequestsLoading = value
 	case RequestedPullRequestsTab:
 		program.requestedPullRequestsLoading = value
 	default:
-		program.myPullRequestsLoading = value
+		program.additionalPullRequestsLoading[tab] = value
 	}
 }
 
 func (program *Program) setPullRequestsCount(tab PullRequestTab, count int, known bool) {
 	switch tab {
+	case MyPullRequestsTab:
+		program.myPullRequestsCount = count
+		program.myPullRequestsCountKnown = known
 	case RequestedPullRequestsTab:
 		program.requestedPullRequestsCount = count
 		program.requestedPullRequestsCountKnown = known
 	default:
-		program.myPullRequestsCount = count
-		program.myPullRequestsCountKnown = known
+		program.additionalPullRequestsCounts[tab] = pullRequestCountState{count: count, known: known}
 	}
 }

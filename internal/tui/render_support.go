@@ -39,7 +39,7 @@ func (program *Program) detailViewContent() string {
 }
 
 func (program *Program) fallbackDetailViewContent(item Item) string {
-	if isPullRequestLoadingTitle(item.Title) {
+	if program.isPullRequestLoadingItem(item) {
 		return program.loadingSpinnerFrame()
 	}
 
@@ -55,10 +55,10 @@ func (program *Program) fallbackDetailViewContent(item Item) string {
 func (program *Program) detailHeader(item Item) string {
 	source := "Connected user"
 	if program.model.currentSideFocus() == FocusPullRequestsView {
-		source = fmt.Sprintf("%s tab", program.model.ActivePullRequestTab().Label())
+		source = fmt.Sprintf("%s tab", program.model.PullRequestTabLabel(program.model.ActivePullRequestTab()))
 	}
 
-	return fmt.Sprintf("%s\n%s", source, program.displayItemTitle(item.Title))
+	return fmt.Sprintf("%s\n%s", source, program.displayItemTitle(item))
 }
 
 func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
@@ -82,32 +82,6 @@ func (program *Program) syncDetailViewState(detailDocument detailDocument, viewp
 
 	program.detailViewState.sync(detailDocument, viewportHeight)
 	program.detailViewState.syncSearch(detailDocument, program.model.DetailSearchQuery())
-}
-
-func (program *Program) pullRequestsTabLabels() []string {
-	return []string{
-		program.pullRequestsTabLabel(MyPullRequestsTab),
-		program.pullRequestsTabLabel(RequestedPullRequestsTab),
-	}
-}
-
-func (program *Program) pullRequestsTabLabel(tab PullRequestTab) string {
-	label := tab.Label()
-	count, ok := program.pullRequestsCount(tab)
-	if !ok {
-		return label
-	}
-
-	return fmt.Sprintf("%s (%d)", label, count)
-}
-
-func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return program.requestedPullRequestsCount, program.requestedPullRequestsCountKnown
-	default:
-		return program.myPullRequestsCount, program.myPullRequestsCountKnown
-	}
 }
 
 func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) bool {

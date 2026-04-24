@@ -35,6 +35,32 @@ func TestRun_GivenLoadedKeymapOverrides_WhenStartingTheProgram_ThenItAppliesThem
 	}
 }
 
+func TestRun_GivenLoadedPullRequestSearches_WhenStartingTheProgram_ThenItAppliesThemBeforeRunning(t *testing.T) {
+	expectedSearches := []appconfig.PullRequestSearch{
+		{Label: "Mine", Command: []string{"pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+		{Label: "Team Review", Command: []string{"pr", "list", "--search", "review-requested:@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+	}
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		nil,
+		func() (appconfig.Config, error) {
+			return appconfig.Config{PullRequests: expectedSearches}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(runner.appliedPullRequestSearches, expectedSearches) {
+		t.Fatalf("expected pull request searches %+v, actual %+v", expectedSearches, runner.appliedPullRequestSearches)
+	}
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "run"}, runner.calls)
+	}
+}
+
 func TestRun_GivenConfigLoadError_WhenStartingTheProgram_ThenItReturnsTheError(t *testing.T) {
 	expectedErr := errors.New("boom")
 	runner := &fakeConfigurableRunner{}
@@ -80,8 +106,8 @@ func TestRun_GivenReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequeste
 	if runner.reviewURL != expectedURL {
 		t.Fatalf("expected review url %q, actual %q", expectedURL, runner.reviewURL)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "review", "run"}, runner.calls)
 	}
 }
 
@@ -113,18 +139,24 @@ func TestRun_GivenReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturn
 }
 
 type fakeConfigurableRunner struct {
-	appliedOverrides appconfig.KeymapOverrides
-	reviewURL        string
-	runCalled        bool
-	reviewCalled     bool
-	runErr           error
-	reviewErr        error
-	calls            []string
+	appliedOverrides           appconfig.KeymapOverrides
+	appliedPullRequestSearches []appconfig.PullRequestSearch
+	reviewURL                  string
+	runCalled                  bool
+	reviewCalled               bool
+	runErr                     error
+	reviewErr                  error
+	calls                      []string
 }
 
 func (runner *fakeConfigurableRunner) ApplyKeymapOverrides(overrides appconfig.KeymapOverrides) {
 	runner.appliedOverrides = overrides
 	runner.calls = append(runner.calls, "apply")
+}
+
+func (runner *fakeConfigurableRunner) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
+	runner.appliedPullRequestSearches = append([]appconfig.PullRequestSearch(nil), searches...)
+	runner.calls = append(runner.calls, "apply_pull_request_searches")
 }
 
 func (runner *fakeConfigurableRunner) OpenReviewByURL(url string) error {

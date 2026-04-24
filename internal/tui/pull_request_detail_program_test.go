@@ -533,12 +533,14 @@ func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.Connect
 	return githubcli.ConnectedUser{}, nil
 }
 
-func (loader *fakePullRequestDetailLoader) ListMyPullRequests() ([]githubcli.PullRequest, error) {
-	return append([]githubcli.PullRequest(nil), loader.myPullRequests...), nil
-}
+func (loader *fakePullRequestDetailLoader) ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error) {
+	for _, argument := range commandArguments {
+		if argument == "--review-requested" {
+			return append([]githubcli.PullRequest(nil), loader.requestedPullRequests...), nil
+		}
+	}
 
-func (loader *fakePullRequestDetailLoader) ListRequestedPullRequests() ([]githubcli.PullRequest, error) {
-	return append([]githubcli.PullRequest(nil), loader.requestedPullRequests...), nil
+	return append([]githubcli.PullRequest(nil), loader.myPullRequests...), nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error) {
