@@ -46,14 +46,15 @@ type detailDocument struct {
 }
 
 type detailViewState struct {
-	cursor             detailPosition
-	originRow          int
-	preferredColumn    int
-	mode               detailMode
-	visualAnchor       detailPosition
-	pendingGoToTop     bool
-	searchMatches      []detailSearchMatch
-	currentSearchMatch int
+	cursor                          detailPosition
+	originRow                       int
+	preferredColumn                 int
+	mode                            detailMode
+	visualAnchor                    detailPosition
+	pendingGoToTop                  bool
+	pendingToggleInlineConversation bool
+	searchMatches                   []detailSearchMatch
+	currentSearchMatch              int
 }
 
 type detailCellStyle struct {

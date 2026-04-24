@@ -44,6 +44,7 @@ func (state *detailViewState) reset() {
 
 func (state *detailViewState) clearPendingPrefix() {
 	state.pendingGoToTop = false
+	state.pendingToggleInlineConversation = false
 }
 
 func (state *detailViewState) enterVisualMode() {
@@ -134,7 +135,22 @@ func (state *detailViewState) handleGoToTopPrefix(document detailDocument, viewp
 		return
 	}
 
+	state.pendingToggleInlineConversation = false
 	state.pendingGoToTop = true
+}
+
+func (state *detailViewState) armInlineConversationTogglePrefix() {
+	state.pendingGoToTop = false
+	state.pendingToggleInlineConversation = true
+}
+
+func (state *detailViewState) consumeInlineConversationTogglePrefix() bool {
+	if !state.pendingToggleInlineConversation {
+		return false
+	}
+
+	state.clearPendingPrefix()
+	return true
 }
 
 func (state *detailViewState) moveToTop(document detailDocument, viewportHeight int) {

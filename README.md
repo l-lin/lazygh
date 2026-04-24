@@ -63,7 +63,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--json", 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.
 
-For multi-key motions, configure the prefix key. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` mean `gg` goes to the top.
+For multi-key motions, configure the prefix key. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` mean `gg` goes to the top. In review mode, `toggle_inline_conversation_prefix = "z"` plus `open_actions_popup = "a"` gives `za` to expand or collapse the inline conversation at the cursor.
 
 This example mirrors the built-in defaults.
 
@@ -124,6 +124,7 @@ next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
+toggle_inline_conversation_prefix = "z"
 close = ["esc", "ctrl+[", "q"]
 
 [keymaps.search]

@@ -8,6 +8,7 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.sideViewCyclingBlocked() {
 		return nil
 	}
@@ -18,6 +19,7 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.sideViewCyclingBlocked() {
 		return nil
 	}
@@ -180,6 +182,7 @@ func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) er
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.mainPaneActionBlocked() {
 		return nil
 	}
@@ -212,6 +215,7 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.detailTransitionBlocked() {
 		return nil
 	}
@@ -291,6 +295,7 @@ func (program *Program) closeSearch(gui *gocui.Gui) error {
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.helpToggleBlocked() {
 		return nil
 	}
@@ -305,6 +310,7 @@ func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	program.helpVisible = false
 	return program.refreshViewsIfGUI(gui)
 }

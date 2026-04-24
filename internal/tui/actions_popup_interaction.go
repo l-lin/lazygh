@@ -7,7 +7,12 @@ import (
 )
 
 func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
+	if program.detailViewState.consumeInlineConversationTogglePrefix() {
+		return program.toggleInlineConversationVisibility(gui, nil)
+	}
+
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}

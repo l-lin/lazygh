@@ -18,6 +18,7 @@ type pullRequestCommentTarget struct {
 
 func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}

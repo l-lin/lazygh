@@ -345,6 +345,67 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingEnter_ThenI
 	}
 }
 
+func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingZA_ThenItTogglesTheConversationVisibility(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Comment on line R3")
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
+		t.Fatalf("expected the first z to arm the motion without changing the thread, actual %q", detailView.Buffer())
+	}
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
+		t.Fatalf("expected za to collapse the thread, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected za to hide the thread body while collapsed, actual %q", detailView.Buffer())
+	}
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
+		t.Fatalf("expected za to expand the thread again, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected za to show the thread body again, actual %q", detailView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPressingEnter_ThenItExpandsAndRehidesTheConversation(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{

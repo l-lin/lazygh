@@ -14,7 +14,18 @@ func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int
 	return newDetailDocument(renderReviewDiffFileWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs), width)
 }
 
+func (program *Program) armInlineConversationTogglePrefix(_ *gocui.Gui, _ *gocui.View) error {
+	if !program.reviewSession.active || program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+		program.detailViewState.clearPendingPrefix()
+		return nil
+	}
+
+	program.detailViewState.armInlineConversationTogglePrefix()
+	return nil
+}
+
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
+	program.detailViewState.clearPendingPrefix()
 	if !program.reviewSession.active || program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
