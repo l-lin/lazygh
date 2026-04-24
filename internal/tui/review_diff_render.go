@@ -73,7 +73,7 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 		for _, line := range hunk.Lines {
 			rows = append(rows, reviewDiffRenderedRow{
 				Kind: reviewDiffRenderedRowKindDiffLine,
-				Text: renderReviewDiffLine(line, numberWidth),
+				Text: renderReviewDiffLine(file.Path, line, numberWidth),
 				Anchor: &reviewDiffRenderedRowAnchor{
 					Path: strings.TrimSpace(file.Path),
 					Line: line,
@@ -262,21 +262,24 @@ func renderReviewDiffHunkHeader(header string) string {
 	return styleText(header, foregroundColorEscape(theme.DiffHunkHeaderHex))
 }
 
-func renderReviewDiffLine(line reviewDiffLine, numberWidth int) string {
+func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int) string {
 	numberPrefix := foregroundColorEscape(theme.DiffLineNumberHex)
 	prefix := styleText(
 		fmt.Sprintf("%s : %s │ ", diffPreviewLineNumberText(line.LeftLine, numberWidth), diffPreviewLineNumberText(line.RightLine, numberWidth)),
 		numberPrefix,
 	)
-	content := " " + line.Text
+	basePrefix := ""
+	sign := " "
 	switch line.Kind {
 	case reviewDiffDeletionLine:
-		return prefix + styleText("-"+line.Text, foregroundColorEscape(theme.DiffDeletionForegroundHex), backgroundColorEscape(theme.DiffDeletionBackgroundHex))
+		basePrefix = foregroundColorEscape(theme.DiffDeletionForegroundHex) + backgroundColorEscape(theme.DiffDeletionBackgroundHex)
+		sign = "-"
 	case reviewDiffAdditionLine:
-		return prefix + styleText("+"+line.Text, foregroundColorEscape(theme.DiffAdditionForegroundHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex))
-	default:
-		return prefix + content
+		basePrefix = foregroundColorEscape(theme.DiffAdditionForegroundHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+		sign = "+"
 	}
+
+	return prefix + styleText(sign, basePrefix) + renderSyntaxHighlightedCode(path, line.Text, basePrefix, nil)
 }
 
 func reviewDiffLineNumberWidth(hunks []reviewDiffHunk) int {

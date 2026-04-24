@@ -8,6 +8,13 @@ require (
 	github.com/charmbracelet/glamour v1.0.0
 	github.com/gdamore/tcell/v2 v2.13.5
 	github.com/jesseduffield/gocui v0.3.1-0.20260327132312-944dab3bc980
+	github.com/tree-sitter-grammars/tree-sitter-toml v0.7.0
+	github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.2
+	github.com/tree-sitter/go-tree-sitter v0.25.0
+	github.com/tree-sitter/tree-sitter-bash v0.25.1
+	github.com/tree-sitter/tree-sitter-go v0.25.0
+	github.com/tree-sitter/tree-sitter-java v0.23.5
+	github.com/tree-sitter/tree-sitter-json v0.24.8
 )
 
 require (
@@ -26,6 +33,7 @@ require (
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.17 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
