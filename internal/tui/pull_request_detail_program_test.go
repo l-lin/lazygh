@@ -96,7 +96,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	expectedSeparator := renderPullRequestDetailSectionSeparator(detailView.InnerWidth())
+	expectedSeparator := strings.Repeat("─", detailView.InnerWidth())
 	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
 		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}
@@ -115,7 +115,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	then_noError(t, actualErr)
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	expectedSeparator = renderPullRequestDetailSectionSeparator(detailView.InnerWidth())
+	expectedSeparator = strings.Repeat("─", detailView.InnerWidth())
 	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
 		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
 	}

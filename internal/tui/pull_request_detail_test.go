@@ -74,11 +74,24 @@ func TestRenderPullRequestDetailHeader_GivenInlineCommentThreadsAndRestInlineCom
 }
 
 func TestRenderPullRequestDetailContentWithSeparator_GivenHeaderAndBody_WhenFormatting_ThenItPlacesAHorizontalRuleBetweenMetadataAndContent(t *testing.T) {
-	actual := renderPullRequestDetailContentWithSeparator("repo\ntitle\nmeta", "Body", 12)
+	actualDocument := newDetailDocument(renderPullRequestDetailContentWithSeparator("repo\ntitle\nmeta", "Body", 12), 12)
+	actual := strings.Join([]string{string(actualDocument.lines[0]), string(actualDocument.lines[1]), string(actualDocument.lines[2]), string(actualDocument.lines[3]), string(actualDocument.lines[4])}, "\n")
 
-	expected := strings.Join([]string{"repo", "title", "meta", "------------", "Body"}, "\n")
+	expected := strings.Join([]string{"repo", "title", "meta", "────────────", "Body"}, "\n")
 	if actual != expected {
 		t.Fatalf("expected detail content %q, actual %q", expected, actual)
+	}
+}
+
+func TestRenderPullRequestDetailContentWithSeparator_GivenHeaderAndBody_WhenFormatting_ThenItStylesTheSeparatorLikeABorder(t *testing.T) {
+	actualDocument := newDetailDocument(renderPullRequestDetailContentWithSeparator("repo", "Body", 12), 12)
+	separatorLineIndex, separatorLine := given_detailDocumentLineContaining(t, actualDocument, "────────────")
+
+	if separatorLine != "────────────" {
+		t.Fatalf("expected separator line %q, actual %q", "────────────", separatorLine)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[separatorLineIndex][0]; actualStylePrefix != foregroundColorEscape(theme.InactiveBorderHex) {
+		t.Fatalf("expected separator border prefix %q, actual %q", foregroundColorEscape(theme.InactiveBorderHex), actualStylePrefix)
 	}
 }
 

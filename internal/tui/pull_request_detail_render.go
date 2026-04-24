@@ -110,7 +110,7 @@ func renderPullRequestDetailSectionSeparator(width int) string {
 		width = defaultDetailWrapWidth
 	}
 
-	return strings.Repeat("-", width)
+	return styleCommentBorder(strings.Repeat("─", width))
 }
 
 type pullRequestCommentsRenderedSection struct {
