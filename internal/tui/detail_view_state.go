@@ -17,25 +17,7 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 	}
 
 	currentRow := document.rowIndexForPosition(state.cursor)
-	maxOriginRow := maxInt(0, document.rowCount()-viewportHeight)
-	if state.originRow > maxOriginRow {
-		state.originRow = maxOriginRow
-	}
-	if state.originRow < 0 {
-		state.originRow = 0
-	}
-	if currentRow < state.originRow {
-		state.originRow = currentRow
-	}
-	if currentRow >= state.originRow+viewportHeight {
-		state.originRow = currentRow - viewportHeight + 1
-	}
-	if state.originRow < 0 {
-		state.originRow = 0
-	}
-	if state.originRow > maxOriginRow {
-		state.originRow = maxOriginRow
-	}
+	state.originRow = visibleViewportOrigin(currentRow, state.originRow, viewportHeight, document.rowCount())
 }
 
 func (state *detailViewState) reset() {

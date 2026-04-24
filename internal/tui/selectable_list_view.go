@@ -78,17 +78,7 @@ func visibleListLinePosition(selectedIndex int, currentOriginY int, visibleHeigh
 	visibleHeight = maxInt(1, visibleHeight)
 	lineCount = maxInt(1, lineCount)
 	selectedIndex = clampIndex(selectedIndex, lineCount)
-	maxOriginY := maxInt(0, lineCount-visibleHeight)
-	currentOriginY = clampInt(currentOriginY, 0, maxOriginY)
-
-	originY := currentOriginY
-	if selectedIndex < originY {
-		originY = selectedIndex
-	}
-	if selectedIndex >= originY+visibleHeight {
-		originY = selectedIndex - visibleHeight + 1
-	}
-	originY = clampInt(originY, 0, maxOriginY)
+	originY := visibleViewportOrigin(selectedIndex, currentOriginY, visibleHeight, lineCount)
 	return originY, selectedIndex - originY
 }
 

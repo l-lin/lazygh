@@ -42,6 +42,7 @@ func TestSubmitSearch_GivenDetailSearchMatchAfterTheCurrentCursor_WhenSubmitting
 	}
 	_, expectedViewportHeight := detailView.Size()
 	expectedViewportHeight = detailView.InnerHeight()
+	_, expectedCurrentOriginY := detailView.Origin()
 
 	actualErr = subject.openSearch(gui, nil)
 	then_noError(t, actualErr)
@@ -58,10 +59,7 @@ func TestSubmitSearch_GivenDetailSearchMatchAfterTheCurrentCursor_WhenSubmitting
 	originX, originY := detailView.Origin()
 	cursorX, cursorY := detailView.Cursor()
 	expectedTargetRow := 15
-	expectedOriginY := expectedTargetRow - expectedViewportHeight + 1
-	if expectedOriginY < 0 {
-		expectedOriginY = 0
-	}
+	expectedOriginY := visibleViewportOrigin(expectedTargetRow, expectedCurrentOriginY, expectedViewportHeight, 20)
 	if originX != 0 || originY != expectedOriginY {
 		t.Fatalf("expected detail origin 0,%d after following the submitted search, actual %d,%d", expectedOriginY, originX, originY)
 	}
