@@ -57,6 +57,51 @@ func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 	return program.refreshViews(gui)
 }
 
+func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackName string) *gocui.View {
+	if view != nil {
+		return view
+	}
+	if gui == nil || fallbackName == "" {
+		return nil
+	}
+
+	actualView, actualErr := gui.View(fallbackName)
+	if actualErr != nil {
+		return nil
+	}
+	return actualView
+}
+
+func (program *Program) recenterListSelection(gui *gocui.Gui, view *gocui.View, fallbackName string, selectedVisibleLine int, lineCount int) error {
+	if lineCount < 1 {
+		return nil
+	}
+
+	actualView := program.resolveView(gui, view, fallbackName)
+	program.centerListLine(actualView, selectedVisibleLine, lineCount)
+	return program.refreshViewsIfGUI(gui)
+}
+
+func (program *Program) currentSideListState() (string, int, int) {
+	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
+		if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil && len(result.data.FileTree.Rows) > 0 {
+			return viewPullRequestsName, program.reviewSessionSelectedVisibleLine(), len(result.data.FileTree.Rows)
+		}
+
+		items := program.reviewSessionFiles()
+		return viewPullRequestsName, program.reviewSessionSelectedVisibleLine(), len(items)
+	}
+
+	switch program.model.Focus() {
+	case FocusPullRequestsView:
+		return viewPullRequestsName, program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()), len(program.model.VisiblePullRequests())
+	case FocusUserView:
+		return viewUserName, program.model.SelectedVisibleUserIndex(), len(program.model.VisibleUsers())
+	default:
+		return "", 0, 0
+	}
+}
+
 func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
 	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, view, mutate); actualErr != nil {
 		return actualErr

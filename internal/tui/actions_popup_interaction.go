@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
-	if program.detailViewState.consumeInlineConversationTogglePrefix() {
+	if program.reviewSession.active && program.model.Focus() == FocusDetailView && program.detailViewState.consumeInlineConversationTogglePrefix() {
 		return program.toggleInlineConversationVisibility(gui, nil)
 	}
 
@@ -104,6 +104,18 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 	}
 
 	return program.refreshViews(gui)
+}
+
+func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocui.View) error {
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	target := keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "recenter_selection")
+	return program.armOrHandleSelectionKeySequence(target, func() error {
+		return program.recenterListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+	})
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {

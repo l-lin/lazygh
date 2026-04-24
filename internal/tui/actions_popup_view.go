@@ -97,8 +97,7 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	if selectedVisibleIndex < 0 {
 		selectedVisibleIndex = 0
 	}
-	view.SetOrigin(0, 0)
-	view.SetCursor(0, selectedVisibleIndex)
+	program.selectListLine(view, selectedVisibleIndex, len(filteredIndexes))
 }
 
 func (program *Program) configureActionsPopupSearchView(view *gocui.View) {

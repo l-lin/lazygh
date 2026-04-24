@@ -14,10 +14,13 @@ func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int
 	return newDetailDocument(renderReviewDiffFileWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs), width)
 }
 
-func (program *Program) armInlineConversationTogglePrefix(_ *gocui.Gui, _ *gocui.View) error {
-	if !program.reviewSession.active || program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+func (program *Program) armInlineConversationTogglePrefix(gui *gocui.Gui, view *gocui.View) error {
+	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		program.detailViewState.clearPendingPrefix()
 		return nil
+	}
+	if program.detailViewState.consumeInlineConversationTogglePrefix() {
+		return program.recenterDetailView(gui, view)
 	}
 
 	program.detailViewState.armInlineConversationTogglePrefix()

@@ -176,7 +176,7 @@ func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDi
 	for _, row := range tree.Rows {
 		fmt.Fprintln(view, renderReviewDiffTreeRow(row, files, query, showSelectedLine && row.VisibleRowIndex == selectedVisibleLine))
 	}
-	program.selectListLine(view, selectedVisibleLine)
+	program.selectListLine(view, selectedVisibleLine, len(tree.Rows))
 }
 
 func reviewDiffSelectableRowIndexes(tree reviewDiffTree) []int {

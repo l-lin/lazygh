@@ -114,6 +114,12 @@ func (state *detailViewState) pageUp(document detailDocument, viewportHeight int
 	state.sync(document, viewportHeight)
 }
 
+func (state *detailViewState) recenter(document detailDocument, viewportHeight int) {
+	state.sync(document, viewportHeight)
+	currentRow := document.rowIndexForPosition(state.cursor)
+	state.originRow = centeredViewportOrigin(currentRow, viewportHeight, document.rowCount())
+}
+
 func (state *detailViewState) moveToRowStart(document detailDocument, viewportHeight int) {
 	state.clearPendingPrefix()
 	state.cursor = document.moveToRowStart(state.cursor)

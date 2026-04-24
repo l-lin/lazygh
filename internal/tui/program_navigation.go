@@ -54,6 +54,25 @@ func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 	})
 }
 
+func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) error {
+	if program.selectionChangeBlocked() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
+	target := keySequenceTargetFor(viewName, keymapScopeSide, "recenter_selection")
+	return program.armOrHandleSelectionKeySequence(target, func() error {
+		return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
+	})
+}
+
+func (program *Program) recenterDetailView(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.recenter(document, viewportHeight)
+	})
+}
+
 func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
 	if program.selectionChangeBlocked() {
 		return nil
