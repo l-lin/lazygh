@@ -20,7 +20,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSe
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyEsc, handler: subject.cancelSearch})
 }
 
-func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptStaysOnThePaneBottomLineWithoutShrinkingTheLayout(t *testing.T) {
+func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptUsesTheGlobalStatusLineWithoutShrinkingTheLayout(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModel(model)
@@ -30,7 +30,9 @@ func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptStay
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	pullRequestsX0, _, pullRequestsX1, pullRequestsY1, actualErr := gui.ViewPosition(viewPullRequestsName)
+	_, _, _, pullRequestsY1, actualErr := gui.ViewPosition(viewPullRequestsName)
+	then_noError(t, actualErr)
+	statusX0, statusY0, statusX1, statusY1, actualErr := gui.ViewPosition(viewStatusLineName)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openSearch(gui, nil)
@@ -55,13 +57,10 @@ func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptStay
 		t.Fatalf("expected the search prompt to expose one visible content row, actual %d", searchView.InnerHeight())
 	}
 
-	searchX0, searchY0, searchX1, _, actualErr := gui.ViewPosition(viewSearchName)
+	searchX0, searchY0, searchX1, searchY1, actualErr := gui.ViewPosition(viewSearchName)
 	then_noError(t, actualErr)
-	if searchX0 != pullRequestsX0 || searchX1 != pullRequestsX1 {
-		t.Fatalf("expected the search prompt to align with the pull requests pane, actual x0=%d x1=%d expected x0=%d x1=%d", searchX0, searchX1, pullRequestsX0, pullRequestsX1)
-	}
-	if searchY0 != pullRequestsY1-1 {
-		t.Fatalf("expected the search prompt to hug the pull requests pane bottom line at y0=%d, actual y0=%d", pullRequestsY1-1, searchY0)
+	if searchX0 != statusX0 || searchX1 != statusX1 || searchY0 != statusY0 || searchY1 != statusY1 {
+		t.Fatalf("expected the search prompt to reuse the status line, actual=(%d,%d)-(%d,%d) expected=(%d,%d)-(%d,%d)", searchX0, searchY0, searchX1, searchY1, statusX0, statusY0, statusX1, statusY1)
 	}
 
 	_, _, _, actualPullRequestsY1, actualErr := gui.ViewPosition(viewPullRequestsName)
@@ -71,7 +70,7 @@ func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptStay
 	}
 }
 
-func TestSearchPrompt_GivenDetailFocus_WhenOpeningSearch_ThenThePromptStaysOnThePaneBottomLineWithoutShrinkingTheLayout(t *testing.T) {
+func TestSearchPrompt_GivenDetailFocus_WhenOpeningSearch_ThenThePromptUsesTheGlobalStatusLineWithoutShrinkingTheLayout(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -81,20 +80,19 @@ func TestSearchPrompt_GivenDetailFocus_WhenOpeningSearch_ThenThePromptStaysOnThe
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	detailX0, _, detailX1, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	_, _, _, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	then_noError(t, actualErr)
+	statusX0, statusY0, statusX1, statusY1, actualErr := gui.ViewPosition(viewStatusLineName)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openSearch(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewSearchName)
 
-	searchX0, searchY0, searchX1, _, actualErr := gui.ViewPosition(viewSearchName)
+	searchX0, searchY0, searchX1, searchY1, actualErr := gui.ViewPosition(viewSearchName)
 	then_noError(t, actualErr)
-	if searchX0 != detailX0 || searchX1 != detailX1 {
-		t.Fatalf("expected the search prompt to align with the detail pane, actual x0=%d x1=%d expected x0=%d x1=%d", searchX0, searchX1, detailX0, detailX1)
-	}
-	if searchY0 != detailY1-1 {
-		t.Fatalf("expected the search prompt to hug the detail pane bottom line at y0=%d, actual y0=%d", detailY1-1, searchY0)
+	if searchX0 != statusX0 || searchX1 != statusX1 || searchY0 != statusY0 || searchY1 != statusY1 {
+		t.Fatalf("expected the search prompt to reuse the status line, actual=(%d,%d)-(%d,%d) expected=(%d,%d)-(%d,%d)", searchX0, searchY0, searchX1, searchY1, statusX0, statusY0, statusX1, statusY1)
 	}
 
 	_, _, _, actualDetailY1, actualErr := gui.ViewPosition(viewDetailName)

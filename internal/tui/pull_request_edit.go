@@ -14,6 +14,16 @@ const (
 	pullRequestDescriptionEditSuccessMessage = "PR description updated"
 )
 
+func (program *Program) editPullRequestTitleAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "edit-pull-request-title",
+		title:    pullRequestTitleEditorTitle,
+		icon:     actionsPopupEditPullRequestIcon,
+		keywords: []string{"edit", "title", "rename", "subject"},
+		execute:  program.executeEditPullRequestTitleAction,
+	}
+}
+
 func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) actionsPopupActionResult {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
@@ -36,6 +46,16 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{closePopup: true}
 	}
 	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
+func (program *Program) editPullRequestDescriptionAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "edit-pull-request-description",
+		title:    pullRequestDescriptionEditorTitle,
+		icon:     actionsPopupEditPullRequestIcon,
+		keywords: []string{"edit", "description", "body", "summary"},
+		execute:  program.executeEditPullRequestDescriptionAction,
+	}
 }
 
 func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) actionsPopupActionResult {

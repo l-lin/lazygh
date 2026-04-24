@@ -101,12 +101,24 @@ func reviewDiffTreeRowText(row reviewDiffTreeRow) string {
 }
 
 func reviewDiffTreeRowStyledText(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	return reviewDiffTreeRowStyledPrefix(row, files) + row.Label
+}
+
+func reviewDiffTreeRowStyledPrefix(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	return reviewDiffTreeRowIndent(row) + reviewDiffTreeRowStyledIcon(row, files) + " "
+}
+
+func reviewDiffTreeRowIndent(row reviewDiffTreeRow) string {
+	return strings.Repeat("  ", row.Depth)
+}
+
+func reviewDiffTreeRowStyledIcon(row reviewDiffTreeRow, files []reviewDiffFile) string {
 	icon := reviewDiffTreeRowIcon(row)
 	foregroundHex := reviewDiffTreeRowForegroundHex(row, files)
 	if strings.TrimSpace(foregroundHex) != "" && foregroundHex != theme.ActiveTextHex {
-		icon = styleText(icon, foregroundColorEscape(foregroundHex))
+		return styleText(icon, foregroundColorEscape(foregroundHex))
 	}
-	return strings.Repeat("  ", row.Depth) + icon + " " + row.Label
+	return icon
 }
 
 func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -127,14 +139,42 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 	}
 }
 
-func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDiffTree, files []reviewDiffFile, selectedVisibleLine int) {
+func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, query string, selected bool) string {
+	if row.FileIndex < 0 {
+		query = ""
+	}
+	if !selected {
+		highlightedLabel, _ := highlightSearchMatches(row.Label, query)
+		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel
+	}
+
+	selectedPrefix := ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+	highlightedLabel, _ := highlightSearchMatchesWithPrefixes(row.Label, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
+	prefix := renderSelectedReviewDiffTreeRowPrefix(row, files, selectedPrefix)
+	return prefix + highlightedLabel
+}
+
+func renderSelectedReviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile, selectedPrefix string) string {
+	indent := applyPrefix(reviewDiffTreeRowIndent(row), selectedPrefix)
+	foregroundHex := reviewDiffTreeRowForegroundHex(row, files)
+	icon := reviewDiffTreeRowIcon(row)
+	if strings.TrimSpace(foregroundHex) != "" && foregroundHex != theme.ActiveTextHex {
+		icon = selectedPrefix + foregroundColorEscape(foregroundHex) + icon + ansiReset
+	} else {
+		icon = applyPrefix(icon, selectedPrefix)
+	}
+	return indent + icon + applyPrefix(" ", selectedPrefix)
+}
+
+func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDiffTree, files []reviewDiffFile, query string, selectedVisibleLine int) {
 	if view == nil {
 		return
 	}
 
 	view.Clear()
+	showSelectedLine := program.usesManualSelectedLineRendering(query) && (program.reviewSession.active || program.shouldHighlightSelection(FocusPullRequestsView, true))
 	for _, row := range tree.Rows {
-		fmt.Fprintln(view, reviewDiffTreeRowStyledText(row, files))
+		fmt.Fprintln(view, renderReviewDiffTreeRow(row, files, query, showSelectedLine && row.VisibleRowIndex == selectedVisibleLine))
 	}
 	program.selectListLine(view, selectedVisibleLine)
 }

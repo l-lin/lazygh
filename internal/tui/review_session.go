@@ -25,6 +25,17 @@ type reviewSessionState struct {
 	summary                      githubcli.PullRequest
 	pendingReviewID              string
 	selectedFileTreeRow          int
+	fileTreeSearchQuery          string
+}
+
+func (program *Program) startReviewAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "start-review",
+		title:    "Start review",
+		icon:     actionsPopupStartReviewIcon,
+		keywords: []string{"start", "review", "pending", "session", "inline"},
+		execute:  program.executeStartReviewAction,
+	}
 }
 
 func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActionResult {

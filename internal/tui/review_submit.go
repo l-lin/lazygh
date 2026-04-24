@@ -9,12 +9,6 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-const (
-	pullRequestReviewSubmitCommentTitle        = "Review: Submit comment"
-	pullRequestReviewSubmitApprovalTitle       = "Review: Submit approval"
-	pullRequestReviewSubmitRequestChangesTitle = "Review: Submit request changes"
-)
-
 type pendingPullRequestReviewTarget struct {
 	repository      string
 	number          int
@@ -22,16 +16,46 @@ type pendingPullRequestReviewTarget struct {
 	sourceFocus     Focus
 }
 
+func (program *Program) submitPendingReviewCommentAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "submit-pending-review-comment",
+		title:    pullRequestReviewCommentComposerTitle,
+		icon:     actionsPopupReviewCommentIcon,
+		keywords: []string{"review", "comment", "feedback", "submit", "finish", "pending", "submit comment"},
+		execute:  program.executeSubmitPendingReviewCommentAction,
+	}
+}
+
+func (program *Program) submitPendingReviewApprovalAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "submit-pending-review-approval",
+		title:    pullRequestReviewApprovalTitle,
+		icon:     actionsPopupReviewApproveIcon,
+		keywords: []string{"review", "approve", "approval", "lgtm", "shipit", "submit", "pending", "submit approval"},
+		execute:  program.executeSubmitPendingReviewApprovalAction,
+	}
+}
+
+func (program *Program) submitPendingReviewRequestChangesAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "submit-pending-review-request-changes",
+		title:    pullRequestRequestChangesComposerTitle,
+		icon:     actionsPopupReviewRequestChangesIcon,
+		keywords: []string{"review", "request", "changes", "block", "submit", "pending", "submit request changes"},
+		execute:  program.executeSubmitPendingReviewRequestChangesAction,
+	}
+}
+
 func (program *Program) executeSubmitPendingReviewCommentAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewSubmitCommentTitle, githubcli.PullRequestReviewEventComment)
+	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewCommentComposerTitle, githubcli.PullRequestReviewEventComment)
 }
 
 func (program *Program) executeSubmitPendingReviewApprovalAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewSubmitApprovalTitle, githubcli.PullRequestReviewEventApprove)
+	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewApprovalTitle, githubcli.PullRequestReviewEventApprove)
 }
 
 func (program *Program) executeSubmitPendingReviewRequestChangesAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewSubmitRequestChangesTitle, githubcli.PullRequestReviewEventRequestChanges)
+	return program.openPendingReviewSubmitComposer(gui, pullRequestRequestChangesComposerTitle, githubcli.PullRequestReviewEventRequestChanges)
 }
 
 func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title string, event githubcli.PullRequestReviewEvent) actionsPopupActionResult {

@@ -12,7 +12,7 @@ import (
 const bottomPromptPrefix = "/"
 
 func (program *Program) layoutSearchView(gui *gocui.Gui) error {
-	view, err := program.layoutPaneBottomOverlayView(gui, viewSearchName, paneViewName(program.model.SearchTarget()))
+	view, err := program.layoutBottomPromptView(gui, viewSearchName)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 		return false
 	}
 
-	program.model.UpdateSearchDraft(program.searchEditor.Text())
+	program.updateActiveSearchDraft(program.searchEditor.Text())
 	program.configureSearchView(view)
 	program.renderSearchView(view)
 	return true

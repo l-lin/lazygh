@@ -96,6 +96,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Page down"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Page up"},
 				{Key: "+/-", Description: "Resize panes"},
+				{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search file tree"},
+				{Key: program.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + program.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
 				program.pullRequestYankHelpEntry(keymapScopePullRequests),
 				program.pullRequestCommentHelpEntry(keymapScopePullRequests),
 				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Review actions"},

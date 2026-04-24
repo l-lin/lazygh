@@ -191,17 +191,30 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
-	if program.mainPaneActionBlocked() || (program.reviewSession.active && program.model.Focus() != FocusDetailView) {
+	if program.mainPaneActionBlocked() || (program.reviewSession.active && program.model.Focus() == FocusUserView) {
 		return nil
 	}
 
 	program.detailViewState.clearPendingPrefix()
-	program.model.StartSearch()
+	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
+		program.startReviewFileTreeSearch()
+	} else {
+		if program.reviewSession.active && program.model.Focus() == FocusDetailView {
+			program.reviewSession.fileTreeSearchQuery = ""
+		}
+		program.model.StartSearch()
+	}
 	program.searchEditor = newLineEditor("")
 	return program.layout(gui)
 }
 
 func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.activeSearchIsReviewFileTreeSearch() {
+		program.submitReviewFileTreeSearch()
+		program.searchEditor = nil
+		return program.refreshViewsIfGUI(gui)
+	}
+
 	target := program.model.SearchTarget()
 	program.model.SubmitSearch()
 	program.searchEditor = nil
@@ -216,6 +229,11 @@ func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.activeSearchIsReviewFileTreeSearch() {
+		program.cancelReviewFileTreeSearch()
+		return program.closeSearch(gui)
+	}
+
 	program.model.CancelSearch()
 	return program.closeSearch(gui)
 }

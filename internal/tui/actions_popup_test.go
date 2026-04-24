@@ -49,7 +49,6 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		" Review PR from URL",
 		" Start review",
 		" Yank URL to clipboard",
 		" Open PR in browser",
@@ -59,6 +58,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		" Comment on PR",
 		" Edit PR title",
 		" Edit PR description",
+		" Review PR from URL",
 	})
 	if strings.Contains(popupView.Buffer(), "10 of 10 actions") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "10 of 10 actions", popupView.Buffer())
@@ -280,6 +280,7 @@ func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSe
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
+	expectedIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "clipboard")
 	for _, ch := range "clipboard" {
 		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
 		if !actualHandled {
@@ -296,8 +297,8 @@ func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSe
 	if subject.model.ActionsPopupSearchActive() {
 		t.Fatal("expected the popup search to stop")
 	}
-	if subject.model.ActionsPopupSelectedActionIndex() != 2 {
-		t.Fatalf("expected selected action index 2, actual %d", subject.model.ActionsPopupSelectedActionIndex())
+	if len(expectedIndexes) != 1 || subject.model.ActionsPopupSelectedActionIndex() != expectedIndexes[0] {
+		t.Fatalf("expected selected action index %v, actual %d", expectedIndexes, subject.model.ActionsPopupSelectedActionIndex())
 	}
 	if len(clipboardWriter.writes) != 0 {
 		t.Fatalf("expected no clipboard writes, actual %v", clipboardWriter.writes)
@@ -466,8 +467,9 @@ func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyP
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.MoveActionsPopupSelectionDown()
-	subject.model.MoveActionsPopupSelectionDown()
+	subject.model.UpdateActionsPopupSearch("clipboard", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "clipboard"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 

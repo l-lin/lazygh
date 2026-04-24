@@ -73,11 +73,16 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 
 func (program *Program) appliedSearchFooterText(focus Focus) string {
 	if program.reviewSession.active {
-		if focus != FocusDetailView {
+		switch focus {
+		case FocusPullRequestsView:
+			query := program.reviewFileTreeSearchQuery()
+			return searchSummaryText(query, program.reviewFileTreeSearchMatchCount(query))
+		case FocusDetailView:
+			query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
+			return searchSummaryText(query, countSearchMatches(program.detailViewContent(), query))
+		default:
 			return ""
 		}
-		query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
-		return searchSummaryText(query, countSearchMatches(program.detailViewContent(), query))
 	}
 
 	switch focus {

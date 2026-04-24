@@ -8,14 +8,16 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestKeybindingSpecs_GivenProgram_WhenListingDetailSearchFollowBindings_ThenTheyExistOnlyOnTheDetailView(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingDetailSearchFollowBindings_ThenTheDetailAndReviewTreeViewsExposeTheirOwnHandlers(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'n', handler: subject.nextDetailSearchMatch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'N', handler: subject.previousDetailSearchMatch})
-	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewSearchName} {
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'n', handler: subject.nextReviewFileTreeSearchMatch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'N', handler: subject.previousReviewFileTreeSearchMatch})
+	for _, viewName := range []string{viewUserName, viewSearchName} {
 		then_bindingDoesNotExist(t, actual, viewName, 'n')
 		then_bindingDoesNotExist(t, actual, viewName, 'N')
 	}

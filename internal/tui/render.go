@@ -127,7 +127,7 @@ func (program *Program) configureUserView(view *gocui.View) {
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
 	if program.reviewSession.active {
-		program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), "")
+		program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), program.reviewFileTreeSearchQuery())
 		return
 	}
 
@@ -180,13 +180,14 @@ func (program *Program) renderUserView(view *gocui.View) {
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
 	if program.reviewSession.active {
+		query := program.reviewFileTreeSearchQuery()
 		if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil && len(result.data.FileTree.Rows) > 0 {
-			program.renderReviewDiffTreeView(view, result.data.FileTree, result.data.Files, program.reviewSessionSelectedVisibleLine())
+			program.renderReviewDiffTreeView(view, result.data.FileTree, result.data.Files, query, program.reviewSessionSelectedVisibleLine())
 			return
 		}
 		program.renderSelectableListView(view, selectableListViewState{
 			focus:               FocusPullRequestsView,
-			query:               "",
+			query:               query,
 			items:               program.reviewSessionFiles(),
 			selectedVisibleLine: program.reviewSessionSelectedVisibleLine(),
 		})
