@@ -171,12 +171,12 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 
 	rows = append(rows,
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadHorizontalBorder(threadWidth), Thread: &threadCopy},
+		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy},
 	)
 	if collapsed {
 		rows = append(rows,
-			reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadHorizontalBorder(threadWidth), Thread: &threadCopy},
+			reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
 			reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
 		)
 		return rows
@@ -193,7 +193,7 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + "No comments in thread.", Thread: &threadCopy})
 	}
 	rows = append(rows,
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: gutter + renderReviewDiffThreadHorizontalBorder(threadWidth), Thread: &threadCopy},
+		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
 	)
 	return rows
@@ -228,8 +228,8 @@ func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) strin
 	return styleText(status, foregroundColorEscape(theme.DiffHunkHeaderHex))
 }
 
-func renderReviewDiffThreadHorizontalBorder(threadWidth int) string {
-	borderWidth := commentBoxInnerWidth(threadWidth) + (commentBoxHorizontalPadding * 2) + 2
+func renderReviewDiffThreadHorizontalBorder(width int) string {
+	borderWidth := effectiveMarkdownWidth(width)
 	if borderWidth < 1 {
 		borderWidth = 1
 	}

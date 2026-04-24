@@ -224,8 +224,8 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex-2]) != "" {
 		t.Fatalf("expected a blank separator line above the conversation, actual %q", detailView.BufferLines()[headerLineIndex-2])
 	}
-	if !strings.Contains(detailView.BufferLines()[headerLineIndex-1], "────") {
-		t.Fatalf("expected a top border above the conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
+	if !strings.HasPrefix(detailView.BufferLines()[headerLineIndex-1], "────") || strings.Contains(detailView.BufferLines()[headerLineIndex-1], "│") {
+		t.Fatalf("expected a full-width top border above the conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
 	}
 	blankLineIndex := headerLineIndex + 1
 	for blankLineIndex < len(detailView.BufferLines()) && strings.TrimSpace(detailView.BufferLines()[blankLineIndex]) != "" {
@@ -234,8 +234,8 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 	if blankLineIndex >= len(detailView.BufferLines()) {
 		t.Fatalf("expected a blank separator line below the conversation, actual %q", strings.Join(detailView.BufferLines(), "\n"))
 	}
-	if !strings.Contains(detailView.BufferLines()[blankLineIndex-1], "────") {
-		t.Fatalf("expected a bottom border below the conversation, actual %q", detailView.BufferLines()[blankLineIndex-1])
+	if !strings.HasPrefix(detailView.BufferLines()[blankLineIndex-1], "────") || strings.Contains(detailView.BufferLines()[blankLineIndex-1], "│") {
+		t.Fatalf("expected a full-width bottom border below the conversation, actual %q", detailView.BufferLines()[blankLineIndex-1])
 	}
 }
 
@@ -274,18 +274,18 @@ func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsC
 	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex-2]) != "" {
 		t.Fatalf("expected a blank separator line above the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex-2])
 	}
-	if !strings.Contains(detailView.BufferLines()[headerLineIndex-1], "────") {
-		t.Fatalf("expected a top border above the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
+	if !strings.HasPrefix(detailView.BufferLines()[headerLineIndex-1], "────") || strings.Contains(detailView.BufferLines()[headerLineIndex-1], "│") {
+		t.Fatalf("expected a full-width top border above the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
 	}
-	if !strings.Contains(detailView.BufferLines()[headerLineIndex+1], "────") {
-		t.Fatalf("expected a bottom border below the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex+1])
+	if !strings.HasPrefix(detailView.BufferLines()[headerLineIndex+1], "────") || strings.Contains(detailView.BufferLines()[headerLineIndex+1], "│") {
+		t.Fatalf("expected a full-width bottom border below the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex+1])
 	}
 	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex+2]) != "" {
 		t.Fatalf("expected a blank separator line below the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex+2])
 	}
 }
 
-func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingSpace_ThenItTogglesTheConversationVisibility(t *testing.T) {
+func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingEnter_ThenItTogglesTheConversationVisibility(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:       "thread-1",
@@ -313,13 +313,13 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingSpace_ThenI
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Comment on line R3")
 
-	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, ' ')
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
-		t.Fatalf("expected the thread to collapse after pressing space, actual %q", detailView.Buffer())
+		t.Fatalf("expected the thread to collapse after pressing enter, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the collapsed thread body to be hidden, actual %q", detailView.Buffer())
@@ -328,14 +328,14 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingSpace_ThenI
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), " Comment on line R3") {
-		t.Fatalf("expected the thread to expand after pressing space again, actual %q", detailView.Buffer())
+		t.Fatalf("expected the thread to expand after pressing enter again, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the expanded thread body to return, actual %q", detailView.Buffer())
 	}
 }
 
-func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPressingSpace_ThenItExpandsAndRehidesTheConversation(t *testing.T) {
+func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPressingEnter_ThenItExpandsAndRehidesTheConversation(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -364,13 +364,13 @@ func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPre
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Comment on line R3 · resolved")
 
-	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, ' ')
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), " Comment on line R3 · resolved") {
-		t.Fatalf("expected the resolved thread to expand after pressing space, actual %q", detailView.Buffer())
+		t.Fatalf("expected the resolved thread to expand after pressing enter, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to appear after expanding, actual %q", detailView.Buffer())
@@ -379,7 +379,7 @@ func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPre
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), " Comment on line R3 · resolved") {
-		t.Fatalf("expected the resolved thread to re-hide after pressing space again, actual %q", detailView.Buffer())
+		t.Fatalf("expected the resolved thread to re-hide after pressing enter again, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to hide again, actual %q", detailView.Buffer())
