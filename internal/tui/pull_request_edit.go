@@ -10,7 +10,7 @@ import (
 const (
 	pullRequestTitleEditorTitle              = "Edit PR title"
 	pullRequestDescriptionEditorTitle        = "Edit PR description"
-	pullRequestDescriptionEditorHeight       = 15
+	pullRequestDescriptionEditorHeight       = 20
 	pullRequestTitleEditSuccessMessage       = "PR title updated"
 	pullRequestDescriptionEditSuccessMessage = "PR description updated"
 )

@@ -194,8 +194,8 @@ func TestActionsPopup_GivenEditDescriptionActionSelected_WhenExecuting_ThenItOpe
 	}
 	_, y0, _, y1, actualErr := gui.ViewPosition(viewModalEditorName)
 	then_noError(t, actualErr)
-	if actual := y1 - y0 + 1; actual != pullRequestDescriptionEditorHeight {
-		t.Fatalf("expected description editor height %d, actual %d", pullRequestDescriptionEditorHeight, actual)
+	if actual := y1 - y0 + 1; actual != 20 {
+		t.Fatalf("expected description editor height %d, actual %d", 20, actual)
 	}
 }
 
