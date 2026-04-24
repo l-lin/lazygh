@@ -132,6 +132,7 @@ func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, 
 }
 
 func (program *Program) mutateDetailViewStateWithoutRefresh(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
+	program.clearPendingSelectionPrefix()
 	actualView := view
 	if actualView == nil && gui != nil {
 		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {

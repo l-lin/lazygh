@@ -180,9 +180,13 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 	})
 }
 
-func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+func (program *Program) nextPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
+	if program.reviewSession.active {
+		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationForward)
+	}
+
 	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() || program.reviewSession.active {
+	if program.selectionChangeBlocked() {
 		return nil
 	}
 
@@ -191,9 +195,13 @@ func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error 
 	return nil
 }
 
-func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+func (program *Program) previousPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
+	if program.reviewSession.active {
+		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationBackward)
+	}
+
 	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() || program.reviewSession.active {
+	if program.selectionChangeBlocked() {
 		return nil
 	}
 
