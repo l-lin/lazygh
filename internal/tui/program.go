@@ -30,6 +30,8 @@ type GitHubLoader interface {
 	RequestChangesOnPullRequest(repository string, number int, body string) error
 	SubmitPullRequestReview(pullRequestReviewID string, event githubcli.PullRequestReviewEvent, body string) error
 	AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error
+	UpdatePullRequestReviewComment(commentID string, body string) error
+	DeletePullRequestReviewComment(commentID string) error
 	ResolvePullRequestReviewThread(threadID string) error
 	UnresolvePullRequestReviewThread(threadID string) error
 	OpenPullRequestInBrowser(repository string, number int) error

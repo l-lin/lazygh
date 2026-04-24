@@ -35,6 +35,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.reviewPullRequestURLActionsPopupAction(),
 		)
 	}
+	actions = append(actions, program.currentInlineCommentEditActions()...)
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
 		actions = append(actions, inlineCommentAction)
 	}

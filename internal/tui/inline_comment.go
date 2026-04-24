@@ -39,7 +39,7 @@ func renderPullRequestInlineCommentThreadSection(thread githubcli.PullRequestRev
 	}
 
 	for _, threadComment := range thread.Comments {
-		body := renderMarkdownWithFallback(threadComment.Body, renderer, commentBodyWidth, "No comment body.")
+		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
 		lines = append(lines, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
 	}
 	return strings.Join(lines, "\n")

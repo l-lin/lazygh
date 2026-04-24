@@ -490,49 +490,54 @@ func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment strin
 }
 
 type fakePullRequestDetailLoader struct {
-	details                  map[string]githubcli.PullRequestDetail
-	detailErrors             map[string]error
-	detailCalls              []string
-	diffs                    map[string]githubcli.PullRequestDiff
-	diffErrors               map[string]error
-	diffCalls                []string
-	commentCalls             []string
-	commentBodies            []string
-	commentErr               error
-	myPullRequests           []githubcli.PullRequest
-	requestedPullRequests    []githubcli.PullRequest
-	approveCalls             []string
-	approveErr               error
-	reviewCommentCalls       []string
-	reviewCommentBodies      []string
-	reviewCommentErr         error
-	requestChangesCalls      []string
-	requestChangesBodies     []string
-	requestChangesErr        error
-	submitReviewIDs          []string
-	submitReviewEvents       []githubcli.PullRequestReviewEvent
-	submitReviewBodies       []string
-	submitReviewErr          error
-	reviewThreadReviewIDs    []string
-	reviewThreadBodies       []string
-	reviewThreadTargets      []githubcli.PullRequestReviewThreadTarget
-	reviewThreadErr          error
-	resolveReviewThreadIDs   []string
-	resolveReviewThreadErr   error
-	unresolveReviewThreadIDs []string
-	unresolveReviewThreadErr error
-	reviewKeyByPendingID     map[string]string
-	openBrowserCalls         []string
-	openBrowserErr           error
-	editTitleCalls           []string
-	editTitleValues          []string
-	editTitleErr             error
-	editDescriptionCalls     []string
-	editDescriptionBodies    []string
-	editDescriptionErr       error
-	startReviewCalls         []string
-	startReviewID            string
-	startReviewErr           error
+	details                   map[string]githubcli.PullRequestDetail
+	detailErrors              map[string]error
+	detailCalls               []string
+	diffs                     map[string]githubcli.PullRequestDiff
+	diffErrors                map[string]error
+	diffCalls                 []string
+	commentCalls              []string
+	commentBodies             []string
+	commentErr                error
+	myPullRequests            []githubcli.PullRequest
+	requestedPullRequests     []githubcli.PullRequest
+	approveCalls              []string
+	approveErr                error
+	reviewCommentCalls        []string
+	reviewCommentBodies       []string
+	reviewCommentErr          error
+	requestChangesCalls       []string
+	requestChangesBodies      []string
+	requestChangesErr         error
+	submitReviewIDs           []string
+	submitReviewEvents        []githubcli.PullRequestReviewEvent
+	submitReviewBodies        []string
+	submitReviewErr           error
+	reviewThreadReviewIDs     []string
+	reviewThreadBodies        []string
+	reviewThreadTargets       []githubcli.PullRequestReviewThreadTarget
+	reviewThreadErr           error
+	updateReviewCommentIDs    []string
+	updateReviewCommentBodies []string
+	updateReviewCommentErr    error
+	deleteReviewCommentIDs    []string
+	deleteReviewCommentErr    error
+	resolveReviewThreadIDs    []string
+	resolveReviewThreadErr    error
+	unresolveReviewThreadIDs  []string
+	unresolveReviewThreadErr  error
+	reviewKeyByPendingID      map[string]string
+	openBrowserCalls          []string
+	openBrowserErr            error
+	editTitleCalls            []string
+	editTitleValues           []string
+	editTitleErr              error
+	editDescriptionCalls      []string
+	editDescriptionBodies     []string
+	editDescriptionErr        error
+	startReviewCalls          []string
+	startReviewID             string
+	startReviewErr            error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -641,6 +646,27 @@ func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullReques
 	return nil
 }
 
+func (loader *fakePullRequestDetailLoader) UpdatePullRequestReviewComment(commentID string, body string) error {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	loader.updateReviewCommentIDs = append(loader.updateReviewCommentIDs, trimmedCommentID)
+	loader.updateReviewCommentBodies = append(loader.updateReviewCommentBodies, body)
+	if loader.updateReviewCommentErr != nil {
+		return loader.updateReviewCommentErr
+	}
+	loader.updateReviewComment(trimmedCommentID, body)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) DeletePullRequestReviewComment(commentID string) error {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	loader.deleteReviewCommentIDs = append(loader.deleteReviewCommentIDs, trimmedCommentID)
+	if loader.deleteReviewCommentErr != nil {
+		return loader.deleteReviewCommentErr
+	}
+	loader.deleteReviewComment(trimmedCommentID)
+	return nil
+}
+
 func (loader *fakePullRequestDetailLoader) ResolvePullRequestReviewThread(threadID string) error {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	loader.resolveReviewThreadIDs = append(loader.resolveReviewThreadIDs, trimmedThreadID)
@@ -738,6 +764,114 @@ func (loader *fakePullRequestDetailLoader) updatePullRequestDetail(repository st
 	}
 	update(&detail)
 	loader.details[key] = detail
+}
+
+func (loader *fakePullRequestDetailLoader) updateReviewComment(commentID string, body string) {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if trimmedCommentID == "" {
+		return
+	}
+	for key, detail := range loader.details {
+		updated := false
+		for threadIndex := range detail.InlineCommentThreads {
+			for commentIndex := range detail.InlineCommentThreads[threadIndex].Comments {
+				if strings.TrimSpace(detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ID) != trimmedCommentID {
+					continue
+				}
+				detail.InlineCommentThreads[threadIndex].Comments[commentIndex].Body = body
+				updated = true
+			}
+		}
+		for commentIndex := range detail.InlineComments {
+			if strings.TrimSpace(detail.InlineComments[commentIndex].ID) != trimmedCommentID {
+				continue
+			}
+			detail.InlineComments[commentIndex].Body = body
+			updated = true
+		}
+		if updated {
+			loader.details[key] = detail
+		}
+	}
+	for key, diff := range loader.diffs {
+		updated := false
+		for threadIndex := range diff.Threads {
+			for commentIndex := range diff.Threads[threadIndex].Comments {
+				if strings.TrimSpace(diff.Threads[threadIndex].Comments[commentIndex].ID) != trimmedCommentID {
+					continue
+				}
+				diff.Threads[threadIndex].Comments[commentIndex].Body = body
+				updated = true
+			}
+		}
+		if updated {
+			loader.diffs[key] = diff
+		}
+	}
+}
+
+func (loader *fakePullRequestDetailLoader) deleteReviewComment(commentID string) {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if trimmedCommentID == "" {
+		return
+	}
+	for key, detail := range loader.details {
+		updated := false
+		filteredThreads := detail.InlineCommentThreads[:0]
+		for _, thread := range detail.InlineCommentThreads {
+			comments := thread.Comments[:0]
+			for _, comment := range thread.Comments {
+				if strings.TrimSpace(comment.ID) == trimmedCommentID {
+					updated = true
+					continue
+				}
+				comments = append(comments, comment)
+			}
+			thread.Comments = comments
+			if len(thread.Comments) > 0 {
+				filteredThreads = append(filteredThreads, thread)
+			} else if updated {
+				continue
+			}
+		}
+		detail.InlineCommentThreads = filteredThreads
+		comments := detail.InlineComments[:0]
+		for _, comment := range detail.InlineComments {
+			if strings.TrimSpace(comment.ID) == trimmedCommentID {
+				updated = true
+				continue
+			}
+			comments = append(comments, comment)
+		}
+		detail.InlineComments = comments
+		if updated {
+			loader.details[key] = detail
+		}
+	}
+	for key, diff := range loader.diffs {
+		updated := false
+		filteredThreads := diff.Threads[:0]
+		for _, thread := range diff.Threads {
+			comments := thread.Comments[:0]
+			for _, comment := range thread.Comments {
+				if strings.TrimSpace(comment.ID) == trimmedCommentID {
+					updated = true
+					continue
+				}
+				comments = append(comments, comment)
+			}
+			thread.Comments = comments
+			if len(thread.Comments) > 0 {
+				filteredThreads = append(filteredThreads, thread)
+			} else if updated {
+				continue
+			}
+		}
+		diff.Threads = filteredThreads
+		if updated {
+			loader.diffs[key] = diff
+		}
+	}
 }
 
 func (loader *fakePullRequestDetailLoader) updateReviewThreadState(threadID string, resolved bool) {

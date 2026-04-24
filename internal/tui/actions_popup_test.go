@@ -595,6 +595,63 @@ func TestActionsPopup_GivenBrowserCommentsTabCursorOnAnInlineThread_WhenOpening_
 	}
 }
 
+func TestActionsPopup_GivenBrowserCommentsTabCursorOnAnOwnedInlineComment_WhenOpening_ThenItShowsUpdateAndDeleteInlineCommentActions(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/comments",
+				State:       "OPEN",
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+					ID:       "thread-1",
+					Path:     "internal/tui/render.go",
+					Line:     43,
+					DiffSide: "RIGHT",
+					Comments: []githubcli.PullRequestComment{{
+						ID:              "PRRC_1",
+						ViewerDidAuthor: true,
+						Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+						Body:            "Inline thread body",
+						CreatedAt:       "2026-04-18T10:30:00Z",
+						DiffHunk:        "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+					}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42":            "Rendered body 42",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), inlineCommentUpdateEditorTitle) {
+		t.Fatalf("expected the popup to contain the inline comment update action, actual %q", popupView.Buffer())
+	}
+	if !strings.Contains(popupView.Buffer(), inlineCommentDeleteActionTitle) {
+		t.Fatalf("expected the popup to contain the inline comment delete action, actual %q", popupView.Buffer())
+	}
+}
+
 func TestActionsPopup_GivenBrowserCommentsTabCursorOutsideInlineComments_WhenOpening_ThenItHidesTheResolveInlineCommentAction(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
@@ -760,6 +817,192 @@ func TestActionsPopup_GivenReviewModeCursorOnAResolvedInlineThread_WhenOpening_T
 	if !strings.Contains(popupView.Buffer(), "Mark inline comment as unresolved") {
 		t.Fatalf("expected the popup to contain the inline-thread unresolve action, actual %q", popupView.Buffer())
 	}
+}
+
+func TestActionsPopup_GivenReviewModeOwnedInlineCommentUpdateAction_WhenExecuting_ThenItOpensTheEditorSeededWithTheCurrentMarkdown(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:              "PRRC_1",
+			ViewerDidAuthor: true,
+			Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+			Body:            "**Thread body**",
+			CreatedAt:       "2026-04-20T10:00:00Z",
+			DiffHunk:        "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"**Thread body**": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	editorView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	if !strings.Contains(editorView.Title, inlineCommentUpdateEditorTitle) {
+		t.Fatalf("expected the editor title to contain %q, actual %q", inlineCommentUpdateEditorTitle, editorView.Title)
+	}
+	if !strings.Contains(editorView.Buffer(), "**Thread body**") {
+		t.Fatalf("expected the editor buffer to contain the raw markdown %q, actual %q", "**Thread body**", editorView.Buffer())
+	}
+}
+
+func TestEditInlineComment_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefreshesTheRenderedReviewThreadAndShowsFeedback(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:              "PRRC_1",
+			ViewerDidAuthor: true,
+			Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+			Body:            "Original body",
+			CreatedAt:       "2026-04-20T10:00:00Z",
+			DiffHunk:        "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Original body": "Rendered original body",
+		"Updated body":  "Rendered updated body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	subject.modalEditor.editor.SetText("Updated body")
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if !reflect.DeepEqual(loader.updateReviewCommentIDs, []string{"PRRC_1"}) {
+		t.Fatalf("expected updated inline comment ids %v, actual %v", []string{"PRRC_1"}, loader.updateReviewCommentIDs)
+	}
+	if !reflect.DeepEqual(loader.updateReviewCommentBodies, []string{"Updated body"}) {
+		t.Fatalf("expected updated inline comment bodies %v, actual %v", []string{"Updated body"}, loader.updateReviewCommentBodies)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
+		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.diffCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered updated body") {
+		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered updated body", detailView.Buffer())
+	}
+	then_statusLineContains(t, gui, inlineCommentUpdatedSuccessMessage)
+}
+
+func TestActionsPopup_GivenReviewModeOwnedInlineCommentDeleteAction_WhenExecuting_ThenItDeletesTheCommentAndRefreshesTheDiff(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:              "PRRC_1",
+			ViewerDidAuthor: true,
+			Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+			Body:            "Thread body",
+			CreatedAt:       "2026-04-20T10:00:00Z",
+			DiffHunk:        "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("delete inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "delete inline comment"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if !reflect.DeepEqual(loader.deleteReviewCommentIDs, []string{"PRRC_1"}) {
+		t.Fatalf("expected deleted inline comment ids %v, actual %v", []string{"PRRC_1"}, loader.deleteReviewCommentIDs)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
+		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.diffCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected detail buffer to remove %q, actual %q", "Rendered thread body", detailView.Buffer())
+	}
+	then_statusLineContains(t, gui, inlineCommentDeletedSuccessMessage)
 }
 
 func TestActionsPopup_GivenDetailFocus_WhenPressingQ_ThenItReturnsToTheDetailPaneCleanly(t *testing.T) {

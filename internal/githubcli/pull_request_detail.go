@@ -50,14 +50,17 @@ type PullRequestLabel struct {
 }
 
 type PullRequestComment struct {
-	Author    *PullRequestCommentAuthor `json:"author"`
-	Body      string                    `json:"body"`
-	CreatedAt string                    `json:"createdAt"`
-	URL       string                    `json:"url"`
-	DiffHunk  string                    `json:"diffHunk"`
+	ID              string                    `json:"id"`
+	Author          *PullRequestCommentAuthor `json:"author"`
+	Body            string                    `json:"body"`
+	CreatedAt       string                    `json:"createdAt"`
+	URL             string                    `json:"url"`
+	DiffHunk        string                    `json:"diffHunk"`
+	ViewerDidAuthor bool                      `json:"viewerDidAuthor"`
 }
 
 type PullRequestInlineComment struct {
+	ID                string                    `json:"node_id"`
 	Author            *PullRequestCommentAuthor `json:"user"`
 	Body              string                    `json:"body"`
 	CreatedAt         string                    `json:"created_at"`
@@ -216,6 +219,7 @@ func (label PullRequestLabel) normalized() PullRequestLabel {
 }
 
 func (comment PullRequestComment) normalized() PullRequestComment {
+	comment.ID = strings.TrimSpace(comment.ID)
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)
@@ -228,6 +232,7 @@ func (comment PullRequestComment) normalized() PullRequestComment {
 }
 
 func (comment PullRequestInlineComment) normalized() PullRequestInlineComment {
+	comment.ID = strings.TrimSpace(comment.ID)
 	comment.Body = strings.TrimSpace(comment.Body)
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
@@ -20,10 +21,11 @@ const (
 )
 
 type reviewDiffRenderedRow struct {
-	Kind   reviewDiffRenderedRowKind
-	Text   string
-	Anchor *reviewDiffRenderedRowAnchor
-	Thread *reviewDiffThread
+	Kind    reviewDiffRenderedRowKind
+	Text    string
+	Anchor  *reviewDiffRenderedRowAnchor
+	Thread  *reviewDiffThread
+	Comment *githubcli.PullRequestComment
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
@@ -183,9 +185,10 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	for _, comment := range thread.Comments {
-		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
+		commentCopy := comment
+		body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
 		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
-			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy})
+			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}
 	if len(thread.Comments) == 0 {
