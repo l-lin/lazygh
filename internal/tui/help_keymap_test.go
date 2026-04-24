@@ -34,6 +34,46 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_helpEntryUsesKey(t, actualBuffer, "Quit", "<c-x>")
 }
 
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecentering(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Recenter cursor", "zz")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
+}
+
+func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecentering(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Recenter selection", "zz")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
+}
+
 func then_helpEntryUsesKey(t *testing.T, buffer string, description string, expectedKey string) {
 	t.Helper()
 

@@ -63,7 +63,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--json", 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.
 
-For multi-key motions, configure the prefix key. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` mean `gg` goes to the top. In review mode, `toggle_inline_conversation_prefix = "z"` plus `open_actions_popup = "a"` gives `za` to expand or collapse the inline conversation at the cursor.
+For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zz` recenter the selected row in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zz` recenter the cursor. `page_down` and `page_up` move half a page and recenter on every supported view.
 
 This example mirrors the built-in defaults.
 
@@ -91,6 +91,7 @@ previous_side_view = "h"
 focus_detail_view = "0"
 move_selection_to_top = "g"
 move_selection_to_bottom = "G"
+recenter_selection = "z"
 exit_review_mode = ["esc", "ctrl+[", "q"]
 
 [keymaps.user]
@@ -124,6 +125,7 @@ next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
+# `za` toggles inline conversations in review mode, `zz` recenters the cursor.
 toggle_inline_conversation_prefix = "z"
 close = ["esc", "ctrl+[", "q"]
 
@@ -135,8 +137,11 @@ cancel = ["esc", "ctrl+["]
 focus_search = "/"
 move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
+page_down = "ctrl+d"
+page_up = "ctrl+u"
 move_selection_to_top = "g"
 move_selection_to_bottom = "G"
+recenter_selection = "z"
 execute_selected_action = "enter"
 close = ["esc", "ctrl+[", "q"]
 
