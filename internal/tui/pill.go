@@ -5,6 +5,7 @@ import "strings"
 const (
 	roundedPillLeftSeparator  = ""
 	roundedPillRightSeparator = ""
+	roundedPillAdornmentWidth = 4
 )
 
 func renderRoundedPill(text string, foregroundHex string, backgroundHex string) string {

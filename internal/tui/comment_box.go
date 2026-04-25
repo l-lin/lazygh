@@ -53,13 +53,22 @@ func styleCommentBorder(text string) string {
 }
 
 func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, createdAt string, width int) string {
-	metadataText := compactCommentMetadataText(commentAuthorBadgeText(author)+" · "+formatTimestamp(createdAt), width)
-	metadataRunes := []rune(metadataText)
-	badgeWidth := minInt(len(metadataRunes), runeCountInt(commentAuthorBadgeText(author)))
-	badgeText := string(metadataRunes[:badgeWidth])
-	remainderText := string(metadataRunes[badgeWidth:])
+	badgeText := commentAuthorBadgeText(author)
+	metadataWidth := width - roundedPillAdornmentWidth
+	if metadataWidth < 1 {
+		metadataWidth = width
+	}
 
-	return styleCommentAuthorBadgeText(badgeText) + styleCommentMetadataText(remainderText)
+	metadataText := compactCommentMetadataText(badgeText+" · "+formatTimestamp(createdAt), metadataWidth)
+	metadataRunes := []rune(metadataText)
+	badgeWidth := minInt(len(metadataRunes), runeCountInt(badgeText))
+	renderedBadgeText := string(metadataRunes[:badgeWidth])
+	remainderText := string(metadataRunes[badgeWidth:])
+	if metadataWidth == width {
+		return styleCommentAuthorBadgeTextWithoutRoundedPill(renderedBadgeText) + styleCommentMetadataText(remainderText)
+	}
+
+	return styleCommentAuthorBadgeText(renderedBadgeText) + styleCommentMetadataText(remainderText)
 }
 
 func commentAuthorBadgeText(author *githubcli.PullRequestCommentAuthor) string {
@@ -67,6 +76,10 @@ func commentAuthorBadgeText(author *githubcli.PullRequestCommentAuthor) string {
 }
 
 func styleCommentAuthorBadgeText(text string) string {
+	return renderRoundedPill(text, theme.CommentAuthorBadgeForegroundHex, theme.CommentAuthorBadgeBackgroundHex)
+}
+
+func styleCommentAuthorBadgeTextWithoutRoundedPill(text string) string {
 	return styleText(text, foregroundColorEscape(theme.CommentAuthorBadgeForegroundHex), backgroundColorEscape(theme.CommentAuthorBadgeBackgroundHex))
 }
 
