@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"codeberg.org/l-lin/lazygh/internal/story"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
@@ -122,6 +123,25 @@ markdown_heading = "#1F1F28"
 	}
 }
 
+func TestLoad_GivenStoryReviewSettings_WhenLoading_ThenItPreservesTheConfiguredAgentCommandAndPrompt(t *testing.T) {
+	configPath := given_configFile(t, `
+[story_review]
+agent_command = ["pi", "-p", "@{{prompt_file}}"]
+prompt = "Tell the story with dry professionalism."
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{StoryReview: story.Config{
+		AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"},
+		Prompt:       "Tell the story with dry professionalism.",
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenInvalidPullRequestSearchEntries_WhenLoading_ThenItIgnoresOnlyTheBadEntries(t *testing.T) {
 	configPath := given_configFile(t, `
 [[pull_requests.searches]]
@@ -168,6 +188,19 @@ func TestConfig_ResolvedTheme_GivenNoConfiguredTheme_WhenResolving_ThenItFallsBa
 	expected := theme.DefaultPalette()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected palette %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedStoryReview_GivenNoConfiguredPrompt_WhenResolving_ThenItFallsBackToTheDefaultPrompt(t *testing.T) {
+	subject := Config{}
+
+	actual := subject.ResolvedStoryReview()
+
+	if len(actual.AgentCommand) != 0 {
+		t.Fatalf("expected no agent command, actual %v", actual.AgentCommand)
+	}
+	if actual.Prompt != story.DefaultPrompt() {
+		t.Fatalf("expected default prompt %q, actual %q", story.DefaultPrompt(), actual.Prompt)
 	}
 }
 

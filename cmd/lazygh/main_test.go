@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	"codeberg.org/l-lin/lazygh/internal/story"
 	apptheme "codeberg.org/l-lin/lazygh/internal/theme"
 )
 
@@ -57,8 +58,8 @@ func TestRun_GivenLoadedPullRequestSearches_WhenStartingTheProgram_ThenItApplies
 	if !reflect.DeepEqual(runner.appliedPullRequestSearches, expectedSearches) {
 		t.Fatalf("expected pull request searches %+v, actual %+v", expectedSearches, runner.appliedPullRequestSearches)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}, runner.calls)
 	}
 }
 
@@ -86,6 +87,32 @@ func TestRun_GivenLoadedThemeOverrides_WhenStartingTheProgram_ThenItAppliesThemB
 	}
 	if !runner.runCalled {
 		t.Fatal("expected the runner to be called")
+	}
+}
+
+func TestRun_GivenLoadedStoryReviewConfig_WhenStartingTheProgram_ThenItAppliesItBeforeRunning(t *testing.T) {
+	expectedConfig := story.Config{
+		AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"},
+		Prompt:       "Tell the story with dry professionalism.",
+	}
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		nil,
+		func() (appconfig.Config, error) {
+			return appconfig.Config{StoryReview: expectedConfig}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(runner.appliedStoryReviewConfig, expectedConfig) {
+		t.Fatalf("expected story review config %+v, actual %+v", expectedConfig, runner.appliedStoryReviewConfig)
+	}
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}, runner.calls)
 	}
 }
 
@@ -134,8 +161,8 @@ func TestRun_GivenReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequeste
 	if runner.reviewURL != expectedURL {
 		t.Fatalf("expected review url %q, actual %q", expectedURL, runner.reviewURL)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "review", "run"}, runner.calls)
 	}
 }
 
@@ -169,6 +196,7 @@ func TestRun_GivenReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturn
 type fakeConfigurableRunner struct {
 	appliedOverrides           appconfig.KeymapOverrides
 	appliedPullRequestSearches []appconfig.PullRequestSearch
+	appliedStoryReviewConfig   story.Config
 	reviewURL                  string
 	runCalled                  bool
 	reviewCalled               bool
@@ -185,6 +213,11 @@ func (runner *fakeConfigurableRunner) ApplyKeymapOverrides(overrides appconfig.K
 func (runner *fakeConfigurableRunner) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
 	runner.appliedPullRequestSearches = append([]appconfig.PullRequestSearch(nil), searches...)
 	runner.calls = append(runner.calls, "apply_pull_request_searches")
+}
+
+func (runner *fakeConfigurableRunner) ApplyStoryReviewConfig(config story.Config) {
+	runner.appliedStoryReviewConfig = config
+	runner.calls = append(runner.calls, "apply_story_review")
 }
 
 func (runner *fakeConfigurableRunner) OpenReviewByURL(url string) error {

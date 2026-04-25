@@ -6,6 +6,7 @@ import (
 	clip "codeberg.org/l-lin/lazygh/internal/clipboard"
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/story"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
@@ -79,6 +80,7 @@ type Program struct {
 	gui                               *gocui.Gui
 	keymapOverrides                   appconfig.KeymapOverrides
 	pullRequestSearches               []appconfig.PullRequestSearch
+	storyReviewConfig                 story.Config
 	pendingSelectionKeySequence       keySequenceState
 }
 

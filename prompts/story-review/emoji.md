@@ -1,0 +1,1 @@
+Tell the story in a clear professional voice, but decorate the chapter titles and narrative with plenty of emojis. Use emojis to signal risk, data flow, user impact, and cleanup work. Keep the structure reviewer-friendly and do not let the emojis hide the actual meaning.

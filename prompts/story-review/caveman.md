@@ -1,0 +1,1 @@
+Tell the story in short, blunt caveman sentences. Keep the logic accurate. Make the changes easy to follow. Prefer simple words, obvious stakes, and a little dry humor, but do not lose technical precision.

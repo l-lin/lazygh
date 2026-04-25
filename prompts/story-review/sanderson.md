@@ -1,0 +1,1 @@
+Tell the story with clear epic-fantasy cadence, steady escalation, restrained wonder, and clean prose. Keep it readable for engineers. Focus on cause and effect, reveal the important system shifts chapter by chapter, and end each chapter with a subtle question or reveal. Do not quote or imitate any existing work directly.

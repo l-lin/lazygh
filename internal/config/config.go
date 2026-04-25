@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"codeberg.org/l-lin/lazygh/internal/story"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/BurntSushi/toml"
 )
@@ -20,6 +21,7 @@ type Config struct {
 	Keymaps      KeymapOverrides
 	PullRequests []PullRequestSearch
 	Theme        theme.Palette
+	StoryReview  story.Config
 }
 
 type KeymapOverrides map[string]map[string][]string
@@ -33,6 +35,7 @@ type rawConfig struct {
 	Keymaps      map[string]map[string]any `toml:"keymaps"`
 	PullRequests rawPullRequestConfig      `toml:"pull_requests"`
 	Theme        theme.Palette             `toml:"theme"`
+	StoryReview  rawStoryReviewConfig      `toml:"story_review"`
 }
 
 type rawPullRequestConfig struct {
@@ -42,6 +45,11 @@ type rawPullRequestConfig struct {
 type rawPullRequestSearch struct {
 	Label   string `toml:"label"`
 	Command any    `toml:"command"`
+}
+
+type rawStoryReviewConfig struct {
+	AgentCommand any    `toml:"agent_command"`
+	Prompt       string `toml:"prompt"`
 }
 
 func DefaultPath(homeDirectory string) string {
@@ -75,6 +83,7 @@ func Load(configPath string) (Config, error) {
 		Keymaps:      normalizeKeymapOverrides(raw.Keymaps),
 		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
 		Theme:        theme.NormalizePalette(raw.Theme),
+		StoryReview:  normalizeStoryReviewConfig(raw.StoryReview),
 	}, nil
 }
 
@@ -97,6 +106,10 @@ func (config Config) ResolvedPullRequestSearches() []PullRequestSearch {
 
 func (config Config) ResolvedTheme() theme.Palette {
 	return theme.ResolvePalette(config.Theme)
+}
+
+func (config Config) ResolvedStoryReview() story.Config {
+	return story.ResolveConfig(config.StoryReview)
 }
 
 func ResolvePullRequestSearches(searches []PullRequestSearch) []PullRequestSearch {
@@ -197,6 +210,13 @@ func normalizeCommandArguments(arguments []string) []string {
 	}
 
 	return normalizedArguments
+}
+
+func normalizeStoryReviewConfig(raw rawStoryReviewConfig) story.Config {
+	return story.Config{
+		AgentCommand: normalizeCommand(raw.AgentCommand),
+		Prompt:       strings.TrimSpace(raw.Prompt),
+	}
 }
 
 func normalizeKeymapOverrides(rawScopes map[string]map[string]any) KeymapOverrides {

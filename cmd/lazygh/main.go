@@ -7,6 +7,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/app"
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/story"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 	"codeberg.org/l-lin/lazygh/internal/tui"
 )
@@ -14,6 +15,7 @@ import (
 type configurableRunner interface {
 	ApplyKeymapOverrides(appconfig.KeymapOverrides)
 	ApplyPullRequestSearches([]appconfig.PullRequestSearch)
+	ApplyStoryReviewConfig(story.Config)
 	OpenReviewByURL(string) error
 	Run() error
 }
@@ -43,6 +45,7 @@ func run(args []string, loadConfig func() (appconfig.Config, error), newRunner f
 	runner := newRunner()
 	runner.ApplyKeymapOverrides(configuration.Keymaps)
 	runner.ApplyPullRequestSearches(configuration.PullRequests)
+	runner.ApplyStoryReviewConfig(configuration.ResolvedStoryReview())
 	if startupOptions.reviewURL != "" {
 		if actualErr := runner.OpenReviewByURL(startupOptions.reviewURL); actualErr != nil {
 			return actualErr
