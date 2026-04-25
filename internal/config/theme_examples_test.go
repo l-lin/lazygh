@@ -10,6 +10,10 @@ import (
 
 func TestLoad_GivenBundledThemeExamples_WhenLoading_ThenEachExampleParsesIntoAResolvedPalette(t *testing.T) {
 	expectedExampleFileNames := []string{
+		"catppuccin-frappe.toml",
+		"catppuccin-latte.toml",
+		"catppuccin-macchiato.toml",
+		"catppuccin-mocha.toml",
 		"gruvbox-dark.toml",
 		"gruvbox-light.toml",
 		"kanagawa-dark.toml",
