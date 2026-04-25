@@ -7,6 +7,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/app"
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 	"codeberg.org/l-lin/lazygh/internal/tui"
 )
 
@@ -36,6 +37,8 @@ func run(args []string, loadConfig func() (appconfig.Config, error), newRunner f
 	if actualErr != nil {
 		return actualErr
 	}
+
+	theme.ApplyPalette(configuration.ResolvedTheme())
 
 	runner := newRunner()
 	runner.ApplyKeymapOverrides(configuration.Keymaps)

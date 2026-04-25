@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/BurntSushi/toml"
 )
 
@@ -18,6 +19,7 @@ const (
 type Config struct {
 	Keymaps      KeymapOverrides
 	PullRequests []PullRequestSearch
+	Theme        theme.Palette
 }
 
 type KeymapOverrides map[string]map[string][]string
@@ -30,6 +32,7 @@ type PullRequestSearch struct {
 type rawConfig struct {
 	Keymaps      map[string]map[string]any `toml:"keymaps"`
 	PullRequests rawPullRequestConfig      `toml:"pull_requests"`
+	Theme        theme.Palette             `toml:"theme"`
 }
 
 type rawPullRequestConfig struct {
@@ -71,6 +74,7 @@ func Load(configPath string) (Config, error) {
 	return Config{
 		Keymaps:      normalizeKeymapOverrides(raw.Keymaps),
 		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
+		Theme:        theme.NormalizePalette(raw.Theme),
 	}, nil
 }
 
@@ -89,6 +93,10 @@ func DefaultPullRequestSearches() []PullRequestSearch {
 
 func (config Config) ResolvedPullRequestSearches() []PullRequestSearch {
 	return ResolvePullRequestSearches(config.PullRequests)
+}
+
+func (config Config) ResolvedTheme() theme.Palette {
+	return theme.ResolvePalette(config.Theme)
 }
 
 func ResolvePullRequestSearches(searches []PullRequestSearch) []PullRequestSearch {

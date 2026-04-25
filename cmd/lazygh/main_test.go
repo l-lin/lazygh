@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	apptheme "codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestRun_GivenLoadedKeymapOverrides_WhenStartingTheProgram_ThenItAppliesThemBeforeRunning(t *testing.T) {
@@ -58,6 +59,33 @@ func TestRun_GivenLoadedPullRequestSearches_WhenStartingTheProgram_ThenItApplies
 	}
 	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "run"}) {
 		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "run"}, runner.calls)
+	}
+}
+
+func TestRun_GivenLoadedThemeOverrides_WhenStartingTheProgram_ThenItAppliesThemBeforeConstructingTheRunner(t *testing.T) {
+	t.Cleanup(apptheme.ResetPalette)
+
+	expectedActiveBorderHex := "#7E9CD8"
+	runner := &fakeConfigurableRunner{}
+	actualThemeDuringRunnerConstruction := ""
+
+	actualErr := run(
+		nil,
+		func() (appconfig.Config, error) {
+			return appconfig.Config{Theme: apptheme.Palette{ActiveBorderHex: expectedActiveBorderHex}}, nil
+		},
+		func() configurableRunner {
+			actualThemeDuringRunnerConstruction = apptheme.ActiveBorderHex
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if actualThemeDuringRunnerConstruction != expectedActiveBorderHex {
+		t.Fatalf("expected active border color %q during runner construction, actual %q", expectedActiveBorderHex, actualThemeDuringRunnerConstruction)
+	}
+	if !runner.runCalled {
+		t.Fatal("expected the runner to be called")
 	}
 }
 

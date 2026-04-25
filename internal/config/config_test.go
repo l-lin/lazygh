@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestDefaultPath_GivenHomeDirectory_WhenBuildingTheDefaultConfigPath_ThenItUsesTheLazyghConfigLocation(t *testing.T) {
@@ -98,6 +100,28 @@ command = "search prs --review-requested @me --limit 50 --state open --json titl
 	}
 }
 
+func TestLoad_GivenThemeOverrides_WhenLoading_ThenItPreservesOnlyTheValidConfiguredColors(t *testing.T) {
+	configPath := given_configFile(t, `
+[theme]
+active_border = " #7E9CD8 "
+inactive_border = "#54546D"
+selected_line_background = "wrong"
+markdown_heading = "#1F1F28"
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{Theme: theme.Palette{
+		ActiveBorderHex:    "#7E9CD8",
+		InactiveBorderHex:  "#54546D",
+		MarkdownHeadingHex: "#1F1F28",
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenInvalidPullRequestSearchEntries_WhenLoading_ThenItIgnoresOnlyTheBadEntries(t *testing.T) {
 	configPath := given_configFile(t, `
 [[pull_requests.searches]]
@@ -133,6 +157,17 @@ func TestConfig_ResolvedPullRequestSearches_GivenAnEmptyConfiguredList_WhenResol
 	expected := DefaultPullRequestSearches()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected searches %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedTheme_GivenNoConfiguredTheme_WhenResolving_ThenItFallsBackToTheDefaultPalette(t *testing.T) {
+	subject := Config{}
+
+	actual := subject.ResolvedTheme()
+
+	expected := theme.DefaultPalette()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected palette %+v, actual %+v", expected, actual)
 	}
 }
 
