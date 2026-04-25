@@ -31,7 +31,38 @@ mise run tidy
 ## Config
 `lazygh` looks for `~/.config/lazygh/config.toml`.
 
-If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+
+### Themes
+Configure palette overrides under `[theme]`.
+
+- Every color key is optional.
+- Values must use the `#RRGGBB` format.
+- Missing or invalid colors fall back to the built-in palette.
+- Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
+
+Bundled examples:
+- `themes/kanagawa-wave.toml`
+- `themes/kanagawa-dragon.toml`
+- `themes/tokyonight-dark.toml`
+- `themes/tokyonight-light.toml`
+- `themes/gruvbox-dark.toml`
+- `themes/gruvbox-light.toml`
+- `themes/nord.toml`
+
+This example overrides only a few colors.
+
+```toml
+[theme]
+active_border = "#7E9CD8"
+inactive_border = "#54546D"
+selected_line_background = "#363646"
+markdown_heading = "#7E9CD8"
+syntax_keyword = "#957FB8"
+syntax_string = "#98BB6C"
+diff_addition_background = "#2B3328"
+diff_deletion_background = "#43242B"
+```
 
 ### Pull request searches
 Configure ordered tabs under `[[pull_requests.searches]]`.
