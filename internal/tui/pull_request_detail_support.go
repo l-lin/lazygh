@@ -26,12 +26,13 @@ func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequ
 }
 
 func renderPullRequestStatusBadge(status string) string {
+	label := strings.TrimSpace(detailStatusIcon + " " + status)
 	foregroundHex, backgroundHex := pullRequestStatusBadgeColors(status)
 	if foregroundHex == "" || backgroundHex == "" {
-		return status
+		return label
 	}
 
-	return styleText(status, foregroundColorEscape(foregroundHex), backgroundColorEscape(backgroundHex))
+	return renderRoundedPill(label, foregroundHex, backgroundHex)
 }
 
 func pullRequestStatusBadgeColors(status string) (string, string) {

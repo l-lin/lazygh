@@ -70,7 +70,7 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 		parts = append(parts, fmt.Sprintf("%s %s ← %s", detailBranchIcon, compactBranchLabel(valueOrDash(baseRefName)), compactBranchLabel(valueOrDash(headRefName))))
 	}
 
-	parts = append(parts, fmt.Sprintf("%s %s", detailStatusIcon, renderPullRequestStatusBadge(detailStatus(detail, summary))))
+	parts = append(parts, renderPullRequestStatusBadge(detailStatus(detail, summary)))
 
 	checkSummary := summarizeStatusChecks(detail.StatusCheckRollup)
 	if checkSummary != "-" {
