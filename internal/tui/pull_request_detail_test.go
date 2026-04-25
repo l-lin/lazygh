@@ -52,6 +52,9 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 			t.Fatalf("expected header to contain %q, actual %q", expected, actualText)
 		}
 	}
+	if strings.Contains(actualText, "  ·  ") {
+		t.Fatalf("expected header metadata to avoid dot separators, actual %q", actualText)
+	}
 }
 
 func TestRenderPullRequestDetailHeader_GivenInlineCommentThreadsAndRestInlineComments_WhenFormatting_ThenItCountsThreadCommentsWithoutDoubleCounting(t *testing.T) {
@@ -153,6 +156,9 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRenders
 	}
 	if !strings.Contains(metadataLine, "2026-04-18 13:00 UTC") {
 		t.Fatalf("expected the metadata line to contain the comment timestamp, actual %q", metadataLine)
+	}
+	if strings.Contains(metadataLine, "·") {
+		t.Fatalf("expected the metadata line to avoid dot separators, actual %q", metadataLine)
 	}
 	if actualBodyLine := string(actualDocument.lines[2]); !strings.HasPrefix(actualBodyLine, "│ Rendered comment one") {
 		t.Fatalf("expected boxed comment body, actual %q", actualBodyLine)
@@ -260,6 +266,9 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 	}
 	if !strings.Contains(metadataLine, "2026-04-18 14:15 UTC") {
 		t.Fatalf("expected the metadata line to keep the timestamp on the same line, actual %q", metadataLine)
+	}
+	if strings.Contains(metadataLine, "·") {
+		t.Fatalf("expected the inline comment metadata line to avoid dot separators, actual %q", metadataLine)
 	}
 	if !strings.HasPrefix(metadataLine, "│ ") || !strings.HasSuffix(metadataLine, " │") {
 		t.Fatalf("expected the metadata line to render inside the rounded box, actual %q", metadataLine)

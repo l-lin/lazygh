@@ -59,7 +59,7 @@ func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, cr
 		metadataWidth = width
 	}
 
-	metadataText := compactCommentMetadataText(badgeText+" · "+formatTimestamp(createdAt), metadataWidth)
+	metadataText := compactCommentMetadataText(badgeText+"  "+formatTimestamp(createdAt), metadataWidth)
 	metadataRunes := []rune(metadataText)
 	badgeWidth := minInt(len(metadataRunes), runeCountInt(badgeText))
 	renderedBadgeText := string(metadataRunes[:badgeWidth])

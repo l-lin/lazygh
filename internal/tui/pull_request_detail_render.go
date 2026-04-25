@@ -80,7 +80,7 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 	commentCount := pullRequestDetailCommentCount(detail)
 	parts = append(parts, fmt.Sprintf("%s %s", detailCommentsIcon, formatCommentCount(commentCount)))
 
-	return strings.Join(parts, "  ·  ")
+	return strings.Join(parts, "  ")
 }
 
 func renderPullRequestDetailContent(header string, content string) string {

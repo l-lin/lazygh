@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
@@ -34,9 +35,12 @@ func TestLayout_GivenOpenPullRequestDetail_WhenRendering_ThenItShowsTheStatusAsA
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	statusLineIndex := given_viewLineIndexContaining(t, detailView, "OPEN")
+	if !strings.Contains(detailView.BufferLines()[statusLineIndex], roundedPillLeftSeparator+detailStatusIcon+" OPEN"+roundedPillRightSeparator) {
+		t.Fatalf("expected the status pill to avoid outer padding, actual %q", detailView.BufferLines()[statusLineIndex])
+	}
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, "", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill left separator")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, statusLineIndex, " "+detailStatusIcon+" OPEN ", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, " "+detailStatusIcon+" OPEN ", given_themeColorHex(t, theme.PullRequestStatusOpenForegroundHex), "status pill foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, statusLineIndex, detailStatusIcon+" OPEN", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, detailStatusIcon+" OPEN", given_themeColorHex(t, theme.PullRequestStatusOpenForegroundHex), "status pill foreground")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, "", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill right separator")
 }
 
@@ -84,8 +88,11 @@ func TestLayout_GivenPullRequestComment_WhenRendering_ThenItShowsTheAuthorAsARou
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	if !strings.Contains(detailView.BufferLines()[authorLineIndex], roundedPillLeftSeparator+detailCommentsIcon+" @reviewer-one"+roundedPillRightSeparator) {
+		t.Fatalf("expected the author pill to avoid outer padding, actual %q", detailView.BufferLines()[authorLineIndex])
+	}
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, "", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill left separator")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, " "+detailCommentsIcon+" @reviewer-one ", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, " "+detailCommentsIcon+" @reviewer-one ", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "comment author pill foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "comment author pill foreground")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, "", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill right separator")
 }
