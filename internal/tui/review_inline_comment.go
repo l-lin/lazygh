@@ -23,7 +23,7 @@ type reviewInlineCommentTarget struct {
 }
 
 func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, view *gocui.View) error {
-	target, err := program.selectedInlineReviewCommentTarget(gui, view)
+	selection, err := program.selectedInlineReviewCommentSelection(gui, view)
 	if err != nil {
 		program.setFeedback(FocusDetailView, err.Error())
 		if gui == nil {
@@ -32,19 +32,24 @@ func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, view *go
 		return program.refreshViews(gui)
 	}
 
-	return program.openMultilineModalEditor(gui, pullRequestReviewInlineCommentComposerTitle, "", func(body string) error {
-		return program.submitInlineReviewComment(target, body)
+	return program.openMultilineModalEditor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) error {
+		return program.submitInlineReviewComment(selection.target, body)
 	}, reviewInlineCommentModalHeight, handleMultilineModalEditorExternalEditKey)
 }
 
-func (program *Program) selectedInlineReviewCommentTarget(gui *gocui.Gui, view *gocui.View) (reviewInlineCommentTarget, error) {
+type reviewInlineCommentSelection struct {
+	target      reviewInlineCommentTarget
+	initialBody string
+}
+
+func (program *Program) selectedInlineReviewCommentSelection(gui *gocui.Gui, view *gocui.View) (reviewInlineCommentSelection, error) {
 	if !program.reviewSession.active {
-		return reviewInlineCommentTarget{}, errReviewThreadTargetUnavailable
+		return reviewInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
 
 	repository := pullRequestRepositoryName(program.reviewSession.summary.Repository)
 	if strings.TrimSpace(repository) == "" || program.reviewSession.summary.Number <= 0 || strings.TrimSpace(program.reviewSession.pendingReviewID) == "" {
-		return reviewInlineCommentTarget{}, errors.New("missing pull request review context")
+		return reviewInlineCommentSelection{}, errors.New("missing pull request review context")
 	}
 
 	actualView := view
@@ -59,20 +64,23 @@ func (program *Program) selectedInlineReviewCommentTarget(gui *gocui.Gui, view *
 	program.syncDetailViewState(detailDocument, viewportHeight)
 	selectedFile, ok := program.selectedReviewSessionDiffFile()
 	if !ok {
-		return reviewInlineCommentTarget{}, errReviewThreadTargetUnavailable
+		return reviewInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
 
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	threadTarget, err := reviewDiffThreadTargetForSelection(renderedRows, detailDocument, program.detailViewState)
 	if err != nil {
-		return reviewInlineCommentTarget{}, err
+		return reviewInlineCommentSelection{}, err
 	}
 
-	return reviewInlineCommentTarget{
-		repository:    repository,
-		number:        program.reviewSession.summary.Number,
-		pendingReview: strings.TrimSpace(program.reviewSession.pendingReviewID),
-		threadTarget:  threadTarget,
+	return reviewInlineCommentSelection{
+		target: reviewInlineCommentTarget{
+			repository:    repository,
+			number:        program.reviewSession.summary.Number,
+			pendingReview: strings.TrimSpace(program.reviewSession.pendingReviewID),
+			threadTarget:  threadTarget,
+		},
+		initialBody: reviewInlineCommentSuggestionBody(selectedFile.Path, reviewDiffSelectedSnippet(renderedRows, detailDocument, program.detailViewState)),
 	}, nil
 }
 

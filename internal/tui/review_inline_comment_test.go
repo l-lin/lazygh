@@ -52,6 +52,9 @@ func TestReviewMode_GivenTheDetailCursorOnADiffLine_WhenOpeningTheInlineCommentC
 	if actual := y1 - y0 + 1; actual != reviewInlineCommentModalHeight {
 		t.Fatalf("expected inline comment composer height %d, actual %d", reviewInlineCommentModalHeight, actual)
 	}
+	if actual := subject.modalEditor.Text(); actual != "" {
+		t.Fatalf("expected an empty inline comment draft without a visual selection, actual %q", actual)
+	}
 
 	subject.modalEditor.editor.SetText("Draft inline comment")
 	actualHandled := subject.editModalEditor(composerView, gocui.KeyCtrlG, 0, gocui.ModNone)
@@ -63,6 +66,44 @@ func TestReviewMode_GivenTheDetailCursorOnADiffLine_WhenOpeningTheInlineCommentC
 	}
 	if !strings.Contains(composerView.Buffer(), "Edited in $EDITOR") {
 		t.Fatalf("expected composer buffer to contain %q, actual %q", "Edited in $EDITOR", composerView.Buffer())
+	}
+}
+
+func TestReviewMode_GivenALinewiseSelectionAcrossAddedJavaLines_WhenOpeningTheInlineCommentComposer_ThenItPrefillsASuggestionFenceWithTheSelectedSnippet(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionJavaSuggestionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeLinewiseSelectionBetweenLinesContaining(t, gui, subject, "System.out.println(\"This is an example\");", "return format(version);")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	expected := strings.Join([]string{
+		"```java suggestion",
+		"System.out.println(\"This is an example\");",
+		"return format(version);",
+		"```",
+	}, "\n")
+	if actual := subject.modalEditor.Text(); actual != expected {
+		t.Fatalf("expected inline comment draft %q, actual %q", expected, actual)
 	}
 }
 
@@ -208,4 +249,38 @@ func given_reviewModeDetailCursorOnLineContaining(t *testing.T, gui *gocui.Gui, 
 	subject.detailViewState.sync(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
+}
+
+func given_reviewModeLinewiseSelectionBetweenLinesContaining(t *testing.T, gui *gocui.Gui, subject *Program, startSegment string, endSegment string) {
+	t.Helper()
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	subject.syncDetailViewState(document, detailView.InnerHeight())
+	startLineIndex, _ := given_detailDocumentLineContaining(t, document, startSegment)
+	endLineIndex, _ := given_detailDocumentLineContaining(t, document, endSegment)
+	subject.detailViewState.mode = detailLineVisualMode
+	subject.detailViewState.visualAnchor = detailPosition{line: startLineIndex, column: 0}
+	subject.detailViewState.cursor = detailPosition{line: endLineIndex, column: 0}
+	subject.detailViewState.preferredColumn = 0
+	subject.detailViewState.sync(document, detailView.InnerHeight())
+	actualErr = subject.refreshDetailView(gui)
+	then_noError(t, actualErr)
+}
+
+func given_reviewSessionJavaSuggestionPullRequestDiff() githubcli.PullRequestDiff {
+	return githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/src/main/java/com/acme/VersionParser.java b/src/main/java/com/acme/VersionParser.java",
+			"index 1111111..2222222 100644",
+			"--- a/src/main/java/com/acme/VersionParser.java",
+			"+++ b/src/main/java/com/acme/VersionParser.java",
+			"@@ -10,1 +10,3 @@",
+			" context",
+			"+System.out.println(\"This is an example\");",
+			"+return format(version);",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{{Path: "src/main/java/com/acme/VersionParser.java", ChangeType: "modified", Additions: 2, Deletions: 0}},
+	}
 }
