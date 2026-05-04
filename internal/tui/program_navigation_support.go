@@ -105,8 +105,8 @@ func (program *Program) recenterListSelection(gui *gocui.Gui, view *gocui.View, 
 
 func (program *Program) currentSideListState() (string, int, int) {
 	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
-		if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil && len(result.data.FileTree.Rows) > 0 {
-			return viewPullRequestsName, program.reviewSessionSelectedVisibleLine(), len(result.data.FileTree.Rows)
+		if tree, _, ok := program.reviewSessionCurrentTree(); ok && len(tree.Rows) > 0 {
+			return viewPullRequestsName, program.reviewSessionSelectedVisibleLine(), len(tree.Rows)
 		}
 
 		items := program.reviewSessionFiles()

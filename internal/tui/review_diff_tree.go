@@ -53,7 +53,7 @@ func appendReviewDiffTreeRows(node *reviewDiffTreeNode, depth int, rows *[]revie
 		return
 	}
 	if node.isFile() {
-		appendReviewDiffTreeRow(rows, depth, node.name, node.fileIndex)
+		appendReviewDiffTreeRow(rows, depth, node.name, node.fileIndex, 0, reviewDiffTreeRowKindDirectory)
 		return
 	}
 
@@ -62,21 +62,21 @@ func appendReviewDiffTreeRows(node *reviewDiffTreeNode, depth int, rows *[]revie
 	for currentNode.isDirectory() && len(currentNode.children) == 1 {
 		onlyChild := currentNode.children[0]
 		if onlyChild.isFile() {
-			appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1)
-			appendReviewDiffTreeRow(rows, depth+1, onlyChild.name, onlyChild.fileIndex)
+			appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1, 0, reviewDiffTreeRowKindDirectory)
+			appendReviewDiffTreeRow(rows, depth+1, onlyChild.name, onlyChild.fileIndex, 0, reviewDiffTreeRowKindDirectory)
 			return
 		}
 		pathSegments = append(pathSegments, onlyChild.name)
 		currentNode = onlyChild
 	}
 
-	appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1)
+	appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1, 0, reviewDiffTreeRowKindDirectory)
 	for _, childNode := range currentNode.children {
 		appendReviewDiffTreeRows(childNode, depth+1, rows)
 	}
 }
 
-func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string, fileIndex int) {
+func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string, fileIndex int, chapterIndex int, kind reviewDiffTreeRowKind) {
 	if rows == nil {
 		return
 	}
@@ -85,6 +85,8 @@ func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string,
 		Depth:           depth,
 		Label:           label,
 		FileIndex:       fileIndex,
+		ChapterIndex:    chapterIndex,
+		Kind:            kind,
 	})
 }
 
@@ -148,6 +150,9 @@ func reviewDiffTreeRowStyledIcon(row reviewDiffTreeRow, files []reviewDiffFile) 
 }
 
 func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	if row.Kind == reviewDiffTreeRowKindChapter {
+		return theme.MarkdownHeadingHex
+	}
 	if row.FileIndex < 0 {
 		return theme.DiffLineNumberHex
 	}
@@ -166,7 +171,7 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 }
 
 func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, query string, selected bool) string {
-	if row.FileIndex < 0 {
+	if row.FileIndex < 0 && row.Kind != reviewDiffTreeRowKindChapter {
 		query = ""
 	}
 
@@ -211,6 +216,16 @@ func reviewDiffSelectableRowIndexes(tree reviewDiffTree) []int {
 	indexes := make([]int, 0, len(tree.Rows))
 	for _, row := range tree.Rows {
 		if row.FileIndex >= 0 {
+			indexes = append(indexes, row.VisibleRowIndex)
+		}
+	}
+	return indexes
+}
+
+func reviewDiffSelectableRowIndexesIncludingChapters(tree reviewDiffTree) []int {
+	indexes := make([]int, 0, len(tree.Rows))
+	for _, row := range tree.Rows {
+		if row.Kind == reviewDiffTreeRowKindChapter || row.FileIndex >= 0 {
 			indexes = append(indexes, row.VisibleRowIndex)
 		}
 	}

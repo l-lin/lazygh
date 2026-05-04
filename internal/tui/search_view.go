@@ -124,6 +124,9 @@ func (program *Program) detailViewTitle() string {
 		if program.reviewSessionShowsDescription() {
 			return reviewModeDescriptionTitle
 		}
+		if program.reviewSessionShowsStoryChapter() {
+			return reviewModeChapterTitle
+		}
 		return reviewModeDiffTitle
 	}
 	if program.shouldShowPullRequestDetailTabs() {
@@ -134,6 +137,9 @@ func (program *Program) detailViewTitle() string {
 
 func (program *Program) pullRequestsViewTitle() string {
 	if program.reviewSession.active {
+		if program.reviewSession.mode == reviewSessionModeStory {
+			return reviewModeChaptersTitle
+		}
 		return reviewModeFilesTitle
 	}
 	return ""

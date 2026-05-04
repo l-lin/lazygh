@@ -69,8 +69,11 @@ func reviewDiffFileIcon(filePath string) string {
 }
 
 func reviewDiffTreeRowIcon(row reviewDiffTreeRow) string {
-	if row.FileIndex < 0 {
+	if row.Kind == reviewDiffTreeRowKindChapter {
 		return reviewDiffDirectoryIcon
 	}
-	return reviewDiffFileIcon(row.Label)
+	if row.FileIndex >= 0 {
+		return reviewDiffFileIcon(row.Label)
+	}
+	return reviewDiffDirectoryIcon
 }

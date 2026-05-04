@@ -24,6 +24,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	} else {
 		actions = append(actions,
 			program.startReviewAction(),
+			program.reviewStoryAction(),
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
 			program.reviewApproveAction(),

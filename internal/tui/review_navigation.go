@@ -57,8 +57,13 @@ func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error 
 		return nil
 	}
 
+	selectableRows, ok := program.reviewSessionFileRows()
+	if !ok || len(selectableRows) == 0 {
+		return nil
+	}
+
 	originalRow := program.reviewSession.selectedFileTreeRow
-	program.adjustReviewSessionSelection(change)
+	program.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.reviewSession.selectedFileTreeRow, selectableRows, change)
 	if program.reviewSession.selectedFileTreeRow == originalRow {
 		return nil
 	}
@@ -151,13 +156,13 @@ func (program *Program) reviewSessionCommentTarget(detailView *gocui.View, curre
 }
 
 func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []reviewCommentLocation {
-	result, ok := program.reviewSessionDiffResult()
-	if !ok || result.err != nil {
+	tree, files, ok := program.reviewSessionCurrentTree()
+	if !ok {
 		return nil
 	}
 
 	fileTreeRows := map[int]int{}
-	for _, row := range result.data.FileTree.Rows {
+	for _, row := range tree.Rows {
 		if row.FileIndex < 0 {
 			continue
 		}
@@ -173,7 +178,7 @@ func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []
 	}
 
 	locations := make([]reviewCommentLocation, 0)
-	for fileIndex, file := range result.data.Files {
+	for fileIndex, file := range files {
 		fileTreeRow, ok := fileTreeRows[fileIndex]
 		if !ok {
 			continue

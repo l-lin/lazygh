@@ -181,8 +181,8 @@ func (program *Program) renderUserView(view *gocui.View) {
 func (program *Program) renderPullRequestsView(view *gocui.View) {
 	if program.reviewSession.active {
 		query := program.reviewFileTreeSearchQuery()
-		if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil && len(result.data.FileTree.Rows) > 0 {
-			program.renderReviewDiffTreeView(view, result.data.FileTree, result.data.Files, query, program.reviewSessionSelectedVisibleLine())
+		if tree, files, ok := program.reviewSessionCurrentTree(); ok && len(tree.Rows) > 0 {
+			program.renderReviewDiffTreeView(view, tree, files, query, program.reviewSessionSelectedVisibleLine())
 			return
 		}
 		program.renderSelectableListView(view, selectableListViewState{

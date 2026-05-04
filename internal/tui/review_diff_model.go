@@ -76,11 +76,21 @@ type reviewDiffStats struct {
 	Deletions    int
 }
 
+type reviewDiffTreeRowKind int
+
+const (
+	reviewDiffTreeRowKindDirectory reviewDiffTreeRowKind = iota
+	reviewDiffTreeRowKindFile
+	reviewDiffTreeRowKindChapter
+)
+
 type reviewDiffTreeRow struct {
 	VisibleRowIndex int
 	Depth           int
 	Label           string
 	FileIndex       int
+	ChapterIndex    int
+	Kind            reviewDiffTreeRowKind
 }
 
 type reviewDiffTree struct {

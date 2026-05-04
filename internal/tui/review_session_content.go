@@ -53,6 +53,9 @@ func (program *Program) reviewSessionDetailContent() string {
 	if program.reviewSessionShowsDescription() {
 		return program.reviewSessionDescriptionContent()
 	}
+	if program.reviewSessionShowsStoryChapter() {
+		return program.reviewSessionStoryChapterContent()
+	}
 
 	result, ok := program.reviewSessionDiffResult()
 	if !ok {
@@ -77,11 +80,38 @@ func (program *Program) reviewSessionDescriptionContent() string {
 	return renderPullRequestDescription(summary, detail, program.markdownRenderer, program.detailWrapWidth)
 }
 
+func (program *Program) reviewSessionStoryChapterContent() string {
+	chapter, ok := program.selectedReviewSessionStoryChapter()
+	if !ok {
+		return program.reviewSessionNoDiffDetail()
+	}
+
+	sections := []string{"# " + strings.TrimSpace(chapter.Title)}
+	if strings.TrimSpace(chapter.Narrative) != "" {
+		sections = append(sections, strings.TrimSpace(chapter.Narrative))
+	}
+	if len(chapter.Files) > 0 {
+		sections = append(sections, "## Files")
+		for _, file := range chapter.Files {
+			sections = append(sections, "- "+strings.TrimSpace(file))
+		}
+	}
+	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), program.markdownRenderer, program.detailWrapWidth, "No chapter narrative is available.")
+}
+
 func (program *Program) reviewSessionShowsDescription() bool {
 	if !program.reviewSession.active {
 		return false
 	}
 	return program.model.currentSideFocus() == FocusUserView
+}
+
+func (program *Program) reviewSessionShowsStoryChapter() bool {
+	if !program.reviewSession.active || program.reviewSession.mode != reviewSessionModeStory {
+		return false
+	}
+	_, ok := program.selectedReviewSessionStoryChapter()
+	return ok
 }
 
 func (program *Program) reviewSessionLoadingDetail() string {
@@ -140,6 +170,15 @@ func (program *Program) reviewSessionDetailIdentity() string {
 			pullRequestRepositoryName(program.reviewSession.summary.Repository),
 			program.reviewSession.summary.Number,
 			program.reviewSession.pendingReviewID,
+		)
+	}
+	if chapter, ok := program.selectedReviewSessionStoryChapter(); ok {
+		return fmt.Sprintf(
+			"review:%s:%d:%s:chapter:%s",
+			pullRequestRepositoryName(program.reviewSession.summary.Repository),
+			program.reviewSession.summary.Number,
+			program.reviewSession.pendingReviewID,
+			chapter.ID,
 		)
 	}
 	selectedFilePath := fmt.Sprintf("row:%d", program.reviewSession.selectedFileTreeRow)

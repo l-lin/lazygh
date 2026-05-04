@@ -75,6 +75,7 @@ type Program struct {
 	modalEditor                       *modalEditorState
 	externalEditor                    externalEditor
 	markdownRenderer                  MarkdownRenderer
+	storyGenerator                    reviewStoryGenerator
 	asyncRunner                       asyncRunner
 	uiUpdater                         uiUpdater
 	gui                               *gocui.Gui
@@ -116,6 +117,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},
 		externalEditor:                    systemExternalEditor{},
 		markdownRenderer:                  glamourMarkdownRenderer{},
+		storyGenerator:                    commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
 		asyncRunner:                       goroutineAsyncRunner{},
 		uiUpdater:                         queuedUIUpdater{},
 		clipboardWriter:                   clip.NewSystemWriter(),

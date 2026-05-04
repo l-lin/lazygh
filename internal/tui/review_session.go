@@ -11,13 +11,23 @@ import (
 const (
 	reviewModeMetadataTitle                 = "[1]-Metadata"
 	reviewModeFilesTitle                    = "[2]-Files"
+	reviewModeChaptersTitle                 = "[2]-Chapters"
 	reviewModeDescriptionTitle              = "[0]-Description"
 	reviewModeDiffTitle                     = "[0]-Diff"
+	reviewModeChapterTitle                  = "[0]-Chapter"
 	pendingPullRequestReviewKeptOpenMessage = "Pending review kept open; start review to resume"
+)
+
+type reviewSessionMode int
+
+const (
+	reviewSessionModeDiff reviewSessionMode = iota
+	reviewSessionModeStory
 )
 
 type reviewSessionState struct {
 	active                       bool
+	mode                         reviewSessionMode
 	sourceFocus                  Focus
 	sourceDetailTab              DetailTab
 	sourcePaneLayoutSize         PaneLayoutSize
@@ -28,6 +38,7 @@ type reviewSessionState struct {
 	selectedFileTreeRow          int
 	fileTreeSearchQuery          string
 	collapsedThreadIDs           map[string]bool
+	story                        reviewStoryData
 }
 
 func (program *Program) startReviewAction() actionsPopupAction {
@@ -52,9 +63,18 @@ func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActio
 }
 
 func (program *Program) startReviewSession(summary githubcli.PullRequest, pendingReviewID string) {
+	program.startReviewSessionWithMode(summary, pendingReviewID, reviewSessionModeDiff, reviewStoryData{})
+}
+
+func (program *Program) startStoryReviewSession(summary githubcli.PullRequest, pendingReviewID string, story reviewStoryData) {
+	program.startReviewSessionWithMode(summary, pendingReviewID, reviewSessionModeStory, story)
+}
+
+func (program *Program) startReviewSessionWithMode(summary githubcli.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
 	program.detailViewState.clearPendingPrefix()
 	program.reviewSession = reviewSessionState{
 		active:                       true,
+		mode:                         mode,
 		sourceFocus:                  program.model.Focus(),
 		sourceDetailTab:              program.activeDetailTab,
 		sourcePaneLayoutSize:         program.model.paneLayoutSize,
@@ -63,6 +83,7 @@ func (program *Program) startReviewSession(summary githubcli.PullRequest, pendin
 		summary:                      summary,
 		pendingReviewID:              strings.TrimSpace(pendingReviewID),
 		collapsedThreadIDs:           map[string]bool{},
+		story:                        story,
 	}
 	program.model.paneLayoutSize = program.reviewModePaneLayoutSize()
 	program.model.FocusPullRequestsView()
@@ -127,19 +148,19 @@ func (program *Program) reviewSessionFiles() []Item {
 		return nil
 	}
 
-	result, ok := program.reviewSessionDiffResult()
+	tree, files, ok := program.reviewSessionCurrentTree()
 	if !ok {
+		if result, diffOk := program.reviewSessionDiffResult(); diffOk && result.err != nil {
+			return []Item{{Title: "Could not load file tree", Detail: program.reviewSessionDiffErrorDetail(result.err)}}
+		}
 		return []Item{{Title: "Loading file tree...", Detail: program.reviewSessionLoadingDetail()}}
 	}
-	if result.err != nil {
-		return []Item{{Title: "Could not load file tree", Detail: program.reviewSessionDiffErrorDetail(result.err)}}
-	}
-	if len(result.data.FileTree.Rows) == 0 {
+	if len(tree.Rows) == 0 {
 		return []Item{{Title: "No changed files", Detail: program.reviewSessionNoDiffDetail()}}
 	}
 
 	program.clampReviewSessionSelection()
-	return reviewDiffTreeItems(result.data.FileTree, result.data.Files)
+	return reviewDiffTreeItems(tree, files)
 }
 
 func (program *Program) reviewSessionSelectedVisibleLine() int {
@@ -152,16 +173,11 @@ func (program *Program) reviewSessionSelectedVisibleLine() int {
 }
 
 func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
-	result, ok := program.reviewSessionDiffResult()
-	if !ok || result.err != nil {
+	row, files, ok := program.selectedReviewSessionTreeRow()
+	if !ok || row.FileIndex < 0 || row.FileIndex >= len(files) {
 		return reviewDiffFile{}, false
 	}
-	program.clampReviewSessionSelection()
-	fileIndex, ok := reviewDiffFileIndexAtRow(result.data.FileTree, program.reviewSession.selectedFileTreeRow)
-	if !ok || fileIndex < 0 || fileIndex >= len(result.data.Files) {
-		return reviewDiffFile{}, false
-	}
-	return result.data.Files[fileIndex], true
+	return files[row.FileIndex], true
 }
 
 func (program *Program) clampReviewSessionSelection() {
@@ -205,10 +221,52 @@ func (program *Program) moveReviewSessionSelectionToBottom() {
 }
 
 func (program *Program) reviewSessionSelectableRows() ([]int, bool) {
-	result, ok := program.reviewSessionDiffResult()
-	if !ok || result.err != nil {
+	tree, _, ok := program.reviewSessionCurrentTree()
+	if !ok {
 		return nil, false
 	}
+	if program.reviewSession.mode == reviewSessionModeStory {
+		return reviewDiffSelectableRowIndexesIncludingChapters(tree), true
+	}
+	return reviewDiffSelectableRowIndexes(tree), true
+}
 
-	return reviewDiffSelectableRowIndexes(result.data.FileTree), true
+func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiffFile, bool) {
+	result, ok := program.reviewSessionDiffResult()
+	if !ok || result.err != nil {
+		return reviewDiffTree{}, nil, false
+	}
+	if program.reviewSession.mode == reviewSessionModeStory && len(program.reviewSession.story.Tree.Rows) > 0 {
+		return program.reviewSession.story.Tree, result.data.Files, true
+	}
+	return result.data.FileTree, result.data.Files, true
+}
+
+func (program *Program) selectedReviewSessionTreeRow() (reviewDiffTreeRow, []reviewDiffFile, bool) {
+	tree, files, ok := program.reviewSessionCurrentTree()
+	if !ok || len(tree.Rows) == 0 {
+		return reviewDiffTreeRow{}, nil, false
+	}
+	program.clampReviewSessionSelection()
+	rowIndex := clampIndex(program.reviewSession.selectedFileTreeRow, len(tree.Rows))
+	return tree.Rows[rowIndex], files, true
+}
+
+func (program *Program) selectedReviewSessionStoryChapter() (reviewStoryChapter, bool) {
+	row, _, ok := program.selectedReviewSessionTreeRow()
+	if !ok || row.Kind != reviewDiffTreeRowKindChapter {
+		return reviewStoryChapter{}, false
+	}
+	if row.ChapterIndex < 0 || row.ChapterIndex >= len(program.reviewSession.story.Chapters) {
+		return reviewStoryChapter{}, false
+	}
+	return program.reviewSession.story.Chapters[row.ChapterIndex], true
+}
+
+func (program *Program) reviewSessionFileRows() ([]int, bool) {
+	tree, _, ok := program.reviewSessionCurrentTree()
+	if !ok {
+		return nil, false
+	}
+	return reviewDiffSelectableRowIndexes(tree), true
 }
