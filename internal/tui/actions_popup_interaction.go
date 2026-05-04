@@ -188,6 +188,14 @@ func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *goc
 
 	result := action.execute(gui)
 	if result.err != nil {
+		if message := strings.TrimSpace(result.feedbackMessage); message != "" {
+			program.actionsPopupErrorMessage = ""
+			program.setFeedback(result.feedbackTarget, message)
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
+		}
 		program.actionsPopupErrorMessage = strings.TrimSpace(result.err.Error())
 		if gui == nil {
 			return nil

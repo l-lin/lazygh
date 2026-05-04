@@ -34,8 +34,10 @@ func (action actionsPopupAction) label() string {
 }
 
 type actionsPopupActionResult struct {
-	closePopup bool
-	err        error
+	closePopup      bool
+	err             error
+	feedbackMessage string
+	feedbackTarget  Focus
 }
 
 var errActionsPopupActionUnavailable = errors.New("action is unavailable")

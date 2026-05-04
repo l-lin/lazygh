@@ -10,7 +10,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/story"
 )
 
-func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting_ThenItKeepsThePopupOpenAndShowsHowToConfigureIt(t *testing.T) {
+func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting_ThenItShowsTheConfigurationErrorOnTheStatusLine(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -30,9 +30,10 @@ func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting
 	then_currentViewNameIs(t, gui, viewActionsPopupName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "story_review.agent_command") {
-		t.Fatalf("expected popup title to contain %q, actual %q", "story_review.agent_command", popupView.Title)
+	if popupView.Title != "Actions" {
+		t.Fatalf("expected popup title %q, actual %q", "Actions", popupView.Title)
 	}
+	then_statusLineContains(t, gui, "story_review.agent_command")
 	if subject.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the configuration error")
 	}

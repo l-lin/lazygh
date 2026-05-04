@@ -42,15 +42,15 @@ func (program *Program) reviewStoryAction() actionsPopupAction {
 
 func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupActionResult {
 	if program.githubLoader == nil || program.storyGenerator == nil {
-		return actionsPopupActionResult{err: errors.New(storyReviewUnavailableMessage)}
+		return program.storyReviewStatusLineErrorResult(errors.New(storyReviewUnavailableMessage))
 	}
 	if !program.storyReviewConfig.Configured() {
-		return actionsPopupActionResult{err: errors.New(storyReviewConfigureAgentMessage)}
+		return program.storyReviewStatusLineErrorResult(errors.New(storyReviewConfigureAgentMessage))
 	}
 
 	summary, ok := program.model.SelectedPullRequestSummary()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return program.storyReviewStatusLineErrorResult(errActionsPopupActionUnavailable)
 	}
 
 	program.setFeedback(program.model.Focus(), storyReviewGeneratingFeedback)
@@ -191,4 +191,12 @@ func preferredStoryMetadataValue(primary string, fallback string) string {
 		return trimmedPrimary
 	}
 	return strings.TrimSpace(fallback)
+}
+
+func (program *Program) storyReviewStatusLineErrorResult(actualErr error) actionsPopupActionResult {
+	return actionsPopupActionResult{
+		err:             actualErr,
+		feedbackMessage: strings.TrimSpace(actualErr.Error()),
+		feedbackTarget:  program.model.Focus(),
+	}
 }
