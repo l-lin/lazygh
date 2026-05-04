@@ -31,7 +31,7 @@ mise run tidy
 ## Config
 `lazygh` looks for `~/.config/lazygh/config.toml`.
 
-If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid story-review settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
 
 ### Themes
 Configure palette overrides under `[theme]`.
@@ -42,8 +42,12 @@ Configure palette overrides under `[theme]`.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
 
 Bundled examples:
-- `themes/kanagawa-wave.toml`
-- `themes/kanagawa-dragon.toml`
+- `themes/catppuccin-latte.toml`
+- `themes/catppuccin-frappe.toml`
+- `themes/catppuccin-macchiato.toml`
+- `themes/catppuccin-mocha.toml`
+- `themes/kanagawa-dark.toml`
+- `themes/kanagawa-light.toml`
 - `themes/tokyonight-dark.toml`
 - `themes/tokyonight-light.toml`
 - `themes/gruvbox-dark.toml`
@@ -63,6 +67,44 @@ syntax_string = "#98BB6C"
 diff_addition_background = "#2B3328"
 diff_deletion_background = "#43242B"
 ```
+
+### Story review
+Use the actions popup on a pull request and pick `Review PR as story`.
+
+- `lazygh` asks an external AI command to group changed files into review chapters.
+- If `[story_review].agent_command` is missing, the action fails and tells you to configure it.
+- If `[story_review].prompt` is missing, `lazygh` uses the built-in professional prompt.
+- In story review mode, view `2` shows chapters with nested files. Selecting a chapter shows its narrative in view `0`. Selecting a file shows the diff again, because chaos has limits.
+
+Configure the AI command under `[story_review]`.
+
+- `agent_command` can be a string or an array of strings.
+- Use `{{prompt_file}}` anywhere in the command to inject the generated prompt file path.
+- If the command does not contain `{{prompt_file}}`, `lazygh` appends the prompt file path as the last argument.
+- `prompt` is optional. It controls the tone and chaptering guidance that `lazygh` wraps around the PR metadata and diff.
+
+This example uses `pi` and the built-in default prompt.
+
+```toml
+[story_review]
+agent_command = ["pi", "--models", "anthropic/claude-sonnet-4-6", "--no-session", "-p", "@{{prompt_file}}"]
+```
+
+This example overrides the prompt.
+
+```toml
+[story_review]
+agent_command = ["pi", "--models", "anthropic/claude-sonnet-4-6", "--no-session", "-p", "@{{prompt_file}}"]
+prompt = """
+Group the changes into a logical, reviewer-friendly story. Use a professional tone. Prefer chapters that reflect one cohesive behavior change, refactor step, or debugging thread. Explain what each chapter is doing, why it exists, and what a reviewer should mentally connect across the listed files. Keep the narrative concise, concrete, and useful for code review.
+"""
+```
+
+Prompt examples live in `prompts/story-review/`:
+- `prompts/story-review/default.md`
+- `prompts/story-review/sanderson.md`
+- `prompts/story-review/caveman.md`
+- `prompts/story-review/emoji.md`
 
 ### Pull request searches
 Configure ordered tabs under `[[pull_requests.searches]]`.
