@@ -374,6 +374,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeMain, "open_search", mainPaneViewNames, program.openSearch, runeBinding('/')),
 		keybindingActionFor(keymapScopeMain, "move_selection_down", mainPaneViewNames, program.moveSelectionDown, runeBinding('j'), namedBinding(gocui.KeyArrowDown, "<down>")),
 		keybindingActionFor(keymapScopeMain, "move_selection_up", mainPaneViewNames, program.moveSelectionUp, runeBinding('k'), namedBinding(gocui.KeyArrowUp, "<up>")),
+		keybindingActionFor(keymapScopeMain, "move_detail_view_down", mainPaneViewNames, program.moveDetailViewDown, runeBinding('J')),
+		keybindingActionFor(keymapScopeMain, "move_detail_view_up", mainPaneViewNames, program.moveDetailViewUp, runeBinding('K')),
 		keybindingActionFor(keymapScopeMain, "page_down", mainPaneViewNames, program.pageDown, namedBinding(gocui.KeyCtrlD, "<c-d>")),
 		keybindingActionFor(keymapScopeMain, "page_up", mainPaneViewNames, program.pageUp, namedBinding(gocui.KeyCtrlU, "<c-u>")),
 		keybindingActionFor(keymapScopeMain, "grow_focused_pane", mainPaneViewNames, program.growFocusedPane, runeBinding('+')),

@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 func TestBindingsForViews_GivenMultipleViewsAndDefinitions_WhenExpanding_ThenItCreatesOneBindingPerCombinationInOrder(t *testing.T) {
@@ -66,7 +68,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenControlDAndC
 	}
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingVerticalNavigationBindings_ThenMainPanesSupportJKAndArrowKeys(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingVerticalNavigationBindings_ThenMainPanesSupportJKArrowKeysAndShiftJKForViewZero(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
@@ -76,6 +78,57 @@ func TestKeybindingSpecs_GivenProgram_WhenListingVerticalNavigationBindings_Then
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyArrowDown, handler: subject.moveSelectionDown})
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'k', handler: subject.moveSelectionUp})
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyArrowUp, handler: subject.moveSelectionUp})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'J', handler: subject.moveDetailViewDown})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'K', handler: subject.moveDetailViewUp})
+	}
+}
+
+func TestViewZeroMotion_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenItMovesTheDetailCursorWithoutChangingTheSelection(t *testing.T) {
+	model := NewModel(SeedData{PullRequestTabs: []PullRequestTabSeed{{Label: "My PRs", PullRequests: []Item{{Title: "pr-1", Detail: "line 1\nline 2\nline 3"}}}}})
+	model.FocusPullRequestsView()
+	subject := NewProgramWithModel(model)
+
+	downHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'J')
+	actualErr := downHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.model.SelectedPullRequestIndex(MyPullRequestsTab) != 0 {
+		t.Fatalf("expected selected pull request index %d, actual %d", 0, subject.model.SelectedPullRequestIndex(MyPullRequestsTab))
+	}
+	if subject.detailViewState.cursor == (detailPosition{}) {
+		t.Fatalf("expected the detail cursor to move, actual %+v", subject.detailViewState.cursor)
+	}
+
+	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')
+	actualErr = upHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.detailViewState.cursor != (detailPosition{}) {
+		t.Fatalf("expected the detail cursor to return to the top, actual %+v", subject.detailViewState.cursor)
+	}
+}
+
+func TestViewZeroMotion_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItMovesTheDiffCursorWithoutChangingTheSelectedFile(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
+	subject.startReviewSession(summary, "PRR_shift_jk")
+	subject.clampReviewSessionSelection()
+	expectedSelectedFileTreeRow := subject.reviewSession.selectedFileTreeRow
+
+	downHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'J')
+	actualErr := downHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.reviewSession.selectedFileTreeRow != expectedSelectedFileTreeRow {
+		t.Fatalf("expected selected file tree row %d, actual %d", expectedSelectedFileTreeRow, subject.reviewSession.selectedFileTreeRow)
+	}
+	if subject.detailViewState.cursor == (detailPosition{}) {
+		t.Fatalf("expected the diff cursor to move, actual %+v", subject.detailViewState.cursor)
+	}
+
+	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')
+	actualErr = upHandler(nil, nil)
+	then_noError(t, actualErr)
+	if subject.detailViewState.cursor != (detailPosition{}) {
+		t.Fatalf("expected the diff cursor to return to the top, actual %+v", subject.detailViewState.cursor)
 	}
 }
 

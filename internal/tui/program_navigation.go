@@ -46,6 +46,26 @@ func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error 
 	})
 }
 
+func (program *Program) moveDetailViewDown(gui *gocui.Gui, _ *gocui.View) error {
+	if !program.model.PaneVisible(FocusDetailView) {
+		return nil
+	}
+
+	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveDown(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailViewUp(gui *gocui.Gui, _ *gocui.View) error {
+	if !program.model.PaneVisible(FocusDetailView) {
+		return nil
+	}
+
+	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveUp(document, viewportHeight)
+	})
+}
+
 func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
 	actualView := program.resolveView(gui, view, program.currentViewName())
 	pageSize := viewPageSize(actualView)
