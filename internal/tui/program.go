@@ -60,6 +60,7 @@ type Program struct {
 	pullRequestDetailLoadInFlight     map[string]bool
 	pullRequestDiffCache              map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight       map[string]bool
+	reviewDiffRenderCache             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
 	storyReviewLoading                bool
 	loadingSpinnerFrameIndex          int
 	detailWrapWidth                   int
@@ -113,6 +114,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		pullRequestDetailLoadInFlight:     map[string]bool{},
 		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:       map[string]bool{},
+		reviewDiffRenderCache:             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
 		additionalPullRequestsLoadStarted: map[PullRequestTab]bool{},
 		additionalPullRequestsLoading:     map[PullRequestTab]bool{},
 		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},

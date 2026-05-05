@@ -70,6 +70,12 @@ func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
 		width = 1
 	}
 
+	if program.reviewSession.active && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter() {
+		if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
+			return program.currentReviewDiffDocument(selectedFile, width)
+		}
+	}
+
 	return newDetailDocumentWithWrap(program.detailViewContent(), width, program.detailViewWraps())
 }
 

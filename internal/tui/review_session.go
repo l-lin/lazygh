@@ -85,6 +85,7 @@ func (program *Program) startReviewSessionWithMode(summary githubcli.PullRequest
 		collapsedThreadIDs:           map[string]bool{},
 		story:                        story,
 	}
+	program.invalidateReviewDiffRenderCache()
 	program.model.paneLayoutSize = program.reviewModePaneLayoutSize()
 	program.model.FocusPullRequestsView()
 }
@@ -118,6 +119,7 @@ func (program *Program) restorePullRequestBrowserFromReviewMode() {
 	sourceFullscreenPane := program.reviewSession.sourceFullscreenPane
 	sourceDetailFullscreenReturn := program.reviewSession.sourceDetailFullscreenReturn
 	program.reviewSession = reviewSessionState{}
+	program.invalidateReviewDiffRenderCache()
 	program.activeDetailTab = sourceDetailTab
 	program.detailViewState.clearPendingPrefix()
 	program.model.paneLayoutSize = sourcePaneLayoutSize

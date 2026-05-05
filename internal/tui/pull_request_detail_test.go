@@ -447,11 +447,13 @@ type fakeMarkdownRenderer struct {
 	err          error
 	lastMarkdown string
 	lastWidth    int
+	callCount    int
 }
 
 func (renderer *fakeMarkdownRenderer) Render(markdown string, width int) (string, error) {
 	renderer.lastMarkdown = markdown
 	renderer.lastWidth = width
+	renderer.callCount++
 	if renderer.err != nil {
 		return "", renderer.err
 	}

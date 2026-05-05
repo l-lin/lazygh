@@ -7,11 +7,34 @@ import (
 )
 
 func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {
-	return buildReviewDiffRenderedRowsWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs)
+	cacheKey := program.reviewDiffRenderKey(file, width)
+	if entry, ok := program.cachedReviewDiffRenderEntry(cacheKey); ok && len(entry.rows) > 0 {
+		return entry.rows
+	}
+
+	rows := buildReviewDiffRenderedRowsWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs)
+	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
+	entry.rows = rows
+	program.storeReviewDiffRenderEntry(cacheKey, entry)
+	return rows
 }
 
 func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int) detailDocument {
-	return newDetailDocumentWithWrap(renderReviewDiffFileWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs), width, false)
+	cacheKey := program.reviewDiffRenderKey(file, width)
+	if entry, ok := program.cachedReviewDiffRenderEntry(cacheKey); ok && len(entry.document.rows) > 0 {
+		return entry.document
+	}
+
+	rows := program.currentReviewDiffRenderedRows(file, width)
+	lines := make([]string, 0, len(rows))
+	for _, row := range rows {
+		lines = append(lines, row.Text)
+	}
+	document := newDetailDocumentWithWrap(strings.Join(lines, "\n"), width, false)
+	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
+	entry.document = document
+	program.storeReviewDiffRenderEntry(cacheKey, entry)
+	return document
 }
 
 func (program *Program) armInlineConversationTogglePrefix(gui *gocui.Gui, view *gocui.View) error {
@@ -78,6 +101,7 @@ func (program *Program) setReviewThreadCollapsed(threadID string, collapsed bool
 		program.reviewSession.collapsedThreadIDs = map[string]bool{}
 	}
 	program.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
+	program.invalidateReviewDiffRenderCache()
 }
 
 func reviewDiffThreadCollapsed(thread reviewDiffThread, collapsedThreadIDs map[string]bool) bool {

@@ -46,6 +46,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDiffLoadInFlight, key)
 		program.pullRequestDiffCache[key] = result
+		program.invalidateReviewDiffRenderCache()
 		program.clampReviewSessionSelection()
 		return program.refreshViews(gui)
 	})
@@ -58,6 +59,7 @@ func (program *Program) pullRequestDiffForSummary(summary githubcli.PullRequest)
 
 func (program *Program) invalidatePullRequestDiff(repository string, number int) {
 	delete(program.pullRequestDiffCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	program.invalidateReviewDiffRenderCache()
 }
 
 func (program *Program) selectedPullRequestDiffLoading() bool {

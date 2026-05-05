@@ -79,7 +79,7 @@ func (program *Program) appliedSearchFooterText(focus Focus) string {
 			return searchSummaryText(query, program.reviewFileTreeSearchMatchCount(query))
 		case FocusDetailView:
 			query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
-			return searchSummaryText(query, countSearchMatches(program.detailViewContent(), query))
+			return searchSummaryText(query, program.detailSearchMatchCount(query))
 		default:
 			return ""
 		}
@@ -91,11 +91,19 @@ func (program *Program) appliedSearchFooterText(focus Focus) string {
 		return searchSummaryText(query, len(program.model.VisiblePullRequests()))
 	case FocusDetailView:
 		query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
-		return searchSummaryText(query, countSearchMatches(program.detailViewContent(), query))
+		return searchSummaryText(query, program.detailSearchMatchCount(query))
 	default:
 		query := program.model.appliedSearchQuery(FocusUserView, MyPullRequestsTab)
 		return searchSummaryText(query, len(program.model.VisibleUsers()))
 	}
+}
+
+func (program *Program) detailSearchMatchCount(query string) int {
+	if strings.TrimSpace(query) == "" {
+		return 0
+	}
+
+	return len(program.currentDetailDocument(nil).searchMatches(query))
 }
 
 func searchSummaryText(query string, count int) string {
