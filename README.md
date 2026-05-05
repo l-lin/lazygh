@@ -15,14 +15,37 @@ The next milestones can focus on layout polish and extra PR actions.
 - Go `1.25.9` through `mise`
 - `gh` for the connected user view and the later GitHub-backed milestones
 
-## Run
+## Install with `mise`
+Install `lazygh` globally with `mise`'s Go backend:
+
+```sh
+mise use -g go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest
+lazygh
+```
+
+Run it once without a global install:
+
+```sh
+mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
+```
+
+## Run from this checkout
 ```sh
 mise run run
+```
+
+## Install and use from this checkout
+```sh
+mise run install
+mise run lazygh
+mise run lazygh review https://github.com/acme/widgets/pull/42
 ```
 
 ## Tasks
 ```sh
 mise run run
+mise run install
+mise run lazygh
 mise run test
 mise run fmt
 mise run tidy

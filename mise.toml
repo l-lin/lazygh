@@ -2,9 +2,21 @@
 go = "1.25.9"
 
 [tasks.run]
-description = "Run the lazygh CLI"
+description = "Run the lazygh CLI from source"
 raw = true
 run = "go run ./cmd/lazygh"
+
+[tasks.install]
+description = "Install the lazygh binary into ./bin"
+run = "mkdir -p ./bin && GOBIN=$(pwd)/bin go install ./cmd/lazygh"
+
+[tasks.lazygh]
+description = "Install and run the lazygh binary from ./bin"
+raw = true
+run = [
+  "mkdir -p ./bin && GOBIN=$(pwd)/bin go install ./cmd/lazygh",
+  "./bin/lazygh",
+]
 
 [tasks.test]
 description = "Run the Go test suite"
