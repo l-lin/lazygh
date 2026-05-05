@@ -15,7 +15,6 @@ const (
 	reviewStoryActionTitle           = "Review PR as story"
 	storyReviewConfigureAgentMessage = "configure `story_review.agent_command` in ~/.config/lazygh/config.toml before using story review"
 	storyReviewUnavailableMessage    = "story review is unavailable"
-	storyReviewGeneratingFeedback    = "Generating story review chapters..."
 )
 
 type reviewStoryGenerator interface {
@@ -53,7 +52,8 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 		return program.storyReviewStatusLineErrorResult(errActionsPopupActionUnavailable)
 	}
 
-	program.setFeedback(program.model.Focus(), storyReviewGeneratingFeedback)
+	program.feedbackMessage = ""
+	program.storyReviewLoading = true
 	program.asyncRunner.Go(func() {
 		program.loadStoryReview(gui, summary)
 	})
@@ -64,6 +64,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+			program.storyReviewLoading = false
 			program.setFeedback(program.model.Focus(), "missing pull request identity")
 			return program.refreshViewsIfGUI(gui)
 		})
@@ -74,6 +75,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 	rawDiff, actualErr := program.githubLoader.GetPullRequestDiff(repository, summary.Number)
 	if actualErr != nil {
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+			program.storyReviewLoading = false
 			program.setFeedback(program.model.Focus(), strings.TrimSpace(actualErr.Error()))
 			return program.refreshViewsIfGUI(gui)
 		})
@@ -87,6 +89,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 	})
 	if actualErr != nil {
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+			program.storyReviewLoading = false
 			program.setFeedback(program.model.Focus(), strings.TrimSpace(actualErr.Error()))
 			return program.refreshViewsIfGUI(gui)
 		})
@@ -96,6 +99,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 	pendingReviewID, actualErr := program.githubLoader.StartPendingPullRequestReview(repository, summary.Number)
 	if actualErr != nil {
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+			program.storyReviewLoading = false
 			program.setFeedback(program.model.Focus(), strings.TrimSpace(actualErr.Error()))
 			return program.refreshViewsIfGUI(gui)
 		})
@@ -105,6 +109,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 	diffData := buildReviewDiffData(rawDiff)
 	storyData := buildReviewStoryData(generatedStory, diffData.Files)
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+		program.storyReviewLoading = false
 		program.feedbackMessage = ""
 		key := pullRequestDetailKey(summary.Repository, summary.Number)
 		program.pullRequestDiffCache[key] = pullRequestDiffResult{data: diffData}

@@ -44,7 +44,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 }
 
 func (program *Program) shouldAnimateLoadingSpinner() bool {
-	return program.activePullRequestsLoading() || program.selectedPullRequestDetailLoading()
+	return program.storyReviewLoading || program.activePullRequestsLoading() || program.selectedPullRequestDetailLoading()
 }
 
 func (program *Program) activePullRequestsLoading() bool {

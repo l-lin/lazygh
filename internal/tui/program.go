@@ -60,6 +60,7 @@ type Program struct {
 	pullRequestDetailLoadInFlight     map[string]bool
 	pullRequestDiffCache              map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight       map[string]bool
+	storyReviewLoading                bool
 	loadingSpinnerFrameIndex          int
 	detailWrapWidth                   int
 	activeDetailTab                   DetailTab

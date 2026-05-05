@@ -39,6 +39,37 @@ func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting
 	}
 }
 
+func TestReviewStoryMode_GivenTheAgentIsStillRunning_WhenStartingStoryReview_ThenTheStatusLineShowsOnlyTheSpinner(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()}}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42}}
+	subject.asyncRunner = asyncRunner
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("story", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "story"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued story review load, actual %d", len(asyncRunner.runs))
+	}
+	then_statusLineIs(t, gui, string(loadingSpinnerFrames[0]))
+	if subject.reviewSession.active {
+		t.Fatal("expected story review mode to stay inactive until the async load finishes")
+	}
+}
+
 func TestReviewStoryMode_GivenGeneratedChapters_WhenExecutingTheAction_ThenItShowsChapterNarrativeAndNestedFiles(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_story",

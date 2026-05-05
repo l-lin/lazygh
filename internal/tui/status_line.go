@@ -53,6 +53,10 @@ func (program *Program) statusLineText() string {
 }
 
 func (program *Program) loadingStatusText() string {
+	if program.storyReviewLoading {
+		return program.loadingSpinnerFrame()
+	}
+
 	if message := strings.TrimSpace(program.selectedPullRequestDetailLoadingStatus()); message != "" {
 		return program.loadingSpinnerStatus(message)
 	}
