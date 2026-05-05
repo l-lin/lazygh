@@ -54,6 +54,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		"󰰔 Review PR as story",
 		" Yank URL to clipboard",
 		" Open PR in browser",
+		" Refresh current PR information",
 		" Review: Approve PR",
 		" Review: Comment on PR",
 		" Review: Request changes",
@@ -62,8 +63,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		" Edit PR description",
 		" Review PR from URL",
 	})
-	if strings.Contains(popupView.Buffer(), "11 of 11 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "11 of 11 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "12 of 12 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "12 of 12 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
@@ -141,10 +142,10 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "1 of 11 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 11 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "1 of 12 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 12 actions", popupView.Buffer())
 	}
-	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 11 actions")
+	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 12 actions")
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
 	}
@@ -370,8 +371,8 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "11 of 11 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "11 of 11 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "12 of 12 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "12 of 12 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty when the query is cleared, actual %q", popupView.Footer)

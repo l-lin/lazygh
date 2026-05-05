@@ -31,6 +31,7 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
 		" Yank URL to clipboard",
 		" Open PR in browser",
+		" Refresh current PR information",
 		" Review: Approve PR",
 		" Review: Comment on PR",
 		" Review: Request changes",
@@ -38,8 +39,8 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 	if strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Start review", popupView.Buffer())
 	}
-	if strings.Contains(popupView.Buffer(), "5 of 5 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "5 of 5 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "6 of 6 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "6 of 6 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
