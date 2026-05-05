@@ -32,6 +32,51 @@ func TestRenderReviewDiffFile_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSit
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"5.1.0"`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
 }
 
+func TestRenderReviewDiffFile_GivenCodeDiffsWithMoreSupportedLanguages_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
+	testCases := []struct {
+		name          string
+		path          string
+		line          string
+		segment       string
+		expectedColor string
+	}{
+		{name: "javascript keyword", path: "web/app.js", line: `const answer = formatValue("42");`, segment: "const", expectedColor: theme.SyntaxKeywordHex},
+		{name: "typescript type", path: "web/app.ts", line: `const answer: number = 42;`, segment: "number", expectedColor: theme.SyntaxTypeHex},
+		{name: "html tag", path: "templates/index.html", line: `<div class="hero">Hello</div>`, segment: "div", expectedColor: theme.SyntaxTypeHex},
+		{name: "xml tag", path: "config/widget.xml", line: `<Widget enabled="true"/>`, segment: "Widget", expectedColor: theme.SyntaxTypeHex},
+		{name: "json property", path: "config/app.json", line: `{"count": 2}`, segment: "count", expectedColor: theme.SyntaxPropertyHex},
+		{name: "kotlin type", path: "src/main/kotlin/App.kt", line: `val answer: String = render("x")`, segment: "String", expectedColor: theme.SyntaxTypeHex},
+		{name: "lua keyword", path: "scripts/init.lua", line: `local value = render("x")`, segment: "local", expectedColor: theme.SyntaxKeywordHex},
+		{name: "make include", path: "Makefile", line: `include common.mk`, segment: "include", expectedColor: theme.SyntaxKeywordHex},
+		{name: "python function", path: "tools/app.py", line: `items = render(42)`, segment: "render", expectedColor: theme.SyntaxFunctionHex},
+		{name: "ruby keyword", path: "app/services/render.rb", line: `return render("x")`, segment: "return", expectedColor: theme.SyntaxKeywordHex},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			file := reviewDiffFile{
+				Path:       testCase.path,
+				Additions:  1,
+				ChangeType: reviewDiffChangeTypeModified,
+				Hunks: []reviewDiffHunk{{
+					Header: "@@ -1,0 +1,1 @@",
+					Lines: []reviewDiffLine{{
+						Kind:      reviewDiffAdditionLine,
+						Text:      testCase.line,
+						RightLine: 1,
+						Side:      reviewDiffLineSideRight,
+					}},
+				}},
+			}
+
+			actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
+			lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, testCase.line)
+
+			then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, testCase.segment, foregroundColorEscape(testCase.expectedColor), testCase.name)
+		})
+	}
+}
+
 func TestRenderReviewDiffFile_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHardBackgroundOnlyOnChangedSegments(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "src/main/java/com/acme/VersionParser.java",

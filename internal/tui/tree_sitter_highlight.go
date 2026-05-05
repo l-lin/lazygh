@@ -9,13 +9,22 @@ import (
 
 	"codeberg.org/l-lin/lazygh/internal/theme"
 
+	tree_sitter_kotlin "github.com/tree-sitter-grammars/tree-sitter-kotlin/bindings/go"
+	tree_sitter_lua "github.com/tree-sitter-grammars/tree-sitter-lua/bindings/go"
+	tree_sitter_make "github.com/tree-sitter-grammars/tree-sitter-make/bindings/go"
 	tree_sitter_toml "github.com/tree-sitter-grammars/tree-sitter-toml/bindings/go"
+	tree_sitter_xml "github.com/tree-sitter-grammars/tree-sitter-xml/bindings/go"
 	tree_sitter_yaml "github.com/tree-sitter-grammars/tree-sitter-yaml/bindings/go"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 	tree_sitter_bash "github.com/tree-sitter/tree-sitter-bash/bindings/go"
 	tree_sitter_go "github.com/tree-sitter/tree-sitter-go/bindings/go"
+	tree_sitter_html "github.com/tree-sitter/tree-sitter-html/bindings/go"
 	tree_sitter_java "github.com/tree-sitter/tree-sitter-java/bindings/go"
+	tree_sitter_javascript "github.com/tree-sitter/tree-sitter-javascript/bindings/go"
 	tree_sitter_json "github.com/tree-sitter/tree-sitter-json/bindings/go"
+	tree_sitter_python "github.com/tree-sitter/tree-sitter-python/bindings/go"
+	tree_sitter_ruby "github.com/tree-sitter/tree-sitter-ruby/bindings/go"
+	tree_sitter_typescript "github.com/tree-sitter/tree-sitter-typescript/bindings/go"
 )
 
 type styledRuneRange struct {
@@ -43,12 +52,21 @@ type treeSitterLanguageRuntime struct {
 }
 
 var (
-	treeSitterBashRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_bash.Language()), highlightQuerySource: treeSitterBashHighlightsQuery}
-	treeSitterGoRuntime   = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_go.Language()), highlightQuerySource: treeSitterGoHighlightsQuery}
-	treeSitterJavaRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_java.Language()), highlightQuerySource: treeSitterJavaHighlightsQuery}
-	treeSitterJSONRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_json.Language()), highlightQuerySource: treeSitterJSONHighlightsQuery}
-	treeSitterTOMLRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_toml.Language()), highlightQuerySource: treeSitterTOMLHighlightsQuery}
-	treeSitterYAMLRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_yaml.Language()), highlightQuerySource: treeSitterYAMLHighlightsQuery}
+	treeSitterBashRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_bash.Language()), highlightQuerySource: treeSitterBashHighlightsQuery}
+	treeSitterGoRuntime         = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_go.Language()), highlightQuerySource: treeSitterGoHighlightsQuery}
+	treeSitterHTMLRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_html.Language()), highlightQuerySource: treeSitterHTMLHighlightsQuery}
+	treeSitterJavaRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_java.Language()), highlightQuerySource: treeSitterJavaHighlightsQuery}
+	treeSitterJavaScriptRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_javascript.Language()), highlightQuerySource: treeSitterJavaScriptHighlightsQuery}
+	treeSitterJSONRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_json.Language()), highlightQuerySource: treeSitterJSONHighlightsQuery}
+	treeSitterKotlinRuntime     = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_kotlin.Language()), highlightQuerySource: treeSitterKotlinHighlightsQuery}
+	treeSitterLuaRuntime        = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_lua.Language()), highlightQuerySource: treeSitterLuaHighlightsQuery}
+	treeSitterMakeRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_make.Language()), highlightQuerySource: treeSitterMakeHighlightsQuery}
+	treeSitterPythonRuntime     = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_python.Language()), highlightQuerySource: treeSitterPythonHighlightsQuery}
+	treeSitterRubyRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_ruby.Language()), highlightQuerySource: treeSitterRubyHighlightsQuery}
+	treeSitterTOMLRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_toml.Language()), highlightQuerySource: treeSitterTOMLHighlightsQuery}
+	treeSitterTypeScriptRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_typescript.LanguageTypescript()), highlightQuerySource: treeSitterTypeScriptHighlightsQuery}
+	treeSitterXMLRuntime        = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_xml.LanguageXML()), highlightQuerySource: treeSitterXMLHighlightsQuery}
+	treeSitterYAMLRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_yaml.Language()), highlightQuerySource: treeSitterYAMLHighlightsQuery}
 )
 
 func renderSyntaxHighlightedCode(path string, text string, basePrefix string, leadingRanges []styledRuneRange) string {
@@ -113,12 +131,30 @@ func treeSitterRuntimeForPath(path string) (*treeSitterLanguageRuntime, bool) {
 	switch strings.ToLower(filepath.Ext(normalizedPath)) {
 	case ".go":
 		return treeSitterGoRuntime, true
+	case ".html", ".htm":
+		return treeSitterHTMLRuntime, true
 	case ".java":
 		return treeSitterJavaRuntime, true
+	case ".js", ".cjs", ".mjs":
+		return treeSitterJavaScriptRuntime, true
 	case ".json":
 		return treeSitterJSONRuntime, true
+	case ".kt", ".kts":
+		return treeSitterKotlinRuntime, true
+	case ".lua":
+		return treeSitterLuaRuntime, true
+	case ".mk":
+		return treeSitterMakeRuntime, true
+	case ".py":
+		return treeSitterPythonRuntime, true
+	case ".rb":
+		return treeSitterRubyRuntime, true
 	case ".toml":
 		return treeSitterTOMLRuntime, true
+	case ".ts", ".cts", ".mts":
+		return treeSitterTypeScriptRuntime, true
+	case ".xml":
+		return treeSitterXMLRuntime, true
 	case ".yaml", ".yml":
 		return treeSitterYAMLRuntime, true
 	case ".bash", ".sh", ".zsh":
@@ -128,6 +164,10 @@ func treeSitterRuntimeForPath(path string) (*treeSitterLanguageRuntime, bool) {
 	switch filepath.Base(normalizedPath) {
 	case ".bash_profile", ".bashrc", ".profile", ".zshrc":
 		return treeSitterBashRuntime, true
+	case "makefile", "gnumakefile":
+		return treeSitterMakeRuntime, true
+	case "gemfile", "rakefile":
+		return treeSitterRubyRuntime, true
 	}
 
 	return nil, false
@@ -242,11 +282,11 @@ func treeSitterCaptureStyleForName(name string) (treeSitterCaptureStyle, bool) {
 	trimmedName := strings.TrimSpace(name)
 	switch trimmedName {
 	case "string.special.key":
-		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, 70), true
-	case "text.literal", "text.reference", "text.uri":
-		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, 60), true
-	case "text.title":
+		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, 95), true
+	case "markup.heading", "text.title":
 		return newTreeSitterCaptureStyle(theme.MarkdownHeadingHex, 80), true
+	case "markup.link", "markup.raw", "text.literal", "text.reference", "text.uri":
+		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, 60), true
 	}
 
 	primaryName := trimmedName
@@ -255,19 +295,19 @@ func treeSitterCaptureStyleForName(name string) (treeSitterCaptureStyle, bool) {
 	}
 
 	switch primaryName {
-	case "attribute", "label", "type":
+	case "attribute", "label", "tag", "type":
 		return newTreeSitterCaptureStyle(theme.SyntaxTypeHex, 80), true
 	case "boolean", "constant", "number":
 		return newTreeSitterCaptureStyle(theme.SyntaxNumberHex, 70), true
 	case "comment":
 		return newTreeSitterCaptureStyle(theme.SyntaxCommentHex, 20), true
-	case "constructor", "function":
+	case "conditional", "exception", "include", "keyword", "operator", "preproc", "repeat":
+		return newTreeSitterCaptureStyle(theme.SyntaxKeywordHex, 85), true
+	case "constructor", "function", "method":
 		return newTreeSitterCaptureStyle(theme.SyntaxFunctionHex, 90), true
 	case "escape", "string":
 		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, 75), true
-	case "keyword", "operator":
-		return newTreeSitterCaptureStyle(theme.SyntaxKeywordHex, 85), true
-	case "property":
+	case "field", "parameter", "property":
 		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, 80), true
 	}
 
