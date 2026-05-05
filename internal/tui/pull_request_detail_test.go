@@ -337,8 +337,8 @@ func TestGlamourMarkdownRenderer_GivenHeadingMarkdown_WhenRendering_ThenItKeepsH
 
 	then_noError(t, actualErr)
 	actualDocument := newDetailDocument(actual, 40)
-	if actualHeading := string(actualDocument.lines[0]); actualHeading != "Why" {
-		t.Fatalf("expected visible heading %q, actual %q", "Why", actualHeading)
+	if actualHeading := string(actualDocument.lines[0]); actualHeading != "## Why" {
+		t.Fatalf("expected visible heading %q, actual %q", "## Why", actualHeading)
 	}
 	if actualParagraph := string(actualDocument.lines[2]); actualParagraph != "Paragraph body" {
 		t.Fatalf("expected visible paragraph %q, actual %q", "Paragraph body", actualParagraph)
