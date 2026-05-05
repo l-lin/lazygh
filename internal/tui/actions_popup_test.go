@@ -51,7 +51,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
 		" Start review",
-		"󰰔 Review PR as story",
+		" Review PR as story",
 		" Yank URL to clipboard",
 		" Open PR in browser",
 		" Refresh current PR information",
