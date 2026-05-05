@@ -115,6 +115,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 		program.pullRequestDiffCache[key] = pullRequestDiffResult{data: diffData}
 		if detailOK {
 			program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: detail}
+			program.invalidatePullRequestDetailDocumentCache()
 		}
 		program.startStoryReviewSession(summary, pendingReviewID, storyData)
 		if gui == nil {

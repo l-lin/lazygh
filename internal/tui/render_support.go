@@ -76,6 +76,16 @@ func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
 		}
 	}
 
+	if cacheKey, ok := program.currentPullRequestDetailDocumentCacheKey(width); ok {
+		if document, ok := program.pullRequestDetailDocumentForKey(cacheKey); ok {
+			return document
+		}
+
+		document := newDetailDocumentWithWrap(program.detailViewContent(), width, program.detailViewWraps())
+		program.cachePullRequestDetailDocument(cacheKey, document)
+		return document
+	}
+
 	return newDetailDocumentWithWrap(program.detailViewContent(), width, program.detailViewWraps())
 }
 

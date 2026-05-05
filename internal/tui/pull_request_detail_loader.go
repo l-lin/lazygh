@@ -44,6 +44,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDetailLoadInFlight, key)
 		program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: detail, err: err}
+		program.invalidatePullRequestDetailDocumentCache()
 		return program.refreshViews(gui)
 	})
 }
@@ -96,6 +97,7 @@ func (program *Program) currentDetailIdentity() string {
 
 func (program *Program) invalidatePullRequestDetail(repository string, number int) {
 	delete(program.pullRequestDetailCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	program.invalidatePullRequestDetailDocumentCache()
 }
 
 func pullRequestDetailKey(repository githubcli.Repository, number int) string {

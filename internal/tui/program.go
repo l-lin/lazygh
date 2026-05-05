@@ -58,6 +58,7 @@ type Program struct {
 	additionalPullRequestsCounts      map[PullRequestTab]pullRequestCountState
 	pullRequestDetailCache            map[string]pullRequestDetailResult
 	pullRequestDetailLoadInFlight     map[string]bool
+	pullRequestDetailDocumentCache    map[pullRequestDetailDocumentCacheKey]detailDocument
 	pullRequestDiffCache              map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight       map[string]bool
 	reviewDiffRenderCache             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
@@ -112,6 +113,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		githubLoader:                      githubLoader,
 		pullRequestDetailCache:            map[string]pullRequestDetailResult{},
 		pullRequestDetailLoadInFlight:     map[string]bool{},
+		pullRequestDetailDocumentCache:    map[pullRequestDetailDocumentCacheKey]detailDocument{},
 		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:       map[string]bool{},
 		reviewDiffRenderCache:             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
