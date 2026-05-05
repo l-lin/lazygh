@@ -40,7 +40,7 @@ type Palette struct {
 	DiffHunkHeaderHex                    string `toml:"diff_hunk_header"`
 }
 
-var defaultPalette = Palette{
+var defaultLightPalette = Palette{
 	ActiveBorderHex:                      "#000000",
 	InactiveBorderHex:                    "#CCCCCC",
 	ActiveTextHex:                        "#000000",
@@ -78,46 +78,96 @@ var defaultPalette = Palette{
 	DiffHunkHeaderHex:                    "#656D76",
 }
 
+var defaultDarkPalette = Palette{
+	ActiveBorderHex:                      "#F0F6FC",
+	InactiveBorderHex:                    "#30363D",
+	ActiveTextHex:                        "#F0F6FC",
+	InactiveTextHex:                      "#E6EDF3",
+	InactiveTitleHex:                     "#8B949E",
+	SelectedLineBackgroundHex:            "#21262D",
+	SearchHighlightHex:                   "#633C01",
+	MarkdownHeadingHex:                   "#58A6FF",
+	MarkdownLinkHex:                      "#79C0FF",
+	MarkdownCodeHex:                      "#FFA657",
+	SyntaxKeywordHex:                     "#FF7B72",
+	SyntaxFunctionHex:                    "#D2A8FF",
+	SyntaxTypeHex:                        "#FFA657",
+	SyntaxPropertyHex:                    "#79C0FF",
+	SyntaxStringHex:                      "#A5D6FF",
+	SyntaxNumberHex:                      "#79C0FF",
+	SyntaxCommentHex:                     "#8B949E",
+	CommentAuthorBadgeForegroundHex:      "#DDF4FF",
+	CommentAuthorBadgeBackgroundHex:      "#1F6FEB",
+	PullRequestStatusOpenForegroundHex:   "#3FB950",
+	PullRequestStatusOpenBackgroundHex:   "#033A16",
+	PullRequestStatusDraftForegroundHex:  "#8B949E",
+	PullRequestStatusDraftBackgroundHex:  "#30363D",
+	PullRequestStatusClosedForegroundHex: "#F85149",
+	PullRequestStatusClosedBackgroundHex: "#67060C",
+	PullRequestStatusMergedForegroundHex: "#A371F7",
+	PullRequestStatusMergedBackgroundHex: "#3D2A5C",
+	DiffAdditionForegroundHex:            "#3FB950",
+	DiffAdditionBackgroundHex:            "#033A16",
+	DiffAdditionHighlightBackgroundHex:   "#0F5323",
+	DiffDeletionForegroundHex:            "#F85149",
+	DiffDeletionBackgroundHex:            "#67060C",
+	DiffDeletionHighlightBackgroundHex:   "#8E1519",
+	DiffLineNumberHex:                    "#8B949E",
+	DiffHunkHeaderHex:                    "#8B949E",
+}
+
+var systemPolarityDetector = detectSystemPolarity
+
+var initialDefaultPalette = defaultPaletteForPolarity(systemPolarityDetector())
+
 var (
-	ActiveBorderHex                      = defaultPalette.ActiveBorderHex
-	InactiveBorderHex                    = defaultPalette.InactiveBorderHex
-	ActiveTextHex                        = defaultPalette.ActiveTextHex
-	InactiveTextHex                      = defaultPalette.InactiveTextHex
-	InactiveTitleHex                     = defaultPalette.InactiveTitleHex
-	SelectedLineBackgroundHex            = defaultPalette.SelectedLineBackgroundHex
-	SearchHighlightHex                   = defaultPalette.SearchHighlightHex
-	MarkdownHeadingHex                   = defaultPalette.MarkdownHeadingHex
-	MarkdownLinkHex                      = defaultPalette.MarkdownLinkHex
-	MarkdownCodeHex                      = defaultPalette.MarkdownCodeHex
-	SyntaxKeywordHex                     = defaultPalette.SyntaxKeywordHex
-	SyntaxFunctionHex                    = defaultPalette.SyntaxFunctionHex
-	SyntaxTypeHex                        = defaultPalette.SyntaxTypeHex
-	SyntaxPropertyHex                    = defaultPalette.SyntaxPropertyHex
-	SyntaxStringHex                      = defaultPalette.SyntaxStringHex
-	SyntaxNumberHex                      = defaultPalette.SyntaxNumberHex
-	SyntaxCommentHex                     = defaultPalette.SyntaxCommentHex
-	CommentAuthorBadgeForegroundHex      = defaultPalette.CommentAuthorBadgeForegroundHex
-	CommentAuthorBadgeBackgroundHex      = defaultPalette.CommentAuthorBadgeBackgroundHex
-	PullRequestStatusOpenForegroundHex   = defaultPalette.PullRequestStatusOpenForegroundHex
-	PullRequestStatusOpenBackgroundHex   = defaultPalette.PullRequestStatusOpenBackgroundHex
-	PullRequestStatusDraftForegroundHex  = defaultPalette.PullRequestStatusDraftForegroundHex
-	PullRequestStatusDraftBackgroundHex  = defaultPalette.PullRequestStatusDraftBackgroundHex
-	PullRequestStatusClosedForegroundHex = defaultPalette.PullRequestStatusClosedForegroundHex
-	PullRequestStatusClosedBackgroundHex = defaultPalette.PullRequestStatusClosedBackgroundHex
-	PullRequestStatusMergedForegroundHex = defaultPalette.PullRequestStatusMergedForegroundHex
-	PullRequestStatusMergedBackgroundHex = defaultPalette.PullRequestStatusMergedBackgroundHex
-	DiffAdditionForegroundHex            = defaultPalette.DiffAdditionForegroundHex
-	DiffAdditionBackgroundHex            = defaultPalette.DiffAdditionBackgroundHex
-	DiffAdditionHighlightBackgroundHex   = defaultPalette.DiffAdditionHighlightBackgroundHex
-	DiffDeletionForegroundHex            = defaultPalette.DiffDeletionForegroundHex
-	DiffDeletionBackgroundHex            = defaultPalette.DiffDeletionBackgroundHex
-	DiffDeletionHighlightBackgroundHex   = defaultPalette.DiffDeletionHighlightBackgroundHex
-	DiffLineNumberHex                    = defaultPalette.DiffLineNumberHex
-	DiffHunkHeaderHex                    = defaultPalette.DiffHunkHeaderHex
+	ActiveBorderHex                      = initialDefaultPalette.ActiveBorderHex
+	InactiveBorderHex                    = initialDefaultPalette.InactiveBorderHex
+	ActiveTextHex                        = initialDefaultPalette.ActiveTextHex
+	InactiveTextHex                      = initialDefaultPalette.InactiveTextHex
+	InactiveTitleHex                     = initialDefaultPalette.InactiveTitleHex
+	SelectedLineBackgroundHex            = initialDefaultPalette.SelectedLineBackgroundHex
+	SearchHighlightHex                   = initialDefaultPalette.SearchHighlightHex
+	MarkdownHeadingHex                   = initialDefaultPalette.MarkdownHeadingHex
+	MarkdownLinkHex                      = initialDefaultPalette.MarkdownLinkHex
+	MarkdownCodeHex                      = initialDefaultPalette.MarkdownCodeHex
+	SyntaxKeywordHex                     = initialDefaultPalette.SyntaxKeywordHex
+	SyntaxFunctionHex                    = initialDefaultPalette.SyntaxFunctionHex
+	SyntaxTypeHex                        = initialDefaultPalette.SyntaxTypeHex
+	SyntaxPropertyHex                    = initialDefaultPalette.SyntaxPropertyHex
+	SyntaxStringHex                      = initialDefaultPalette.SyntaxStringHex
+	SyntaxNumberHex                      = initialDefaultPalette.SyntaxNumberHex
+	SyntaxCommentHex                     = initialDefaultPalette.SyntaxCommentHex
+	CommentAuthorBadgeForegroundHex      = initialDefaultPalette.CommentAuthorBadgeForegroundHex
+	CommentAuthorBadgeBackgroundHex      = initialDefaultPalette.CommentAuthorBadgeBackgroundHex
+	PullRequestStatusOpenForegroundHex   = initialDefaultPalette.PullRequestStatusOpenForegroundHex
+	PullRequestStatusOpenBackgroundHex   = initialDefaultPalette.PullRequestStatusOpenBackgroundHex
+	PullRequestStatusDraftForegroundHex  = initialDefaultPalette.PullRequestStatusDraftForegroundHex
+	PullRequestStatusDraftBackgroundHex  = initialDefaultPalette.PullRequestStatusDraftBackgroundHex
+	PullRequestStatusClosedForegroundHex = initialDefaultPalette.PullRequestStatusClosedForegroundHex
+	PullRequestStatusClosedBackgroundHex = initialDefaultPalette.PullRequestStatusClosedBackgroundHex
+	PullRequestStatusMergedForegroundHex = initialDefaultPalette.PullRequestStatusMergedForegroundHex
+	PullRequestStatusMergedBackgroundHex = initialDefaultPalette.PullRequestStatusMergedBackgroundHex
+	DiffAdditionForegroundHex            = initialDefaultPalette.DiffAdditionForegroundHex
+	DiffAdditionBackgroundHex            = initialDefaultPalette.DiffAdditionBackgroundHex
+	DiffAdditionHighlightBackgroundHex   = initialDefaultPalette.DiffAdditionHighlightBackgroundHex
+	DiffDeletionForegroundHex            = initialDefaultPalette.DiffDeletionForegroundHex
+	DiffDeletionBackgroundHex            = initialDefaultPalette.DiffDeletionBackgroundHex
+	DiffDeletionHighlightBackgroundHex   = initialDefaultPalette.DiffDeletionHighlightBackgroundHex
+	DiffLineNumberHex                    = initialDefaultPalette.DiffLineNumberHex
+	DiffHunkHeaderHex                    = initialDefaultPalette.DiffHunkHeaderHex
 )
 
 func DefaultPalette() Palette {
-	return defaultPalette
+	return defaultPaletteForPolarity(systemPolarityDetector())
+}
+
+func defaultPaletteForPolarity(polarity systemPolarity) Palette {
+	if polarity == systemPolarityDark {
+		return defaultDarkPalette
+	}
+
+	return defaultLightPalette
 }
 
 func NormalizePalette(overrides Palette) Palette {
@@ -126,7 +176,7 @@ func NormalizePalette(overrides Palette) Palette {
 
 func ResolvePalette(overrides Palette) Palette {
 	normalized := NormalizePalette(overrides)
-	resolved := defaultPalette
+	resolved := DefaultPalette()
 	resolved.ActiveBorderHex = resolvedColor(resolved.ActiveBorderHex, normalized.ActiveBorderHex)
 	resolved.InactiveBorderHex = resolvedColor(resolved.InactiveBorderHex, normalized.InactiveBorderHex)
 	resolved.ActiveTextHex = resolvedColor(resolved.ActiveTextHex, normalized.ActiveTextHex)
@@ -170,7 +220,7 @@ func ApplyPalette(overrides Palette) {
 }
 
 func ResetPalette() {
-	applyResolvedPalette(defaultPalette)
+	applyResolvedPalette(DefaultPalette())
 }
 
 func applyResolvedPalette(palette Palette) {
