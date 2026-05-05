@@ -18,7 +18,7 @@ const (
 	myPullRequestsUnavailableTitle             = "`gh` not found"
 	myPullRequestsUnavailableDetail            = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
 	myPullRequestsGenericErrorTitle            = "Could not load my pull requests"
-	requestedPullRequestsLoadingTitle          = "Loading requested pull requests..."
+	requestedPullRequestsLoadingTitle          = "Loading My reviews..."
 	requestedPullRequestsEmptyTitle            = "No requested pull requests"
 	requestedPullRequestsEmptyDetail           = "GitHub returned no open pull requests requesting review from the authenticated user."
 	requestedPullRequestsUnauthenticatedTitle  = "GitHub authentication required"

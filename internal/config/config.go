@@ -94,6 +94,10 @@ func DefaultPullRequestSearches() []PullRequestSearch {
 			Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--json", pullRequestJSONFields},
 		},
 		{
+			Label:   "My reviews",
+			Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--json", pullRequestJSONFields},
+		},
+		{
 			Label:   "Requested",
 			Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--json", pullRequestJSONFields},
 		},

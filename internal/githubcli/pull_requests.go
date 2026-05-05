@@ -26,16 +26,6 @@ type PullRequest struct {
 	UpdatedAt  string     `json:"updatedAt"`
 }
 
-func (client *Client) ListMyPullRequests() ([]PullRequest, error) {
-	defaultSearches := appconfig.DefaultPullRequestSearches()
-	return client.ListPullRequests(defaultSearches[0].Command)
-}
-
-func (client *Client) ListRequestedPullRequests() ([]PullRequest, error) {
-	defaultSearches := appconfig.DefaultPullRequestSearches()
-	return client.ListPullRequests(defaultSearches[1].Command)
-}
-
 func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
 	result, err := client.runGH(appconfig.FormatGHCommand(commandArguments), commandArguments...)
 	if err != nil {
