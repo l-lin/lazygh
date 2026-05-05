@@ -90,7 +90,7 @@ func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
 }
 
 func (program *Program) detailViewWraps() bool {
-	return !(program.reviewSession.active && !program.reviewSessionShowsDescription())
+	return false
 }
 
 func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {

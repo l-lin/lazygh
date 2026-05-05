@@ -13,6 +13,7 @@ import (
 const (
 	defaultDetailWrapWidth      = 80
 	minimumMarkdownRenderWidth  = 20
+	disabledMarkdownWordWrap    = 0
 	markdownRenderFailurePrefix = "Markdown rendering failed. Showing source."
 	maximumBranchLabelWidth     = 28
 
@@ -55,10 +56,10 @@ func (tab DetailTab) Label() string {
 	}
 }
 
-func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
+func (glamourMarkdownRenderer) Render(markdown string, _ int) (string, error) {
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStyles(prettyMarkdownStyle()),
-		glamour.WithWordWrap(effectiveMarkdownWidth(width)),
+		glamour.WithWordWrap(disabledMarkdownWordWrap),
 		glamour.WithColorProfile(termenv.TrueColor),
 		glamour.WithChromaFormatter("terminal16m"),
 	)

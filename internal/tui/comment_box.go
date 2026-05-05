@@ -14,18 +14,26 @@ func renderPullRequestCommentSection(comment githubcli.PullRequestComment, body 
 }
 
 func renderCommentBoxWithMetadata(author *githubcli.PullRequestCommentAuthor, createdAt string, body string, width int) string {
-	innerWidth := commentBoxInnerWidth(width)
+	innerWidth := maxInt(commentBoxInnerWidth(width), commentMetadataMinimumInnerWidth(author, createdAt))
+	innerWidth = maxInt(innerWidth, maxStyledTextLineWidth(body))
 	content := strings.Join([]string{
 		renderCommentBoxMetadataLine(author, createdAt, innerWidth),
 		body,
 	}, "\n")
-	return renderRoundedCommentBox(content, width)
+	return renderRoundedCommentBoxWithInnerWidth(content, innerWidth)
 }
 
 func renderRoundedCommentBox(text string, width int) string {
-	innerWidth := commentBoxInnerWidth(width)
-	styledLines := splitStyledTextLines(text)
+	innerWidth := maxInt(commentBoxInnerWidth(width), maxStyledTextLineWidth(text))
+	return renderRoundedCommentBoxWithInnerWidth(text, innerWidth)
+}
 
+func renderRoundedCommentBoxWithInnerWidth(text string, innerWidth int) string {
+	if innerWidth < 1 {
+		innerWidth = 1
+	}
+
+	styledLines := splitStyledTextLines(text)
 	boxLines := make([]string, 0, len(styledLines)+2)
 	boxLines = append(boxLines, styleCommentBorder("╭"+strings.Repeat("─", innerWidth+(commentBoxHorizontalPadding*2))+"╮"))
 	for _, line := range styledLines {
@@ -37,6 +45,22 @@ func renderRoundedCommentBox(text string, width int) string {
 	}
 	boxLines = append(boxLines, styleCommentBorder("╰"+strings.Repeat("─", innerWidth+(commentBoxHorizontalPadding*2))+"╯"))
 	return strings.Join(boxLines, "\n")
+}
+
+func maxStyledTextLineWidth(text string) int {
+	maximumWidth := 0
+	for _, line := range splitStyledTextLines(text) {
+		maximumWidth = maxInt(maximumWidth, len(line.runes))
+	}
+	return maximumWidth
+}
+
+func commentMetadataMinimumInnerWidth(author *githubcli.PullRequestCommentAuthor, createdAt string) int {
+	metadataText := strings.TrimSpace(commentAuthorBadgeText(author) + "  " + formatTimestamp(createdAt))
+	if metadataText == "" {
+		return 1
+	}
+	return runeCountInt(metadataText) + roundedPillAdornmentWidth
 }
 
 func commentBoxInnerWidth(width int) int {
