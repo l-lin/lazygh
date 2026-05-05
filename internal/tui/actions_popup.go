@@ -9,13 +9,13 @@ import (
 
 const (
 	actionsPopupStartReviewIcon            = ""
-	actionsPopupYankPullRequestURLIcon     = ""
+	actionsPopupYankPullRequestURLIcon     = "󰆏"
 	actionsPopupOpenPullRequestBrowserIcon = ""
 	actionsPopupRefreshPullRequestIcon     = ""
-	actionsPopupReviewApproveIcon          = ""
-	actionsPopupReviewCommentIcon          = ""
-	actionsPopupReviewRequestChangesIcon   = ""
-	actionsPopupCommentOnPullRequestIcon   = ""
+	actionsPopupReviewApproveIcon          = "󰆀"
+	actionsPopupReviewCommentIcon          = "󰆂"
+	actionsPopupReviewRequestChangesIcon   = "󰅾"
+	actionsPopupCommentOnPullRequestIcon   = "󰆆"
 	actionsPopupEditPullRequestIcon        = ""
 )
 
