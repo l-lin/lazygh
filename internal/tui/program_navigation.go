@@ -52,7 +52,7 @@ func (program *Program) moveDetailViewDown(gui *gocui.Gui, _ *gocui.View) error 
 	}
 
 	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveDown(document, viewportHeight)
+		program.detailViewState.scrollDown(document, viewportHeight)
 	})
 }
 
@@ -62,7 +62,7 @@ func (program *Program) moveDetailViewUp(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveUp(document, viewportHeight)
+		program.detailViewState.scrollUp(document, viewportHeight)
 	})
 }
 

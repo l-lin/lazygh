@@ -16,12 +16,43 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 		state.visualAnchor = state.cursor
 	}
 
+	state.originRow = clampInt(state.originRow, 0, maxInt(0, document.rowCount()-viewportHeight))
+	if state.manualViewportScroll {
+		return
+	}
+
 	currentRow := document.rowIndexForPosition(state.cursor)
 	state.originRow = visibleViewportOrigin(currentRow, state.originRow, viewportHeight, document.rowCount())
 }
 
 func (state *detailViewState) reset() {
 	*state = detailViewState{currentSearchMatch: -1}
+}
+
+func (state *detailViewState) scrollDown(document detailDocument, viewportHeight int) {
+	state.scroll(document, viewportHeight, 1)
+}
+
+func (state *detailViewState) scrollUp(document detailDocument, viewportHeight int) {
+	state.scroll(document, viewportHeight, -1)
+}
+
+func (state *detailViewState) scroll(document detailDocument, viewportHeight int, delta int) {
+	if viewportHeight < 1 {
+		viewportHeight = 1
+	}
+
+	state.clearPendingPrefix()
+	state.sync(document, viewportHeight)
+	currentRow := document.rowIndexForPosition(state.cursor)
+	newOrigin := clampInt(state.originRow+delta, 0, maxInt(0, document.rowCount()-viewportHeight))
+	newRow := clampInt(currentRow+delta, 0, maxInt(0, document.rowCount()-1))
+	newRow = clampInt(newRow, newOrigin, minInt(document.rowCount()-1, newOrigin+viewportHeight-1))
+	state.originRow = newOrigin
+	state.cursor = document.positionForRow(newRow, state.preferredColumn)
+	state.preferredColumn = document.screenColumnForPosition(state.cursor)
+	state.manualViewportScroll = true
+	state.sync(document, viewportHeight)
 }
 
 func (state *detailViewState) clearPendingPrefix() {
