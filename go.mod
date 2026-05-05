@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/glamour v1.0.0
 	github.com/gdamore/tcell/v2 v2.13.5
 	github.com/jesseduffield/gocui v0.3.1-0.20260327132312-944dab3bc980
+	github.com/muesli/termenv v0.16.0
 	github.com/tree-sitter-grammars/tree-sitter-toml v0.7.0
 	github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.2
 	github.com/tree-sitter/go-tree-sitter v0.25.0
@@ -15,6 +16,7 @@ require (
 	github.com/tree-sitter/tree-sitter-go v0.25.0
 	github.com/tree-sitter/tree-sitter-java v0.23.5
 	github.com/tree-sitter/tree-sitter-json v0.24.8
+	modernc.org/sqlite v1.50.0
 )
 
 require (
@@ -39,7 +41,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.17 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
-	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -53,5 +54,4 @@ require (
 	modernc.org/libc v1.72.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.50.0 // indirect
 )

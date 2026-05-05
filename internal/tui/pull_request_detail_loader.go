@@ -10,7 +10,7 @@ import (
 )
 
 func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
-	if gui == nil || program.githubLoader == nil {
+	if gui == nil {
 		return
 	}
 
@@ -20,13 +20,13 @@ func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 	}
 
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	if key == "" {
+	if key == "" || program.pullRequestDetailLoadInFlight[key] {
 		return
 	}
-	if program.pullRequestDetailLoadInFlight[key] {
-		return
-	}
-	if _, ok := program.pullRequestDetailCache[key]; ok {
+
+	program.hydratePullRequestDetailFromCache(summary)
+	cachedResult, cached := program.pullRequestDetailForSummary(summary)
+	if !program.pullRequestDetailNeedsRefresh(summary, cachedResult, cached) || program.githubLoader == nil {
 		return
 	}
 
@@ -40,11 +40,25 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 	repository := pullRequestRepositoryName(summary.Repository)
 	detail, err := program.githubLoader.GetPullRequestDetail(repository, summary.Number)
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
+	result := pullRequestDetailResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
+	if err == nil {
+		result.detail = detail
+		result.needsRefresh = false
+		program.cachePullRequestDetail(summary, detail)
+	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDetailLoadInFlight, key)
-		program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: detail, err: err}
-		program.invalidatePullRequestDetailDocumentCache()
+		if err == nil || !program.canKeepPullRequestDetailOnRefreshError(key) {
+			program.pullRequestDetailCache[key] = result
+			program.invalidatePullRequestDetailDocumentCache()
+			return program.refreshViews(gui)
+		}
+
+		cachedResult := program.pullRequestDetailCache[key]
+		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
+		cachedResult.needsRefresh = false
+		program.pullRequestDetailCache[key] = cachedResult
 		return program.refreshViews(gui)
 	})
 }
@@ -97,6 +111,7 @@ func (program *Program) currentDetailIdentity() string {
 
 func (program *Program) invalidatePullRequestDetail(repository string, number int) {
 	delete(program.pullRequestDetailCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidatePullRequestDetailDocumentCache()
 }
 

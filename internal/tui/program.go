@@ -56,6 +56,7 @@ type Program struct {
 	additionalPullRequestsLoadStarted map[PullRequestTab]bool
 	additionalPullRequestsLoading     map[PullRequestTab]bool
 	additionalPullRequestsCounts      map[PullRequestTab]pullRequestCountState
+	pullRequestCache                  persistentPullRequestCache
 	pullRequestDetailCache            map[string]pullRequestDetailResult
 	pullRequestDetailLoadInFlight     map[string]bool
 	pullRequestDetailDocumentCache    map[pullRequestDetailDocumentCacheKey]detailDocument
@@ -133,6 +134,12 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 }
 
 func (program *Program) Run() error {
+	if program.pullRequestCache != nil {
+		defer func() {
+			_ = program.pullRequestCache.Close()
+		}()
+	}
+
 	gui, err := gocui.NewGui(gocui.NewGuiOpts{OutputMode: gocui.OutputTrue})
 	if err != nil {
 		return err

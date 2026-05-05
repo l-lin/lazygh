@@ -40,8 +40,10 @@ type MarkdownRenderer interface {
 type glamourMarkdownRenderer struct{}
 
 type pullRequestDetailResult struct {
-	detail githubcli.PullRequestDetail
-	err    error
+	detail          githubcli.PullRequestDetail
+	err             error
+	sourceUpdatedAt string
+	needsRefresh    bool
 }
 
 func (tab DetailTab) Label() string {

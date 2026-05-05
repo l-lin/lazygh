@@ -54,7 +54,22 @@ mise run tidy
 ## Config
 `lazygh` looks for `~/.config/lazygh/config.toml`.
 
-If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid story-review settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid story-review settings, invalid cache settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+
+### Cache
+Use `[cache]` to control the persistent SQLite cache.
+
+- By default, `lazygh` stores the cache at `$XDG_DATA_HOME/lazygh/cache.sqlite3`.
+- If `XDG_DATA_HOME` is unset, it falls back to `~/.local/share/lazygh/cache.sqlite3`.
+- `lazygh` shows cached pull-request lists immediately, then refreshes the active list in the background.
+- Cached PR detail and review diff entries refresh only when the live list reports a newer `updatedAt`, or when `lazygh` mutates that PR and invalidates the cached entry.
+
+This example overrides the cache path.
+
+```toml
+[cache]
+path = "/tmp/lazygh/cache.sqlite3"
+```
 
 ### Themes
 Configure palette overrides under `[theme]`.

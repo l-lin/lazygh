@@ -22,7 +22,12 @@ func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
 }
 
 func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
-	if gui == nil || program.githubLoader == nil || program.pullRequestsLoadStarted(tab) || program.model.ActivePullRequestTab() != tab {
+	if gui == nil || program.pullRequestsLoadStarted(tab) || program.model.ActivePullRequestTab() != tab {
+		return
+	}
+
+	program.hydratePullRequestsFromCache(tab)
+	if program.githubLoader == nil {
 		return
 	}
 
@@ -34,11 +39,16 @@ func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab
 }
 
 func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
-	if gui == nil || program.githubLoader == nil {
+	if gui == nil {
 		return
 	}
 
 	tab := program.model.ActivePullRequestTab()
+	program.hydratePullRequestsFromCache(tab)
+	if program.githubLoader == nil {
+		return
+	}
+
 	program.setPullRequestsLoadStarted(tab, true)
 	program.setPullRequestsLoading(tab, true)
 	program.asyncRunner.Go(func() {
@@ -59,11 +69,22 @@ func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 
 func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 	pullRequests, err := program.listPullRequests(tab)
+	if err == nil {
+		program.cachePullRequests(tab, pullRequests)
+	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.setPullRequestsLoading(tab, false)
-		program.setPullRequestsCount(tab, len(pullRequests), err == nil)
-		program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, pullRequests, err))
+		if err == nil {
+			program.setPullRequestsCount(tab, len(pullRequests), true)
+			program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, pullRequests, nil))
+			return program.refreshViews(gui)
+		}
+
+		if !program.shouldPreservePullRequestRowsOnRefreshError(tab) {
+			program.setPullRequestsCount(tab, 0, false)
+			program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, nil, err))
+		}
 		return program.refreshViews(gui)
 	})
 }

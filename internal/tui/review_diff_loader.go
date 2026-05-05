@@ -10,12 +10,14 @@ import (
 )
 
 type pullRequestDiffResult struct {
-	data reviewDiffData
-	err  error
+	data            reviewDiffData
+	err             error
+	sourceUpdatedAt string
+	needsRefresh    bool
 }
 
 func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
-	if gui == nil || program.githubLoader == nil || !program.reviewSession.active {
+	if gui == nil || !program.reviewSession.active {
 		return
 	}
 
@@ -24,7 +26,10 @@ func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
 	if key == "" || program.pullRequestDiffLoadInFlight[key] {
 		return
 	}
-	if _, ok := program.pullRequestDiffCache[key]; ok {
+
+	program.hydratePullRequestDiffFromCache(summary)
+	cachedResult, cached := program.pullRequestDiffForSummary(summary)
+	if !program.pullRequestDiffNeedsRefresh(summary, cachedResult, cached) || program.githubLoader == nil {
 		return
 	}
 
@@ -38,16 +43,26 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 	repository := pullRequestRepositoryName(summary.Repository)
 	rawDiff, err := program.githubLoader.GetPullRequestDiff(repository, summary.Number)
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	result := pullRequestDiffResult{err: err}
+	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
 		result.data = buildReviewDiffData(rawDiff)
+		result.needsRefresh = false
+		program.cachePullRequestDiff(summary, rawDiff)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDiffLoadInFlight, key)
-		program.pullRequestDiffCache[key] = result
-		program.invalidateReviewDiffRenderCache()
-		program.clampReviewSessionSelection()
+		if err == nil || !program.canKeepPullRequestDiffOnRefreshError(key) {
+			program.pullRequestDiffCache[key] = result
+			program.invalidateReviewDiffRenderCache()
+			program.clampReviewSessionSelection()
+			return program.refreshViews(gui)
+		}
+
+		cachedResult := program.pullRequestDiffCache[key]
+		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
+		cachedResult.needsRefresh = false
+		program.pullRequestDiffCache[key] = cachedResult
 		return program.refreshViews(gui)
 	})
 }
@@ -59,6 +74,7 @@ func (program *Program) pullRequestDiffForSummary(summary githubcli.PullRequest)
 
 func (program *Program) invalidatePullRequestDiff(repository string, number int) {
 	delete(program.pullRequestDiffCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidateReviewDiffRenderCache()
 }
 
