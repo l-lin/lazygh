@@ -16,6 +16,7 @@ type configurableRunner interface {
 	ApplyKeymapOverrides(appconfig.KeymapOverrides)
 	ApplyPullRequestSearches([]appconfig.PullRequestSearch)
 	ApplyStoryReviewConfig(story.Config)
+	ApplyCacheConfig(appconfig.CacheConfig) error
 	OpenReviewByURL(string) error
 	Run() error
 }
@@ -42,10 +43,18 @@ func run(args []string, loadConfig func() (appconfig.Config, error), newRunner f
 
 	theme.ApplyPalette(configuration.ResolvedTheme())
 
+	resolvedCache, actualErr := configuration.ResolvedCache()
+	if actualErr != nil {
+		return actualErr
+	}
+
 	runner := newRunner()
 	runner.ApplyKeymapOverrides(configuration.Keymaps)
 	runner.ApplyPullRequestSearches(configuration.PullRequests)
 	runner.ApplyStoryReviewConfig(configuration.ResolvedStoryReview())
+	if actualErr := runner.ApplyCacheConfig(resolvedCache); actualErr != nil {
+		return actualErr
+	}
 	if startupOptions.reviewURL != "" {
 		if actualErr := runner.OpenReviewByURL(startupOptions.reviewURL); actualErr != nil {
 			return actualErr

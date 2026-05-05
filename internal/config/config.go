@@ -14,6 +14,7 @@ import (
 const (
 	configDirectoryName   = "lazygh"
 	configFileName        = "config.toml"
+	cacheFileName         = "cache.sqlite3"
 	pullRequestJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt"
 )
 
@@ -22,6 +23,11 @@ type Config struct {
 	PullRequests []PullRequestSearch
 	Theme        theme.Palette
 	StoryReview  story.Config
+	Cache        CacheConfig
+}
+
+type CacheConfig struct {
+	Path string
 }
 
 type KeymapOverrides map[string]map[string][]string
@@ -36,6 +42,7 @@ type rawConfig struct {
 	PullRequests rawPullRequestConfig      `toml:"pull_requests"`
 	Theme        theme.Palette             `toml:"theme"`
 	StoryReview  rawStoryReviewConfig      `toml:"story_review"`
+	Cache        rawCacheConfig            `toml:"cache"`
 }
 
 type rawPullRequestConfig struct {
@@ -50,6 +57,10 @@ type rawPullRequestSearch struct {
 type rawStoryReviewConfig struct {
 	AgentCommand any    `toml:"agent_command"`
 	Prompt       string `toml:"prompt"`
+}
+
+type rawCacheConfig struct {
+	Path any `toml:"path"`
 }
 
 func DefaultPath(homeDirectory string) string {
@@ -84,6 +95,7 @@ func Load(configPath string) (Config, error) {
 		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
 		Theme:        theme.NormalizePalette(raw.Theme),
 		StoryReview:  normalizeStoryReviewConfig(raw.StoryReview),
+		Cache:        normalizeCacheConfig(raw.Cache),
 	}, nil
 }
 
@@ -114,6 +126,34 @@ func (config Config) ResolvedTheme() theme.Palette {
 
 func (config Config) ResolvedStoryReview() story.Config {
 	return story.ResolveConfig(config.StoryReview)
+}
+
+func (config Config) ResolvedCache() (CacheConfig, error) {
+	return ResolveCacheConfig(config.Cache)
+}
+
+func DefaultCachePath(homeDirectory string, xdgDataHome string) string {
+	trimmedHomeDirectory := strings.TrimSpace(homeDirectory)
+	trimmedXDGDataHome := strings.TrimSpace(xdgDataHome)
+	if trimmedXDGDataHome != "" {
+		return filepath.Join(trimmedXDGDataHome, configDirectoryName, cacheFileName)
+	}
+
+	return filepath.Join(trimmedHomeDirectory, ".local", "share", configDirectoryName, cacheFileName)
+}
+
+func ResolveCacheConfig(config CacheConfig) (CacheConfig, error) {
+	configuredPath := strings.TrimSpace(config.Path)
+	if configuredPath != "" {
+		return CacheConfig{Path: configuredPath}, nil
+	}
+
+	homeDirectory, actualErr := os.UserHomeDir()
+	if actualErr != nil {
+		return CacheConfig{}, actualErr
+	}
+
+	return CacheConfig{Path: DefaultCachePath(homeDirectory, os.Getenv("XDG_DATA_HOME"))}, nil
 }
 
 func ResolvePullRequestSearches(searches []PullRequestSearch) []PullRequestSearch {
@@ -221,6 +261,19 @@ func normalizeStoryReviewConfig(raw rawStoryReviewConfig) story.Config {
 		AgentCommand: normalizeCommand(raw.AgentCommand),
 		Prompt:       strings.TrimSpace(raw.Prompt),
 	}
+}
+
+func normalizeCacheConfig(raw rawCacheConfig) CacheConfig {
+	return CacheConfig{Path: normalizeOptionalString(raw.Path)}
+}
+
+func normalizeOptionalString(rawValue any) string {
+	stringValue, ok := rawValue.(string)
+	if !ok {
+		return ""
+	}
+
+	return strings.TrimSpace(stringValue)
 }
 
 func normalizeKeymapOverrides(rawScopes map[string]map[string]any) KeymapOverrides {

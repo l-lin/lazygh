@@ -58,8 +58,8 @@ func TestRun_GivenLoadedPullRequestSearches_WhenStartingTheProgram_ThenItApplies
 	if !reflect.DeepEqual(runner.appliedPullRequestSearches, expectedSearches) {
 		t.Fatalf("expected pull request searches %+v, actual %+v", expectedSearches, runner.appliedPullRequestSearches)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "run"}, runner.calls)
 	}
 }
 
@@ -111,8 +111,31 @@ func TestRun_GivenLoadedStoryReviewConfig_WhenStartingTheProgram_ThenItAppliesIt
 	if !reflect.DeepEqual(runner.appliedStoryReviewConfig, expectedConfig) {
 		t.Fatalf("expected story review config %+v, actual %+v", expectedConfig, runner.appliedStoryReviewConfig)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	}
+}
+
+func TestRun_GivenLoadedCacheConfig_WhenStartingTheProgram_ThenItAppliesItBeforeRunning(t *testing.T) {
+	expectedConfig := appconfig.CacheConfig{Path: "/tmp/lazygh/prs.sqlite3"}
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		nil,
+		func() (appconfig.Config, error) {
+			return appconfig.Config{Cache: expectedConfig}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(runner.appliedCacheConfig, expectedConfig) {
+		t.Fatalf("expected cache config %+v, actual %+v", expectedConfig, runner.appliedCacheConfig)
+	}
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "run"}, runner.calls)
 	}
 }
 
@@ -161,8 +184,8 @@ func TestRun_GivenReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequeste
 	if runner.reviewURL != expectedURL {
 		t.Fatalf("expected review url %q, actual %q", expectedURL, runner.reviewURL)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_story_review", "apply_cache", "review", "run"}, runner.calls)
 	}
 }
 
@@ -197,11 +220,13 @@ type fakeConfigurableRunner struct {
 	appliedOverrides           appconfig.KeymapOverrides
 	appliedPullRequestSearches []appconfig.PullRequestSearch
 	appliedStoryReviewConfig   story.Config
+	appliedCacheConfig         appconfig.CacheConfig
 	reviewURL                  string
 	runCalled                  bool
 	reviewCalled               bool
 	runErr                     error
 	reviewErr                  error
+	applyCacheErr              error
 	calls                      []string
 }
 
@@ -218,6 +243,12 @@ func (runner *fakeConfigurableRunner) ApplyPullRequestSearches(searches []appcon
 func (runner *fakeConfigurableRunner) ApplyStoryReviewConfig(config story.Config) {
 	runner.appliedStoryReviewConfig = config
 	runner.calls = append(runner.calls, "apply_story_review")
+}
+
+func (runner *fakeConfigurableRunner) ApplyCacheConfig(config appconfig.CacheConfig) error {
+	runner.appliedCacheConfig = config
+	runner.calls = append(runner.calls, "apply_cache")
+	return runner.applyCacheErr
 }
 
 func (runner *fakeConfigurableRunner) OpenReviewByURL(url string) error {

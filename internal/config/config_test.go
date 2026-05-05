@@ -21,6 +21,29 @@ func TestDefaultPath_GivenHomeDirectory_WhenBuildingTheDefaultConfigPath_ThenItU
 	}
 }
 
+func TestDefaultCachePath_GivenXDGDataHome_WhenBuildingTheDefaultCachePath_ThenItUsesTheXDGDataDirectory(t *testing.T) {
+	homeDirectory := filepath.Join(string(filepath.Separator), "tmp", "alice")
+	xdgDataHome := filepath.Join(string(filepath.Separator), "var", "data")
+
+	actual := DefaultCachePath(homeDirectory, xdgDataHome)
+
+	expected := filepath.Join(xdgDataHome, "lazygh", "cache.sqlite3")
+	if actual != expected {
+		t.Fatalf("expected cache path %q, actual %q", expected, actual)
+	}
+}
+
+func TestDefaultCachePath_GivenNoXDGDataHome_WhenBuildingTheDefaultCachePath_ThenItFallsBackToTheHomeDataDirectory(t *testing.T) {
+	homeDirectory := filepath.Join(string(filepath.Separator), "tmp", "alice")
+
+	actual := DefaultCachePath(homeDirectory, "")
+
+	expected := filepath.Join(homeDirectory, ".local", "share", "lazygh", "cache.sqlite3")
+	if actual != expected {
+		t.Fatalf("expected cache path %q, actual %q", expected, actual)
+	}
+}
+
 func TestLoad_GivenMissingConfigFile_WhenLoading_ThenItReturnsAnEmptyConfig(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.toml")
 
@@ -142,6 +165,35 @@ prompt = "Tell the story with dry professionalism."
 	}
 }
 
+func TestLoad_GivenCacheSettings_WhenLoading_ThenItPreservesTheConfiguredCachePath(t *testing.T) {
+	configPath := given_configFile(t, `
+[cache]
+path = " /tmp/lazygh/prs.sqlite3 "
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{Cache: CacheConfig{Path: "/tmp/lazygh/prs.sqlite3"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoad_GivenAnInvalidCachePathType_WhenLoading_ThenItIgnoresTheBadValue(t *testing.T) {
+	configPath := given_configFile(t, `
+[cache]
+path = 7
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	if actual.Cache.Path != "" {
+		t.Fatalf("expected an empty cache path, actual %q", actual.Cache.Path)
+	}
+}
+
 func TestLoad_GivenInvalidPullRequestSearchEntries_WhenLoading_ThenItIgnoresOnlyTheBadEntries(t *testing.T) {
 	configPath := given_configFile(t, `
 [[pull_requests.searches]]
@@ -201,6 +253,46 @@ func TestConfig_ResolvedStoryReview_GivenNoConfiguredPrompt_WhenResolving_ThenIt
 	}
 	if actual.Prompt != story.DefaultPrompt() {
 		t.Fatalf("expected default prompt %q, actual %q", story.DefaultPrompt(), actual.Prompt)
+	}
+}
+
+func TestConfig_ResolvedCache_GivenNoConfiguredPath_WhenResolving_ThenItUsesTheXDGDataDirectory(t *testing.T) {
+	t.Setenv("HOME", filepath.Join(string(filepath.Separator), "tmp", "alice"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(string(filepath.Separator), "var", "cache-root"))
+	subject := Config{}
+
+	actual, actualErr := subject.ResolvedCache()
+
+	then_noError(t, actualErr)
+	expected := CacheConfig{Path: filepath.Join(string(filepath.Separator), "var", "cache-root", "lazygh", "cache.sqlite3")}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected cache config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedCache_GivenNoConfiguredPathAndNoXDGDataHome_WhenResolving_ThenItFallsBackToTheHomeDataDirectory(t *testing.T) {
+	t.Setenv("HOME", filepath.Join(string(filepath.Separator), "tmp", "alice"))
+	t.Setenv("XDG_DATA_HOME", "")
+	subject := Config{}
+
+	actual, actualErr := subject.ResolvedCache()
+
+	then_noError(t, actualErr)
+	expected := CacheConfig{Path: filepath.Join(string(filepath.Separator), "tmp", "alice", ".local", "share", "lazygh", "cache.sqlite3")}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected cache config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedCache_GivenAConfiguredPath_WhenResolving_ThenItKeepsTheConfiguredLocation(t *testing.T) {
+	subject := Config{Cache: CacheConfig{Path: "/tmp/lazygh/custom.sqlite3"}}
+
+	actual, actualErr := subject.ResolvedCache()
+
+	then_noError(t, actualErr)
+	expected := CacheConfig{Path: "/tmp/lazygh/custom.sqlite3"}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected cache config %+v, actual %+v", expected, actual)
 	}
 }
 
