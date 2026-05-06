@@ -16,14 +16,14 @@ const (
 	markdownRenderFailurePrefix = "Markdown rendering failed. Showing source."
 	maximumBranchLabelWidth     = 28
 
-	detailDescriptionIcon           = "󰈙"
+	detailDescriptionIcon           = ""
 	detailCommentsIcon              = " "
 	detailRepositoryIcon            = ""
 	detailBranchIcon                = ""
 	detailStatusIcon                = ""
 	detailChecksIcon                = "󰄬"
 	detailApprovalIcon              = ""
-	detailInlineCommentLocationIcon = "󰈔"
+	detailInlineCommentLocationIcon = ""
 )
 
 type DetailTab int
