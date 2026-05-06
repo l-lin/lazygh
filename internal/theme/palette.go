@@ -8,6 +8,10 @@ type Palette struct {
 	ActiveTextHex                        string `toml:"active_text"`
 	InactiveTextHex                      string `toml:"inactive_text"`
 	InactiveTitleHex                     string `toml:"inactive_title"`
+	SuccessHex                           string `toml:"success"`
+	FailureHex                           string `toml:"failure"`
+	PendingHex                           string `toml:"pending"`
+	MutedHex                             string `toml:"muted"`
 	PullRequestReferenceHex              string `toml:"pull_request_reference"`
 	PullRequestTitleHex                  string `toml:"pull_request_title"`
 	SelectedLineBackgroundHex            string `toml:"selected_line_background"`
@@ -49,6 +53,10 @@ var defaultLightPalette = Palette{
 	ActiveTextHex:                        "#000000",
 	InactiveTextHex:                      "#000000",
 	InactiveTitleHex:                     "#636363",
+	SuccessHex:                           "#1A7F37",
+	FailureHex:                           "#CF222E",
+	PendingHex:                           "#656D76",
+	MutedHex:                             "#636363",
 	PullRequestReferenceHex:              "#656D76",
 	PullRequestTitleHex:                  "#000000",
 	SelectedLineBackgroundHex:            "#E6E6E6",
@@ -90,6 +98,10 @@ var defaultDarkPalette = Palette{
 	ActiveTextHex:                        "#F0F6FC",
 	InactiveTextHex:                      "#E6EDF3",
 	InactiveTitleHex:                     "#8B949E",
+	SuccessHex:                           "#3FB950",
+	FailureHex:                           "#F85149",
+	PendingHex:                           "#8B949E",
+	MutedHex:                             "#8B949E",
 	PullRequestReferenceHex:              "#8B949E",
 	PullRequestTitleHex:                  "#F0F6FC",
 	SelectedLineBackgroundHex:            "#21262D",
@@ -135,6 +147,10 @@ var (
 	ActiveTextHex                        = initialDefaultPalette.ActiveTextHex
 	InactiveTextHex                      = initialDefaultPalette.InactiveTextHex
 	InactiveTitleHex                     = initialDefaultPalette.InactiveTitleHex
+	SuccessHex                           = initialDefaultPalette.SuccessHex
+	FailureHex                           = initialDefaultPalette.FailureHex
+	PendingHex                           = initialDefaultPalette.PendingHex
+	MutedHex                             = initialDefaultPalette.MutedHex
 	PullRequestReferenceHex              = initialDefaultPalette.PullRequestReferenceHex
 	PullRequestTitleHex                  = initialDefaultPalette.PullRequestTitleHex
 	SelectedLineBackgroundHex            = initialDefaultPalette.SelectedLineBackgroundHex
@@ -194,6 +210,10 @@ func ResolvePalette(overrides Palette) Palette {
 	resolved.ActiveTextHex = resolvedColor(resolved.ActiveTextHex, normalized.ActiveTextHex)
 	resolved.InactiveTextHex = resolvedColor(resolved.InactiveTextHex, normalized.InactiveTextHex)
 	resolved.InactiveTitleHex = resolvedColor(resolved.InactiveTitleHex, normalized.InactiveTitleHex)
+	resolved.SuccessHex = resolvedColor(resolved.SuccessHex, normalized.SuccessHex)
+	resolved.FailureHex = resolvedColor(resolved.FailureHex, normalized.FailureHex)
+	resolved.PendingHex = resolvedColor(resolved.PendingHex, normalized.PendingHex)
+	resolved.MutedHex = resolvedColor(resolved.MutedHex, normalized.MutedHex)
 	resolved.PullRequestReferenceHex = resolvedColor(resolved.PullRequestReferenceHex, normalized.PullRequestReferenceHex)
 	resolved.PullRequestTitleHex = resolvedColor(resolved.PullRequestTitleHex, normalized.PullRequestTitleHex)
 	resolved.SelectedLineBackgroundHex = resolvedColor(resolved.SelectedLineBackgroundHex, normalized.SelectedLineBackgroundHex)
@@ -244,6 +264,10 @@ func applyResolvedPalette(palette Palette) {
 	ActiveTextHex = palette.ActiveTextHex
 	InactiveTextHex = palette.InactiveTextHex
 	InactiveTitleHex = palette.InactiveTitleHex
+	SuccessHex = palette.SuccessHex
+	FailureHex = palette.FailureHex
+	PendingHex = palette.PendingHex
+	MutedHex = palette.MutedHex
 	PullRequestReferenceHex = palette.PullRequestReferenceHex
 	PullRequestTitleHex = palette.PullRequestTitleHex
 	SelectedLineBackgroundHex = palette.SelectedLineBackgroundHex
@@ -286,6 +310,10 @@ func normalizePalette(overrides Palette) Palette {
 		ActiveTextHex:                        normalizeHexColor(overrides.ActiveTextHex),
 		InactiveTextHex:                      normalizeHexColor(overrides.InactiveTextHex),
 		InactiveTitleHex:                     normalizeHexColor(overrides.InactiveTitleHex),
+		SuccessHex:                           normalizeHexColor(overrides.SuccessHex),
+		FailureHex:                           normalizeHexColor(overrides.FailureHex),
+		PendingHex:                           normalizeHexColor(overrides.PendingHex),
+		MutedHex:                             normalizeHexColor(overrides.MutedHex),
 		PullRequestReferenceHex:              normalizeHexColor(overrides.PullRequestReferenceHex),
 		PullRequestTitleHex:                  normalizeHexColor(overrides.PullRequestTitleHex),
 		SelectedLineBackgroundHex:            normalizeHexColor(overrides.SelectedLineBackgroundHex),

@@ -11,13 +11,13 @@ import (
 func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_ThenItKeepsOnlyTheMainMetadata(t *testing.T) {
 	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
 	detail := githubcli.PullRequestDetail{
-		Number:         42,
-		State:          "OPEN",
-		BaseRefName:    "main",
-		HeadRefName:    "feature/overview",
-		Assignees:      []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
-		ReviewRequests: []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}}},
-		Reviews:        []githubcli.PullRequestReview{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"}},
+		Number:            42,
+		State:             "OPEN",
+		BaseRefName:       "main",
+		HeadRefName:       "feature/overview",
+		Assignees:         []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
+		ReviewRequests:    []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}}},
+		Reviews:           []githubcli.PullRequestReview{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"}},
 		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"}},
 	}
 
@@ -88,14 +88,60 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 
 	approvedLineIndex, approvedLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-approved")
 	approvedIconIndex := given_runeIndexInString(t, approvedLine, pullRequestOverviewSuccessIcon)
-	if actualStylePrefix := actualDocument.lineStylePrefixes[approvedLineIndex][approvedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionForegroundHex) {
-		t.Fatalf("expected approved reviewer prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[approvedLineIndex][approvedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.SuccessHex) {
+		t.Fatalf("expected approved reviewer prefix %q, actual %q", foregroundColorEscape(theme.SuccessHex), actualStylePrefix)
 	}
 
 	blockedLineIndex, blockedLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-blocked")
 	blockedIconIndex := given_runeIndexInString(t, blockedLine, pullRequestOverviewFailureIcon)
-	if actualStylePrefix := actualDocument.lineStylePrefixes[blockedLineIndex][blockedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionForegroundHex) {
-		t.Fatalf("expected blocked reviewer prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[blockedLineIndex][blockedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
+		t.Fatalf("expected blocked reviewer prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestOverviewSection_GivenGenericStatusColorOverrides_WhenFormatting_ThenItUsesTheGenericThemeColors(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{SuccessHex: "#7FB069", FailureHex: "#E46876", PendingHex: "#727169", MutedHex: "#8A8980"})
+
+	detail := githubcli.PullRequestDetail{
+		ReviewRequests:    []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-pending"}}},
+		Reviews:           []githubcli.PullRequestReview{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-blocked"}, State: "CHANGES_REQUESTED", SubmittedAt: "2026-04-21T11:00:00Z"}},
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"}},
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), 80), 80)
+
+	pendingLineIndex, pendingLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-pending")
+	pendingIconIndex := given_runeIndexInString(t, pendingLine, pullRequestOverviewPendingIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[pendingLineIndex][pendingIconIndex]; actualStylePrefix != foregroundColorEscape(theme.PendingHex) {
+		t.Fatalf("expected pending reviewer prefix %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
+	}
+
+	blockedLineIndex, blockedLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-blocked")
+	blockedIconIndex := given_runeIndexInString(t, blockedLine, pullRequestOverviewFailureIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[blockedLineIndex][blockedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
+		t.Fatalf("expected blocked reviewer prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+
+	successLineIndex, successLine := given_detailDocumentLineContaining(t, actualDocument, "lint (Successful)")
+	successIconIndex := given_runeIndexInString(t, successLine, pullRequestOverviewSuccessIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[successLineIndex][successIconIndex]; actualStylePrefix != foregroundColorEscape(theme.SuccessHex) {
+		t.Fatalf("expected successful build prefix %q, actual %q", foregroundColorEscape(theme.SuccessHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestOverviewSection_GivenMultipleEntriesInTheSameBlock_WhenFormatting_ThenItDoesNotInsertBlankLinesBetweenThem(t *testing.T) {
+	detail := githubcli.PullRequestDetail{
+		ReviewRequests: []githubcli.PullRequestReviewRequest{
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-one"}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-two"}},
+		},
+	}
+
+	actual := renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), 80)
+
+	if strings.Contains(actual, "@reviewer-one\n│                                                                          │\n│  @reviewer-two") {
+		t.Fatalf("expected reviewers to stay compact without blank spacer lines, actual %q", actual)
 	}
 }
 

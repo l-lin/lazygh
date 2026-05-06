@@ -455,12 +455,12 @@ func pullRequestOverviewStatusIcon(status pullRequestOverviewStatus) string {
 func pullRequestOverviewStatusHex(status pullRequestOverviewStatus) string {
 	switch status {
 	case pullRequestOverviewStatusSuccess:
-		return theme.DiffAdditionForegroundHex
+		return theme.SuccessHex
 	case pullRequestOverviewStatusFailure:
-		return theme.DiffDeletionForegroundHex
+		return theme.FailureHex
 	case pullRequestOverviewStatusPending:
-		return theme.PullRequestStatusDraftForegroundHex
+		return theme.PendingHex
 	default:
-		return theme.InactiveTitleHex
+		return theme.MutedHex
 	}
 }

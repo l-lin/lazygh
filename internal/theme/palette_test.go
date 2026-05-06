@@ -12,11 +12,19 @@ const (
 	darkDefaultMarkdownHeadingBackgroundHex = "#58A6FF"
 	darkDefaultPullRequestReferenceHex      = "#8B949E"
 	darkDefaultPullRequestTitleHex          = "#F0F6FC"
+	darkDefaultSuccessHex                   = "#3FB950"
+	darkDefaultFailureHex                   = "#F85149"
+	darkDefaultPendingHex                   = "#8B949E"
+	darkDefaultMutedHex                     = "#8B949E"
 	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
 	lightDefaultActiveTextHex               = "#000000"
 	lightDefaultSelectedLineBackgroundHex   = "#E6E6E6"
 	lightDefaultPullRequestReferenceHex     = "#656D76"
 	lightDefaultPullRequestTitleHex         = "#000000"
+	lightDefaultSuccessHex                  = "#1A7F37"
+	lightDefaultFailureHex                  = "#CF222E"
+	lightDefaultPendingHex                  = "#656D76"
+	lightDefaultMutedHex                    = "#636363"
 )
 
 func TestDefaultPalette_GivenDarkSystemPolarity_WhenResolving_ThenItUsesDarkDefaults(t *testing.T) {
@@ -39,11 +47,13 @@ func TestResolvePalette_GivenPartialOverrides_WhenResolving_ThenItMergesThemWith
 	actual := ResolvePalette(Palette{
 		ActiveBorderHex:           " #7E9CD8 ",
 		DiffAdditionForegroundHex: "#98BB6C",
+		SuccessHex:                "#7FB069",
 	})
 
 	expected := DefaultPalette()
 	expected.ActiveBorderHex = "#7E9CD8"
 	expected.DiffAdditionForegroundHex = "#98BB6C"
+	expected.SuccessHex = "#7FB069"
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected resolved palette %+v, actual %+v", expected, actual)
 	}
@@ -102,6 +112,10 @@ func TestApplyPalette_GivenOverrides_WhenApplying_ThenItUpdatesThePackageColors(
 		ActiveBorderHex:           "#7E9CD8",
 		InactiveBorderHex:         "#54546D",
 		SelectedLineBackgroundHex: "#223249",
+		SuccessHex:                "#7FB069",
+		FailureHex:                "#E46876",
+		PendingHex:                "#727169",
+		MutedHex:                  "#8A8980",
 	})
 
 	if ActiveBorderHex != "#7E9CD8" {
@@ -115,6 +129,9 @@ func TestApplyPalette_GivenOverrides_WhenApplying_ThenItUpdatesThePackageColors(
 	}
 	if ActiveTextHex != DefaultPalette().ActiveTextHex {
 		t.Fatalf("expected untouched palette values to keep their default, actual %q", ActiveTextHex)
+	}
+	if SuccessHex != "#7FB069" || FailureHex != "#E46876" || PendingHex != "#727169" || MutedHex != "#8A8980" {
+		t.Fatalf("expected generic status colors to be applied, actual success=%q failure=%q pending=%q muted=%q", SuccessHex, FailureHex, PendingHex, MutedHex)
 	}
 }
 
@@ -188,6 +205,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.PullRequestTitleHex != darkDefaultPullRequestTitleHex {
 		t.Fatalf("expected pull request title color %q, actual %q", darkDefaultPullRequestTitleHex, actual.PullRequestTitleHex)
 	}
+	if actual.SuccessHex != darkDefaultSuccessHex || actual.FailureHex != darkDefaultFailureHex || actual.PendingHex != darkDefaultPendingHex || actual.MutedHex != darkDefaultMutedHex {
+		t.Fatalf("expected generic status colors success=%q failure=%q pending=%q muted=%q, actual success=%q failure=%q pending=%q muted=%q", darkDefaultSuccessHex, darkDefaultFailureHex, darkDefaultPendingHex, darkDefaultMutedHex, actual.SuccessHex, actual.FailureHex, actual.PendingHex, actual.MutedHex)
+	}
 	if actual.DiffAdditionBackgroundHex != darkDefaultDiffAdditionBackgroundHex {
 		t.Fatalf("expected diff addition background %q, actual %q", darkDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)
 	}
@@ -207,5 +227,8 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.PullRequestTitleHex != lightDefaultPullRequestTitleHex {
 		t.Fatalf("expected pull request title color %q, actual %q", lightDefaultPullRequestTitleHex, actual.PullRequestTitleHex)
+	}
+	if actual.SuccessHex != lightDefaultSuccessHex || actual.FailureHex != lightDefaultFailureHex || actual.PendingHex != lightDefaultPendingHex || actual.MutedHex != lightDefaultMutedHex {
+		t.Fatalf("expected generic status colors success=%q failure=%q pending=%q muted=%q, actual success=%q failure=%q pending=%q muted=%q", lightDefaultSuccessHex, lightDefaultFailureHex, lightDefaultPendingHex, lightDefaultMutedHex, actual.SuccessHex, actual.FailureHex, actual.PendingHex, actual.MutedHex)
 	}
 }

@@ -80,6 +80,7 @@ Configure palette overrides under `[theme]`.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
 - `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
+- `success`, `failure`, `pending`, and `muted` color generic status labels such as the pull-request overview section.
 - The PR description header reuses the existing diff addition and deletion colors for `+N` and `-N` counts, so it stays aligned with the diff palette instead of inventing new paint.
 - Missing or invalid colors fall back to the built-in palette.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
@@ -106,6 +107,10 @@ inactive_border = "#54546D"
 selected_line_background = "#363646"
 pull_request_reference = "#656D76"
 pull_request_title = "#DCD7BA"
+success = "#98BB6C"
+failure = "#E46876"
+pending = "#C8C093"
+muted = "#727169"
 markdown_heading = "#7E9CD8"
 markdown_heading_background = "#223249"
 syntax_keyword = "#957FB8"

@@ -42,6 +42,16 @@ func TestLoad_GivenBundledThemeExamples_WhenLoading_ThenEachExampleParsesIntoARe
 		if actual.Theme.PullRequestTitleHex == "" {
 			t.Fatalf("expected %q to define %q", fileName, "pull_request_title")
 		}
+		for key, value := range map[string]string{
+			"success": actual.Theme.SuccessHex,
+			"failure": actual.Theme.FailureHex,
+			"pending": actual.Theme.PendingHex,
+			"muted":   actual.Theme.MutedHex,
+		} {
+			if value == "" {
+				t.Fatalf("expected %q to define %q", fileName, key)
+			}
+		}
 		if reflect.DeepEqual(actual.ResolvedTheme(), theme.DefaultPalette()) {
 			t.Fatalf("expected %q to change the default palette", fileName)
 		}
