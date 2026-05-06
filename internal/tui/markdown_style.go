@@ -29,14 +29,12 @@ func prettyMarkdownStyle() glamouransi.StyleConfig {
 
 	style.Heading.StylePrimitive.BlockSuffix = "\n"
 	style.Heading.StylePrimitive.Color = stringPtr(theme.MarkdownHeadingHex)
+	style.Heading.StylePrimitive.BackgroundColor = stringPtr(theme.MarkdownHeadingBackgroundHex)
 	style.Heading.StylePrimitive.Bold = boolPtr(true)
 
-	style.H1.StylePrimitive.Color = stringPtr(readableMarkdownForegroundHex(theme.MarkdownHeadingHex))
-	style.H1.StylePrimitive.BackgroundColor = stringPtr(theme.MarkdownHeadingHex)
-	style.H1.StylePrimitive.Bold = boolPtr(true)
-
-	style.H6.StylePrimitive.Color = stringPtr(theme.InactiveTitleHex)
-	style.H6.StylePrimitive.Bold = boolPtr(false)
+	style.H1.Prefix = "# "
+	style.H1.StylePrimitive.Color = stringPtr(theme.MarkdownHeadingHex)
+	style.H1.StylePrimitive.BackgroundColor = stringPtr(theme.MarkdownHeadingBackgroundHex)
 
 	style.HorizontalRule.Color = stringPtr(theme.InactiveBorderHex)
 
@@ -44,10 +42,15 @@ func prettyMarkdownStyle() glamouransi.StyleConfig {
 	style.Link.Underline = boolPtr(true)
 	style.LinkText.Color = stringPtr(theme.MarkdownLinkHex)
 	style.LinkText.Bold = boolPtr(true)
+	style.LinkText.Underline = boolPtr(false)
+	style.LinkText.Prefix = "󰌹 "
 
 	style.Image.Color = stringPtr(theme.MarkdownLinkHex)
 	style.Image.Underline = boolPtr(true)
 	style.ImageText.Color = stringPtr(theme.InactiveTitleHex)
+	style.ImageText.Format = "{{.text}}"
+	style.ImageText.Prefix = " "
+	style.ImageText.Bold = boolPtr(true)
 
 	style.Code.StylePrimitive.Color = stringPtr(theme.MarkdownCodeHex)
 	style.Code.StylePrimitive.BackgroundColor = stringPtr(theme.SelectedLineBackgroundHex)

@@ -11,6 +11,7 @@ type Palette struct {
 	SelectedLineBackgroundHex            string `toml:"selected_line_background"`
 	SearchHighlightHex                   string `toml:"search_highlight"`
 	MarkdownHeadingHex                   string `toml:"markdown_heading"`
+	MarkdownHeadingBackgroundHex         string `toml:"markdown_heading_background"`
 	MarkdownLinkHex                      string `toml:"markdown_link"`
 	MarkdownCodeHex                      string `toml:"markdown_code"`
 	SyntaxKeywordHex                     string `toml:"syntax_keyword"`
@@ -45,11 +46,12 @@ var defaultLightPalette = Palette{
 	InactiveBorderHex:                    "#CCCCCC",
 	ActiveTextHex:                        "#000000",
 	InactiveTextHex:                      "#000000",
-	InactiveTitleHex:                     "#CCCCCC",
+	InactiveTitleHex:                     "#636363",
 	SelectedLineBackgroundHex:            "#E6E6E6",
 	SearchHighlightHex:                   "#F9EAB3",
-	MarkdownHeadingHex:                   "#1D4ED8",
-	MarkdownLinkHex:                      "#0F766E",
+	MarkdownHeadingHex:                   "#000000",
+	MarkdownHeadingBackgroundHex:         "#F9EAB3",
+	MarkdownLinkHex:                      "#000000",
 	MarkdownCodeHex:                      "#B45309",
 	SyntaxKeywordHex:                     "#CF222E",
 	SyntaxFunctionHex:                    "#8250DF",
@@ -86,7 +88,8 @@ var defaultDarkPalette = Palette{
 	InactiveTitleHex:                     "#8B949E",
 	SelectedLineBackgroundHex:            "#21262D",
 	SearchHighlightHex:                   "#633C01",
-	MarkdownHeadingHex:                   "#58A6FF",
+	MarkdownHeadingHex:                   "#F0F6FC",
+	MarkdownHeadingBackgroundHex:         "#58A6FF",
 	MarkdownLinkHex:                      "#79C0FF",
 	MarkdownCodeHex:                      "#FFA657",
 	SyntaxKeywordHex:                     "#FF7B72",
@@ -129,6 +132,7 @@ var (
 	SelectedLineBackgroundHex            = initialDefaultPalette.SelectedLineBackgroundHex
 	SearchHighlightHex                   = initialDefaultPalette.SearchHighlightHex
 	MarkdownHeadingHex                   = initialDefaultPalette.MarkdownHeadingHex
+	MarkdownHeadingBackgroundHex         = initialDefaultPalette.MarkdownHeadingBackgroundHex
 	MarkdownLinkHex                      = initialDefaultPalette.MarkdownLinkHex
 	MarkdownCodeHex                      = initialDefaultPalette.MarkdownCodeHex
 	SyntaxKeywordHex                     = initialDefaultPalette.SyntaxKeywordHex
