@@ -76,6 +76,8 @@ func (program *Program) refreshActionsPopupViews(gui *gocui.Gui) error {
 	if !program.model.ActionsPopupVisible() {
 		return deleteViewsIfPresent(gui, viewActionsPopupSearchName, viewActionsPopupName)
 	}
+
+	program.syncActionsPopupSearch()
 	if err := program.refreshOverlayView(gui, true, viewActionsPopupName, program.configureActionsPopupView, program.renderActionsPopupView); err != nil {
 		return err
 	}

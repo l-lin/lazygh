@@ -38,7 +38,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.reviewPullRequestURLActionsPopupAction(),
 		)
 	}
-	if program.model.Focus() == FocusDetailView {
+	if program.model.Focus() == FocusDetailView && program.detailCursorHasLink() {
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction())
 	}
 	actions = append(actions, program.currentInlineCommentEditActions()...)
@@ -68,6 +68,14 @@ func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) 
 
 func (program *Program) updateActionsPopupSearch(query string) {
 	program.model.UpdateActionsPopupSearch(query, matchingActionsPopupIndexes(program.currentActionsPopupActions(), query))
+}
+
+func (program *Program) syncActionsPopupSearch() {
+	if !program.model.ActionsPopupVisible() {
+		return
+	}
+
+	program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 }
 
 func matchingActionsPopupIndexes(actions []actionsPopupAction, query string) []int {

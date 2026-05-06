@@ -178,6 +178,7 @@ func (program *Program) mutateDetailViewStateWithoutRefresh(gui *gocui.Gui, view
 	program.syncDetailViewState(detailDocument, viewportHeight)
 	mutate(detailDocument, viewportHeight)
 	program.syncDetailViewState(detailDocument, viewportHeight)
+	program.syncActionsPopupSearch()
 	return nil
 }
 

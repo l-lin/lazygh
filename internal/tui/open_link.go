@@ -47,14 +47,23 @@ func (program *Program) openCurrentLink(view *gocui.View) error {
 		return ErrLinkOpenerUnavailable
 	}
 
-	document := program.currentDetailDocument(view)
-	program.syncDetailViewState(document, viewPageSize(view))
-	url, ok := document.linkAt(program.detailViewState.cursor)
+	url, ok := program.currentDetailCursorLink(view)
 	if !ok {
 		return ErrNoLinkUnderCursor
 	}
 
 	return program.linkOpener.Open(url)
+}
+
+func (program *Program) currentDetailCursorLink(view *gocui.View) (string, bool) {
+	document := program.currentDetailDocument(view)
+	program.syncDetailViewState(document, viewPageSize(view))
+	return document.linkAt(program.detailViewState.cursor)
+}
+
+func (program *Program) detailCursorHasLink() bool {
+	_, ok := program.currentDetailCursorLink(program.resolveView(program.gui, nil, viewDetailName))
+	return ok
 }
 
 func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupAction {

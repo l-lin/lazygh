@@ -114,7 +114,9 @@ diff_deletion_background = "#43242B"
 ```
 
 ### Links
-Use the actions popup in pull-request detail, or press `gx` in any detail view, to open the link under the cursor.
+Use the actions popup in pull-request detail when the cursor is on a link, or press `gx` in any detail view, to open the link under the cursor.
+
+The popup entry appears only when `view 0` has a hyperlink target or a visible URL under the cursor.
 
 - By default, `lazygh` uses `open` on macOS.
 - By default, `lazygh` uses `xdg-open` on Linux.
