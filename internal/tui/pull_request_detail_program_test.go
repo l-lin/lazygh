@@ -360,6 +360,46 @@ func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItsBackgroundFillsTheWh
 	then_viewLineHasBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "markdown code block background")
 }
 
+func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItAddsBlankBackgroundLinesAboveAndBelowTheCode(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 114, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#114": {Title: "Styled PR", Number: 114, Body: "```go\nfmt.Println(\"hi\")\n```", BaseRefName: "main", HeadRefName: "feature-114", State: "OPEN"},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	codeLineIndex := given_viewLineIndexContaining(t, detailView, `fmt.Println("hi")`)
+	if codeLineIndex < 1 || codeLineIndex >= len(detailView.BufferLines())-1 {
+		t.Fatalf("expected blank padding lines around the code block, actual lines %q", detailView.BufferLines())
+	}
+	if strings.Trim(detailView.BufferLines()[codeLineIndex-1], " ⠀") != "" {
+		t.Fatalf("expected the line above the code block to stay blank, actual %q", detailView.BufferLines()[codeLineIndex-1])
+	}
+	if strings.Trim(detailView.BufferLines()[codeLineIndex+1], " ⠀") != "" {
+		t.Fatalf("expected the line below the code block to stay blank, actual %q", detailView.BufferLines()[codeLineIndex+1])
+	}
+	then_viewLineHasBackgroundColor(t, gui, viewDetailName, codeLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "markdown code block top padding background")
+	then_viewLineHasBackgroundColor(t, gui, viewDetailName, codeLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "markdown code block bottom padding background")
+}
+
 func TestLayout_GivenRenderedMarkdownDescription_WhenRendering_ThenVisibleLinesDoNotLeakRawANSISequences(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

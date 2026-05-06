@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"unicode/utf8"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 type styledTextLine struct {
@@ -51,7 +53,7 @@ func splitStyledTextLines(text string) []styledTextLine {
 		lines[index] = trimTrailingStyledSpaces(lines[index])
 	}
 
-	return lines
+	return addMarkdownCodeBlockPaddingLines(lines)
 }
 
 func trimTrailingStyledSpaces(line styledTextLine) styledTextLine {
@@ -63,6 +65,55 @@ func trimTrailingStyledSpaces(line styledTextLine) styledTextLine {
 	line.runes = line.runes[:trimmedLength]
 	line.stylePrefixes = line.stylePrefixes[:trimmedLength]
 	return line
+}
+
+func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
+	if len(lines) == 0 {
+		return lines
+	}
+
+	backgroundSequence := trueColorANSIParameterSequence(48, theme.SelectedLineBackgroundHex)
+	if backgroundSequence == "" {
+		return lines
+	}
+
+	paddedLines := make([]styledTextLine, 0, len(lines)+2)
+	for index, line := range lines {
+		isCodeBlockLine := styledLineHasUniformBackground(line, backgroundSequence)
+		if isCodeBlockLine && (index == 0 || !styledLineHasUniformBackground(lines[index-1], backgroundSequence)) {
+			paddedLines = append(paddedLines, styledPaddingLine(line))
+		}
+
+		paddedLines = append(paddedLines, line)
+
+		if isCodeBlockLine && (index == len(lines)-1 || !styledLineHasUniformBackground(lines[index+1], backgroundSequence)) {
+			paddedLines = append(paddedLines, styledPaddingLine(line))
+		}
+	}
+
+	return paddedLines
+}
+
+func styledLineHasUniformBackground(line styledTextLine, backgroundSequence string) bool {
+	if len(line.runes) == 0 || backgroundSequence == "" {
+		return false
+	}
+
+	for index := range line.runes {
+		if index >= len(line.stylePrefixes) || !strings.Contains(line.stylePrefixes[index], backgroundSequence) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func styledPaddingLine(line styledTextLine) styledTextLine {
+	if len(line.stylePrefixes) == 0 {
+		return styledTextLine{}
+	}
+
+	return styledTextLine{runes: []rune{' '}, stylePrefixes: []string{line.stylePrefixes[0]}}
 }
 
 func renderStyledTextLine(line styledTextLine) string {
