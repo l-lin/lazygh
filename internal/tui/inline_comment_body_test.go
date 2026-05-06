@@ -57,7 +57,7 @@ func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesTh
 	if renderer.lastMarkdown != expectedMarkdown {
 		t.Fatalf("expected markdown renderer input %q, actual %q", expectedMarkdown, renderer.lastMarkdown)
 	}
-	if renderer.lastWidth != 72 {
-		t.Fatalf("expected markdown renderer width %d, actual %d", 72, renderer.lastWidth)
+	if renderer.lastWidth != disabledMarkdownWordWrap {
+		t.Fatalf("expected markdown renderer width %d, actual %d", disabledMarkdownWordWrap, renderer.lastWidth)
 	}
 }

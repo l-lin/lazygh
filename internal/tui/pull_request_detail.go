@@ -55,10 +55,10 @@ func (tab DetailTab) Label() string {
 	}
 }
 
-func (glamourMarkdownRenderer) Render(markdown string, _ int) (string, error) {
+func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStyles(prettyMarkdownStyle()),
-		glamour.WithWordWrap(disabledMarkdownWordWrap),
+		glamour.WithWordWrap(markdownWordWrap(width)),
 		glamour.WithPreservedNewLines(),
 		glamour.WithChromaFormatter("terminal16m"),
 	)
@@ -72,4 +72,11 @@ func (glamourMarkdownRenderer) Render(markdown string, _ int) (string, error) {
 	}
 
 	return strings.TrimSpace(rendered), nil
+}
+
+func markdownWordWrap(width int) int {
+	if width <= disabledMarkdownWordWrap {
+		return disabledMarkdownWordWrap
+	}
+	return maxInt(width, minimumMarkdownRenderWidth)
 }

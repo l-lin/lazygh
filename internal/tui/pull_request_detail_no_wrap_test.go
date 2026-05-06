@@ -7,11 +7,11 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-func TestGlamourMarkdownRenderer_GivenALongParagraph_WhenRendering_ThenItDoesNotInsertSoftWrapNewlines(t *testing.T) {
+func TestGlamourMarkdownRenderer_GivenALongParagraphAndDisabledWordWrap_WhenRendering_ThenItDoesNotInsertSoftWrapNewlines(t *testing.T) {
 	renderer := glamourMarkdownRenderer{}
 	markdown := strings.Repeat("No soft wrap should appear in this paragraph. ", 4)
 
-	actual, actualErr := renderer.Render(markdown, 20)
+	actual, actualErr := renderer.Render(markdown, disabledMarkdownWordWrap)
 
 	then_noError(t, actualErr)
 	actualDocument := newDetailDocument(actual, 200)
@@ -20,15 +20,27 @@ func TestGlamourMarkdownRenderer_GivenALongParagraph_WhenRendering_ThenItDoesNot
 	}
 }
 
-func TestLayout_GivenDescriptionTabWithALongRenderedLine_WhenBuildingViewZeroDocument_ThenItDoesNotWrapTheDetailBody(t *testing.T) {
-	longLine := strings.Repeat("very-long-description-segment-", 4)
+func TestGlamourMarkdownRenderer_GivenALongParagraphAndPositiveWidth_WhenRendering_ThenItInsertsSoftWrapNewlines(t *testing.T) {
+	renderer := glamourMarkdownRenderer{}
+	markdown := strings.Repeat("Wrap this paragraph on words. ", 6)
+
+	actual, actualErr := renderer.Render(markdown, 20)
+
+	then_noError(t, actualErr)
+	actualDocument := newDetailDocument(actual, 200)
+	if actualDocument.lineCount() < 2 {
+		t.Fatalf("expected multiple visible paragraph lines, actual %d in %q", actualDocument.lineCount(), actual)
+	}
+}
+
+func TestLayout_GivenDescriptionTabWithALongMarkdownParagraph_WhenBuildingViewZeroDocument_ThenItWordWrapsTheDetailBody(t *testing.T) {
+	markdown := strings.Repeat("description ", 24)
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Body 42", BaseRefName: "main", HeadRefName: "feature/no-wrap", State: "OPEN"},
+			"acme/widgets#42": {Title: "First PR", Number: 42, Body: markdown, BaseRefName: "main", HeadRefName: "feature/wrap", State: "OPEN"},
 		},
 	})
-	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 42": longLine}}
-	gui := given_headlessGuiWithSize(t, 60, 20)
+	gui := given_headlessGuiWithSize(t, 40, 20)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
@@ -37,11 +49,14 @@ func TestLayout_GivenDescriptionTabWithALongRenderedLine_WhenBuildingViewZeroDoc
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	document := subject.currentDetailDocument(detailView)
-	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, longLine)
-
-	if actual := detailDocumentRowCountForLine(document, lineIndex); actual != 1 {
-		t.Fatalf("expected the description line to stay on one rendered row, actual %d for %q", actual, actualLine)
+	actualDescriptionLineCount := 0
+	for _, line := range detailView.BufferLines() {
+		if strings.Contains(line, "description") {
+			actualDescriptionLineCount++
+		}
+	}
+	if actualDescriptionLineCount < 2 {
+		t.Fatalf("expected the description to wrap onto multiple visible lines, actual %d in %q", actualDescriptionLineCount, detailView.Buffer())
 	}
 }
 
