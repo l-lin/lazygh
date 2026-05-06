@@ -60,26 +60,25 @@ func TestLayout_GivenDescriptionTabWithALongMarkdownParagraph_WhenBuildingViewZe
 	}
 }
 
-func TestLayout_GivenCommentsTabWithALongRenderedCommentLine_WhenBuildingViewZeroDocument_ThenItDoesNotWrapTheCommentBody(t *testing.T) {
-	longLine := strings.Repeat("very-long-comment-segment-", 4)
+func TestLayout_GivenCommentsTabWithALongMarkdownComment_WhenBuildingViewZeroDocument_ThenItWrapsTheCommentBody(t *testing.T) {
+	markdown := strings.Repeat("wrap this comment body ", 18)
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
 				Title:       "First PR",
 				Number:      42,
 				BaseRefName: "main",
-				HeadRefName: "feature/no-wrap-comments",
+				HeadRefName: "feature/wrap-comments",
 				State:       "OPEN",
 				Comments: []githubcli.PullRequestComment{{
 					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
 					CreatedAt: "2026-05-05T10:00:00Z",
-					Body:      "Comment 42",
+					Body:      markdown,
 				}},
 			},
 		},
 	})
 	subject.activeDetailTab = CommentsDetailTab
-	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Comment 42": longLine}}
 	gui := given_headlessGuiWithSize(t, 60, 20)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -89,11 +88,14 @@ func TestLayout_GivenCommentsTabWithALongRenderedCommentLine_WhenBuildingViewZer
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	document := subject.currentDetailDocument(detailView)
-	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, longLine)
-
-	if actual := detailDocumentRowCountForLine(document, lineIndex); actual != 1 {
-		t.Fatalf("expected the comment line to stay on one rendered row, actual %d for %q", actual, actualLine)
+	actualWrappedLineCount := 0
+	for _, line := range detailView.BufferLines() {
+		if strings.Contains(line, "wrap this comment body") || strings.Contains(line, "comment body") {
+			actualWrappedLineCount++
+		}
+	}
+	if actualWrappedLineCount < 2 {
+		t.Fatalf("expected the comment body to wrap onto multiple visible lines, actual %d in %q", actualWrappedLineCount, detailView.Buffer())
 	}
 }
 

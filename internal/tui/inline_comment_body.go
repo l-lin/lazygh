@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-func renderInlineCommentBody(markdown string, renderer MarkdownRenderer, _ int) string {
-	return renderMarkdownWithFallback(prepareInlineCommentMarkdown(markdown), renderer, disabledMarkdownWordWrap, "No comment body.")
+func renderInlineCommentBody(markdown string, renderer MarkdownRenderer, width int) string {
+	return renderMarkdownWithFallback(prepareInlineCommentMarkdown(markdown), renderer, width, "No comment body.")
 }
 
 func prepareInlineCommentMarkdown(markdown string) string {
