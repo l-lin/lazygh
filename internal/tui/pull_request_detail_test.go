@@ -17,9 +17,16 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
 	}
 	detail := githubcli.PullRequestDetail{
-		Title:       "Add a real detail pane",
-		Number:      42,
-		State:       "OPEN",
+		Title:     "Add a real detail pane",
+		Number:    42,
+		Author:    &githubcli.PullRequestAuthor{Login: "octocat"},
+		State:     "OPEN",
+		Labels:    []githubcli.PullRequestLabel{{Name: "bug"}, {Name: "backend"}},
+		Assignees: []githubcli.PullRequestAuthor{{Login: "assignee-one"}, {Login: "assignee-two"}},
+		ReviewRequests: []githubcli.PullRequestReviewRequest{
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Slug: "platform", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+		},
 		BaseRefName: "main",
 		HeadRefName: "feature/detail",
 		Comments: []githubcli.PullRequestComment{{
@@ -42,11 +49,18 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 
 	for _, expected := range []string{
 		detailRepositoryIcon + " acme/widgets#42",
+		detailAuthorIcon + " @octocat",
 		"Add a real detail pane",
 		detailBranchIcon + " main ← feature/detail",
 		detailStatusIcon + " OPEN",
 		detailChecksIcon + " 1 passing, 1 failing",
 		detailCommentsIcon + " 1 comment",
+		detailLabelIcon + " bug",
+		detailLabelIcon + " backend",
+		detailAssigneesIcon + " @assignee-one",
+		detailAssigneesIcon + " @assignee-two",
+		detailReviewRequestsIcon + " @reviewer-requested",
+		detailReviewRequestsIcon + " @acme/platform",
 	} {
 		if !strings.Contains(actualText, expected) {
 			t.Fatalf("expected header to contain %q, actual %q", expected, actualText)

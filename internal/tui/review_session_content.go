@@ -77,7 +77,12 @@ func (program *Program) reviewSessionDescriptionContent() string {
 	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
 		detail = result.detail
 	}
-	return renderPullRequestDescription(summary, detail, program.markdownRenderer, program.detailWrapWidth)
+
+	return renderPullRequestDetailContentWithSeparator(
+		renderPullRequestDetailHeader(summary, detail),
+		renderPullRequestDescription(summary, detail, program.markdownRenderer, program.detailWrapWidth),
+		program.detailWrapWidth,
+	)
 }
 
 func (program *Program) reviewSessionStoryChapterContent() string {

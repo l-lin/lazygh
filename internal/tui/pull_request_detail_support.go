@@ -50,6 +50,60 @@ func pullRequestStatusBadgeColors(status string) (string, string) {
 	}
 }
 
+func renderPullRequestContextLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	parts := []string{fmt.Sprintf("%s %s#%d", detailRepositoryIcon, pullRequestRepositoryName(summary.Repository), firstNonZero(detail.Number, summary.Number))}
+	authorLogin := pullRequestAuthorLogin(detail.Author)
+	if authorLogin != "-" {
+		parts = append(parts, fmt.Sprintf("%s %s", detailAuthorIcon, authorLogin))
+	}
+	return strings.Join(parts, "  ")
+}
+
+func renderPullRequestLabelsLine(labels []githubcli.PullRequestLabel) string {
+	entries := make([]string, 0, len(labels))
+	for _, label := range labels {
+		trimmedName := strings.TrimSpace(label.Name)
+		if trimmedName == "" {
+			continue
+		}
+		entries = append(entries, detailLabelIcon+" "+trimmedName)
+	}
+	if len(entries) == 0 {
+		return ""
+	}
+	return strings.Join(entries, "  ")
+}
+
+func renderPullRequestAssigneesLine(assignees []githubcli.PullRequestAuthor) string {
+	entries := make([]string, 0, len(assignees))
+	for _, assignee := range assignees {
+		login := pullRequestAssigneeLogin(&assignee)
+		if login == "-" {
+			continue
+		}
+		entries = append(entries, detailAssigneesIcon+" "+login)
+	}
+	if len(entries) == 0 {
+		return ""
+	}
+	return strings.Join(entries, "  ")
+}
+
+func renderPullRequestReviewRequestsLine(reviewRequests []githubcli.PullRequestReviewRequest) string {
+	entries := make([]string, 0, len(reviewRequests))
+	for _, reviewRequest := range reviewRequests {
+		label := pullRequestReviewRequestLabel(reviewRequest.RequestedReviewer)
+		if label == "-" {
+			continue
+		}
+		entries = append(entries, detailReviewRequestsIcon+" "+label)
+	}
+	if len(entries) == 0 {
+		return ""
+	}
+	return strings.Join(entries, "  ")
+}
+
 func renderPullRequestApprovalsLine(reviews []githubcli.PullRequestReview) string {
 	approverLogins := approvedPullRequestReviewerLogins(reviews)
 	if len(approverLogins) == 0 {
@@ -143,6 +197,35 @@ func pullRequestAuthorLogin(author *githubcli.PullRequestAuthor) string {
 		return "-"
 	}
 	return formatLogin(author.Login)
+}
+
+func pullRequestAssigneeLogin(author *githubcli.PullRequestAuthor) string {
+	if author == nil {
+		return "-"
+	}
+	return formatLogin(author.Login)
+}
+
+func pullRequestReviewRequestLabel(reviewer githubcli.PullRequestRequestedReviewer) string {
+	if login := formatLogin(reviewer.Login); login != "-" {
+		return login
+	}
+
+	organizationLogin := ""
+	if reviewer.Organization != nil {
+		organizationLogin = strings.TrimSpace(reviewer.Organization.Login)
+	}
+	slug := strings.TrimSpace(reviewer.Slug)
+	if organizationLogin != "" && slug != "" {
+		return "@" + organizationLogin + "/" + slug
+	}
+	if slug != "" {
+		return "@" + slug
+	}
+	if trimmedName := strings.TrimSpace(reviewer.Name); trimmedName != "" {
+		return trimmedName
+	}
+	return "-"
 }
 
 func pullRequestCommentAuthorLogin(author *githubcli.PullRequestCommentAuthor) string {

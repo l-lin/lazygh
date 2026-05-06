@@ -9,12 +9,20 @@ import (
 
 func renderPullRequestDetailHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
 	headerLines := []string{
-		fmt.Sprintf("%s %s#%d", detailRepositoryIcon, pullRequestRepositoryName(summary.Repository), firstNonZero(detail.Number, summary.Number)),
+		renderPullRequestContextLine(summary, detail),
 		pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title)),
 		renderPullRequestMetaLine(summary, detail),
 	}
-	if approvalsLine := renderPullRequestApprovalsLine(detail.Reviews); approvalsLine != "" {
-		headerLines = append(headerLines, approvalsLine)
+	for _, line := range []string{
+		renderPullRequestLabelsLine(detail.Labels),
+		renderPullRequestAssigneesLine(detail.Assignees),
+		renderPullRequestReviewRequestsLine(detail.ReviewRequests),
+		renderPullRequestApprovalsLine(detail.Reviews),
+	} {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		headerLines = append(headerLines, line)
 	}
 
 	return strings.Join(headerLines, "\n")

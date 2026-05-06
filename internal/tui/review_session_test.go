@@ -136,13 +136,17 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
-				Title:        "First PR",
-				Number:       42,
-				Body:         "Body 42",
-				BaseRefName:  "main",
-				HeadRefName:  "feature/review",
-				State:        "OPEN",
-				ChangedFiles: 2,
+				Title:          "First PR",
+				Number:         42,
+				Body:           "Body 42",
+				Author:         &githubcli.PullRequestAuthor{Login: "octocat"},
+				Labels:         []githubcli.PullRequestLabel{{Name: "bug"}, {Name: "backend"}},
+				Assignees:      []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
+				ReviewRequests: []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}}},
+				BaseRefName:    "main",
+				HeadRefName:    "feature/review",
+				State:          "OPEN",
+				ChangedFiles:   2,
 			},
 		},
 		diffs: map[string]githubcli.PullRequestDiff{
@@ -171,8 +175,10 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	if !strings.Contains(detailView.Buffer(), "Rendered body 42") {
-		t.Fatalf("expected the review detail pane to show the rendered description, actual %q", detailView.Buffer())
+	for _, expected := range []string{detailRepositoryIcon + " acme/widgets#42", detailAuthorIcon + " @octocat", detailLabelIcon + " bug", detailAssigneesIcon + " @assignee-one", detailReviewRequestsIcon + " @reviewer-requested", "Rendered body 42"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected the review detail pane to contain %q, actual %q", expected, detailView.Buffer())
+		}
 	}
 	if strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
 		t.Fatalf("expected the review detail pane to hide the diff while metadata is selected, actual %q", detailView.Buffer())
@@ -183,8 +189,8 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q when focusing view 0 from metadata, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	if !strings.Contains(detailView.Buffer(), "Rendered body 42") {
-		t.Fatalf("expected the review detail pane to keep showing the rendered description, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), detailAuthorIcon+" @octocat") || !strings.Contains(detailView.Buffer(), "Rendered body 42") {
+		t.Fatalf("expected the review detail pane to keep showing the rendered description with metadata, actual %q", detailView.Buffer())
 	}
 
 	actualErr = subject.focusPullRequestsView(gui, nil)
@@ -613,13 +619,17 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullReq
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
-				Title:        "First PR",
-				Number:       42,
-				Body:         "Body 42",
-				BaseRefName:  "main",
-				HeadRefName:  "feature/review",
-				State:        "OPEN",
-				ChangedFiles: 2,
+				Title:          "First PR",
+				Number:         42,
+				Body:           "Body 42",
+				Author:         &githubcli.PullRequestAuthor{Login: "octocat"},
+				Labels:         []githubcli.PullRequestLabel{{Name: "bug"}, {Name: "backend"}},
+				Assignees:      []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
+				ReviewRequests: []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Slug: "platform", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}}},
+				BaseRefName:    "main",
+				HeadRefName:    "feature/review",
+				State:          "OPEN",
+				ChangedFiles:   2,
 			},
 		},
 		diffs: map[string]githubcli.PullRequestDiff{
@@ -638,8 +648,10 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullReq
 
 	metadataView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
-	if !strings.Contains(metadataView.Buffer(), "First PR") || !strings.Contains(metadataView.Buffer(), detailRepositoryIcon+" acme/widgets#42") || !strings.Contains(metadataView.Buffer(), detailBranchIcon+" main ← feature/review") || !strings.Contains(metadataView.Buffer(), detailStatusIcon+" OPEN") {
-		t.Fatalf("expected review metadata to contain the pull request context, actual %q", metadataView.Buffer())
+	for _, expected := range []string{"First PR", detailRepositoryIcon + " acme/widgets#42", detailAuthorIcon + " @octocat", detailBranchIcon + " main ← feature/review", detailStatusIcon + " OPEN", detailLabelIcon + " bug", detailAssigneesIcon + " @assignee-one", detailReviewRequestsIcon + " @acme/platform"} {
+		if !strings.Contains(metadataView.Buffer(), expected) {
+			t.Fatalf("expected review metadata to contain %q, actual %q", expected, metadataView.Buffer())
+		}
 	}
 
 	countsLineIndex := given_viewLineIndexContaining(t, metadataView, "Changed files:")

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,baseRefName,headRefName,mergeStateStatus,mergeable,comments,reviews,additions,deletions,changedFiles,statusCheckRollup"
+const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
 	ErrInvalidPullRequestDetailResponse        = fmt.Errorf("invalid pull request detail response")
@@ -25,6 +25,8 @@ type PullRequestDetail struct {
 	CreatedAt            string                     `json:"createdAt"`
 	UpdatedAt            string                     `json:"updatedAt"`
 	Labels               []PullRequestLabel         `json:"labels"`
+	Assignees            []PullRequestAuthor        `json:"assignees"`
+	ReviewRequests       []PullRequestReviewRequest `json:"reviewRequests"`
 	BaseRefName          string                     `json:"baseRefName"`
 	HeadRefName          string                     `json:"headRefName"`
 	MergeStateStatus     string                     `json:"mergeStateStatus"`
@@ -47,6 +49,22 @@ type PullRequestAuthor struct {
 
 type PullRequestLabel struct {
 	Name string `json:"name"`
+}
+
+type PullRequestReviewRequest struct {
+	RequestedReviewer PullRequestRequestedReviewer `json:"requestedReviewer"`
+}
+
+type PullRequestRequestedReviewer struct {
+	TypeName     string                                `json:"__typename"`
+	Login        string                                `json:"login"`
+	Name         string                                `json:"name"`
+	Slug         string                                `json:"slug"`
+	Organization *PullRequestReviewRequestOrganization `json:"organization"`
+}
+
+type PullRequestReviewRequestOrganization struct {
+	Login string `json:"login"`
 }
 
 type PullRequestComment struct {
@@ -169,6 +187,20 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		}
 		detail.Labels = normalizedLabels
 	}
+	if len(detail.Assignees) > 0 {
+		normalizedAssignees := make([]PullRequestAuthor, 0, len(detail.Assignees))
+		for _, assignee := range detail.Assignees {
+			normalizedAssignees = append(normalizedAssignees, assignee.normalized())
+		}
+		detail.Assignees = normalizedAssignees
+	}
+	if len(detail.ReviewRequests) > 0 {
+		normalizedReviewRequests := make([]PullRequestReviewRequest, 0, len(detail.ReviewRequests))
+		for _, reviewRequest := range detail.ReviewRequests {
+			normalizedReviewRequests = append(normalizedReviewRequests, reviewRequest.normalized())
+		}
+		detail.ReviewRequests = normalizedReviewRequests
+	}
 	if len(detail.Comments) > 0 {
 		normalizedComments := make([]PullRequestComment, 0, len(detail.Comments))
 		for _, comment := range detail.Comments {
@@ -216,6 +248,28 @@ func (author PullRequestAuthor) normalized() PullRequestAuthor {
 func (label PullRequestLabel) normalized() PullRequestLabel {
 	label.Name = strings.TrimSpace(label.Name)
 	return label
+}
+
+func (reviewRequest PullRequestReviewRequest) normalized() PullRequestReviewRequest {
+	reviewRequest.RequestedReviewer = reviewRequest.RequestedReviewer.normalized()
+	return reviewRequest
+}
+
+func (reviewer PullRequestRequestedReviewer) normalized() PullRequestRequestedReviewer {
+	reviewer.TypeName = strings.TrimSpace(reviewer.TypeName)
+	reviewer.Login = strings.TrimSpace(reviewer.Login)
+	reviewer.Name = strings.TrimSpace(reviewer.Name)
+	reviewer.Slug = strings.TrimSpace(reviewer.Slug)
+	if reviewer.Organization != nil {
+		normalizedOrganization := reviewer.Organization.normalized()
+		reviewer.Organization = &normalizedOrganization
+	}
+	return reviewer
+}
+
+func (organization PullRequestReviewRequestOrganization) normalized() PullRequestReviewRequestOrganization {
+	organization.Login = strings.TrimSpace(organization.Login)
+	return organization
 }
 
 func (comment PullRequestComment) normalized() PullRequestComment {
