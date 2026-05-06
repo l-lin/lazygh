@@ -42,12 +42,10 @@ func (program *Program) armInlineConversationTogglePrefix(gui *gocui.Gui, view *
 		program.detailViewState.clearPendingPrefix()
 		return nil
 	}
-	if program.detailViewState.consumeInlineConversationTogglePrefix() {
-		return program.recenterDetailView(gui, view)
-	}
 
-	program.detailViewState.armInlineConversationTogglePrefix()
-	return nil
+	return program.armOrHandleDetailKeySequence(detailViewportPlacementTarget(), func() error {
+		return program.recenterDetailView(gui, view)
+	})
 }
 
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {

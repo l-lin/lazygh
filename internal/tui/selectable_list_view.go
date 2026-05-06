@@ -148,20 +148,63 @@ func (program *Program) selectListLine(view *gocui.View, selectedIndex int, line
 		return
 	}
 
+	if placement, ok := program.consumePendingListViewportPlacement(view.Name()); ok {
+		originY, cursorY := placedListLinePosition(selectedIndex, view.InnerHeight(), lineCount, placement)
+		view.SetOrigin(0, originY)
+		view.SetCursor(0, cursorY)
+		return
+	}
+
 	_, currentOriginY := view.Origin()
 	originY, cursorY := visibleListLinePosition(selectedIndex, currentOriginY, view.InnerHeight(), lineCount)
 	view.SetOrigin(0, originY)
 	view.SetCursor(0, cursorY)
 }
 
-func (program *Program) centerListLine(view *gocui.View, selectedIndex int, lineCount int) {
+type viewportPlacement int
+
+const (
+	viewportPlacementTop viewportPlacement = iota
+	viewportPlacementCenter
+	viewportPlacementBottom
+)
+
+func (program *Program) placeListLine(view *gocui.View, selectedIndex int, lineCount int, placement viewportPlacement) {
 	if view == nil || lineCount < 1 {
 		return
 	}
 
-	originY, cursorY := centeredListLinePosition(selectedIndex, view.InnerHeight(), lineCount)
+	program.setPendingListViewportPlacement(view.Name(), placement)
+	originY, cursorY := placedListLinePosition(selectedIndex, view.InnerHeight(), lineCount, placement)
 	view.SetOrigin(0, originY)
 	view.SetCursor(0, cursorY)
+}
+
+func (program *Program) setPendingListViewportPlacement(viewName string, placement viewportPlacement) {
+	if viewName == "" {
+		return
+	}
+	if program.pendingListViewportPlacements == nil {
+		program.pendingListViewportPlacements = map[string]viewportPlacement{}
+	}
+	program.pendingListViewportPlacements[viewName] = placement
+}
+
+func (program *Program) consumePendingListViewportPlacement(viewName string) (viewportPlacement, bool) {
+	if viewName == "" || len(program.pendingListViewportPlacements) == 0 {
+		return 0, false
+	}
+
+	placement, ok := program.pendingListViewportPlacements[viewName]
+	if !ok {
+		return 0, false
+	}
+	delete(program.pendingListViewportPlacements, viewName)
+	return placement, true
+}
+
+func (program *Program) centerListLine(view *gocui.View, selectedIndex int, lineCount int) {
+	program.placeListLine(view, selectedIndex, lineCount, viewportPlacementCenter)
 }
 
 func visibleListLinePosition(selectedIndex int, currentOriginY int, visibleHeight int, lineCount int) (int, int) {
@@ -172,20 +215,32 @@ func visibleListLinePosition(selectedIndex int, currentOriginY int, visibleHeigh
 	return originY, selectedIndex - originY
 }
 
-func centeredListLinePosition(selectedIndex int, visibleHeight int, lineCount int) (int, int) {
+func placedListLinePosition(selectedIndex int, visibleHeight int, lineCount int, placement viewportPlacement) (int, int) {
 	visibleHeight = maxInt(1, visibleHeight)
 	lineCount = maxInt(1, lineCount)
 	selectedIndex = clampIndex(selectedIndex, lineCount)
-	originY := centeredViewportOrigin(selectedIndex, visibleHeight, lineCount)
+	originY := placedViewportOrigin(selectedIndex, visibleHeight, lineCount, placement)
 	return originY, selectedIndex - originY
 }
 
 func centeredViewportOrigin(selectedRow int, visibleHeight int, rowCount int) int {
+	return placedViewportOrigin(selectedRow, visibleHeight, rowCount, viewportPlacementCenter)
+}
+
+func placedViewportOrigin(selectedRow int, visibleHeight int, rowCount int, placement viewportPlacement) int {
 	visibleHeight = maxInt(1, visibleHeight)
 	rowCount = maxInt(1, rowCount)
 	selectedRow = clampIndex(selectedRow, rowCount)
 	maxOriginY := maxInt(0, rowCount-visibleHeight)
-	originY := selectedRow - visibleHeight/2
+
+	originY := selectedRow
+	switch placement {
+	case viewportPlacementCenter:
+		originY = selectedRow - visibleHeight/2
+	case viewportPlacementBottom:
+		originY = selectedRow - (visibleHeight - 1)
+	}
+
 	return clampInt(originY, 0, maxOriginY)
 }
 

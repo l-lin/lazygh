@@ -136,10 +136,36 @@ func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocu
 		return nil
 	}
 
-	target := keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "recenter_selection")
+	target := actionsPopupViewportPlacementTarget()
 	return program.armOrHandleSelectionKeySequence(target, func() error {
 		return program.recenterListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
 	})
+}
+
+func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+	if !program.pendingSelectionKeySequence.consume(actionsPopupViewportPlacementTarget()) {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	return program.placeListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()), viewportPlacementTop)
+}
+
+func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+	if !program.pendingSelectionKeySequence.consume(actionsPopupViewportPlacementTarget()) {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	return program.placeListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()), viewportPlacementBottom)
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {

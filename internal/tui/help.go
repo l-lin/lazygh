@@ -79,7 +79,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "gg/G", Description: "First/last line"},
 				{Key: program.reviewFileMotionHelpKeys(keymapScopeDetail), Description: "Previous/next file"},
 				{Key: program.reviewCommentMotionHelpKeys(keymapScopeDetail), Description: "Previous/next comment"},
-				{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Recenter cursor"},
+				{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Cursor to top/center/bottom"},
 				{Key: "w/e/b", Description: "Next/end/previous word"},
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
@@ -99,7 +99,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "gg/G", Description: "First/last file"},
 				{Key: program.reviewFileMotionHelpKeys(keymapScopePullRequests), Description: "Previous/next file"},
 				{Key: program.reviewCommentMotionHelpKeys(keymapScopePullRequests), Description: "Previous/next comment"},
-				{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Recenter selection"},
+				{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Selection to top/center/bottom"},
 				{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
@@ -130,7 +130,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "0/$", Description: "Line start/end"},
 			{Key: "gg/G", Description: "First/last line"},
 			{Key: program.helpKeyChordOrFallback("g", "x", keybindingActionID{scope: keymapScopeDetail, action: "move_cursor_to_top"}, keybindingActionID{scope: keymapScopeDetail, action: "open_link_under_cursor"}), Description: "Open link under cursor"},
-			{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Recenter cursor"},
+			{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Cursor to top/center/bottom"},
 			{Key: "w/e/b", Description: "Next/end/previous word"},
 			{Key: "n/N", Description: "Next/previous match"},
 			{Key: "v/V", Description: "Start char/line visual selection"},
@@ -154,7 +154,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		return []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 			{Key: "gg/G", Description: "First/last pull request"},
-			{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Recenter selection"},
+			{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Selection to top/center/bottom"},
 			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
@@ -171,7 +171,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		return []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 			{Key: "gg/G", Description: "First/last user"},
-			{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Recenter selection"},
+			{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Selection to top/center/bottom"},
 			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
@@ -241,6 +241,11 @@ func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybind
 func (program *Program) helpRepeatedKeyOrFallback(fallback string, actionID keybindingActionID) string {
 	key := program.helpKeysOrFallback(fallback, actionID)
 	return key + key
+}
+
+func (program *Program) helpViewportPlacementKeysOrFallback(prefixFallback string, actionID keybindingActionID) string {
+	key := program.helpKeysOrFallback(prefixFallback, actionID)
+	return key + "t/" + key + key + "/" + key + "b"
 }
 
 func (program *Program) helpKeyChordOrFallback(prefixFallback string, suffixFallback string, prefixActionID keybindingActionID, suffixActionID keybindingActionID) string {

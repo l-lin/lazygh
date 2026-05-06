@@ -101,6 +101,22 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 	}
 }
 
+func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsZTZZAndZB(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"`zt`, `zz`, and `zb` place the selected row",
+		"`za` for inline conversations",
+		"`zt`/`zz`/`zb` place the cursor at the top/center/bottom",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheLinksSection_ThenItDocumentsTheOpenCommandAndGXShortcut(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)

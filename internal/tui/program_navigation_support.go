@@ -59,6 +59,30 @@ func (program *Program) armOrHandleSelectionKeySequence(target keySequenceTarget
 	return handle()
 }
 
+func (program *Program) armOrHandleDetailKeySequence(target keySequenceTarget, handle func() error) error {
+	if target.viewName == "" {
+		program.detailViewState.clearPendingPrefix()
+		return nil
+	}
+	if !program.detailViewState.pendingKeySequence.armOrConsume(target) {
+		return nil
+	}
+
+	return handle()
+}
+
+func sideViewportPlacementTarget(viewName string) keySequenceTarget {
+	return keySequenceTargetFor(viewName, keymapScopeSide, "recenter_selection")
+}
+
+func actionsPopupViewportPlacementTarget() keySequenceTarget {
+	return keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "recenter_selection")
+}
+
+func detailViewportPlacementTarget() keySequenceTarget {
+	return keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup")
+}
+
 func (program *Program) currentSideViewName() string {
 	switch program.model.Focus() {
 	case FocusUserView:
@@ -94,12 +118,21 @@ func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackNa
 }
 
 func (program *Program) recenterListSelection(gui *gocui.Gui, view *gocui.View, fallbackName string, selectedVisibleLine int, lineCount int) error {
+	return program.placeListSelection(gui, view, fallbackName, selectedVisibleLine, lineCount, viewportPlacementCenter)
+}
+
+func (program *Program) placeListSelection(gui *gocui.Gui, view *gocui.View, fallbackName string, selectedVisibleLine int, lineCount int, placement viewportPlacement) error {
 	if lineCount < 1 {
 		return nil
 	}
 
 	actualView := program.resolveView(gui, view, fallbackName)
-	program.centerListLine(actualView, selectedVisibleLine, lineCount)
+	viewName := fallbackName
+	if actualView != nil && actualView.Name() != "" {
+		viewName = actualView.Name()
+	}
+	program.setPendingListViewportPlacement(viewName, placement)
+	program.placeListLine(actualView, selectedVisibleLine, lineCount, placement)
 	return program.refreshViewsIfGUI(gui)
 }
 

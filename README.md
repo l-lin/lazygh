@@ -79,6 +79,7 @@ Configure palette overrides under `[theme]`.
 - `markdown_heading_background` controls the full-line heading fill.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
+- `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
 - Missing or invalid colors fall back to the built-in palette.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
 
@@ -195,7 +196,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--json", 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.
 
-For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zz` recenter the selected row in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zz` recenter the cursor. `page_down` and `page_up` move half a page and recenter on every supported view. In review mode on views `0` and `2`, `previous_tab` and `next_tab` become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments.
+For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. `page_down` and `page_up` move half a page and recenter on every supported view. In review mode on views `0` and `2`, `previous_tab` and `next_tab` become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments.
 
 This example mirrors the built-in defaults.
 
@@ -223,6 +224,7 @@ previous_side_view = "h"
 focus_detail_view = "0"
 move_selection_to_top = "g"
 move_selection_to_bottom = "G"
+# `zt`/`zz`/`zb` place the selection at the top/center/bottom in side panes.
 recenter_selection = "z"
 exit_review_mode = ["esc", "ctrl+[", "q"]
 
@@ -260,7 +262,7 @@ next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
-# `gx` opens the link under the cursor, `za` toggles inline conversations in review mode, `zz` recenters the cursor.
+# `gx` opens the link under the cursor, `za` toggles inline conversations in review mode, and `zt`/`zz`/`zb` place the cursor at the top/center/bottom.
 toggle_inline_conversation_prefix = "z"
 close = ["esc", "ctrl+[", "q"]
 
@@ -276,6 +278,7 @@ page_down = "ctrl+d"
 page_up = "ctrl+u"
 move_selection_to_top = "g"
 move_selection_to_bottom = "G"
+# `zt`/`zz`/`zb` place the selection at the top/center/bottom in the popup.
 recenter_selection = "z"
 execute_selected_action = "enter"
 close = ["esc", "ctrl+[", "q"]

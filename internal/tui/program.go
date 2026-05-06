@@ -88,6 +88,7 @@ type Program struct {
 	pullRequestSearches               []appconfig.PullRequestSearch
 	storyReviewConfig                 story.Config
 	pendingSelectionKeySequence       keySequenceState
+	pendingListViewportPlacements     map[string]viewportPlacement
 }
 
 func NewProgram(githubLoaders ...GitHubLoader) *Program {
@@ -132,6 +133,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		detailViewState:                   newDetailViewState(),
 		detailWrapWidth:                   defaultDetailWrapWidth,
 		pullRequestSearches:               appconfig.DefaultPullRequestSearches(),
+		pendingListViewportPlacements:     map[string]viewportPlacement{},
 	}
 }
 

@@ -35,7 +35,7 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_helpEntryUsesKey(t, actualBuffer, "Quit", "<c-x>")
 }
 
-func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecentering(t *testing.T) {
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -51,7 +51,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRec
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
-	then_helpEntryUsesKey(t, actualBuffer, "Recenter cursor", "zz")
+	then_helpEntryUsesKey(t, actualBuffer, "Cursor to top/center/bottom", "zt/zz/zb")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
 }
@@ -74,7 +74,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheL
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
 }
 
-func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecentering(t *testing.T) {
+func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -88,7 +88,7 @@ func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecen
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
-	then_helpEntryUsesKey(t, actualBuffer, "Recenter selection", "zz")
+	then_helpEntryUsesKey(t, actualBuffer, "Selection to top/center/bottom", "zt/zz/zb")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
 }

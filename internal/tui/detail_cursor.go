@@ -48,15 +48,16 @@ type detailDocument struct {
 }
 
 type detailViewState struct {
-	cursor               detailPosition
-	originRow            int
-	preferredColumn      int
-	mode                 detailMode
-	visualAnchor         detailPosition
-	pendingKeySequence   keySequenceState
-	searchMatches        []detailSearchMatch
-	currentSearchMatch   int
-	manualViewportScroll bool
+	cursor                    detailPosition
+	originRow                 int
+	preferredColumn           int
+	mode                      detailMode
+	visualAnchor              detailPosition
+	pendingKeySequence        keySequenceState
+	searchMatches             []detailSearchMatch
+	currentSearchMatch        int
+	manualViewportScroll      bool
+	preserveViewportSyncCount int
 }
 
 type detailCellStyle struct {

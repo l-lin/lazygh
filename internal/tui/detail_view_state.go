@@ -20,6 +20,10 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 	if state.manualViewportScroll {
 		return
 	}
+	if state.preserveViewportSyncCount > 0 {
+		state.preserveViewportSyncCount--
+		return
+	}
 
 	currentRow := document.rowIndexForPosition(state.cursor)
 	state.originRow = visibleViewportOrigin(currentRow, state.originRow, viewportHeight, document.rowCount())
@@ -128,9 +132,23 @@ func (state *detailViewState) pageUp(document detailDocument, viewportHeight int
 }
 
 func (state *detailViewState) recenter(document detailDocument, viewportHeight int) {
+	state.placeCursorInViewport(document, viewportHeight, viewportPlacementCenter)
+}
+
+func (state *detailViewState) placeCursorAtViewportTop(document detailDocument, viewportHeight int) {
+	state.placeCursorInViewport(document, viewportHeight, viewportPlacementTop)
+}
+
+func (state *detailViewState) placeCursorAtViewportBottom(document detailDocument, viewportHeight int) {
+	state.placeCursorInViewport(document, viewportHeight, viewportPlacementBottom)
+}
+
+func (state *detailViewState) placeCursorInViewport(document detailDocument, viewportHeight int, placement viewportPlacement) {
+	state.clearPendingPrefix()
 	state.sync(document, viewportHeight)
 	currentRow := document.rowIndexForPosition(state.cursor)
-	state.originRow = centeredViewportOrigin(currentRow, viewportHeight, document.rowCount())
+	state.originRow = placedViewportOrigin(currentRow, viewportHeight, document.rowCount(), placement)
+	state.preserveViewportSyncCount = 2
 }
 
 func (state *detailViewState) moveToRowStart(document detailDocument, viewportHeight int) {

@@ -89,15 +89,62 @@ func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) 
 	}
 
 	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	target := keySequenceTargetFor(viewName, keymapScopeSide, "recenter_selection")
+	target := sideViewportPlacementTarget(viewName)
 	return program.armOrHandleSelectionKeySequence(target, func() error {
 		return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
 	})
 }
 
+func (program *Program) moveSideSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
+	if program.selectionChangeBlocked() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
+	if !program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	return program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, viewportPlacementTop)
+}
+
+func (program *Program) moveSideSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
+	if program.selectionChangeBlocked() {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
+	if !program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
+		program.clearPendingSelectionPrefix()
+		return nil
+	}
+
+	return program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, viewportPlacementBottom)
+}
+
 func (program *Program) recenterDetailView(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.recenter(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToViewportTop(gui *gocui.Gui, view *gocui.View) error {
+	if !program.detailViewState.pendingKeySequence.consume(detailViewportPlacementTarget()) {
+		program.detailViewState.clearPendingPrefix()
+		return nil
+	}
+
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.placeCursorAtViewportTop(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.placeCursorAtViewportBottom(document, viewportHeight)
 	})
 }
 
@@ -187,6 +234,10 @@ func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.Vi
 }
 
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
+	if program.detailViewState.pendingKeySequence.consume(detailViewportPlacementTarget()) {
+		return program.moveDetailCursorToViewportBottom(gui, view)
+	}
+
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.moveToPreviousWord(document, viewportHeight)
 	})

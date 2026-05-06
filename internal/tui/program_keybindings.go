@@ -387,6 +387,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeSide, "move_selection_to_top", sidePaneViewNames, program.moveSideSelectionToTop, runeBinding('g')),
 		keybindingActionFor(keymapScopeSide, "move_selection_to_bottom", sidePaneViewNames, program.moveSideSelectionToBottom, runeBinding('G')),
 		keybindingActionFor(keymapScopeSide, "recenter_selection", sidePaneViewNames, program.recenterSideSelection, runeBinding('z')),
+		keybindingActionFor(keymapScopeSide, "place_selection_at_viewport_top", sidePaneViewNames, program.moveSideSelectionToViewportTop, runeBinding('t')),
+		keybindingActionFor(keymapScopeSide, "place_selection_at_viewport_bottom", sidePaneViewNames, program.moveSideSelectionToViewportBottom, runeBinding('b')),
 		keybindingActionFor(keymapScopeSide, "exit_review_mode", sidePaneViewNames, program.exitReviewMode, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
 		keybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail, namedBinding(gocui.KeyEnter, "<enter>")),
@@ -421,6 +423,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeDetail, "comment_on_pull_request", []string{viewDetailName}, program.openPullRequestCommentComposer, runeBinding('c')),
 		keybindingActionFor(keymapScopeDetail, "open_actions_popup", []string{viewDetailName}, program.openActionsPopup, runeBinding('a')),
 		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation_prefix", []string{viewDetailName}, program.armInlineConversationTogglePrefix, runeBinding('z')),
+		keybindingActionFor(keymapScopeDetail, "place_cursor_at_viewport_top", []string{viewDetailName}, program.moveDetailCursorToViewportTop, runeBinding('t')),
 		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeDetail, "close", []string{viewDetailName}, program.closeDetail, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
@@ -435,6 +438,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_to_top", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToTop, runeBinding('g')),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_to_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToBottom, runeBinding('G')),
 		keybindingActionFor(keymapScopeActionsPopup, "recenter_selection", []string{viewActionsPopupName}, program.recenterActionsPopupSelection, runeBinding('z')),
+		keybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_top", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportTop, runeBinding('t')),
+		keybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportBottom, runeBinding('b')),
 		keybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeActionsPopup, "close", []string{viewActionsPopupName}, program.closeActionsPopup, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
