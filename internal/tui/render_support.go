@@ -19,12 +19,13 @@ func (program *Program) detailViewContent() string {
 					return renderPullRequestDetailError(*row.Summary, result.err)
 				}
 
-				header := renderPullRequestDetailHeader(*row.Summary, result.detail)
+				header := renderPullRequestBrowserHeader(*row.Summary, result.detail)
+				overview := renderPullRequestOverviewSection(buildPullRequestOverviewSection(result.detail), program.detailWrapWidth)
 				content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
 				if program.activeDetailTab == CommentsDetailTab {
 					content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineCommentThreads, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)
 				}
-				return renderPullRequestDetailContentWithSeparator(header, content, program.detailWrapWidth)
+				return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
 			}
 			return renderPullRequestDetailLoading(*row.Summary, program.loadingSpinnerFrame())
 		}

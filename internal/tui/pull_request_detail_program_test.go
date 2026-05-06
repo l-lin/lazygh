@@ -16,12 +16,28 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	firstSummary := githubcli.PullRequest{Title: "First PR", Number: 101, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-1"}
 	secondSummary := githubcli.PullRequest{Title: "Second PR", Number: 102, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-2"}
 	firstDetail := githubcli.PullRequestDetail{
-		Title:       "First PR",
-		Number:      101,
-		Body:        "Body 101",
-		BaseRefName: "main",
-		HeadRefName: "feature-101",
-		State:       "OPEN",
+		Title:            "First PR",
+		Number:           101,
+		Body:             "Body 101",
+		BaseRefName:      "main",
+		HeadRefName:      "feature-101",
+		State:            "OPEN",
+		Mergeable:        "MERGEABLE",
+		MergeStateStatus: "CLEAN",
+		ReviewRequests: []githubcli.PullRequestReviewRequest{{
+			RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"},
+		}},
+		Reviews: []githubcli.PullRequestReview{{
+			Author:      &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"},
+			State:       "APPROVED",
+			SubmittedAt: "2026-04-21T10:00:00Z",
+		}},
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+			Name:         "lint",
+			WorkflowName: "CI",
+			Status:       "COMPLETED",
+			Conclusion:   "SUCCESS",
+		}},
 		Comments: []githubcli.PullRequestComment{{
 			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
 			Body:      "Comment 101",
@@ -97,12 +113,15 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	expectedSeparator := strings.Repeat("─", detailView.InnerWidth())
-	expectedMetaLine := string(newDetailDocument(renderPullRequestMetaLine(firstSummary, firstDetail), detailView.InnerWidth()).lines[0])
-	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
-		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
+	if !strings.Contains(detailView.Buffer(), "Reviewers (1/2)") || !strings.Contains(detailView.Buffer(), "CI / lint (Successful)") || !strings.Contains(detailView.Buffer(), "Changes can be cleanly merged.") {
+		t.Fatalf("expected the description tab to show the overview section, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), expectedMetaLine+"\n"+expectedSeparator+"\nRendered body 101") {
-		t.Fatalf("expected the description tab to keep a separator after metadata, actual %q", detailView.Buffer())
+	headerLineIndex := given_viewLineIndexContaining(t, detailView, detailStatusIcon+" OPEN")
+	overviewLineIndex := given_viewLineIndexContaining(t, detailView, "Reviewers")
+	separatorLineIndex := given_viewLineIndexContaining(t, detailView, expectedSeparator)
+	bodyLineIndex := given_viewLineIndexContaining(t, detailView, "Rendered body 101")
+	if !(headerLineIndex < overviewLineIndex && overviewLineIndex < separatorLineIndex && separatorLineIndex < bodyLineIndex) {
+		t.Fatalf("expected header, overview, separator, and body to stay ordered, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected description tab to hide comments, actual %q", detailView.Buffer())
@@ -117,12 +136,15 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
 	expectedSeparator = strings.Repeat("─", detailView.InnerWidth())
-	expectedMetaLine = string(newDetailDocument(renderPullRequestMetaLine(firstSummary, firstDetail), detailView.InnerWidth()).lines[0])
-	if actualDetailLines := detailView.BufferLines(); len(actualDetailLines) < 5 || actualDetailLines[3] != expectedSeparator {
-		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", strings.Join(actualDetailLines, "\n"))
+	if !strings.Contains(detailView.Buffer(), "Reviewers (1/2)") || !strings.Contains(detailView.Buffer(), "CI / lint (Successful)") || !strings.Contains(detailView.Buffer(), "Changes can be cleanly merged.") {
+		t.Fatalf("expected the comments tab to show the overview section, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), expectedMetaLine+"\n"+expectedSeparator+"\n╭") {
-		t.Fatalf("expected the comments tab to keep a separator after metadata, actual %q", detailView.Buffer())
+	headerLineIndex = given_viewLineIndexContaining(t, detailView, detailStatusIcon+" OPEN")
+	overviewLineIndex = given_viewLineIndexContaining(t, detailView, "Reviewers")
+	separatorLineIndex = given_viewLineIndexContaining(t, detailView, expectedSeparator)
+	commentLineIndex := given_viewLineIndexContaining(t, detailView, detailCommentsIcon+" @reviewer-one")
+	if !(headerLineIndex < overviewLineIndex && overviewLineIndex < separatorLineIndex && separatorLineIndex < commentLineIndex) {
+		t.Fatalf("expected header, overview, separator, and comments to stay ordered, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), detailCommentsIcon+" @reviewer-one") || !strings.Contains(detailView.Buffer(), "2026-04-18 10:00 UTC") {
 		t.Fatalf("expected the comments tab to render the comment author badge and timestamp inside the box, actual %q", detailView.Buffer())
@@ -222,7 +244,7 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeS
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 109": "Rendered body 109", "Inline diff body": "Rendered inline diff body"}}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
@@ -272,7 +294,7 @@ func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlig
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 110": "Rendered body 110", "Inline body": "Rendered inline body"}}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
@@ -310,7 +332,7 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
@@ -353,7 +375,7 @@ func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailP
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
@@ -427,7 +449,7 @@ func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItsBackgroundFillsTheWh
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
@@ -457,7 +479,7 @@ func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItAddsBlankBackgroundLi
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 

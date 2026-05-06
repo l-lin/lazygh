@@ -74,7 +74,7 @@ func TestLayout_GivenPullRequestComment_WhenRendering_ThenItShowsTheAuthorAsARou
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.markdownRenderer = &fakeMarkdownRenderer{output: "Rendered comment"}
-	gui := given_headlessGui(t)
+	gui := given_headlessGuiWithSize(t, 120, 50)
 	defer gui.Close()
 	subject.configureGUI(gui)
 

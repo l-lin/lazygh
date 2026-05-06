@@ -112,7 +112,7 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	commentContentLine := program.detailViewState.cursor.line - renderedTextLineCount(renderPullRequestDetailHeader(summary, result.detail)) - 1
+	commentContentLine := program.detailViewState.cursor.line - pullRequestBrowserContentStartLine(summary, result.detail, program.detailWrapWidth)
 	thread, ok := pullRequestCommentsInlineThreadAtCursor(result.detail, program.markdownRenderer, program.detailWrapWidth, commentContentLine)
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false

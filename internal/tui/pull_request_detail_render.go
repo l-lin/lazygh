@@ -7,18 +7,36 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
+type pullRequestHeaderOptions struct {
+	includeStatusChecks bool
+	includeReviewers    bool
+}
+
 func renderPullRequestDetailHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	return renderPullRequestHeader(summary, detail, pullRequestHeaderOptions{includeStatusChecks: true, includeReviewers: true})
+}
+
+func renderPullRequestBrowserHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	return renderPullRequestHeader(summary, detail, pullRequestHeaderOptions{})
+}
+
+func renderPullRequestHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, options pullRequestHeaderOptions) string {
 	headerLines := []string{
 		renderPullRequestContextLine(summary, detail),
 		pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title)),
-		renderPullRequestMetaLine(summary, detail),
+		renderPullRequestMetaLineWithOptions(summary, detail, options.includeStatusChecks),
 	}
-	for _, line := range []string{
+	metadataLines := []string{
 		renderPullRequestLabelsLine(detail.Labels),
 		renderPullRequestAssigneesLine(detail.Assignees),
-		renderPullRequestReviewRequestsLine(detail.ReviewRequests),
-		renderPullRequestApprovalsLine(detail.Reviews),
-	} {
+	}
+	if options.includeReviewers {
+		metadataLines = append(metadataLines,
+			renderPullRequestReviewRequestsLine(detail.ReviewRequests),
+			renderPullRequestApprovalsLine(detail.Reviews),
+		)
+	}
+	for _, line := range metadataLines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
@@ -70,6 +88,10 @@ func renderPullRequestDetailError(summary githubcli.PullRequest, err error) stri
 }
 
 func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	return renderPullRequestMetaLineWithOptions(summary, detail, true)
+}
+
+func renderPullRequestMetaLineWithOptions(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, includeStatusChecks bool) string {
 	parts := make([]string, 0, 6)
 
 	baseRefName := strings.TrimSpace(detail.BaseRefName)
@@ -80,9 +102,11 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 
 	parts = append(parts, renderPullRequestStatusBadge(detailStatus(detail, summary)))
 
-	checkSummary := summarizeStatusChecks(detail.StatusCheckRollup)
-	if checkSummary != "-" {
-		parts = append(parts, fmt.Sprintf("%s %s", detailChecksIcon, checkSummary))
+	if includeStatusChecks {
+		checkSummary := summarizeStatusChecks(detail.StatusCheckRollup)
+		if checkSummary != "-" {
+			parts = append(parts, fmt.Sprintf("%s %s", detailChecksIcon, checkSummary))
+		}
 	}
 
 	commentCount := pullRequestDetailCommentCount(detail)
@@ -115,6 +139,33 @@ func renderPullRequestDetailContentWithSeparator(header string, content string, 
 	}
 
 	return strings.Join([]string{trimmedHeader, renderPullRequestDetailSectionSeparator(width), trimmedContent}, "\n")
+}
+
+func renderPullRequestBrowserDetailContent(header string, overview string, content string, width int) string {
+	trimmedHeader := strings.TrimRight(header, "\n")
+	trimmedOverview := strings.TrimSpace(overview)
+	trimmedContent := strings.TrimLeft(content, "\n")
+
+	sections := filterEmptyStrings([]string{trimmedHeader, trimmedOverview})
+	if len(sections) == 0 {
+		return trimmedContent
+	}
+	if trimmedContent == "" {
+		return strings.Join(sections, "\n\n")
+	}
+
+	headerAndOverview := strings.Join(sections, "\n\n")
+	return strings.Join([]string{headerAndOverview, renderPullRequestDetailSectionSeparator(width), trimmedContent}, "\n")
+}
+
+func pullRequestBrowserContentStartLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) int {
+	header := renderPullRequestBrowserHeader(summary, detail)
+	overview := renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), width)
+	sections := filterEmptyStrings([]string{strings.TrimRight(header, "\n"), strings.TrimSpace(overview)})
+	if len(sections) == 0 {
+		return 0
+	}
+	return renderedTextLineCount(strings.Join(sections, "\n\n")) + 1
 }
 
 func renderPullRequestDetailSectionSeparator(width int) string {

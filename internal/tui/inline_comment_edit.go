@@ -139,7 +139,7 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	commentContentLine := program.detailViewState.cursor.line - renderedTextLineCount(renderPullRequestDetailHeader(summary, result.detail)) - 1
+	commentContentLine := program.detailViewState.cursor.line - pullRequestBrowserContentStartLine(summary, result.detail, program.detailWrapWidth)
 	target, ok := pullRequestCommentsInlineCommentActionTargetAtCursor(result.detail, program.markdownRenderer, program.detailWrapWidth, commentContentLine)
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
