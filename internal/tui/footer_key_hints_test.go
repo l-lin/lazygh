@@ -3,16 +3,14 @@ package tui
 import (
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
-	"github.com/gdamore/tcell/v2"
 	"github.com/jesseduffield/gocui"
 )
 
-func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedKeyHintsRightAlignedAboveTheBottomBorder(t *testing.T) {
+func TestStatusLineKeyHints_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedHintsRightAlignedOnTheBottomRow(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -21,13 +19,13 @@ func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGre
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsFooterName, 0, "?: Help, /: Search, a: Action", given_themeColorHex(t, theme.InactiveTitleHex), "footer key hints")
-	then_footerTextIsRightAlignedAbovePaneBorder(t, gui, viewPullRequestsName, "?: Help, /: Search, a: Action")
-	then_viewBottomBorderStillSpansThePane(t, gui, viewPullRequestsName)
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "?: Help, /: Search, a: Action", given_themeColorHex(t, theme.InactiveTitleHex), "status line key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "?: Help, /: Search, a: Action")
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
-func TestPaneFooter_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResolvedKeysInKeyColonDescriptionFormat(t *testing.T) {
+func TestStatusLineKeyHints_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResolvedKeysInKeyColonDescriptionFormat(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_pullRequestCommentModel(), appconfig.KeymapOverrides{
 		"main": {
 			"toggle_help": {"!"},
@@ -44,10 +42,10 @@ func TestPaneFooter_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResol
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "!: Help, s/<c-s>: Search, p: Action")
+	then_statusLineKeyHintsAre(t, gui, "!: Help, s/<c-s>: Search, p: Action")
 }
 
-func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItHidesTheKeyHints(t *testing.T) {
+func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterOrKeyHints(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -57,6 +55,8 @@ func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenIt
 	then_noError(t, actualErr)
 
 	then_viewDoesNotExist(t, gui, viewUserFooterName)
+	then_viewDoesNotExist(t, gui, viewStatusLineKeyHintsName)
+	then_statusLineIs(t, gui, "")
 }
 
 func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItShowsOnlyTheSearchSummary(t *testing.T) {
@@ -73,9 +73,11 @@ func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItSh
 	then_noError(t, actualErr)
 
 	then_footerTextIs(t, gui, viewUserFooterName, "/2 (1 match)")
+	then_viewDoesNotExist(t, gui, viewStatusLineKeyHintsName)
+	then_statusLineIs(t, gui, "")
 }
 
-func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingBrowserModePullRequestsAndDetail_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
+func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingBrowserModePullRequestsAndDetail_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
@@ -109,16 +111,16 @@ func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingBrowserModePullReque
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, p: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, p: Action")
 
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewDetailFooterName, "?: Help, /: Search, d: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, d: Action")
 }
 
-func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDiff_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
+func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDiff_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
@@ -155,11 +157,11 @@ func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDi
 
 	actualErr = subject.focusPullRequestsView(gui, nil)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, p: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, p: Action")
 
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewDetailFooterName, "?: Help, /: Search, d: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, d: Action")
 }
 
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {
@@ -169,64 +171,5 @@ func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected s
 	then_noError(t, actualErr)
 	if actual := strings.TrimSpace(footerView.Buffer()); actual != expected {
 		t.Fatalf("expected footer %q for view %q, actual %q", expected, viewName, actual)
-	}
-}
-
-func then_footerTextIsRightAlignedAbovePaneBorder(t *testing.T, gui *gocui.Gui, paneViewName string, expected string) {
-	t.Helper()
-
-	actualErr := gui.ForceLayoutAndRedraw()
-	then_noError(t, actualErr)
-
-	x0, _, x1, y1, actualErr := gui.ViewPosition(paneViewName)
-	then_noError(t, actualErr)
-	screen, ok := gocui.Screen.(tcell.SimulationScreen)
-	if !ok {
-		t.Fatal("expected a simulation screen")
-	}
-	cells, width, _ := screen.GetContents()
-	startX := x1 - utf8.RuneCountInString(expected)
-	for offset, expectedRune := range expected {
-		actualCell := cells[((y1-1)*width)+(startX+offset)]
-		if len(actualCell.Runes) == 0 || actualCell.Runes[0] != expectedRune {
-			actualRune := rune(0)
-			if len(actualCell.Runes) > 0 {
-				actualRune = actualCell.Runes[0]
-			}
-			t.Fatalf("expected right-aligned footer rune %q at %s offset %d, actual %q", string(expectedRune), paneViewName, offset, string(actualRune))
-		}
-	}
-	leftCell := cells[((y1-1)*width)+x0]
-	if len(leftCell.Runes) == 0 || leftCell.Runes[0] != '│' {
-		actualRune := rune(0)
-		if len(leftCell.Runes) > 0 {
-			actualRune = leftCell.Runes[0]
-		}
-		t.Fatalf("expected left border to stay visible above the bottom border in %s, actual %q", paneViewName, string(actualRune))
-	}
-}
-
-func then_viewBottomBorderStillSpansThePane(t *testing.T, gui *gocui.Gui, paneViewName string) {
-	t.Helper()
-
-	actualErr := gui.ForceLayoutAndRedraw()
-	then_noError(t, actualErr)
-
-	x0, _, x1, y1, actualErr := gui.ViewPosition(paneViewName)
-	then_noError(t, actualErr)
-	screen, ok := gocui.Screen.(tcell.SimulationScreen)
-	if !ok {
-		t.Fatal("expected a simulation screen")
-	}
-	cells, width, _ := screen.GetContents()
-	for x := x0 + 1; x < x1; x++ {
-		actualCell := cells[(y1*width)+x]
-		if len(actualCell.Runes) == 0 || actualCell.Runes[0] != '─' {
-			actualRune := rune(0)
-			if len(actualCell.Runes) > 0 {
-				actualRune = actualCell.Runes[0]
-			}
-			t.Fatalf("expected bottom border rune %q at %s x=%d, actual %q", "─", paneViewName, x, string(actualRune))
-		}
 	}
 }

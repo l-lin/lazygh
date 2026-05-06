@@ -69,9 +69,10 @@ func TestReviewMode_GivenSubmittedFileTreeSearch_WhenRendering_ThenItKeepsTheTre
 
 	footerView, actualErr := gui.View(viewPullRequestsFooterName)
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/model (1 match)  •  ?: Help, /: Search, a: Action" {
-		t.Fatalf("expected review tree footer %q, actual %q", "/model (1 match)  •  ?: Help, /: Search, a: Action", actual)
+	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/model (1 match)" {
+		t.Fatalf("expected review tree footer %q, actual %q", "/model (1 match)", actual)
 	}
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
 )
 
@@ -18,31 +17,14 @@ const (
 
 type paneFooterState struct {
 	searchSummary string
-	keyHints      string
 }
 
-func (state paneFooterState) VisibleText() string {
-	sections := filterEmptyStrings([]string{strings.TrimSpace(state.searchSummary), strings.TrimSpace(state.keyHints)})
-	return strings.Join(sections, "  •  ")
-}
-
-func (state paneFooterState) StyledText() string {
-	sections := make([]string, 0, 2)
-	if searchSummary := strings.TrimSpace(state.searchSummary); searchSummary != "" {
-		sections = append(sections, searchSummary)
-	}
-	if keyHints := strings.TrimSpace(state.keyHints); keyHints != "" {
-		sections = append(sections, styleText(keyHints, foregroundColorEscape(theme.InactiveTitleHex)))
-	}
-	return strings.Join(sections, "  •  ")
-}
-
-func (state paneFooterState) HasKeyHints() bool {
-	return strings.TrimSpace(state.keyHints) != ""
+func (state paneFooterState) Text() string {
+	return strings.TrimSpace(state.searchSummary)
 }
 
 func (state paneFooterState) Visible() bool {
-	return strings.TrimSpace(state.VisibleText()) != ""
+	return state.Text() != ""
 }
 
 func (program *Program) layoutPaneFooterViews(gui *gocui.Gui) error {
@@ -66,21 +48,13 @@ func (program *Program) layoutPaneFooterView(gui *gocui.Gui, focus Focus) error 
 		return deleteViewIfPresent(gui, viewName)
 	}
 
-	parentView, err := gui.View(paneViewName(focus))
-	if err != nil {
-		if isUnknownViewError(err) {
-			return nil
-		}
-		return err
-	}
-
-	view, err := program.layoutPaneFooterViewForState(gui, paneViewName(focus), viewName, state)
+	view, err := program.layoutPaneBottomOverlayView(gui, viewName, paneViewName(focus))
 	if err != nil {
 		return err
 	}
 
 	program.configurePaneFooterView(view)
-	program.renderPaneFooterView(view, state.VisibleText(), state.StyledText(), parentView.InnerWidth(), state.HasKeyHints())
+	program.renderPaneFooterView(view, state.Text())
 	_, err = gui.SetViewOnTop(viewName)
 	if isUnknownViewError(err) {
 		return nil
@@ -94,14 +68,19 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 		return paneFooterState{}
 	}
 
-	state := paneFooterState{searchSummary: strings.TrimSpace(program.appliedSearchFooterText(focus))}
-	if program.shouldShowPaneFooterKeyHints(focus) {
-		state.keyHints = program.paneFooterKeyHintsText(focus)
-	}
-	return state
+	return paneFooterState{searchSummary: strings.TrimSpace(program.appliedSearchFooterText(focus))}
 }
 
-func (program *Program) shouldShowPaneFooterKeyHints(focus Focus) bool {
+func (program *Program) statusLineKeyHintsText() string {
+	focus := program.model.Focus()
+	if !program.shouldShowStatusLineKeyHints(focus) {
+		return ""
+	}
+
+	return program.paneFooterKeyHintsText(focus)
+}
+
+func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {
 	if focus == FocusUserView || focus != program.model.Focus() || !program.model.PaneVisible(focus) {
 		return false
 	}
@@ -193,32 +172,13 @@ func searchSummaryText(query string, count int) string {
 	return fmt.Sprintf("/%s (%d %s)", trimmedQuery, count, pluralize(count, "match", "matches"))
 }
 
-func (program *Program) layoutPaneFooterViewForState(gui *gocui.Gui, parentViewName string, viewName string, state paneFooterState) (*gocui.View, error) {
-	if !state.HasKeyHints() {
-		return program.layoutPaneBottomOverlayView(gui, viewName, parentViewName)
-	}
-
-	x0, y0, x1, y1, err := gui.ViewPosition(parentViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	footerY0 := maxInt(y0, y1-2)
-	view, err := gui.SetView(viewName, x0, footerY0, x1, y1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return nil, err
-	}
-
-	return view, nil
-}
-
 func (program *Program) configurePaneFooterView(view *gocui.View) {
 	program.configureBottomPromptView(view, nil, false)
 	view.Editable = false
 	view.Editor = nil
 }
 
-func (program *Program) renderPaneFooterView(view *gocui.View, visibleText string, styledText string, width int, alignRight bool) {
+func (program *Program) renderPaneFooterView(view *gocui.View, text string) {
 	if view == nil {
 		return
 	}
@@ -226,13 +186,7 @@ func (program *Program) renderPaneFooterView(view *gocui.View, visibleText strin
 	view.Clear()
 	view.SetOrigin(0, 0)
 	view.SetCursor(0, 0)
-	if !alignRight {
-		fmt.Fprint(view, strings.TrimSpace(styledText))
-		return
-	}
-
-	paddingWidth := maxInt(0, width-runeCountInt(strings.TrimSpace(visibleText)))
-	fmt.Fprint(view, strings.Repeat(" ", paddingWidth)+strings.TrimSpace(styledText))
+	fmt.Fprint(view, strings.TrimSpace(text))
 }
 
 func paneFooterViewName(focus Focus) string {

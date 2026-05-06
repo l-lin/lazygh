@@ -61,9 +61,10 @@ func TestPaneResize_GivenPullRequestsFocusWithAnAppliedSearch_WhenCyclingPlusThr
 
 	pullRequestsFooterView, actualErr := gui.View(viewPullRequestsFooterName)
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(pullRequestsFooterView.Buffer()); actual != "/2 (1 match)  •  ?: Help, /: Search, a: Action" {
-		t.Fatalf("expected pull requests footer %q, actual %q", "/2 (1 match)  •  ?: Help, /: Search, a: Action", actual)
+	if actual := strings.TrimSpace(pullRequestsFooterView.Buffer()); actual != "/2 (1 match)" {
+		t.Fatalf("expected pull requests footer %q, actual %q", "/2 (1 match)", actual)
 	}
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 
 	actualErr = subject.growFocusedPane(gui, nil)
 	then_noError(t, actualErr)
@@ -80,9 +81,10 @@ func TestPaneResize_GivenPullRequestsFocusWithAnAppliedSearch_WhenCyclingPlusThr
 
 	pullRequestsFooterView, actualErr = gui.View(viewPullRequestsFooterName)
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(pullRequestsFooterView.Buffer()); actual != "/2 (1 match)  •  ?: Help, /: Search, a: Action" {
-		t.Fatalf("expected pull requests footer %q after restoring the layout, actual %q", "/2 (1 match)  •  ?: Help, /: Search, a: Action", actual)
+	if actual := strings.TrimSpace(pullRequestsFooterView.Buffer()); actual != "/2 (1 match)" {
+		t.Fatalf("expected pull requests footer %q after restoring the layout, actual %q", "/2 (1 match)", actual)
 	}
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 }
 
 func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_ThenTheDetailPaneHidesTheSidePanesAndRestoresThemWithTheSameContext(t *testing.T) {
@@ -117,9 +119,10 @@ func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_T
 
 	detailFooterView, actualErr := gui.View(viewDetailFooterName)
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)  •  ?: Help, /: Search" {
-		t.Fatalf("expected detail footer %q, actual %q", "/detail 1 (1 match)  •  ?: Help, /: Search", actual)
+	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)" {
+		t.Fatalf("expected detail footer %q, actual %q", "/detail 1 (1 match)", actual)
 	}
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
 
 	actualErr = subject.focusUserView(gui, nil)
 	then_noError(t, actualErr)
@@ -143,9 +146,10 @@ func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_T
 
 	detailFooterView, actualErr = gui.View(viewDetailFooterName)
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)  •  ?: Help, /: Search" {
-		t.Fatalf("expected detail footer %q after restoring the layout, actual %q", "/detail 1 (1 match)  •  ?: Help, /: Search", actual)
+	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)" {
+		t.Fatalf("expected detail footer %q after restoring the layout, actual %q", "/detail 1 (1 match)", actual)
 	}
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
 }
 
 func TestPaneResize_GivenUserFocusWithAnAppliedSearch_WhenCyclingMinusThroughFullscreenAndBack_ThenTheDefaultLayoutReturnsExactly(t *testing.T) {

@@ -16,6 +16,7 @@ const (
 	viewPullRequestsName       = "pull-requests"
 	viewSearchName             = "search"
 	viewStatusLineName         = "status-line"
+	viewStatusLineKeyHintsName = "status-line-key-hints"
 	viewActionsPopupName       = "actions-popup"
 	viewActionsPopupSearchName = "actions-popup-search"
 )

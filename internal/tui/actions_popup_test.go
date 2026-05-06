@@ -518,7 +518,8 @@ func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyP
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
 	}
 	then_statusLineContains(t, gui, yankSuccessMessage)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheActionsShortcut(t *testing.T) {

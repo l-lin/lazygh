@@ -26,6 +26,9 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	if err := program.layoutStatusLineView(gui); err != nil {
 		return err
 	}
+	if err := program.layoutStatusLineKeyHintsView(gui); err != nil {
+		return err
+	}
 	if err := program.refreshOverlayView(gui, program.helpVisible, viewHelpName, program.configureHelpView, program.renderHelpView); err != nil {
 		return err
 	}

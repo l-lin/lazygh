@@ -170,7 +170,8 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 	}
 
 	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisibleAndShowsTheError(t *testing.T) {
@@ -225,7 +226,8 @@ func TestPullRequestCommentComposer_GivenPullRequestDetail_WhenSubmitting_ThenIt
 	}
 
 	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
-	then_footerTextIs(t, gui, viewDetailFooterName, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
 func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheCommentShortcut(t *testing.T) {

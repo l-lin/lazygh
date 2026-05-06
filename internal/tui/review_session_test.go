@@ -1038,7 +1038,8 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpe
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	actualErr = given_startingReviewMode(t, gui, subject)
 	then_noError(t, actualErr)
@@ -1067,7 +1068,8 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenPressingQFromTheFileTree_ThenIt
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
 func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestoresThePriorBrowserFocusSelectionAndDetailTab(t *testing.T) {
