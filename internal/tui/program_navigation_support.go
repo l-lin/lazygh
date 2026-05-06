@@ -212,6 +212,18 @@ func (program *Program) selectionChangeBlocked() bool {
 	return program.model.SearchActive()
 }
 
+func (program *Program) scrollReadOnlyView(gui *gocui.Gui, view *gocui.View, fallbackName string, delta int) error {
+	actualView := program.resolveView(gui, view, fallbackName)
+	if actualView == nil {
+		return nil
+	}
+
+	originX, originY := actualView.Origin()
+	maxOriginY := maxInt(0, len(actualView.BufferLines())-viewPageSize(actualView))
+	actualView.SetOrigin(originX, clampInt(originY+delta, 0, maxOriginY))
+	return nil
+}
+
 func viewPageSize(view *gocui.View) int {
 	if view == nil {
 		return 1

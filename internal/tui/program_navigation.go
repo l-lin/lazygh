@@ -82,6 +82,22 @@ func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 	})
 }
 
+func (program *Program) fullPageDown(gui *gocui.Gui, view *gocui.View) error {
+	actualView := program.resolveView(gui, view, program.currentViewName())
+	pageSize := viewPageSize(actualView)
+	return program.handlePageChange(gui, actualView, fullPageDelta(pageSize), func(document detailDocument, viewportHeight int) {
+		program.detailViewState.fullPageDown(document, viewportHeight)
+	})
+}
+
+func (program *Program) fullPageUp(gui *gocui.Gui, view *gocui.View) error {
+	actualView := program.resolveView(gui, view, program.currentViewName())
+	pageSize := viewPageSize(actualView)
+	return program.handlePageChange(gui, actualView, -fullPageDelta(pageSize), func(document detailDocument, viewportHeight int) {
+		program.detailViewState.fullPageUp(document, viewportHeight)
+	})
+}
+
 func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) error {
 	if program.selectionChangeBlocked() {
 		program.clearPendingSelectionPrefix()

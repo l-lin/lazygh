@@ -52,6 +52,26 @@ func TestKeybindingSpecs_GivenConflictingPullRequestsOverride_WhenListingBinding
 	}
 }
 
+func TestKeybindingSpecs_GivenFullPageOverride_WhenListingBindings_ThenItKeepsHalfPageBindingsSeparate(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"main": {
+			"full_page_down": {"pagedown"},
+			"full_page_up":   {"pageup"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyPgdn, handler: subject.fullPageDown})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyPgup, handler: subject.fullPageUp})
+		then_bindingDoesNotExist(t, actual, viewName, gocui.KeyCtrlF)
+		then_bindingDoesNotExist(t, actual, viewName, gocui.KeyCtrlB)
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyCtrlD, handler: subject.pageDown})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyCtrlU, handler: subject.pageUp})
+	}
+}
+
 func given_programWithKeymapOverrides(model *Model, overrides appconfig.KeymapOverrides) *Program {
 	subject := NewProgramWithModel(model)
 	subject.ApplyKeymapOverrides(overrides)

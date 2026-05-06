@@ -107,6 +107,22 @@ func (model *Model) PageActionsPopupUp(pageSize int) {
 	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -pageDelta(pageSize))
 }
 
+func (model *Model) FullPageActionsPopupDown(pageSize int) {
+	if !model.actionsPopup.visible {
+		return
+	}
+
+	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, fullPageDelta(pageSize))
+}
+
+func (model *Model) FullPageActionsPopupUp(pageSize int) {
+	if !model.actionsPopup.visible {
+		return
+	}
+
+	model.actionsPopup.selectedActionIndex = adjustVisibleSelection(model.actionsPopup.selectedActionIndex, model.actionsPopup.filteredActionIndexes, -fullPageDelta(pageSize))
+}
+
 func (model *Model) MoveActionsPopupSelectionToTop() {
 	if !model.actionsPopup.visible {
 		return

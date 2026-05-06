@@ -43,6 +43,14 @@ func pageDelta(pageSize int) int {
 	return maxInt(1, pageSize/2)
 }
 
+func fullPageDelta(pageSize int) int {
+	if pageSize <= 1 {
+		return 1
+	}
+
+	return pageSize
+}
+
 func copyItems(items []Item) []Item {
 	copiedItems := make([]Item, 0, len(items))
 	for _, item := range items {

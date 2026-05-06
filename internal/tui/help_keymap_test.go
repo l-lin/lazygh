@@ -54,6 +54,8 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacemen
 	then_helpEntryUsesKey(t, actualBuffer, "Cursor to top/center/bottom", "zt/zz/zb")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page down", "<c-f>/pagedown")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "<c-b>/pageup")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheLinkUnderCursor(t *testing.T) {
@@ -91,6 +93,8 @@ func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsViewportPlacementM
 	then_helpEntryUsesKey(t, actualBuffer, "Selection to top/center/bottom", "zt/zz/zb")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page down", "<c-f>/pagedown")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "<c-b>/pageup")
 }
 
 func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {

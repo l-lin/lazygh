@@ -185,7 +185,7 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 
 	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " "}
 	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
-		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex)
+		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.backgroundHex)
 	}
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)

@@ -19,9 +19,13 @@ func TestParseConfiguredKey_GivenSupportedKeyStrings_WhenParsing_ThenItReturnsBi
 		{name: "enter", value: "enter", expectedKey: gocui.KeyEnter, expectedLabel: "<enter>"},
 		{name: "escape", value: "esc", expectedKey: gocui.KeyEsc, expectedLabel: "<esc>"},
 		{name: "control bracket", value: "ctrl+[", expectedKey: gocui.KeyCtrlLsqBracket, expectedLabel: "<c-[>"},
+		{name: "control b", value: "ctrl+b", expectedKey: gocui.KeyCtrlB, expectedLabel: "<c-b>"},
+		{name: "control f", value: "ctrl+f", expectedKey: gocui.KeyCtrlF, expectedLabel: "<c-f>"},
 		{name: "tab", value: "tab", expectedKey: gocui.KeyTab, expectedLabel: "tab"},
 		{name: "shift tab", value: "shift+tab", expectedKey: gocui.KeyBacktab, expectedLabel: "shift+tab"},
 		{name: "down", value: "down", expectedKey: gocui.KeyArrowDown, expectedLabel: "<down>"},
+		{name: "pageup", value: "pageup", expectedKey: gocui.KeyPgup, expectedLabel: "pageup"},
+		{name: "pagedown", value: "pagedown", expectedKey: gocui.KeyPgdn, expectedLabel: "pagedown"},
 		{name: "alt enter", value: "alt+enter", expectedKey: gocui.KeyAltEnter, expectedLabel: "alt+enter"},
 		{name: "space", value: "space", expectedKey: ' ', expectedLabel: "space"},
 	}

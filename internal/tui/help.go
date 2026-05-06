@@ -89,6 +89,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
+				{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
+				{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 				{Key: "+/-", Description: "Toggle fullscreen"},
 				{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search diff"},
 				{Key: "<esc>/q", Description: "Exit visual / return"},
@@ -103,6 +105,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
+				{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
+				{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 				{Key: "+/-", Description: "Resize panes"},
 				{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search file tree"},
 				{Key: program.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + program.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
@@ -137,6 +141,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
+			{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
+			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Toggle fullscreen"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search detail"},
 			{Key: "<esc>/q", Description: "Exit visual / return"},
@@ -158,6 +164,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
+			{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
+			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Resize panes"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search pull requests"},
 			program.pullRequestYankHelpEntry(keymapScopePullRequests),
@@ -175,11 +183,21 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
+			{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
+			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Resize panes"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search users"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeUser, action: "open_detail"}), Description: "Open detail"},
 		}
 	}
+}
+
+func (program *Program) fullPageHelpDown(gui *gocui.Gui, view *gocui.View) error {
+	return program.scrollReadOnlyView(gui, view, viewHelpName, fullPageDelta(viewPageSize(program.resolveView(gui, view, viewHelpName))))
+}
+
+func (program *Program) fullPageHelpUp(gui *gocui.Gui, view *gocui.View) error {
+	return program.scrollReadOnlyView(gui, view, viewHelpName, -fullPageDelta(viewPageSize(program.resolveView(gui, view, viewHelpName))))
 }
 
 func (program *Program) globalHelpEntries() []helpEntry {

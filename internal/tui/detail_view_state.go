@@ -118,16 +118,25 @@ func (state *detailViewState) moveUp(document detailDocument, viewportHeight int
 }
 
 func (state *detailViewState) pageDown(document detailDocument, viewportHeight int) {
-	state.clearPendingPrefix()
-	state.sync(document, viewportHeight)
-	state.cursor = document.moveVertical(state.cursor, pageDelta(viewportHeight), state.preferredColumn)
-	state.recenter(document, viewportHeight)
+	state.page(document, viewportHeight, pageDelta(viewportHeight))
 }
 
 func (state *detailViewState) pageUp(document detailDocument, viewportHeight int) {
+	state.page(document, viewportHeight, -pageDelta(viewportHeight))
+}
+
+func (state *detailViewState) fullPageDown(document detailDocument, viewportHeight int) {
+	state.page(document, viewportHeight, fullPageDelta(viewportHeight))
+}
+
+func (state *detailViewState) fullPageUp(document detailDocument, viewportHeight int) {
+	state.page(document, viewportHeight, -fullPageDelta(viewportHeight))
+}
+
+func (state *detailViewState) page(document detailDocument, viewportHeight int, delta int) {
 	state.clearPendingPrefix()
 	state.sync(document, viewportHeight)
-	state.cursor = document.moveVertical(state.cursor, -pageDelta(viewportHeight), state.preferredColumn)
+	state.cursor = document.moveVertical(state.cursor, delta, state.preferredColumn)
 	state.recenter(document, viewportHeight)
 }
 

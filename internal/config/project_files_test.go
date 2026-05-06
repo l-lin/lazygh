@@ -101,6 +101,24 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 	}
 }
 
+func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsFullPageNavigationAndTheTextInputException(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"full_page_down",
+		"full_page_up",
+		"`ctrl-d`/`ctrl-u`",
+		"`ctrl-f`/`ctrl-b`",
+		"Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsZTZZAndZB(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)

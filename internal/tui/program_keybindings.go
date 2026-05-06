@@ -264,6 +264,10 @@ func parseConfiguredKey(value string) (configuredKeybinding, bool) {
 		return namedBinding(gocui.KeyArrowLeft, "<left>"), true
 	case "right", "arrowright", "arrow-right", "<right>":
 		return namedBinding(gocui.KeyArrowRight, "<right>"), true
+	case "pageup", "page-up", "pgup", "<pageup>", "<pgup>":
+		return namedBinding(gocui.KeyPgup, "pageup"), true
+	case "pagedown", "page-down", "pgdown", "pgdn", "<pagedown>", "<pgdown>", "<pgdn>":
+		return namedBinding(gocui.KeyPgdn, "pagedown"), true
 	case "space", "<space>":
 		return runeBinding(' '), true
 	case "alt+enter", "alt-enter", "<alt+enter>":
@@ -378,6 +382,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeMain, "move_detail_view_up", mainPaneViewNames, program.moveDetailViewUp, runeBinding('K')),
 		keybindingActionFor(keymapScopeMain, "page_down", mainPaneViewNames, program.pageDown, namedBinding(gocui.KeyCtrlD, "<c-d>")),
 		keybindingActionFor(keymapScopeMain, "page_up", mainPaneViewNames, program.pageUp, namedBinding(gocui.KeyCtrlU, "<c-u>")),
+		keybindingActionFor(keymapScopeMain, "full_page_down", mainPaneViewNames, program.fullPageDown, namedBinding(gocui.KeyCtrlF, "<c-f>"), namedBinding(gocui.KeyPgdn, "pagedown")),
+		keybindingActionFor(keymapScopeMain, "full_page_up", mainPaneViewNames, program.fullPageUp, namedBinding(gocui.KeyCtrlB, "<c-b>"), namedBinding(gocui.KeyPgup, "pageup")),
 		keybindingActionFor(keymapScopeMain, "grow_focused_pane", mainPaneViewNames, program.growFocusedPane, runeBinding('+')),
 		keybindingActionFor(keymapScopeMain, "shrink_focused_pane", mainPaneViewNames, program.shrinkFocusedPane, runeBinding('-')),
 
@@ -435,6 +441,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_up", []string{viewActionsPopupName}, program.moveActionsPopupSelectionUp, runeBinding('k'), namedBinding(gocui.KeyArrowUp, "<up>")),
 		keybindingActionFor(keymapScopeActionsPopup, "page_down", []string{viewActionsPopupName}, program.pageActionsPopupDown, namedBinding(gocui.KeyCtrlD, "<c-d>")),
 		keybindingActionFor(keymapScopeActionsPopup, "page_up", []string{viewActionsPopupName}, program.pageActionsPopupUp, namedBinding(gocui.KeyCtrlU, "<c-u>")),
+		keybindingActionFor(keymapScopeActionsPopup, "full_page_down", []string{viewActionsPopupName}, program.fullPageActionsPopupDown, namedBinding(gocui.KeyCtrlF, "<c-f>"), namedBinding(gocui.KeyPgdn, "pagedown")),
+		keybindingActionFor(keymapScopeActionsPopup, "full_page_up", []string{viewActionsPopupName}, program.fullPageActionsPopupUp, namedBinding(gocui.KeyCtrlB, "<c-b>"), namedBinding(gocui.KeyPgup, "pageup")),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_to_top", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToTop, runeBinding('g')),
 		keybindingActionFor(keymapScopeActionsPopup, "move_selection_to_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToBottom, runeBinding('G')),
 		keybindingActionFor(keymapScopeActionsPopup, "recenter_selection", []string{viewActionsPopupName}, program.recenterActionsPopupSelection, runeBinding('z')),
@@ -449,6 +457,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, namedBinding(gocui.KeyAltEnter, "alt+enter"), namedBinding(gocui.KeyCtrlS, "<c-s>")),
 		keybindingActionFor(keymapScopeModalEditor, "close", []string{viewModalEditorName}, program.closeModalEditor, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>")),
 
+		keybindingActionFor(keymapScopeHelp, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown, namedBinding(gocui.KeyCtrlF, "<c-f>"), namedBinding(gocui.KeyPgdn, "pagedown")),
+		keybindingActionFor(keymapScopeHelp, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp, namedBinding(gocui.KeyCtrlB, "<c-b>"), namedBinding(gocui.KeyPgup, "pageup")),
 		keybindingActionFor(keymapScopeHelp, "close", []string{viewHelpName}, program.closeHelp, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 	}
 }
