@@ -78,6 +78,7 @@ type Program struct {
 	reviewSession                     reviewSessionState
 	modalEditor                       *modalEditorState
 	externalEditor                    externalEditor
+	linkOpener                        linkOpener
 	markdownRenderer                  MarkdownRenderer
 	storyGenerator                    reviewStoryGenerator
 	asyncRunner                       asyncRunner
@@ -122,6 +123,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		additionalPullRequestsLoading:     map[PullRequestTab]bool{},
 		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},
 		externalEditor:                    systemExternalEditor{},
+		linkOpener:                        newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand),
 		markdownRenderer:                  glamourMarkdownRenderer{},
 		storyGenerator:                    commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
 		asyncRunner:                       goroutineAsyncRunner{},

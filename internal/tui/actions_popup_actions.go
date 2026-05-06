@@ -38,6 +38,9 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.reviewPullRequestURLActionsPopupAction(),
 		)
 	}
+	if program.model.Focus() == FocusDetailView {
+		actions = append(actions, program.openLinkUnderCursorActionsPopupAction())
+	}
 	actions = append(actions, program.currentInlineCommentEditActions()...)
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
 		actions = append(actions, inlineCommentAction)

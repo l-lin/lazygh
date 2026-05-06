@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"codeberg.org/l-lin/lazygh/internal/story"
@@ -22,12 +23,17 @@ type Config struct {
 	Keymaps      KeymapOverrides
 	PullRequests []PullRequestSearch
 	Theme        theme.Palette
+	Links        LinksConfig
 	StoryReview  story.Config
 	Cache        CacheConfig
 }
 
 type CacheConfig struct {
 	Path string
+}
+
+type LinksConfig struct {
+	OpenCommand []string
 }
 
 type KeymapOverrides map[string]map[string][]string
@@ -41,6 +47,7 @@ type rawConfig struct {
 	Keymaps      map[string]map[string]any `toml:"keymaps"`
 	PullRequests rawPullRequestConfig      `toml:"pull_requests"`
 	Theme        theme.Palette             `toml:"theme"`
+	Links        rawLinksConfig            `toml:"links"`
 	StoryReview  rawStoryReviewConfig      `toml:"story_review"`
 	Cache        rawCacheConfig            `toml:"cache"`
 }
@@ -61,6 +68,10 @@ type rawStoryReviewConfig struct {
 
 type rawCacheConfig struct {
 	Path any `toml:"path"`
+}
+
+type rawLinksConfig struct {
+	OpenCommand any `toml:"open_command"`
 }
 
 func DefaultPath(homeDirectory string) string {
@@ -94,6 +105,7 @@ func Load(configPath string) (Config, error) {
 		Keymaps:      normalizeKeymapOverrides(raw.Keymaps),
 		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
 		Theme:        theme.NormalizePalette(raw.Theme),
+		Links:        normalizeLinksConfig(raw.Links),
 		StoryReview:  normalizeStoryReviewConfig(raw.StoryReview),
 		Cache:        normalizeCacheConfig(raw.Cache),
 	}, nil
@@ -122,6 +134,10 @@ func (config Config) ResolvedPullRequestSearches() []PullRequestSearch {
 
 func (config Config) ResolvedTheme() theme.Palette {
 	return theme.ResolvePalette(config.Theme)
+}
+
+func (config Config) ResolvedLinks() LinksConfig {
+	return ResolveLinksConfig(config.Links)
 }
 
 func (config Config) ResolvedStoryReview() story.Config {
@@ -154,6 +170,30 @@ func ResolveCacheConfig(config CacheConfig) (CacheConfig, error) {
 	}
 
 	return CacheConfig{Path: DefaultCachePath(homeDirectory, os.Getenv("XDG_DATA_HOME"))}, nil
+}
+
+func ResolveLinksConfig(config LinksConfig) LinksConfig {
+	return resolveLinksConfigForGOOS(config, runtime.GOOS)
+}
+
+func resolveLinksConfigForGOOS(config LinksConfig, goos string) LinksConfig {
+	configuredCommand := normalizeCommandArguments(config.OpenCommand)
+	if len(configuredCommand) > 0 {
+		return LinksConfig{OpenCommand: configuredCommand}
+	}
+
+	return LinksConfig{OpenCommand: defaultLinksOpenCommand(goos)}
+}
+
+func defaultLinksOpenCommand(goos string) []string {
+	switch strings.TrimSpace(strings.ToLower(goos)) {
+	case "darwin":
+		return []string{"open"}
+	case "linux":
+		return []string{"xdg-open"}
+	default:
+		return nil
+	}
 }
 
 func ResolvePullRequestSearches(searches []PullRequestSearch) []PullRequestSearch {
@@ -261,6 +301,10 @@ func normalizeStoryReviewConfig(raw rawStoryReviewConfig) story.Config {
 		AgentCommand: normalizeCommand(raw.AgentCommand),
 		Prompt:       strings.TrimSpace(raw.Prompt),
 	}
+}
+
+func normalizeLinksConfig(raw rawLinksConfig) LinksConfig {
+	return LinksConfig{OpenCommand: normalizeCommand(raw.OpenCommand)}
 }
 
 func normalizeCacheConfig(raw rawCacheConfig) CacheConfig {

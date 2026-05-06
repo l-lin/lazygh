@@ -18,13 +18,14 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 	}
 
 	document := detailDocument{
-		text:              []rune(strings.Join(visibleLines, "\n")),
-		lines:             make([][]rune, 0, len(styledLines)),
-		lineStylePrefixes: make([][]string, 0, len(styledLines)),
-		width:             width,
-		wrap:              wrap,
-		lineStartOffsets:  make([]int, 0, len(styledLines)),
-		lineStartRows:     make([]int, 0, len(styledLines)),
+		text:                 []rune(strings.Join(visibleLines, "\n")),
+		lines:                make([][]rune, 0, len(styledLines)),
+		lineStylePrefixes:    make([][]string, 0, len(styledLines)),
+		lineHyperlinkTargets: make([][]string, 0, len(styledLines)),
+		width:                width,
+		wrap:                 wrap,
+		lineStartOffsets:     make([]int, 0, len(styledLines)),
+		lineStartRows:        make([]int, 0, len(styledLines)),
 	}
 
 	offset := 0
@@ -32,8 +33,10 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 	for lineIndex, styledLine := range styledLines {
 		lineRunes := append([]rune(nil), styledLine.runes...)
 		lineStylePrefixes := append([]string(nil), styledLine.stylePrefixes...)
+		lineHyperlinkTargets := append([]string(nil), styledLine.hyperlinkTargets...)
 		document.lines = append(document.lines, lineRunes)
 		document.lineStylePrefixes = append(document.lineStylePrefixes, lineStylePrefixes)
+		document.lineHyperlinkTargets = append(document.lineHyperlinkTargets, lineHyperlinkTargets)
 		document.lineStartOffsets = append(document.lineStartOffsets, offset)
 		document.lineStartRows = append(document.lineStartRows, rowIndex)
 

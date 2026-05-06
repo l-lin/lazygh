@@ -8,13 +8,15 @@ import (
 )
 
 type styledTextLine struct {
-	runes         []rune
-	stylePrefixes []string
+	runes            []rune
+	stylePrefixes    []string
+	hyperlinkTargets []string
 }
 
 func splitStyledTextLines(text string) []styledTextLine {
 	lines := []styledTextLine{{}}
 	currentStylePrefix := ""
+	currentHyperlinkTarget := ""
 
 	for index := 0; index < len(text); {
 		if text[index] == '\x1b' {
@@ -25,7 +27,10 @@ func splitStyledTextLines(text string) []styledTextLine {
 				index = nextIndex
 				continue
 			}
-			if nextIndex, ok := consumeOSCSequence(text, index); ok {
+			if sequence, nextIndex, ok := consumeOSCSequence(text, index); ok {
+				if target, ok := hyperlinkTargetFromOSCSequence(sequence); ok {
+					currentHyperlinkTarget = target
+				}
 				index = nextIndex
 				continue
 			}
@@ -46,6 +51,7 @@ func splitStyledTextLines(text string) []styledTextLine {
 		line := &lines[len(lines)-1]
 		line.runes = append(line.runes, character)
 		line.stylePrefixes = append(line.stylePrefixes, currentStylePrefix)
+		line.hyperlinkTargets = append(line.hyperlinkTargets, currentHyperlinkTarget)
 		index += size
 	}
 
@@ -64,6 +70,7 @@ func trimTrailingStyledSpaces(line styledTextLine) styledTextLine {
 
 	line.runes = line.runes[:trimmedLength]
 	line.stylePrefixes = line.stylePrefixes[:trimmedLength]
+	line.hyperlinkTargets = line.hyperlinkTargets[:trimmedLength]
 	return line
 }
 
@@ -113,7 +120,12 @@ func styledPaddingLine(line styledTextLine) styledTextLine {
 		return styledTextLine{}
 	}
 
-	return styledTextLine{runes: []rune{' '}, stylePrefixes: []string{line.stylePrefixes[0]}}
+	paddingTarget := ""
+	if len(line.hyperlinkTargets) > 0 {
+		paddingTarget = line.hyperlinkTargets[0]
+	}
+
+	return styledTextLine{runes: []rune{' '}, stylePrefixes: []string{line.stylePrefixes[0]}, hyperlinkTargets: []string{paddingTarget}}
 }
 
 func renderStyledTextLine(line styledTextLine) string {
@@ -160,23 +172,39 @@ func consumeCSISequence(text string, startIndex int) (string, int, bool) {
 	return text[startIndex:], len(text), true
 }
 
-func consumeOSCSequence(text string, startIndex int) (int, bool) {
+func consumeOSCSequence(text string, startIndex int) (string, int, bool) {
 	if startIndex+1 >= len(text) || text[startIndex] != '\x1b' || text[startIndex+1] != ']' {
-		return startIndex, false
+		return "", startIndex, false
 	}
 
 	for index := startIndex + 2; index < len(text); index++ {
 		switch text[index] {
 		case '\a':
-			return index + 1, true
+			return text[startIndex : index+1], index + 1, true
 		case '\x1b':
 			if index+1 < len(text) && text[index+1] == '\\' {
-				return index + 2, true
+				return text[startIndex : index+2], index + 2, true
 			}
 		}
 	}
 
-	return len(text), true
+	return text[startIndex:], len(text), true
+}
+
+func hyperlinkTargetFromOSCSequence(sequence string) (string, bool) {
+	if !strings.HasPrefix(sequence, "\x1b]8;") {
+		return "", false
+	}
+
+	trimmedSequence := strings.TrimSuffix(sequence, "\a")
+	trimmedSequence = strings.TrimSuffix(trimmedSequence, "\x1b\\")
+	payload := strings.TrimPrefix(trimmedSequence, "\x1b]8;")
+	separatorIndex := strings.Index(payload, ";")
+	if separatorIndex < 0 {
+		return "", false
+	}
+
+	return strings.TrimSpace(payload[separatorIndex+1:]), true
 }
 
 func updatedANSIStylePrefix(currentPrefix string, sequence string) string {

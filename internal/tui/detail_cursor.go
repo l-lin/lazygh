@@ -36,14 +36,15 @@ type detailWrappedRow struct {
 }
 
 type detailDocument struct {
-	text              []rune
-	lines             [][]rune
-	lineStylePrefixes [][]string
-	width             int
-	wrap              bool
-	lineStartOffsets  []int
-	lineStartRows     []int
-	rows              []detailWrappedRow
+	text                 []rune
+	lines                [][]rune
+	lineStylePrefixes    [][]string
+	lineHyperlinkTargets [][]string
+	width                int
+	wrap                 bool
+	lineStartOffsets     []int
+	lineStartRows        []int
+	rows                 []detailWrappedRow
 }
 
 type detailViewState struct {

@@ -1,0 +1,133 @@
+package tui
+
+import (
+	"errors"
+	"regexp"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/jesseduffield/gocui"
+)
+
+var (
+	ErrNoLinkUnderCursor = errors.New("no link under cursor")
+	visibleURLPattern    = regexp.MustCompile(`https?://[^\s<>"']+`)
+)
+
+const (
+	openLinkSuccessMessage           = " Link opened"
+	openLinkFailureMessage           = "󰅚 Open failed"
+	openLinkUnavailableMessage       = "󰌑 No link under cursor"
+	openLinkOpenerUnavailableMessage = "󰌑 Link opener unavailable"
+)
+
+func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {
+	if !program.detailViewState.consumeGoToTopPrefix() {
+		program.detailViewState.clearPendingPrefix()
+		return nil
+	}
+
+	err := program.openCurrentLink(program.resolveView(gui, view, viewDetailName))
+	switch {
+	case err == nil:
+		program.setFeedback(program.model.Focus(), openLinkSuccessMessage)
+	case errors.Is(err, ErrNoLinkUnderCursor):
+		program.setFeedback(program.model.Focus(), openLinkUnavailableMessage)
+	case errors.Is(err, ErrLinkOpenerUnavailable):
+		program.setFeedback(program.model.Focus(), openLinkOpenerUnavailableMessage)
+	default:
+		program.setFeedback(program.model.Focus(), openLinkFailureMessage)
+	}
+
+	return program.refreshViewsIfGUI(gui)
+}
+
+func (program *Program) openCurrentLink(view *gocui.View) error {
+	if program.linkOpener == nil {
+		return ErrLinkOpenerUnavailable
+	}
+
+	document := program.currentDetailDocument(view)
+	program.syncDetailViewState(document, viewPageSize(view))
+	url, ok := document.linkAt(program.detailViewState.cursor)
+	if !ok {
+		return ErrNoLinkUnderCursor
+	}
+
+	return program.linkOpener.Open(url)
+}
+
+func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "open-link-under-cursor",
+		title:    "Open link under cursor",
+		icon:     actionsPopupOpenLinkIcon,
+		keywords: []string{"open", "link", "cursor", "url", "browser"},
+		execute:  program.executeOpenLinkUnderCursorAction,
+	}
+}
+
+func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) actionsPopupActionResult {
+	err := program.openCurrentLink(program.resolveView(gui, nil, viewDetailName))
+	switch {
+	case err == nil:
+		program.setFeedback(program.model.Focus(), openLinkSuccessMessage)
+		return actionsPopupActionResult{closePopup: true}
+	case errors.Is(err, ErrNoLinkUnderCursor):
+		return actionsPopupActionResult{err: errors.New(openLinkUnavailableMessage)}
+	case errors.Is(err, ErrLinkOpenerUnavailable):
+		return actionsPopupActionResult{err: errors.New(openLinkOpenerUnavailableMessage)}
+	default:
+		return actionsPopupActionResult{err: errors.New(openLinkFailureMessage)}
+	}
+}
+
+func (document detailDocument) linkAt(position detailPosition) (string, bool) {
+	position = document.clampPosition(position)
+	if target := strings.TrimSpace(document.hyperlinkTargetAt(position)); target != "" {
+		return target, true
+	}
+
+	return document.visibleURLAt(position)
+}
+
+func (document detailDocument) hyperlinkTargetAt(position detailPosition) string {
+	if position.line < 0 || position.line >= len(document.lineHyperlinkTargets) {
+		return ""
+	}
+	if position.column < 0 || position.column >= len(document.lineHyperlinkTargets[position.line]) {
+		return ""
+	}
+
+	return document.lineHyperlinkTargets[position.line][position.column]
+}
+
+func (document detailDocument) visibleURLAt(position detailPosition) (string, bool) {
+	if position.line < 0 || position.line >= len(document.lines) {
+		return "", false
+	}
+
+	line := string(document.lines[position.line])
+	for _, byteRange := range visibleURLPattern.FindAllStringIndex(line, -1) {
+		candidate := trimVisibleURL(line[byteRange[0]:byteRange[1]])
+		if candidate == "" {
+			continue
+		}
+
+		startColumn := utf8.RuneCountInString(line[:byteRange[0]])
+		endColumn := startColumn + utf8.RuneCountInString(candidate)
+		if position.column < startColumn || position.column >= endColumn {
+			continue
+		}
+
+		return candidate, true
+	}
+
+	return "", false
+}
+
+func trimVisibleURL(value string) string {
+	trimmed := strings.TrimSpace(value)
+	trimmed = strings.TrimRight(trimmed, ".,:;!?)]}\"'")
+	return trimmed
+}

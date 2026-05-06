@@ -56,6 +56,24 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRec
 	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
 }
 
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheLinkUnderCursor(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
+}
+
 func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsZZAndHalfPageRecentering(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)

@@ -129,6 +129,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "h/j/k/l/<up>/<down>", Description: "Move cursor"},
 			{Key: "0/$", Description: "Line start/end"},
 			{Key: "gg/G", Description: "First/last line"},
+			{Key: program.helpKeyChordOrFallback("g", "x", keybindingActionID{scope: keymapScopeDetail, action: "move_cursor_to_top"}, keybindingActionID{scope: keymapScopeDetail, action: "open_link_under_cursor"}), Description: "Open link under cursor"},
 			{Key: program.helpRepeatedKeyOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Recenter cursor"},
 			{Key: "w/e/b", Description: "Next/end/previous word"},
 			{Key: "n/N", Description: "Next/previous match"},

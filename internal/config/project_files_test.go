@@ -70,3 +70,19 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 		}
 	}
 }
+
+func TestProjectFiles_GivenTheReadme_WhenReadingTheLinksSection_ThenItDocumentsTheOpenCommandAndGXShortcut(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"[links]",
+		"open_command",
+		"gx",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}

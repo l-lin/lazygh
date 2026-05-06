@@ -11,6 +11,7 @@ const (
 	actionsPopupStartReviewIcon            = ""
 	actionsPopupYankPullRequestURLIcon     = "󰆏"
 	actionsPopupOpenPullRequestBrowserIcon = ""
+	actionsPopupOpenLinkIcon               = ""
 	actionsPopupRefreshPullRequestIcon     = ""
 	actionsPopupReviewApproveIcon          = "󰆀"
 	actionsPopupReviewCommentIcon          = "󰆂"

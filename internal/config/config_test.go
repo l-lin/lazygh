@@ -167,6 +167,21 @@ prompt = "Tell the story with dry professionalism."
 	}
 }
 
+func TestLoad_GivenLinksOpenCommand_WhenLoading_ThenItPreservesTheConfiguredCommand(t *testing.T) {
+	configPath := given_configFile(t, `
+[links]
+open_command = ["open", "-a", "Safari"]
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{Links: LinksConfig{OpenCommand: []string{"open", "-a", "Safari"}}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenCacheSettings_WhenLoading_ThenItPreservesTheConfiguredCachePath(t *testing.T) {
 	configPath := given_configFile(t, `
 [cache]
@@ -242,6 +257,33 @@ func TestConfig_ResolvedTheme_GivenNoConfiguredTheme_WhenResolving_ThenItFallsBa
 	expected := theme.DefaultPalette()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected palette %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestResolveLinksConfig_GivenNoConfiguredOpenCommandOnDarwin_WhenResolving_ThenItUsesOpen(t *testing.T) {
+	actual := resolveLinksConfigForGOOS(LinksConfig{}, "darwin")
+
+	expected := LinksConfig{OpenCommand: []string{"open"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected links config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestResolveLinksConfig_GivenNoConfiguredOpenCommandOnLinux_WhenResolving_ThenItUsesXDGOpen(t *testing.T) {
+	actual := resolveLinksConfigForGOOS(LinksConfig{}, "linux")
+
+	expected := LinksConfig{OpenCommand: []string{"xdg-open"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected links config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestResolveLinksConfig_GivenAConfiguredOpenCommand_WhenResolving_ThenItKeepsTheConfiguredCommand(t *testing.T) {
+	actual := resolveLinksConfigForGOOS(LinksConfig{OpenCommand: []string{"open", "-a", "Firefox"}}, "linux")
+
+	expected := LinksConfig{OpenCommand: []string{"open", "-a", "Firefox"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected links config %+v, actual %+v", expected, actual)
 	}
 }
 

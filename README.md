@@ -110,6 +110,21 @@ diff_addition_background = "#2B3328"
 diff_deletion_background = "#43242B"
 ```
 
+### Links
+Use the actions popup in pull-request detail, or press `gx` in any detail view, to open the link under the cursor.
+
+- By default, `lazygh` uses `open` on macOS.
+- By default, `lazygh` uses `xdg-open` on Linux.
+- Override the opener under `[links]` when your desktop environment demands a different ritual.
+- `open_command` can be a string or an array of strings. `lazygh` appends the resolved URL as the last argument.
+
+This example opens links with Firefox on macOS.
+
+```toml
+[links]
+open_command = ["open", "-a", "Firefox"]
+```
+
 ### Story review
 Use the actions popup on a pull request and pick `Review PR as story`.
 
@@ -228,6 +243,7 @@ move_cursor_right = "l"
 move_cursor_to_row_start = "0"
 move_cursor_to_row_end = "$"
 move_cursor_to_top = "g"
+open_link_under_cursor = "x"
 move_cursor_to_bottom = "G"
 move_cursor_to_next_word = "w"
 move_cursor_to_word_end = "e"
@@ -242,7 +258,7 @@ next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
-# `za` toggles inline conversations in review mode, `zz` recenters the cursor.
+# `gx` opens the link under the cursor, `za` toggles inline conversations in review mode, `zz` recenters the cursor.
 toggle_inline_conversation_prefix = "z"
 close = ["esc", "ctrl+[", "q"]
 

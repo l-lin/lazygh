@@ -156,6 +156,10 @@ func (state *detailViewState) handleGoToTopPrefix(document detailDocument, viewp
 	state.moveToTop(document, viewportHeight)
 }
 
+func (state *detailViewState) consumeGoToTopPrefix() bool {
+	return state.pendingKeySequence.consume(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "move_cursor_to_top"))
+}
+
 func (state *detailViewState) armInlineConversationTogglePrefix() {
 	state.pendingKeySequence.arm(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup"))
 }
