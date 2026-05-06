@@ -204,49 +204,14 @@ func NormalizePalette(overrides Palette) Palette {
 
 func ResolvePalette(overrides Palette) Palette {
 	normalized := NormalizePalette(overrides)
-	resolved := DefaultPalette()
-	resolved.ActiveBorderHex = resolvedColor(resolved.ActiveBorderHex, normalized.ActiveBorderHex)
-	resolved.InactiveBorderHex = resolvedColor(resolved.InactiveBorderHex, normalized.InactiveBorderHex)
-	resolved.ActiveTextHex = resolvedColor(resolved.ActiveTextHex, normalized.ActiveTextHex)
-	resolved.InactiveTextHex = resolvedColor(resolved.InactiveTextHex, normalized.InactiveTextHex)
-	resolved.InactiveTitleHex = resolvedColor(resolved.InactiveTitleHex, normalized.InactiveTitleHex)
-	resolved.SuccessHex = resolvedColor(resolved.SuccessHex, normalized.SuccessHex)
-	resolved.FailureHex = resolvedColor(resolved.FailureHex, normalized.FailureHex)
-	resolved.PendingHex = resolvedColor(resolved.PendingHex, normalized.PendingHex)
-	resolved.MutedHex = resolvedColor(resolved.MutedHex, normalized.MutedHex)
-	resolved.PullRequestReferenceHex = resolvedColor(resolved.PullRequestReferenceHex, normalized.PullRequestReferenceHex)
-	resolved.PullRequestTitleHex = resolvedColor(resolved.PullRequestTitleHex, normalized.PullRequestTitleHex)
-	resolved.SelectedLineBackgroundHex = resolvedColor(resolved.SelectedLineBackgroundHex, normalized.SelectedLineBackgroundHex)
-	resolved.SearchHighlightHex = resolvedColor(resolved.SearchHighlightHex, normalized.SearchHighlightHex)
-	resolved.MarkdownHeadingHex = resolvedColor(resolved.MarkdownHeadingHex, normalized.MarkdownHeadingHex)
-	resolved.MarkdownHeadingBackgroundHex = resolvedColor(resolved.MarkdownHeadingBackgroundHex, normalized.MarkdownHeadingBackgroundHex)
-	resolved.MarkdownLinkHex = resolvedColor(resolved.MarkdownLinkHex, normalized.MarkdownLinkHex)
-	resolved.MarkdownCodeHex = resolvedColor(resolved.MarkdownCodeHex, normalized.MarkdownCodeHex)
-	resolved.SyntaxKeywordHex = resolvedColor(resolved.SyntaxKeywordHex, normalized.SyntaxKeywordHex)
-	resolved.SyntaxFunctionHex = resolvedColor(resolved.SyntaxFunctionHex, normalized.SyntaxFunctionHex)
-	resolved.SyntaxTypeHex = resolvedColor(resolved.SyntaxTypeHex, normalized.SyntaxTypeHex)
-	resolved.SyntaxPropertyHex = resolvedColor(resolved.SyntaxPropertyHex, normalized.SyntaxPropertyHex)
-	resolved.SyntaxStringHex = resolvedColor(resolved.SyntaxStringHex, normalized.SyntaxStringHex)
-	resolved.SyntaxNumberHex = resolvedColor(resolved.SyntaxNumberHex, normalized.SyntaxNumberHex)
-	resolved.SyntaxCommentHex = resolvedColor(resolved.SyntaxCommentHex, normalized.SyntaxCommentHex)
-	resolved.CommentAuthorBadgeForegroundHex = resolvedColor(resolved.CommentAuthorBadgeForegroundHex, normalized.CommentAuthorBadgeForegroundHex)
-	resolved.CommentAuthorBadgeBackgroundHex = resolvedColor(resolved.CommentAuthorBadgeBackgroundHex, normalized.CommentAuthorBadgeBackgroundHex)
-	resolved.PullRequestStatusOpenForegroundHex = resolvedColor(resolved.PullRequestStatusOpenForegroundHex, normalized.PullRequestStatusOpenForegroundHex)
-	resolved.PullRequestStatusOpenBackgroundHex = resolvedColor(resolved.PullRequestStatusOpenBackgroundHex, normalized.PullRequestStatusOpenBackgroundHex)
-	resolved.PullRequestStatusDraftForegroundHex = resolvedColor(resolved.PullRequestStatusDraftForegroundHex, normalized.PullRequestStatusDraftForegroundHex)
-	resolved.PullRequestStatusDraftBackgroundHex = resolvedColor(resolved.PullRequestStatusDraftBackgroundHex, normalized.PullRequestStatusDraftBackgroundHex)
-	resolved.PullRequestStatusClosedForegroundHex = resolvedColor(resolved.PullRequestStatusClosedForegroundHex, normalized.PullRequestStatusClosedForegroundHex)
-	resolved.PullRequestStatusClosedBackgroundHex = resolvedColor(resolved.PullRequestStatusClosedBackgroundHex, normalized.PullRequestStatusClosedBackgroundHex)
-	resolved.PullRequestStatusMergedForegroundHex = resolvedColor(resolved.PullRequestStatusMergedForegroundHex, normalized.PullRequestStatusMergedForegroundHex)
-	resolved.PullRequestStatusMergedBackgroundHex = resolvedColor(resolved.PullRequestStatusMergedBackgroundHex, normalized.PullRequestStatusMergedBackgroundHex)
-	resolved.DiffAdditionForegroundHex = resolvedColor(resolved.DiffAdditionForegroundHex, normalized.DiffAdditionForegroundHex)
-	resolved.DiffAdditionBackgroundHex = resolvedColor(resolved.DiffAdditionBackgroundHex, normalized.DiffAdditionBackgroundHex)
-	resolved.DiffAdditionHighlightBackgroundHex = resolvedColor(resolved.DiffAdditionHighlightBackgroundHex, normalized.DiffAdditionHighlightBackgroundHex)
-	resolved.DiffDeletionForegroundHex = resolvedColor(resolved.DiffDeletionForegroundHex, normalized.DiffDeletionForegroundHex)
-	resolved.DiffDeletionBackgroundHex = resolvedColor(resolved.DiffDeletionBackgroundHex, normalized.DiffDeletionBackgroundHex)
-	resolved.DiffDeletionHighlightBackgroundHex = resolvedColor(resolved.DiffDeletionHighlightBackgroundHex, normalized.DiffDeletionHighlightBackgroundHex)
-	resolved.DiffLineNumberHex = resolvedColor(resolved.DiffLineNumberHex, normalized.DiffLineNumberHex)
-	resolved.DiffHunkHeaderHex = resolvedColor(resolved.DiffHunkHeaderHex, normalized.DiffHunkHeaderHex)
+	return mergePalette(DefaultPalette(), normalized)
+}
+
+func mergePalette(base Palette, overrides Palette) Palette {
+	resolved := base
+	visitPaletteColorPairs(&resolved, &overrides, func(resolvedColorValue *string, overrideColorValue *string) {
+		*resolvedColorValue = resolvedColor(*resolvedColorValue, *overrideColorValue)
+	})
 	return resolved
 }
 
@@ -304,49 +269,71 @@ func applyResolvedPalette(palette Palette) {
 }
 
 func normalizePalette(overrides Palette) Palette {
-	return Palette{
-		ActiveBorderHex:                      normalizeHexColor(overrides.ActiveBorderHex),
-		InactiveBorderHex:                    normalizeHexColor(overrides.InactiveBorderHex),
-		ActiveTextHex:                        normalizeHexColor(overrides.ActiveTextHex),
-		InactiveTextHex:                      normalizeHexColor(overrides.InactiveTextHex),
-		InactiveTitleHex:                     normalizeHexColor(overrides.InactiveTitleHex),
-		SuccessHex:                           normalizeHexColor(overrides.SuccessHex),
-		FailureHex:                           normalizeHexColor(overrides.FailureHex),
-		PendingHex:                           normalizeHexColor(overrides.PendingHex),
-		MutedHex:                             normalizeHexColor(overrides.MutedHex),
-		PullRequestReferenceHex:              normalizeHexColor(overrides.PullRequestReferenceHex),
-		PullRequestTitleHex:                  normalizeHexColor(overrides.PullRequestTitleHex),
-		SelectedLineBackgroundHex:            normalizeHexColor(overrides.SelectedLineBackgroundHex),
-		SearchHighlightHex:                   normalizeHexColor(overrides.SearchHighlightHex),
-		MarkdownHeadingHex:                   normalizeHexColor(overrides.MarkdownHeadingHex),
-		MarkdownHeadingBackgroundHex:         normalizeHexColor(overrides.MarkdownHeadingBackgroundHex),
-		MarkdownLinkHex:                      normalizeHexColor(overrides.MarkdownLinkHex),
-		MarkdownCodeHex:                      normalizeHexColor(overrides.MarkdownCodeHex),
-		SyntaxKeywordHex:                     normalizeHexColor(overrides.SyntaxKeywordHex),
-		SyntaxFunctionHex:                    normalizeHexColor(overrides.SyntaxFunctionHex),
-		SyntaxTypeHex:                        normalizeHexColor(overrides.SyntaxTypeHex),
-		SyntaxPropertyHex:                    normalizeHexColor(overrides.SyntaxPropertyHex),
-		SyntaxStringHex:                      normalizeHexColor(overrides.SyntaxStringHex),
-		SyntaxNumberHex:                      normalizeHexColor(overrides.SyntaxNumberHex),
-		SyntaxCommentHex:                     normalizeHexColor(overrides.SyntaxCommentHex),
-		CommentAuthorBadgeForegroundHex:      normalizeHexColor(overrides.CommentAuthorBadgeForegroundHex),
-		CommentAuthorBadgeBackgroundHex:      normalizeHexColor(overrides.CommentAuthorBadgeBackgroundHex),
-		PullRequestStatusOpenForegroundHex:   normalizeHexColor(overrides.PullRequestStatusOpenForegroundHex),
-		PullRequestStatusOpenBackgroundHex:   normalizeHexColor(overrides.PullRequestStatusOpenBackgroundHex),
-		PullRequestStatusDraftForegroundHex:  normalizeHexColor(overrides.PullRequestStatusDraftForegroundHex),
-		PullRequestStatusDraftBackgroundHex:  normalizeHexColor(overrides.PullRequestStatusDraftBackgroundHex),
-		PullRequestStatusClosedForegroundHex: normalizeHexColor(overrides.PullRequestStatusClosedForegroundHex),
-		PullRequestStatusClosedBackgroundHex: normalizeHexColor(overrides.PullRequestStatusClosedBackgroundHex),
-		PullRequestStatusMergedForegroundHex: normalizeHexColor(overrides.PullRequestStatusMergedForegroundHex),
-		PullRequestStatusMergedBackgroundHex: normalizeHexColor(overrides.PullRequestStatusMergedBackgroundHex),
-		DiffAdditionForegroundHex:            normalizeHexColor(overrides.DiffAdditionForegroundHex),
-		DiffAdditionBackgroundHex:            normalizeHexColor(overrides.DiffAdditionBackgroundHex),
-		DiffAdditionHighlightBackgroundHex:   normalizeHexColor(overrides.DiffAdditionHighlightBackgroundHex),
-		DiffDeletionForegroundHex:            normalizeHexColor(overrides.DiffDeletionForegroundHex),
-		DiffDeletionBackgroundHex:            normalizeHexColor(overrides.DiffDeletionBackgroundHex),
-		DiffDeletionHighlightBackgroundHex:   normalizeHexColor(overrides.DiffDeletionHighlightBackgroundHex),
-		DiffLineNumberHex:                    normalizeHexColor(overrides.DiffLineNumberHex),
-		DiffHunkHeaderHex:                    normalizeHexColor(overrides.DiffHunkHeaderHex),
+	normalized := overrides
+	visitPaletteColors(&normalized, func(color *string) {
+		*color = normalizeHexColor(*color)
+	})
+	return normalized
+}
+
+func visitPaletteColors(palette *Palette, visit func(color *string)) {
+	for _, color := range paletteColorPointers(palette) {
+		visit(color)
+	}
+}
+
+func visitPaletteColorPairs(left *Palette, right *Palette, visit func(leftColor *string, rightColor *string)) {
+	leftColors := paletteColorPointers(left)
+	rightColors := paletteColorPointers(right)
+	for index := range leftColors {
+		visit(leftColors[index], rightColors[index])
+	}
+}
+
+func paletteColorPointers(palette *Palette) []*string {
+	return []*string{
+		&palette.ActiveBorderHex,
+		&palette.InactiveBorderHex,
+		&palette.ActiveTextHex,
+		&palette.InactiveTextHex,
+		&palette.InactiveTitleHex,
+		&palette.SuccessHex,
+		&palette.FailureHex,
+		&palette.PendingHex,
+		&palette.MutedHex,
+		&palette.PullRequestReferenceHex,
+		&palette.PullRequestTitleHex,
+		&palette.SelectedLineBackgroundHex,
+		&palette.SearchHighlightHex,
+		&palette.MarkdownHeadingHex,
+		&palette.MarkdownHeadingBackgroundHex,
+		&palette.MarkdownLinkHex,
+		&palette.MarkdownCodeHex,
+		&palette.SyntaxKeywordHex,
+		&palette.SyntaxFunctionHex,
+		&palette.SyntaxTypeHex,
+		&palette.SyntaxPropertyHex,
+		&palette.SyntaxStringHex,
+		&palette.SyntaxNumberHex,
+		&palette.SyntaxCommentHex,
+		&palette.CommentAuthorBadgeForegroundHex,
+		&palette.CommentAuthorBadgeBackgroundHex,
+		&palette.PullRequestStatusOpenForegroundHex,
+		&palette.PullRequestStatusOpenBackgroundHex,
+		&palette.PullRequestStatusDraftForegroundHex,
+		&palette.PullRequestStatusDraftBackgroundHex,
+		&palette.PullRequestStatusClosedForegroundHex,
+		&palette.PullRequestStatusClosedBackgroundHex,
+		&palette.PullRequestStatusMergedForegroundHex,
+		&palette.PullRequestStatusMergedBackgroundHex,
+		&palette.DiffAdditionForegroundHex,
+		&palette.DiffAdditionBackgroundHex,
+		&palette.DiffAdditionHighlightBackgroundHex,
+		&palette.DiffDeletionForegroundHex,
+		&palette.DiffDeletionBackgroundHex,
+		&palette.DiffDeletionHighlightBackgroundHex,
+		&palette.DiffLineNumberHex,
+		&palette.DiffHunkHeaderHex,
 	}
 }
 

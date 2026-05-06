@@ -90,6 +90,27 @@ func TestResolvePalette_GivenDarkSystemPolarityAndPartialOverrides_WhenResolving
 	then_paletteUsesDarkDefaults(t, actual)
 }
 
+func TestMergePalette_GivenSparseOverrides_WhenMerging_ThenItReplacesOnlyConfiguredFieldsAcrossTheWholePalette(t *testing.T) {
+	actual := mergePalette(Palette{
+		ActiveBorderHex:                    "#111111",
+		CommentAuthorBadgeBackgroundHex:    "#222222",
+		DiffDeletionHighlightBackgroundHex: "#333333",
+	}, Palette{
+		ActiveBorderHex:                    "#AAAAAA",
+		CommentAuthorBadgeBackgroundHex:    "",
+		DiffDeletionHighlightBackgroundHex: "#BBBBBB",
+	})
+
+	expected := Palette{
+		ActiveBorderHex:                    "#AAAAAA",
+		CommentAuthorBadgeBackgroundHex:    "#222222",
+		DiffDeletionHighlightBackgroundHex: "#BBBBBB",
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected merged palette %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestResetPalette_GivenDarkSystemPolarity_WhenResetting_ThenItRestoresTheDarkDefaultPalette(t *testing.T) {
 	t.Cleanup(ResetPalette)
 	given_systemPolarityDetector(t, func() systemPolarity { return systemPolarityDark })
