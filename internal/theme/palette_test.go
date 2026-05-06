@@ -10,9 +10,11 @@ const (
 	darkDefaultSelectedLineBackgroundHex    = "#21262D"
 	darkDefaultMarkdownHeadingHex           = "#F0F6FC"
 	darkDefaultMarkdownHeadingBackgroundHex = "#58A6FF"
+	darkDefaultPullRequestReferenceHex      = "#8B949E"
 	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
 	lightDefaultActiveTextHex               = "#000000"
 	lightDefaultSelectedLineBackgroundHex   = "#E6E6E6"
+	lightDefaultPullRequestReferenceHex     = "#656D76"
 )
 
 func TestDefaultPalette_GivenDarkSystemPolarity_WhenResolving_ThenItUsesDarkDefaults(t *testing.T) {
@@ -127,6 +129,19 @@ func TestApplyPalette_GivenMarkdownHeadingBackgroundOverride_WhenApplying_ThenIt
 	}
 }
 
+func TestApplyPalette_GivenPullRequestReferenceOverride_WhenApplying_ThenItUpdatesThePackageColor(t *testing.T) {
+	t.Cleanup(ResetPalette)
+
+	ApplyPalette(Palette{PullRequestReferenceHex: "#54546D"})
+
+	if PullRequestReferenceHex != "#54546D" {
+		t.Fatalf("expected pull request reference color %q, actual %q", "#54546D", PullRequestReferenceHex)
+	}
+	if ActiveTextHex != DefaultPalette().ActiveTextHex {
+		t.Fatalf("expected untouched active text color %q, actual %q", DefaultPalette().ActiveTextHex, ActiveTextHex)
+	}
+}
+
 func given_systemPolarityDetector(t *testing.T, detector func() systemPolarity) {
 	t.Helper()
 
@@ -152,6 +167,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.MarkdownHeadingBackgroundHex != darkDefaultMarkdownHeadingBackgroundHex {
 		t.Fatalf("expected markdown heading background %q, actual %q", darkDefaultMarkdownHeadingBackgroundHex, actual.MarkdownHeadingBackgroundHex)
 	}
+	if actual.PullRequestReferenceHex != darkDefaultPullRequestReferenceHex {
+		t.Fatalf("expected pull request reference color %q, actual %q", darkDefaultPullRequestReferenceHex, actual.PullRequestReferenceHex)
+	}
 	if actual.DiffAdditionBackgroundHex != darkDefaultDiffAdditionBackgroundHex {
 		t.Fatalf("expected diff addition background %q, actual %q", darkDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)
 	}
@@ -165,5 +183,8 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.SelectedLineBackgroundHex != lightDefaultSelectedLineBackgroundHex {
 		t.Fatalf("expected selected line background %q, actual %q", lightDefaultSelectedLineBackgroundHex, actual.SelectedLineBackgroundHex)
+	}
+	if actual.PullRequestReferenceHex != lightDefaultPullRequestReferenceHex {
+		t.Fatalf("expected pull request reference color %q, actual %q", lightDefaultPullRequestReferenceHex, actual.PullRequestReferenceHex)
 	}
 }

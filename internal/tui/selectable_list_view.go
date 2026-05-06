@@ -2,9 +2,13 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 type selectableListViewState struct {
@@ -33,10 +37,20 @@ func (program *Program) renderSelectableListView(view *gocui.View, state selecta
 
 	showSelectedLine := program.usesManualSelectedLineRendering(state.query) && program.shouldHighlightSelection(state.focus, true)
 	for visibleIndex, item := range state.items {
-		program.renderHighlightedLine(view, program.displayItemTitle(item), state.query, showSelectedLine && visibleIndex == state.selectedVisibleLine)
+		program.renderItemLine(view, item, state.query, showSelectedLine && visibleIndex == state.selectedVisibleLine)
 	}
 
 	program.selectListLine(view, state.selectedVisibleLine, len(state.items))
+}
+
+func (program *Program) renderItemLine(view *gocui.View, item Item, query string, selected bool) {
+	text := program.displayItemTitle(item)
+	if len(item.TitleSegments) == 0 || text != item.Title {
+		program.renderHighlightedLine(view, text, query, selected)
+		return
+	}
+
+	fmt.Fprintln(view, renderStyledItemTitle(item.Title, item.TitleSegments, query, selected))
 }
 
 func (program *Program) renderHighlightedLine(view *gocui.View, text string, query string, selected bool) {
@@ -47,6 +61,82 @@ func (program *Program) renderHighlightedLine(view *gocui.View, text string, que
 		highlightedText, _ = highlightSearchMatches(text, query)
 	}
 	fmt.Fprintln(view, highlightedText)
+}
+
+func renderStyledItemTitle(title string, segments []ItemTitleSegment, query string, selected bool) string {
+	if len(segments) == 0 {
+		return title
+	}
+
+	matchRanges := titleMatchRanges(title, query)
+	selectedPrefix := ""
+	matchPrefix := backgroundColorEscape(theme.SearchHighlightHex)
+	if selected {
+		selectedPrefix = ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+		matchPrefix = ansiBold + backgroundColorEscape(theme.SearchHighlightHex)
+	}
+
+	var builder strings.Builder
+	currentPrefix := ""
+	globalIndex := 0
+	rangeIndex := 0
+	for _, segment := range segments {
+		for _, character := range segment.Text {
+			for rangeIndex < len(matchRanges) && globalIndex >= matchRanges[rangeIndex].end {
+				rangeIndex++
+			}
+
+			prefix := segment.Prefix + selectedPrefix
+			if rangeIndex < len(matchRanges) && globalIndex >= matchRanges[rangeIndex].start && globalIndex < matchRanges[rangeIndex].end {
+				prefix = segment.Prefix + matchPrefix
+			}
+			if prefix != currentPrefix {
+				if currentPrefix != "" {
+					builder.WriteString(ansiReset)
+				}
+				if prefix != "" {
+					builder.WriteString(prefix)
+				}
+				currentPrefix = prefix
+			}
+
+			builder.WriteRune(character)
+			globalIndex++
+		}
+	}
+	if currentPrefix != "" {
+		builder.WriteString(ansiReset)
+	}
+
+	return builder.String()
+}
+
+type titleMatchRange struct {
+	start int
+	end   int
+}
+
+func titleMatchRanges(title string, query string) []titleMatchRange {
+	trimmedQuery := strings.TrimSpace(query)
+	if trimmedQuery == "" {
+		return nil
+	}
+
+	pattern := regexp.MustCompile(`(?i)` + regexp.QuoteMeta(trimmedQuery))
+	byteRanges := pattern.FindAllStringIndex(title, -1)
+	if len(byteRanges) == 0 {
+		return nil
+	}
+
+	matchRanges := make([]titleMatchRange, 0, len(byteRanges))
+	for _, byteRange := range byteRanges {
+		matchRanges = append(matchRanges, titleMatchRange{
+			start: utf8.RuneCountInString(title[:byteRange[0]]),
+			end:   utf8.RuneCountInString(title[:byteRange[1]]),
+		})
+	}
+
+	return matchRanges
 }
 
 func (program *Program) usesManualSelectedLineRendering(query string) bool {

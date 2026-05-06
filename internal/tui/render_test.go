@@ -6,6 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
@@ -191,6 +192,25 @@ func TestLayout_GivenDetailFocus_WhenRendering_ThenTheSourceViewKeepsTheSelected
 	if !pullRequestsView.HighlightInactive {
 		t.Fatal("expected source view to keep inactive highlight while detail is focused")
 	}
+}
+
+func TestLayout_GivenPullRequestListRows_WhenRendering_ThenItUsesThePullRequestReferenceColorForTheRepositoryAndNumberSegment(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:      "First PR",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, theme.PullRequestReferenceHex), "pull request reference")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, theme.InactiveTextHex), "pull request title")
 }
 
 func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(t *testing.T) {

@@ -17,9 +17,15 @@ const (
 	RequestedPullRequestsTab
 )
 
+type ItemTitleSegment struct {
+	Text   string
+	Prefix string
+}
+
 type Item struct {
-	Title  string
-	Detail string
+	Title         string
+	Detail        string
+	TitleSegments []ItemTitleSegment
 }
 
 type PullRequestRow struct {

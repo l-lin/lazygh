@@ -131,15 +131,17 @@ active_border = " #7E9CD8 "
 inactive_border = "#54546D"
 selected_line_background = "wrong"
 markdown_heading = "#1F1F28"
+pull_request_reference = "#656D76"
 `)
 
 	actual, actualErr := when_loading(configPath)
 
 	then_noError(t, actualErr)
 	expected := Config{Theme: theme.Palette{
-		ActiveBorderHex:    "#7E9CD8",
-		InactiveBorderHex:  "#54546D",
-		MarkdownHeadingHex: "#1F1F28",
+		ActiveBorderHex:         "#7E9CD8",
+		InactiveBorderHex:       "#54546D",
+		MarkdownHeadingHex:      "#1F1F28",
+		PullRequestReferenceHex: "#656D76",
 	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)

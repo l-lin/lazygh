@@ -7,6 +7,7 @@ import (
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 const (
@@ -182,11 +183,17 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 		body,
 	}
 
+	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
+	titleSuffix := " " + valueOrDash(pullRequest.Title)
 	summaryCopy := pullRequest
 	return PullRequestRow{
 		Item: Item{
-			Title:  fmt.Sprintf("%s#%d %s", repositoryName, pullRequest.Number, valueOrDash(pullRequest.Title)),
+			Title:  titlePrefix + titleSuffix,
 			Detail: strings.Join(detailLines, "\n"),
+			TitleSegments: []ItemTitleSegment{
+				{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex)},
+				{Text: titleSuffix},
+			},
 		},
 		Summary: &summaryCopy,
 	}

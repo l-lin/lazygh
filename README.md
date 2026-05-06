@@ -77,6 +77,7 @@ Configure palette overrides under `[theme]`.
 - Every color key is optional.
 - Values must use the `#RRGGBB` format.
 - `markdown_heading_background` controls the full-line heading fill.
+- `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - Missing or invalid colors fall back to the built-in palette.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
 
@@ -100,6 +101,7 @@ This example overrides only a few colors.
 active_border = "#7E9CD8"
 inactive_border = "#54546D"
 selected_line_background = "#363646"
+pull_request_reference = "#656D76"
 markdown_heading = "#7E9CD8"
 markdown_heading_background = "#223249"
 syntax_keyword = "#957FB8"

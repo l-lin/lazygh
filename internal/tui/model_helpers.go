@@ -44,15 +44,17 @@ func pageDelta(pageSize int) int {
 }
 
 func copyItems(items []Item) []Item {
-	copiedItems := make([]Item, len(items))
-	copy(copiedItems, items)
+	copiedItems := make([]Item, 0, len(items))
+	for _, item := range items {
+		copiedItems = append(copiedItems, copyItem(item))
+	}
 	return copiedItems
 }
 
 func copyPullRequestRows(rows []PullRequestRow) []PullRequestRow {
 	copiedRows := make([]PullRequestRow, 0, len(rows))
 	for _, row := range rows {
-		copiedRow := PullRequestRow{Item: row.Item}
+		copiedRow := PullRequestRow{Item: copyItem(row.Item)}
 		if row.Summary != nil {
 			summaryCopy := *row.Summary
 			copiedRow.Summary = &summaryCopy
@@ -62,10 +64,20 @@ func copyPullRequestRows(rows []PullRequestRow) []PullRequestRow {
 	return copiedRows
 }
 
+func copyItem(item Item) Item {
+	copied := Item{Title: item.Title, Detail: item.Detail}
+	if len(item.TitleSegments) == 0 {
+		return copied
+	}
+
+	copied.TitleSegments = append([]ItemTitleSegment(nil), item.TitleSegments...)
+	return copied
+}
+
 func pullRequestRowsFromItems(items []Item) []PullRequestRow {
 	rows := make([]PullRequestRow, 0, len(items))
 	for _, item := range items {
-		rows = append(rows, PullRequestRow{Item: item})
+		rows = append(rows, PullRequestRow{Item: copyItem(item)})
 	}
 	return rows
 }
