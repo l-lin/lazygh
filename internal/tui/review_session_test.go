@@ -179,7 +179,7 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	for _, expected := range []string{detailRepositoryIcon + " acme/widgets#42", detailAuthorIcon + " @octocat", "Created: 2026-04-18 10:00 UTC", "Updated: 2026-04-18 12:30 UTC", "+12", "-3", detailLabelIcon + " bug", detailAssigneesIcon + " @assignee-one", detailReviewRequestsIcon + " @reviewer-requested", "Rendered body 42"} {
+	for _, expected := range []string{"acme/widgets#42 First PR", "Created by", "@octocat", "the 2026-04-18 10:00 UTC", "(last updated at 2026-04-18 12:30 UTC)", "Assigned to", "@assignee-one", detailStatusIcon + " OPEN", "+12", "-3", detailLabelIcon + " bug", detailReviewRequestsIcon + " @reviewer-requested", "Rendered body 42"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the review detail pane to contain %q, actual %q", expected, detailView.Buffer())
 		}
@@ -193,8 +193,8 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q when focusing view 0 from metadata, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	if !strings.Contains(detailView.Buffer(), detailAuthorIcon+" @octocat") || !strings.Contains(detailView.Buffer(), "Rendered body 42") {
-		t.Fatalf("expected the review detail pane to keep showing the rendered description with metadata, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "Created by") || !strings.Contains(detailView.Buffer(), "@octocat") || !strings.Contains(detailView.Buffer(), "Rendered body 42") {
+		t.Fatalf("expected the review detail pane to keep showing the rendered overview with metadata, actual %q", detailView.Buffer())
 	}
 
 	actualErr = subject.focusPullRequestsView(gui, nil)
@@ -697,7 +697,7 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullReq
 
 	metadataView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
-	for _, expected := range []string{"First PR", detailRepositoryIcon + " acme/widgets#42", detailAuthorIcon + " @octocat", detailBranchIcon + " main ← feature/review", detailStatusIcon + " OPEN", detailLabelIcon + " bug", detailAssigneesIcon + " @assignee-one", detailReviewRequestsIcon + " @acme/platform"} {
+	for _, expected := range []string{"acme/widgets#42 First PR", "Created by", "@octocat", "Assigned to", "@assignee-one", "main ← feature/review", detailStatusIcon + " OPEN", detailLabelIcon + " bug", detailReviewRequestsIcon + " @acme/platform"} {
 		if !strings.Contains(metadataView.Buffer(), expected) {
 			t.Fatalf("expected review metadata to contain %q, actual %q", expected, metadataView.Buffer())
 		}
@@ -832,7 +832,7 @@ func TestBrowserMode_GivenReviewRenderingSupport_WhenRefreshingThePullRequestDet
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 1)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)"}, 1)
 	if strings.Contains(detailView.Buffer(), "Conversation · resolved") {
 		t.Fatalf("expected browser mode to keep the existing comments-tab formatter, actual %q", detailView.Buffer())
 	}

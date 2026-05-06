@@ -25,7 +25,7 @@ const (
 	detailReviewRequestsIcon        = "󰀆"
 	detailLabelIcon                 = "󰓼"
 	detailBranchIcon                = ""
-	detailStatusIcon                = ""
+	detailStatusIcon                = pullRequestIcon
 	detailChecksIcon                = "󰄬"
 	detailApprovalIcon              = ""
 	detailInlineCommentLocationIcon = ""
@@ -56,7 +56,7 @@ func (tab DetailTab) Label() string {
 	case CommentsDetailTab:
 		return fmt.Sprintf("%s Conversations", detailCommentsIcon)
 	default:
-		return fmt.Sprintf("%s Description", detailDescriptionIcon)
+		return fmt.Sprintf("%s Overview", detailDescriptionIcon)
 	}
 }
 

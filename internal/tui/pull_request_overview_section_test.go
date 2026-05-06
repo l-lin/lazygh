@@ -8,11 +8,14 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_ThenItKeepsOnlyTheMainMetadata(t *testing.T) {
-	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_ThenItKeepsOnlyTheMainOverviewMetadata(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "Overview PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
 	detail := githubcli.PullRequestDetail{
 		Number:            42,
+		Author:            &githubcli.PullRequestAuthor{Login: "octocat"},
 		State:             "OPEN",
+		CreatedAt:         "2026-04-18T10:00:00Z",
+		UpdatedAt:         "2026-04-18T12:30:00Z",
 		BaseRefName:       "main",
 		HeadRefName:       "feature/overview",
 		Assignees:         []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
@@ -21,16 +24,17 @@ func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_T
 		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"}},
 	}
 
-	actual := renderPullRequestBrowserHeader(summary, detail)
+	actualDocument := newDetailDocument(renderPullRequestBrowserHeader(summary, detail), 120)
+	actualText := string(actualDocument.text)
 
-	for _, expected := range []string{detailBranchIcon + " main ← feature/overview", detailStatusIcon + " OPEN", detailAssigneesIcon + " @assignee-one"} {
-		if !strings.Contains(actual, expected) {
-			t.Fatalf("expected browser header to contain %q, actual %q", expected, actual)
+	for _, expected := range []string{"acme/widgets#42 Overview PR", "Created by", "@octocat", "Assigned to", "@assignee-one", "main ← feature/overview", detailStatusIcon + " OPEN"} {
+		if !strings.Contains(actualText, expected) {
+			t.Fatalf("expected browser header to contain %q, actual %q", expected, actualText)
 		}
 	}
-	for _, unexpected := range []string{detailChecksIcon, detailReviewRequestsIcon, detailApprovalIcon} {
-		if strings.Contains(actual, unexpected) {
-			t.Fatalf("expected browser header to omit %q, actual %q", unexpected, actual)
+	for _, unexpected := range []string{detailChecksIcon, detailReviewRequestsIcon, detailApprovalIcon, detailBranchIcon, detailAssigneesIcon} {
+		if strings.Contains(actualText, unexpected) {
+			t.Fatalf("expected browser header to omit %q, actual %q", unexpected, actualText)
 		}
 	}
 }

@@ -21,29 +21,28 @@ func renderPullRequestBrowserHeader(summary githubcli.PullRequest, detail github
 }
 
 func renderPullRequestHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, options pullRequestHeaderOptions) string {
-	headerLines := []string{
-		renderPullRequestContextLine(summary, detail),
-		pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title)),
-		renderPullRequestMetaLineWithOptions(summary, detail, options.includeStatusChecks),
-	}
-	metadataLines := []string{
-		renderPullRequestLabelsLine(detail.Labels),
+	headerLines := filterEmptyStrings([]string{
+		renderPullRequestTitleAndReferenceLine(summary, detail),
+		renderPullRequestLifecycleLine(summary, detail),
 		renderPullRequestAssigneesLine(detail.Assignees),
-	}
+	})
+	metadataLines := filterEmptyStrings([]string{
+		renderPullRequestMetaLineWithOptions(summary, detail, options.includeStatusChecks),
+		renderPullRequestLabelsLine(detail.Labels),
+	})
 	if options.includeReviewers {
-		metadataLines = append(metadataLines,
+		metadataLines = append(metadataLines, filterEmptyStrings([]string{
 			renderPullRequestReviewRequestsLine(detail.ReviewRequests),
 			renderPullRequestApprovalsLine(detail.Reviews),
-		)
+		})...)
 	}
-	for _, line := range metadataLines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		headerLines = append(headerLines, line)
+	if len(metadataLines) == 0 {
+		return strings.Join(headerLines, "\n")
 	}
-
-	return strings.Join(headerLines, "\n")
+	if len(headerLines) == 0 {
+		return strings.Join(metadataLines, "\n")
+	}
+	return strings.Join(append(append(headerLines, ""), metadataLines...), "\n")
 }
 
 func renderPullRequestDescription(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int) string {
@@ -92,15 +91,13 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 }
 
 func renderPullRequestMetaLineWithOptions(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, includeStatusChecks bool) string {
-	parts := make([]string, 0, 6)
+	parts := []string{renderPullRequestStatusBadge(detailStatus(detail, summary))}
 
 	baseRefName := strings.TrimSpace(detail.BaseRefName)
 	headRefName := strings.TrimSpace(detail.HeadRefName)
 	if baseRefName != "" || headRefName != "" {
-		parts = append(parts, fmt.Sprintf("%s %s ← %s", detailBranchIcon, compactBranchLabel(valueOrDash(baseRefName)), compactBranchLabel(valueOrDash(headRefName))))
+		parts = append(parts, fmt.Sprintf("%s ← %s", valueOrDash(baseRefName), valueOrDash(headRefName)))
 	}
-
-	parts = append(parts, renderPullRequestStatusBadge(detailStatus(detail, summary)))
 
 	if includeStatusChecks {
 		checkSummary := summarizeStatusChecks(detail.StatusCheckRollup)
@@ -109,11 +106,8 @@ func renderPullRequestMetaLineWithOptions(summary githubcli.PullRequest, detail 
 		}
 	}
 
-	commentCount := pullRequestDetailCommentCount(detail)
-	parts = append(parts, fmt.Sprintf("%s %s", detailCommentsIcon, formatCommentCount(commentCount)))
 	parts = append(parts, renderPullRequestChurnParts(detail)...)
-
-	return strings.Join(parts, "  ")
+	return strings.Join(filterEmptyStrings(parts), "  ")
 }
 
 func renderPullRequestDetailContent(header string, content string) string {

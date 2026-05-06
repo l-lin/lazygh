@@ -59,19 +59,48 @@ func pullRequestStatusStyleFor(status string) (pullRequestStatusStyle, bool) {
 	}
 }
 
-func renderPullRequestContextLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
-	parts := []string{fmt.Sprintf("%s %s#%d", detailRepositoryIcon, pullRequestRepositoryName(summary.Repository), firstNonZero(detail.Number, summary.Number))}
-	authorLogin := pullRequestAuthorLogin(detail.Author)
-	if authorLogin != "-" {
-		parts = append(parts, fmt.Sprintf("%s %s", detailAuthorIcon, authorLogin))
+func renderPullRequestTitleAndReferenceLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	reference := pullRequestReference(summary, detail)
+	title := pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title))
+	if reference == "" {
+		return stylePullRequestTitleText(title)
 	}
-	if createdAt := formattedOptionalTimestamp(detail.CreatedAt); createdAt != "" {
-		parts = append(parts, "Created: "+createdAt)
+	return stylePullRequestReferenceText(reference) + " " + stylePullRequestTitleText(title)
+}
+
+func pullRequestReference(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	number := firstNonZero(detail.Number, summary.Number)
+	if number <= 0 {
+		return repository
 	}
-	if updatedAt := formattedOptionalTimestamp(firstNonEmpty(detail.UpdatedAt, summary.UpdatedAt)); updatedAt != "" {
-		parts = append(parts, "Updated: "+updatedAt)
+	return fmt.Sprintf("%s#%d", repository, number)
+}
+
+func renderPullRequestLifecycleLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+	authorBadge := renderPullRequestActorBadge(pullRequestAuthorLogin(detail.Author))
+	createdAt := formattedOptionalTimestamp(detail.CreatedAt)
+	updatedAt := formattedOptionalTimestamp(firstNonEmpty(detail.UpdatedAt, summary.UpdatedAt))
+
+	var builder strings.Builder
+	if authorBadge != "" || createdAt != "" {
+		builder.WriteString(stylePullRequestTitleText("Created"))
+		if authorBadge != "" {
+			builder.WriteString(stylePullRequestTitleText(" by "))
+			builder.WriteString(authorBadge)
+		}
+		if createdAt != "" {
+			builder.WriteString(stylePullRequestMutedText(" the " + createdAt))
+		}
+		if updatedAt != "" {
+			builder.WriteString(stylePullRequestMutedText(" (last updated at " + updatedAt + ")"))
+		}
+		return builder.String()
 	}
-	return strings.Join(parts, "  ")
+	if updatedAt != "" {
+		return stylePullRequestMutedText("Last updated at " + updatedAt)
+	}
+	return ""
 }
 
 func renderPullRequestLabelsLine(labels []githubcli.PullRequestLabel) string {
@@ -86,22 +115,42 @@ func renderPullRequestLabelsLine(labels []githubcli.PullRequestLabel) string {
 	if len(entries) == 0 {
 		return ""
 	}
-	return strings.Join(entries, "  ")
+	return stylePullRequestMutedText(strings.Join(entries, "  "))
 }
 
 func renderPullRequestAssigneesLine(assignees []githubcli.PullRequestAuthor) string {
 	entries := make([]string, 0, len(assignees))
 	for _, assignee := range assignees {
-		login := pullRequestAssigneeLogin(&assignee)
-		if login == "-" {
+		badge := renderPullRequestActorBadge(pullRequestAssigneeLogin(&assignee))
+		if badge == "" {
 			continue
 		}
-		entries = append(entries, detailAssigneesIcon+" "+login)
+		entries = append(entries, badge)
 	}
 	if len(entries) == 0 {
 		return ""
 	}
-	return strings.Join(entries, "  ")
+	return stylePullRequestTitleText("Assigned to ") + strings.Join(entries, " ")
+}
+
+func renderPullRequestActorBadge(login string) string {
+	trimmedLogin := strings.TrimSpace(login)
+	if trimmedLogin == "" || trimmedLogin == "-" {
+		return ""
+	}
+	return renderRoundedPill(trimmedLogin, theme.CommentAuthorBadgeHex, theme.CommentAuthorBadgeBackgroundHex)
+}
+
+func stylePullRequestReferenceText(text string) string {
+	return styleText(text, foregroundColorEscape(theme.PullRequestReferenceHex))
+}
+
+func stylePullRequestTitleText(text string) string {
+	return styleText(text, foregroundColorEscape(theme.PullRequestTitleHex))
+}
+
+func stylePullRequestMutedText(text string) string {
+	return styleText(text, foregroundColorEscape(theme.PullRequestReferenceHex))
 }
 
 func renderPullRequestReviewRequestsLine(reviewRequests []githubcli.PullRequestReviewRequest) string {

@@ -113,9 +113,9 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	expectedSeparator := strings.Repeat("─", detailView.InnerWidth())
-	for _, expected := range []string{" Reviewers (1/2)", " Merge Checks", " Builds", "Rendered body 101"} {
+	for _, expected := range []string{"acme/widgets#101 First PR", " Reviewers (1/2)", " Merge Checks", " Builds", "Rendered body 101"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
-			t.Fatalf("expected the description tab to contain %q, actual %q", expected, detailView.Buffer())
+			t.Fatalf("expected the overview tab to contain %q, actual %q", expected, detailView.Buffer())
 		}
 	}
 	for _, hidden := range []string{"@reviewer-requested", "CI / lint (Successful)", "Changes can be cleanly merged."} {
@@ -131,9 +131,9 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 		t.Fatalf("expected header, folded overview, separator, and body to stay ordered, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
-		t.Fatalf("expected description tab to hide comments, actual %q", detailView.Buffer())
+		t.Fatalf("expected overview tab to hide comments, actual %q", detailView.Buffer())
 	}
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 0)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)"}, 0)
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101"}, loader.detailCalls)
 	}
@@ -142,9 +142,9 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	then_noError(t, actualErr)
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	for _, hidden := range []string{detailRepositoryIcon + " acme/widgets#101", detailStatusIcon + " OPEN", "Reviewers", "Merge Checks", "Builds", "Rendered body 101"} {
+	for _, hidden := range []string{"acme/widgets#101 First PR", detailStatusIcon + " OPEN", "Reviewers", "Merge Checks", "Builds", "Rendered body 101"} {
 		if strings.Contains(detailView.Buffer(), hidden) {
-			t.Fatalf("expected the conversations tab to hide description metadata %q, actual %q", hidden, detailView.Buffer())
+			t.Fatalf("expected the conversations tab to hide overview metadata %q, actual %q", hidden, detailView.Buffer())
 		}
 	}
 	for _, expected := range []string{" Comment", "Rendered comment 101", " Comment on line R43", detailInlineCommentLocationIcon + " internal/tui/render.go:43  +1  -1", "Rendered inline 101"} {
@@ -152,7 +152,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 			t.Fatalf("expected the conversations tab to contain %q, actual %q", expected, detailView.Buffer())
 		}
 	}
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 1)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)"}, 1)
 
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
@@ -277,7 +277,7 @@ func TestBrowserMode_GivenTheCursorOnAConversation_WhenPressingZA_ThenItTogglesT
 	}
 }
 
-func TestLayout_GivenDescriptionHeaderMetadata_WhenRendering_ThenTheDescriptionTabShowsColoredChurnAndTimestamps(t *testing.T) {
+func TestLayout_GivenOverviewHeaderMetadata_WhenRendering_ThenTheOverviewTabShowsColoredChurnAndLifecycleTimestamps(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
@@ -285,7 +285,7 @@ func TestLayout_GivenDescriptionHeaderMetadata_WhenRendering_ThenTheDescriptionT
 	})
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#118": {Title: "Styled PR", Number: 118, Body: "Body 118", BaseRefName: "main", HeadRefName: "feature-118", State: "OPEN", CreatedAt: "2026-04-18T10:00:00Z", UpdatedAt: "2026-04-18T12:30:00Z", Additions: 12, Deletions: 3, ChangedFiles: 5},
+			"acme/widgets#118": {Title: "Styled PR", Number: 118, Body: "Body 118", Author: &githubcli.PullRequestAuthor{Login: "octocat"}, BaseRefName: "main", HeadRefName: "feature-118", State: "OPEN", CreatedAt: "2026-04-18T10:00:00Z", UpdatedAt: "2026-04-18T12:30:00Z", Additions: 12, Deletions: 3, ChangedFiles: 5},
 		},
 	}
 	subject := NewProgramWithModelAndLoader(model, loader)
@@ -304,7 +304,7 @@ func TestLayout_GivenDescriptionHeaderMetadata_WhenRendering_ThenTheDescriptionT
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	for _, expected := range []string{"Created: 2026-04-18 10:00 UTC", "Updated: 2026-04-18 12:30 UTC", "+12", "-3", "Rendered body 118"} {
+	for _, expected := range []string{"Created by", "the 2026-04-18 10:00 UTC", "(last updated at 2026-04-18 12:30 UTC)", "+12", "-3", "Rendered body 118"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected detail buffer to contain %q, actual %q", expected, detailView.Buffer())
 		}

@@ -10,7 +10,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItShowsACompactHeaderWithIcons(t *testing.T) {
+func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItShowsTheOverviewReferenceLifecycleAndStatusLines(t *testing.T) {
 	summary := githubcli.PullRequest{
 		Title:      "Fallback title",
 		Number:     42,
@@ -46,28 +46,24 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 	}
 
 	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
-	actual := make([]string, 0, len(actualDocument.lines))
-	for _, line := range actualDocument.lines {
-		actual = append(actual, string(line))
-	}
-	actualText := strings.Join(actual, "\n")
+	actualText := string(actualDocument.text)
 
 	for _, expected := range []string{
-		detailRepositoryIcon + " acme/widgets#42",
-		detailAuthorIcon + " @octocat",
-		"Add a real detail pane",
-		"Created: 2026-04-18 10:00 UTC",
-		"Updated: 2026-04-18 12:30 UTC",
-		detailBranchIcon + " main ← feature/detail",
+		"acme/widgets#42 Add a real detail pane",
+		"Created by",
+		"@octocat",
+		"the 2026-04-18 10:00 UTC",
+		"(last updated at 2026-04-18 12:30 UTC)",
+		"Assigned to",
+		"@assignee-one",
+		"@assignee-two",
 		detailStatusIcon + " OPEN",
+		"main ← feature/detail",
 		detailChecksIcon + " 1 passing, 1 failing",
-		detailCommentsIcon + " 1 comment",
 		"+12",
 		"-3",
 		detailLabelIcon + " bug",
 		detailLabelIcon + " backend",
-		detailAssigneesIcon + " @assignee-one",
-		detailAssigneesIcon + " @assignee-two",
 		detailReviewRequestsIcon + " @reviewer-requested",
 		detailReviewRequestsIcon + " @acme/platform",
 	} {
@@ -75,13 +71,63 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 			t.Fatalf("expected header to contain %q, actual %q", expected, actualText)
 		}
 	}
+	for _, unexpected := range []string{"Created:", "Updated:", detailCommentsIcon + " 1 comment"} {
+		if strings.Contains(actualText, unexpected) {
+			t.Fatalf("expected header to omit %q, actual %q", unexpected, actualText)
+		}
+	}
 	if strings.Contains(actualText, "  ·  ") {
 		t.Fatalf("expected header metadata to avoid dot separators, actual %q", actualText)
 	}
 }
 
-func TestRenderPullRequestDetailHeader_GivenInlineCommentThreadsAndRestInlineComments_WhenFormatting_ThenItCountsThreadCommentsWithoutDoubleCounting(t *testing.T) {
-	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItStylesTheReferenceLifecycleBadgesAndLabels(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "Fallback title", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+	detail := githubcli.PullRequestDetail{
+		Title:       "Add a real detail pane",
+		Number:      42,
+		Author:      &githubcli.PullRequestAuthor{Login: "octocat"},
+		CreatedAt:   "2026-04-18T10:00:00Z",
+		UpdatedAt:   "2026-04-18T12:30:00Z",
+		Labels:      []githubcli.PullRequestLabel{{Name: "bug"}},
+		Assignees:   []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
+		BaseRefName: "main",
+		HeadRefName: "feature/detail",
+		State:       "OPEN",
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
+	titleLineIndex, titleLine := given_detailDocumentLineContaining(t, actualDocument, "acme/widgets#42")
+	referenceIndex := given_runeIndexInString(t, titleLine, "acme/widgets#42")
+	titleIndex := given_runeIndexInString(t, titleLine, "Add a real detail pane")
+	lifecycleLineIndex, lifecycleLine := given_detailDocumentLineContaining(t, actualDocument, "@octocat")
+	createdByIndex := given_runeIndexInString(t, lifecycleLine, "Created by")
+	authorIndex := given_runeIndexInString(t, lifecycleLine, "@octocat")
+	dateIndex := given_runeIndexInString(t, lifecycleLine, "2026-04-18 10:00 UTC")
+	labelsLineIndex, labelsLine := given_detailDocumentLineContaining(t, actualDocument, detailLabelIcon+" bug")
+	labelIndex := given_runeIndexInString(t, labelsLine, detailLabelIcon)
+
+	if actualStylePrefix := actualDocument.lineStylePrefixes[titleLineIndex][referenceIndex]; actualStylePrefix != foregroundColorEscape(theme.PullRequestReferenceHex) {
+		t.Fatalf("expected reference prefix %q, actual %q", foregroundColorEscape(theme.PullRequestReferenceHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[titleLineIndex][titleIndex]; actualStylePrefix != foregroundColorEscape(theme.PullRequestTitleHex) {
+		t.Fatalf("expected title prefix %q, actual %q", foregroundColorEscape(theme.PullRequestTitleHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lifecycleLineIndex][createdByIndex]; actualStylePrefix != foregroundColorEscape(theme.PullRequestTitleHex) {
+		t.Fatalf("expected lifecycle prefix %q, actual %q", foregroundColorEscape(theme.PullRequestTitleHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lifecycleLineIndex][authorIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.CommentAuthorBadgeHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.CommentAuthorBadgeBackgroundHex)) {
+		t.Fatalf("expected author badge prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.CommentAuthorBadgeHex), backgroundColorEscape(theme.CommentAuthorBadgeBackgroundHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lifecycleLineIndex][dateIndex]; actualStylePrefix != foregroundColorEscape(theme.PullRequestReferenceHex) {
+		t.Fatalf("expected lifecycle timestamp prefix %q, actual %q", foregroundColorEscape(theme.PullRequestReferenceHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[labelsLineIndex][labelIndex]; actualStylePrefix != foregroundColorEscape(theme.PullRequestReferenceHex) {
+		t.Fatalf("expected labels prefix %q, actual %q", foregroundColorEscape(theme.PullRequestReferenceHex), actualStylePrefix)
+	}
+}
+
+func TestPullRequestDetailCommentCount_GivenInlineCommentThreadsAndRestInlineComments_WhenCounting_ThenItCountsThreadCommentsWithoutDoubleCounting(t *testing.T) {
 	detail := githubcli.PullRequestDetail{
 		Number: 42,
 		Comments: []githubcli.PullRequestComment{{
@@ -97,10 +143,10 @@ func TestRenderPullRequestDetailHeader_GivenInlineCommentThreadsAndRestInlineCom
 		}},
 	}
 
-	actual := renderPullRequestDetailHeader(summary, detail)
+	actual := pullRequestDetailCommentCount(detail)
 
-	if !strings.Contains(actual, detailCommentsIcon+" 3 comments") {
-		t.Fatalf("expected the header to count thread comments once, actual %q", actual)
+	if actual != 3 {
+		t.Fatalf("expected comment count %d, actual %d", 3, actual)
 	}
 }
 
@@ -127,10 +173,10 @@ func TestRenderPullRequestDetailHeader_GivenSummaryOnlyUpdatedTimestamp_WhenForm
 
 	actual := renderPullRequestDetailHeader(summary, detail)
 
-	if strings.Contains(actual, "Created:") {
-		t.Fatalf("expected the header to omit the missing created timestamp, actual %q", actual)
+	if strings.Contains(actual, "Created:") || strings.Contains(actual, "Created by") {
+		t.Fatalf("expected the header to omit the missing created metadata, actual %q", actual)
 	}
-	if !strings.Contains(actual, "Updated: 2026-04-18 12:30 UTC") {
+	if !strings.Contains(actual, "Last updated at 2026-04-18 12:30 UTC") {
 		t.Fatalf("expected the header to contain the updated timestamp, actual %q", actual)
 	}
 	if strings.Contains(actual, "  +0") || strings.Contains(actual, "  -0") {
@@ -490,11 +536,17 @@ func TestRenderPullRequestDetailHeader_GivenApprovalReviews_WhenFormatting_ThenI
 	}
 }
 
-func TestCompactBranchLabel_GivenALongBranchName_WhenFormatting_ThenItKeepsBothEndsWithAnEllipsis(t *testing.T) {
-	actual := compactBranchLabel("1234567890123ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+func TestRenderPullRequestDetailHeader_GivenALongBranchName_WhenFormatting_ThenItKeepsTheFullBranchName(t *testing.T) {
+	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+	detail := githubcli.PullRequestDetail{Number: 42, State: "OPEN", BaseRefName: "main", HeadRefName: "P3C-7048/refactor_shared_modules"}
 
-	if actual != "1234567890123…MNOPQRSTUVWXYZ" {
-		t.Fatalf("expected branch label %q, actual %q", "1234567890123…MNOPQRSTUVWXYZ", actual)
+	actual := renderPullRequestDetailHeader(summary, detail)
+
+	if !strings.Contains(actual, "main ← P3C-7048/refactor_shared_modules") {
+		t.Fatalf("expected the header to keep the full branch name, actual %q", actual)
+	}
+	if strings.Contains(actual, "…") {
+		t.Fatalf("expected the header to avoid truncating the branch name, actual %q", actual)
 	}
 }
 
