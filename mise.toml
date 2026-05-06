@@ -28,7 +28,7 @@ run = "mkdir -p bin && go build -o ./bin/lazygh ./cmd/lazygh"
 
 [tasks.fmt]
 description = "Format Go source files"
-run = "fd -e go . cmd internal -0 | xargs -0 gofmt -w"
+run = "gofmt -w ."
 
 [tasks.tidy]
 description = "Tidy Go module files"
