@@ -25,9 +25,17 @@ func TestUseDarkMarkdownStyle_GivenDarkActiveText_WhenDeciding_ThenItPrefersTheL
 	}
 }
 
-func TestGlamourMarkdownRenderer_GivenAFirstLevelHeading_WhenRendering_ThenItUsesTheThemeHeadingBackgroundWithReadableText(t *testing.T) {
+func TestGlamourMarkdownRenderer_GivenAFirstLevelHeadingBackgroundOverride_WhenRendering_ThenItUsesTheConfiguredThemeColors(t *testing.T) {
+	const (
+		expectedHeadingHex           = "#7AA2F7"
+		expectedHeadingBackgroundHex = "#223249"
+	)
+
 	t.Cleanup(theme.ResetPalette)
-	theme.ApplyPalette(theme.Palette{MarkdownHeadingHex: "#7AA2F7"})
+	theme.ApplyPalette(theme.Palette{
+		MarkdownHeadingHex:           expectedHeadingHex,
+		MarkdownHeadingBackgroundHex: expectedHeadingBackgroundHex,
+	})
 	renderer := glamourMarkdownRenderer{}
 
 	actual, actualErr := renderer.Render("# Ship it", 40)
@@ -35,8 +43,8 @@ func TestGlamourMarkdownRenderer_GivenAFirstLevelHeading_WhenRendering_ThenItUse
 	then_noError(t, actualErr)
 	actualDocument := newDetailDocument(actual, 40)
 	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, "Ship it")
-	then_linePrefixContainsBackgroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "Ship it", theme.MarkdownHeadingHex, "markdown h1 background")
-	then_linePrefixContainsForegroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "Ship it", "#000000", "markdown h1 readable foreground")
+	then_linePrefixContainsBackgroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "Ship it", expectedHeadingBackgroundHex, "markdown h1 background")
+	then_linePrefixContainsForegroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "Ship it", expectedHeadingHex, "markdown h1 foreground")
 }
 
 func TestGlamourMarkdownRenderer_GivenASecondLevelHeading_WhenRendering_ThenItKeepsTheDefaultGlamourPrefixWithThemeColor(t *testing.T) {

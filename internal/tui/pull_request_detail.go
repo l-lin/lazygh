@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/glamour"
-	"github.com/muesli/termenv"
+	"charm.land/glamour/v2"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
@@ -60,7 +59,7 @@ func (glamourMarkdownRenderer) Render(markdown string, _ int) (string, error) {
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithStyles(prettyMarkdownStyle()),
 		glamour.WithWordWrap(disabledMarkdownWordWrap),
-		glamour.WithColorProfile(termenv.TrueColor),
+		glamour.WithPreservedNewLines(),
 		glamour.WithChromaFormatter("terminal16m"),
 	)
 	if err != nil {

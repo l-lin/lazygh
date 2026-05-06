@@ -113,6 +113,19 @@ func TestApplyPalette_GivenOverrides_WhenApplying_ThenItUpdatesThePackageColors(
 	}
 }
 
+func TestApplyPalette_GivenMarkdownHeadingBackgroundOverride_WhenApplying_ThenItUpdatesThePackageColor(t *testing.T) {
+	t.Cleanup(ResetPalette)
+
+	ApplyPalette(Palette{MarkdownHeadingBackgroundHex: "#223249"})
+
+	if MarkdownHeadingBackgroundHex != "#223249" {
+		t.Fatalf("expected markdown heading background %q, actual %q", "#223249", MarkdownHeadingBackgroundHex)
+	}
+	if MarkdownHeadingHex != DefaultPalette().MarkdownHeadingHex {
+		t.Fatalf("expected untouched markdown heading color %q, actual %q", DefaultPalette().MarkdownHeadingHex, MarkdownHeadingHex)
+	}
+}
+
 func given_systemPolarityDetector(t *testing.T, detector func() systemPolarity) {
 	t.Helper()
 

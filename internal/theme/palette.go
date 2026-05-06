@@ -189,6 +189,7 @@ func ResolvePalette(overrides Palette) Palette {
 	resolved.SelectedLineBackgroundHex = resolvedColor(resolved.SelectedLineBackgroundHex, normalized.SelectedLineBackgroundHex)
 	resolved.SearchHighlightHex = resolvedColor(resolved.SearchHighlightHex, normalized.SearchHighlightHex)
 	resolved.MarkdownHeadingHex = resolvedColor(resolved.MarkdownHeadingHex, normalized.MarkdownHeadingHex)
+	resolved.MarkdownHeadingBackgroundHex = resolvedColor(resolved.MarkdownHeadingBackgroundHex, normalized.MarkdownHeadingBackgroundHex)
 	resolved.MarkdownLinkHex = resolvedColor(resolved.MarkdownLinkHex, normalized.MarkdownLinkHex)
 	resolved.MarkdownCodeHex = resolvedColor(resolved.MarkdownCodeHex, normalized.MarkdownCodeHex)
 	resolved.SyntaxKeywordHex = resolvedColor(resolved.SyntaxKeywordHex, normalized.SyntaxKeywordHex)
@@ -236,6 +237,7 @@ func applyResolvedPalette(palette Palette) {
 	SelectedLineBackgroundHex = palette.SelectedLineBackgroundHex
 	SearchHighlightHex = palette.SearchHighlightHex
 	MarkdownHeadingHex = palette.MarkdownHeadingHex
+	MarkdownHeadingBackgroundHex = palette.MarkdownHeadingBackgroundHex
 	MarkdownLinkHex = palette.MarkdownLinkHex
 	MarkdownCodeHex = palette.MarkdownCodeHex
 	SyntaxKeywordHex = palette.SyntaxKeywordHex
@@ -275,6 +277,7 @@ func normalizePalette(overrides Palette) Palette {
 		SelectedLineBackgroundHex:            normalizeHexColor(overrides.SelectedLineBackgroundHex),
 		SearchHighlightHex:                   normalizeHexColor(overrides.SearchHighlightHex),
 		MarkdownHeadingHex:                   normalizeHexColor(overrides.MarkdownHeadingHex),
+		MarkdownHeadingBackgroundHex:         normalizeHexColor(overrides.MarkdownHeadingBackgroundHex),
 		MarkdownLinkHex:                      normalizeHexColor(overrides.MarkdownLinkHex),
 		MarkdownCodeHex:                      normalizeHexColor(overrides.MarkdownCodeHex),
 		SyntaxKeywordHex:                     normalizeHexColor(overrides.SyntaxKeywordHex),

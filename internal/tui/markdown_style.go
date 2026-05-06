@@ -4,8 +4,8 @@ import (
 	"math"
 	"strconv"
 
-	glamouransi "github.com/charmbracelet/glamour/ansi"
-	glamourstyles "github.com/charmbracelet/glamour/styles"
+	glamouransi "charm.land/glamour/v2/ansi"
+	glamourstyles "charm.land/glamour/v2/styles"
 
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
