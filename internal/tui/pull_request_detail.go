@@ -56,8 +56,11 @@ func (tab DetailTab) Label() string {
 }
 
 func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
+	markdownStyle := prettyMarkdownStyle()
+	registerMarkdownChromaStyle(markdownStyle)
+
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStyles(prettyMarkdownStyle()),
+		glamour.WithStyles(markdownStyle),
 		glamour.WithWordWrap(markdownWordWrap(width)),
 		glamour.WithPreservedNewLines(),
 		glamour.WithChromaFormatter("terminal16m"),

@@ -96,6 +96,24 @@ func TestGlamourMarkdownRenderer_GivenThemeSyntaxPalette_WhenRenderingCodeFence_
 	then_linePrefixContainsBackgroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `return fmt.Sprintf("%d", value + 42)`, theme.SelectedLineBackgroundHex, "markdown code background")
 }
 
+func TestGlamourMarkdownRenderer_GivenDifferentThemeRenders_WhenRenderingCodeFenceTwice_ThenItUsesTheCurrentThemeBackgroundEachTime(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	renderer := glamourMarkdownRenderer{}
+	markdown := "```go\nfmt.Println(\"hi\")\n```"
+
+	theme.ApplyPalette(theme.Palette{SelectedLineBackgroundHex: "#232323"})
+	_, actualErr := renderer.Render(markdown, 80)
+	then_noError(t, actualErr)
+
+	theme.ResetPalette()
+	actual, actualErr := renderer.Render(markdown, 80)
+
+	then_noError(t, actualErr)
+	actualDocument := newDetailDocument(actual, 80)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("hi")`)
+	then_linePrefixContainsBackgroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `fmt.Println("hi")`, theme.SelectedLineBackgroundHex, "markdown code background after palette reset")
+}
+
 func then_linePrefixContainsForegroundHex(t *testing.T, linePrefixes []string, visibleLine string, segment string, expectedHex string, label string) {
 	t.Helper()
 	then_linePrefixContainsTrueColorHex(t, linePrefixes, visibleLine, segment, 38, expectedHex, label)

@@ -330,6 +330,36 @@ func TestLayout_GivenMarkdownHeading_WhenRendering_ThenItsBackgroundFillsTheWhol
 	then_viewLineHasBackgroundColor(t, gui, viewDetailName, headingLineIndex, given_themeColorHex(t, theme.MarkdownHeadingBackgroundHex), "markdown heading background")
 }
 
+func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItsBackgroundFillsTheWholeVisibleLine(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 113, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#113": {Title: "Styled PR", Number: 113, Body: "```go\nfmt.Println(\"hi\")\n```", BaseRefName: "main", HeadRefName: "feature-113", State: "OPEN"},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	codeLineIndex := given_viewLineIndexContaining(t, detailView, `fmt.Println("hi")`)
+	then_viewLineHasBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "markdown code block background")
+}
+
 func TestLayout_GivenRenderedMarkdownDescription_WhenRendering_ThenVisibleLinesDoNotLeakRawANSISequences(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
