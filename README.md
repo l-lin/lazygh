@@ -137,6 +137,7 @@ Use the actions popup on a pull request and pick `Review PR as story`.
 - If `[story_review].agent_command` is missing, the action fails and tells you to configure it.
 - If `[story_review].prompt` is missing, `lazygh` uses the built-in professional prompt.
 - In story review mode, view `2` shows chapters with nested files. Selecting a chapter shows its narrative in view `0`. Selecting a file shows the diff again, because chaos has limits.
+- In review-mode diff view `0`, press `c` or use the actions popup to add an inline comment when the cursor or visual selection resolves to valid diff lines.
 
 Configure the AI command under `[story_review]`.
 
@@ -261,6 +262,7 @@ previous_search_match = "N"
 enter_visual_mode = "v"
 enter_line_visual_mode = "V"
 # In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
+# On diff lines in view `0`, `c` and the actions popup both add inline comments.
 previous_tab = "["
 next_tab = "]"
 copy_pull_request_url = "y"

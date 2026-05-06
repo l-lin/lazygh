@@ -37,6 +37,38 @@ func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, view *go
 	}, reviewInlineCommentModalHeight, handleMultilineModalEditorExternalEditKey)
 }
 
+func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, bool) {
+	if !program.reviewSession.active || program.model.Focus() != FocusDetailView {
+		return actionsPopupAction{}, false
+	}
+	if _, err := program.selectedInlineReviewCommentSelection(program.gui, nil); err != nil {
+		return actionsPopupAction{}, false
+	}
+
+	return program.addInlineReviewCommentAction(), true
+}
+
+func (program *Program) addInlineReviewCommentAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "add-inline-review-comment",
+		title:    "Add inline comment",
+		icon:     actionsPopupCommentOnPullRequestIcon,
+		keywords: []string{"inline", "comment", "review", "diff", "suggestion"},
+		execute:  program.executeAddInlineReviewCommentAction,
+	}
+}
+
+func (program *Program) executeAddInlineReviewCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+	wasVisible := program.modalEditorVisible()
+	if err := program.openInlineReviewCommentComposer(gui, nil); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	if !wasVisible && program.modalEditorVisible() {
+		return actionsPopupActionResult{closePopup: true}
+	}
+	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
 type reviewInlineCommentSelection struct {
 	target      reviewInlineCommentTarget
 	initialBody string

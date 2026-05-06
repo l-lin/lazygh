@@ -22,6 +22,9 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.submitPendingReviewCommentAction(),
 			program.submitPendingReviewRequestChangesAction(),
 		)
+		if inlineCommentAction, ok := program.currentReviewInlineCommentAction(); ok {
+			actions = append(actions, inlineCommentAction)
+		}
 	} else {
 		actions = append(actions,
 			program.startReviewAction(),
