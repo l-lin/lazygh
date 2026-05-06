@@ -183,14 +183,20 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 		body,
 	}
 
+	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " "}
+	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
+		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex)
+	}
+
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
 	titleSuffix := " " + valueOrDash(pullRequest.Title)
 	summaryCopy := pullRequest
 	return PullRequestRow{
 		Item: Item{
-			Title:  titlePrefix + titleSuffix,
+			Title:  statusIconSegment.Text + titlePrefix + titleSuffix,
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
+				statusIconSegment,
 				{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex)},
 				{Text: titleSuffix, Prefix: foregroundColorEscape(theme.PullRequestTitleHex)},
 			},

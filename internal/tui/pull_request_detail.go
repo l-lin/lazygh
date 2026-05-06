@@ -18,7 +18,8 @@ const (
 
 	detailDescriptionIcon           = ""
 	detailCommentsIcon              = " "
-	detailRepositoryIcon            = ""
+	pullRequestIcon                 = ""
+	detailRepositoryIcon            = pullRequestIcon
 	detailAuthorIcon                = ""
 	detailAssigneesIcon             = "󰀄"
 	detailReviewRequestsIcon        = "󰀆"

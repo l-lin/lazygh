@@ -6,7 +6,7 @@
 The repo now boots into a three-view TUI:
 - view `0`: detail pane, including rich PR metadata, markdown body rendering, and comments from `gh pr view`
 - view `1`: connected user from `gh api user`
-- view `2`: pull requests from ordered, configurable `gh` searches, with tabs named from the config
+- view `2`: pull requests from ordered, configurable `gh` searches, rendered as ` owner/repo#123 title` rows with tabs named from the config
 
 The next milestones can focus on layout polish and extra PR actions.
 

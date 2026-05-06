@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestDefaultSeedData_GivenAFreshModel_WhenReadingMyPullRequests_ThenItStartsInALoadingState(t *testing.T) {
@@ -41,8 +42,8 @@ func TestSetPullRequests_GivenMyPullRequests_WhenSelectingThePullRequestsView_Th
 	if len(actualPullRequests) != 1 {
 		t.Fatalf("expected 1 pull request row, actual %d", len(actualPullRequests))
 	}
-	if actualPullRequests[0].Title != "doctolib/patient-account#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA" {
-		t.Fatalf("expected title %q, actual %q", "doctolib/patient-account#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA", actualPullRequests[0].Title)
+	if actualPullRequests[0].Title != " doctolib/patient-account#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA" {
+		t.Fatalf("expected title %q, actual %q", " doctolib/patient-account#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA", actualPullRequests[0].Title)
 	}
 
 	actualDetail := subject.DetailContent()
@@ -81,6 +82,102 @@ func TestSetPullRequests_GivenASelectedMyPullRequest_WhenRefreshingTheList_ThenT
 	actual := subject.SelectedPullRequestIndex(MyPullRequestsTab)
 	if actual != 1 {
 		t.Fatalf("expected selection 1, actual %d", actual)
+	}
+}
+
+func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPrependsAStateColoredIcon(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		pullRequest             githubcli.PullRequest
+		expectedIconPrefix      string
+		expectedVisibleTitle    string
+		expectedReferencePrefix string
+		expectedTitlePrefix     string
+	}{
+		{
+			name: "open",
+			pullRequest: githubcli.PullRequest{
+				Title:      "Open PR",
+				Number:     42,
+				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+				State:      "OPEN",
+			},
+			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusOpenBackgroundHex),
+			expectedVisibleTitle:    " acme/widgets#42 Open PR",
+			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
+			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
+		},
+		{
+			name: "draft",
+			pullRequest: githubcli.PullRequest{
+				Title:      "Draft PR",
+				Number:     43,
+				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+				State:      "OPEN",
+				IsDraft:    true,
+			},
+			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusDraftBackgroundHex),
+			expectedVisibleTitle:    " acme/widgets#43 Draft PR",
+			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
+			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
+		},
+		{
+			name: "closed",
+			pullRequest: githubcli.PullRequest{
+				Title:      "Closed PR",
+				Number:     44,
+				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+				State:      "CLOSED",
+			},
+			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusClosedBackgroundHex),
+			expectedVisibleTitle:    " acme/widgets#44 Closed PR",
+			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
+			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
+		},
+		{
+			name: "merged",
+			pullRequest: githubcli.PullRequest{
+				Title:      "Merged PR",
+				Number:     45,
+				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+				State:      "MERGED",
+			},
+			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusMergedBackgroundHex),
+			expectedVisibleTitle:    " acme/widgets#45 Merged PR",
+			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
+			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual := pullRequestRow(testCase.pullRequest).Item
+
+			if actual.Title != testCase.expectedVisibleTitle {
+				t.Fatalf("expected title %q, actual %q", testCase.expectedVisibleTitle, actual.Title)
+			}
+			if len(actual.TitleSegments) != 3 {
+				t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
+			}
+			if actual.TitleSegments[0].Text != " " {
+				t.Fatalf("expected icon segment text %q, actual %q", " ", actual.TitleSegments[0].Text)
+			}
+			if actual.TitleSegments[0].Prefix != testCase.expectedIconPrefix {
+				t.Fatalf("expected icon segment prefix %q, actual %q", testCase.expectedIconPrefix, actual.TitleSegments[0].Prefix)
+			}
+			if actual.TitleSegments[1].Text != fmt.Sprintf("acme/widgets#%d", testCase.pullRequest.Number) {
+				t.Fatalf("expected reference segment %q, actual %q", fmt.Sprintf("acme/widgets#%d", testCase.pullRequest.Number), actual.TitleSegments[1].Text)
+			}
+			if actual.TitleSegments[1].Prefix != testCase.expectedReferencePrefix {
+				t.Fatalf("expected reference segment prefix %q, actual %q", testCase.expectedReferencePrefix, actual.TitleSegments[1].Prefix)
+			}
+			if actual.TitleSegments[2].Text != " "+testCase.pullRequest.Title {
+				t.Fatalf("expected title segment text %q, actual %q", " "+testCase.pullRequest.Title, actual.TitleSegments[2].Text)
+			}
+			if actual.TitleSegments[2].Prefix != testCase.expectedTitlePrefix {
+				t.Fatalf("expected title segment prefix %q, actual %q", testCase.expectedTitlePrefix, actual.TitleSegments[2].Prefix)
+			}
+		})
 	}
 }
 

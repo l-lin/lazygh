@@ -15,38 +15,47 @@ func detailBody(detail githubcli.PullRequestDetail, summary githubcli.PullReques
 }
 
 func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequest) string {
-	state := strings.ToUpper(strings.TrimSpace(firstNonEmpty(detail.State, summary.State)))
-	if state == "" {
-		state = "-"
+	return effectivePullRequestStatus(firstNonEmpty(detail.State, summary.State), detail.IsDraft || summary.IsDraft)
+}
+
+func effectivePullRequestStatus(state string, isDraft bool) string {
+	normalizedState := strings.ToUpper(strings.TrimSpace(state))
+	if normalizedState == "" {
+		normalizedState = "-"
 	}
-	if detail.IsDraft || summary.IsDraft {
+	if isDraft {
 		return "DRAFT"
 	}
-	return state
+	return normalizedState
 }
 
 func renderPullRequestStatusBadge(status string) string {
 	label := strings.TrimSpace(detailStatusIcon + " " + status)
-	foregroundHex, backgroundHex := pullRequestStatusBadgeColors(status)
-	if foregroundHex == "" || backgroundHex == "" {
+	statusStyle, ok := pullRequestStatusStyleFor(status)
+	if !ok {
 		return label
 	}
 
-	return renderRoundedPill(label, foregroundHex, backgroundHex)
+	return renderRoundedPill(label, statusStyle.foregroundHex, statusStyle.backgroundHex)
 }
 
-func pullRequestStatusBadgeColors(status string) (string, string) {
+type pullRequestStatusStyle struct {
+	foregroundHex string
+	backgroundHex string
+}
+
+func pullRequestStatusStyleFor(status string) (pullRequestStatusStyle, bool) {
 	switch strings.ToUpper(strings.TrimSpace(status)) {
 	case "OPEN":
-		return theme.PullRequestStatusOpenForegroundHex, theme.PullRequestStatusOpenBackgroundHex
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusOpenForegroundHex, backgroundHex: theme.PullRequestStatusOpenBackgroundHex}, true
 	case "DRAFT":
-		return theme.PullRequestStatusDraftForegroundHex, theme.PullRequestStatusDraftBackgroundHex
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusDraftForegroundHex, backgroundHex: theme.PullRequestStatusDraftBackgroundHex}, true
 	case "CLOSED":
-		return theme.PullRequestStatusClosedForegroundHex, theme.PullRequestStatusClosedBackgroundHex
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusClosedForegroundHex, backgroundHex: theme.PullRequestStatusClosedBackgroundHex}, true
 	case "MERGED":
-		return theme.PullRequestStatusMergedForegroundHex, theme.PullRequestStatusMergedBackgroundHex
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusMergedForegroundHex, backgroundHex: theme.PullRequestStatusMergedBackgroundHex}, true
 	default:
-		return "", ""
+		return pullRequestStatusStyle{}, false
 	}
 }
 
