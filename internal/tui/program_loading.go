@@ -1,6 +1,10 @@
 package tui
 
 import (
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
@@ -70,6 +74,7 @@ func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 	pullRequests, err := program.listPullRequests(tab)
 	if err == nil {
+		sortPullRequestsByMostRecentUpdate(pullRequests)
 		program.cachePullRequests(tab, pullRequests)
 	}
 
@@ -91,6 +96,34 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubcli.PullRequest, error) {
 	return program.githubLoader.ListPullRequests(program.pullRequestSearch(tab).Command)
+}
+
+func sortPullRequestsByMostRecentUpdate(pullRequests []githubcli.PullRequest) {
+	sort.SliceStable(pullRequests, func(left int, right int) bool {
+		leftUpdatedAt, leftOK := pullRequestUpdatedAtTime(pullRequests[left])
+		rightUpdatedAt, rightOK := pullRequestUpdatedAtTime(pullRequests[right])
+		switch {
+		case leftOK && rightOK:
+			if leftUpdatedAt.Equal(rightUpdatedAt) {
+				return false
+			}
+			return leftUpdatedAt.After(rightUpdatedAt)
+		case leftOK:
+			return true
+		case rightOK:
+			return false
+		default:
+			return false
+		}
+	})
+}
+
+func pullRequestUpdatedAtTime(pullRequest githubcli.PullRequest) (time.Time, bool) {
+	updatedAt, actualErr := time.Parse(time.RFC3339, strings.TrimSpace(pullRequest.UpdatedAt))
+	if actualErr != nil {
+		return time.Time{}, false
+	}
+	return updatedAt, true
 }
 
 func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {

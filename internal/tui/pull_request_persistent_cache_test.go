@@ -66,6 +66,42 @@ func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering
 	}
 }
 
+func TestLayout_GivenCachedPullRequestsAndUnsortedLiveResults_WhenRendering_ThenItShowsTheLiveRowsSortedByMostRecentUpdate(t *testing.T) {
+	cachedPullRequests := []githubcli.PullRequest{
+		{Title: "Cached older", Number: 41, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/41", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T09:00:00Z"},
+		{Title: "Cached newer", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"},
+	}
+	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{
+		{Title: "Older live PR", Number: 41, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/41", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T09:00:00Z"},
+		{Title: "Newer live PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"},
+	}}}
+	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): cachedPullRequests}}
+	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject.pullRequestCache = cache
+	subject.connectedUserLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.model.FocusUserView()
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+
+	then_noError(t, actualErr)
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	actualBuffer := pullRequestsView.Buffer()
+	olderIndex := strings.Index(actualBuffer, "Older live PR")
+	newerIndex := strings.Index(actualBuffer, "Newer live PR")
+	if olderIndex < 0 || newerIndex < 0 {
+		t.Fatalf("expected pull requests buffer to contain both live rows, actual %q", actualBuffer)
+	}
+	if newerIndex > olderIndex {
+		t.Fatalf("expected the newer live row to render before the older one, actual %q", actualBuffer)
+	}
+}
+
 func TestLoadPullRequests_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	expected := []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: expected}}
