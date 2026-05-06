@@ -62,17 +62,17 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 	actualText := string(actualDocument.text)
 
 	for _, expected := range []string{
-		"Reviewers (1/4)",
+		pullRequestOverviewFailureIcon + " Reviewers (1/4)",
 		"@acme/platform",
 		"@reviewer-approved",
 		"@reviewer-blocked",
-		"Merge Checks",
+		pullRequestOverviewFailureIcon + " Merge Checks",
 		"Reviews",
 		"1 reviewer has requested changes.",
 		"1 passing, 1 failing, 1 pending",
 		"No conflicts with base branch",
 		"Changes can be cleanly merged.",
-		"Builds",
+		pullRequestOverviewFailureIcon + " Builds",
 		"CI / lint (Successful)",
 		"CI / test (Failed)",
 		"deploy (Pending)",
@@ -90,6 +90,12 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 		t.Fatalf("expected overview box border prefix %q, actual %q", foregroundColorEscape(theme.InactiveBorderHex), actualStylePrefix)
 	}
 
+	reviewersHeadingLineIndex, reviewersHeadingLine := given_detailDocumentLineContaining(t, actualDocument, pullRequestOverviewFailureIcon+" Reviewers (1/4)")
+	reviewersHeadingIconIndex := given_runeIndexInString(t, reviewersHeadingLine, pullRequestOverviewFailureIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[reviewersHeadingLineIndex][reviewersHeadingIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
+		t.Fatalf("expected reviewers heading prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+
 	approvedLineIndex, approvedLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-approved")
 	approvedIconIndex := given_runeIndexInString(t, approvedLine, pullRequestOverviewSuccessIcon)
 	if actualStylePrefix := actualDocument.lineStylePrefixes[approvedLineIndex][approvedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.SuccessHex) {
@@ -100,6 +106,31 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 	blockedIconIndex := given_runeIndexInString(t, blockedLine, pullRequestOverviewFailureIcon)
 	if actualStylePrefix := actualDocument.lineStylePrefixes[blockedLineIndex][blockedIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
 		t.Fatalf("expected blocked reviewer prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+
+	mergeChecksHeadingLineIndex, mergeChecksHeadingLine := given_detailDocumentLineContaining(t, actualDocument, pullRequestOverviewFailureIcon+" Merge Checks")
+	mergeChecksHeadingIconIndex := given_runeIndexInString(t, mergeChecksHeadingLine, pullRequestOverviewFailureIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[mergeChecksHeadingLineIndex][mergeChecksHeadingIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
+		t.Fatalf("expected merge checks heading prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+
+	buildsHeadingLineIndex, buildsHeadingLine := given_detailDocumentLineContaining(t, actualDocument, pullRequestOverviewFailureIcon+" Builds")
+	buildsHeadingIconIndex := given_runeIndexInString(t, buildsHeadingLine, pullRequestOverviewFailureIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[buildsHeadingLineIndex][buildsHeadingIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
+		t.Fatalf("expected builds heading prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestOverviewSection_GivenMultipleBlocks_WhenFormatting_ThenItDoesNotInsertBlankLinesBetweenOverviewSections(t *testing.T) {
+	detail := githubcli.PullRequestDetail{
+		ReviewRequests:    []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-one"}}},
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"}},
+	}
+
+	actual := renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), 80)
+
+	if strings.Contains(actual, "\n\n") {
+		t.Fatalf("expected overview sections to stay consecutive without blank spacer lines, actual %q", actual)
 	}
 }
 

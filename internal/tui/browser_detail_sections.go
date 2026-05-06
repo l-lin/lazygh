@@ -29,15 +29,15 @@ type browserDetailSectionCursor struct {
 	inBody     bool
 }
 
-func renderBrowserDetailSectionHeader(title string, collapsed bool) string {
+func renderBrowserDetailSectionHeader(title string, collapsed bool, foregroundHex string) string {
 	chevron := browserDetailExpandedChevron
 	if collapsed {
 		chevron = browserDetailCollapsedChevron
 	}
-	return styleText(chevron+" "+strings.TrimSpace(title), foregroundColorEscape(theme.InactiveTitleHex))
+	return styleText(chevron+" "+strings.TrimSpace(title), foregroundColorEscape(foregroundHex))
 }
 
-func renderBrowserDetailSections(sections []browserDetailSection) string {
+func renderBrowserDetailSections(sections []browserDetailSection, includeBlankLines bool) string {
 	if len(sections) == 0 {
 		return ""
 	}
@@ -51,14 +51,14 @@ func renderBrowserDetailSections(sections []browserDetailSection) string {
 				lines = append(lines, strings.Split(trimmedBody, "\n")...)
 			}
 		}
-		if index < len(sections)-1 {
+		if includeBlankLines && index < len(sections)-1 {
 			lines = append(lines, "")
 		}
 	}
 	return strings.Join(lines, "\n")
 }
 
-func browserDetailSectionAtCursor(sections []browserDetailSection, cursorLine int) (browserDetailSectionCursor, bool) {
+func browserDetailSectionAtCursor(sections []browserDetailSection, cursorLine int, includeBlankLines bool) (browserDetailSectionCursor, bool) {
 	lineIndex := cursorLine
 	currentLine := 0
 	for sectionIndex, section := range sections {
@@ -81,7 +81,7 @@ func browserDetailSectionAtCursor(sections []browserDetailSection, cursorLine in
 			currentLine += bodyLineCount
 		}
 
-		if sectionIndex < len(sections)-1 {
+		if includeBlankLines && sectionIndex < len(sections)-1 {
 			if lineIndex == 0 {
 				return browserDetailSectionCursor{}, false
 			}
@@ -133,15 +133,11 @@ func (program *Program) currentPullRequestOverviewSections(summary githubcli.Pul
 			continue
 		}
 
-		heading := strings.TrimSpace(block.Title)
-		if summary := strings.TrimSpace(block.Summary); summary != "" {
-			heading += " (" + summary + ")"
-		}
 		sectionID := browserDetailSectionID(pullRequestKey, "overview", index, strings.ToLower(strings.ReplaceAll(strings.TrimSpace(block.Title), " ", "-")))
 		collapsed := program.browserDetailSectionCollapsed(sectionID, true)
 		sections = append(sections, browserDetailSection{
 			id:        sectionID,
-			header:    renderBrowserDetailSectionHeader(heading, collapsed),
+			header:    renderBrowserDetailSectionHeader(pullRequestOverviewBlockHeadingText(block), collapsed, pullRequestOverviewStatusHex(block.Status)),
 			body:      renderRoundedCommentBox(entries, width),
 			collapsed: collapsed,
 		})
@@ -150,7 +146,7 @@ func (program *Program) currentPullRequestOverviewSections(summary githubcli.Pul
 }
 
 func (program *Program) renderCurrentPullRequestOverview(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) string {
-	return renderBrowserDetailSections(program.currentPullRequestOverviewSections(summary, detail, width))
+	return renderBrowserDetailSections(program.currentPullRequestOverviewSections(summary, detail, width), false)
 }
 
 func browserDescriptionOverviewStartLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) int {
@@ -167,7 +163,7 @@ func (program *Program) browserOverviewSectionAtCursor(summary githubcli.PullReq
 	if relativeCursorLine < 0 {
 		return browserDetailSectionCursor{}, false
 	}
-	sectionAtCursor, ok := browserDetailSectionAtCursor(program.currentPullRequestOverviewSections(summary, detail, width), relativeCursorLine)
+	sectionAtCursor, ok := browserDetailSectionAtCursor(program.currentPullRequestOverviewSections(summary, detail, width), relativeCursorLine, false)
 	if !ok {
 		return browserDetailSectionCursor{}, false
 	}
@@ -186,7 +182,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{
 			id:        sectionID,
-			header:    renderBrowserDetailSectionHeader(renderPullRequestCommentConversationTitle(comment), collapsed),
+			header:    renderBrowserDetailSectionHeader(renderPullRequestCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
 			body:      renderPullRequestCommentSection(comment, body, width),
 			collapsed: collapsed,
 		})
@@ -199,7 +195,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 			collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 			sections = append(sections, browserDetailSection{
 				id:           sectionID,
-				header:       renderBrowserDetailSectionHeader(renderPullRequestInlineThreadConversationTitle(thread), collapsed),
+				header:       renderBrowserDetailSectionHeader(renderPullRequestInlineThreadConversationTitle(thread), collapsed, theme.InactiveTitleHex),
 				body:         renderPullRequestInlineCommentThreadBody(thread, program.markdownRenderer, width),
 				collapsed:    collapsed,
 				inlineThread: &thread,
@@ -214,7 +210,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{
 			id:        sectionID,
-			header:    renderBrowserDetailSectionHeader(renderPullRequestInlineCommentConversationTitle(comment), collapsed),
+			header:    renderBrowserDetailSectionHeader(renderPullRequestInlineCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
 			body:      renderPullRequestInlineCommentSection(comment, body, width),
 			collapsed: collapsed,
 		})
@@ -228,14 +224,14 @@ func (program *Program) renderCurrentPullRequestConversationsTab(summary githubc
 	if len(sections) == 0 {
 		return "No comments yet."
 	}
-	return renderBrowserDetailSections(sections)
+	return renderBrowserDetailSections(sections, true)
 }
 
 func (program *Program) browserConversationSectionAtCursor(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int, cursorLine int) (browserDetailSectionCursor, bool) {
 	if cursorLine < 0 {
 		return browserDetailSectionCursor{}, false
 	}
-	return browserDetailSectionAtCursor(program.currentPullRequestConversationSections(summary, detail, width), cursorLine)
+	return browserDetailSectionAtCursor(program.currentPullRequestConversationSections(summary, detail, width), cursorLine, true)
 }
 
 func renderPullRequestCommentConversationTitle(_ githubcli.PullRequestComment) string {

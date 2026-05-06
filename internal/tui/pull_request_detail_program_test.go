@@ -113,7 +113,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	expectedSeparator := strings.Repeat("─", detailView.InnerWidth())
-	for _, expected := range []string{"acme/widgets#101 First PR", " Reviewers (1/2)", " Merge Checks", " Builds", "Rendered body 101"} {
+	for _, expected := range []string{"acme/widgets#101 First PR", " " + pullRequestOverviewPendingIcon + " Reviewers (1/2)", " " + pullRequestOverviewPendingIcon + " Merge Checks", " " + pullRequestOverviewSuccessIcon + " Builds", "Rendered body 101"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the overview tab to contain %q, actual %q", expected, detailView.Buffer())
 		}
@@ -124,12 +124,20 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 		}
 	}
 	headerLineIndex := given_viewLineIndexContaining(t, detailView, detailStatusIcon+" OPEN")
-	overviewLineIndex := given_viewLineIndexContaining(t, detailView, " Reviewers (1/2)")
+	reviewersLineIndex := given_viewLineIndexContaining(t, detailView, pullRequestOverviewPendingIcon+" Reviewers (1/2)")
+	mergeChecksLineIndex := given_viewLineIndexContaining(t, detailView, pullRequestOverviewPendingIcon+" Merge Checks")
+	buildsLineIndex := given_viewLineIndexContaining(t, detailView, pullRequestOverviewSuccessIcon+" Builds")
 	separatorLineIndex := given_viewLineIndexContaining(t, detailView, expectedSeparator)
 	bodyLineIndex := given_viewLineIndexContaining(t, detailView, "Rendered body 101")
-	if !(headerLineIndex < overviewLineIndex && overviewLineIndex < separatorLineIndex && separatorLineIndex < bodyLineIndex) {
+	if !(headerLineIndex < reviewersLineIndex && reviewersLineIndex < mergeChecksLineIndex && mergeChecksLineIndex < buildsLineIndex && buildsLineIndex < separatorLineIndex && separatorLineIndex < bodyLineIndex) {
 		t.Fatalf("expected header, folded overview, separator, and body to stay ordered, actual %q", detailView.Buffer())
 	}
+	if mergeChecksLineIndex != reviewersLineIndex+1 || buildsLineIndex != mergeChecksLineIndex+1 {
+		t.Fatalf("expected folded overview headers to stay consecutive without blank spacer lines, actual %q", detailView.Buffer())
+	}
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, reviewersLineIndex, pullRequestOverviewPendingIcon+" Reviewers (1/2)", given_themeColorHex(t, theme.PendingHex), "reviewers overview header")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, mergeChecksLineIndex, pullRequestOverviewPendingIcon+" Merge Checks", given_themeColorHex(t, theme.PendingHex), "merge checks overview header")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, buildsLineIndex, pullRequestOverviewSuccessIcon+" Builds", given_themeColorHex(t, theme.SuccessHex), "builds overview header")
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected overview tab to hide comments, actual %q", detailView.Buffer())
 	}
@@ -200,20 +208,20 @@ func TestBrowserMode_GivenTheCursorOnAnOverviewSection_WhenPressingEnter_ThenItT
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, " Reviewers (0/1)")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)")
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "@reviewer-requested") {
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "@reviewer-requested") {
 		t.Fatalf("expected enter to expand the overview section, actual %q", detailView.Buffer())
 	}
 
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " Reviewers (0/1)") {
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") {
 		t.Fatalf("expected enter to collapse the overview section again, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "@reviewer-requested") {

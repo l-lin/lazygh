@@ -34,6 +34,7 @@ type pullRequestOverviewSection struct {
 type pullRequestOverviewBlock struct {
 	Title   string
 	Summary string
+	Status  pullRequestOverviewStatus
 	Entries []pullRequestOverviewEntry
 }
 
@@ -70,7 +71,7 @@ func renderPullRequestOverviewSection(section pullRequestOverviewSection, width 
 		}
 		renderedBlocks = append(renderedBlocks, renderedBlock)
 	}
-	return strings.Join(renderedBlocks, "\n\n")
+	return strings.Join(renderedBlocks, "\n")
 }
 
 func renderPullRequestOverviewBlock(block pullRequestOverviewBlock, width int) string {
@@ -79,15 +80,31 @@ func renderPullRequestOverviewBlock(block pullRequestOverviewBlock, width int) s
 		return ""
 	}
 
+	heading := renderPullRequestOverviewBlockHeading(block)
+	if heading == "" {
+		return renderRoundedCommentBox(entries, width)
+	}
+
+	return heading + "\n" + renderRoundedCommentBox(entries, width)
+}
+
+func renderPullRequestOverviewBlockHeading(block pullRequestOverviewBlock) string {
+	headingText := pullRequestOverviewBlockHeadingText(block)
+	if headingText == "" {
+		return ""
+	}
+	return styleText(headingText, foregroundColorEscape(pullRequestOverviewStatusHex(block.Status)))
+}
+
+func pullRequestOverviewBlockHeadingText(block pullRequestOverviewBlock) string {
 	heading := strings.TrimSpace(block.Title)
 	if summary := strings.TrimSpace(block.Summary); summary != "" {
 		heading += " (" + summary + ")"
 	}
 	if heading == "" {
-		return renderRoundedCommentBox(entries, width)
+		return ""
 	}
-
-	return styleText(heading, foregroundColorEscape(theme.InactiveTitleHex)) + "\n" + renderRoundedCommentBox(entries, width)
+	return pullRequestOverviewStatusIcon(block.Status) + " " + heading
 }
 
 func renderPullRequestOverviewEntries(entries []pullRequestOverviewEntry) string {
@@ -125,22 +142,28 @@ func renderPullRequestOverviewEntryDetail(detail string) string {
 }
 
 func buildPullRequestReviewersBlock(reviewers pullRequestReviewerOverview) pullRequestOverviewBlock {
-	if len(reviewers.Entries) == 0 {
-		return pullRequestOverviewBlock{
-			Title: "Reviewers",
-			Entries: []pullRequestOverviewEntry{{
-				Label:    "No reviewers yet.",
-				Status:   pullRequestOverviewStatusMuted,
-				ShowIcon: false,
-			}},
-		}
+	entries := reviewers.Entries
+	if len(entries) == 0 {
+		entries = []pullRequestOverviewEntry{{
+			Label:    "No reviewers yet.",
+			Status:   pullRequestOverviewStatusMuted,
+			ShowIcon: false,
+		}}
 	}
 
 	return pullRequestOverviewBlock{
 		Title:   "Reviewers",
-		Summary: fmt.Sprintf("%d/%d", reviewers.ApprovedCount, len(reviewers.Entries)),
-		Entries: reviewers.Entries,
+		Summary: pullRequestReviewerSummary(reviewers),
+		Status:  pullRequestOverviewBlockStatus(entries),
+		Entries: entries,
 	}
+}
+
+func pullRequestReviewerSummary(reviewers pullRequestReviewerOverview) string {
+	if len(reviewers.Entries) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d/%d", reviewers.ApprovedCount, len(reviewers.Entries))
 }
 
 func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRequestReviewerOverview {
@@ -202,14 +225,12 @@ func latestPullRequestReviewsByLogin(reviews []githubcli.PullRequestReview) map[
 }
 
 func buildPullRequestMergeChecksBlock(detail githubcli.PullRequestDetail, reviewers pullRequestReviewerOverview) pullRequestOverviewBlock {
-	return pullRequestOverviewBlock{
-		Title: "Merge Checks",
-		Entries: []pullRequestOverviewEntry{
-			buildPullRequestReviewSummaryEntry(reviewers),
-			buildPullRequestBuildSummaryEntry(detail.StatusCheckRollup),
-			buildPullRequestMergeabilityEntry(detail),
-		},
+	entries := []pullRequestOverviewEntry{
+		buildPullRequestReviewSummaryEntry(reviewers),
+		buildPullRequestBuildSummaryEntry(detail.StatusCheckRollup),
+		buildPullRequestMergeabilityEntry(detail),
 	}
+	return pullRequestOverviewBlock{Title: "Merge Checks", Status: pullRequestOverviewBlockStatus(entries), Entries: entries}
 }
 
 func buildPullRequestReviewSummaryEntry(reviewers pullRequestReviewerOverview) pullRequestOverviewEntry {
@@ -308,7 +329,7 @@ func buildPullRequestBuildsBlock(detail githubcli.PullRequestDetail) pullRequest
 		entries = append(entries, pullRequestOverviewEntry{Label: "No builds reported.", Status: pullRequestOverviewStatusMuted, ShowIcon: false})
 	}
 
-	return pullRequestOverviewBlock{Title: "Builds", Entries: entries}
+	return pullRequestOverviewBlock{Title: "Builds", Status: pullRequestOverviewBlockStatus(entries), Entries: entries}
 }
 
 func buildPullRequestBuildEntry(check githubcli.PullRequestStatusCheck) pullRequestOverviewEntry {
@@ -368,6 +389,33 @@ func pullRequestOverviewStatusForChecks(checks []githubcli.PullRequestStatusChec
 
 func pullRequestOverviewStatusForCheck(check githubcli.PullRequestStatusCheck) pullRequestOverviewStatus {
 	return classifyPullRequestStatusCheck(check).OverviewStatus
+}
+
+func pullRequestOverviewBlockStatus(entries []pullRequestOverviewEntry) pullRequestOverviewStatus {
+	hasSuccess := false
+	hasMuted := false
+	for _, entry := range entries {
+		switch entry.Status {
+		case pullRequestOverviewStatusFailure:
+			return pullRequestOverviewStatusFailure
+		case pullRequestOverviewStatusPending:
+			return pullRequestOverviewStatusPending
+		case pullRequestOverviewStatusSuccess:
+			hasSuccess = true
+		default:
+			hasMuted = true
+		}
+	}
+	if hasMuted {
+		if hasSuccess {
+			return pullRequestOverviewStatusPending
+		}
+		return pullRequestOverviewStatusMuted
+	}
+	if hasSuccess {
+		return pullRequestOverviewStatusSuccess
+	}
+	return pullRequestOverviewStatusMuted
 }
 
 func pullRequestOverviewStatusPriority(status pullRequestOverviewStatus) int {
