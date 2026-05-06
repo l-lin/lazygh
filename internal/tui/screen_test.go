@@ -172,6 +172,142 @@ func given_screenCellsForViewSegment(t *testing.T, gui *gocui.Gui, viewName stri
 	return cells, width, x0 + 1 + runeStart, y0 + 1 + lineIndex
 }
 
+func then_viewLineRuneRangeHasBackgroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, startRune int, endRune int, expected int32, label string) {
+	t.Helper()
+
+	actualErr := gui.ForceLayoutAndRedraw()
+	then_noError(t, actualErr)
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	line, ok := view.Line(lineIndex)
+	if !ok {
+		t.Fatalf("expected view %q to have line %d", viewName, lineIndex)
+	}
+	lineRunes := []rune(line)
+	if startRune < 0 || endRune > len(lineRunes) || startRune >= endRune {
+		t.Fatalf("expected rune range [%d,%d) inside line %q", startRune, endRune, line)
+	}
+
+	x0, y0, _, _, actualErr := gui.ViewPosition(viewName)
+	then_noError(t, actualErr)
+	screen, ok := gocui.Screen.(tcell.SimulationScreen)
+	if !ok {
+		t.Fatal("expected a simulation screen")
+	}
+
+	cells, width, _ := screen.GetContents()
+	for runeIndex := startRune; runeIndex < endRune; runeIndex++ {
+		actualCell := cells[((y0+1+lineIndex)*width)+(x0+1+runeIndex)]
+		_, backgroundColor, _ := actualCell.Style.Decompose()
+		actual := backgroundColor.TrueColor().Hex()
+		if actual != expected {
+			t.Fatalf("expected %s color %#x at %s line %d rune %d, actual %#x", label, expected, viewName, lineIndex, runeIndex, actual)
+		}
+	}
+}
+
+func then_viewLineRuneDoesNotHaveBackgroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, runeIndex int, unexpected int32, label string) {
+	t.Helper()
+
+	actualErr := gui.ForceLayoutAndRedraw()
+	then_noError(t, actualErr)
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	line, ok := view.Line(lineIndex)
+	if !ok {
+		t.Fatalf("expected view %q to have line %d", viewName, lineIndex)
+	}
+	lineRunes := []rune(line)
+	if runeIndex < 0 || runeIndex >= len(lineRunes) {
+		t.Fatalf("expected rune index %d inside line %q", runeIndex, line)
+	}
+
+	x0, y0, _, _, actualErr := gui.ViewPosition(viewName)
+	then_noError(t, actualErr)
+	screen, ok := gocui.Screen.(tcell.SimulationScreen)
+	if !ok {
+		t.Fatal("expected a simulation screen")
+	}
+
+	cells, width, _ := screen.GetContents()
+	actualCell := cells[((y0+1+lineIndex)*width)+(x0+1+runeIndex)]
+	_, backgroundColor, _ := actualCell.Style.Decompose()
+	actual := backgroundColor.TrueColor().Hex()
+	if actual == unexpected {
+		t.Fatalf("expected %s to avoid color %#x at %s line %d rune %d, actual %#x", label, unexpected, viewName, lineIndex, runeIndex, actual)
+	}
+}
+
+func given_commentBoxInnerRuneRange(t *testing.T, line string) (int, int) {
+	t.Helper()
+
+	lineRunes := []rune(line)
+	leftBorderIndex := -1
+	rightBorderIndex := -1
+	for index, character := range lineRunes {
+		if character != '│' {
+			continue
+		}
+		if leftBorderIndex < 0 {
+			leftBorderIndex = index
+		}
+		rightBorderIndex = index
+	}
+	if leftBorderIndex < 0 || rightBorderIndex <= leftBorderIndex {
+		t.Fatalf("expected line %q to contain a comment box interior", line)
+	}
+	return leftBorderIndex, rightBorderIndex
+}
+
+func given_commentBoxInnerText(t *testing.T, line string) string {
+	t.Helper()
+
+	leftBorderIndex, rightBorderIndex := given_commentBoxInnerRuneRange(t, line)
+	return string([]rune(line)[leftBorderIndex+1 : rightBorderIndex])
+}
+
+func given_viewLineIndexContainingCommentBoxText(t *testing.T, view *gocui.View, expected string) int {
+	t.Helper()
+
+	for index, line := range view.BufferLines() {
+		if strings.Contains(line, expected) && strings.Count(line, "│") >= 2 {
+			return index
+		}
+	}
+
+	t.Fatalf("expected a comment box line to contain %q, actual %q", expected, view.Buffer())
+	return 0
+}
+
+func then_viewCommentBoxInteriorHasBackgroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, expected int32, label string) {
+	t.Helper()
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	line, ok := view.Line(lineIndex)
+	if !ok {
+		t.Fatalf("expected view %q to have line %d", viewName, lineIndex)
+	}
+	leftBorderIndex, rightBorderIndex := given_commentBoxInnerRuneRange(t, line)
+	then_viewLineRuneRangeHasBackgroundColor(t, gui, viewName, lineIndex, leftBorderIndex+1, rightBorderIndex, expected, label)
+}
+
+func then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, unexpected int32, label string) {
+	t.Helper()
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	line, ok := view.Line(lineIndex)
+	if !ok {
+		t.Fatalf("expected view %q to have line %d", viewName, lineIndex)
+	}
+	leftBorderIndex, rightBorderIndex := given_commentBoxInnerRuneRange(t, line)
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewName, lineIndex, leftBorderIndex, unexpected, label+" left")
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewName, lineIndex, rightBorderIndex, unexpected, label+" right")
+}
+
 func given_searchHighlightColorHex(t *testing.T) int32 {
 	t.Helper()
 

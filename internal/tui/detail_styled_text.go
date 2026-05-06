@@ -128,6 +128,30 @@ func styledPaddingLine(line styledTextLine) styledTextLine {
 	return styledTextLine{runes: []rune{' '}, stylePrefixes: []string{line.stylePrefixes[0]}, hyperlinkTargets: []string{paddingTarget}}
 }
 
+func renderStyledTextLineWithWidth(line styledTextLine, width int) string {
+	if width <= len(line.runes) {
+		return renderStyledTextLine(line)
+	}
+
+	return renderStyledTextLine(line) + renderStyledPadding(styledTextLinePaddingPrefix(line, width), width-len(line.runes))
+}
+
+func styledTextLinePaddingPrefix(line styledTextLine, width int) string {
+	return markdownFullWidthLinePaddingPrefix(width, line.stylePrefixes, 0, len(line.runes)-1)
+}
+
+func renderStyledPadding(prefix string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+
+	padding := strings.Repeat(" ", width)
+	if prefix == "" {
+		return padding
+	}
+	return prefix + padding + ansiReset
+}
+
 func renderStyledTextLine(line styledTextLine) string {
 	if len(line.runes) == 0 {
 		return ""
@@ -156,6 +180,37 @@ func renderStyledTextLine(line styledTextLine) string {
 	}
 
 	return builder.String()
+}
+
+func markdownFullWidthLinePaddingPrefix(width int, prefixes []string, startColumn int, endColumn int) string {
+	if width <= 0 || endColumn < startColumn || (endColumn-startColumn+1) >= width {
+		return ""
+	}
+
+	for _, backgroundHex := range []string{theme.MarkdownHeadingBackgroundHex, theme.SelectedLineBackgroundHex} {
+		if paddingPrefix := fullWidthLinePaddingPrefixForBackground(prefixes, startColumn, endColumn, backgroundHex); paddingPrefix != "" {
+			return paddingPrefix
+		}
+	}
+
+	return ""
+}
+
+func fullWidthLinePaddingPrefixForBackground(prefixes []string, startColumn int, endColumn int, backgroundHex string) string {
+	backgroundSequence := trueColorANSIParameterSequence(48, backgroundHex)
+	if backgroundSequence == "" {
+		return ""
+	}
+
+	paddingPrefix := ""
+	for column := startColumn; column <= endColumn && column < len(prefixes); column++ {
+		if !strings.Contains(prefixes[column], backgroundSequence) {
+			return ""
+		}
+		paddingPrefix = prefixes[column]
+	}
+
+	return paddingPrefix
 }
 
 func consumeCSISequence(text string, startIndex int) (string, int, bool) {

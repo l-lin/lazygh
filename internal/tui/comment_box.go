@@ -37,11 +37,8 @@ func renderRoundedCommentBoxWithInnerWidth(text string, innerWidth int) string {
 	boxLines := make([]string, 0, len(styledLines)+2)
 	boxLines = append(boxLines, styleCommentBorder("╭"+strings.Repeat("─", innerWidth+(commentBoxHorizontalPadding*2))+"╮"))
 	for _, line := range styledLines {
-		paddingWidth := innerWidth - len(line.runes)
-		if paddingWidth < 0 {
-			paddingWidth = 0
-		}
-		boxLines = append(boxLines, styleCommentBorder("│")+strings.Repeat(" ", commentBoxHorizontalPadding)+renderStyledTextLine(line)+strings.Repeat(" ", paddingWidth)+strings.Repeat(" ", commentBoxHorizontalPadding)+styleCommentBorder("│"))
+		paddingPrefix := styledTextLinePaddingPrefix(line, innerWidth)
+		boxLines = append(boxLines, styleCommentBorder("│")+renderStyledPadding(paddingPrefix, commentBoxHorizontalPadding)+renderStyledTextLineWithWidth(line, innerWidth)+renderStyledPadding(paddingPrefix, commentBoxHorizontalPadding)+styleCommentBorder("│"))
 	}
 	boxLines = append(boxLines, styleCommentBorder("╰"+strings.Repeat("─", innerWidth+(commentBoxHorizontalPadding*2))+"╯"))
 	return strings.Join(boxLines, "\n")

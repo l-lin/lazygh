@@ -15,7 +15,7 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 	rowRunes := line[row.startColumn : row.endColumn+1]
 	lineStylePrefixes := document.lineStylePrefixes[row.line]
 	lineMatchRanges := searchMatchRanges[row.line]
-	paddingPrefix := detailFullWidthLinePaddingPrefix(document.width, lineStylePrefixes, row.startColumn, row.endColumn)
+	paddingPrefix := markdownFullWidthLinePaddingPrefix(document.width, lineStylePrefixes, row.startColumn, row.endColumn)
 	if len(lineMatchRanges) == 0 && !state.mode.isVisual() && !detailLineHasStylePrefixes(lineStylePrefixes, row.startColumn, row.endColumn) && paddingPrefix == "" {
 		return row.text
 	}
@@ -87,37 +87,6 @@ func detailLineStylePrefix(prefixes []string, column int) string {
 	}
 
 	return prefixes[column]
-}
-
-func detailFullWidthLinePaddingPrefix(width int, prefixes []string, startColumn int, endColumn int) string {
-	if width <= 0 || endColumn < startColumn || (endColumn-startColumn+1) >= width {
-		return ""
-	}
-
-	for _, backgroundHex := range []string{theme.MarkdownHeadingBackgroundHex, theme.SelectedLineBackgroundHex} {
-		if paddingPrefix := detailFullWidthLinePaddingPrefixForBackground(prefixes, startColumn, endColumn, backgroundHex); paddingPrefix != "" {
-			return paddingPrefix
-		}
-	}
-
-	return ""
-}
-
-func detailFullWidthLinePaddingPrefixForBackground(prefixes []string, startColumn int, endColumn int, backgroundHex string) string {
-	backgroundSequence := trueColorANSIParameterSequence(48, backgroundHex)
-	if backgroundSequence == "" {
-		return ""
-	}
-
-	paddingPrefix := ""
-	for column := startColumn; column <= endColumn && column < len(prefixes); column++ {
-		if !strings.Contains(prefixes[column], backgroundSequence) {
-			return ""
-		}
-		paddingPrefix = prefixes[column]
-	}
-
-	return paddingPrefix
 }
 
 func detailColumnInRanges(column int, ranges []detailColumnRange) bool {

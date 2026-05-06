@@ -308,6 +308,51 @@ func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUse
 	}
 }
 
+func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxColorsAndFillsTheCommentBoxInterior(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "```go\nfunc render(value int) string {\n\treturn fmt.Sprintf(\"%d\", value + 42)\n}\n```",
+			CreatedAt: "2026-04-20T10:00:00Z",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	codeStartLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "func render")
+	codeLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `return fmt.Sprintf("%d", value + 42)`)
+	codeEndLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "}")
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[codeStartLineIndex-1])); actualInnerText != "" {
+		t.Fatalf("expected the review inline comment code block top padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[codeEndLineIndex+1])); actualInnerText != "" {
+		t.Fatalf("expected the review inline comment code block bottom padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	}
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeStartLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block top padding background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeEndLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block bottom padding background")
+	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block border background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "return", given_themeColorHex(t, theme.SyntaxKeywordHex), "review inline comment code keyword")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "Sprintf", given_themeColorHex(t, theme.SyntaxFunctionHex), "review inline comment code function")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, `"%d"`, given_themeColorHex(t, theme.SyntaxStringHex), "review inline comment code string")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "42", given_themeColorHex(t, theme.SyntaxNumberHex), "review inline comment code number")
+}
+
 func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsTheThreadChevronAndTheRightSideLineNumber(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
