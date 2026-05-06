@@ -158,16 +158,6 @@ func renderPullRequestBrowserDetailContent(header string, overview string, conte
 	return strings.Join([]string{headerAndOverview, renderPullRequestDetailSectionSeparator(width), trimmedContent}, "\n")
 }
 
-func pullRequestBrowserContentStartLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) int {
-	header := renderPullRequestBrowserHeader(summary, detail)
-	overview := renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), width)
-	sections := filterEmptyStrings([]string{strings.TrimRight(header, "\n"), strings.TrimSpace(overview)})
-	if len(sections) == 0 {
-		return 0
-	}
-	return renderedTextLineCount(strings.Join(sections, "\n\n")) + 1
-}
-
 func renderPullRequestDetailSectionSeparator(width int) string {
 	if width < 1 {
 		width = defaultDetailWrapWidth

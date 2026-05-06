@@ -77,6 +77,7 @@ type Program struct {
 	actionsPopupSearchEditor          *lineEditor
 	actionsPopupErrorMessage          string
 	reviewSession                     reviewSessionState
+	browserCollapsedSectionStates     map[string]bool
 	modalEditor                       *modalEditorState
 	externalEditor                    externalEditor
 	linkOpener                        linkOpener
@@ -121,6 +122,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:       map[string]bool{},
 		reviewDiffRenderCache:             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
+		browserCollapsedSectionStates:     map[string]bool{},
 		additionalPullRequestsLoadStarted: map[PullRequestTab]bool{},
 		additionalPullRequestsLoading:     map[PullRequestTab]bool{},
 		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},

@@ -54,7 +54,7 @@ type pullRequestDetailResult struct {
 func (tab DetailTab) Label() string {
 	switch tab {
 	case CommentsDetailTab:
-		return fmt.Sprintf("%s Comments", detailCommentsIcon)
+		return fmt.Sprintf("%s Conversations", detailCommentsIcon)
 	default:
 		return fmt.Sprintf("%s Description", detailDescriptionIcon)
 	}

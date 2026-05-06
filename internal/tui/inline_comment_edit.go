@@ -139,8 +139,12 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	commentContentLine := program.detailViewState.cursor.line - pullRequestBrowserContentStartLine(summary, result.detail, program.detailWrapWidth)
-	target, ok := pullRequestCommentsInlineCommentActionTargetAtCursor(result.detail, program.markdownRenderer, program.detailWrapWidth, commentContentLine)
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	if !ok || sectionAtCursor.section.inlineThread == nil || !sectionAtCursor.inBody {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+
+	target, ok := pullRequestInlineThreadCommentActionTargetAtBodyCursor(*sectionAtCursor.section.inlineThread, program.markdownRenderer, program.detailWrapWidth, sectionAtCursor.bodyLine)
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
@@ -181,38 +185,12 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 	}, true
 }
 
-func pullRequestCommentsInlineCommentActionTargetAtCursor(detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
-	if len(detail.InlineCommentThreads) == 0 {
-		return pullRequestReviewCommentActionTarget{}, false
-	}
-
-	sections := buildPullRequestCommentsRenderedSections(detail.Comments, detail.InlineCommentThreads, detail.InlineComments, renderer, width)
-	lineIndex := cursorLine
-	for sectionIndex, section := range sections {
-		lineCount := renderedTextLineCount(section.text)
-		if section.inlineThread != nil && lineIndex >= 0 && lineIndex < lineCount {
-			return pullRequestInlineThreadCommentActionTargetAtCursor(*section.inlineThread, renderer, width, lineIndex)
-		}
-		lineIndex -= lineCount
-		if sectionIndex < len(sections)-1 {
-			if lineIndex == 0 {
-				return pullRequestReviewCommentActionTarget{}, false
-			}
-			lineIndex--
-		}
-	}
-
-	return pullRequestReviewCommentActionTarget{}, false
-}
-
-func pullRequestInlineThreadCommentActionTargetAtCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
+func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
 	lineIndex := cursorLine
 	comment := pullRequestInlineCommentFromThread(thread)
-	for _, prefix := range []string{renderPullRequestInlineCommentLocationLine(comment), renderPullRequestInlineCommentThreadStatusLine(thread)} {
-		lineIndex -= renderedTextLineCount(prefix)
-		if lineIndex < 0 {
-			return pullRequestReviewCommentActionTarget{}, false
-		}
+	lineIndex -= renderedTextLineCount(renderPullRequestInlineCommentLocationLine(comment))
+	if lineIndex < 0 {
+		return pullRequestReviewCommentActionTarget{}, false
 	}
 
 	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)

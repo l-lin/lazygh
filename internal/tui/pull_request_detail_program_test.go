@@ -12,7 +12,7 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDetailAndShowsDescriptionAndCommentsInSeparateTabs(t *testing.T) {
+func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDetailAndShowsDescriptionAndConversationsInSeparateTabs(t *testing.T) {
 	firstSummary := githubcli.PullRequest{Title: "First PR", Number: 101, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-1"}
 	secondSummary := githubcli.PullRequest{Title: "Second PR", Number: 102, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback-2"}
 	firstDetail := githubcli.PullRequestDetail{
@@ -113,15 +113,22 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	expectedSeparator := strings.Repeat("─", detailView.InnerWidth())
-	if !strings.Contains(detailView.Buffer(), "Reviewers (1/2)") || !strings.Contains(detailView.Buffer(), "CI / lint (Successful)") || !strings.Contains(detailView.Buffer(), "Changes can be cleanly merged.") {
-		t.Fatalf("expected the description tab to show the overview section, actual %q", detailView.Buffer())
+	for _, expected := range []string{" Reviewers (1/2)", " Merge Checks", " Builds", "Rendered body 101"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected the description tab to contain %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+	for _, hidden := range []string{"@reviewer-requested", "CI / lint (Successful)", "Changes can be cleanly merged."} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected the description tab to keep overview block bodies folded, actual %q", detailView.Buffer())
+		}
 	}
 	headerLineIndex := given_viewLineIndexContaining(t, detailView, detailStatusIcon+" OPEN")
-	overviewLineIndex := given_viewLineIndexContaining(t, detailView, "Reviewers")
+	overviewLineIndex := given_viewLineIndexContaining(t, detailView, " Reviewers (1/2)")
 	separatorLineIndex := given_viewLineIndexContaining(t, detailView, expectedSeparator)
 	bodyLineIndex := given_viewLineIndexContaining(t, detailView, "Rendered body 101")
 	if !(headerLineIndex < overviewLineIndex && overviewLineIndex < separatorLineIndex && separatorLineIndex < bodyLineIndex) {
-		t.Fatalf("expected header, overview, separator, and body to stay ordered, actual %q", detailView.Buffer())
+		t.Fatalf("expected header, folded overview, separator, and body to stay ordered, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected description tab to hide comments, actual %q", detailView.Buffer())
@@ -135,34 +142,15 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	then_noError(t, actualErr)
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	expectedSeparator = strings.Repeat("─", detailView.InnerWidth())
-	if !strings.Contains(detailView.Buffer(), "Reviewers (1/2)") || !strings.Contains(detailView.Buffer(), "CI / lint (Successful)") || !strings.Contains(detailView.Buffer(), "Changes can be cleanly merged.") {
-		t.Fatalf("expected the comments tab to show the overview section, actual %q", detailView.Buffer())
+	for _, hidden := range []string{detailRepositoryIcon + " acme/widgets#101", detailStatusIcon + " OPEN", "Reviewers", "Merge Checks", "Builds", "Rendered body 101"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected the conversations tab to hide description metadata %q, actual %q", hidden, detailView.Buffer())
+		}
 	}
-	headerLineIndex = given_viewLineIndexContaining(t, detailView, detailStatusIcon+" OPEN")
-	overviewLineIndex = given_viewLineIndexContaining(t, detailView, "Reviewers")
-	separatorLineIndex = given_viewLineIndexContaining(t, detailView, expectedSeparator)
-	commentLineIndex := given_viewLineIndexContaining(t, detailView, detailCommentsIcon+" @reviewer-one")
-	if !(headerLineIndex < overviewLineIndex && overviewLineIndex < separatorLineIndex && separatorLineIndex < commentLineIndex) {
-		t.Fatalf("expected header, overview, separator, and comments to stay ordered, actual %q", detailView.Buffer())
-	}
-	if !strings.Contains(detailView.Buffer(), detailCommentsIcon+" @reviewer-one") || !strings.Contains(detailView.Buffer(), "2026-04-18 10:00 UTC") {
-		t.Fatalf("expected the comments tab to render the comment author badge and timestamp inside the box, actual %q", detailView.Buffer())
-	}
-	if !strings.Contains(detailView.Buffer(), "Rendered comment 101") {
-		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered comment 101", detailView.Buffer())
-	}
-	if !strings.Contains(detailView.Buffer(), detailInlineCommentLocationIcon+" internal/tui/render.go:43  +1  -1") {
-		t.Fatalf("expected comments tab to contain the inline comment location and diff counts, actual %q", detailView.Buffer())
-	}
-	if !strings.Contains(detailView.Buffer(), "   : 43 │ \"model\": \"opus\",") {
-		t.Fatalf("expected comments tab to contain the inline diff line, actual %q", detailView.Buffer())
-	}
-	if !strings.Contains(detailView.Buffer(), "Rendered inline 101") {
-		t.Fatalf("expected comments tab to contain %q, actual %q", "Rendered inline 101", detailView.Buffer())
-	}
-	if strings.Contains(detailView.Buffer(), "Rendered body 101") {
-		t.Fatalf("expected comments tab to hide description text, actual %q", detailView.Buffer())
+	for _, expected := range []string{" Comment", "Rendered comment 101", " Comment on line R43", detailInlineCommentLocationIcon + " internal/tui/render.go:43  +1  -1", "Rendered inline 101"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected the conversations tab to contain %q, actual %q", expected, detailView.Buffer())
+		}
 	}
 	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label()}, 1)
 
@@ -186,6 +174,106 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101", "acme/widgets#102"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101", "acme/widgets#102"}, loader.detailCalls)
+	}
+}
+
+func TestBrowserMode_GivenTheCursorOnAnOverviewSection_WhenPressingEnter_ThenItTogglesTheSectionVisibility(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:          "First PR",
+				Number:         42,
+				Body:           "Body 42",
+				BaseRefName:    "main",
+				HeadRefName:    "feature/overview",
+				State:          "OPEN",
+				ReviewRequests: []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, " Reviewers (0/1)")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "@reviewer-requested") {
+		t.Fatalf("expected enter to expand the overview section, actual %q", detailView.Buffer())
+	}
+
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Reviewers (0/1)") {
+		t.Fatalf("expected enter to collapse the overview section again, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "@reviewer-requested") {
+		t.Fatalf("expected the collapsed overview section to hide its body, actual %q", detailView.Buffer())
+	}
+}
+
+func TestBrowserMode_GivenTheCursorOnAConversation_WhenPressingZA_ThenItTogglesTheConversationVisibility(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/conversations",
+				State:       "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:      "Comment body",
+					CreatedAt: "2026-04-18T10:00:00Z",
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Comment body": "Rendered comment body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, " Comment")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment") {
+		t.Fatalf("expected za to collapse the conversation, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered comment body") {
+		t.Fatalf("expected the collapsed conversation to hide its body, actual %q", detailView.Buffer())
+	}
+
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " Comment") || !strings.Contains(detailView.Buffer(), "Rendered comment body") {
+		t.Fatalf("expected za to expand the conversation again, actual %q", detailView.Buffer())
 	}
 }
 

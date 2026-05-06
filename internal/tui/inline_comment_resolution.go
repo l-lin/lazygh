@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
-
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 const (
@@ -112,11 +110,11 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	commentContentLine := program.detailViewState.cursor.line - pullRequestBrowserContentStartLine(summary, result.detail, program.detailWrapWidth)
-	thread, ok := pullRequestCommentsInlineThreadAtCursor(result.detail, program.markdownRenderer, program.detailWrapWidth, commentContentLine)
-	if !ok {
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	if !ok || sectionAtCursor.section.inlineThread == nil {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
+	thread := *sectionAtCursor.section.inlineThread
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
 		return pullRequestReviewThreadActionTarget{}, false
@@ -157,30 +155,6 @@ func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullReques
 		threadID:   strings.TrimSpace(thread.ID),
 		resolved:   thread.IsResolved,
 	}, true
-}
-
-func pullRequestCommentsInlineThreadAtCursor(detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int, cursorLine int) (githubcli.PullRequestReviewThread, bool) {
-	if len(detail.InlineCommentThreads) == 0 {
-		return githubcli.PullRequestReviewThread{}, false
-	}
-
-	sections := buildPullRequestCommentsRenderedSections(detail.Comments, detail.InlineCommentThreads, detail.InlineComments, renderer, width)
-	lineIndex := cursorLine
-	for sectionIndex, section := range sections {
-		lineCount := renderedTextLineCount(section.text)
-		if section.inlineThread != nil && lineIndex >= 0 && lineIndex < lineCount {
-			return *section.inlineThread, true
-		}
-		lineIndex -= lineCount
-		if sectionIndex < len(sections)-1 {
-			if lineIndex == 0 {
-				return githubcli.PullRequestReviewThread{}, false
-			}
-			lineIndex--
-		}
-	}
-
-	return githubcli.PullRequestReviewThread{}, false
 }
 
 func renderedTextLineCount(text string) int {

@@ -45,10 +45,10 @@ type pullRequestOverviewEntry struct {
 }
 
 type pullRequestReviewerOverview struct {
-	Entries                []pullRequestOverviewEntry
-	ApprovedCount          int
-	PendingCount           int
-	ChangesRequestedCount  int
+	Entries               []pullRequestOverviewEntry
+	ApprovedCount         int
+	PendingCount          int
+	ChangesRequestedCount int
 }
 
 func buildPullRequestOverviewSection(detail githubcli.PullRequestDetail) pullRequestOverviewSection {
@@ -95,12 +95,8 @@ func renderPullRequestOverviewEntries(entries []pullRequestOverviewEntry) string
 		return ""
 	}
 
-	lines := make([]string, 0, len(entries)*3)
-	for index, entry := range entries {
-		if index > 0 {
-			lines = append(lines, "")
-		}
-
+	lines := make([]string, 0, len(entries)*2)
+	for _, entry := range entries {
 		label := strings.TrimSpace(entry.Label)
 		if label != "" {
 			lines = append(lines, renderPullRequestOverviewEntryLabel(entry))

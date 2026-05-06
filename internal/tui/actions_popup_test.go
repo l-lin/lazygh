@@ -772,7 +772,7 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenExec
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Resolved") {
+	if !strings.Contains(detailView.Buffer(), "· resolved") {
 		t.Fatalf("expected the detail buffer to refresh with the resolved state, actual %q", detailView.Buffer())
 	}
 }

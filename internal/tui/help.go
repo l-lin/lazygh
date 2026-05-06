@@ -150,6 +150,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries,
 				program.pullRequestCommentHelpEntry(keymapScopeDetail),
+				helpEntry{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse section"},
 				helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "PR actions"},
 				helpEntry{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeDetail, action: "previous_tab"}), Description: "Previous detail tab"},
 				helpEntry{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeDetail, action: "next_tab"}), Description: "Next detail tab"},

@@ -50,10 +50,16 @@ func (program *Program) armInlineConversationTogglePrefix(gui *gocui.Gui, view *
 
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
 	program.detailViewState.clearPendingPrefix()
-	if !program.reviewSession.active || program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
+	if program.reviewSession.active {
+		return program.toggleReviewInlineConversationVisibility(gui, view)
+	}
+	return program.toggleBrowserDetailSectionVisibility(gui, view)
+}
 
+func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
 	selectedFile, ok := program.selectedReviewSessionDiffFile()
 	if !ok {
 		return nil
@@ -84,6 +90,52 @@ func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view 
 		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
 		program.detailViewState.preferredColumn = 0
 	}
+	if gui == nil {
+		return nil
+	}
+	return program.refreshViews(gui)
+}
+
+func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
+	if !program.shouldShowPullRequestDetailTabs() {
+		return nil
+	}
+
+	summary, ok := program.model.SelectedPullRequestSummary()
+	if !ok {
+		return nil
+	}
+	result, ok := program.pullRequestDetailForSummary(summary)
+	if !ok || result.err != nil {
+		return nil
+	}
+
+	actualView := view
+	if actualView == nil && gui != nil {
+		detailView, err := gui.View(viewDetailName)
+		if err == nil {
+			actualView = detailView
+		}
+	}
+	viewportHeight := viewPageSize(actualView)
+	detailDocument := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(detailDocument, viewportHeight)
+
+	cursorLine := program.detailViewState.cursor.line
+	var sectionAtCursor browserDetailSectionCursor
+	switch program.activeDetailTab {
+	case CommentsDetailTab:
+		sectionAtCursor, ok = program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, cursorLine)
+	default:
+		sectionAtCursor, ok = program.browserOverviewSectionAtCursor(summary, result.detail, detailDocument.width, cursorLine)
+	}
+	if !ok {
+		return nil
+	}
+
+	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
+	program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerLine, column: 0}
+	program.detailViewState.preferredColumn = 0
 	if gui == nil {
 		return nil
 	}

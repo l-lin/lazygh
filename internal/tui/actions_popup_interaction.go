@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
-	if program.reviewSession.active && program.model.Focus() == FocusDetailView && program.detailViewState.consumeInlineConversationTogglePrefix() {
+	if program.model.Focus() == FocusDetailView && program.detailViewState.consumeInlineConversationTogglePrefix() {
 		return program.toggleInlineConversationVisibility(gui, nil)
 	}
 
