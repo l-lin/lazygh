@@ -6,10 +6,11 @@ import (
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
 )
 
-func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDefaultKeyHints(t *testing.T) {
+func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedKeyHints(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -18,10 +19,11 @@ func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDefault
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  a Actions")
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsFooterName, 0, "?: Help, /: Search, a: Action", given_themeColorHex(t, theme.InactiveTitleHex), "footer key hints")
 }
 
-func TestPaneFooter_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResolvedKeys(t *testing.T) {
+func TestPaneFooter_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResolvedKeysInKeyColonDescriptionFormat(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_pullRequestCommentModel(), appconfig.KeymapOverrides{
 		"main": {
 			"toggle_help": {"!"},
@@ -38,10 +40,10 @@ func TestPaneFooter_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResol
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "! Help  s/<c-s> Search  p Actions")
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "!: Help, s/<c-s>: Search, p: Action")
 }
 
-func TestPaneFooter_GivenAContextWithoutActions_WhenRendering_ThenItOmitsTheActionsHint(t *testing.T) {
+func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItHidesTheKeyHints(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -50,7 +52,23 @@ func TestPaneFooter_GivenAContextWithoutActions_WhenRendering_ThenItOmitsTheActi
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_footerTextIs(t, gui, viewUserFooterName, "? Help  / Search")
+	then_viewDoesNotExist(t, gui, viewUserFooterName)
+}
+
+func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItShowsOnlyTheSearchSummary(t *testing.T) {
+	model := given_model()
+	model.StartSearch()
+	model.UpdateSearchDraft("2")
+	model.SubmitSearch()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_footerTextIs(t, gui, viewUserFooterName, "/2 (1 match)")
 }
 
 func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingBrowserModePullRequestsAndDetail_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
@@ -87,13 +105,13 @@ func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingBrowserModePullReque
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  p Actions")
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, p: Action")
 
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewDetailFooterName, "? Help  / Search  d Actions")
+	then_footerTextIs(t, gui, viewDetailFooterName, "?: Help, /: Search, d: Action")
 }
 
 func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDiff_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
@@ -133,11 +151,11 @@ func TestPaneFooter_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDi
 
 	actualErr = subject.focusPullRequestsView(gui, nil)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  p Actions")
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, p: Action")
 
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	then_footerTextIs(t, gui, viewDetailFooterName, "? Help  / Search  d Actions")
+	then_footerTextIs(t, gui, viewDetailFooterName, "?: Help, /: Search, d: Action")
 }
 
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {

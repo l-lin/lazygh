@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
 )
 
@@ -78,7 +79,7 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 }
 
 func (program *Program) shouldShowPaneFooterKeyHints(focus Focus) bool {
-	if focus != program.model.Focus() || !program.model.PaneVisible(focus) {
+	if focus == FocusUserView || focus != program.model.Focus() || !program.model.PaneVisible(focus) {
 		return false
 	}
 	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
@@ -95,7 +96,11 @@ func (program *Program) paneFooterKeyHintsText(focus Focus) string {
 	if actionsHint := program.paneFooterActionsHint(focus); actionsHint != "" {
 		hints = append(hints, actionsHint)
 	}
-	return strings.Join(filterEmptyStrings(hints), "  ")
+	visibleText := strings.Join(filterEmptyStrings(hints), ", ")
+	if strings.TrimSpace(visibleText) == "" {
+		return ""
+	}
+	return styleText(visibleText, foregroundColorEscape(theme.InactiveTitleHex))
 }
 
 func (program *Program) paneFooterKeyHint(label string, actionIDs ...keybindingActionID) string {
@@ -103,7 +108,7 @@ func (program *Program) paneFooterKeyHint(label string, actionIDs ...keybindingA
 	if resolvedKeys == "" {
 		return ""
 	}
-	return resolvedKeys + " " + label
+	return resolvedKeys + ": " + label
 }
 
 func (program *Program) paneFooterActionsHint(focus Focus) string {
@@ -111,7 +116,7 @@ func (program *Program) paneFooterActionsHint(focus Focus) string {
 	if !ok || len(program.currentActionsPopupActions()) == 0 {
 		return ""
 	}
-	return program.paneFooterKeyHint("Actions", actionID)
+	return program.paneFooterKeyHint("Action", actionID)
 }
 
 func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {

@@ -93,7 +93,7 @@ func TestActionsPopup_GivenReviewModeSubmitCommentActionSelected_WhenSubmitting_
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 
 	then_statusLineContains(t, gui, pullRequestReviewSuccessMessage)
-	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  a Actions")
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
