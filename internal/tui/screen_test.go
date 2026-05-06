@@ -51,6 +51,33 @@ func then_viewLineSegmentHasForegroundColor(t *testing.T, gui *gocui.Gui, viewNa
 	}
 }
 
+func then_viewLineHasBackgroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, expected int32, label string) {
+	t.Helper()
+
+	actualErr := gui.ForceLayoutAndRedraw()
+	then_noError(t, actualErr)
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	x0, y0, _, _, actualErr := gui.ViewPosition(viewName)
+	then_noError(t, actualErr)
+
+	screen, ok := gocui.Screen.(tcell.SimulationScreen)
+	if !ok {
+		t.Fatal("expected a simulation screen")
+	}
+
+	cells, width, _ := screen.GetContents()
+	for offset := range view.InnerWidth() {
+		actualCell := cells[((y0+1+lineIndex)*width)+(x0+1+offset)]
+		_, backgroundColor, _ := actualCell.Style.Decompose()
+		actual := backgroundColor.TrueColor().Hex()
+		if actual != expected {
+			t.Fatalf("expected %s color %#x at %s line %d offset %d, actual %#x", label, expected, viewName, lineIndex, offset, actual)
+		}
+	}
+}
+
 func then_viewLineSegmentIsNotUnderlined(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) {
 	t.Helper()
 

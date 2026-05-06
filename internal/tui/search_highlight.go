@@ -69,7 +69,7 @@ func backgroundColorEscape(hexColor string) string {
 		return ""
 	}
 
-	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", red, green, blue)
+	return fmt.Sprintf("\x1b[%sm", trueColorANSIParameters(48, red, green, blue))
 }
 
 func parseHexColor(hexColor string) (int, int, int, bool) {
