@@ -192,7 +192,7 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
 				{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex)},
-				{Text: titleSuffix},
+				{Text: titleSuffix, Prefix: foregroundColorEscape(theme.PullRequestTitleHex)},
 			},
 		},
 		Summary: &summaryCopy,

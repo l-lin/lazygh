@@ -236,7 +236,7 @@ func TestRenderReviewDiffFile_GivenChangedFile_WhenRendering_ThenItPrefixesTheHe
 	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
 	actualHeader := string(actualDocument.lines[0])
 
-	expected := "󰈔 engines/preventive_continuous_care/app/jobs/preventive_continuous_care/complete_health_reminders_job.rb:43  +1  -1"
+	expected := detailInlineCommentLocationIcon + " engines/preventive_continuous_care/app/jobs/preventive_continuous_care/complete_health_reminders_job.rb:43  +1  -1"
 	if actualHeader != expected {
 		t.Fatalf("expected review diff header %q, actual %q", expected, actualHeader)
 	}

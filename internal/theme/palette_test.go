@@ -11,10 +11,12 @@ const (
 	darkDefaultMarkdownHeadingHex           = "#F0F6FC"
 	darkDefaultMarkdownHeadingBackgroundHex = "#58A6FF"
 	darkDefaultPullRequestReferenceHex      = "#8B949E"
+	darkDefaultPullRequestTitleHex          = "#F0F6FC"
 	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
 	lightDefaultActiveTextHex               = "#000000"
 	lightDefaultSelectedLineBackgroundHex   = "#E6E6E6"
 	lightDefaultPullRequestReferenceHex     = "#656D76"
+	lightDefaultPullRequestTitleHex         = "#000000"
 )
 
 func TestDefaultPalette_GivenDarkSystemPolarity_WhenResolving_ThenItUsesDarkDefaults(t *testing.T) {
@@ -142,6 +144,19 @@ func TestApplyPalette_GivenPullRequestReferenceOverride_WhenApplying_ThenItUpdat
 	}
 }
 
+func TestApplyPalette_GivenPullRequestTitleOverride_WhenApplying_ThenItUpdatesThePackageColor(t *testing.T) {
+	t.Cleanup(ResetPalette)
+
+	ApplyPalette(Palette{PullRequestTitleHex: "#1F2937"})
+
+	if PullRequestTitleHex != "#1F2937" {
+		t.Fatalf("expected pull request title color %q, actual %q", "#1F2937", PullRequestTitleHex)
+	}
+	if ActiveTextHex != DefaultPalette().ActiveTextHex {
+		t.Fatalf("expected untouched active text color %q, actual %q", DefaultPalette().ActiveTextHex, ActiveTextHex)
+	}
+}
+
 func given_systemPolarityDetector(t *testing.T, detector func() systemPolarity) {
 	t.Helper()
 
@@ -170,6 +185,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.PullRequestReferenceHex != darkDefaultPullRequestReferenceHex {
 		t.Fatalf("expected pull request reference color %q, actual %q", darkDefaultPullRequestReferenceHex, actual.PullRequestReferenceHex)
 	}
+	if actual.PullRequestTitleHex != darkDefaultPullRequestTitleHex {
+		t.Fatalf("expected pull request title color %q, actual %q", darkDefaultPullRequestTitleHex, actual.PullRequestTitleHex)
+	}
 	if actual.DiffAdditionBackgroundHex != darkDefaultDiffAdditionBackgroundHex {
 		t.Fatalf("expected diff addition background %q, actual %q", darkDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)
 	}
@@ -186,5 +204,8 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.PullRequestReferenceHex != lightDefaultPullRequestReferenceHex {
 		t.Fatalf("expected pull request reference color %q, actual %q", lightDefaultPullRequestReferenceHex, actual.PullRequestReferenceHex)
+	}
+	if actual.PullRequestTitleHex != lightDefaultPullRequestTitleHex {
+		t.Fatalf("expected pull request title color %q, actual %q", lightDefaultPullRequestTitleHex, actual.PullRequestTitleHex)
 	}
 }

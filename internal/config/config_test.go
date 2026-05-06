@@ -132,6 +132,7 @@ inactive_border = "#54546D"
 selected_line_background = "wrong"
 markdown_heading = "#1F1F28"
 pull_request_reference = "#656D76"
+pull_request_title = "#111827"
 `)
 
 	actual, actualErr := when_loading(configPath)
@@ -142,6 +143,7 @@ pull_request_reference = "#656D76"
 		InactiveBorderHex:       "#54546D",
 		MarkdownHeadingHex:      "#1F1F28",
 		PullRequestReferenceHex: "#656D76",
+		PullRequestTitleHex:     "#111827",
 	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)

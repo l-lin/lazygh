@@ -9,6 +9,7 @@ type Palette struct {
 	InactiveTextHex                      string `toml:"inactive_text"`
 	InactiveTitleHex                     string `toml:"inactive_title"`
 	PullRequestReferenceHex              string `toml:"pull_request_reference"`
+	PullRequestTitleHex                  string `toml:"pull_request_title"`
 	SelectedLineBackgroundHex            string `toml:"selected_line_background"`
 	SearchHighlightHex                   string `toml:"search_highlight"`
 	MarkdownHeadingHex                   string `toml:"markdown_heading"`
@@ -49,6 +50,7 @@ var defaultLightPalette = Palette{
 	InactiveTextHex:                      "#000000",
 	InactiveTitleHex:                     "#636363",
 	PullRequestReferenceHex:              "#656D76",
+	PullRequestTitleHex:                  "#000000",
 	SelectedLineBackgroundHex:            "#E6E6E6",
 	SearchHighlightHex:                   "#F9EAB3",
 	MarkdownHeadingHex:                   "#000000",
@@ -89,6 +91,7 @@ var defaultDarkPalette = Palette{
 	InactiveTextHex:                      "#E6EDF3",
 	InactiveTitleHex:                     "#8B949E",
 	PullRequestReferenceHex:              "#8B949E",
+	PullRequestTitleHex:                  "#F0F6FC",
 	SelectedLineBackgroundHex:            "#21262D",
 	SearchHighlightHex:                   "#633C01",
 	MarkdownHeadingHex:                   "#F0F6FC",
@@ -133,6 +136,7 @@ var (
 	InactiveTextHex                      = initialDefaultPalette.InactiveTextHex
 	InactiveTitleHex                     = initialDefaultPalette.InactiveTitleHex
 	PullRequestReferenceHex              = initialDefaultPalette.PullRequestReferenceHex
+	PullRequestTitleHex                  = initialDefaultPalette.PullRequestTitleHex
 	SelectedLineBackgroundHex            = initialDefaultPalette.SelectedLineBackgroundHex
 	SearchHighlightHex                   = initialDefaultPalette.SearchHighlightHex
 	MarkdownHeadingHex                   = initialDefaultPalette.MarkdownHeadingHex
@@ -191,6 +195,7 @@ func ResolvePalette(overrides Palette) Palette {
 	resolved.InactiveTextHex = resolvedColor(resolved.InactiveTextHex, normalized.InactiveTextHex)
 	resolved.InactiveTitleHex = resolvedColor(resolved.InactiveTitleHex, normalized.InactiveTitleHex)
 	resolved.PullRequestReferenceHex = resolvedColor(resolved.PullRequestReferenceHex, normalized.PullRequestReferenceHex)
+	resolved.PullRequestTitleHex = resolvedColor(resolved.PullRequestTitleHex, normalized.PullRequestTitleHex)
 	resolved.SelectedLineBackgroundHex = resolvedColor(resolved.SelectedLineBackgroundHex, normalized.SelectedLineBackgroundHex)
 	resolved.SearchHighlightHex = resolvedColor(resolved.SearchHighlightHex, normalized.SearchHighlightHex)
 	resolved.MarkdownHeadingHex = resolvedColor(resolved.MarkdownHeadingHex, normalized.MarkdownHeadingHex)
@@ -240,6 +245,7 @@ func applyResolvedPalette(palette Palette) {
 	InactiveTextHex = palette.InactiveTextHex
 	InactiveTitleHex = palette.InactiveTitleHex
 	PullRequestReferenceHex = palette.PullRequestReferenceHex
+	PullRequestTitleHex = palette.PullRequestTitleHex
 	SelectedLineBackgroundHex = palette.SelectedLineBackgroundHex
 	SearchHighlightHex = palette.SearchHighlightHex
 	MarkdownHeadingHex = palette.MarkdownHeadingHex
@@ -281,6 +287,7 @@ func normalizePalette(overrides Palette) Palette {
 		InactiveTextHex:                      normalizeHexColor(overrides.InactiveTextHex),
 		InactiveTitleHex:                     normalizeHexColor(overrides.InactiveTitleHex),
 		PullRequestReferenceHex:              normalizeHexColor(overrides.PullRequestReferenceHex),
+		PullRequestTitleHex:                  normalizeHexColor(overrides.PullRequestTitleHex),
 		SelectedLineBackgroundHex:            normalizeHexColor(overrides.SelectedLineBackgroundHex),
 		SearchHighlightHex:                   normalizeHexColor(overrides.SearchHighlightHex),
 		MarkdownHeadingHex:                   normalizeHexColor(overrides.MarkdownHeadingHex),

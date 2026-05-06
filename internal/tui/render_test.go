@@ -210,7 +210,7 @@ func TestLayout_GivenPullRequestListRows_WhenRendering_ThenItUsesThePullRequestR
 	then_noError(t, actualErr)
 
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, theme.PullRequestReferenceHex), "pull request reference")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, theme.InactiveTextHex), "pull request title")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, theme.PullRequestTitleHex), "pull request title")
 }
 
 func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(t *testing.T) {
