@@ -21,6 +21,8 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 		Number:    42,
 		Author:    &githubcli.PullRequestAuthor{Login: "octocat"},
 		State:     "OPEN",
+		CreatedAt: "2026-04-18T10:00:00Z",
+		UpdatedAt: "2026-04-18T12:30:00Z",
 		Labels:    []githubcli.PullRequestLabel{{Name: "bug"}, {Name: "backend"}},
 		Assignees: []githubcli.PullRequestAuthor{{Login: "assignee-one"}, {Login: "assignee-two"}},
 		ReviewRequests: []githubcli.PullRequestReviewRequest{
@@ -38,6 +40,9 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 			{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"},
 			{Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"},
 		},
+		Additions:   12,
+		Deletions:   3,
+		ChangedFiles: 5,
 	}
 
 	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
@@ -51,10 +56,14 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 		detailRepositoryIcon + " acme/widgets#42",
 		detailAuthorIcon + " @octocat",
 		"Add a real detail pane",
+		"Created: 2026-04-18 10:00 UTC",
+		"Updated: 2026-04-18 12:30 UTC",
 		detailBranchIcon + " main ← feature/detail",
 		detailStatusIcon + " OPEN",
 		detailChecksIcon + " 1 passing, 1 failing",
 		detailCommentsIcon + " 1 comment",
+		"+12",
+		"-3",
 		detailLabelIcon + " bug",
 		detailLabelIcon + " backend",
 		detailAssigneesIcon + " @assignee-one",
@@ -92,6 +101,40 @@ func TestRenderPullRequestDetailHeader_GivenInlineCommentThreadsAndRestInlineCom
 
 	if !strings.Contains(actual, detailCommentsIcon+" 3 comments") {
 		t.Fatalf("expected the header to count thread comments once, actual %q", actual)
+	}
+}
+
+func TestRenderPullRequestDetailHeader_GivenChurnCounts_WhenFormatting_ThenItUsesTheDiffPalette(t *testing.T) {
+	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
+	detail := githubcli.PullRequestDetail{Number: 42, Additions: 12, Deletions: 3, ChangedFiles: 5}
+
+	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
+	lineIndex, line := given_detailDocumentLineContaining(t, actualDocument, "+12")
+	additionIndex := given_runeIndexInString(t, line, "+12")
+	deletionIndex := given_runeIndexInString(t, line, "-3")
+
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][additionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionForegroundHex) {
+		t.Fatalf("expected additions prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][deletionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionForegroundHex) {
+		t.Fatalf("expected deletions prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionForegroundHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestDetailHeader_GivenSummaryOnlyUpdatedTimestamp_WhenFormatting_ThenItOmitsMissingCreatedTimeAndChurn(t *testing.T) {
+	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-04-18T12:30:00Z"}
+	detail := githubcli.PullRequestDetail{Number: 42}
+
+	actual := renderPullRequestDetailHeader(summary, detail)
+
+	if strings.Contains(actual, "Created:") {
+		t.Fatalf("expected the header to omit the missing created timestamp, actual %q", actual)
+	}
+	if !strings.Contains(actual, "Updated: 2026-04-18 12:30 UTC") {
+		t.Fatalf("expected the header to contain the updated timestamp, actual %q", actual)
+	}
+	if strings.Contains(actual, "  +0") || strings.Contains(actual, "  -0") {
+		t.Fatalf("expected the header to omit placeholder churn counts, actual %q", actual)
 	}
 }
 

@@ -70,7 +70,7 @@ func renderPullRequestDetailError(summary githubcli.PullRequest, err error) stri
 }
 
 func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
-	parts := make([]string, 0, 4)
+	parts := make([]string, 0, 6)
 
 	baseRefName := strings.TrimSpace(detail.BaseRefName)
 	headRefName := strings.TrimSpace(detail.HeadRefName)
@@ -87,6 +87,7 @@ func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.P
 
 	commentCount := pullRequestDetailCommentCount(detail)
 	parts = append(parts, fmt.Sprintf("%s %s", detailCommentsIcon, formatCommentCount(commentCount)))
+	parts = append(parts, renderPullRequestChurnParts(detail)...)
 
 	return strings.Join(parts, "  ")
 }

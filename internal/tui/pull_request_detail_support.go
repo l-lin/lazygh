@@ -65,6 +65,12 @@ func renderPullRequestContextLine(summary githubcli.PullRequest, detail githubcl
 	if authorLogin != "-" {
 		parts = append(parts, fmt.Sprintf("%s %s", detailAuthorIcon, authorLogin))
 	}
+	if createdAt := formattedOptionalTimestamp(detail.CreatedAt); createdAt != "" {
+		parts = append(parts, "Created: "+createdAt)
+	}
+	if updatedAt := formattedOptionalTimestamp(firstNonEmpty(detail.UpdatedAt, summary.UpdatedAt)); updatedAt != "" {
+		parts = append(parts, "Updated: "+updatedAt)
+	}
 	return strings.Join(parts, "  ")
 }
 
@@ -297,6 +303,29 @@ func mergeableText(mergeable string) string {
 
 func formatCommentCount(count int) string {
 	return fmt.Sprintf("%d %s", count, pluralize(count, "comment", "comments"))
+}
+
+func renderPullRequestChurnParts(detail githubcli.PullRequestDetail) []string {
+	if !pullRequestChurnAvailable(detail) {
+		return nil
+	}
+
+	return []string{
+		styleText(fmt.Sprintf("+%d", detail.Additions), foregroundColorEscape(theme.DiffAdditionForegroundHex)),
+		styleText(fmt.Sprintf("-%d", detail.Deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex)),
+	}
+}
+
+func pullRequestChurnAvailable(detail githubcli.PullRequestDetail) bool {
+	return detail.ChangedFiles > 0 || detail.Additions > 0 || detail.Deletions > 0
+}
+
+func formattedOptionalTimestamp(value string) string {
+	trimmedValue := strings.TrimSpace(value)
+	if trimmedValue == "" {
+		return ""
+	}
+	return formatTimestamp(trimmedValue)
 }
 
 func effectiveMarkdownWidth(width int) int {

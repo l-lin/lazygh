@@ -4,7 +4,7 @@
 
 ## Status
 The repo now boots into a three-view TUI:
-- view `0`: detail pane, including rich PR metadata, markdown body rendering, and comments from `gh pr view`
+- view `0`: detail pane, including rich PR metadata, UTC created and updated timestamps, colored `+N` and `-N` churn counts, markdown body rendering, and comments from `gh pr view`
 - view `1`: connected user from `gh api user`
 - view `2`: pull requests from ordered, configurable `gh` searches, rendered as ` owner/repo#123 title` rows with tabs named from the config
 
@@ -80,6 +80,7 @@ Configure palette overrides under `[theme]`.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
 - `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
+- The PR description header reuses the existing diff addition and deletion colors for `+N` and `-N` counts, so it stays aligned with the diff palette instead of inventing new paint.
 - Missing or invalid colors fall back to the built-in palette.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
 

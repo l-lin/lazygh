@@ -167,6 +167,43 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	}
 }
 
+func TestLayout_GivenDescriptionHeaderMetadata_WhenRendering_ThenTheDescriptionTabShowsColoredChurnAndTimestamps(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 118, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body", UpdatedAt: "2026-04-18T12:30:00Z"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#118": {Title: "Styled PR", Number: 118, Body: "Body 118", BaseRefName: "main", HeadRefName: "feature-118", State: "OPEN", CreatedAt: "2026-04-18T10:00:00Z", UpdatedAt: "2026-04-18T12:30:00Z", Additions: 12, Deletions: 3, ChangedFiles: 5},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 118": "Rendered body 118"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	for _, expected := range []string{"Created: 2026-04-18 10:00 UTC", "Updated: 2026-04-18 12:30 UTC", "+12", "-3", "Rendered body 118"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected detail buffer to contain %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+	countsLineIndex := given_viewLineIndexContaining(t, detailView, "+12")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, countsLineIndex, "+12", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "description header additions")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, countsLineIndex, "-3", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "description header deletions")
+}
+
 func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeSitterSyntaxColorsAndExactChangeBackgrounds(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

@@ -146,6 +146,10 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 				BaseRefName:    "main",
 				HeadRefName:    "feature/review",
 				State:          "OPEN",
+				CreatedAt:      "2026-04-18T10:00:00Z",
+				UpdatedAt:      "2026-04-18T12:30:00Z",
+				Additions:      12,
+				Deletions:      3,
 				ChangedFiles:   2,
 			},
 		},
@@ -175,7 +179,7 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	for _, expected := range []string{detailRepositoryIcon + " acme/widgets#42", detailAuthorIcon + " @octocat", detailLabelIcon + " bug", detailAssigneesIcon + " @assignee-one", detailReviewRequestsIcon + " @reviewer-requested", "Rendered body 42"} {
+	for _, expected := range []string{detailRepositoryIcon + " acme/widgets#42", detailAuthorIcon + " @octocat", "Created: 2026-04-18 10:00 UTC", "Updated: 2026-04-18 12:30 UTC", "+12", "-3", detailLabelIcon + " bug", detailAssigneesIcon + " @assignee-one", detailReviewRequestsIcon + " @reviewer-requested", "Rendered body 42"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the review detail pane to contain %q, actual %q", expected, detailView.Buffer())
 		}
