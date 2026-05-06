@@ -335,30 +335,7 @@ func pullRequestOverviewCheckDisplayName(check githubcli.PullRequestStatusCheck)
 }
 
 func pullRequestOverviewCheckStateLabel(check githubcli.PullRequestStatusCheck) string {
-	status := strings.ToUpper(strings.TrimSpace(check.Status))
-	conclusion := strings.ToUpper(strings.TrimSpace(check.Conclusion))
-	switch {
-	case status != "COMPLETED":
-		return "Pending"
-	case conclusion == "SUCCESS":
-		return "Successful"
-	case conclusion == "NEUTRAL":
-		return "Neutral"
-	case conclusion == "SKIPPED":
-		return "Skipped"
-	case conclusion == "CANCELLED":
-		return "Cancelled"
-	case conclusion == "TIMED_OUT":
-		return "Timed out"
-	case conclusion == "STARTUP_FAILURE":
-		return "Startup failure"
-	case conclusion == "ACTION_REQUIRED":
-		return "Action required"
-	case conclusion == "FAILURE":
-		return "Failed"
-	default:
-		return "Pending"
-	}
+	return classifyPullRequestStatusCheck(check).StateLabel
 }
 
 func pullRequestOverviewStatusForReviewState(state string) pullRequestOverviewStatus {
@@ -390,22 +367,7 @@ func pullRequestOverviewStatusForChecks(checks []githubcli.PullRequestStatusChec
 }
 
 func pullRequestOverviewStatusForCheck(check githubcli.PullRequestStatusCheck) pullRequestOverviewStatus {
-	status := strings.ToUpper(strings.TrimSpace(check.Status))
-	conclusion := strings.ToUpper(strings.TrimSpace(check.Conclusion))
-	if status != "COMPLETED" {
-		return pullRequestOverviewStatusPending
-	}
-
-	switch conclusion {
-	case "SUCCESS", "NEUTRAL", "SKIPPED":
-		return pullRequestOverviewStatusSuccess
-	case "FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED":
-		return pullRequestOverviewStatusFailure
-	case "CANCELLED":
-		return pullRequestOverviewStatusMuted
-	default:
-		return pullRequestOverviewStatusPending
-	}
+	return classifyPullRequestStatusCheck(check).OverviewStatus
 }
 
 func pullRequestOverviewStatusPriority(status pullRequestOverviewStatus) int {

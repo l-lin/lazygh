@@ -263,14 +263,11 @@ func summarizeStatusChecks(checks []githubcli.PullRequestStatusCheck) string {
 	failing := 0
 	pending := 0
 	for _, check := range checks {
-		status := strings.ToUpper(strings.TrimSpace(check.Status))
-		conclusion := strings.ToUpper(strings.TrimSpace(check.Conclusion))
-		switch {
-		case status != "COMPLETED":
-			pending++
-		case conclusion == "SUCCESS" || conclusion == "NEUTRAL" || conclusion == "SKIPPED":
+		classification := classifyPullRequestStatusCheck(check)
+		switch classification.SummaryKind {
+		case pullRequestStatusCheckSummaryKindPassing:
 			passing++
-		case conclusion == "FAILURE" || conclusion == "TIMED_OUT" || conclusion == "CANCELLED" || conclusion == "STARTUP_FAILURE" || conclusion == "ACTION_REQUIRED":
+		case pullRequestStatusCheckSummaryKindFailing:
 			failing++
 		default:
 			pending++
