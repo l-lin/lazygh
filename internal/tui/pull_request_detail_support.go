@@ -137,21 +137,7 @@ func approvedPullRequestReviewerLogins(reviews []githubcli.PullRequestReview) []
 		return nil
 	}
 
-	latestReviewByLogin := map[string]githubcli.PullRequestReview{}
-	latestReviewIndexes := map[string]int{}
-	for index, review := range reviews {
-		login := pullRequestReviewAuthorLogin(review.Author)
-		if login == "" {
-			continue
-		}
-
-		latestReview, ok := latestReviewByLogin[login]
-		if !ok || pullRequestReviewIsLater(review, index, latestReview, latestReviewIndexes[login]) {
-			latestReviewByLogin[login] = review
-			latestReviewIndexes[login] = index
-		}
-	}
-
+	latestReviewByLogin := latestPullRequestReviews(reviews)
 	approverLogins := make([]string, 0, len(latestReviewByLogin))
 	for login, review := range latestReviewByLogin {
 		if strings.EqualFold(strings.TrimSpace(review.State), "APPROVED") {
@@ -160,6 +146,24 @@ func approvedPullRequestReviewerLogins(reviews []githubcli.PullRequestReview) []
 	}
 	sort.Strings(approverLogins)
 	return approverLogins
+}
+
+func latestPullRequestReviews(reviews []githubcli.PullRequestReview) map[string]githubcli.PullRequestReview {
+	latestByLogin := map[string]githubcli.PullRequestReview{}
+	latestIndexes := map[string]int{}
+	for index, review := range reviews {
+		login := pullRequestReviewAuthorLogin(review.Author)
+		if login == "" {
+			continue
+		}
+
+		latestReview, ok := latestByLogin[login]
+		if !ok || pullRequestReviewIsLater(review, index, latestReview, latestIndexes[login]) {
+			latestByLogin[login] = review
+			latestIndexes[login] = index
+		}
+	}
+	return latestByLogin
 }
 
 func pullRequestReviewIsLater(candidate githubcli.PullRequestReview, candidateIndex int, current githubcli.PullRequestReview, currentIndex int) bool {

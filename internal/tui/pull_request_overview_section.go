@@ -193,21 +193,7 @@ func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRe
 }
 
 func latestPullRequestReviewsByLogin(reviews []githubcli.PullRequestReview) map[string]string {
-	latestByLogin := map[string]githubcli.PullRequestReview{}
-	latestIndexes := map[string]int{}
-	for index, review := range reviews {
-		login := pullRequestReviewAuthorLogin(review.Author)
-		if login == "" {
-			continue
-		}
-
-		latestReview, ok := latestByLogin[login]
-		if !ok || pullRequestReviewIsLater(review, index, latestReview, latestIndexes[login]) {
-			latestByLogin[login] = review
-			latestIndexes[login] = index
-		}
-	}
-
+	latestByLogin := latestPullRequestReviews(reviews)
 	statesByLogin := make(map[string]string, len(latestByLogin))
 	for login, review := range latestByLogin {
 		statesByLogin[login] = strings.ToUpper(strings.TrimSpace(review.State))
