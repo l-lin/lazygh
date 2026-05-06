@@ -29,12 +29,12 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		" Yank URL to clipboard",
-		" Open PR in browser",
-		" Refresh current PR information",
-		" Review: Approve PR",
-		" Review: Comment on PR",
-		" Review: Request changes",
+		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
+		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
+		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
+		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
+		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
 	})
 	if strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Start review", popupView.Buffer())

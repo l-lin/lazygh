@@ -6,12 +6,13 @@ import (
 )
 
 const (
-	darkDefaultActiveTextHex              = "#F0F6FC"
-	darkDefaultSelectedLineBackgroundHex  = "#21262D"
-	darkDefaultMarkdownHeadingHex         = "#58A6FF"
-	darkDefaultDiffAdditionBackgroundHex  = "#033A16"
-	lightDefaultActiveTextHex             = "#000000"
-	lightDefaultSelectedLineBackgroundHex = "#E6E6E6"
+	darkDefaultActiveTextHex                = "#F0F6FC"
+	darkDefaultSelectedLineBackgroundHex    = "#21262D"
+	darkDefaultMarkdownHeadingHex           = "#F0F6FC"
+	darkDefaultMarkdownHeadingBackgroundHex = "#58A6FF"
+	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
+	lightDefaultActiveTextHex               = "#000000"
+	lightDefaultSelectedLineBackgroundHex   = "#E6E6E6"
 )
 
 func TestDefaultPalette_GivenDarkSystemPolarity_WhenResolving_ThenItUsesDarkDefaults(t *testing.T) {
@@ -147,6 +148,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.MarkdownHeadingHex != darkDefaultMarkdownHeadingHex {
 		t.Fatalf("expected markdown heading color %q, actual %q", darkDefaultMarkdownHeadingHex, actual.MarkdownHeadingHex)
+	}
+	if actual.MarkdownHeadingBackgroundHex != darkDefaultMarkdownHeadingBackgroundHex {
+		t.Fatalf("expected markdown heading background %q, actual %q", darkDefaultMarkdownHeadingBackgroundHex, actual.MarkdownHeadingBackgroundHex)
 	}
 	if actual.DiffAdditionBackgroundHex != darkDefaultDiffAdditionBackgroundHex {
 		t.Fatalf("expected diff addition background %q, actual %q", darkDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)

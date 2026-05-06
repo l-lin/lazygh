@@ -50,17 +50,17 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		" Start review",
-		" Review PR as story",
-		" Yank URL to clipboard",
-		" Open PR in browser",
-		" Refresh current PR information",
-		" Review: Approve PR",
-		" Review: Comment on PR",
-		" Review: Request changes",
-		" Comment on PR",
-		" Edit PR title",
-		" Edit PR description",
+		actionsPopupLabel(actionsPopupStartReviewIcon, "Start review"),
+		actionsPopupLabel(actionsPopupReviewStoryIcon, reviewStoryActionTitle),
+		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
+		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
+		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
+		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
+		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
+		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
+		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
+		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
 		" Review PR from URL",
 	})
 	if strings.Contains(popupView.Buffer(), "12 of 12 actions") {
@@ -1026,6 +1026,10 @@ func TestActionsPopup_GivenDetailFocus_WhenPressingQ_ThenItReturnsToTheDetailPan
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+}
+
+func actionsPopupLabel(icon string, title string) string {
+	return actionsPopupAction{icon: icon, title: title}.label()
 }
 
 func then_popupBufferContainsOrderedActionLines(t *testing.T, buffer string, expected []string) {
