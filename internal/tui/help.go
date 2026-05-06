@@ -229,6 +229,27 @@ func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybind
 		return fallback
 	}
 
+	actualLabels, ok, hasOverride := program.resolvedKeyLabels(actionIDs...)
+	if !ok || !hasOverride || len(actualLabels) == 0 {
+		return fallback
+	}
+
+	return strings.Join(actualLabels, "/")
+}
+
+func (program *Program) resolvedKeyLabelsText(actionIDs ...keybindingActionID) string {
+	actualLabels, ok, _ := program.resolvedKeyLabels(actionIDs...)
+	if !ok || len(actualLabels) == 0 {
+		return ""
+	}
+	return strings.Join(actualLabels, "/")
+}
+
+func (program *Program) resolvedKeyLabels(actionIDs ...keybindingActionID) ([]string, bool, bool) {
+	if len(actionIDs) == 0 {
+		return nil, false, false
+	}
+
 	resolvedActions := map[keybindingActionID]resolvedKeybindingAction{}
 	for _, action := range program.resolvedKeybindingActions() {
 		resolvedActions[action.action.id] = action
@@ -239,7 +260,7 @@ func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybind
 	for _, actionID := range actionIDs {
 		action, ok := resolvedActions[actionID]
 		if !ok {
-			return fallback
+			return nil, false, false
 		}
 		if action.overridden {
 			hasOverride = true
@@ -249,11 +270,7 @@ func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybind
 		}
 	}
 
-	if !hasOverride || len(actualLabels) == 0 {
-		return fallback
-	}
-
-	return strings.Join(actualLabels, "/")
+	return actualLabels, true, hasOverride
 }
 
 func (program *Program) helpRepeatedKeyOrFallback(fallback string, actionID keybindingActionID) string {

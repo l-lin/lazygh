@@ -119,8 +119,8 @@ func TestSearchFooter_GivenSubmittedPullRequestsSearch_WhenRendering_ThenTheAppl
 
 	footerView, actualErr := gui.View("pull-requests-footer")
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/2 (1 match)" {
-		t.Fatalf("expected pull requests footer %q, actual %q", "/2 (1 match)", actual)
+	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/2 (1 match)  •  ? Help  / Search  a Actions" {
+		t.Fatalf("expected pull requests footer %q, actual %q", "/2 (1 match)  •  ? Help  / Search  a Actions", actual)
 	}
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
@@ -148,8 +148,8 @@ func TestSearchFooter_GivenSubmittedDetailSearch_WhenRendering_ThenTheAppliedQue
 
 	footerView, actualErr := gui.View("detail-footer")
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/Alpha (1 match)" {
-		t.Fatalf("expected detail footer %q, actual %q", "/Alpha (1 match)", actual)
+	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/Alpha (1 match)  •  ? Help  / Search" {
+		t.Fatalf("expected detail footer %q, actual %q", "/Alpha (1 match)  •  ? Help  / Search", actual)
 	}
 
 	detailView, actualErr := gui.View(viewDetailName)

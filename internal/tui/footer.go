@@ -16,11 +16,17 @@ const (
 )
 
 type paneFooterState struct {
-	text string
+	searchSummary string
+	keyHints      string
+}
+
+func (state paneFooterState) Text() string {
+	sections := filterEmptyStrings([]string{strings.TrimSpace(state.searchSummary), strings.TrimSpace(state.keyHints)})
+	return strings.Join(sections, "  •  ")
 }
 
 func (state paneFooterState) Visible() bool {
-	return strings.TrimSpace(state.text) != ""
+	return strings.TrimSpace(state.Text()) != ""
 }
 
 func (program *Program) layoutPaneFooterViews(gui *gocui.Gui) error {
@@ -50,7 +56,7 @@ func (program *Program) layoutPaneFooterView(gui *gocui.Gui, focus Focus) error 
 	}
 
 	program.configurePaneFooterView(view)
-	program.renderPaneFooterView(view, state.text)
+	program.renderPaneFooterView(view, state.Text())
 	_, err = gui.SetViewOnTop(viewName)
 	if isUnknownViewError(err) {
 		return nil
@@ -64,11 +70,59 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 		return paneFooterState{}
 	}
 
-	if message := strings.TrimSpace(program.appliedSearchFooterText(focus)); message != "" {
-		return paneFooterState{text: message}
+	state := paneFooterState{searchSummary: strings.TrimSpace(program.appliedSearchFooterText(focus))}
+	if program.shouldShowPaneFooterKeyHints(focus) {
+		state.keyHints = program.paneFooterKeyHintsText(focus)
 	}
+	return state
+}
 
-	return paneFooterState{}
+func (program *Program) shouldShowPaneFooterKeyHints(focus Focus) bool {
+	if focus != program.model.Focus() || !program.model.PaneVisible(focus) {
+		return false
+	}
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+		return false
+	}
+	return isMainPaneFocus(focus)
+}
+
+func (program *Program) paneFooterKeyHintsText(focus Focus) string {
+	hints := []string{
+		program.paneFooterKeyHint("Help", keybindingActionID{scope: keymapScopeMain, action: "toggle_help"}),
+		program.paneFooterKeyHint("Search", keybindingActionID{scope: keymapScopeMain, action: "open_search"}),
+	}
+	if actionsHint := program.paneFooterActionsHint(focus); actionsHint != "" {
+		hints = append(hints, actionsHint)
+	}
+	return strings.Join(filterEmptyStrings(hints), "  ")
+}
+
+func (program *Program) paneFooterKeyHint(label string, actionIDs ...keybindingActionID) string {
+	resolvedKeys := strings.TrimSpace(program.resolvedKeyLabelsText(actionIDs...))
+	if resolvedKeys == "" {
+		return ""
+	}
+	return resolvedKeys + " " + label
+}
+
+func (program *Program) paneFooterActionsHint(focus Focus) string {
+	actionID, ok := paneFooterActionsActionID(focus)
+	if !ok || len(program.currentActionsPopupActions()) == 0 {
+		return ""
+	}
+	return program.paneFooterKeyHint("Actions", actionID)
+}
+
+func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {
+	switch focus {
+	case FocusPullRequestsView:
+		return keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}, true
+	case FocusDetailView:
+		return keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}, true
+	default:
+		return keybindingActionID{}, false
+	}
 }
 
 func (program *Program) appliedSearchFooterText(focus Focus) string {

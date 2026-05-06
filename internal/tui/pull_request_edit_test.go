@@ -130,7 +130,7 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefresh
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Renamed PR", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestTitleEditSuccessMessage)
-	then_viewDoesNotExist(t, gui, viewDetailFooterName)
+	then_footerTextIs(t, gui, viewDetailFooterName, "? Help  / Search  a Actions")
 }
 
 func TestEditPullRequestTitle_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisible(t *testing.T) {
@@ -346,7 +346,7 @@ func TestEditPullRequestDescription_GivenSuccessfulSubmit_WhenSubmitting_ThenItR
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Updated body", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestDescriptionEditSuccessMessage)
-	then_viewDoesNotExist(t, gui, viewDetailFooterName)
+	then_footerTextIs(t, gui, viewDetailFooterName, "? Help  / Search  a Actions")
 }
 
 func TestEditPullRequestDescription_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisible(t *testing.T) {

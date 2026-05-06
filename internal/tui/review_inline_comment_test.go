@@ -159,7 +159,7 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Please add context", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestReviewInlineCommentSuccessMessage)
-	then_viewDoesNotExist(t, gui, viewDetailFooterName)
+	then_footerTextIs(t, gui, viewDetailFooterName, "? Help  / Search  a Actions")
 }
 
 func TestReviewMode_GivenTheDetailCursorOnAnInvalidRow_WhenOpeningTheInlineCommentComposer_ThenItShowsAnErrorAndKeepsFocusOnViewZero(t *testing.T) {
@@ -190,7 +190,7 @@ func TestReviewMode_GivenTheDetailCursorOnAnInvalidRow_WhenOpeningTheInlineComme
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
 	then_statusLineContains(t, gui, reviewThreadTargetUnavailableMessage)
-	then_viewDoesNotExist(t, gui, viewDetailFooterName)
+	then_footerTextIs(t, gui, viewDetailFooterName, "? Help  / Search  a Actions")
 }
 
 func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeepsTheDraftVisibleAndShowsTheError(t *testing.T) {

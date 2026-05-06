@@ -331,7 +331,7 @@ func TestLayout_GivenPullRequestsLoadingState_WhenRendering_ThenThePanesShowOnly
 	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
 		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}
-	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  a Actions")
 }
 
 func TestRefreshViews_GivenALoadingPullRequestsSpinner_WhenAdvancingTheFrame_ThenTheRenderedSpinnerChanges(t *testing.T) {

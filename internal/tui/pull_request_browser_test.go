@@ -29,5 +29,5 @@ func TestActionsPopup_GivenOpenBrowserActionSelected_WhenExecuting_ThenItUsesThe
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_statusLineContains(t, gui, pullRequestBrowserOpenSuccessMessage)
-	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  a Actions")
 }

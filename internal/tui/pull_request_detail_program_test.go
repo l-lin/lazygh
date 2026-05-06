@@ -622,7 +622,7 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
 		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}
-	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
+	then_footerTextIs(t, gui, viewPullRequestsFooterName, "? Help  / Search  a Actions")
 }
 
 func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment string) int {
