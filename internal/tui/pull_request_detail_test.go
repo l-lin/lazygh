@@ -40,8 +40,8 @@ func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItSh
 			{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"},
 			{Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"},
 		},
-		Additions:   12,
-		Deletions:   3,
+		Additions:    12,
+		Deletions:    3,
 		ChangedFiles: 5,
 	}
 
@@ -113,11 +113,11 @@ func TestRenderPullRequestDetailHeader_GivenChurnCounts_WhenFormatting_ThenItUse
 	additionIndex := given_runeIndexInString(t, line, "+12")
 	deletionIndex := given_runeIndexInString(t, line, "-3")
 
-	if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][additionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionForegroundHex) {
-		t.Fatalf("expected additions prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][additionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionHex) {
+		t.Fatalf("expected additions prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), actualStylePrefix)
 	}
-	if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][deletionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionForegroundHex) {
-		t.Fatalf("expected deletions prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][deletionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionHex) {
+		t.Fatalf("expected deletions prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionHex), actualStylePrefix)
 	}
 }
 
@@ -250,12 +250,12 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItS
 		t.Fatalf("expected inline comment location %q, actual %q", expectedVisibleLine, locationLine)
 	}
 	additionIndex := given_runeIndexInString(t, locationLine, "+1")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[locationLineIndex][additionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionForegroundHex) {
-		t.Fatalf("expected inline addition count prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[locationLineIndex][additionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffAdditionHex) {
+		t.Fatalf("expected inline addition count prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), actualStylePrefix)
 	}
 	deletionIndex := given_runeIndexInString(t, locationLine, "-1")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[locationLineIndex][deletionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionForegroundHex) {
-		t.Fatalf("expected inline deletion count prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[locationLineIndex][deletionIndex]; actualStylePrefix != foregroundColorEscape(theme.DiffDeletionHex) {
+		t.Fatalf("expected inline deletion count prefix %q, actual %q", foregroundColorEscape(theme.DiffDeletionHex), actualStylePrefix)
 	}
 }
 
@@ -366,8 +366,8 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 	if !strings.Contains(statusLine, "Resolved") {
 		t.Fatalf("expected the thread status to mention the resolved state, actual %q", statusLine)
 	}
-	if actualStylePrefix := actualDocument.lineStylePrefixes[statusLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionForegroundHex)) {
-		t.Fatalf("expected the resolved state to use the addition color prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[statusLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) {
+		t.Fatalf("expected the resolved state to use the addition color prefix %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), actualStylePrefix)
 	}
 	if _, replyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered reply"); !strings.Contains(replyLine, "Rendered reply") {
 		t.Fatalf("expected the reply to render in the same inline thread section, actual %q", replyLine)
@@ -484,8 +484,8 @@ func TestRenderPullRequestDetailHeader_GivenApprovalReviews_WhenFormatting_ThenI
 		t.Fatalf("expected approvals line to hide reviewers whose latest review is not an approval, actual %q", approvalsLine)
 	}
 	for _, iconIndex := range []int{firstIconIndex, secondIconIndex} {
-		if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][iconIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionForegroundHex)) {
-			t.Fatalf("expected approval icon prefix to contain the addition foreground %q, actual %q", foregroundColorEscape(theme.DiffAdditionForegroundHex), actualStylePrefix)
+		if actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][iconIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) {
+			t.Fatalf("expected approval icon prefix to contain the addition foreground %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), actualStylePrefix)
 		}
 	}
 }

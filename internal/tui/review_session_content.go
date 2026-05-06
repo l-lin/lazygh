@@ -41,8 +41,8 @@ func (program *Program) reviewSessionMetadataContent() string {
 func renderReviewSessionMetadataStats(stats reviewDiffStats) string {
 	return strings.Join([]string{
 		fmt.Sprintf("Changed files: %d", stats.ChangedFiles),
-		styleText(fmt.Sprintf("+%d", stats.Additions), foregroundColorEscape(theme.DiffAdditionForegroundHex)),
-		styleText(fmt.Sprintf("-%d", stats.Deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex)),
+		styleText(fmt.Sprintf("+%d", stats.Additions), foregroundColorEscape(theme.DiffAdditionHex)),
+		styleText(fmt.Sprintf("-%d", stats.Deletions), foregroundColorEscape(theme.DiffDeletionHex)),
 	}, "  ")
 }
 

@@ -134,7 +134,9 @@ markdown_heading = "#1F1F28"
 pull_request_reference = "#656D76"
 pull_request_title = "#111827"
 success = "#7FB069"
-pending = "broken"
+success_background = "#D7E8D0"
+comment_author_badge = "#4D699B"
+pending_background = "broken"
 `)
 
 	actual, actualErr := when_loading(configPath)
@@ -147,6 +149,8 @@ pending = "broken"
 		PullRequestReferenceHex: "#656D76",
 		PullRequestTitleHex:     "#111827",
 		SuccessHex:              "#7FB069",
+		SuccessBackgroundHex:    "#D7E8D0",
+		CommentAuthorBadgeHex:   "#4D699B",
 	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)

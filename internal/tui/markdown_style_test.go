@@ -79,8 +79,8 @@ func TestGlamourMarkdownRenderer_GivenThemeSyntaxPalette_WhenRenderingCodeFence_
 		SyntaxStringHex:           "#70E000",
 		SyntaxNumberHex:           "#FFD166",
 		SyntaxCommentHex:          "#8E9AAF",
-		DiffAdditionForegroundHex: "#80ED99",
-		DiffDeletionForegroundHex: "#FF6B6B",
+		DiffAdditionHex:           "#80ED99",
+		DiffDeletionHex:           "#FF6B6B",
 	})
 	renderer := glamourMarkdownRenderer{}
 

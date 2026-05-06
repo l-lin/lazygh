@@ -55,9 +55,9 @@ func renderPullRequestInlineCommentThreadStatusLine(thread githubcli.PullRequest
 
 func renderPullRequestInlineCommentResolutionBadge(resolved bool) string {
 	if resolved {
-		return styleText(" Resolved ", foregroundColorEscape(theme.DiffAdditionForegroundHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex))
+		return styleText(" Resolved ", foregroundColorEscape(theme.DiffAdditionHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex))
 	}
-	return styleText(" Unresolved ", foregroundColorEscape(theme.DiffDeletionForegroundHex), backgroundColorEscape(theme.DiffDeletionBackgroundHex))
+	return styleText(" Unresolved ", foregroundColorEscape(theme.DiffDeletionHex), backgroundColorEscape(theme.DiffDeletionBackgroundHex))
 }
 
 func renderPullRequestInlineCommentOutdatedBadge() string {
@@ -87,8 +87,8 @@ func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread
 func renderPullRequestInlineCommentLocationLine(comment githubcli.PullRequestInlineComment) string {
 	additions, deletions := diffHunkChangeCounts(comment.DiffHunk)
 	location := pullRequestInlineCommentLocation(comment)
-	additionText := styleText(fmt.Sprintf("+%d", additions), foregroundColorEscape(theme.DiffAdditionForegroundHex))
-	deletionText := styleText(fmt.Sprintf("-%d", deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex))
+	additionText := styleText(fmt.Sprintf("+%d", additions), foregroundColorEscape(theme.DiffAdditionHex))
+	deletionText := styleText(fmt.Sprintf("-%d", deletions), foregroundColorEscape(theme.DiffDeletionHex))
 
 	segments := []string{styleText(detailInlineCommentLocationIcon, foregroundColorEscape(theme.DiffLineNumberHex))}
 	if location != "" {

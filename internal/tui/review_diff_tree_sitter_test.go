@@ -125,7 +125,7 @@ func TestRenderReviewDiffFile_GivenUnsupportedFileExtension_WhenFormatting_ThenI
 	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `mysteryValue();`)
 	segmentIndex := given_runeIndexInString(t, visibleLine, "mysteryValue")
 	actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][segmentIndex]
-	expectedStylePrefix := foregroundColorEscape(theme.DiffAdditionForegroundHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+	expectedStylePrefix := foregroundColorEscape(theme.DiffAdditionHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
 	if actualStylePrefix != expectedStylePrefix {
 		t.Fatalf("expected unsupported file prefix %q, actual %q", expectedStylePrefix, actualStylePrefix)
 	}

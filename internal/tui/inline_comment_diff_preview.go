@@ -64,9 +64,9 @@ func diffPreviewLineContentPrefix(previewLine diffPreviewLine) string {
 
 	switch previewLine.kind {
 	case diffPreviewAdditionLine:
-		return boldPrefix + foregroundColorEscape(theme.DiffAdditionForegroundHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+		return boldPrefix + foregroundColorEscape(theme.DiffAdditionHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
 	case diffPreviewDeletionLine:
-		return boldPrefix + foregroundColorEscape(theme.DiffDeletionForegroundHex) + backgroundColorEscape(theme.DiffDeletionBackgroundHex)
+		return boldPrefix + foregroundColorEscape(theme.DiffDeletionHex) + backgroundColorEscape(theme.DiffDeletionBackgroundHex)
 	case diffPreviewContextLine:
 		if previewLine.target {
 			return boldPrefix

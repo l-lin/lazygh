@@ -97,11 +97,11 @@ func commentAuthorBadgeText(author *githubcli.PullRequestCommentAuthor) string {
 }
 
 func styleCommentAuthorBadgeText(text string) string {
-	return renderRoundedPill(text, theme.CommentAuthorBadgeForegroundHex, theme.CommentAuthorBadgeBackgroundHex)
+	return renderRoundedPill(text, theme.CommentAuthorBadgeHex, theme.CommentAuthorBadgeBackgroundHex)
 }
 
 func styleCommentAuthorBadgeTextWithoutRoundedPill(text string) string {
-	return styleText(text, foregroundColorEscape(theme.CommentAuthorBadgeForegroundHex), backgroundColorEscape(theme.CommentAuthorBadgeBackgroundHex))
+	return styleText(text, foregroundColorEscape(theme.CommentAuthorBadgeHex), backgroundColorEscape(theme.CommentAuthorBadgeBackgroundHex))
 }
 
 func styleCommentMetadataText(text string) string {

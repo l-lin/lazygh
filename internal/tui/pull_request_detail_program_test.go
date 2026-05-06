@@ -310,8 +310,8 @@ func TestLayout_GivenDescriptionHeaderMetadata_WhenRendering_ThenTheDescriptionT
 		}
 	}
 	countsLineIndex := given_viewLineIndexContaining(t, detailView, "+12")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, countsLineIndex, "+12", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "description header additions")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, countsLineIndex, "-3", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "description header deletions")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, countsLineIndex, "+12", given_themeColorHex(t, theme.DiffAdditionHex), "description header additions")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, countsLineIndex, "-3", given_themeColorHex(t, theme.DiffDeletionHex), "description header deletions")
 }
 
 func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeSitterSyntaxColorsAndExactChangeBackgrounds(t *testing.T) {
@@ -346,8 +346,8 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeS
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	locationLineIndex := given_viewLineIndexContaining(t, detailView, detailInlineCommentLocationIcon+" src/main/java/com/acme/VersionParser.java:43")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "+1", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "inline addition count")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "inline deletion count")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "+1", given_themeColorHex(t, theme.DiffAdditionHex), "inline addition count")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, locationLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionHex), "inline deletion count")
 
 	deletionLineIndex := given_viewLineIndexContaining(t, detailView, `return Versions.fromString("5.0.1");`)
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "return", given_themeColorHex(t, theme.SyntaxKeywordHex), "inline deletion keyword")
@@ -397,7 +397,7 @@ func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlig
 	then_noError(t, actualErr)
 	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-inline")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-inline", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "inline comment author badge background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-inline", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "inline comment author badge foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-inline", given_themeColorHex(t, theme.CommentAuthorBadgeHex), "inline comment author badge foreground")
 	if !strings.Contains(detailView.BufferLines()[authorLineIndex], "2026-04-18 10:00 UTC") {
 		t.Fatalf("expected the inline comment timestamp to stay on the metadata line, actual %q", detailView.BufferLines()[authorLineIndex])
 	}
@@ -484,7 +484,7 @@ func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailP
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, commentBorderLineIndex, "╭", given_themeColorHex(t, theme.InactiveBorderHex), "comment border")
 	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author badge background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "comment author badge foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeHex), "comment author badge foreground")
 	if !strings.Contains(detailView.BufferLines()[authorLineIndex], "2026-04-18 10:00 UTC") {
 		t.Fatalf("expected the comment timestamp to stay on the metadata line, actual %q", detailView.BufferLines()[authorLineIndex])
 	}

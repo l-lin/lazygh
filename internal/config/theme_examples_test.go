@@ -43,10 +43,13 @@ func TestLoad_GivenBundledThemeExamples_WhenLoading_ThenEachExampleParsesIntoARe
 			t.Fatalf("expected %q to define %q", fileName, "pull_request_title")
 		}
 		for key, value := range map[string]string{
-			"success": actual.Theme.SuccessHex,
-			"failure": actual.Theme.FailureHex,
-			"pending": actual.Theme.PendingHex,
-			"muted":   actual.Theme.MutedHex,
+			"success":            actual.Theme.SuccessHex,
+			"success_background": actual.Theme.SuccessBackgroundHex,
+			"failure":            actual.Theme.FailureHex,
+			"failure_background": actual.Theme.FailureBackgroundHex,
+			"pending":            actual.Theme.PendingHex,
+			"pending_background": actual.Theme.PendingBackgroundHex,
+			"muted":              actual.Theme.MutedHex,
 		} {
 			if value == "" {
 				t.Fatalf("expected %q to define %q", fileName, key)

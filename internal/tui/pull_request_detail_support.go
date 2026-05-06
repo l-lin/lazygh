@@ -47,13 +47,13 @@ type pullRequestStatusStyle struct {
 func pullRequestStatusStyleFor(status string) (pullRequestStatusStyle, bool) {
 	switch strings.ToUpper(strings.TrimSpace(status)) {
 	case "OPEN":
-		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusOpenForegroundHex, backgroundHex: theme.PullRequestStatusOpenBackgroundHex}, true
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusOpenHex, backgroundHex: theme.PullRequestStatusOpenBackgroundHex}, true
 	case "DRAFT":
-		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusDraftForegroundHex, backgroundHex: theme.PullRequestStatusDraftBackgroundHex}, true
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusDraftHex, backgroundHex: theme.PullRequestStatusDraftBackgroundHex}, true
 	case "CLOSED":
-		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusClosedForegroundHex, backgroundHex: theme.PullRequestStatusClosedBackgroundHex}, true
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusClosedHex, backgroundHex: theme.PullRequestStatusClosedBackgroundHex}, true
 	case "MERGED":
-		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusMergedForegroundHex, backgroundHex: theme.PullRequestStatusMergedBackgroundHex}, true
+		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusMergedHex, backgroundHex: theme.PullRequestStatusMergedBackgroundHex}, true
 	default:
 		return pullRequestStatusStyle{}, false
 	}
@@ -127,7 +127,7 @@ func renderPullRequestApprovalsLine(reviews []githubcli.PullRequestReview) strin
 
 	approvals := make([]string, 0, len(approverLogins))
 	for _, login := range approverLogins {
-		approvals = append(approvals, styleText(detailApprovalIcon, foregroundColorEscape(theme.DiffAdditionForegroundHex))+" "+formatLogin(login))
+		approvals = append(approvals, styleText(detailApprovalIcon, foregroundColorEscape(theme.DiffAdditionHex))+" "+formatLogin(login))
 	}
 	return strings.Join(approvals, "  ")
 }
@@ -312,8 +312,8 @@ func renderPullRequestChurnParts(detail githubcli.PullRequestDetail) []string {
 	}
 
 	return []string{
-		styleText(fmt.Sprintf("+%d", detail.Additions), foregroundColorEscape(theme.DiffAdditionForegroundHex)),
-		styleText(fmt.Sprintf("-%d", detail.Deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex)),
+		styleText(fmt.Sprintf("+%d", detail.Additions), foregroundColorEscape(theme.DiffAdditionHex)),
+		styleText(fmt.Sprintf("-%d", detail.Deletions), foregroundColorEscape(theme.DiffDeletionHex)),
 	}
 }
 

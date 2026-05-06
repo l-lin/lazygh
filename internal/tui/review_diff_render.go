@@ -253,8 +253,8 @@ func renderReviewDiffFileHeader(file reviewDiffFile) string {
 		parts = append(parts, fmt.Sprintf("renamed from %s", strings.TrimSpace(file.PreviousPath)))
 	}
 	parts = append(parts,
-		styleText(fmt.Sprintf("+%d", file.Additions), foregroundColorEscape(theme.DiffAdditionForegroundHex)),
-		styleText(fmt.Sprintf("-%d", file.Deletions), foregroundColorEscape(theme.DiffDeletionForegroundHex)),
+		styleText(fmt.Sprintf("+%d", file.Additions), foregroundColorEscape(theme.DiffAdditionHex)),
+		styleText(fmt.Sprintf("-%d", file.Deletions), foregroundColorEscape(theme.DiffDeletionHex)),
 	)
 	return strings.Join(parts, "  ")
 }
@@ -273,10 +273,10 @@ func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int, cha
 	sign := " "
 	switch line.Kind {
 	case reviewDiffDeletionLine:
-		basePrefix = foregroundColorEscape(theme.DiffDeletionForegroundHex) + backgroundColorEscape(theme.DiffDeletionBackgroundHex)
+		basePrefix = foregroundColorEscape(theme.DiffDeletionHex) + backgroundColorEscape(theme.DiffDeletionBackgroundHex)
 		sign = "-"
 	case reviewDiffAdditionLine:
-		basePrefix = foregroundColorEscape(theme.DiffAdditionForegroundHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+		basePrefix = foregroundColorEscape(theme.DiffAdditionHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
 		sign = "+"
 	}
 

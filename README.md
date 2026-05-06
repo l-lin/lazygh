@@ -76,12 +76,13 @@ Configure palette overrides under `[theme]`.
 
 - Every color key is optional.
 - Values must use the `#RRGGBB` format.
+- Unsuffixed keys such as `diff_addition`, `diff_deletion`, `pull_request_status_open`, and `comment_author_badge` set foreground colors. Only background colors keep the `_background` suffix.
+- `success`, `success_background`, `failure`, `failure_background`, `pending`, and `pending_background` are shared status colors. If you do not override the matching specific keys, `lazygh` reuses them for open, closed, and draft pills, and for diff addition and deletion colors.
+- `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
 - `markdown_heading_background` controls the full-line heading fill.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
-- `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
-- `success`, `failure`, `pending`, and `muted` color generic status labels such as the pull-request overview section.
-- The PR description header reuses the existing diff addition and deletion colors for `+N` and `-N` counts, so it stays aligned with the diff palette instead of inventing new paint.
+- The PR description header reuses the diff addition and deletion colors for `+N` and `-N` counts.
 - Missing or invalid colors fall back to the built-in palette.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
 
@@ -108,15 +109,22 @@ selected_line_background = "#363646"
 pull_request_reference = "#656D76"
 pull_request_title = "#DCD7BA"
 success = "#98BB6C"
+success_background = "#2B3328"
 failure = "#E46876"
+failure_background = "#43242B"
 pending = "#C8C093"
+pending_background = "#363646"
 muted = "#727169"
+comment_author_badge = "#7E9CD8"
+comment_author_badge_background = "#223249"
 markdown_heading = "#7E9CD8"
 markdown_heading_background = "#223249"
 syntax_keyword = "#957FB8"
 syntax_string = "#98BB6C"
-diff_addition_background = "#2B3328"
-diff_deletion_background = "#43242B"
+pull_request_status_merged = "#957FB8"
+pull_request_status_merged_background = "#252535"
+diff_addition_highlight_background = "#35513B"
+diff_deletion_highlight_background = "#5A2E35"
 ```
 
 ### Links

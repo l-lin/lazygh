@@ -40,7 +40,7 @@ func TestLayout_GivenOpenPullRequestDetail_WhenRendering_ThenItShowsTheStatusAsA
 	}
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, "", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill left separator")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, statusLineIndex, detailStatusIcon+" OPEN", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, detailStatusIcon+" OPEN", given_themeColorHex(t, theme.PullRequestStatusOpenForegroundHex), "status pill foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, detailStatusIcon+" OPEN", given_themeColorHex(t, theme.PullRequestStatusOpenHex), "status pill foreground")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, statusLineIndex, "", given_themeColorHex(t, theme.PullRequestStatusOpenBackgroundHex), "status pill right separator")
 }
 
@@ -93,6 +93,6 @@ func TestLayout_GivenPullRequestComment_WhenRendering_ThenItShowsTheAuthorAsARou
 	}
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, "", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill left separator")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "comment author pill foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeHex), "comment author pill foreground")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, "", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "comment author pill right separator")
 }

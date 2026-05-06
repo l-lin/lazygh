@@ -162,9 +162,9 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 
 	switch files[row.FileIndex].ChangeType {
 	case reviewDiffChangeTypeAdded:
-		return theme.DiffAdditionForegroundHex
+		return theme.DiffAdditionHex
 	case reviewDiffChangeTypeRemoved:
-		return theme.DiffDeletionForegroundHex
+		return theme.DiffDeletionHex
 	default:
 		return theme.ActiveTextHex
 	}

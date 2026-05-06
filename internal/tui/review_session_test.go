@@ -241,8 +241,8 @@ func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffC
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	headerLineIndex := given_viewLineIndexContaining(t, detailView, "internal/tui/render.go")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "+2", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review diff addition count")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review diff deletion count")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "+2", given_themeColorHex(t, theme.DiffAdditionHex), "review diff addition count")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "-1", given_themeColorHex(t, theme.DiffDeletionHex), "review diff deletion count")
 
 	hunkHeaderLineIndex := given_viewLineIndexContaining(t, detailView, "@@ -1,2 +1,3 @@")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, hunkHeaderLineIndex, "@@ -1,2 +1,3 @@", given_themeColorHex(t, theme.DiffHunkHeaderHex), "review diff hunk header")
@@ -251,12 +251,12 @@ func TestReviewMode_GivenTheSelectedFileDiff_WhenRendering_ThenViewZeroUsesDiffC
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, contextLineIndex, "1 : 1 │", given_themeColorHex(t, theme.DiffLineNumberHex), "review diff line numbers")
 
 	deletionLineIndex := given_viewLineIndexContaining(t, detailView, "old line")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "old line", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review diff deletion text")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "old line", given_themeColorHex(t, theme.DiffDeletionHex), "review diff deletion text")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, "old", given_themeColorHex(t, theme.DiffDeletionHighlightBackgroundHex), "review diff deletion changed background")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, deletionLineIndex, " line", given_themeColorHex(t, theme.DiffDeletionBackgroundHex), "review diff deletion unchanged background")
 
 	additionLineIndex := given_viewLineIndexContaining(t, detailView, "new line")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review diff addition text")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "new line", given_themeColorHex(t, theme.DiffAdditionHex), "review diff addition text")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, "new", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "review diff addition changed background")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, " line", given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "review diff addition unchanged background")
 }
@@ -306,7 +306,7 @@ func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUse
 	then_noError(t, actualErr)
 	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "review thread author badge background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeForegroundHex), "review thread author badge foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.CommentAuthorBadgeHex), "review thread author badge foreground")
 	if !strings.Contains(detailView.BufferLines()[authorLineIndex], "2026-04-20 10:00 UTC") {
 		t.Fatalf("expected the review thread timestamp to stay on the metadata line, actual %q", detailView.BufferLines()[authorLineIndex])
 	}
@@ -704,8 +704,8 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullReq
 	}
 
 	countsLineIndex := given_viewLineIndexContaining(t, metadataView, "Changed files:")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "+3", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review metadata additions")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "-2", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review metadata deletions")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "+3", given_themeColorHex(t, theme.DiffAdditionHex), "review metadata additions")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "-2", given_themeColorHex(t, theme.DiffDeletionHex), "review metadata deletions")
 }
 
 func TestReviewMode_GivenADeepSingleFilePath_WhenRenderingTheFilesPane_ThenTheFileRowShowsOnlyTheFilename(t *testing.T) {
@@ -884,11 +884,11 @@ func TestReviewMode_GivenColoredFileTreeRows_WhenRendering_ThenDirectoriesAreGra
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, changedLineIndex, "changed.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree modified file label")
 
 	addedLineIndex := given_viewLineIndexContaining(t, filesView, "added.go")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "", given_themeColorHex(t, theme.DiffAdditionForegroundHex), "review tree added file icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "", given_themeColorHex(t, theme.DiffAdditionHex), "review tree added file icon")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, addedLineIndex, "added.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree added file label")
 
 	deletedLineIndex := given_viewLineIndexContaining(t, filesView, "deleted.go")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "", given_themeColorHex(t, theme.DiffDeletionForegroundHex), "review tree deleted file icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "", given_themeColorHex(t, theme.DiffDeletionHex), "review tree deleted file icon")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, deletedLineIndex, "deleted.go", given_themeColorHex(t, theme.ActiveTextHex), "review tree deleted file label")
 }
 

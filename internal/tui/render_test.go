@@ -231,7 +231,7 @@ func TestLayout_GivenPullRequestListStatusIcon_WhenRenderingTheSelectedRow_ThenI
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "", given_themeColorHex(t, theme.PullRequestStatusOpenForegroundHex), "pull request status icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "", given_themeColorHex(t, theme.PullRequestStatusOpenHex), "pull request status icon")
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, 0, "")
 }
 

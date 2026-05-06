@@ -9,8 +9,11 @@ type Palette struct {
 	InactiveTextHex                      string `toml:"inactive_text"`
 	InactiveTitleHex                     string `toml:"inactive_title"`
 	SuccessHex                           string `toml:"success"`
+	SuccessBackgroundHex                 string `toml:"success_background"`
 	FailureHex                           string `toml:"failure"`
+	FailureBackgroundHex                 string `toml:"failure_background"`
 	PendingHex                           string `toml:"pending"`
+	PendingBackgroundHex                 string `toml:"pending_background"`
 	MutedHex                             string `toml:"muted"`
 	PullRequestReferenceHex              string `toml:"pull_request_reference"`
 	PullRequestTitleHex                  string `toml:"pull_request_title"`
@@ -27,114 +30,153 @@ type Palette struct {
 	SyntaxStringHex                      string `toml:"syntax_string"`
 	SyntaxNumberHex                      string `toml:"syntax_number"`
 	SyntaxCommentHex                     string `toml:"syntax_comment"`
-	CommentAuthorBadgeForegroundHex      string `toml:"comment_author_badge_foreground"`
+	CommentAuthorBadgeHex                string `toml:"comment_author_badge"`
 	CommentAuthorBadgeBackgroundHex      string `toml:"comment_author_badge_background"`
-	PullRequestStatusOpenForegroundHex   string `toml:"pull_request_status_open_foreground"`
+	PullRequestStatusOpenHex             string `toml:"pull_request_status_open"`
 	PullRequestStatusOpenBackgroundHex   string `toml:"pull_request_status_open_background"`
-	PullRequestStatusDraftForegroundHex  string `toml:"pull_request_status_draft_foreground"`
+	PullRequestStatusDraftHex            string `toml:"pull_request_status_draft"`
 	PullRequestStatusDraftBackgroundHex  string `toml:"pull_request_status_draft_background"`
-	PullRequestStatusClosedForegroundHex string `toml:"pull_request_status_closed_foreground"`
+	PullRequestStatusClosedHex           string `toml:"pull_request_status_closed"`
 	PullRequestStatusClosedBackgroundHex string `toml:"pull_request_status_closed_background"`
-	PullRequestStatusMergedForegroundHex string `toml:"pull_request_status_merged_foreground"`
+	PullRequestStatusMergedHex           string `toml:"pull_request_status_merged"`
 	PullRequestStatusMergedBackgroundHex string `toml:"pull_request_status_merged_background"`
-	DiffAdditionForegroundHex            string `toml:"diff_addition_foreground"`
+	DiffAdditionHex                      string `toml:"diff_addition"`
 	DiffAdditionBackgroundHex            string `toml:"diff_addition_background"`
 	DiffAdditionHighlightBackgroundHex   string `toml:"diff_addition_highlight_background"`
-	DiffDeletionForegroundHex            string `toml:"diff_deletion_foreground"`
+	DiffDeletionHex                      string `toml:"diff_deletion"`
 	DiffDeletionBackgroundHex            string `toml:"diff_deletion_background"`
 	DiffDeletionHighlightBackgroundHex   string `toml:"diff_deletion_highlight_background"`
 	DiffLineNumberHex                    string `toml:"diff_line_number"`
 	DiffHunkHeaderHex                    string `toml:"diff_hunk_header"`
 }
 
-var defaultLightPalette = Palette{
-	ActiveBorderHex:                      "#000000",
-	InactiveBorderHex:                    "#CCCCCC",
-	ActiveTextHex:                        "#000000",
-	InactiveTextHex:                      "#000000",
-	InactiveTitleHex:                     "#636363",
-	SuccessHex:                           "#1A7F37",
-	FailureHex:                           "#CF222E",
-	PendingHex:                           "#656D76",
-	MutedHex:                             "#636363",
-	PullRequestReferenceHex:              "#656D76",
-	PullRequestTitleHex:                  "#000000",
-	SelectedLineBackgroundHex:            "#E6E6E6",
-	SearchHighlightHex:                   "#F9EAB3",
-	MarkdownHeadingHex:                   "#000000",
-	MarkdownHeadingBackgroundHex:         "#F9EAB3",
-	MarkdownLinkHex:                      "#000000",
-	MarkdownCodeHex:                      "#B45309",
-	SyntaxKeywordHex:                     "#CF222E",
-	SyntaxFunctionHex:                    "#8250DF",
-	SyntaxTypeHex:                        "#953800",
-	SyntaxPropertyHex:                    "#0550AE",
-	SyntaxStringHex:                      "#0A3069",
-	SyntaxNumberHex:                      "#0550AE",
-	SyntaxCommentHex:                     "#6E7781",
-	CommentAuthorBadgeForegroundHex:      "#0969DA",
-	CommentAuthorBadgeBackgroundHex:      "#DDF4FF",
-	PullRequestStatusOpenForegroundHex:   "#1A7F37",
-	PullRequestStatusOpenBackgroundHex:   "#DFF3E4",
-	PullRequestStatusDraftForegroundHex:  "#656D76",
-	PullRequestStatusDraftBackgroundHex:  "#E6E6E6",
-	PullRequestStatusClosedForegroundHex: "#CF222E",
-	PullRequestStatusClosedBackgroundHex: "#FFE2E5",
-	PullRequestStatusMergedForegroundHex: "#8250DF",
-	PullRequestStatusMergedBackgroundHex: "#F5EDFF",
-	DiffAdditionForegroundHex:            "#1A7F37",
-	DiffAdditionBackgroundHex:            "#DFF3E4",
-	DiffAdditionHighlightBackgroundHex:   "#ACEEBB",
-	DiffDeletionForegroundHex:            "#CF222E",
-	DiffDeletionBackgroundHex:            "#FFE2E5",
-	DiffDeletionHighlightBackgroundHex:   "#FFC1C8",
-	DiffLineNumberHex:                    "#656D76",
-	DiffHunkHeaderHex:                    "#656D76",
+var defaultLightPalette = newDefaultLightPalette()
+
+func newDefaultLightPalette() Palette {
+	activeTextHex := "#000000"
+	mutedHex := "#636363"
+	pendingHex := "#656D76"
+	pendingBackgroundHex := "#E6E6E6"
+	successHex := "#1A7F37"
+	successBackgroundHex := "#DFF3E4"
+	failureHex := "#CF222E"
+	failureBackgroundHex := "#FFE2E5"
+	searchHighlightHex := "#F9EAB3"
+	commentAuthorBadgeHex := "#0969DA"
+	commentAuthorBadgeBackgroundHex := "#DDF4FF"
+	mergedHex := "#8250DF"
+	mergedBackgroundHex := "#F5EDFF"
+	return Palette{
+		ActiveBorderHex:                      "#000000",
+		InactiveBorderHex:                    "#CCCCCC",
+		ActiveTextHex:                        activeTextHex,
+		InactiveTextHex:                      "#000000",
+		InactiveTitleHex:                     mutedHex,
+		SuccessHex:                           successHex,
+		SuccessBackgroundHex:                 successBackgroundHex,
+		FailureHex:                           failureHex,
+		FailureBackgroundHex:                 failureBackgroundHex,
+		PendingHex:                           pendingHex,
+		PendingBackgroundHex:                 pendingBackgroundHex,
+		MutedHex:                             mutedHex,
+		PullRequestReferenceHex:              pendingHex,
+		PullRequestTitleHex:                  activeTextHex,
+		SelectedLineBackgroundHex:            pendingBackgroundHex,
+		SearchHighlightHex:                   searchHighlightHex,
+		MarkdownHeadingHex:                   activeTextHex,
+		MarkdownHeadingBackgroundHex:         searchHighlightHex,
+		MarkdownLinkHex:                      "#000000",
+		MarkdownCodeHex:                      "#B45309",
+		SyntaxKeywordHex:                     "#CF222E",
+		SyntaxFunctionHex:                    "#8250DF",
+		SyntaxTypeHex:                        "#953800",
+		SyntaxPropertyHex:                    "#0550AE",
+		SyntaxStringHex:                      "#0A3069",
+		SyntaxNumberHex:                      "#0550AE",
+		SyntaxCommentHex:                     "#6E7781",
+		CommentAuthorBadgeHex:                commentAuthorBadgeHex,
+		CommentAuthorBadgeBackgroundHex:      commentAuthorBadgeBackgroundHex,
+		PullRequestStatusOpenHex:             successHex,
+		PullRequestStatusOpenBackgroundHex:   successBackgroundHex,
+		PullRequestStatusDraftHex:            pendingHex,
+		PullRequestStatusDraftBackgroundHex:  pendingBackgroundHex,
+		PullRequestStatusClosedHex:           failureHex,
+		PullRequestStatusClosedBackgroundHex: failureBackgroundHex,
+		PullRequestStatusMergedHex:           mergedHex,
+		PullRequestStatusMergedBackgroundHex: mergedBackgroundHex,
+		DiffAdditionHex:                      successHex,
+		DiffAdditionBackgroundHex:            successBackgroundHex,
+		DiffAdditionHighlightBackgroundHex:   "#ACEEBB",
+		DiffDeletionHex:                      failureHex,
+		DiffDeletionBackgroundHex:            failureBackgroundHex,
+		DiffDeletionHighlightBackgroundHex:   "#FFC1C8",
+		DiffLineNumberHex:                    pendingHex,
+		DiffHunkHeaderHex:                    pendingHex,
+	}
 }
 
-var defaultDarkPalette = Palette{
-	ActiveBorderHex:                      "#F0F6FC",
-	InactiveBorderHex:                    "#30363D",
-	ActiveTextHex:                        "#F0F6FC",
-	InactiveTextHex:                      "#E6EDF3",
-	InactiveTitleHex:                     "#8B949E",
-	SuccessHex:                           "#3FB950",
-	FailureHex:                           "#F85149",
-	PendingHex:                           "#8B949E",
-	MutedHex:                             "#8B949E",
-	PullRequestReferenceHex:              "#8B949E",
-	PullRequestTitleHex:                  "#F0F6FC",
-	SelectedLineBackgroundHex:            "#21262D",
-	SearchHighlightHex:                   "#633C01",
-	MarkdownHeadingHex:                   "#F0F6FC",
-	MarkdownHeadingBackgroundHex:         "#58A6FF",
-	MarkdownLinkHex:                      "#79C0FF",
-	MarkdownCodeHex:                      "#FFA657",
-	SyntaxKeywordHex:                     "#FF7B72",
-	SyntaxFunctionHex:                    "#D2A8FF",
-	SyntaxTypeHex:                        "#FFA657",
-	SyntaxPropertyHex:                    "#79C0FF",
-	SyntaxStringHex:                      "#A5D6FF",
-	SyntaxNumberHex:                      "#79C0FF",
-	SyntaxCommentHex:                     "#8B949E",
-	CommentAuthorBadgeForegroundHex:      "#DDF4FF",
-	CommentAuthorBadgeBackgroundHex:      "#1F6FEB",
-	PullRequestStatusOpenForegroundHex:   "#3FB950",
-	PullRequestStatusOpenBackgroundHex:   "#033A16",
-	PullRequestStatusDraftForegroundHex:  "#8B949E",
-	PullRequestStatusDraftBackgroundHex:  "#30363D",
-	PullRequestStatusClosedForegroundHex: "#F85149",
-	PullRequestStatusClosedBackgroundHex: "#67060C",
-	PullRequestStatusMergedForegroundHex: "#A371F7",
-	PullRequestStatusMergedBackgroundHex: "#3D2A5C",
-	DiffAdditionForegroundHex:            "#3FB950",
-	DiffAdditionBackgroundHex:            "#033A16",
-	DiffAdditionHighlightBackgroundHex:   "#0F5323",
-	DiffDeletionForegroundHex:            "#F85149",
-	DiffDeletionBackgroundHex:            "#67060C",
-	DiffDeletionHighlightBackgroundHex:   "#8E1519",
-	DiffLineNumberHex:                    "#8B949E",
-	DiffHunkHeaderHex:                    "#8B949E",
+var defaultDarkPalette = newDefaultDarkPalette()
+
+func newDefaultDarkPalette() Palette {
+	activeTextHex := "#F0F6FC"
+	mutedHex := "#8B949E"
+	pendingHex := "#8B949E"
+	pendingBackgroundHex := "#30363D"
+	successHex := "#3FB950"
+	successBackgroundHex := "#033A16"
+	failureHex := "#F85149"
+	failureBackgroundHex := "#67060C"
+	commentAuthorBadgeHex := "#DDF4FF"
+	commentAuthorBadgeBackgroundHex := "#1F6FEB"
+	mergedHex := "#A371F7"
+	mergedBackgroundHex := "#3D2A5C"
+	return Palette{
+		ActiveBorderHex:                      activeTextHex,
+		InactiveBorderHex:                    "#30363D",
+		ActiveTextHex:                        activeTextHex,
+		InactiveTextHex:                      "#E6EDF3",
+		InactiveTitleHex:                     mutedHex,
+		SuccessHex:                           successHex,
+		SuccessBackgroundHex:                 successBackgroundHex,
+		FailureHex:                           failureHex,
+		FailureBackgroundHex:                 failureBackgroundHex,
+		PendingHex:                           pendingHex,
+		PendingBackgroundHex:                 pendingBackgroundHex,
+		MutedHex:                             mutedHex,
+		PullRequestReferenceHex:              pendingHex,
+		PullRequestTitleHex:                  activeTextHex,
+		SelectedLineBackgroundHex:            "#21262D",
+		SearchHighlightHex:                   "#633C01",
+		MarkdownHeadingHex:                   activeTextHex,
+		MarkdownHeadingBackgroundHex:         "#58A6FF",
+		MarkdownLinkHex:                      "#79C0FF",
+		MarkdownCodeHex:                      "#FFA657",
+		SyntaxKeywordHex:                     "#FF7B72",
+		SyntaxFunctionHex:                    "#D2A8FF",
+		SyntaxTypeHex:                        "#FFA657",
+		SyntaxPropertyHex:                    "#79C0FF",
+		SyntaxStringHex:                      "#A5D6FF",
+		SyntaxNumberHex:                      "#79C0FF",
+		SyntaxCommentHex:                     mutedHex,
+		CommentAuthorBadgeHex:                commentAuthorBadgeHex,
+		CommentAuthorBadgeBackgroundHex:      commentAuthorBadgeBackgroundHex,
+		PullRequestStatusOpenHex:             successHex,
+		PullRequestStatusOpenBackgroundHex:   successBackgroundHex,
+		PullRequestStatusDraftHex:            pendingHex,
+		PullRequestStatusDraftBackgroundHex:  pendingBackgroundHex,
+		PullRequestStatusClosedHex:           failureHex,
+		PullRequestStatusClosedBackgroundHex: failureBackgroundHex,
+		PullRequestStatusMergedHex:           mergedHex,
+		PullRequestStatusMergedBackgroundHex: mergedBackgroundHex,
+		DiffAdditionHex:                      successHex,
+		DiffAdditionBackgroundHex:            successBackgroundHex,
+		DiffAdditionHighlightBackgroundHex:   "#0F5323",
+		DiffDeletionHex:                      failureHex,
+		DiffDeletionBackgroundHex:            failureBackgroundHex,
+		DiffDeletionHighlightBackgroundHex:   "#8E1519",
+		DiffLineNumberHex:                    pendingHex,
+		DiffHunkHeaderHex:                    pendingHex,
+	}
 }
 
 var systemPolarityDetector = detectSystemPolarity
@@ -148,8 +190,11 @@ var (
 	InactiveTextHex                      = initialDefaultPalette.InactiveTextHex
 	InactiveTitleHex                     = initialDefaultPalette.InactiveTitleHex
 	SuccessHex                           = initialDefaultPalette.SuccessHex
+	SuccessBackgroundHex                 = initialDefaultPalette.SuccessBackgroundHex
 	FailureHex                           = initialDefaultPalette.FailureHex
+	FailureBackgroundHex                 = initialDefaultPalette.FailureBackgroundHex
 	PendingHex                           = initialDefaultPalette.PendingHex
+	PendingBackgroundHex                 = initialDefaultPalette.PendingBackgroundHex
 	MutedHex                             = initialDefaultPalette.MutedHex
 	PullRequestReferenceHex              = initialDefaultPalette.PullRequestReferenceHex
 	PullRequestTitleHex                  = initialDefaultPalette.PullRequestTitleHex
@@ -166,20 +211,20 @@ var (
 	SyntaxStringHex                      = initialDefaultPalette.SyntaxStringHex
 	SyntaxNumberHex                      = initialDefaultPalette.SyntaxNumberHex
 	SyntaxCommentHex                     = initialDefaultPalette.SyntaxCommentHex
-	CommentAuthorBadgeForegroundHex      = initialDefaultPalette.CommentAuthorBadgeForegroundHex
+	CommentAuthorBadgeHex                = initialDefaultPalette.CommentAuthorBadgeHex
 	CommentAuthorBadgeBackgroundHex      = initialDefaultPalette.CommentAuthorBadgeBackgroundHex
-	PullRequestStatusOpenForegroundHex   = initialDefaultPalette.PullRequestStatusOpenForegroundHex
+	PullRequestStatusOpenHex             = initialDefaultPalette.PullRequestStatusOpenHex
 	PullRequestStatusOpenBackgroundHex   = initialDefaultPalette.PullRequestStatusOpenBackgroundHex
-	PullRequestStatusDraftForegroundHex  = initialDefaultPalette.PullRequestStatusDraftForegroundHex
+	PullRequestStatusDraftHex            = initialDefaultPalette.PullRequestStatusDraftHex
 	PullRequestStatusDraftBackgroundHex  = initialDefaultPalette.PullRequestStatusDraftBackgroundHex
-	PullRequestStatusClosedForegroundHex = initialDefaultPalette.PullRequestStatusClosedForegroundHex
+	PullRequestStatusClosedHex           = initialDefaultPalette.PullRequestStatusClosedHex
 	PullRequestStatusClosedBackgroundHex = initialDefaultPalette.PullRequestStatusClosedBackgroundHex
-	PullRequestStatusMergedForegroundHex = initialDefaultPalette.PullRequestStatusMergedForegroundHex
+	PullRequestStatusMergedHex           = initialDefaultPalette.PullRequestStatusMergedHex
 	PullRequestStatusMergedBackgroundHex = initialDefaultPalette.PullRequestStatusMergedBackgroundHex
-	DiffAdditionForegroundHex            = initialDefaultPalette.DiffAdditionForegroundHex
+	DiffAdditionHex                      = initialDefaultPalette.DiffAdditionHex
 	DiffAdditionBackgroundHex            = initialDefaultPalette.DiffAdditionBackgroundHex
 	DiffAdditionHighlightBackgroundHex   = initialDefaultPalette.DiffAdditionHighlightBackgroundHex
-	DiffDeletionForegroundHex            = initialDefaultPalette.DiffDeletionForegroundHex
+	DiffDeletionHex                      = initialDefaultPalette.DiffDeletionHex
 	DiffDeletionBackgroundHex            = initialDefaultPalette.DiffDeletionBackgroundHex
 	DiffDeletionHighlightBackgroundHex   = initialDefaultPalette.DiffDeletionHighlightBackgroundHex
 	DiffLineNumberHex                    = initialDefaultPalette.DiffLineNumberHex
@@ -204,7 +249,29 @@ func NormalizePalette(overrides Palette) Palette {
 
 func ResolvePalette(overrides Palette) Palette {
 	normalized := NormalizePalette(overrides)
-	return mergePalette(DefaultPalette(), normalized)
+	resolved := mergePalette(DefaultPalette(), normalized)
+	cascadePaletteColors(&resolved, normalized)
+	return resolved
+}
+
+func cascadePaletteColors(resolved *Palette, overrides Palette) {
+	inheritColor(&resolved.PullRequestStatusOpenHex, overrides.PullRequestStatusOpenHex, resolved.SuccessHex, overrides.SuccessHex)
+	inheritColor(&resolved.PullRequestStatusOpenBackgroundHex, overrides.PullRequestStatusOpenBackgroundHex, resolved.SuccessBackgroundHex, overrides.SuccessBackgroundHex)
+	inheritColor(&resolved.PullRequestStatusDraftHex, overrides.PullRequestStatusDraftHex, resolved.PendingHex, overrides.PendingHex)
+	inheritColor(&resolved.PullRequestStatusDraftBackgroundHex, overrides.PullRequestStatusDraftBackgroundHex, resolved.PendingBackgroundHex, overrides.PendingBackgroundHex)
+	inheritColor(&resolved.PullRequestStatusClosedHex, overrides.PullRequestStatusClosedHex, resolved.FailureHex, overrides.FailureHex)
+	inheritColor(&resolved.PullRequestStatusClosedBackgroundHex, overrides.PullRequestStatusClosedBackgroundHex, resolved.FailureBackgroundHex, overrides.FailureBackgroundHex)
+	inheritColor(&resolved.DiffAdditionHex, overrides.DiffAdditionHex, resolved.SuccessHex, overrides.SuccessHex)
+	inheritColor(&resolved.DiffAdditionBackgroundHex, overrides.DiffAdditionBackgroundHex, resolved.SuccessBackgroundHex, overrides.SuccessBackgroundHex)
+	inheritColor(&resolved.DiffDeletionHex, overrides.DiffDeletionHex, resolved.FailureHex, overrides.FailureHex)
+	inheritColor(&resolved.DiffDeletionBackgroundHex, overrides.DiffDeletionBackgroundHex, resolved.FailureBackgroundHex, overrides.FailureBackgroundHex)
+}
+
+func inheritColor(target *string, targetOverride string, source string, sourceOverride string) {
+	if targetOverride != "" || sourceOverride == "" {
+		return
+	}
+	*target = source
 }
 
 func mergePalette(base Palette, overrides Palette) Palette {
@@ -230,8 +297,11 @@ func applyResolvedPalette(palette Palette) {
 	InactiveTextHex = palette.InactiveTextHex
 	InactiveTitleHex = palette.InactiveTitleHex
 	SuccessHex = palette.SuccessHex
+	SuccessBackgroundHex = palette.SuccessBackgroundHex
 	FailureHex = palette.FailureHex
+	FailureBackgroundHex = palette.FailureBackgroundHex
 	PendingHex = palette.PendingHex
+	PendingBackgroundHex = palette.PendingBackgroundHex
 	MutedHex = palette.MutedHex
 	PullRequestReferenceHex = palette.PullRequestReferenceHex
 	PullRequestTitleHex = palette.PullRequestTitleHex
@@ -248,20 +318,20 @@ func applyResolvedPalette(palette Palette) {
 	SyntaxStringHex = palette.SyntaxStringHex
 	SyntaxNumberHex = palette.SyntaxNumberHex
 	SyntaxCommentHex = palette.SyntaxCommentHex
-	CommentAuthorBadgeForegroundHex = palette.CommentAuthorBadgeForegroundHex
+	CommentAuthorBadgeHex = palette.CommentAuthorBadgeHex
 	CommentAuthorBadgeBackgroundHex = palette.CommentAuthorBadgeBackgroundHex
-	PullRequestStatusOpenForegroundHex = palette.PullRequestStatusOpenForegroundHex
+	PullRequestStatusOpenHex = palette.PullRequestStatusOpenHex
 	PullRequestStatusOpenBackgroundHex = palette.PullRequestStatusOpenBackgroundHex
-	PullRequestStatusDraftForegroundHex = palette.PullRequestStatusDraftForegroundHex
+	PullRequestStatusDraftHex = palette.PullRequestStatusDraftHex
 	PullRequestStatusDraftBackgroundHex = palette.PullRequestStatusDraftBackgroundHex
-	PullRequestStatusClosedForegroundHex = palette.PullRequestStatusClosedForegroundHex
+	PullRequestStatusClosedHex = palette.PullRequestStatusClosedHex
 	PullRequestStatusClosedBackgroundHex = palette.PullRequestStatusClosedBackgroundHex
-	PullRequestStatusMergedForegroundHex = palette.PullRequestStatusMergedForegroundHex
+	PullRequestStatusMergedHex = palette.PullRequestStatusMergedHex
 	PullRequestStatusMergedBackgroundHex = palette.PullRequestStatusMergedBackgroundHex
-	DiffAdditionForegroundHex = palette.DiffAdditionForegroundHex
+	DiffAdditionHex = palette.DiffAdditionHex
 	DiffAdditionBackgroundHex = palette.DiffAdditionBackgroundHex
 	DiffAdditionHighlightBackgroundHex = palette.DiffAdditionHighlightBackgroundHex
-	DiffDeletionForegroundHex = palette.DiffDeletionForegroundHex
+	DiffDeletionHex = palette.DiffDeletionHex
 	DiffDeletionBackgroundHex = palette.DiffDeletionBackgroundHex
 	DiffDeletionHighlightBackgroundHex = palette.DiffDeletionHighlightBackgroundHex
 	DiffLineNumberHex = palette.DiffLineNumberHex
@@ -298,8 +368,11 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.InactiveTextHex,
 		&palette.InactiveTitleHex,
 		&palette.SuccessHex,
+		&palette.SuccessBackgroundHex,
 		&palette.FailureHex,
+		&palette.FailureBackgroundHex,
 		&palette.PendingHex,
+		&palette.PendingBackgroundHex,
 		&palette.MutedHex,
 		&palette.PullRequestReferenceHex,
 		&palette.PullRequestTitleHex,
@@ -316,20 +389,20 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.SyntaxStringHex,
 		&palette.SyntaxNumberHex,
 		&palette.SyntaxCommentHex,
-		&palette.CommentAuthorBadgeForegroundHex,
+		&palette.CommentAuthorBadgeHex,
 		&palette.CommentAuthorBadgeBackgroundHex,
-		&palette.PullRequestStatusOpenForegroundHex,
+		&palette.PullRequestStatusOpenHex,
 		&palette.PullRequestStatusOpenBackgroundHex,
-		&palette.PullRequestStatusDraftForegroundHex,
+		&palette.PullRequestStatusDraftHex,
 		&palette.PullRequestStatusDraftBackgroundHex,
-		&palette.PullRequestStatusClosedForegroundHex,
+		&palette.PullRequestStatusClosedHex,
 		&palette.PullRequestStatusClosedBackgroundHex,
-		&palette.PullRequestStatusMergedForegroundHex,
+		&palette.PullRequestStatusMergedHex,
 		&palette.PullRequestStatusMergedBackgroundHex,
-		&palette.DiffAdditionForegroundHex,
+		&palette.DiffAdditionHex,
 		&palette.DiffAdditionBackgroundHex,
 		&palette.DiffAdditionHighlightBackgroundHex,
-		&palette.DiffDeletionForegroundHex,
+		&palette.DiffDeletionHex,
 		&palette.DiffDeletionBackgroundHex,
 		&palette.DiffDeletionHighlightBackgroundHex,
 		&palette.DiffLineNumberHex,
