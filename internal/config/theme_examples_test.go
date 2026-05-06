@@ -33,6 +33,9 @@ func TestLoad_GivenBundledThemeExamples_WhenLoading_ThenEachExampleParsesIntoARe
 		if reflect.DeepEqual(actual.Theme, theme.Palette{}) {
 			t.Fatalf("expected %q to define at least one theme override", fileName)
 		}
+		if actual.Theme.MarkdownHeadingBackgroundHex == "" {
+			t.Fatalf("expected %q to define %q", fileName, "markdown_heading_background")
+		}
 		if reflect.DeepEqual(actual.ResolvedTheme(), theme.DefaultPalette()) {
 			t.Fatalf("expected %q to change the default palette", fileName)
 		}

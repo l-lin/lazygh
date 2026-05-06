@@ -40,3 +40,18 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheMiseSection_ThenItDocumentsGl
 		}
 	}
 }
+
+func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsTheMarkdownHeadingBackgroundOverride(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"markdown_heading_background",
+		"controls the full-line heading fill",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}

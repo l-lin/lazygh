@@ -76,6 +76,7 @@ Configure palette overrides under `[theme]`.
 
 - Every color key is optional.
 - Values must use the `#RRGGBB` format.
+- `markdown_heading_background` controls the full-line heading fill.
 - Missing or invalid colors fall back to the built-in palette.
 - Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
 
@@ -100,6 +101,7 @@ active_border = "#7E9CD8"
 inactive_border = "#54546D"
 selected_line_background = "#363646"
 markdown_heading = "#7E9CD8"
+markdown_heading_background = "#223249"
 syntax_keyword = "#957FB8"
 syntax_string = "#98BB6C"
 diff_addition_background = "#2B3328"
