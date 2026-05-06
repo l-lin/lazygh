@@ -3,14 +3,16 @@ package tui
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/gdamore/tcell/v2"
 	"github.com/jesseduffield/gocui"
 )
 
-func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedKeyHints(t *testing.T) {
+func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedKeyHintsRightAlignedAboveTheBottomBorder(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -21,6 +23,8 @@ func TestPaneFooter_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGre
 
 	then_footerTextIs(t, gui, viewPullRequestsFooterName, "?: Help, /: Search, a: Action")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsFooterName, 0, "?: Help, /: Search, a: Action", given_themeColorHex(t, theme.InactiveTitleHex), "footer key hints")
+	then_footerTextIsRightAlignedAbovePaneBorder(t, gui, viewPullRequestsName, "?: Help, /: Search, a: Action")
+	then_viewBottomBorderStillSpansThePane(t, gui, viewPullRequestsName)
 }
 
 func TestPaneFooter_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResolvedKeysInKeyColonDescriptionFormat(t *testing.T) {
@@ -165,5 +169,64 @@ func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected s
 	then_noError(t, actualErr)
 	if actual := strings.TrimSpace(footerView.Buffer()); actual != expected {
 		t.Fatalf("expected footer %q for view %q, actual %q", expected, viewName, actual)
+	}
+}
+
+func then_footerTextIsRightAlignedAbovePaneBorder(t *testing.T, gui *gocui.Gui, paneViewName string, expected string) {
+	t.Helper()
+
+	actualErr := gui.ForceLayoutAndRedraw()
+	then_noError(t, actualErr)
+
+	x0, _, x1, y1, actualErr := gui.ViewPosition(paneViewName)
+	then_noError(t, actualErr)
+	screen, ok := gocui.Screen.(tcell.SimulationScreen)
+	if !ok {
+		t.Fatal("expected a simulation screen")
+	}
+	cells, width, _ := screen.GetContents()
+	startX := x1 - utf8.RuneCountInString(expected)
+	for offset, expectedRune := range expected {
+		actualCell := cells[((y1-1)*width)+(startX+offset)]
+		if len(actualCell.Runes) == 0 || actualCell.Runes[0] != expectedRune {
+			actualRune := rune(0)
+			if len(actualCell.Runes) > 0 {
+				actualRune = actualCell.Runes[0]
+			}
+			t.Fatalf("expected right-aligned footer rune %q at %s offset %d, actual %q", string(expectedRune), paneViewName, offset, string(actualRune))
+		}
+	}
+	leftCell := cells[((y1-1)*width)+x0]
+	if len(leftCell.Runes) == 0 || leftCell.Runes[0] != '│' {
+		actualRune := rune(0)
+		if len(leftCell.Runes) > 0 {
+			actualRune = leftCell.Runes[0]
+		}
+		t.Fatalf("expected left border to stay visible above the bottom border in %s, actual %q", paneViewName, string(actualRune))
+	}
+}
+
+func then_viewBottomBorderStillSpansThePane(t *testing.T, gui *gocui.Gui, paneViewName string) {
+	t.Helper()
+
+	actualErr := gui.ForceLayoutAndRedraw()
+	then_noError(t, actualErr)
+
+	x0, _, x1, y1, actualErr := gui.ViewPosition(paneViewName)
+	then_noError(t, actualErr)
+	screen, ok := gocui.Screen.(tcell.SimulationScreen)
+	if !ok {
+		t.Fatal("expected a simulation screen")
+	}
+	cells, width, _ := screen.GetContents()
+	for x := x0 + 1; x < x1; x++ {
+		actualCell := cells[(y1*width)+x]
+		if len(actualCell.Runes) == 0 || actualCell.Runes[0] != '─' {
+			actualRune := rune(0)
+			if len(actualCell.Runes) > 0 {
+				actualRune = actualCell.Runes[0]
+			}
+			t.Fatalf("expected bottom border rune %q at %s x=%d, actual %q", "─", paneViewName, x, string(actualRune))
+		}
 	}
 }

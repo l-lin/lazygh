@@ -200,7 +200,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--json", 
 ### Keymap overrides
 Use scoped tables under `[keymaps]`.
 
-The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`. It skips `view 1`, and it updates automatically when you remap keys, which is the bare minimum for honesty.
+The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It skips `view 1`, and it updates automatically when you remap keys, which is the bare minimum for honesty.
 
 For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious. In review mode on views `0` and `2`, `previous_tab` and `next_tab` become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments.
 
