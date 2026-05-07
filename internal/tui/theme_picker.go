@@ -104,6 +104,7 @@ func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset th
 	}
 
 	theme.ApplyPalette(theme.ResolvePaletteWithPreset(normalizedName, theme.Palette{}))
+	program.restylePullRequestRows()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.actionsPopupErrorMessage = ""

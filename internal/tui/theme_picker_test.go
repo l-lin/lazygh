@@ -77,6 +77,36 @@ func TestChangeTheme_GivenPresetSelection_WhenSubmitting_ThenItSavesThePresetUpd
 	then_statusLineContains(t, gui, "Theme changed to Kanagawa Dark")
 }
 
+func TestChangeTheme_GivenExistingPullRequestRows_WhenSubmitting_ThenItRestylesThemWithoutWaitingForADataRefresh(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.ResolvePaletteWithPreset("catppuccin-latte", theme.Palette{}))
+
+	store := &fakeThemePresetStore{}
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.themePresetStore = store
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("change theme", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "change theme"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("gruvbox dark", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "gruvbox dark"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, theme.PullRequestReferenceHex), "pull request reference after theme switch")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, theme.PullRequestTitleHex), "pull request title after theme switch")
+}
+
 func TestChangeTheme_GivenPresetSaveFailure_WhenSubmitting_ThenItKeepsThePickerOpenAndShowsTheError(t *testing.T) {
 	t.Cleanup(theme.ResetPalette)
 	theme.ApplyPalette(theme.Palette{BackgroundHex: "#101010"})

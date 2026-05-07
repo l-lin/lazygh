@@ -357,6 +357,32 @@ func TestLayout_GivenFailingMergeChecks_WhenRendering_ThenTheListRowUsesTheFailu
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Blocked PR", given_themeColorHex(t, theme.FailureBackgroundHex), "failed merge checks pull request background")
 }
 
+func TestLayout_GivenCatppuccinFrappeFailureRowBackground_WhenRendering_ThenThePullRequestTitleUsesAReadableForeground(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.ResolvePaletteWithPreset("catppuccin-frappe", theme.Palette{}))
+
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:                  "Blocked PR",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "CHANGES_REQUESTED",
+		MergeStateStatus:       "BLOCKED",
+		StatusCheckRollupState: "FAILURE",
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, theme.BackgroundHex), "readable pull request reference on bright failure background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "Blocked PR", given_themeColorHex(t, theme.BackgroundHex), "readable pull request title on bright failure background")
+}
+
 func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowDoesNotShowThem(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{

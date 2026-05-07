@@ -183,14 +183,18 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 		body,
 	}
 
-	mergeChecksBackgroundPrefix := pullRequestMergeChecksBackgroundPrefix(pullRequest)
+	mergeChecksBackgroundHex := pullRequestMergeChecksBackgroundHex(pullRequest)
+	mergeChecksBackgroundPrefix := backgroundColorEscape(mergeChecksBackgroundHex)
 	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: mergeChecksBackgroundPrefix}
 	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
-		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusStyle.foregroundHex), mergeChecksBackgroundPrefix)
+		statusForegroundHex := pullRequestReadableForegroundHex(statusStyle.foregroundHex, mergeChecksBackgroundHex)
+		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusForegroundHex), mergeChecksBackgroundPrefix)
 	}
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
 	titleSuffix := " " + valueOrDash(pullRequest.Title)
+	referenceForegroundHex := pullRequestReadableForegroundHex(theme.PullRequestReferenceHex, mergeChecksBackgroundHex)
+	titleForegroundHex := pullRequestReadableForegroundHex(theme.PullRequestTitleHex, mergeChecksBackgroundHex)
 
 	summaryCopy := pullRequest
 	return PullRequestRow{
@@ -199,23 +203,77 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
 				statusIconSegment,
-				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), mergeChecksBackgroundPrefix)},
-				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), mergeChecksBackgroundPrefix)},
+				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(referenceForegroundHex), mergeChecksBackgroundPrefix)},
+				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(titleForegroundHex), mergeChecksBackgroundPrefix)},
 			},
 		},
 		Summary: &summaryCopy,
 	}
 }
 
-func pullRequestMergeChecksBackgroundPrefix(pullRequest githubcli.PullRequest) string {
+func pullRequestMergeChecksBackgroundHex(pullRequest githubcli.PullRequest) string {
 	switch pullRequestMergeChecksStatus(pullRequest) {
 	case pullRequestOverviewStatusSuccess:
-		return backgroundColorEscape(theme.SuccessBackgroundHex)
+		return theme.SuccessBackgroundHex
 	case pullRequestOverviewStatusFailure:
-		return backgroundColorEscape(theme.FailureBackgroundHex)
+		return theme.FailureBackgroundHex
 	default:
 		return ""
 	}
+}
+
+func pullRequestReadableForegroundHex(preferredHex string, backgroundHex string) string {
+	trimmedBackgroundHex := strings.TrimSpace(backgroundHex)
+	if trimmedBackgroundHex == "" {
+		return preferredHex
+	}
+	if pullRequestContrastRatio(preferredHex, trimmedBackgroundHex) >= 4.5 {
+		return preferredHex
+	}
+	for _, candidateHex := range []string{theme.BackgroundHex, theme.ActiveTextHex, theme.InactiveTextHex, readableMarkdownForegroundHex(trimmedBackgroundHex)} {
+		if pullRequestContrastRatio(candidateHex, trimmedBackgroundHex) >= 4.5 {
+			return candidateHex
+		}
+	}
+	return readableMarkdownForegroundHex(trimmedBackgroundHex)
+}
+
+func pullRequestContrastRatio(foregroundHex string, backgroundHex string) float64 {
+	foregroundLuminance, ok := relativeLuminance(strings.TrimSpace(foregroundHex))
+	if !ok {
+		return 0
+	}
+	backgroundLuminance, ok := relativeLuminance(strings.TrimSpace(backgroundHex))
+	if !ok {
+		return 0
+	}
+	return contrastRatio(foregroundLuminance, backgroundLuminance)
+}
+
+func (program *Program) restylePullRequestRows() {
+	if program == nil || program.model == nil {
+		return
+	}
+
+	for _, tab := range program.model.PullRequestTabs() {
+		rows := program.model.PullRequestRows(tab)
+		if len(rows) == 0 {
+			continue
+		}
+		program.model.SetPullRequestRows(tab, restyledPullRequestRows(rows))
+	}
+}
+
+func restyledPullRequestRows(rows []PullRequestRow) []PullRequestRow {
+	restyledRows := make([]PullRequestRow, 0, len(rows))
+	for _, row := range rows {
+		if row.Summary == nil {
+			restyledRows = append(restyledRows, row)
+			continue
+		}
+		restyledRows = append(restyledRows, pullRequestRow(*row.Summary))
+	}
+	return restyledRows
 }
 
 func pullRequestMergeChecksStatus(pullRequest githubcli.PullRequest) pullRequestOverviewStatus {

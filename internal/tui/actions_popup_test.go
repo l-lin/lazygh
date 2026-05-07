@@ -9,6 +9,7 @@ import (
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpensItOnlyInPullRequestContextsAndThePopupSupportsSearchNavigationAndClose(t *testing.T) {
@@ -204,6 +205,35 @@ func TestActionsPopup_GivenKeywordSearch_WhenFiltering_ThenItCanFindReviewAndEdi
 	if !strings.Contains(popupView.Buffer(), "Edit PR title") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Edit PR title", popupView.Buffer())
 	}
+}
+
+func TestActionsPopup_GivenSearchQuery_WhenRendering_ThenTheMatchAndTheSelectedLineKeepTheThemeForeground(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.ResolvePaletteWithPreset("kanagawa-dark", theme.Palette{}))
+
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "start" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, "Start", given_themeColorHex(t, theme.ActiveTextHex), "search match foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, "review", given_themeColorHex(t, theme.ActiveTextHex), "selected line foreground")
 }
 
 func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenThePendingReview_ThenItKeepsThePopupOpenAndShowsTheFailure(t *testing.T) {

@@ -56,9 +56,14 @@ func (program *Program) renderItemLine(view *gocui.View, item Item, query string
 func (program *Program) renderHighlightedLine(view *gocui.View, text string, query string, selected bool) {
 	var highlightedText string
 	if selected {
-		highlightedText, _ = highlightSearchMatchesOnSelectedLine(text, query)
+		selectedForegroundPrefix := foregroundColorEscapeForAttribute(view.SelFgColor)
+		selectedLinePrefix := ansiBold + selectedForegroundPrefix + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+		selectedMatchPrefix := ansiBold + selectedForegroundPrefix + backgroundColorEscape(theme.SearchHighlightHex)
+		highlightedText, _ = highlightSearchMatchesWithPrefixes(text, query, selectedLinePrefix, selectedMatchPrefix)
 	} else {
-		highlightedText, _ = highlightSearchMatches(text, query)
+		foregroundPrefix := foregroundColorEscapeForAttribute(view.FgColor)
+		matchPrefix := foregroundPrefix + backgroundColorEscape(theme.SearchHighlightHex)
+		highlightedText, _ = highlightSearchMatchesWithPrefixes(text, query, foregroundPrefix, matchPrefix)
 	}
 	fmt.Fprintln(view, highlightedText)
 }
