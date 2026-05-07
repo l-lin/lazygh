@@ -170,6 +170,30 @@ func TestGetPullRequestDetail_GivenApprovalReviews_WhenFetching_ThenItReturnsNor
 	}
 }
 
+func TestGetPullRequestDetail_GivenPendingInlineReviewComments_WhenFetching_ThenItPreservesTheThreadCommentState(t *testing.T) {
+	runner := &fakeRunner{
+		responses: []fakeCommandResponse{
+			{stdout: []byte(`{"title":"Pending detail","number":42,"body":"Body","state":"OPEN"}`)},
+			{stdout: []byte(`[]`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":12,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"PRRC_1","state":" PENDING ","author":{"login":"reviewer-inline"},"body":"Draft feedback","createdAt":"2026-04-18T14:00:00Z"}]}}]}}}}}`)},
+		},
+	}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	if len(actual.InlineCommentThreads) != 1 {
+		t.Fatalf("expected 1 inline thread, actual %d", len(actual.InlineCommentThreads))
+	}
+	if len(actual.InlineCommentThreads[0].Comments) != 1 {
+		t.Fatalf("expected 1 inline thread comment, actual %+v", actual.InlineCommentThreads[0].Comments)
+	}
+	if actual.InlineCommentThreads[0].Comments[0].State != "PENDING" {
+		t.Fatalf("expected inline thread comment state %q, actual %+v", "PENDING", actual.InlineCommentThreads[0].Comments[0])
+	}
+}
+
 func TestGetPullRequestDetail_GivenInvalidJSON_WhenFetching_ThenReturnsAnInvalidResponseError(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"title":`)}
 	subject := NewClientWithRunner(runner)

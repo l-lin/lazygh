@@ -74,6 +74,7 @@ type PullRequestComment struct {
 	CreatedAt       string                    `json:"createdAt"`
 	URL             string                    `json:"url"`
 	DiffHunk        string                    `json:"diffHunk"`
+	State           string                    `json:"state"`
 	ViewerDidAuthor bool                      `json:"viewerDidAuthor"`
 }
 
@@ -278,6 +279,7 @@ func (comment PullRequestComment) normalized() PullRequestComment {
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)
 	comment.DiffHunk = strings.TrimSpace(comment.DiffHunk)
+	comment.State = strings.TrimSpace(comment.State)
 	if comment.Author != nil {
 		normalizedAuthor := comment.Author.normalized()
 		comment.Author = &normalizedAuthor
