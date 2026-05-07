@@ -181,6 +181,9 @@ func TestLayout_GivenThemeBackgroundOverride_WhenRendering_ThenItAppliesItToTheG
 	if gui.BgColor != expectedBackground {
 		t.Fatalf("expected gui background color %v, actual %v", expectedBackground, gui.BgColor)
 	}
+	if gui.SelBgColor != expectedBackground {
+		t.Fatalf("expected gui selected frame background color %v, actual %v", expectedBackground, gui.SelBgColor)
+	}
 	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName, viewStatusLineName} {
 		view, viewErr := gui.View(viewName)
 		then_noError(t, viewErr)

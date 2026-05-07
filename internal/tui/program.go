@@ -183,7 +183,7 @@ func (program *Program) configureGUI(gui *gocui.Gui) {
 	gui.BgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	gui.FgColor = gocui.GetColor(theme.InactiveTextHex)
 	gui.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
-	gui.SelBgColor = gocui.ColorDefault
+	gui.SelBgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	gui.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	gui.SelFrameColor = gocui.GetColor(theme.ActiveBorderHex)
 }
