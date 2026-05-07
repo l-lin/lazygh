@@ -193,22 +193,16 @@ func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.Pul
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
-	if diffPreview != "" {
-		lineIndex -= renderedTextLineCount(diffPreview)
-		if lineIndex < 0 {
-			return pullRequestReviewCommentActionTarget{}, false
-		}
-	}
-
-	threadWidth := width
-	if threadWidth < minimumMarkdownRenderWidth {
-		threadWidth = defaultDetailWrapWidth
-	}
+	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
-	for _, threadComment := range thread.Comments {
+	statusBadges := inlineThreadMetadataBadges(thread.IsResolved, thread.IsOutdated, thread.Comments)
+	for index, threadComment := range thread.Comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
+		commentBadges := []commentMetadataBadge(nil)
+		if index == 0 {
+			commentBadges = statusBadges
+		}
+		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadataBadges(threadComment.Author, threadComment.CreatedAt, commentBadges, body, threadWidth))
 		if lineIndex < commentLineCount {
 			if strings.TrimSpace(threadComment.ID) == "" || !threadComment.ViewerDidAuthor {
 				return pullRequestReviewCommentActionTarget{}, false

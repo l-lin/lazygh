@@ -285,6 +285,84 @@ func TestBrowserMode_GivenTheCursorOnAConversation_WhenPressingZA_ThenItTogglesT
 	}
 }
 
+func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapsesResolvedThreadsKeepsSectionsTightAndHidesDiffPreview(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/conversations",
+				State:       "OPEN",
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{
+					{
+						ID:         "thread-1",
+						IsResolved: true,
+						Path:       "internal/tui/render.go",
+						Line:       43,
+						DiffSide:   "RIGHT",
+						Comments: []githubcli.PullRequestComment{{
+							Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-resolved"},
+							Body:      "Resolved thread body",
+							CreatedAt: "2026-04-18T10:00:00Z",
+							DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+						}},
+					},
+					{
+						ID:       "thread-2",
+						Path:     "internal/tui/model.go",
+						Line:     57,
+						DiffSide: "RIGHT",
+						Comments: []githubcli.PullRequestComment{{
+							Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-active"},
+							Body:      "Active thread body",
+							CreatedAt: "2026-04-18T10:30:00Z",
+							DiffHunk:  "@@ -56,2 +56,2 @@\n old line\n-old value\n+new value",
+						}},
+					},
+				},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Resolved thread body": "Rendered resolved thread body",
+		"Active thread body":   "Rendered active thread body",
+	}}
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	resolvedHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " Comment on line R43 · resolved")
+	activeHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " Comment on line R57")
+	if activeHeaderLineIndex != resolvedHeaderLineIndex+1 {
+		t.Fatalf("expected consecutive conversation headers without blank spacer lines, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered resolved thread body") {
+		t.Fatalf("expected resolved threads to stay folded by default, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered active thread body") {
+		t.Fatalf("expected unresolved threads to stay visible, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "@@ -42,2 +42,2 @@") || strings.Contains(detailView.Buffer(), "opusplan") || strings.Contains(detailView.Buffer(), "old value") {
+		t.Fatalf("expected inline thread conversations to hide diff previews, actual %q", detailView.Buffer())
+	}
+	metadataLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-active")
+	if !strings.Contains(detailView.BufferLines()[metadataLineIndex], "Unresolved") {
+		t.Fatalf("expected the active thread metadata line to show the unresolved badge, actual %q", detailView.BufferLines()[metadataLineIndex])
+	}
+}
+
 func TestLayout_GivenOverviewHeaderMetadata_WhenRendering_ThenTheOverviewTabShowsColoredChurnAndLifecycleTimestamps(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

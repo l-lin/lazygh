@@ -20,48 +20,80 @@ func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineCo
 }
 
 func renderPullRequestInlineCommentThreadSection(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestInlineCommentThreadContent(thread, renderer, width)
+}
+
+func renderPullRequestInlineCommentThreadContent(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
 	comment := pullRequestInlineCommentFromThread(thread)
-	lines := []string{renderPullRequestInlineCommentLocationLine(comment), renderPullRequestInlineCommentThreadStatusLine(thread)}
-
-	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
-	if diffPreview != "" {
-		lines = append(lines, diffPreview)
-	}
-
-	threadWidth := width
-	if threadWidth < minimumMarkdownRenderWidth {
-		threadWidth = defaultDetailWrapWidth
-	}
-	commentBodyWidth := commentBoxInnerWidth(threadWidth)
+	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
+	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	if len(thread.Comments) == 0 {
 		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth))
 		return strings.Join(lines, "\n")
 	}
 
-	for _, threadComment := range thread.Comments {
-		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		lines = append(lines, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
+	for _, commentBox := range renderInlineThreadCommentBoxes(thread.Comments, renderer, threadWidth, inlineThreadMetadataBadges(thread.IsResolved, thread.IsOutdated, thread.Comments)) {
+		lines = append(lines, commentBox)
 	}
 	return strings.Join(lines, "\n")
 }
 
-func renderPullRequestInlineCommentThreadStatusLine(thread githubcli.PullRequestReviewThread) string {
-	badges := []string{renderPullRequestInlineCommentResolutionBadge(thread.IsResolved)}
-	if thread.IsOutdated {
-		badges = append(badges, renderPullRequestInlineCommentOutdatedBadge())
+func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int, badges []commentMetadataBadge) []string {
+	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
+	commentBodyWidth := commentBoxInnerWidth(threadWidth)
+	renderedComments := make([]string, 0, len(comments))
+	for index, threadComment := range comments {
+		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
+		commentBadges := []commentMetadataBadge(nil)
+		if index == 0 {
+			commentBadges = badges
+		}
+		renderedComments = append(renderedComments, renderCommentBoxWithMetadataBadges(threadComment.Author, threadComment.CreatedAt, commentBadges, body, threadWidth))
 	}
-	return strings.Join(badges, " ")
+	return renderedComments
 }
 
-func renderPullRequestInlineCommentResolutionBadge(resolved bool) string {
+func normalizedInlineThreadCommentBoxWidth(width int) int {
+	if width < minimumMarkdownRenderWidth {
+		return defaultDetailWrapWidth
+	}
+	return width
+}
+
+func inlineThreadMetadataBadges(resolved bool, outdated bool, comments []githubcli.PullRequestComment) []commentMetadataBadge {
+	badges := make([]commentMetadataBadge, 0, 3)
+	if pullRequestCommentsContainPendingState(comments) {
+		badges = append(badges, pendingInlineThreadMetadataBadge())
+	}
+	badges = append(badges, inlineThreadResolutionMetadataBadge(resolved))
+	if outdated {
+		badges = append(badges, outdatedInlineThreadMetadataBadge())
+	}
+	return badges
+}
+
+func pullRequestCommentsContainPendingState(comments []githubcli.PullRequestComment) bool {
+	for _, comment := range comments {
+		if strings.EqualFold(strings.TrimSpace(comment.State), "PENDING") {
+			return true
+		}
+	}
+	return false
+}
+
+func pendingInlineThreadMetadataBadge() commentMetadataBadge {
+	return commentMetadataBadge{Label: "Pending", ForegroundHex: theme.PendingHex, BackgroundHex: theme.SelectedLineBackgroundHex}
+}
+
+func inlineThreadResolutionMetadataBadge(resolved bool) commentMetadataBadge {
 	if resolved {
-		return styleText(" Resolved ", foregroundColorEscape(theme.DiffAdditionHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex))
+		return commentMetadataBadge{Label: "Resolved", ForegroundHex: theme.DiffAdditionHex, BackgroundHex: theme.DiffAdditionBackgroundHex}
 	}
-	return styleText(" Unresolved ", foregroundColorEscape(theme.DiffDeletionHex), backgroundColorEscape(theme.DiffDeletionBackgroundHex))
+	return commentMetadataBadge{Label: "Unresolved", ForegroundHex: theme.DiffDeletionHex, BackgroundHex: theme.DiffDeletionBackgroundHex}
 }
 
-func renderPullRequestInlineCommentOutdatedBadge() string {
-	return styleText(" Outdated ", foregroundColorEscape(theme.DiffHunkHeaderHex), backgroundColorEscape(theme.SelectedLineBackgroundHex))
+func outdatedInlineThreadMetadataBadge() commentMetadataBadge {
+	return commentMetadataBadge{Label: "Outdated", ForegroundHex: theme.DiffHunkHeaderHex, BackgroundHex: theme.SelectedLineBackgroundHex}
 }
 
 func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread) githubcli.PullRequestInlineComment {

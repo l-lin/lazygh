@@ -192,7 +192,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 		for index, rawThread := range detail.InlineCommentThreads {
 			thread := rawThread
 			sectionID := browserDetailSectionID(pullRequestKey, "thread", index, thread.ID)
-			collapsed := program.browserDetailSectionCollapsed(sectionID, false)
+			collapsed := program.browserDetailSectionCollapsed(sectionID, thread.IsResolved)
 			sections = append(sections, browserDetailSection{
 				id:           sectionID,
 				header:       renderBrowserDetailSectionHeader(renderPullRequestInlineThreadConversationTitle(thread), collapsed, theme.InactiveTitleHex),
@@ -224,14 +224,14 @@ func (program *Program) renderCurrentPullRequestConversationsTab(summary githubc
 	if len(sections) == 0 {
 		return "No comments yet."
 	}
-	return renderBrowserDetailSections(sections, true)
+	return renderBrowserDetailSections(sections, false)
 }
 
 func (program *Program) browserConversationSectionAtCursor(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int, cursorLine int) (browserDetailSectionCursor, bool) {
 	if cursorLine < 0 {
 		return browserDetailSectionCursor{}, false
 	}
-	return browserDetailSectionAtCursor(program.currentPullRequestConversationSections(summary, detail, width), cursorLine, true)
+	return browserDetailSectionAtCursor(program.currentPullRequestConversationSections(summary, detail, width), cursorLine, false)
 }
 
 func renderPullRequestCommentConversationTitle(_ githubcli.PullRequestComment) string {
@@ -256,29 +256,7 @@ func renderPullRequestInlineThreadConversationTitle(thread githubcli.PullRequest
 }
 
 func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
-	comment := pullRequestInlineCommentFromThread(thread)
-	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
-
-	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
-	if diffPreview != "" {
-		lines = append(lines, diffPreview)
-	}
-
-	threadWidth := width
-	if threadWidth < minimumMarkdownRenderWidth {
-		threadWidth = defaultDetailWrapWidth
-	}
-	commentBodyWidth := commentBoxInnerWidth(threadWidth)
-	if len(thread.Comments) == 0 {
-		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth))
-		return strings.Join(lines, "\n")
-	}
-
-	for _, threadComment := range thread.Comments {
-		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		lines = append(lines, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
-	}
-	return strings.Join(lines, "\n")
+	return renderPullRequestInlineCommentThreadContent(thread, renderer, width)
 }
 
 func pullRequestInlineCommentSideLabel(comment githubcli.PullRequestInlineComment) string {

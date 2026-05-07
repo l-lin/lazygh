@@ -312,6 +312,45 @@ func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUse
 	}
 }
 
+func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItShowsStatusBadgesOnTheMetadataLine(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:         "thread-1",
+		IsOutdated: true,
+		Path:       "internal/tui/render.go",
+		Line:       3,
+		DiffSide:   "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+			State:     "PENDING",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	authorLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
+		if !strings.Contains(detailView.BufferLines()[authorLineIndex], expected) {
+			t.Fatalf("expected the review metadata line to contain %q, actual %q", expected, detailView.BufferLines()[authorLineIndex])
+		}
+	}
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, authorLineIndex, "Pending", given_themeColorHex(t, theme.PendingHex), "review thread pending badge foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, authorLineIndex, "Pending", given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review thread pending badge background")
+}
+
 func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxColorsAndFillsTheCommentBoxInterior(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{

@@ -391,3 +391,38 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlace
 		t.Fatalf("expected markdown renderer input %q, actual %q", "Thread body", renderer.lastMarkdown)
 	}
 }
+
+func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_ThenItShowsThemOnTheMetadataLine(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered thread body"}
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,2 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight}},
+		}},
+		Threads: []reviewDiffThread{{
+			ID:         "thread-1",
+			Path:       "internal/tui/render.go",
+			Line:       11,
+			Side:       reviewDiffLineSideRight,
+			IsOutdated: true,
+			Comments:   []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Thread body", CreatedAt: "2026-04-20T10:00:00Z", State: "PENDING"}},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
+	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-one")
+
+	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
+		if !strings.Contains(metadataLine, expected) {
+			t.Fatalf("expected the metadata line to contain %q, actual %q", expected, metadataLine)
+		}
+	}
+	pendingIndex := given_runeIndexInString(t, metadataLine, "Pending")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[metadataLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.SelectedLineBackgroundHex)) {
+		t.Fatalf("expected the pending badge prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.SelectedLineBackgroundHex), actualStylePrefix)
+	}
+}

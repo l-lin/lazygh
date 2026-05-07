@@ -777,6 +777,77 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenExec
 	}
 }
 
+func TestActionsPopup_GivenBrowserCommentsTabCursorOnTheSecondInlineThread_WhenResolving_ThenItTargetsTheMatchingThreadAfterCompactRendering(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/comments",
+				State:       "OPEN",
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{
+					{
+						ID:         "thread-1",
+						IsResolved: true,
+						Path:       "internal/tui/render.go",
+						Line:       43,
+						DiffSide:   "RIGHT",
+						Comments: []githubcli.PullRequestComment{{
+							Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline-one"},
+							Body:      "First inline thread body",
+							CreatedAt: "2026-04-18T10:30:00Z",
+							DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+						}},
+					},
+					{
+						ID:       "thread-2",
+						Path:     "internal/tui/model.go",
+						Line:     57,
+						DiffSide: "RIGHT",
+						Comments: []githubcli.PullRequestComment{{
+							Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline-two"},
+							Body:      "Second inline thread body",
+							CreatedAt: "2026-04-18T11:00:00Z",
+							DiffHunk:  "@@ -56,2 +56,2 @@\n old line\n-old value\n+new value",
+						}},
+					},
+				},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42":                   "Rendered body 42",
+		"First inline thread body":  "Rendered first inline thread body",
+		"Second inline thread body": "Rendered second inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered second inline thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("mark inline comment as resolved", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark inline comment as resolved"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-2"}) {
+		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-2"}, loader.resolveReviewThreadIDs)
+	}
+}
+
 func TestActionsPopup_GivenReviewModeCursorOnAResolvedInlineThread_WhenOpening_ThenItShowsTheUnresolveInlineCommentAction(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{

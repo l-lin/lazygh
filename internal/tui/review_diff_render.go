@@ -185,10 +185,15 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	}
 
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
-	for _, comment := range thread.Comments {
+	statusBadges := inlineThreadMetadataBadges(thread.IsResolved, thread.IsOutdated, thread.Comments)
+	for index, comment := range thread.Comments {
 		commentCopy := comment
 		body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
-		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
+		commentBadges := []commentMetadataBadge(nil)
+		if index == 0 {
+			commentBadges = statusBadges
+		}
+		for _, boxLine := range strings.Split(renderCommentBoxWithMetadataBadges(comment.Author, comment.CreatedAt, commentBadges, body, threadWidth), "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}
