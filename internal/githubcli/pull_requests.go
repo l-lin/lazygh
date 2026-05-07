@@ -14,7 +14,33 @@ var (
 )
 
 const pullRequestSearchJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt,id"
-const pullRequestListReviewMetadataQuery = `query($ids:[ID!]!){nodes(ids:$ids){... on PullRequest{id reviewDecision reviewRequests(first:100){nodes{requestedReviewer{__typename ... on User{login name} ... on Team{name slug organization{login}}}}}}}`
+const pullRequestListReviewMetadataQuery = `
+query($ids:[ID!]!) {
+  nodes(ids:$ids) {
+    ... on PullRequest {
+      id
+      reviewDecision
+      reviewRequests(first:100) {
+        nodes {
+          requestedReviewer {
+            __typename
+            ... on User {
+              login
+              name
+            }
+            ... on Team {
+              name
+              slug
+              organization {
+                login
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`
 
 type Repository struct {
 	Name          string `json:"name"`

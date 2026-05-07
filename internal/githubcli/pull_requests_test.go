@@ -2,8 +2,18 @@ package githubcli
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestPullRequestListReviewMetadataQuery_GivenTheStaticGraphQLDocument_WhenReadingIt_ThenItKeepsBalancedSelectionSets(t *testing.T) {
+	actualOpenCount := strings.Count(pullRequestListReviewMetadataQuery, "{")
+	actualCloseCount := strings.Count(pullRequestListReviewMetadataQuery, "}")
+
+	if actualOpenCount != actualCloseCount {
+		t.Fatalf("expected balanced GraphQL braces, actual open=%d close=%d in %q", actualOpenCount, actualCloseCount, pullRequestListReviewMetadataQuery)
+	}
+}
 
 func TestListPullRequests_GivenPullRequestSearchArgumentsWithoutJSON_WhenFetching_ThenItAppendsTheRequiredJSONFields(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`[]`)}
