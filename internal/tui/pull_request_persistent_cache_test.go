@@ -66,7 +66,7 @@ func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering
 	}
 }
 
-func TestLayout_GivenCachedPullRequestsAndUnsortedLiveResults_WhenRendering_ThenItShowsTheLiveRowsSortedByMostRecentUpdate(t *testing.T) {
+func TestLayout_GivenCachedPullRequestsAndLiveResultsInSearchOrder_WhenRendering_ThenItKeepsTheLiveRowOrder(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{
 		{Title: "Cached older", Number: 41, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/41", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T09:00:00Z"},
 		{Title: "Cached newer", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"},
@@ -97,8 +97,8 @@ func TestLayout_GivenCachedPullRequestsAndUnsortedLiveResults_WhenRendering_Then
 	if olderIndex < 0 || newerIndex < 0 {
 		t.Fatalf("expected pull requests buffer to contain both live rows, actual %q", actualBuffer)
 	}
-	if newerIndex > olderIndex {
-		t.Fatalf("expected the newer live row to render before the older one, actual %q", actualBuffer)
+	if olderIndex > newerIndex {
+		t.Fatalf("expected the live rows to keep their search order, actual %q", actualBuffer)
 	}
 }
 

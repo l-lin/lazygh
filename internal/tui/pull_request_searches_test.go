@@ -36,9 +36,9 @@ func TestNextPullRequestTab_GivenThreeConfiguredTabs_WhenSwitching_ThenItCyclesA
 func TestApplyPullRequestSearches_GivenConfiguredSearches_WhenRendering_ThenItUsesTheirLabelsInOrder(t *testing.T) {
 	subject := NewProgramWithModel(NewModel(DefaultSeedData()))
 	subject.ApplyPullRequestSearches([]appconfig.PullRequestSearch{
-		{Label: "Mine", Command: []string{"pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
-		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
-		{Label: "Escalated", Command: []string{"search", "prs", "--search", "label:escalated state:open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "Escalated", Command: []string{"search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"}},
 	})
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -55,7 +55,7 @@ func TestApplyPullRequestSearches_GivenConfiguredSearches_WhenRendering_ThenItUs
 func TestApplyPullRequestSearches_GivenAConfiguredReplacementList_WhenApplying_ThenItReplacesTheDefaultLoadingTabs(t *testing.T) {
 	subject := NewProgramWithModel(NewModel(DefaultSeedData()))
 	expected := []appconfig.PullRequestSearch{
-		{Label: "Mine", Command: []string{"pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
 	}
 
 	subject.ApplyPullRequestSearches(expected)

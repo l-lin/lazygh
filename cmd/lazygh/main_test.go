@@ -39,8 +39,8 @@ func TestRun_GivenLoadedKeymapOverrides_WhenStartingTheProgram_ThenItAppliesThem
 
 func TestRun_GivenLoadedPullRequestSearches_WhenStartingTheProgram_ThenItAppliesThemBeforeRunning(t *testing.T) {
 	expectedSearches := []appconfig.PullRequestSearch{
-		{Label: "Mine", Command: []string{"pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
-		{Label: "Team Review", Command: []string{"pr", "list", "--search", "review-requested:@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "Team Review", Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
 	}
 	runner := &fakeConfigurableRunner{}
 

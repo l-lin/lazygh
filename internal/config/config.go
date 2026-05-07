@@ -13,10 +13,9 @@ import (
 )
 
 const (
-	configDirectoryName   = "lazygh"
-	configFileName        = "config.toml"
-	cacheFileName         = "cache.sqlite3"
-	pullRequestJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt"
+	configDirectoryName = "lazygh"
+	configFileName      = "config.toml"
+	cacheFileName       = "cache.sqlite3"
 )
 
 type Config struct {
@@ -115,15 +114,15 @@ func DefaultPullRequestSearches() []PullRequestSearch {
 	return []PullRequestSearch{
 		{
 			Label:   "My PRs",
-			Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--json", pullRequestJSONFields},
+			Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"},
 		},
 		{
 			Label:   "My reviews",
-			Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--json", pullRequestJSONFields},
+			Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"},
 		},
 		{
 			Label:   "Requested",
-			Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--json", pullRequestJSONFields},
+			Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"},
 		},
 	}
 }

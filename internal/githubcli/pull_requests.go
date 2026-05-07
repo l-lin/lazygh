@@ -10,6 +10,8 @@ import (
 
 var ErrInvalidPullRequestResponse = fmt.Errorf("invalid pull request response")
 
+const pullRequestSearchJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt"
+
 type Repository struct {
 	Name          string `json:"name"`
 	NameWithOwner string `json:"nameWithOwner"`
@@ -27,7 +29,8 @@ type PullRequest struct {
 }
 
 func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
-	result, err := client.runGH(appconfig.FormatGHCommand(commandArguments), commandArguments...)
+	resolvedCommandArguments := pullRequestSearchCommandArguments(commandArguments)
+	result, err := client.runGH(FormatPullRequestSearchCommand(commandArguments), resolvedCommandArguments...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +45,29 @@ func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest
 	}
 
 	return pullRequests, nil
+}
+
+func FormatPullRequestSearchCommand(commandArguments []string) string {
+	return appconfig.FormatGHCommand(pullRequestSearchCommandArguments(commandArguments))
+}
+
+func pullRequestSearchCommandArguments(commandArguments []string) []string {
+	resolvedCommandArguments := make([]string, 0, len(commandArguments)+2)
+	for index := 0; index < len(commandArguments); index++ {
+		argument := commandArguments[index]
+		switch {
+		case argument == "--json":
+			index++
+			continue
+		case strings.HasPrefix(argument, "--json="):
+			continue
+		default:
+			resolvedCommandArguments = append(resolvedCommandArguments, argument)
+		}
+	}
+
+	resolvedCommandArguments = append(resolvedCommandArguments, "--json", pullRequestSearchJSONFields)
+	return resolvedCommandArguments
 }
 
 func (pullRequest PullRequest) normalized() PullRequest {

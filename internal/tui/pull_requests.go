@@ -53,7 +53,7 @@ var (
 )
 
 func buildPullRequestListState(search appconfig.PullRequestSearch) pullRequestListState {
-	commandLine := appconfig.FormatGHCommand(search.Command)
+	commandLine := githubcli.FormatPullRequestSearchCommand(search.Command)
 	label := strings.TrimSpace(search.Label)
 	switch label {
 	case "Requested":

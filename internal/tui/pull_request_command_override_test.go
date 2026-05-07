@@ -11,7 +11,7 @@ func TestApplyPullRequestSearches_GivenCustomSearches_WhenReadingTheConfiguredLo
 	subject := NewProgramWithModel(model)
 	subject.ApplyPullRequestSearches([]appconfig.PullRequestSearch{{
 		Label:   "Team Review",
-		Command: []string{"pr", "list", "--search", "review-requested:@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"},
+		Command: []string{"pr", "list", "--search", "review-requested:@me", "--state", "open"},
 	}})
 
 	actualPullRequests := subject.model.PullRequests(PullRequestTab(0))
@@ -31,7 +31,7 @@ func TestStatusLineText_GivenConfiguredSearchWhileLoading_WhenReadingTheStatusLi
 	subject := NewProgramWithModel(model)
 	subject.ApplyPullRequestSearches([]appconfig.PullRequestSearch{{
 		Label:   "Mine",
-		Command: []string{"pr", "list", "--search", "author:@me status:open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"},
+		Command: []string{"pr", "list", "--search", "author:@me status:open"},
 	}})
 	subject.myPullRequestsLoading = true
 

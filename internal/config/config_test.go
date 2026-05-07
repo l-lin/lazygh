@@ -247,6 +247,19 @@ command = 1
 	}
 }
 
+func TestDefaultPullRequestSearches_WhenReadingDefaults_ThenTheySortByLastUpdatedDescendingWithoutJSONFlags(t *testing.T) {
+	actual := DefaultPullRequestSearches()
+
+	expected := []PullRequestSearch{
+		{Label: "My PRs", Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "My reviews", Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"}},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected searches %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestConfig_ResolvedPullRequestSearches_GivenAnEmptyConfiguredList_WhenResolving_ThenItFallsBackToDefaults(t *testing.T) {
 	subject := Config{}
 
