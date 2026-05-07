@@ -5,6 +5,7 @@
 ## Status
 The repo now boots into a three-view TUI:
 - view `0`: detail pane, including rich PR metadata, UTC created and updated timestamps, colored `+N` and `-N` churn counts, markdown body rendering, and comments from `gh pr view`
+- view `0` conversations keep inline threads compact: resolved threads start folded, status badges sit on the first comment metadata line, and diff hunk previews stay out of the way
 - view `1`: connected user from `gh api user`
 - view `2`: pull requests from ordered, configurable `gh` searches, rendered as ` owner/repo#123 title` rows with tabs named from the config
 
