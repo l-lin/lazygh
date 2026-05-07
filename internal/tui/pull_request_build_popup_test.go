@@ -283,11 +283,13 @@ func TestActionsPopup_GivenDetailCursorOnBuildLink_WhenOpening_ThenItShowsTheBui
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), actionsPopupLabel(actionsPopupBuildRunIcon, pullRequestBuildRunActionTitle)) {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", actionsPopupLabel(actionsPopupBuildRunIcon, pullRequestBuildRunActionTitle), popupView.Buffer())
+	expectedBuildRunLabel := actionsPopupLabel("", pullRequestBuildRunActionTitle)
+	if !strings.Contains(popupView.Buffer(), expectedBuildRunLabel) {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", expectedBuildRunLabel, popupView.Buffer())
 	}
-	if !strings.Contains(popupView.Buffer(), actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle)) {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle), popupView.Buffer())
+	expectedBuildLogsLabel := actionsPopupLabel("", pullRequestBuildRunLogsActionTitle)
+	if !strings.Contains(popupView.Buffer(), expectedBuildLogsLabel) {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", expectedBuildLogsLabel, popupView.Buffer())
 	}
 }
 

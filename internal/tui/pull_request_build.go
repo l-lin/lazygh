@@ -13,8 +13,9 @@ const (
 	pullRequestBuildLogsUnavailableMessage = "󰅚 Build logs unavailable"
 	pullRequestBuildRunActionTitle         = "View build run"
 	pullRequestBuildRunLogsActionTitle     = "View job logs"
-	actionsPopupBuildRunIcon               = detailChecksIcon
-	actionsPopupBuildRunLogsIcon           = detailCommentsIcon
+	actionsPopupBuildActionIcon            = ""
+	actionsPopupBuildRunIcon               = actionsPopupBuildActionIcon
+	actionsPopupBuildRunLogsIcon           = actionsPopupBuildActionIcon
 )
 
 type pullRequestBuildRunTarget struct {
