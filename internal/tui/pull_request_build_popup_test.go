@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -42,11 +41,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingBuildRunPopupBindings_ThenItUse
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'q', handler: subject.closePullRequestBuildRunPopup})
 }
 
-func TestBrowserMode_GivenTheCursorOnANonPendingBuild_WhenPressingEnter_ThenItShowsSpinnerBeforeOpeningTheBuildRunPopup(t *testing.T) {
+func TestBrowserMode_GivenTheCursorOnANonPendingBuild_WhenPressingEnter_ThenItCollapsesTheBuildsSectionWithoutOpeningTheBuildRunPopup(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
-		buildRuns: map[string]string{
-			"https://github.com/acme/widgets/actions/runs/42": "Run #42\nStatus: completed\nConclusion: failure",
-		},
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
 				Title:       "First PR",
@@ -86,39 +82,20 @@ func TestBrowserMode_GivenTheCursorOnANonPendingBuild_WhenPressingEnter_ThenItSh
 	actualErr = enterHandler(gui, detailView)
 	then_noError(t, actualErr)
 
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued build run load, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 0 {
+		t.Fatalf("expected no queued build run load, actual %d", len(asyncRunner.runs))
 	}
 	then_viewDoesNotExist(t, gui, viewPullRequestBuildInfoName)
-	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
-	then_statusLineContains(t, gui, "Running `gh run view 42 -R acme/widgets --verbose`.")
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewFailureIcon+" Builds") {
+		t.Fatalf("expected enter to collapse the builds section, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "CI / test (Failed)") {
+		t.Fatalf("expected the collapsed builds section to hide the build row, actual %q", detailView.Buffer())
+	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-
-	asyncRunner.runs[0]()
-
-	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
-	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "Build run · CI / test") {
-		t.Fatalf("expected popup title to contain %q, actual %q", "Build run · CI / test", popupView.Title)
-	}
-	for _, expected := range []string{"Run: https://github.com/acme/widgets/actions/runs/42", "Run #42", "Status: completed", "Conclusion: failure"} {
-		if !strings.Contains(popupView.Buffer(), expected) {
-			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
-		}
-	}
-	if popupView.InnerHeight() < 10 {
-		t.Fatalf("expected a taller build run popup, actual inner height %d", popupView.InnerHeight())
-	}
-	if !gui.Cursor {
-		t.Fatal("expected the cursor to be visible inside the build run popup")
-	}
-	if !reflect.DeepEqual(loader.buildRunCalls, []string{"acme/widgets"}) {
-		t.Fatalf("expected build run calls %v, actual %v", []string{"acme/widgets"}, loader.buildRunCalls)
-	}
-	then_currentViewNameIs(t, gui, viewPullRequestBuildInfoName)
 }
 
-func TestBrowserMode_GivenTheCursorOnAPendingBuild_WhenPressingEnter_ThenItDoesNotStartLoadingOrOpenTheBuildRunPopup(t *testing.T) {
+func TestBrowserMode_GivenTheCursorOnAPendingBuild_WhenPressingEnter_ThenItStillTogglesTheBuildsSectionWithoutLoadingAnything(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
