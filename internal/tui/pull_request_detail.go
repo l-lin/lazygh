@@ -25,7 +25,6 @@ const (
 	detailAssigneesIcon             = "󰀄"
 	detailReviewRequestsIcon        = "󰀆"
 	detailLabelIcon                 = "󰓼"
-	detailBranchIcon                = ""
 	detailStatusIcon                = pullRequestIcon
 	detailChecksIcon                = "󰄬"
 	detailApprovalIcon              = ""
