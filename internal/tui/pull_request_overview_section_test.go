@@ -175,7 +175,7 @@ func TestRenderPullRequestOverviewSection_GivenMultipleEntriesInTheSameBlock_Whe
 
 	actual := renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), 80)
 
-	if strings.Contains(actual, "@reviewer-one\n│                                                                          │\n│  @reviewer-two") {
+	if strings.Contains(actual, "@reviewer-one\n│                                                                          │\n│ 󰦖 @reviewer-two") {
 		t.Fatalf("expected reviewers to stay compact without blank spacer lines, actual %q", actual)
 	}
 }
