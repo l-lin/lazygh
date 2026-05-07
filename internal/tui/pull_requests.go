@@ -183,10 +183,10 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 		body,
 	}
 
-	approvedBackgroundPrefix := pullRequestApprovedBackgroundPrefix(pullRequest)
-	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: approvedBackgroundPrefix}
+	reviewDecisionBackgroundPrefix := pullRequestReviewDecisionBackgroundPrefix(pullRequest)
+	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: reviewDecisionBackgroundPrefix}
 	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
-		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusStyle.foregroundHex), approvedBackgroundPrefix)
+		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusStyle.foregroundHex), reviewDecisionBackgroundPrefix)
 	}
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
@@ -199,19 +199,23 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
 				statusIconSegment,
-				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), approvedBackgroundPrefix)},
-				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), approvedBackgroundPrefix)},
+				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), reviewDecisionBackgroundPrefix)},
+				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), reviewDecisionBackgroundPrefix)},
 			},
 		},
 		Summary: &summaryCopy,
 	}
 }
 
-func pullRequestApprovedBackgroundPrefix(pullRequest githubcli.PullRequest) string {
-	if !strings.EqualFold(strings.TrimSpace(pullRequest.ReviewDecision), "APPROVED") {
+func pullRequestReviewDecisionBackgroundPrefix(pullRequest githubcli.PullRequest) string {
+	switch strings.ToUpper(strings.TrimSpace(pullRequest.ReviewDecision)) {
+	case "APPROVED":
+		return backgroundColorEscape(theme.SuccessBackgroundHex)
+	case "CHANGES_REQUESTED":
+		return backgroundColorEscape(theme.WarningBackgroundHex)
+	default:
 		return ""
 	}
-	return backgroundColorEscape(theme.SuccessBackgroundHex)
 }
 
 func pullRequestTitleSegmentPrefix(foregroundPrefix string, backgroundPrefix string) string {

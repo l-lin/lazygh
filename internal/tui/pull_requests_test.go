@@ -205,6 +205,30 @@ func TestPullRequestRow_GivenAnApprovedReviewDecision_WhenBuildingTheListRow_The
 	}
 }
 
+func TestPullRequestRow_GivenAChangesRequestedReviewDecision_WhenBuildingTheListRow_ThenItUsesTheWarningBackgroundForEachTitleSegment(t *testing.T) {
+	actual := pullRequestRow(githubcli.PullRequest{
+		Title:          "Blocked PR",
+		Number:         42,
+		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:          "OPEN",
+		ReviewDecision: "CHANGES_REQUESTED",
+	}).Item
+
+	if actual.Title != " acme/widgets#42 Blocked PR" {
+		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Blocked PR", actual.Title)
+	}
+	if len(actual.TitleSegments) != 3 {
+		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
+	}
+
+	expectedBackground := backgroundColorEscape(theme.WarningBackgroundHex)
+	for index, segment := range actual.TitleSegments {
+		if !strings.Contains(segment.Prefix, expectedBackground) {
+			t.Fatalf("expected title segment %d prefix %q to contain %q", index, segment.Prefix, expectedBackground)
+		}
+	}
+}
+
 func TestPullRequestRow_GivenRequestedReviewTeams_WhenBuildingTheListRow_ThenItDoesNotAppendThemToTheTitle(t *testing.T) {
 	actual := pullRequestRow(githubcli.PullRequest{
 		Title:      "Need teams",

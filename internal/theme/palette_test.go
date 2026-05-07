@@ -18,6 +18,7 @@ const (
 	darkDefaultFailureBackgroundHex         = "#67060C"
 	darkDefaultPendingHex                   = "#8B949E"
 	darkDefaultPendingBackgroundHex         = "#30363D"
+	darkDefaultWarningBackgroundHex         = "#5A3200"
 	darkDefaultMutedHex                     = "#8B949E"
 	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
 	lightDefaultActiveTextHex               = "#000000"
@@ -30,6 +31,7 @@ const (
 	lightDefaultFailureBackgroundHex        = "#FFE2E5"
 	lightDefaultPendingHex                  = "#656D76"
 	lightDefaultPendingBackgroundHex        = "#E6E6E6"
+	lightDefaultWarningBackgroundHex        = "#FFF1E5"
 	lightDefaultMutedHex                    = "#636363"
 )
 
@@ -230,6 +232,16 @@ func TestApplyPalette_GivenOverrides_WhenApplying_ThenItUpdatesThePackageColors(
 	}
 }
 
+func TestApplyPalette_GivenWarningBackgroundOverride_WhenApplying_ThenItUpdatesThePackageColor(t *testing.T) {
+	t.Cleanup(ResetPalette)
+
+	ApplyPalette(Palette{WarningBackgroundHex: "#FFE4CC"})
+
+	if WarningBackgroundHex != "#FFE4CC" {
+		t.Fatalf("expected warning background %q, actual %q", "#FFE4CC", WarningBackgroundHex)
+	}
+}
+
 func TestApplyPalette_GivenGenericStatusBackgroundOverrides_WhenApplying_ThenItUpdatesTheDerivedPackageColors(t *testing.T) {
 	t.Cleanup(ResetPalette)
 
@@ -326,8 +338,8 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.SuccessHex != darkDefaultSuccessHex || actual.FailureHex != darkDefaultFailureHex || actual.PendingHex != darkDefaultPendingHex || actual.MutedHex != darkDefaultMutedHex {
 		t.Fatalf("expected generic status colors success=%q failure=%q pending=%q muted=%q, actual success=%q failure=%q pending=%q muted=%q", darkDefaultSuccessHex, darkDefaultFailureHex, darkDefaultPendingHex, darkDefaultMutedHex, actual.SuccessHex, actual.FailureHex, actual.PendingHex, actual.MutedHex)
 	}
-	if actual.SuccessBackgroundHex != darkDefaultSuccessBackgroundHex || actual.FailureBackgroundHex != darkDefaultFailureBackgroundHex || actual.PendingBackgroundHex != darkDefaultPendingBackgroundHex {
-		t.Fatalf("expected generic status backgrounds success=%q failure=%q pending=%q, actual success=%q failure=%q pending=%q", darkDefaultSuccessBackgroundHex, darkDefaultFailureBackgroundHex, darkDefaultPendingBackgroundHex, actual.SuccessBackgroundHex, actual.FailureBackgroundHex, actual.PendingBackgroundHex)
+	if actual.SuccessBackgroundHex != darkDefaultSuccessBackgroundHex || actual.FailureBackgroundHex != darkDefaultFailureBackgroundHex || actual.PendingBackgroundHex != darkDefaultPendingBackgroundHex || actual.WarningBackgroundHex != darkDefaultWarningBackgroundHex {
+		t.Fatalf("expected generic status backgrounds success=%q failure=%q pending=%q warning=%q, actual success=%q failure=%q pending=%q warning=%q", darkDefaultSuccessBackgroundHex, darkDefaultFailureBackgroundHex, darkDefaultPendingBackgroundHex, darkDefaultWarningBackgroundHex, actual.SuccessBackgroundHex, actual.FailureBackgroundHex, actual.PendingBackgroundHex, actual.WarningBackgroundHex)
 	}
 	if actual.DiffAdditionBackgroundHex != darkDefaultDiffAdditionBackgroundHex {
 		t.Fatalf("expected diff addition background %q, actual %q", darkDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)
@@ -352,7 +364,7 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	if actual.SuccessHex != lightDefaultSuccessHex || actual.FailureHex != lightDefaultFailureHex || actual.PendingHex != lightDefaultPendingHex || actual.MutedHex != lightDefaultMutedHex {
 		t.Fatalf("expected generic status colors success=%q failure=%q pending=%q muted=%q, actual success=%q failure=%q pending=%q muted=%q", lightDefaultSuccessHex, lightDefaultFailureHex, lightDefaultPendingHex, lightDefaultMutedHex, actual.SuccessHex, actual.FailureHex, actual.PendingHex, actual.MutedHex)
 	}
-	if actual.SuccessBackgroundHex != lightDefaultSuccessBackgroundHex || actual.FailureBackgroundHex != lightDefaultFailureBackgroundHex || actual.PendingBackgroundHex != lightDefaultPendingBackgroundHex {
-		t.Fatalf("expected generic status backgrounds success=%q failure=%q pending=%q, actual success=%q failure=%q pending=%q", lightDefaultSuccessBackgroundHex, lightDefaultFailureBackgroundHex, lightDefaultPendingBackgroundHex, actual.SuccessBackgroundHex, actual.FailureBackgroundHex, actual.PendingBackgroundHex)
+	if actual.SuccessBackgroundHex != lightDefaultSuccessBackgroundHex || actual.FailureBackgroundHex != lightDefaultFailureBackgroundHex || actual.PendingBackgroundHex != lightDefaultPendingBackgroundHex || actual.WarningBackgroundHex != lightDefaultWarningBackgroundHex {
+		t.Fatalf("expected generic status backgrounds success=%q failure=%q pending=%q warning=%q, actual success=%q failure=%q pending=%q warning=%q", lightDefaultSuccessBackgroundHex, lightDefaultFailureBackgroundHex, lightDefaultPendingBackgroundHex, lightDefaultWarningBackgroundHex, actual.SuccessBackgroundHex, actual.FailureBackgroundHex, actual.PendingBackgroundHex, actual.WarningBackgroundHex)
 	}
 }

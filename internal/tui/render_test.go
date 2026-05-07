@@ -255,6 +255,26 @@ func TestLayout_GivenAnApprovedPullRequest_WhenRendering_ThenTheListRowUsesTheSu
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
 }
 
+func TestLayout_GivenAChangesRequestedPullRequest_WhenRendering_ThenTheListRowUsesTheWarningBackground(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:          "Blocked PR",
+		Number:         42,
+		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:          "OPEN",
+		ReviewDecision: "CHANGES_REQUESTED",
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Blocked PR", given_themeColorHex(t, theme.WarningBackgroundHex), "changes requested pull request background")
+}
+
 func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowDoesNotShowThem(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
