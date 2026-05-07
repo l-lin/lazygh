@@ -325,6 +325,95 @@ func TestLayout_GivenPullRequestChanges_WhenRendering_ThenTheBrowserChangesTabLo
 	}
 }
 
+func TestBrowserMode_GivenAResolvedChangesTabThread_WhenPressingEnterAndZA_ThenItTogglesTheThreadVisibility(t *testing.T) {
+	diff := githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/internal/tui/render.go b/internal/tui/render.go",
+			"index 1111111..2222222 100644",
+			"--- a/internal/tui/render.go",
+			"+++ b/internal/tui/render.go",
+			"@@ -42,2 +42,2 @@",
+			" context line",
+			"-old line",
+			"+new line",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{{Path: "internal/tui/render.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+		Threads: []githubcli.PullRequestReviewThread{{
+			ID:         "thread-1",
+			IsResolved: true,
+			Path:       "internal/tui/render.go",
+			Line:       43,
+			DiffSide:   "RIGHT",
+			Comments: []githubcli.PullRequestComment{{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+				Body:      "Inline thread body",
+				CreatedAt: "2026-04-18T10:30:00Z",
+			}},
+		}},
+	}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:43") {
+		t.Fatalf("expected the resolved thread to start folded in changes, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected the folded changes thread to hide its body, actual %q", detailView.Buffer())
+	}
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:43")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:43") || !strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected enter to expand the changes thread, actual %q", detailView.Buffer())
+	}
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
+	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = collapseHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:43") {
+		t.Fatalf("expected za to collapse the changes thread, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected za to hide the changes thread body again, actual %q", detailView.Buffer())
+	}
+}
+
 func TestBrowserMode_GivenTheCursorOnAnOverviewSection_WhenPressingEnter_ThenItTogglesTheSectionVisibility(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

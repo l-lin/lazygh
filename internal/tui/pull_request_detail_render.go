@@ -78,15 +78,7 @@ func renderPullRequestCommitsTab(commits []githubcli.PullRequestCommit, renderer
 }
 
 func renderPullRequestChangesTab(files []reviewDiffFile, renderer MarkdownRenderer, width int) string {
-	if len(files) == 0 {
-		return "No changes yet."
-	}
-
-	renderedFiles := make([]string, 0, len(files))
-	for _, file := range files {
-		renderedFiles = append(renderedFiles, renderReviewDiffFile(file, renderer, width))
-	}
-	return strings.Join(renderedFiles, "\n\n")
+	return renderPullRequestChangesRows(buildPullRequestChangesRenderedRows(files, renderer, width))
 }
 
 func renderPullRequestChangesTabError(err error) string {

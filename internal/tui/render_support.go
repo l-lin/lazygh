@@ -55,7 +55,7 @@ func (program *Program) renderCurrentPullRequestChangesTab(summary githubcli.Pul
 	if result.err != nil {
 		return renderPullRequestChangesTabError(result.err)
 	}
-	return renderPullRequestChangesTab(result.data.Files, program.markdownRenderer, width)
+	return renderPullRequestChangesRows(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, width))
 }
 
 func (program *Program) fallbackDetailViewContent(item Item) string {

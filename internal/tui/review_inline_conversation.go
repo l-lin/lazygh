@@ -121,6 +121,10 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewportHeight)
 
+	if program.activeDetailTab == ChangesDetailTab {
+		return program.toggleBrowserChangesThreadVisibility(gui, summary, detailDocument)
+	}
+
 	cursorLine := program.detailViewState.cursor.line
 	var sectionAtCursor browserDetailSectionCursor
 	switch program.activeDetailTab {
