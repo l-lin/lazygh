@@ -153,7 +153,7 @@ func renderCommentMetadataBadge(badge commentMetadataBadge) string {
 	if strings.TrimSpace(badge.ForegroundHex) == "" || strings.TrimSpace(badge.BackgroundHex) == "" {
 		return label
 	}
-	return styleText(" "+label+" ", foregroundColorEscape(badge.ForegroundHex), backgroundColorEscape(badge.BackgroundHex))
+	return renderRoundedPill(label, badge.ForegroundHex, badge.BackgroundHex)
 }
 
 func commentAuthorBadgeText(author *githubcli.PullRequestCommentAuthor) string {

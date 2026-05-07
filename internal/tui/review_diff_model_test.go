@@ -476,6 +476,9 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_
 	if strings.Contains(headerLine, "R11") || strings.Contains(headerLine, "L11") {
 		t.Fatalf("expected the header line to drop the side anchor, actual %q", headerLine)
 	}
+	if !strings.Contains(metadataLine, "Pending") {
+		t.Fatalf("expected the metadata line to render the pending state as a rounded pill, actual %q", metadataLine)
+	}
 	pendingIndex := given_runeIndexInString(t, metadataLine, "Pending")
 	if actualStylePrefix := actualDocument.lineStylePrefixes[metadataLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.PendingBackgroundHex)) {
 		t.Fatalf("expected the pending comment pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.PendingBackgroundHex), actualStylePrefix)
