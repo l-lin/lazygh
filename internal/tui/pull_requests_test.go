@@ -181,6 +181,30 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 	}
 }
 
+func TestPullRequestRow_GivenAnApprovedReviewDecision_WhenBuildingTheListRow_ThenItUsesTheSuccessBackgroundForEachTitleSegment(t *testing.T) {
+	actual := pullRequestRow(githubcli.PullRequest{
+		Title:          "Approved PR",
+		Number:         42,
+		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:          "OPEN",
+		ReviewDecision: "APPROVED",
+	}).Item
+
+	if actual.Title != " acme/widgets#42 Approved PR" {
+		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Approved PR", actual.Title)
+	}
+	if len(actual.TitleSegments) != 3 {
+		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
+	}
+
+	expectedBackground := backgroundColorEscape(theme.SuccessBackgroundHex)
+	for index, segment := range actual.TitleSegments {
+		if !strings.Contains(segment.Prefix, expectedBackground) {
+			t.Fatalf("expected title segment %d prefix %q to contain %q", index, segment.Prefix, expectedBackground)
+		}
+	}
+}
+
 func TestMyPullRequestsErrorItem_GivenAnAuthenticationError_WhenBuildingTheState_ThenItShowsTheRecoveryMessage(t *testing.T) {
 	actual := myPullRequestsErrorItem(fmt.Errorf("wrap: %w", githubcli.ErrUnauthenticated))
 

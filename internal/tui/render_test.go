@@ -235,6 +235,26 @@ func TestLayout_GivenPullRequestListStatusIcon_WhenRenderingTheSelectedRow_ThenI
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, 0, "")
 }
 
+func TestLayout_GivenAnApprovedPullRequest_WhenRendering_ThenTheListRowUsesTheSuccessBackground(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:          "Approved PR",
+		Number:         42,
+		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:          "OPEN",
+		ReviewDecision: "APPROVED",
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
+}
+
 func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)

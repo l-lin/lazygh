@@ -183,9 +183,10 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 		body,
 	}
 
-	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " "}
+	approvedBackgroundPrefix := pullRequestApprovedBackgroundPrefix(pullRequest)
+	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: approvedBackgroundPrefix}
 	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
-		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex)
+		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusStyle.foregroundHex), approvedBackgroundPrefix)
 	}
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
@@ -197,12 +198,23 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
 				statusIconSegment,
-				{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex)},
-				{Text: titleSuffix, Prefix: foregroundColorEscape(theme.PullRequestTitleHex)},
+				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), approvedBackgroundPrefix)},
+				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), approvedBackgroundPrefix)},
 			},
 		},
 		Summary: &summaryCopy,
 	}
+}
+
+func pullRequestApprovedBackgroundPrefix(pullRequest githubcli.PullRequest) string {
+	if !strings.EqualFold(strings.TrimSpace(pullRequest.ReviewDecision), "APPROVED") {
+		return ""
+	}
+	return backgroundColorEscape(theme.SuccessBackgroundHex)
+}
+
+func pullRequestTitleSegmentPrefix(foregroundPrefix string, backgroundPrefix string) string {
+	return foregroundPrefix + backgroundPrefix
 }
 
 func pullRequestErrorItem(state pullRequestListState, err error) Item {
