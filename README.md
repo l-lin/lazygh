@@ -107,6 +107,7 @@ Configure palette overrides under `[theme]`.
 - Values must use the `#RRGGBB` format.
 - Unsuffixed keys such as `diff_addition`, `diff_deletion`, `pull_request_status_open`, and `comment_author_badge` set foreground colors. Only background colors keep the `_background` suffix.
 - `success`, `success_background`, `failure`, `failure_background`, `pending`, and `pending_background` are shared status colors. If you do not override the matching specific keys, `lazygh` reuses them for open, closed, and draft pills, and for diff addition and deletion colors.
+- `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
 - `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
 - `markdown_heading_background` controls the full-line heading fill.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
@@ -220,7 +221,7 @@ Configure ordered tabs under `[[pull_requests.searches]]`.
 - You can add extra searches by appending more entries.
 - If the list is missing or ends up empty after validation, `lazygh` falls back to those three built-in tabs.
 
-`lazygh` runs `gh` itself, so configure only the arguments after `gh`. A string value is split on whitespace. If one argument needs spaces, use an array instead. `lazygh` always appends `--json title,number,repository,url,body,state,isDraft,updatedAt`, so do not set `--json` in your config. The built-in searches use `gh search prs --sort updated --order desc`. If order matters for a custom search, prefer `gh search prs` and set the sort flags yourself.
+`lazygh` runs `gh` itself, so configure only the arguments after `gh`. A string value is split on whitespace. If one argument needs spaces, use an array instead. `lazygh` always appends `--json title,number,repository,url,body,state,isDraft,updatedAt,id`, so do not set `--json` in your config. The built-in searches use `gh search prs --sort updated --order desc`. If order matters for a custom search, prefer `gh search prs` and set the sort flags yourself.
 
 This example keeps the built-in searches and adds a fourth tab.
 

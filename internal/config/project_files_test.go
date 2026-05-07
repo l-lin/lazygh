@@ -101,6 +101,21 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 	}
 }
 
+func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsMergeCheckRowHighlights(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"`success_background` and `failure_background` also fill pull-request rows in view 2",
+		"when the Merge Checks summary is fully passing or failing",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsFullPageNavigationAndTheTextInputException(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)
