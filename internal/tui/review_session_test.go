@@ -64,7 +64,7 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if filesView.Title != "[2]-Files" {
 		t.Fatalf("expected files view title %q, actual %q", "[2]-Files", filesView.Title)
 	}
-	if !strings.Contains(filesView.Buffer(), "󰝰 internal/tui/") || !strings.Contains(filesView.Buffer(), " render.go") || !strings.Contains(filesView.Buffer(), " model.go") {
+	if !strings.Contains(filesView.Buffer(), " internal/tui/") || !strings.Contains(filesView.Buffer(), " render.go") || !strings.Contains(filesView.Buffer(), " model.go") {
 		t.Fatalf("expected files view to contain the iconified collapsed file tree, actual %q", filesView.Buffer())
 	}
 	if len(filesView.Tabs) != 0 {
@@ -795,7 +795,7 @@ func TestReviewMode_GivenADeepSingleFilePath_WhenRenderingTheFilesPane_ThenTheFi
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), "󰝰 content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/") {
+	if !strings.Contains(filesView.Buffer(), " content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/") {
 		t.Fatalf("expected files view to contain the collapsed directory row, actual %q", filesView.Buffer())
 	}
 	if !strings.Contains(filesView.Buffer(), " RecommendationStoreAdapter.java") {
@@ -933,7 +933,7 @@ func TestReviewMode_GivenColoredFileTreeRows_WhenRendering_ThenDirectoriesAreGra
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
 	directoryLineIndex := given_viewLineIndexContaining(t, filesView, "internal/tui/")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "󰝰", given_themeColorHex(t, theme.DiffLineNumberHex), "review tree directory icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "", given_themeColorHex(t, theme.DiffLineNumberHex), "review tree directory icon")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/", given_themeColorHex(t, theme.ActiveTextHex), "review tree directory label")
 
 	changedLineIndex := given_viewLineIndexContaining(t, filesView, "changed.go")

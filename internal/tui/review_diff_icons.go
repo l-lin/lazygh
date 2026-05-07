@@ -7,8 +7,8 @@ import (
 
 const (
 	reviewDiffHeaderPathIcon  = detailInlineCommentLocationIcon
-	reviewDiffDirectoryIcon   = "󰝰"
-	reviewDiffDefaultFileIcon = ""
+	reviewDiffDirectoryIcon   = ""
+	reviewDiffDefaultFileIcon = ""
 )
 
 var reviewDiffFileIconsByName = map[string]string{

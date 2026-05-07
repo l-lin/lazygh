@@ -196,9 +196,9 @@ func TestReviewDiffTreeItems_GivenDirectoriesAndFiles_WhenFormatting_ThenItPrefi
 	actual := reviewDiffTreeItems(tree, nil)
 
 	expected := []Item{
-		{Title: "󰝰 internal/"},
-		{Title: "  󰝰 tui/"},
-		{Title: "     notes.txt"},
+		{Title: " internal/"},
+		{Title: "   tui/"},
+		{Title: "     notes.txt"},
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected items %+v, actual %+v", expected, actual)
