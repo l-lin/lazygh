@@ -116,7 +116,7 @@ func (program *Program) userViewTitle() string {
 	if program.reviewSession.active {
 		return reviewModeMetadataTitle
 	}
-	return "[1]-Connected user"
+	return "[1]-" + detailAuthorIcon + " Connected user"
 }
 
 func (program *Program) detailViewTitle() string {

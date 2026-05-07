@@ -9,12 +9,14 @@ import (
 )
 
 const (
-	reviewModeMetadataTitle                 = "[1]-Metadata"
-	reviewModeFilesTitle                    = "[2]-Files"
-	reviewModeChaptersTitle                 = "[2]-Chapters"
-	reviewModeDescriptionTitle              = "[0]-Description"
-	reviewModeDiffTitle                     = "[0]-Diff"
-	reviewModeChapterTitle                  = "[0]-Chapter"
+	reviewModeMetadataIcon                  = "󰋼"
+	reviewModeChapterIcon                   = ""
+	reviewModeMetadataTitle                 = "[1]-" + reviewModeMetadataIcon + " Metadata"
+	reviewModeFilesTitle                    = "[2]-" + reviewDiffDirectoryIcon + " Files"
+	reviewModeChaptersTitle                 = "[2]-" + reviewModeChapterIcon + " Chapters"
+	reviewModeDescriptionTitle              = "[0]-" + detailDescriptionIcon + " Description"
+	reviewModeDiffTitle                     = "[0]-" + detailChangesIcon + " Diff"
+	reviewModeChapterTitle                  = "[0]-" + reviewModeChapterIcon + " Chapter"
 	pendingPullRequestReviewKeptOpenMessage = "Pending review kept open; start review to resume"
 )
 

@@ -52,8 +52,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 
 	metadataView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
-	if metadataView.Title != "[1]-Metadata" {
-		t.Fatalf("expected metadata view title %q, actual %q", "[1]-Metadata", metadataView.Title)
+	if metadataView.Title != reviewModeMetadataTitle {
+		t.Fatalf("expected metadata view title %q, actual %q", reviewModeMetadataTitle, metadataView.Title)
 	}
 	if !strings.Contains(metadataView.Buffer(), "Pending review: PRR_pending") || !strings.Contains(metadataView.Buffer(), "Changed files: 2") || !strings.Contains(metadataView.Buffer(), "+3") || !strings.Contains(metadataView.Buffer(), "-2") {
 		t.Fatalf("expected metadata view to contain review stats, actual %q", metadataView.Buffer())
@@ -61,8 +61,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if filesView.Title != "[2]-Files" {
-		t.Fatalf("expected files view title %q, actual %q", "[2]-Files", filesView.Title)
+	if filesView.Title != reviewModeFilesTitle {
+		t.Fatalf("expected files view title %q, actual %q", reviewModeFilesTitle, filesView.Title)
 	}
 	if !strings.Contains(filesView.Buffer(), " internal/tui/") || !strings.Contains(filesView.Buffer(), " render.go") || !strings.Contains(filesView.Buffer(), " model.go") {
 		t.Fatalf("expected files view to contain the iconified collapsed file tree, actual %q", filesView.Buffer())
@@ -73,8 +73,8 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if detailView.Title != "[0]-Diff" {
-		t.Fatalf("expected detail view title %q, actual %q", "[0]-Diff", detailView.Title)
+	if detailView.Title != reviewModeDiffTitle {
+		t.Fatalf("expected detail view title %q, actual %q", reviewModeDiffTitle, detailView.Title)
 	}
 	if !strings.Contains(detailView.Buffer(), detailInlineCommentLocationIcon+" internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
 		t.Fatalf("expected detail view to contain the iconified first parsed diff file, actual %q", detailView.Buffer())

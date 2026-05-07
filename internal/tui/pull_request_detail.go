@@ -17,6 +17,8 @@ const (
 
 	detailDescriptionIcon           = ""
 	detailCommentsIcon              = " "
+	detailCommitsIcon               = ""
+	detailChangesIcon               = ""
 	pullRequestIcon                 = ""
 	detailRepositoryIcon            = pullRequestIcon
 	detailAuthorIcon                = ""
@@ -55,13 +57,13 @@ type pullRequestDetailResult struct {
 func (tab DetailTab) Label() string {
 	switch tab {
 	case CommentsDetailTab:
-		return "Comments"
+		return strings.TrimSpace(detailCommentsIcon) + " Comments"
 	case CommitsDetailTab:
-		return "Commits"
+		return detailCommitsIcon + " Commits"
 	case ChangesDetailTab:
-		return "Changes"
+		return detailChangesIcon + " Changes"
 	default:
-		return "Description"
+		return detailDescriptionIcon + " Description"
 	}
 }
 
