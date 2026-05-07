@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	pullRequestOverviewSuccessIcon = ""
-	pullRequestOverviewFailureIcon = ""
+	pullRequestOverviewSuccessIcon = ""
+	pullRequestOverviewFailureIcon = ""
 	pullRequestOverviewPendingIcon = "󰦖"
 	pullRequestOverviewMutedIcon   = "•"
 )

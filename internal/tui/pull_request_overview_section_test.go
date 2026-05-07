@@ -8,6 +8,27 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
+func TestPullRequestOverviewStatusIcon_GivenSuccessAndFailureStatuses_WhenFormatting_ThenItUsesTheUpdatedGlyphs(t *testing.T) {
+	testCases := []struct {
+		name     string
+		status   pullRequestOverviewStatus
+		expected string
+	}{
+		{name: "success", status: pullRequestOverviewStatusSuccess, expected: ""},
+		{name: "failure", status: pullRequestOverviewStatusFailure, expected: ""},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual := pullRequestOverviewStatusIcon(testCase.status)
+
+			if actual != testCase.expected {
+				t.Fatalf("expected icon %q, actual %q", testCase.expected, actual)
+			}
+		})
+	}
+}
+
 func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_ThenItKeepsOnlyTheMainOverviewMetadata(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "Overview PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
 	detail := githubcli.PullRequestDetail{

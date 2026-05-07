@@ -11,7 +11,7 @@ func TestDetailTabLabel_GivenEachBrowserTab_WhenFormatting_ThenItPrefixesTheLabe
 		{name: "description", tab: DescriptionDetailTab, expected: " Description"},
 		{name: "comments", tab: CommentsDetailTab, expected: " Comments"},
 		{name: "commits", tab: CommitsDetailTab, expected: " Commits"},
-		{name: "changes", tab: ChangesDetailTab, expected: " Changes"},
+		{name: "changes", tab: ChangesDetailTab, expected: " Changes"},
 	}
 
 	for _, testCase := range testCases {
@@ -41,7 +41,7 @@ func TestReviewModeTitles_GivenTheRepurposedViews_WhenFormatting_ThenEachViewGet
 		"files":       "[2]- Files",
 		"chapters":    "[2]- Chapters",
 		"description": "[0]- Description",
-		"diff":        "[0]- Diff",
+		"diff":        "[0]- Diff",
 		"chapter":     "[0]- Chapter",
 	}
 
