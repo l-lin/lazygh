@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,reviews,additions,deletions,changedFiles,statusCheckRollup"
+const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
 	ErrInvalidPullRequestDetailResponse        = fmt.Errorf("invalid pull request detail response")
@@ -32,6 +32,7 @@ type PullRequestDetail struct {
 	MergeStateStatus     string                     `json:"mergeStateStatus"`
 	Mergeable            string                     `json:"mergeable"`
 	Comments             []PullRequestComment       `json:"comments"`
+	Commits              []PullRequestCommit        `json:"commits"`
 	Reviews              []PullRequestReview        `json:"reviews"`
 	InlineComments       []PullRequestInlineComment `json:"-"`
 	InlineCommentThreads []PullRequestReviewThread  `json:"-"`
@@ -76,6 +77,21 @@ type PullRequestComment struct {
 	DiffHunk        string                    `json:"diffHunk"`
 	State           string                    `json:"state"`
 	ViewerDidAuthor bool                      `json:"viewerDidAuthor"`
+}
+
+type PullRequestCommit struct {
+	OID             string                    `json:"oid"`
+	MessageHeadline string                    `json:"messageHeadline"`
+	MessageBody     string                    `json:"messageBody"`
+	AuthoredDate    string                    `json:"authoredDate"`
+	CommittedDate   string                    `json:"committedDate"`
+	Authors         []PullRequestCommitAuthor `json:"authors"`
+}
+
+type PullRequestCommitAuthor struct {
+	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type PullRequestInlineComment struct {
@@ -209,6 +225,13 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		}
 		detail.Comments = normalizedComments
 	}
+	if len(detail.Commits) > 0 {
+		normalizedCommits := make([]PullRequestCommit, 0, len(detail.Commits))
+		for _, commit := range detail.Commits {
+			normalizedCommits = append(normalizedCommits, commit.normalized())
+		}
+		detail.Commits = normalizedCommits
+	}
 	if len(detail.Reviews) > 0 {
 		normalizedReviews := make([]PullRequestReview, 0, len(detail.Reviews))
 		for _, review := range detail.Reviews {
@@ -285,6 +308,29 @@ func (comment PullRequestComment) normalized() PullRequestComment {
 		comment.Author = &normalizedAuthor
 	}
 	return comment
+}
+
+func (commit PullRequestCommit) normalized() PullRequestCommit {
+	commit.OID = strings.TrimSpace(commit.OID)
+	commit.MessageHeadline = strings.TrimSpace(commit.MessageHeadline)
+	commit.MessageBody = strings.TrimSpace(commit.MessageBody)
+	commit.AuthoredDate = strings.TrimSpace(commit.AuthoredDate)
+	commit.CommittedDate = strings.TrimSpace(commit.CommittedDate)
+	if len(commit.Authors) > 0 {
+		normalizedAuthors := make([]PullRequestCommitAuthor, 0, len(commit.Authors))
+		for _, author := range commit.Authors {
+			normalizedAuthors = append(normalizedAuthors, author.normalized())
+		}
+		commit.Authors = normalizedAuthors
+	}
+	return commit
+}
+
+func (author PullRequestCommitAuthor) normalized() PullRequestCommitAuthor {
+	author.Login = strings.TrimSpace(author.Login)
+	author.Name = strings.TrimSpace(author.Name)
+	author.Email = strings.TrimSpace(author.Email)
+	return author
 }
 
 func (comment PullRequestInlineComment) normalized() PullRequestInlineComment {

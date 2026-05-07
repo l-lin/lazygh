@@ -10,7 +10,7 @@ import (
 func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetching_ThenReturnsTheRichPullRequestDetail(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{
-			{stdout: []byte(`{"title":"Add a real detail pane","number":42,"url":"https://github.com/acme/widgets/pull/42","body":"## Summary\n\n- render markdown\n- show comments","author":{"login":"octocat","name":"Octo Cat","is_bot":false},"state":"OPEN","isDraft":false,"createdAt":"2026-04-18T10:00:00Z","updatedAt":"2026-04-18T12:30:00Z","labels":[{"name":"bug"},{"name":"backend"}],"assignees":[{"login":"assignee-one","name":"Assignee One","is_bot":false},{"login":"assignee-two","name":"Assignee Two","is_bot":false}],"reviewRequests":[{"requestedReviewer":{"__typename":"User","login":"reviewer-requested"}},{"requestedReviewer":{"__typename":"Team","name":"Platform","slug":"platform","organization":{"login":"acme"}}}],"baseRefName":"main","headRefName":"feature/detail","mergeStateStatus":"CLEAN","mergeable":"MERGEABLE","comments":[{"author":{"login":"reviewer"},"body":"Looks good to me","createdAt":"2026-04-18T13:00:00Z","url":"https://github.com/acme/widgets/pull/42#issuecomment-1"}],"additions":12,"deletions":3,"changedFiles":5,"statusCheckRollup":[{"__typename":"CheckRun","name":"lint","status":"COMPLETED","conclusion":"SUCCESS","workflowName":"CI"}]}`)},
+			{stdout: []byte(`{"title":"Add a real detail pane","number":42,"url":"https://github.com/acme/widgets/pull/42","body":"## Summary\n\n- render markdown\n- show comments","author":{"login":"octocat","name":"Octo Cat","is_bot":false},"state":"OPEN","isDraft":false,"createdAt":"2026-04-18T10:00:00Z","updatedAt":"2026-04-18T12:30:00Z","labels":[{"name":"bug"},{"name":"backend"}],"assignees":[{"login":"assignee-one","name":"Assignee One","is_bot":false},{"login":"assignee-two","name":"Assignee Two","is_bot":false}],"reviewRequests":[{"requestedReviewer":{"__typename":"User","login":"reviewer-requested"}},{"requestedReviewer":{"__typename":"Team","name":"Platform","slug":"platform","organization":{"login":"acme"}}}],"baseRefName":"main","headRefName":"feature/detail","mergeStateStatus":"CLEAN","mergeable":"MERGEABLE","comments":[{"author":{"login":"reviewer"},"body":"Looks good to me","createdAt":"2026-04-18T13:00:00Z","url":"https://github.com/acme/widgets/pull/42#issuecomment-1"}],"commits":[{"oid":"e9a3253762e768badaa1d4a5b3d267416d1e42f4","messageHeadline":"reintroduce interactive gh pr","messageBody":"this commit adds gh pr back","authoredDate":"2019-10-04T15:23:39Z","committedDate":"2019-10-04T15:57:48Z","authors":[{"email":"vilmibm@github.com","login":"vilmibm","name":"nate smith"}]}],"additions":12,"deletions":3,"changedFiles":5,"statusCheckRollup":[{"__typename":"CheckRun","name":"lint","status":"COMPLETED","conclusion":"SUCCESS","workflowName":"CI"}]}`)},
 			{stdout: []byte(`[[{"user":{"login":"reviewer-inline"},"body":"Please keep the blank line.","created_at":"2026-04-18T14:00:00Z","html_url":"https://github.com/acme/widgets/pull/42#discussion_r1","path":"internal/tui/render.go","line":252,"original_line":252,"side":"RIGHT","start_side":"RIGHT","subject_type":"LINE","diff_hunk":"@@ -250,3 +250,4 @@\n header := renderPullRequestDetailHeader(*row.Summary, result.detail)\n content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)\n-if program.activeDetailTab == CommentsDetailTab {\n+if program.activeDetailTab == CommentsDetailTab {\n  content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)"}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":252,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"reviewer-inline"},"body":"Please keep the blank line.","createdAt":"2026-04-18T14:00:00Z","url":"https://github.com/acme/widgets/pull/42#discussion_r1","diffHunk":"@@ -250,3 +250,4 @@\n header := renderPullRequestDetailHeader(*row.Summary, result.detail)\n content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)\n-if program.activeDetailTab == CommentsDetailTab {\n+if program.activeDetailTab == CommentsDetailTab {\n  content = renderPullRequestCommentsTab(result.detail.Comments, result.detail.InlineComments, program.markdownRenderer, program.detailWrapWidth)"}]}}]}}}}}`)},
 		},
@@ -21,7 +21,7 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 
 	then_noError(t, actualErr)
 	then_commandsAre(t, runner, []fakeCommandCall{
-		{name: "gh", args: []string{"pr", "view", "42", "-R", "acme/widgets", "--json", "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,reviews,additions,deletions,changedFiles,statusCheckRollup"}},
+		{name: "gh", args: []string{"pr", "view", "42", "-R", "acme/widgets", "--json", "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"}},
 		{name: "gh", args: []string{"api", "repos/acme/widgets/pulls/42/comments?per_page=100", "--paginate", "--slurp"}},
 		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestReviewThreadsQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "number=42"}},
 	})
@@ -48,6 +48,18 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 			Body:      "Looks good to me",
 			CreatedAt: "2026-04-18T13:00:00Z",
 			URL:       "https://github.com/acme/widgets/pull/42#issuecomment-1",
+		}},
+		Commits: []PullRequestCommit{{
+			OID:             "e9a3253762e768badaa1d4a5b3d267416d1e42f4",
+			MessageHeadline: "reintroduce interactive gh pr",
+			MessageBody:     "this commit adds gh pr back",
+			AuthoredDate:    "2019-10-04T15:23:39Z",
+			CommittedDate:   "2019-10-04T15:57:48Z",
+			Authors: []PullRequestCommitAuthor{{
+				Email: "vilmibm@github.com",
+				Login: "vilmibm",
+				Name:  "nate smith",
+			}},
 		}},
 		InlineComments: []PullRequestInlineComment{{
 			Author:       &PullRequestCommentAuthor{Login: "reviewer-inline"},
@@ -95,7 +107,7 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 func TestGetPullRequestDetail_GivenMissingOptionalFields_WhenFetching_ThenItNormalizesTheResponse(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{
-			{stdout: []byte(`{"title":"  Ship it  ","number":7,"url":"  https://github.com/acme/widgets/pull/7  ","body":"  body  ","author":null,"state":"  OPEN  ","createdAt":" 2026-04-18T10:00:00Z ","updatedAt":" 2026-04-18T12:30:00Z ","labels":[{"name":"  needs-review  "}],"assignees":[{"login":"  assignee-one  ","name":"  Assignee One  "}],"reviewRequests":[{"requestedReviewer":{"__typename":" User ","login":" reviewer-one "}},{"requestedReviewer":{"__typename":" Team ","name":" Platform ","slug":" platform ","organization":{"login":" acme "}}}],"baseRefName":"  main  ","headRefName":"  branch  ","mergeStateStatus":"  BLOCKED  ","mergeable":"  UNKNOWN  ","comments":[{"author":null,"body":"  first  ","createdAt":" 2026-04-18T13:00:00Z ","url":"  https://example.com/comment  "}],"additions":1,"deletions":2,"changedFiles":3,"statusCheckRollup":[{"__typename":"  CheckRun  ","name":"  lint  ","status":"  COMPLETED  ","conclusion":"  FAILURE  ","workflowName":"  CI  "}]}`)},
+			{stdout: []byte(`{"title":"  Ship it  ","number":7,"url":"  https://github.com/acme/widgets/pull/7  ","body":"  body  ","author":null,"state":"  OPEN  ","createdAt":" 2026-04-18T10:00:00Z ","updatedAt":" 2026-04-18T12:30:00Z ","labels":[{"name":"  needs-review  "}],"assignees":[{"login":"  assignee-one  ","name":"  Assignee One  "}],"reviewRequests":[{"requestedReviewer":{"__typename":" User ","login":" reviewer-one "}},{"requestedReviewer":{"__typename":" Team ","name":" Platform ","slug":" platform ","organization":{"login":" acme "}}}],"baseRefName":"  main  ","headRefName":"  branch  ","mergeStateStatus":"  BLOCKED  ","mergeable":"  UNKNOWN  ","comments":[{"author":null,"body":"  first  ","createdAt":" 2026-04-18T13:00:00Z ","url":"  https://example.com/comment  "}],"commits":[{"oid":"  abcdef1234567890  ","messageHeadline":"  Trim me  ","messageBody":"  body  ","authoredDate":" 2026-04-18T14:00:00Z ","committedDate":" 2026-04-18T14:05:00Z ","authors":[{"email":"  dev@example.com  ","login":" reviewer-one ","name":" Reviewer One "}]}],"additions":1,"deletions":2,"changedFiles":3,"statusCheckRollup":[{"__typename":"  CheckRun  ","name":"  lint  ","status":"  COMPLETED  ","conclusion":"  FAILURE  ","workflowName":"  CI  "}]}`)},
 			{stdout: []byte(`[[{"user":{"login":"  reviewer-inline  "},"body":"  inline body  ","created_at":" 2026-04-18T14:00:00Z ","html_url":"  https://example.com/discussion  ","path":"  internal/tui/pull_request_detail.go  ","line":19,"original_line":21,"side":"  LEFT  ","start_side":"  LEFT  ","subject_type":"  LINE  ","diff_hunk":"  @@ -19,1 +21,1 @@\n-old\n+new  "}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"  thread-1  ","isResolved":true,"isOutdated":false,"path":"  internal/tui/pull_request_detail.go  ","originalLine":21,"diffSide":"  LEFT  ","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"  reviewer-inline  "},"body":"  inline body  ","createdAt":" 2026-04-18T14:00:00Z ","url":"  https://example.com/discussion  ","diffHunk":"  @@ -19,1 +21,1 @@\n-old\n+new  "}]}}]}}}}}`)},
 		},
@@ -122,6 +134,12 @@ func TestGetPullRequestDetail_GivenMissingOptionalFields_WhenFetching_ThenItNorm
 	}
 	if len(actual.Comments) != 1 || actual.Comments[0].Author != nil || actual.Comments[0].Body != "first" {
 		t.Fatalf("expected normalized comments, actual %+v", actual.Comments)
+	}
+	if len(actual.Commits) != 1 {
+		t.Fatalf("expected 1 normalized commit, actual %d", len(actual.Commits))
+	}
+	if actual.Commits[0].OID != "abcdef1234567890" || actual.Commits[0].MessageHeadline != "Trim me" || actual.Commits[0].MessageBody != "body" || actual.Commits[0].AuthoredDate != "2026-04-18T14:00:00Z" || actual.Commits[0].CommittedDate != "2026-04-18T14:05:00Z" || len(actual.Commits[0].Authors) != 1 || actual.Commits[0].Authors[0].Email != "dev@example.com" || actual.Commits[0].Authors[0].Login != "reviewer-one" || actual.Commits[0].Authors[0].Name != "Reviewer One" {
+		t.Fatalf("expected normalized commits, actual %+v", actual.Commits)
 	}
 	if len(actual.InlineComments) != 1 {
 		t.Fatalf("expected 1 inline comment, actual %d", len(actual.InlineComments))
