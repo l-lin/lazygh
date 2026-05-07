@@ -1,6 +1,9 @@
 package githubcli
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -100,4 +103,91 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequ
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected pull requests %+v, actual %+v", expected, actual)
 	}
+}
+
+func TestListPullRequests_GivenReviewMetadataHydrationFailure_WhenFetching_ThenItReturnsTheSearchResultsWithoutFailing(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Ship it","number":42,"repository":{"nameWithOwner":"acme/widgets"},"url":"https://github.com/acme/widgets/pull/42","state":"OPEN"}]`)},
+		{stderr: []byte("gh: HTTP 502"), err: errors.New("exit status 1")},
+	}}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
+
+	then_noError(t, actualErr)
+	then_commandsAre(t, runner, []fakeCommandCall{
+		{name: "gh", args: []string{"search", "prs", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt,id"}},
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestListReviewMetadataQuery, "-F", "ids[]=PR_kwDOA"}},
+	})
+
+	expected := []PullRequest{{
+		ID:         "PR_kwDOA",
+		Title:      "Ship it",
+		Number:     42,
+		Repository: Repository{NameWithOwner: "acme/widgets"},
+		URL:        "https://github.com/acme/widgets/pull/42",
+		State:      "OPEN",
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected pull requests %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestListPullRequests_GivenInvalidReviewMetadataResponse_WhenFetching_ThenItReturnsTheMetadataError(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Ship it","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
+		{stdout: []byte(`{"data":`)},
+	}}
+	subject := NewClientWithRunner(runner)
+
+	_, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
+
+	if !errors.Is(actualErr, ErrInvalidPullRequestReviewMetadataResponse) {
+		t.Fatalf("expected error %v, actual %v", ErrInvalidPullRequestReviewMetadataResponse, actualErr)
+	}
+}
+
+func TestListPullRequests_GivenMorePullRequestIDsThanOneBatch_WhenFetching_ThenItBatchesTheMetadataGraphQLRequests(t *testing.T) {
+	searchResults := make([]PullRequest, 0, pullRequestListReviewMetadataBatchSize+1)
+	for index := range pullRequestListReviewMetadataBatchSize + 1 {
+		searchResults = append(searchResults, PullRequest{
+			ID:         fmt.Sprintf("PR_%03d", index),
+			Title:      fmt.Sprintf("Pull Request %03d", index),
+			Number:     index,
+			Repository: Repository{NameWithOwner: "acme/widgets"},
+			State:      "OPEN",
+		})
+	}
+	searchResultJSON, actualErr := json.Marshal(searchResults)
+	then_noError(t, actualErr)
+
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: searchResultJSON},
+		{stdout: []byte(`{"data":{"nodes":[]}}`)},
+		{stdout: []byte(`{"data":{"nodes":[]}}`)},
+	}}
+	subject := NewClientWithRunner(runner)
+
+	_, actualErr = subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
+
+	then_noError(t, actualErr)
+	if len(runner.calls) != 3 {
+		t.Fatalf("expected 3 command calls, actual %d", len(runner.calls))
+	}
+	if actual := pullRequestListReviewMetadataArgumentCount(runner.calls[1].args); actual != pullRequestListReviewMetadataBatchSize {
+		t.Fatalf("expected first metadata batch size %d, actual %d", pullRequestListReviewMetadataBatchSize, actual)
+	}
+	if actual := pullRequestListReviewMetadataArgumentCount(runner.calls[2].args); actual != 1 {
+		t.Fatalf("expected second metadata batch size %d, actual %d", 1, actual)
+	}
+}
+
+func pullRequestListReviewMetadataArgumentCount(arguments []string) int {
+	count := 0
+	for _, argument := range arguments {
+		if strings.HasPrefix(argument, "ids[]=") {
+			count++
+		}
+	}
+	return count
 }

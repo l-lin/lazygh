@@ -2,6 +2,7 @@ package githubcli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,7 +14,11 @@ var (
 	ErrInvalidPullRequestReviewMetadataResponse = fmt.Errorf("invalid pull request review metadata response")
 )
 
-const pullRequestSearchJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt,id"
+const (
+	pullRequestSearchJSONFields            = "title,number,repository,url,body,state,isDraft,updatedAt,id"
+	pullRequestListReviewMetadataBatchSize = 20
+)
+
 const pullRequestListReviewMetadataQuery = `
 query($ids:[ID!]!) {
   nodes(ids:$ids) {
@@ -126,7 +131,7 @@ func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest
 	}
 
 	reviewMetadataByID, err := client.listPullRequestReviewMetadata(pullRequests)
-	if err != nil {
+	if err != nil && !shouldIgnorePullRequestReviewMetadataError(err) {
 		return nil, err
 	}
 
@@ -150,6 +155,33 @@ func (client *Client) listPullRequestReviewMetadata(pullRequests []PullRequest) 
 		return nil, nil
 	}
 
+	metadataByID := map[string]pullRequestListReviewMetadata{}
+	for batchStart := 0; batchStart < len(ids); batchStart += pullRequestListReviewMetadataBatchSize {
+		batchEnd := batchStart + pullRequestListReviewMetadataBatchSize
+		if batchEnd > len(ids) {
+			batchEnd = len(ids)
+		}
+
+		batchMetadataByID, err := client.listPullRequestReviewMetadataBatch(ids[batchStart:batchEnd])
+		for id, metadata := range batchMetadataByID {
+			metadataByID[id] = metadata
+		}
+		if err != nil {
+			return metadataByID, err
+		}
+	}
+
+	if len(metadataByID) == 0 {
+		return nil, nil
+	}
+	return metadataByID, nil
+}
+
+func (client *Client) listPullRequestReviewMetadataBatch(ids []string) (map[string]pullRequestListReviewMetadata, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
 	args := []string{"api", "graphql", "-f", "query=" + pullRequestListReviewMetadataQuery}
 	for _, id := range ids {
 		args = append(args, "-F", "ids[]="+id)
@@ -161,6 +193,13 @@ func (client *Client) listPullRequestReviewMetadata(pullRequests []PullRequest) 
 	}
 
 	return parsePullRequestListReviewMetadata(result.Stdout)
+}
+
+func shouldIgnorePullRequestReviewMetadataError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return !errors.Is(err, ErrInvalidPullRequestReviewMetadataResponse)
 }
 
 func uniquePullRequestIDs(pullRequests []PullRequest) []string {
