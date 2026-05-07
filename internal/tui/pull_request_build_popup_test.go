@@ -396,7 +396,7 @@ func TestActionsPopup_GivenBuildRunActionSelected_WhenExecuting_ThenItClosesTheP
 	}
 }
 
-func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenSanitizing_ThenItDropsTheRepeatedPrefix(t *testing.T) {
+func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenSanitizing_ThenItKeepsOnlyUnknownStepAndAfter(t *testing.T) {
 	actual := sanitizePullRequestBuildRunLog(strings.Join([]string{
 		"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
 		"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0137572Z Secret source: Actions",
@@ -404,9 +404,32 @@ func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenS
 	}, "\n"))
 
 	expected := strings.Join([]string{
-		"2026-04-24T17:36:05.0135694Z ##[endgroup]",
-		"2026-04-24T17:36:05.0137572Z Secret source: Actions",
+		"UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
+		"UNKNOWN STEP    2026-04-24T17:36:05.0137572Z Secret source: Actions",
 		"plain line",
+	}, "\n")
+	if actual != expected {
+		t.Fatalf("expected sanitized logs %q, actual %q", expected, actual)
+	}
+}
+
+func TestSanitizePullRequestBuildRunLog_GivenUnknownStepLinesWithoutTimestamps_WhenSanitizing_ThenItStillDropsTheRepeatedPrefix(t *testing.T) {
+	actual := sanitizePullRequestBuildRunLog(strings.Join([]string{
+		"Consumer contract tests    UNKNOWN STEP    ***",
+		"Consumer contract tests    UNKNOWN STEP    ",
+		"2026-05-02T00:40:33.7759098Z   VAULT_SECRET_CI_GITHUB_APP_GENERIC_ID: ***",
+		"2026-05-02T00:40:33.7766286Z   VAULT_SECRET_CI_GITHUB_APP_GENERIC_PEM: ***",
+		"Consumer contract tests    UNKNOWN STEP    ***",
+		"Consumer contract tests    UNKNOWN STEP    ***",
+	}, "\n"))
+
+	expected := strings.Join([]string{
+		"UNKNOWN STEP    ***",
+		"UNKNOWN STEP",
+		"2026-05-02T00:40:33.7759098Z   VAULT_SECRET_CI_GITHUB_APP_GENERIC_ID: ***",
+		"2026-05-02T00:40:33.7766286Z   VAULT_SECRET_CI_GITHUB_APP_GENERIC_PEM: ***",
+		"UNKNOWN STEP    ***",
+		"UNKNOWN STEP    ***",
 	}, "\n")
 	if actual != expected {
 		t.Fatalf("expected sanitized logs %q, actual %q", expected, actual)

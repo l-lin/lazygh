@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -16,9 +15,8 @@ const (
 	pullRequestBuildRunPopupMinHeight      = 16
 	pullRequestBuildLogsPopupWidthPercent  = 90
 	pullRequestBuildLogsPopupHeightPercent = 90
+	pullRequestBuildRunUnknownStepLabel    = "UNKNOWN STEP"
 )
-
-var pullRequestBuildRunLogTimestampPattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T[^\s]+Z`)
 
 type pullRequestBuildRunLoadState struct {
 	command string
@@ -256,8 +254,8 @@ func sanitizePullRequestBuildRunLog(raw string) string {
 
 	lines := strings.Split(trimmedRaw, "\n")
 	for index, line := range lines {
-		if match := pullRequestBuildRunLogTimestampPattern.FindStringIndex(line); match != nil && match[0] > 0 {
-			lines[index] = strings.TrimSpace(line[match[0]:])
+		if markerIndex := strings.Index(line, pullRequestBuildRunUnknownStepLabel); markerIndex >= 0 {
+			lines[index] = strings.TrimSpace(line[markerIndex:])
 			continue
 		}
 		lines[index] = strings.TrimRight(line, " ")
