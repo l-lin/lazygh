@@ -207,7 +207,6 @@ func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) strin
 	comment := pullRequestInlineCommentFromReviewDiffThread(thread)
 	return renderInlineThreadHeaderLine(
 		pullRequestInlineCommentLocation(comment),
-		inlineThreadAnchorLabel(reviewDiffThreadSideLabel(thread), reviewDiffThreadDisplayLine(thread)),
 		collapsed,
 		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated, thread.Comments),
 	)

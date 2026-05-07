@@ -378,7 +378,7 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 	}
 }
 
-func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenFormatting_ThenItShowsTheResolvedStateOnTheHeaderLineAndRendersRepliesTogether(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenFormatting_ThenItShowsTheResolvedStateAsAPillOnTheHeaderLineAndRendersRepliesTogether(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
 		"Needs more spacing":     "Rendered inline comment",
 		"Fixed in the next push": "Rendered reply",
@@ -406,24 +406,32 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 
 	actual := renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120)
 	actualDocument := newDetailDocument(actual, 120)
-	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43 R43")
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43")
 	resolvedIndex := given_runeIndexInString(t, headerLine, "Resolved")
 
-	if !strings.Contains(headerLine, " internal/tui/render.go:43 R43 Resolved") {
-		t.Fatalf("expected the header line to show the location and resolved state, actual %q", headerLine)
+	if !strings.Contains(headerLine, " internal/tui/render.go:43") {
+		t.Fatalf("expected the header line to show the location, actual %q", headerLine)
 	}
-	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) {
-		t.Fatalf("expected the resolved header prefix to contain %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), actualStylePrefix)
+	if strings.Contains(headerLine, "R43") || strings.Contains(headerLine, "L43") {
+		t.Fatalf("expected the header line to drop the side anchor, actual %q", headerLine)
 	}
-	if strings.Contains(actual, "@@ -42,2 +42,2 @@") || strings.Contains(actual, "opusplan") {
-		t.Fatalf("expected inline thread rendering to drop the diff preview, actual %q", actual)
+	if !strings.Contains(headerLine, "Resolved") {
+		t.Fatalf("expected the header line to show the resolved state, actual %q", headerLine)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.DiffAdditionBackgroundHex)) {
+		t.Fatalf("expected the resolved pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex), actualStylePrefix)
+	}
+	for _, expected := range []string{"@@ -42,2 +42,2 @@", "42 : 42 │ \"deny\": []", "43 :    │ \"model\": \"opusplan\",", "   : 43 │ \"model\": \"opus\","} {
+		if _, actualLine := given_detailDocumentLineContaining(t, actualDocument, expected); actualLine != expected {
+			t.Fatalf("expected inline thread rendering to keep the visible diff preview line %q, actual %q", expected, actualLine)
+		}
 	}
 	if _, replyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered reply"); !strings.Contains(replyLine, "Rendered reply") {
 		t.Fatalf("expected the reply to render in the same inline thread section, actual %q", replyLine)
 	}
 }
 
-func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsPendingUnresolvedAndOutdatedStatesOnTheHeaderLine(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsPendingUnresolvedAndOutdatedPillsOnTheHeaderLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 	inlineThreads := []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -441,16 +449,48 @@ func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_W
 	}}
 
 	actualDocument := newDetailDocument(renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120), 120)
-	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43 R43")
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43")
 
 	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
 		if !strings.Contains(headerLine, expected) {
 			t.Fatalf("expected the header line to contain %q, actual %q", expected, headerLine)
 		}
 	}
+	if strings.Contains(headerLine, "R43") || strings.Contains(headerLine, "L43") {
+		t.Fatalf("expected the header line to drop the side anchor, actual %q", headerLine)
+	}
 	pendingIndex := given_runeIndexInString(t, headerLine, "Pending")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) {
-		t.Fatalf("expected the pending header prefix to contain %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.PendingBackgroundHex)) {
+		t.Fatalf("expected the pending pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.PendingBackgroundHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenMultiLineInlineCommentThreads_WhenFormatting_ThenItShowsAtLeastFiveDiffLinesWithLeadingContext(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
+	inlineThreads := []githubcli.PullRequestReviewThread{{
+		ID:        "thread-1",
+		Path:      "internal/tui/render.go",
+		Line:      71,
+		StartLine: 70,
+		DiffSide:  "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			CreatedAt: "2026-04-18T14:15:00Z",
+			Body:      "Needs more spacing",
+			DiffHunk:  "@@ -66,6 +66,7 @@\n one\n two\n three\n four\n-five old\n-six old\n+five new\n+six new\n seven",
+		}},
+	}}
+
+	actual := renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120)
+	actualDocument := newDetailDocument(actual, 120)
+
+	for _, expected := range []string{"@@ -66,6 +66,7 @@", "67 : 67 │ two", "68 : 68 │ three", "69 : 69 │ four", "70 :    │ five old", "71 :    │ six old", "   : 70 │ five new", "   : 71 │ six new"} {
+		if _, actualLine := given_detailDocumentLineContaining(t, actualDocument, expected); actualLine != expected {
+			t.Fatalf("expected the diff preview to contain the visible line %q, actual %q", expected, actualLine)
+		}
+	}
+	if strings.Contains(actual, "66 : 66 │ one") || strings.Contains(actual, "72 : 72 │ seven") {
+		t.Fatalf("expected the diff preview to crop to three leading context lines plus the selected lines, actual %q", actual)
 	}
 }
 

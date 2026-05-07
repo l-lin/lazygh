@@ -392,7 +392,7 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlace
 	}
 }
 
-func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_ThenItShowsThemOnTheHeaderLine(t *testing.T) {
+func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_ThenItShowsThemAsPillsOnTheHeaderLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered thread body"}
 	file := reviewDiffFile{
 		Path:       "internal/tui/render.go",
@@ -414,15 +414,18 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_
 	}
 
 	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
-	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:11 R11")
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:11")
 
 	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
 		if !strings.Contains(headerLine, expected) {
 			t.Fatalf("expected the header line to contain %q, actual %q", expected, headerLine)
 		}
 	}
+	if strings.Contains(headerLine, "R11") || strings.Contains(headerLine, "L11") {
+		t.Fatalf("expected the header line to drop the side anchor, actual %q", headerLine)
+	}
 	pendingIndex := given_runeIndexInString(t, headerLine, "Pending")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) {
-		t.Fatalf("expected the pending header prefix to contain %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.PendingBackgroundHex)) {
+		t.Fatalf("expected the pending pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.PendingBackgroundHex), actualStylePrefix)
 	}
 }

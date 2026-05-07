@@ -131,7 +131,7 @@ func TestReviewMode_GivenTheFilesPane_WhenPressingCommentMotions_ThenItMovesToTh
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3 R3 Unresolved")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
 	actualErr = nextPrefixHandler(gui, filesView)
@@ -140,7 +140,7 @@ func TestReviewMode_GivenTheFilesPane_WhenPressingCommentMotions_ThenItMovesToTh
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_selectedReviewFileIs(t, subject, "internal/tui/model.go")
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10 L10 Unresolved")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
 	actualErr = previousPrefixHandler(gui, filesView)
@@ -149,7 +149,7 @@ func TestReviewMode_GivenTheFilesPane_WhenPressingCommentMotions_ThenItMovesToTh
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3 R3 Unresolved")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 }
 
@@ -184,7 +184,7 @@ func TestReviewMode_GivenTheDiffPane_WhenPressingCommentMotions_ThenItMovesToThe
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3 R3 Unresolved")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
 	actualErr = nextPrefixHandler(gui, detailView)
@@ -193,7 +193,7 @@ func TestReviewMode_GivenTheDiffPane_WhenPressingCommentMotions_ThenItMovesToThe
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_selectedReviewFileIs(t, subject, "internal/tui/model.go")
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10 L10 Unresolved")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
 	actualErr = previousPrefixHandler(gui, detailView)
@@ -202,7 +202,7 @@ func TestReviewMode_GivenTheDiffPane_WhenPressingCommentMotions_ThenItMovesToThe
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3 R3 Unresolved")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 }
 

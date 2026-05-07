@@ -187,6 +187,13 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 
 func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
 	lineIndex := cursorLine
+	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
+		lineIndex -= renderedTextLineCount(diffPreview)
+		if lineIndex < 0 {
+			return pullRequestReviewCommentActionTarget{}, false
+		}
+	}
+
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	for _, threadComment := range thread.Comments {

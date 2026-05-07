@@ -285,7 +285,7 @@ func TestBrowserMode_GivenTheCursorOnAConversation_WhenPressingZA_ThenItTogglesT
 	}
 }
 
-func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapsesResolvedThreadsKeepsSectionsTightAndHidesDiffPreview(t *testing.T) {
+func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapsesResolvedThreadsKeepsSectionsTightAndShowsTheDiffPreview(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
@@ -312,13 +312,13 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 					{
 						ID:       "thread-2",
 						Path:     "internal/tui/model.go",
-						Line:     57,
+						Line:     60,
 						DiffSide: "RIGHT",
 						Comments: []githubcli.PullRequestComment{{
 							Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-active"},
 							Body:      "Active thread body",
 							CreatedAt: "2026-04-18T10:30:00Z",
-							DiffHunk:  "@@ -56,2 +56,2 @@\n old line\n-old value\n+new value",
+							DiffHunk:  "@@ -56,6 +56,7 @@\n one\n two\n three\n four\n-old value\n+new value\n tail",
 						}},
 					},
 				},
@@ -343,8 +343,8 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	resolvedHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:43 R43 Resolved")
-	activeHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/model.go:57 R57 Unresolved")
+	resolvedHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:43")
+	activeHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/model.go:60")
 	if activeHeaderLineIndex != resolvedHeaderLineIndex+3 {
 		t.Fatalf("expected the collapsed thread to render as a bordered block before the next header block, actual %q", detailView.Buffer())
 	}
@@ -354,8 +354,13 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 	if !strings.Contains(detailView.Buffer(), "Rendered active thread body") {
 		t.Fatalf("expected unresolved threads to stay visible, actual %q", detailView.Buffer())
 	}
-	if strings.Contains(detailView.Buffer(), "@@ -42,2 +42,2 @@") || strings.Contains(detailView.Buffer(), "opusplan") || strings.Contains(detailView.Buffer(), "old value") {
-		t.Fatalf("expected inline thread conversations to hide diff previews, actual %q", detailView.Buffer())
+	for _, expected := range []string{"@@ -56,6 +56,7 @@", "56 : 56 │ one", "57 : 57 │ two", "58 : 58 │ three", "59 : 59 │ four", "60 :    │ old value", "   : 60 │ new value"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected the browser conversations tab to keep the diff preview line %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+	if strings.Contains(detailView.Buffer(), "61 : 61 │ tail") {
+		t.Fatalf("expected the browser conversations tab to crop the diff preview after five lines plus the selected line, actual %q", detailView.Buffer())
 	}
 	if activeHeaderLineIndex == 0 || !strings.HasPrefix(detailView.BufferLines()[activeHeaderLineIndex-1], "────") {
 		t.Fatalf("expected the browser conversations tab to render the same top border as review mode, actual %q", detailView.Buffer())

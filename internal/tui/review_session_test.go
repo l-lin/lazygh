@@ -312,7 +312,7 @@ func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUse
 	}
 }
 
-func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItShowsStatusOnTheHeaderLine(t *testing.T) {
+func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItShowsStatusPillsOnTheHeaderLine(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -341,13 +341,17 @@ func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItS
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	headerLineIndex := given_viewLineIndexContaining(t, detailView, "internal/tui/render.go:3 R3")
+	headerLineIndex := given_viewLineIndexContaining(t, detailView, "internal/tui/render.go:3")
 	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
 		if !strings.Contains(detailView.BufferLines()[headerLineIndex], expected) {
 			t.Fatalf("expected the review header line to contain %q, actual %q", expected, detailView.BufferLines()[headerLineIndex])
 		}
 	}
+	if strings.Contains(detailView.BufferLines()[headerLineIndex], "R3") || strings.Contains(detailView.BufferLines()[headerLineIndex], "L3") {
+		t.Fatalf("expected the review header line to drop the side anchor, actual %q", detailView.BufferLines()[headerLineIndex])
+	}
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "Pending", given_themeColorHex(t, theme.PendingHex), "review thread pending header foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, headerLineIndex, "Pending", given_themeColorHex(t, theme.PendingBackgroundHex), "review thread pending header background")
 }
 
 func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxColorsAndFillsTheCommentBoxInterior(t *testing.T) {
@@ -395,7 +399,7 @@ func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxC
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "42", given_themeColorHex(t, theme.SyntaxNumberHex), "review inline comment code number")
 }
 
-func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsTheThreadChevronAndTheRightSideLineNumber(t *testing.T) {
+func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsTheThreadChevronAndTheLocationWithoutASideAnchor(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:       "thread-1",
@@ -422,7 +426,10 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	headerLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:3 R3 Unresolved")
+	headerLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:3")
+	if strings.Contains(detailView.BufferLines()[headerLineIndex], "R3") || strings.Contains(detailView.BufferLines()[headerLineIndex], "L3") {
+		t.Fatalf("expected the conversation header to drop the side anchor, actual %q", detailView.BufferLines()[headerLineIndex])
+	}
 	if strings.Contains(detailView.BufferLines()[headerLineIndex], "│") {
 		t.Fatalf("expected the conversation header to hide the diff gutter, actual %q", detailView.BufferLines()[headerLineIndex])
 	}
@@ -454,7 +461,7 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 	}
 }
 
-func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsCollapsedAndShowsTheLeftSideLineNumber(t *testing.T) {
+func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsCollapsedAndDropsTheSideAnchor(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:           "thread-1",
@@ -482,7 +489,10 @@ func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsC
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	headerLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:2 L2 Resolved")
+	headerLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:2")
+	if strings.Contains(detailView.BufferLines()[headerLineIndex], "L2") || strings.Contains(detailView.BufferLines()[headerLineIndex], "R2") {
+		t.Fatalf("expected the collapsed conversation header to drop the side anchor, actual %q", detailView.BufferLines()[headerLineIndex])
+	}
 	if strings.Contains(detailView.BufferLines()[headerLineIndex], "│") {
 		t.Fatalf("expected the collapsed conversation header to hide the diff gutter, actual %q", detailView.BufferLines()[headerLineIndex])
 	}
@@ -529,15 +539,18 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingEnter_ThenI
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3 R3 Unresolved")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3")
 
 	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Unresolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Unresolved") {
 		t.Fatalf("expected the thread to collapse after pressing enter, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "R3") || strings.Contains(detailView.Buffer(), "L3") {
+		t.Fatalf("expected the collapsed thread header to drop the side anchor, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the collapsed thread body to be hidden, actual %q", detailView.Buffer())
@@ -545,7 +558,7 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingEnter_ThenI
 
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Unresolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Unresolved") {
 		t.Fatalf("expected the thread to expand after pressing enter again, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
@@ -579,7 +592,7 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingZA_ThenItTo
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3 R3 Unresolved")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3")
 
 	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
 	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
@@ -587,15 +600,18 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingZA_ThenItTo
 	then_noError(t, actualErr)
 	actualErr = prefixHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Unresolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Unresolved") {
 		t.Fatalf("expected the first z to arm the motion without changing the thread, actual %q", detailView.Buffer())
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Unresolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Unresolved") {
 		t.Fatalf("expected za to collapse the thread, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "R3") || strings.Contains(detailView.Buffer(), "L3") {
+		t.Fatalf("expected za to keep the side anchor out of the header, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected za to hide the thread body while collapsed, actual %q", detailView.Buffer())
@@ -606,7 +622,7 @@ func TestReviewMode_GivenTheCursorOnAnInlineConversation_WhenPressingZA_ThenItTo
 	then_noError(t, actualErr)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Unresolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Unresolved") {
 		t.Fatalf("expected za to expand the thread again, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
@@ -641,15 +657,18 @@ func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPre
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3 R3 Resolved")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3")
 
 	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Resolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Resolved") {
 		t.Fatalf("expected the resolved thread to expand after pressing enter, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "R3") || strings.Contains(detailView.Buffer(), "L3") {
+		t.Fatalf("expected the resolved thread header to drop the side anchor, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to appear after expanding, actual %q", detailView.Buffer())
@@ -657,7 +676,7 @@ func TestReviewMode_GivenTheCursorOnAResolvedCollapsedInlineConversation_WhenPre
 
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3 R3 Resolved") {
+	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:3") || !strings.Contains(detailView.Buffer(), "Resolved") {
 		t.Fatalf("expected the resolved thread to re-hide after pressing enter again, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {

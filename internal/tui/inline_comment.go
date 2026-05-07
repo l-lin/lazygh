@@ -8,6 +8,8 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
+const inlineThreadConversationMinimumDiffLines = 5
+
 func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineComment, body string, width int) string {
 	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
 
@@ -33,7 +35,6 @@ func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestRevi
 		renderReviewDiffThreadHorizontalBorder(width),
 		renderInlineThreadHeaderLine(
 			pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(thread)),
-			pullRequestInlineThreadAnchor(thread),
 			collapsed,
 			inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated, thread.Comments),
 		),
@@ -46,16 +47,35 @@ func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestRevi
 
 func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
+	lines := make([]string, 0, len(thread.Comments)+2)
+	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
+		lines = append(lines, diffPreview)
+	}
 	if len(thread.Comments) == 0 {
-		return strings.Join([]string{
-			renderRoundedCommentBox("No comments in thread.", threadWidth),
-			renderReviewDiffThreadHorizontalBorder(width),
-		}, "\n")
+		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth), renderReviewDiffThreadHorizontalBorder(width))
+		return strings.Join(lines, "\n")
 	}
 
-	lines := renderInlineThreadCommentBoxes(thread.Comments, renderer, threadWidth)
+	lines = append(lines, renderInlineThreadCommentBoxes(thread.Comments, renderer, threadWidth)...)
 	lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
 	return strings.Join(lines, "\n")
+}
+
+func renderPullRequestInlineCommentThreadDiffPreview(comment githubcli.PullRequestInlineComment) string {
+	previewLines := parseDiffPreviewLines(comment.DiffHunk)
+	if len(previewLines) == 0 {
+		return ""
+	}
+
+	markTargetDiffPreviewLines(previewLines, comment)
+	previewLines = trimDiffPreviewLinesForConversation(previewLines, comment, inlineThreadConversationMinimumDiffLines)
+	changedRangesByLine := diffPreviewChangedStyleRanges(previewLines)
+	numberWidth := diffPreviewLineNumberWidth(previewLines)
+	renderedLines := make([]string, 0, len(previewLines))
+	for lineIndex, previewLine := range previewLines {
+		renderedLines = append(renderedLines, renderDiffPreviewLine(comment.Path, previewLine, numberWidth, changedRangesByLine[lineIndex]))
+	}
+	return strings.Join(renderedLines, "\n")
 }
 
 func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) []string {
@@ -98,7 +118,7 @@ func pullRequestCommentsContainPendingState(comments []githubcli.PullRequestComm
 }
 
 func pendingInlineThreadStatusBadge() commentMetadataBadge {
-	return commentMetadataBadge{Label: "Pending", ForegroundHex: theme.PendingHex, BackgroundHex: theme.SelectedLineBackgroundHex}
+	return commentMetadataBadge{Label: "Pending", ForegroundHex: theme.PendingHex, BackgroundHex: theme.PendingBackgroundHex}
 }
 
 func inlineThreadResolutionStatusBadge(resolved bool) commentMetadataBadge {
@@ -112,7 +132,7 @@ func outdatedInlineThreadStatusBadge() commentMetadataBadge {
 	return commentMetadataBadge{Label: "Outdated", ForegroundHex: theme.DiffHunkHeaderHex, BackgroundHex: theme.SelectedLineBackgroundHex}
 }
 
-func renderInlineThreadHeaderLine(location string, anchor string, collapsed bool, badges []commentMetadataBadge) string {
+func renderInlineThreadHeaderLine(location string, collapsed bool, badges []commentMetadataBadge) string {
 	chevron := browserDetailExpandedChevron
 	if collapsed {
 		chevron = browserDetailCollapsedChevron
@@ -121,9 +141,6 @@ func renderInlineThreadHeaderLine(location string, anchor string, collapsed bool
 	segments := []string{styleText(chevron, foregroundColorEscape(theme.DiffHunkHeaderHex))}
 	if trimmedLocation := strings.TrimSpace(location); trimmedLocation != "" {
 		segments = append(segments, styleText(trimmedLocation, foregroundColorEscape(theme.DiffHunkHeaderHex)))
-	}
-	if trimmedAnchor := strings.TrimSpace(anchor); trimmedAnchor != "" {
-		segments = append(segments, styleText(trimmedAnchor, foregroundColorEscape(theme.DiffHunkHeaderHex)))
 	}
 	for _, badge := range badges {
 		if renderedBadge := renderInlineThreadHeaderBadge(badge); renderedBadge != "" {
@@ -138,7 +155,10 @@ func renderInlineThreadHeaderBadge(badge commentMetadataBadge) string {
 	if label == "" {
 		return ""
 	}
-	return styleText(label, foregroundColorEscape(badge.ForegroundHex), backgroundColorEscape(badge.BackgroundHex))
+	if strings.TrimSpace(badge.ForegroundHex) == "" || strings.TrimSpace(badge.BackgroundHex) == "" {
+		return label
+	}
+	return renderRoundedPill(label, badge.ForegroundHex, badge.BackgroundHex)
 }
 
 func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread) githubcli.PullRequestInlineComment {
@@ -179,20 +199,6 @@ func pullRequestInlineCommentFromReviewDiffThread(thread reviewDiffThread) githu
 		break
 	}
 	return comment
-}
-
-func pullRequestInlineThreadAnchor(thread githubcli.PullRequestReviewThread) string {
-	comment := pullRequestInlineCommentFromThread(thread)
-	line := pullRequestInlineCommentDisplayLine(comment)
-	return inlineThreadAnchorLabel(pullRequestInlineCommentSideLabel(comment), line)
-}
-
-func inlineThreadAnchorLabel(side string, line int) string {
-	trimmedSide := strings.TrimSpace(side)
-	if line <= 0 {
-		return trimmedSide
-	}
-	return fmt.Sprintf("%s%d", trimmedSide, line)
 }
 
 func renderPullRequestInlineCommentLocationLine(comment githubcli.PullRequestInlineComment) string {

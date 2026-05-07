@@ -233,6 +233,92 @@ func diffPreviewLineNumberWidth(previewLines []diffPreviewLine) int {
 	return width
 }
 
+func trimDiffPreviewLinesForConversation(previewLines []diffPreviewLine, comment githubcli.PullRequestInlineComment, minimumVisibleLines int) []diffPreviewLine {
+	if len(previewLines) == 0 {
+		return nil
+	}
+	if minimumVisibleLines < 1 {
+		minimumVisibleLines = 1
+	}
+
+	startLine, endLine, side := pullRequestInlineCommentTargetRange(comment)
+	if startLine <= 0 && endLine <= 0 {
+		return append([]diffPreviewLine(nil), previewLines...)
+	}
+	if endLine == 0 {
+		endLine = startLine
+	}
+	if startLine == 0 {
+		startLine = endLine
+	}
+	if startLine > endLine {
+		startLine, endLine = endLine, startLine
+	}
+
+	targetLineCount := endLine - startLine + 1
+	leadingContextLineCount := maxInt(minimumVisibleLines-targetLineCount, 0)
+	minimumPreviewLine := firstPositiveConversationPreviewLineNumber(previewLines, side)
+	if minimumPreviewLine <= 0 {
+		return append([]diffPreviewLine(nil), previewLines...)
+	}
+	previewStartLine := maxInt(minimumPreviewLine, startLine-leadingContextLineCount)
+
+	startIndex := -1
+	endIndex := -1
+	for index, previewLine := range previewLines {
+		lineNumber := conversationPreviewLineNumber(previewLine, side)
+		if lineNumber <= 0 {
+			continue
+		}
+		if lineNumber < previewStartLine {
+			continue
+		}
+		if lineNumber > endLine {
+			break
+		}
+		if startIndex < 0 {
+			startIndex = index
+		}
+		endIndex = index
+	}
+	if startIndex < 0 || endIndex < 0 {
+		return append([]diffPreviewLine(nil), previewLines...)
+	}
+
+	for startIndex > 0 && conversationPreviewLineNumber(previewLines[startIndex-1], side) == 0 && previewLines[startIndex-1].kind != diffPreviewHunkHeaderLine && previewLines[startIndex-1].kind != diffPreviewNoteLine {
+		startIndex--
+	}
+	for endIndex+1 < len(previewLines) && conversationPreviewLineNumber(previewLines[endIndex+1], side) == 0 && previewLines[endIndex+1].kind != diffPreviewHunkHeaderLine && previewLines[endIndex+1].kind != diffPreviewNoteLine {
+		endIndex++
+	}
+
+	prefixLineCount := 0
+	for prefixLineCount < len(previewLines) && (previewLines[prefixLineCount].kind == diffPreviewHunkHeaderLine || previewLines[prefixLineCount].kind == diffPreviewNoteLine) {
+		prefixLineCount++
+	}
+	trimmedPreviewLines := make([]diffPreviewLine, 0, prefixLineCount+(endIndex-startIndex+1))
+	trimmedPreviewLines = append(trimmedPreviewLines, previewLines[:prefixLineCount]...)
+	trimmedPreviewLines = append(trimmedPreviewLines, previewLines[startIndex:endIndex+1]...)
+	return trimmedPreviewLines
+}
+
+func firstPositiveConversationPreviewLineNumber(previewLines []diffPreviewLine, side string) int {
+	for _, previewLine := range previewLines {
+		lineNumber := conversationPreviewLineNumber(previewLine, side)
+		if lineNumber > 0 {
+			return lineNumber
+		}
+	}
+	return 0
+}
+
+func conversationPreviewLineNumber(previewLine diffPreviewLine, side string) int {
+	if strings.EqualFold(strings.TrimSpace(side), "LEFT") {
+		return previewLine.leftLine
+	}
+	return previewLine.rightLine
+}
+
 func parseDiffHunkHeader(line string) (int, int, bool) {
 	matches := diffHunkHeaderPattern.FindStringSubmatch(strings.TrimSpace(line))
 	if len(matches) != 3 {
