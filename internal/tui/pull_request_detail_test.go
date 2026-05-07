@@ -312,7 +312,7 @@ func TestRenderPullRequestDetailHeader_GivenReactionGroups_WhenFormatting_ThenIt
 
 	actual := renderPullRequestDetailHeader(summary, detail)
 	actualDocument := newDetailDocument(actual, 120)
-	_, reactionLine := given_detailDocumentLineContaining(t, actualDocument, "Reactions:")
+	_, reactionLine := given_detailDocumentLineContaining(t, actualDocument, "👍")
 
 	if !strings.Contains(reactionLine, "👍 2") {
 		t.Fatalf("expected the reactions line to contain %q, actual %q", "👍 2", reactionLine)

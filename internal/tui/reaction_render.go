@@ -13,7 +13,7 @@ func renderPullRequestReactionLine(groups []githubcli.ReactionGroup) string {
 	if strings.TrimSpace(renderedGroups) == "" {
 		return ""
 	}
-	return styleCommentMetadataText("Reactions:") + " " + renderedGroups
+	return renderedGroups
 }
 
 func renderReactionGroups(groups []githubcli.ReactionGroup) string {

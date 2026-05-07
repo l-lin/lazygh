@@ -173,29 +173,6 @@ This example opens links with Firefox on macOS.
 open_command = ["open", "-a", "Firefox"]
 ```
 
-### Reactions
-Use the actions popup and pick `Add reaction` when the current context is a pull request on `Description`, a PR comment on `Comments`, or an inline comment in `Comments` or review mode.
-
-The picker exposes the full GitHub set: `+1`, `-1`, `laugh`, `hooray`, `confused`, `heart`, `rocket`, `eyes`.
-
-`lazygh` renders current reaction groups in the PR header and on comment metadata lines, so the state stays visible after you react. Adding the same reaction twice is a no-op, because GitHub already heard you the first time.
-
-Example:
-
-```text
-Add reaction
-👍 Thumbs up (+1)
-👎 Thumbs down (-1)
-😄 Laugh
-🎉 Hooray
-😕 Confused
-❤️ Heart
-🚀 Rocket
-👀 Eyes
-
-Reactions: 👍 2  ❤️ 1  👀 1
-```
-
 ### Story review
 Use the actions popup on a pull request and pick `Review PR as story`.
 
