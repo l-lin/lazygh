@@ -43,13 +43,13 @@ func prettyMarkdownStyle() glamouransi.StyleConfig {
 	style.LinkText.Color = stringPtr(theme.MarkdownLinkHex)
 	style.LinkText.Bold = boolPtr(true)
 	style.LinkText.Underline = boolPtr(false)
-	style.LinkText.Prefix = "󰌹 "
+	style.LinkText.Prefix = iconMarkdownLink + " "
 
 	style.Image.Color = stringPtr(theme.MarkdownLinkHex)
 	style.Image.Underline = boolPtr(true)
 	style.ImageText.Color = stringPtr(theme.InactiveTitleHex)
 	style.ImageText.Format = "{{.text}}"
-	style.ImageText.Prefix = " "
+	style.ImageText.Prefix = iconMarkdownImage + " "
 	style.ImageText.Bold = boolPtr(true)
 
 	style.Code.StylePrimitive.Color = stringPtr(theme.MarkdownCodeHex)

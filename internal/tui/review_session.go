@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	reviewModeMetadataIcon                  = "󰋼"
-	reviewModeChapterIcon                   = ""
 	reviewModeMetadataTitle                 = "[1]-" + reviewModeMetadataIcon + " Metadata"
 	reviewModeFilesTitle                    = "[2]-" + reviewDiffDirectoryIcon + " Files"
 	reviewModeChaptersTitle                 = "[2]-" + reviewModeChapterIcon + " Chapters"

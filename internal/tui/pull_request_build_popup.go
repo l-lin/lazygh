@@ -255,7 +255,11 @@ func sanitizePullRequestBuildRunLog(raw string) string {
 	lines := strings.Split(trimmedRaw, "\n")
 	for index, line := range lines {
 		if markerIndex := strings.Index(line, pullRequestBuildRunUnknownStepLabel); markerIndex >= 0 {
-			lines[index] = strings.TrimSpace(line[markerIndex:])
+			suffixStart := markerIndex + len(pullRequestBuildRunUnknownStepLabel)
+			if suffixStart > len(line) {
+				suffixStart = len(line)
+			}
+			lines[index] = strings.TrimSpace(line[suffixStart:])
 			continue
 		}
 		lines[index] = strings.TrimRight(line, " ")

@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	actionsPopupChangeThemeIcon = "󰸌"
-	themePickerActionTitle      = "Change theme"
-	themePickerTitle            = "Select theme"
+	themePickerActionTitle = "Change theme"
+	themePickerTitle       = "Select theme"
 )
 
 type themePresetStore interface {

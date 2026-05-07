@@ -106,8 +106,6 @@ func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile
 	return row.Label + reviewDiffTreeRowCommentSuffix(row, files)
 }
 
-const reviewDiffTreeCommentCountIcon = ""
-
 func reviewDiffTreeRowCommentSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
 	commentCount := reviewDiffTreeRowCommentCount(row, files)
 	if commentCount <= 0 {

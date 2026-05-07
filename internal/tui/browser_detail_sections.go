@@ -9,11 +9,6 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-const (
-	browserDetailExpandedChevron  = ""
-	browserDetailCollapsedChevron = ""
-)
-
 type browserDetailSection struct {
 	id                 string
 	header             string

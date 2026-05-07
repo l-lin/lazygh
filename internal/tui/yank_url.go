@@ -13,9 +13,9 @@ var (
 )
 
 const (
-	yankSuccessMessage     = "󰆏 URL copied"
-	yankFailureMessage     = "󰅚 Copy failed"
-	yankUnavailableMessage = "󰌑 No PR URL"
+	yankSuccessMessage     = iconCopy + " URL copied"
+	yankFailureMessage     = iconWarning + " Copy failed"
+	yankUnavailableMessage = iconUnavailable + " No PR URL"
 )
 
 func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) error {

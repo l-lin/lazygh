@@ -9,13 +9,6 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-const (
-	pullRequestOverviewSuccessIcon = ""
-	pullRequestOverviewFailureIcon = ""
-	pullRequestOverviewPendingIcon = "󰦖"
-	pullRequestOverviewMutedIcon   = "•"
-)
-
 type pullRequestOverviewStatus int
 
 const (

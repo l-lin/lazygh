@@ -173,8 +173,8 @@ func TestOpenReviewByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_ThenIt
 	if metadataView.Title != reviewModeMetadataTitle {
 		t.Fatalf("expected metadata view title %q, actual %q", reviewModeMetadataTitle, metadataView.Title)
 	}
-	if !strings.Contains(metadataView.Buffer(), "Rocket PR") {
-		t.Fatalf("expected metadata view to contain %q, actual %q", "Rocket PR", metadataView.Buffer())
+	if actual := strings.TrimSpace(metadataView.Buffer()); actual != "acme/rocket#77" {
+		t.Fatalf("expected metadata view buffer %q, actual %q", "acme/rocket#77", actual)
 	}
 }
 

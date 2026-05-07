@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	actionsPopupResolveInlineCommentIcon  = "󰄬"
 	inlineCommentResolvedSuccessMessage   = "Inline comment resolved"
 	inlineCommentUnresolvedSuccessMessage = "Inline comment marked unresolved"
 )

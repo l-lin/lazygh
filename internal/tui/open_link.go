@@ -15,10 +15,10 @@ var (
 )
 
 const (
-	openLinkSuccessMessage           = " Link opened"
-	openLinkFailureMessage           = "󰅚 Open failed"
-	openLinkUnavailableMessage       = "󰌑 No link under cursor"
-	openLinkOpenerUnavailableMessage = "󰌑 Link opener unavailable"
+	openLinkSuccessMessage           = iconLink + " Link opened"
+	openLinkFailureMessage           = iconWarning + " Open failed"
+	openLinkUnavailableMessage       = iconUnavailable + " No link under cursor"
+	openLinkOpenerUnavailableMessage = iconUnavailable + " Link opener unavailable"
 )
 
 func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {

@@ -7,19 +7,6 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-const (
-	actionsPopupStartReviewIcon            = ""
-	actionsPopupYankPullRequestURLIcon     = "󰆏"
-	actionsPopupOpenPullRequestBrowserIcon = ""
-	actionsPopupOpenLinkIcon               = ""
-	actionsPopupRefreshPullRequestIcon     = ""
-	actionsPopupReviewApproveIcon          = "󰆀"
-	actionsPopupReviewCommentIcon          = "󰆂"
-	actionsPopupReviewRequestChangesIcon   = "󰅾"
-	actionsPopupCommentOnPullRequestIcon   = "󰆆"
-	actionsPopupEditPullRequestIcon        = ""
-)
-
 type actionsPopupAction struct {
 	id       string
 	title    string

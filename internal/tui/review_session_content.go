@@ -7,43 +7,11 @@ import (
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func (program *Program) reviewSessionMetadataContent() string {
-	summary := program.reviewSession.summary
-	detail := githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, Body: summary.Body, State: summary.State, UpdatedAt: summary.UpdatedAt}
-	bodyLines := []string{fmt.Sprintf("Pending review: %s", valueOrDash(program.reviewSession.pendingReviewID))}
-
-	if result, ok := program.pullRequestDetailForSummary(summary); ok {
-		if result.err != nil {
-			bodyLines = append(bodyLines, "", "Could not load richer pull request metadata.", strings.TrimSpace(result.err.Error()))
-		} else {
-			detail = result.detail
-		}
-	} else {
-		bodyLines = append(bodyLines, "", "Loading richer pull request metadata...")
-	}
-
-	if result, ok := program.reviewSessionDiffResult(); ok {
-		if result.err != nil {
-			bodyLines = append(bodyLines, "", "Could not load changed files.", strings.TrimSpace(result.err.Error()))
-		} else {
-			bodyLines = append(bodyLines, renderReviewSessionMetadataStats(result.data.Stats))
-		}
-	} else {
-		bodyLines = append(bodyLines, "", "Loading changed files...")
-	}
-
-	return renderPullRequestDetailContent(renderPullRequestDetailHeader(summary, detail), strings.Join(bodyLines, "\n"))
-}
-
-func renderReviewSessionMetadataStats(stats reviewDiffStats) string {
-	return strings.Join([]string{
-		fmt.Sprintf("Changed files: %d", stats.ChangedFiles),
-		styleText(fmt.Sprintf("+%d", stats.Additions), foregroundColorEscape(theme.DiffAdditionHex)),
-		styleText(fmt.Sprintf("-%d", stats.Deletions), foregroundColorEscape(theme.DiffDeletionHex)),
-	}, "  ")
+	reference := pullRequestReference(program.reviewSession.summary, githubcli.PullRequestDetail{})
+	return valueOrDash(strings.TrimSpace(reference))
 }
 
 func (program *Program) reviewSessionDetailContent() string {

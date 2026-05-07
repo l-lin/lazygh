@@ -64,6 +64,9 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	if reactionAction, ok := program.currentReactionAction(); ok {
 		actions = append(actions, reactionAction)
 	}
+	if replyAction, ok := program.currentInlineCommentReplyAction(); ok {
+		actions = append(actions, replyAction)
+	}
 	actions = append(actions, program.currentInlineCommentEditActions()...)
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
 		actions = append(actions, inlineCommentAction)

@@ -1247,68 +1247,72 @@ func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment strin
 }
 
 type fakePullRequestDetailLoader struct {
-	details                   map[string]githubcli.PullRequestDetail
-	detailErrors              map[string]error
-	detailCalls               []string
-	diffs                     map[string]githubcli.PullRequestDiff
-	diffErrors                map[string]error
-	diffCalls                 []string
-	commentCalls              []string
-	commentBodies             []string
-	commentErr                error
-	myPullRequests            []githubcli.PullRequest
-	requestedPullRequests     []githubcli.PullRequest
-	approveCalls              []string
-	approveErr                error
-	reviewCommentCalls        []string
-	reviewCommentBodies       []string
-	reviewCommentErr          error
-	requestChangesCalls       []string
-	requestChangesBodies      []string
-	requestChangesErr         error
-	submitReviewIDs           []string
-	submitReviewEvents        []githubcli.PullRequestReviewEvent
-	submitReviewBodies        []string
-	submitReviewErr           error
-	reviewThreadReviewIDs     []string
-	reviewThreadBodies        []string
-	reviewThreadTargets       []githubcli.PullRequestReviewThreadTarget
-	reviewThreadErr           error
-	updateReviewCommentIDs    []string
-	updateReviewCommentBodies []string
-	updateReviewCommentErr    error
-	deleteReviewCommentIDs    []string
-	deleteReviewCommentErr    error
-	resolveReviewThreadIDs    []string
-	resolveReviewThreadErr    error
-	unresolveReviewThreadIDs  []string
-	unresolveReviewThreadErr  error
-	addReactionSubjectIDs     []string
-	addReactionContents       []githubcli.ReactionContent
-	addReactionErr            error
-	reviewKeyByPendingID      map[string]string
-	openBrowserCalls          []string
-	openBrowserErr            error
-	editTitleCalls            []string
-	editTitleValues           []string
-	editTitleErr              error
-	editDescriptionCalls      []string
-	editDescriptionBodies     []string
-	editDescriptionErr        error
-	startReviewCalls          []string
-	startReviewID             string
-	startReviewErr            error
-	buildRuns                 map[string]string
-	buildRunJobs              map[string][]githubcli.PullRequestBuildRunJob
-	buildLogs                 map[int]string
-	buildRunCalls             []string
-	buildRunChecks            []githubcli.PullRequestStatusCheck
-	buildRunJobCalls          []string
-	buildRunJobChecks         []githubcli.PullRequestStatusCheck
-	buildLogCalls             []int
-	buildRunErr               error
-	buildRunJobsErr           error
-	buildLogErr               error
+	details                    map[string]githubcli.PullRequestDetail
+	detailErrors               map[string]error
+	detailCalls                []string
+	diffs                      map[string]githubcli.PullRequestDiff
+	diffErrors                 map[string]error
+	diffCalls                  []string
+	commentCalls               []string
+	commentBodies              []string
+	commentErr                 error
+	myPullRequests             []githubcli.PullRequest
+	requestedPullRequests      []githubcli.PullRequest
+	approveCalls               []string
+	approveErr                 error
+	reviewCommentCalls         []string
+	reviewCommentBodies        []string
+	reviewCommentErr           error
+	requestChangesCalls        []string
+	requestChangesBodies       []string
+	requestChangesErr          error
+	submitReviewIDs            []string
+	submitReviewEvents         []githubcli.PullRequestReviewEvent
+	submitReviewBodies         []string
+	submitReviewErr            error
+	reviewThreadReviewIDs      []string
+	reviewThreadBodies         []string
+	reviewThreadTargets        []githubcli.PullRequestReviewThreadTarget
+	reviewThreadErr            error
+	reviewThreadReplyReviewIDs []string
+	reviewThreadReplyThreadIDs []string
+	reviewThreadReplyBodies    []string
+	reviewThreadReplyErr       error
+	updateReviewCommentIDs     []string
+	updateReviewCommentBodies  []string
+	updateReviewCommentErr     error
+	deleteReviewCommentIDs     []string
+	deleteReviewCommentErr     error
+	resolveReviewThreadIDs     []string
+	resolveReviewThreadErr     error
+	unresolveReviewThreadIDs   []string
+	unresolveReviewThreadErr   error
+	addReactionSubjectIDs      []string
+	addReactionContents        []githubcli.ReactionContent
+	addReactionErr             error
+	reviewKeyByPendingID       map[string]string
+	openBrowserCalls           []string
+	openBrowserErr             error
+	editTitleCalls             []string
+	editTitleValues            []string
+	editTitleErr               error
+	editDescriptionCalls       []string
+	editDescriptionBodies      []string
+	editDescriptionErr         error
+	startReviewCalls           []string
+	startReviewID              string
+	startReviewErr             error
+	buildRuns                  map[string]string
+	buildRunJobs               map[string][]githubcli.PullRequestBuildRunJob
+	buildLogs                  map[int]string
+	buildRunCalls              []string
+	buildRunChecks             []githubcli.PullRequestStatusCheck
+	buildRunJobCalls           []string
+	buildRunJobChecks          []githubcli.PullRequestStatusCheck
+	buildLogCalls              []int
+	buildRunErr                error
+	buildRunJobsErr            error
+	buildLogErr                error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -1409,11 +1413,25 @@ func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullReques
 					Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
 					Body:      body,
 					CreatedAt: "2026-04-20T12:00:00Z",
+					State:     "PENDING",
 				}},
 			})
 			loader.diffs[key] = diff
 		}
 	}
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThreadReply(pullRequestReviewID string, pullRequestReviewThreadID string, body string) error {
+	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
+	trimmedThreadID := strings.TrimSpace(pullRequestReviewThreadID)
+	loader.reviewThreadReplyReviewIDs = append(loader.reviewThreadReplyReviewIDs, trimmedReviewID)
+	loader.reviewThreadReplyThreadIDs = append(loader.reviewThreadReplyThreadIDs, trimmedThreadID)
+	loader.reviewThreadReplyBodies = append(loader.reviewThreadReplyBodies, body)
+	if loader.reviewThreadReplyErr != nil {
+		return loader.reviewThreadReplyErr
+	}
+	loader.addReviewThreadReply(trimmedReviewID, trimmedThreadID, body)
 	return nil
 }
 
@@ -1676,6 +1694,54 @@ func given_reactionGroupsWithAddedReaction(groups []githubcli.ReactionGroup, con
 		return updatedGroups
 	}
 	return append(updatedGroups, githubcli.ReactionGroup{Content: content, TotalCount: 1, ViewerHasReacted: true})
+}
+
+func (loader *fakePullRequestDetailLoader) addReviewThreadReply(reviewID string, threadID string, body string) {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	if trimmedThreadID == "" {
+		return
+	}
+
+	commentID := "PRRC_reply_" + strconv.Itoa(len(loader.reviewThreadReplyBodies))
+	state := ""
+	if strings.TrimSpace(reviewID) != "" {
+		state = "PENDING"
+	}
+	reply := githubcli.PullRequestComment{
+		ID:              commentID,
+		ViewerDidAuthor: true,
+		Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+		Body:            body,
+		CreatedAt:       "2026-04-20T12:30:00Z",
+		State:           state,
+	}
+
+	for key, detail := range loader.details {
+		updated := false
+		for threadIndex := range detail.InlineCommentThreads {
+			if strings.TrimSpace(detail.InlineCommentThreads[threadIndex].ID) != trimmedThreadID {
+				continue
+			}
+			detail.InlineCommentThreads[threadIndex].Comments = append(detail.InlineCommentThreads[threadIndex].Comments, reply)
+			updated = true
+		}
+		if updated {
+			loader.details[key] = detail
+		}
+	}
+	for key, diff := range loader.diffs {
+		updated := false
+		for threadIndex := range diff.Threads {
+			if strings.TrimSpace(diff.Threads[threadIndex].ID) != trimmedThreadID {
+				continue
+			}
+			diff.Threads[threadIndex].Comments = append(diff.Threads[threadIndex].Comments, reply)
+			updated = true
+		}
+		if updated {
+			loader.diffs[key] = diff
+		}
+	}
 }
 
 func (loader *fakePullRequestDetailLoader) updateReviewComment(commentID string, body string) {

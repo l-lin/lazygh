@@ -55,8 +55,13 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	if metadataView.Title != reviewModeMetadataTitle {
 		t.Fatalf("expected metadata view title %q, actual %q", reviewModeMetadataTitle, metadataView.Title)
 	}
-	if !strings.Contains(metadataView.Buffer(), "Pending review: PRR_pending") || !strings.Contains(metadataView.Buffer(), "Changed files: 2") || !strings.Contains(metadataView.Buffer(), "+3") || !strings.Contains(metadataView.Buffer(), "-2") {
-		t.Fatalf("expected metadata view to contain review stats, actual %q", metadataView.Buffer())
+	if actual := strings.TrimSpace(metadataView.Buffer()); actual != "acme/widgets#42" {
+		t.Fatalf("expected metadata view buffer %q, actual %q", "acme/widgets#42", actual)
+	}
+	for _, hidden := range []string{"Pending review", "Changed files", "+3", "-2"} {
+		if strings.Contains(metadataView.Buffer(), hidden) {
+			t.Fatalf("expected metadata view to hide %q, actual %q", hidden, metadataView.Buffer())
+		}
 	}
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
@@ -173,6 +178,17 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	then_noError(t, actualErr)
 	actualErr = subject.focusUserView(gui, nil)
 	then_noError(t, actualErr)
+
+	metadataView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(metadataView.Buffer()); actual != "acme/widgets#42" {
+		t.Fatalf("expected metadata view buffer %q, actual %q", "acme/widgets#42", actual)
+	}
+	for _, hidden := range []string{"Created by", "Assigned to", "@octocat", "+12", "-3"} {
+		if strings.Contains(metadataView.Buffer(), hidden) {
+			t.Fatalf("expected metadata view to hide %q, actual %q", hidden, metadataView.Buffer())
+		}
+	}
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
@@ -724,7 +740,7 @@ func TestReviewMode_GivenApprovalMetadata_WhenRendering_ThenTheMetadataPaneFitsA
 	}
 }
 
-func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullRequestContextAndColoredDiffCounts(t *testing.T) {
+func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsOnlyThePullRequestReference(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
@@ -758,15 +774,14 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsThePullReq
 
 	metadataView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
-	for _, expected := range []string{"acme/widgets#42 First PR", "Created by", "@octocat", "Assigned to", "@assignee-one", "main ← feature/review", detailStatusIcon + " OPEN", detailLabelIcon + " bug", detailReviewRequestsIcon + " @acme/platform"} {
-		if !strings.Contains(metadataView.Buffer(), expected) {
-			t.Fatalf("expected review metadata to contain %q, actual %q", expected, metadataView.Buffer())
+	if actual := strings.TrimSpace(metadataView.Buffer()); actual != "acme/widgets#42" {
+		t.Fatalf("expected review metadata buffer %q, actual %q", "acme/widgets#42", actual)
+	}
+	for _, hidden := range []string{"First PR", "Created by", "@octocat", "Assigned to", "@assignee-one", "main ← feature/review", detailStatusIcon + " OPEN", detailLabelIcon + " bug", detailReviewRequestsIcon + " @acme/platform", "Changed files", "+3", "-2"} {
+		if strings.Contains(metadataView.Buffer(), hidden) {
+			t.Fatalf("expected review metadata to hide %q, actual %q", hidden, metadataView.Buffer())
 		}
 	}
-
-	countsLineIndex := given_viewLineIndexContaining(t, metadataView, "Changed files:")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "+3", given_themeColorHex(t, theme.DiffAdditionHex), "review metadata additions")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewUserName, countsLineIndex, "-2", given_themeColorHex(t, theme.DiffDeletionHex), "review metadata deletions")
 }
 
 func TestReviewMode_GivenADeepSingleFilePath_WhenRenderingTheFilesPane_ThenTheFileRowShowsOnlyTheFilename(t *testing.T) {

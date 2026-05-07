@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	actionsPopupReviewPullRequestURLIcon = ""
-	reviewPullRequestURLEditorTitle      = "Review PR from URL"
+	reviewPullRequestURLEditorTitle = "Review PR from URL"
 )
 
 func (program *Program) reviewPullRequestURLActionsPopupAction() actionsPopupAction {

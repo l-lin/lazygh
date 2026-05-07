@@ -1,0 +1,149 @@
+package tui
+
+import (
+	"errors"
+	"strings"
+
+	"github.com/jesseduffield/gocui"
+)
+
+const (
+	pullRequestInlineCommentReplyEditorTitle    = "Reply to inline comment"
+	pullRequestInlineCommentReplySuccessMessage = "Inline reply posted"
+)
+
+type pullRequestReviewThreadReplyTarget struct {
+	repository    string
+	number        int
+	pendingReview string
+	threadID      string
+}
+
+func (program *Program) currentInlineCommentReplyAction() (actionsPopupAction, bool) {
+	if _, ok := program.selectedPullRequestReviewThreadReplyTarget(); !ok {
+		return actionsPopupAction{}, false
+	}
+	return program.replyToInlineCommentAction(), true
+}
+
+func (program *Program) replyToInlineCommentAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:       "reply-to-inline-comment",
+		title:    pullRequestInlineCommentReplyEditorTitle,
+		icon:     actionsPopupCommentOnPullRequestIcon,
+		keywords: []string{"inline", "comment", "reply", "thread", "discussion"},
+		execute:  program.executeReplyToInlineCommentAction,
+	}
+}
+
+func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+
+	wasVisible := program.modalEditorVisible()
+	err := program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
+		return program.submitInlineCommentReply(target, body)
+	}, reviewInlineCommentModalHeight, handleMultilineModalEditorExternalEditKey)
+	if err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	if !wasVisible && program.modalEditorVisible() {
+		return actionsPopupActionResult{closePopup: true}
+	}
+	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
+func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadReplyTarget, body string) error {
+	if strings.TrimSpace(target.threadID) == "" {
+		return errors.New("missing inline comment thread identity")
+	}
+	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
+		return errors.New("missing pull request identity")
+	}
+	if program.githubLoader == nil {
+		return errors.New("github loader is unavailable")
+	}
+	if err := program.githubLoader.AddPullRequestReviewThreadReply(target.pendingReview, target.threadID, body); err != nil {
+		return err
+	}
+
+	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.setFeedback(FocusDetailView, pullRequestInlineCommentReplySuccessMessage)
+	return nil
+}
+
+func (program *Program) selectedPullRequestReviewThreadReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
+	if program.model.Focus() != FocusDetailView {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	if program.reviewSession.active {
+		return program.selectedReviewInlineCommentReplyTarget()
+	}
+	return program.selectedBrowserInlineCommentReplyTarget()
+}
+
+func (program *Program) selectedBrowserInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
+	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	summary, ok := program.model.SelectedPullRequestSummary()
+	if !ok {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	result, ok := program.pullRequestDetailForSummary(summary)
+	if !ok || result.err != nil {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	if !ok || sectionAtCursor.section.inlineThread == nil || !sectionAtCursor.inBody {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	thread := *sectionAtCursor.section.inlineThread
+	if _, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, program.markdownRenderer, program.detailWrapWidth, sectionAtCursor.bodyLine); !ok {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	return pullRequestReviewThreadReplyTarget{
+		repository: repository,
+		number:     summary.Number,
+		threadID:   strings.TrimSpace(thread.ID),
+	}, true
+}
+
+func (program *Program) selectedReviewInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
+	if !program.reviewSession.active {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	selectedFile, ok := program.selectedReviewSessionDiffFile()
+	if !ok {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
+	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
+	thread, _, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailViewState)
+	if !ok {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
+	if repository == "" || program.reviewSession.summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	return pullRequestReviewThreadReplyTarget{
+		repository:    repository,
+		number:        program.reviewSession.summary.Number,
+		pendingReview: strings.TrimSpace(program.reviewSession.pendingReviewID),
+		threadID:      strings.TrimSpace(thread.ID),
+	}, true
+}

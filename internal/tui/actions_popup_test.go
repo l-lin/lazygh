@@ -63,7 +63,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
-		" Review PR from URL",
+		actionsPopupLabel(actionsPopupReviewPullRequestURLIcon, reviewPullRequestURLEditorTitle),
 	})
 	if strings.Contains(popupView.Buffer(), "13 of 13 actions") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "13 of 13 actions", popupView.Buffer())

@@ -14,8 +14,8 @@ func TestPullRequestOverviewStatusIcon_GivenSuccessAndFailureStatuses_WhenFormat
 		status   pullRequestOverviewStatus
 		expected string
 	}{
-		{name: "success", status: pullRequestOverviewStatusSuccess, expected: ""},
-		{name: "failure", status: pullRequestOverviewStatusFailure, expected: ""},
+		{name: "success", status: pullRequestOverviewStatusSuccess, expected: iconStatusSuccess},
+		{name: "failure", status: pullRequestOverviewStatusFailure, expected: iconStatusFailure},
 	}
 
 	for _, testCase := range testCases {

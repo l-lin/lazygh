@@ -8,10 +8,10 @@ func TestDetailTabLabel_GivenEachBrowserTab_WhenFormatting_ThenItPrefixesTheLabe
 		tab      DetailTab
 		expected string
 	}{
-		{name: "description", tab: DescriptionDetailTab, expected: " Description"},
-		{name: "comments", tab: CommentsDetailTab, expected: " Comments"},
-		{name: "commits", tab: CommitsDetailTab, expected: " Commits"},
-		{name: "changes", tab: ChangesDetailTab, expected: " Changes"},
+		{name: "description", tab: DescriptionDetailTab, expected: iconDescription + " Description"},
+		{name: "comments", tab: CommentsDetailTab, expected: iconComment + " Comments"},
+		{name: "commits", tab: CommitsDetailTab, expected: iconCommit + " Commits"},
+		{name: "changes", tab: ChangesDetailTab, expected: iconChanges + " Changes"},
 	}
 
 	for _, testCase := range testCases {
@@ -30,19 +30,20 @@ func TestUserViewTitle_GivenBrowserMode_WhenFormatting_ThenItShowsAnIcon(t *test
 
 	actual := subject.userViewTitle()
 
-	if actual != "[1]- Connected user" {
-		t.Fatalf("expected title %q, actual %q", "[1]- Connected user", actual)
+	expected := "[1]-" + iconUser + " Connected user"
+	if actual != expected {
+		t.Fatalf("expected title %q, actual %q", expected, actual)
 	}
 }
 
 func TestReviewModeTitles_GivenTheRepurposedViews_WhenFormatting_ThenEachViewGetsAnIcon(t *testing.T) {
 	expected := map[string]string{
-		"metadata":    "[1]-󰋼 Metadata",
-		"files":       "[2]- Files",
-		"chapters":    "[2]- Chapters",
-		"description": "[0]- Description",
-		"diff":        "[0]- Diff",
-		"chapter":     "[0]- Chapter",
+		"metadata":    "[1]-" + iconMetadata + " Metadata",
+		"files":       "[2]-" + iconDirectory + " Files",
+		"chapters":    "[2]-" + iconChapter + " Chapters",
+		"description": "[0]-" + iconDescription + " Description",
+		"diff":        "[0]-" + iconChanges + " Diff",
+		"chapter":     "[0]-" + iconChapter + " Chapter",
 	}
 
 	actual := map[string]string{

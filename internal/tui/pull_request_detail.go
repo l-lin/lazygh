@@ -14,22 +14,6 @@ const (
 	disabledMarkdownWordWrap    = 0
 	markdownRenderFailurePrefix = "Markdown rendering failed. Showing source."
 	maximumBranchLabelWidth     = 28
-
-	detailDescriptionIcon           = ""
-	detailCommentsIcon              = " "
-	detailCommitsIcon               = ""
-	detailChangesIcon               = ""
-	pullRequestIcon                 = ""
-	draftPullRequestIcon            = ""
-	detailRepositoryIcon            = pullRequestIcon
-	detailAuthorIcon                = ""
-	detailAssigneesIcon             = "󰀄"
-	detailReviewRequestsIcon        = "󰀆"
-	detailLabelIcon                 = "󰓼"
-	detailStatusIcon                = pullRequestIcon
-	detailChecksIcon                = "󰄬"
-	detailApprovalIcon              = ""
-	detailInlineCommentLocationIcon = ""
 )
 
 type DetailTab int

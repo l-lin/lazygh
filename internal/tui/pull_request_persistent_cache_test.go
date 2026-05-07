@@ -42,8 +42,9 @@ func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBa
 	then_noError(t, actualErr)
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if actualLine, ok := pullRequestsView.Line(0); !ok || !strings.Contains(actualLine, " acme/widgets#42 Cached PR") {
-		t.Fatalf("expected pull requests line %q to contain %q", actualLine, " acme/widgets#42 Cached PR")
+	expected := iconPullRequest + " acme/widgets#42 Cached PR"
+	if actualLine, ok := pullRequestsView.Line(0); !ok || !strings.Contains(actualLine, expected) {
+		t.Fatalf("expected pull requests line %q to contain %q", actualLine, expected)
 	}
 	if len(asyncRunner.runs) != 1 {
 		t.Fatalf("expected one queued pull request refresh, actual %d", len(asyncRunner.runs))

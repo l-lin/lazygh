@@ -1,8 +1,8 @@
 package tui
 
 const (
-	detailYankSuccessMessage = "󰆏 Selection copied"
-	detailYankFailureMessage = "󰅚 Copy failed"
+	detailYankSuccessMessage = iconCopy + " Selection copied"
+	detailYankFailureMessage = iconWarning + " Copy failed"
 )
 
 type detailMode int

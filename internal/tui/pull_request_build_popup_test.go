@@ -283,11 +283,11 @@ func TestActionsPopup_GivenDetailCursorOnBuildLink_WhenOpening_ThenItShowsTheBui
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	expectedBuildRunLabel := actionsPopupLabel("", pullRequestBuildRunActionTitle)
+	expectedBuildRunLabel := actionsPopupLabel(actionsPopupBuildRunIcon, pullRequestBuildRunActionTitle)
 	if !strings.Contains(popupView.Buffer(), expectedBuildRunLabel) {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", expectedBuildRunLabel, popupView.Buffer())
 	}
-	expectedBuildLogsLabel := actionsPopupLabel("", pullRequestBuildRunLogsActionTitle)
+	expectedBuildLogsLabel := actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle)
 	if !strings.Contains(popupView.Buffer(), expectedBuildLogsLabel) {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", expectedBuildLogsLabel, popupView.Buffer())
 	}
@@ -398,7 +398,7 @@ func TestActionsPopup_GivenBuildRunActionSelected_WhenExecuting_ThenItClosesTheP
 	}
 }
 
-func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenSanitizing_ThenItKeepsOnlyUnknownStepAndAfter(t *testing.T) {
+func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenSanitizing_ThenItKeepsOnlyTheLogTextAfterUnknownStep(t *testing.T) {
 	actual := sanitizePullRequestBuildRunLog(strings.Join([]string{
 		"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
 		"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0137572Z Secret source: Actions",
@@ -406,8 +406,8 @@ func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenS
 	}, "\n"))
 
 	expected := strings.Join([]string{
-		"UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
-		"UNKNOWN STEP    2026-04-24T17:36:05.0137572Z Secret source: Actions",
+		"2026-04-24T17:36:05.0135694Z ##[endgroup]",
+		"2026-04-24T17:36:05.0137572Z Secret source: Actions",
 		"plain line",
 	}, "\n")
 	if actual != expected {
@@ -415,7 +415,7 @@ func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenS
 	}
 }
 
-func TestSanitizePullRequestBuildRunLog_GivenUnknownStepLinesWithoutTimestamps_WhenSanitizing_ThenItStillDropsTheRepeatedPrefix(t *testing.T) {
+func TestSanitizePullRequestBuildRunLog_GivenUnknownStepLinesWithoutTimestamps_WhenSanitizing_ThenItStillDropsTheRepeatedPrefixAndUnknownStepLabel(t *testing.T) {
 	actual := sanitizePullRequestBuildRunLog(strings.Join([]string{
 		"Consumer contract tests    UNKNOWN STEP    ***",
 		"Consumer contract tests    UNKNOWN STEP    ",
@@ -426,12 +426,12 @@ func TestSanitizePullRequestBuildRunLog_GivenUnknownStepLinesWithoutTimestamps_W
 	}, "\n"))
 
 	expected := strings.Join([]string{
-		"UNKNOWN STEP    ***",
-		"UNKNOWN STEP",
+		"***",
+		"",
 		"2026-05-02T00:40:33.7759098Z   VAULT_SECRET_CI_GITHUB_APP_GENERIC_ID: ***",
 		"2026-05-02T00:40:33.7766286Z   VAULT_SECRET_CI_GITHUB_APP_GENERIC_PEM: ***",
-		"UNKNOWN STEP    ***",
-		"UNKNOWN STEP    ***",
+		"***",
+		"***",
 	}, "\n")
 	if actual != expected {
 		t.Fatalf("expected sanitized logs %q, actual %q", expected, actual)

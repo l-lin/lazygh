@@ -17,6 +17,7 @@
 - Keep GitHub shelling in `internal/githubcli`.
 - Keep rendering logic in `internal/tui`.
 - Keep palette values in `internal/theme`.
+- Keep user-facing icons in `internal/tui/icons.go`.
 - Prefer the standard library and small dependencies.
 - Default TUI choice is `github.com/jesseduffield/gocui` because it stays close to lazygit.
 

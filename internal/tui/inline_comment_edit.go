@@ -10,11 +10,10 @@ import (
 )
 
 const (
-	actionsPopupDeleteInlineCommentIcon = ""
-	inlineCommentUpdateEditorTitle      = "Update inline comment"
-	inlineCommentDeleteActionTitle      = "Delete inline comment"
-	inlineCommentUpdatedSuccessMessage  = "Inline comment updated"
-	inlineCommentDeletedSuccessMessage  = "Inline comment deleted"
+	inlineCommentUpdateEditorTitle     = "Update inline comment"
+	inlineCommentDeleteActionTitle     = "Delete inline comment"
+	inlineCommentUpdatedSuccessMessage = "Inline comment updated"
+	inlineCommentDeletedSuccessMessage = "Inline comment deleted"
 )
 
 type pullRequestReviewCommentActionTarget struct {

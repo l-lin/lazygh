@@ -9,13 +9,10 @@ import (
 )
 
 const (
-	pullRequestBuildRunUnavailableMessage  = "󰅚 Build run unavailable"
-	pullRequestBuildLogsUnavailableMessage = "󰅚 Build logs unavailable"
+	pullRequestBuildRunUnavailableMessage  = iconWarning + " Build run unavailable"
+	pullRequestBuildLogsUnavailableMessage = iconWarning + " Build logs unavailable"
 	pullRequestBuildRunActionTitle         = "View build run"
 	pullRequestBuildRunLogsActionTitle     = "View job logs"
-	actionsPopupBuildActionIcon            = ""
-	actionsPopupBuildRunIcon               = actionsPopupBuildActionIcon
-	actionsPopupBuildRunLogsIcon           = actionsPopupBuildActionIcon
 )
 
 type pullRequestBuildRunTarget struct {

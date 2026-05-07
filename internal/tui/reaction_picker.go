@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	actionsPopupAddReactionIcon            = "󰞅"
 	reactionPickerTitle                    = "Add reaction"
 	pullRequestReactionAddedSuccessMessage = "Reaction added"
 	pullRequestReactionAlreadyAddedMessage = "Reaction already added"
