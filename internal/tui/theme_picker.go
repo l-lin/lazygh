@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	actionsPopupChangeThemeIcon = ""
+	actionsPopupChangeThemeIcon = "󰸌"
 	themePickerActionTitle      = "Change theme"
 	themePickerTitle            = "Select theme"
 )
