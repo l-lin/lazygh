@@ -2,49 +2,15 @@
 
 `lazygh` is a Go CLI that aims to make GitHub pull request work less annoying with a lazygit-like TUI.
 
-## Status
-The repo now boots into a three-view TUI:
-- view `0`: browser mode shows `Description`, `Comments`, `Commits`, and `Changes` tabs; review mode keeps its separate diff workflow
-- view `0` still renders rich PR metadata, UTC created and updated timestamps, reaction groups, colored `+N` and `-N` churn counts, markdown bodies, commit history, and a read-only full PR diff with inline threads
-- view `0` conversations stay compact: resolved threads start folded, status badges sit on the header line, and diff hunk previews stay out of the way
-- view `1`: connected user from `gh api user`
-- view `2`: pull requests from ordered, configurable `gh` searches, rendered as ` owner/repo#123 title` rows with tabs named from the config
-
-### Browser detail tabs
-When view `2` is active, view `0` shows four browser-only tabs.
-
-- `Description` shows the PR header, current reaction groups, folded overview blocks, and the rendered body.
-- `Comments` shows general comments and inline review threads, with reaction groups on the metadata line.
-- `Commits` shows the PR commits with short SHAs, authors, and timestamps.
-- `Changes` shows the read-only full PR diff, grouped by file headers, with inline threads rendered in place.
-
-Example:
-
-```text
-Commits
-╭──────────────────────────────────────────────────────────────────────────────╮
-│ e9a3253 reintroduce interactive gh pr                                       │
-│ Authors: nate smith                                                         │
-│ Authored 2019-10-04 15:23 UTC  Committed 2019-10-04 15:57 UTC               │
-╰──────────────────────────────────────────────────────────────────────────────╯
-
-Changes
- internal/tui/render.go  +1  -1
-
-@@ -42,2 +42,2 @@
-42 : 42 │  context line
-43 :    │ -old line
-   : 43 │ +new line
-```
-
-The next milestones can focus on layout polish and extra PR actions.
-
 ## Prerequisites
+
 - `mise`
 - Go `1.25.9` through `mise`
 - `gh` for the connected user view and the later GitHub-backed milestones
 
-## Install with `mise`
+## Installation
+### with `mise`
+
 Install `lazygh` globally with `mise`'s Go backend:
 
 ```sh
@@ -58,34 +24,21 @@ Run it once without a global install:
 mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
 ```
 
-## Run from this checkout
-```sh
-mise run run
-```
+### Run from source
 
-## Install and use from this checkout
 ```sh
-mise run install
-mise run lazygh
-mise run lazygh review https://github.com/acme/widgets/pull/42
-```
-
-## Tasks
-```sh
+git clone https://codeberg.org/l-lin/lazygh/cmd/lazygh
 mise run run
-mise run install
-mise run lazygh
-mise run test
-mise run fmt
-mise run tidy
 ```
 
 ## Config
+
 `lazygh` looks for `~/.config/lazygh/config.toml`.
 
 If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid story-review settings, invalid cache settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
 
 ### Cache
+
 Use `[cache]` to control the persistent SQLite cache.
 
 - By default, `lazygh` stores the cache at `$XDG_DATA_HOME/lazygh/cache.sqlite3`.
@@ -101,6 +54,7 @@ path = "/tmp/lazygh/cache.sqlite3"
 ```
 
 ### Themes
+
 Configure theme presets and palette overrides under `[theme]`.
 
 - `preset` selects a bundled theme. Available presets include `system`, `light`, and `dark`, plus the bundled example names listed below.
@@ -128,6 +82,7 @@ preset = "system"
 ```
 
 Bundled examples:
+
 - `themes/catppuccin-latte.toml`
 - `themes/catppuccin-frappe.toml`
 - `themes/catppuccin-macchiato.toml`
@@ -171,6 +126,7 @@ diff_deletion_highlight_background = "#5A2E35"
 ```
 
 ### Links
+
 Use the actions popup in pull-request detail when the cursor is on a link, or press `gx` in any detail view, to open the link under the cursor.
 
 The popup entry appears only when `view 0` has a hyperlink target or a visible URL under the cursor.
@@ -188,6 +144,7 @@ open_command = ["open", "-a", "Firefox"]
 ```
 
 ### Story review
+
 Use the actions popup on a pull request and pick `Review PR as story`.
 
 - `lazygh` asks an external AI command to group changed files into review chapters.
@@ -221,12 +178,14 @@ Group the changes into a logical, reviewer-friendly story. Use a professional to
 ```
 
 Prompt examples live in `prompts/story-review/`:
+
 - `prompts/story-review/default.md`
 - `prompts/story-review/sanderson.md`
 - `prompts/story-review/caveman.md`
 - `prompts/story-review/emoji.md`
 
 ### Pull request searches
+
 Configure ordered tabs under `[[pull_requests.searches]]`.
 
 - The configured list fully defines the pull-request tabs.
@@ -258,6 +217,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--sort", 
 ```
 
 ### Keymap overrides
+
 Use scoped tables under `[keymaps]`.
 
 The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It skips `view 1`, and it updates automatically when you remap keys, which is the bare minimum for honesty.
@@ -379,4 +339,3 @@ open_search = "s"
 [keymaps.pull_requests]
 open_actions_popup = "p"
 ```
-
