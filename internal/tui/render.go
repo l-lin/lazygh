@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"fmt"
-
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/theme"
@@ -59,7 +57,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	if err := syncOverlayLayout(gui, program.modalEditorVisible(), program.layoutModalEditorView, viewModalEditorName); err != nil {
 		return err
 	}
-	if err := syncOverlayLayout(gui, program.pullRequestBuildInfoPopupVisible(), program.layoutPullRequestBuildInfoPopupView, viewPullRequestBuildInfoName); err != nil {
+	if err := syncOverlayLayout(gui, program.pullRequestBuildRunPopupVisible(), program.layoutPullRequestBuildRunPopupView, viewPullRequestBuildInfoName); err != nil {
 		return err
 	}
 	if err := syncOverlayLayout(gui, program.model.ActionsPopupVisible(), program.layoutActionsPopupViews, viewActionsPopupSearchName, viewActionsPopupName); err != nil {
@@ -215,23 +213,5 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	detailDocument := program.currentDetailDocument(view)
 	program.syncDetailViewState(detailDocument, view.InnerHeight())
-	view.Clear()
-
-	searchMatchRanges := detailSearchMatchRanges(program.detailViewState.searchMatches)
-	for rowIndex, row := range detailDocument.rows {
-		if rowIndex > 0 {
-			fmt.Fprint(view, "\n")
-		}
-		fmt.Fprint(view, renderDetailRow(detailDocument, row, searchMatchRanges, program.detailViewState))
-	}
-
-	cursorRow, cursorColumn := program.detailViewState.screenPosition(detailDocument)
-	originX := 0
-	innerWidth := view.InnerWidth()
-	if innerWidth > 0 && cursorColumn >= innerWidth {
-		originX = cursorColumn - innerWidth + 1
-		cursorColumn = innerWidth - 1
-	}
-	view.SetOrigin(originX, program.detailViewState.originRow)
-	view.SetCursor(cursorColumn, cursorRow-program.detailViewState.originRow)
+	renderDetailDocumentView(view, detailDocument, program.detailViewState)
 }

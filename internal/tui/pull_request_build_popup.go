@@ -1,33 +1,46 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
-
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 const (
-	pullRequestBuildInfoPopupFallbackWidth = 70
-	pullRequestBuildInfoPopupMinWidth      = 50
-	pullRequestBuildInfoPopupMinHeight     = 8
+	pullRequestBuildRunPopupFallbackWidth = 90
+	pullRequestBuildRunPopupMinWidth      = 60
+	pullRequestBuildRunPopupMinHeight     = 16
 )
 
-type pullRequestBuildInfoPopupState struct {
-	title   string
-	content string
+type pullRequestBuildRunLoadState struct {
+	command string
 }
 
-func (program *Program) pullRequestBuildInfoPopupVisible() bool {
-	return program != nil && program.pullRequestBuildInfoPopup != nil
+type pullRequestBuildRunPopupContent struct {
+	checkTitle string
+	runURL     string
+	body       string
 }
 
-func (program *Program) openPullRequestBuildInfoPopup(gui *gocui.Gui, buildInfo githubcli.PullRequestBuildInfo) error {
-	program.pullRequestBuildInfoPopup = &pullRequestBuildInfoPopupState{
-		title:   pullRequestBuildInfoPopupTitle(buildInfo),
-		content: renderPullRequestBuildInfoPopupContent(buildInfo),
+type pullRequestBuildRunPopupState struct {
+	title     string
+	runURL    string
+	body      string
+	viewState detailViewState
+	documents map[int]detailDocument
+}
+
+func (program *Program) pullRequestBuildRunPopupVisible() bool {
+	return program != nil && program.pullRequestBuildRunPopup != nil
+}
+
+func (program *Program) openPullRequestBuildRunPopup(gui *gocui.Gui, content pullRequestBuildRunPopupContent) error {
+	program.pullRequestBuildRunPopup = &pullRequestBuildRunPopupState{
+		title:     pullRequestBuildRunPopupTitle(content.checkTitle),
+		runURL:    strings.TrimSpace(content.runURL),
+		body:      renderPullRequestBuildRunPopupContent(content),
+		viewState: newDetailViewState(),
+		documents: map[int]detailDocument{},
 	}
 	if gui == nil {
 		return nil
@@ -35,17 +48,22 @@ func (program *Program) openPullRequestBuildInfoPopup(gui *gocui.Gui, buildInfo 
 	return program.layout(gui)
 }
 
-func (program *Program) closePullRequestBuildInfoPopup(gui *gocui.Gui, _ *gocui.View) error {
-	program.pullRequestBuildInfoPopup = nil
+func (program *Program) closePullRequestBuildRunPopup(gui *gocui.Gui, _ *gocui.View) error {
+	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.viewState.mode.isVisual() {
+		popup.viewState.exitVisualMode()
+		return program.refreshViewsIfGUI(gui)
+	}
+
+	program.pullRequestBuildRunPopup = nil
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) layoutPullRequestBuildInfoPopupView(gui *gocui.Gui) error {
+func (program *Program) layoutPullRequestBuildRunPopupView(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
-	totalWidth := boundedHalfWidth(maxX, pullRequestBuildInfoPopupMinWidth, pullRequestBuildInfoPopupFallbackWidth)
-	totalHeight := pullRequestBuildInfoPopupMinHeight
-	if popup := program.pullRequestBuildInfoPopup; popup != nil {
-		totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(popup.content))+2)
+	totalWidth := boundedHalfWidth(maxX, pullRequestBuildRunPopupMinWidth, pullRequestBuildRunPopupFallbackWidth)
+	totalHeight := pullRequestBuildRunPopupMinHeight
+	if popup := program.pullRequestBuildRunPopup; popup != nil {
+		totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(popup.body))+2)
 	}
 	if totalHeight > maxY-2 {
 		totalHeight = maxInt(3, maxY-2)
@@ -57,8 +75,8 @@ func (program *Program) layoutPullRequestBuildInfoPopupView(gui *gocui.Gui) erro
 		return err
 	}
 
-	program.configurePullRequestBuildInfoPopupView(view)
-	program.renderPullRequestBuildInfoPopupView(view)
+	program.configurePullRequestBuildRunPopupView(view)
+	program.renderPullRequestBuildRunPopupView(view)
 	_, err = gui.SetViewOnTop(viewPullRequestBuildInfoName)
 	if isUnknownViewError(err) {
 		return nil
@@ -66,103 +84,90 @@ func (program *Program) layoutPullRequestBuildInfoPopupView(gui *gocui.Gui) erro
 	return err
 }
 
-func (program *Program) configurePullRequestBuildInfoPopupView(view *gocui.View) {
+func (program *Program) configurePullRequestBuildRunPopupView(view *gocui.View) {
 	title := ""
-	if program.pullRequestBuildInfoPopup != nil {
-		title = program.pullRequestBuildInfoPopup.title
+	if program.pullRequestBuildRunPopup != nil {
+		title = program.pullRequestBuildRunPopup.title
 	}
 	configureFramedOverlayView(view, title, "")
-	view.Wrap = true
+	view.Wrap = false
 	view.Editable = false
+	view.Editor = nil
 	view.Highlight = false
 }
 
-func (program *Program) renderPullRequestBuildInfoPopupView(view *gocui.View) {
-	if view == nil || program.pullRequestBuildInfoPopup == nil {
+func (program *Program) renderPullRequestBuildRunPopupView(view *gocui.View) {
+	if view == nil || program.pullRequestBuildRunPopup == nil {
 		return
 	}
-	renderReadOnlyTextView(view, program.pullRequestBuildInfoPopup.content)
+
+	document := program.currentPullRequestBuildRunPopupDocument(view)
+	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
+	renderDetailDocumentView(view, document, program.pullRequestBuildRunPopup.viewState)
 }
 
-func pullRequestBuildInfoPopupTitle(buildInfo githubcli.PullRequestBuildInfo) string {
-	title := pullRequestBuildInfoDisplayName(buildInfo)
-	if title == "" {
-		return "Build info"
+func (program *Program) currentPullRequestBuildRunPopupDocument(view *gocui.View) detailDocument {
+	popup := program.pullRequestBuildRunPopup
+	if popup == nil {
+		return detailDocument{}
 	}
-	return "Build info · " + title
+
+	width := 1
+	if view != nil && view.InnerWidth() > 0 {
+		width = view.InnerWidth()
+	}
+	if width < 1 {
+		width = 1
+	}
+	if popup.documents != nil {
+		if document, ok := popup.documents[width]; ok {
+			return document
+		}
+	} else {
+		popup.documents = map[int]detailDocument{}
+	}
+
+	document := newDetailDocumentWithWrap(popup.body, width, false)
+	popup.documents[width] = document
+	return document
 }
 
-func pullRequestBuildInfoDisplayName(buildInfo githubcli.PullRequestBuildInfo) string {
-	workflow := strings.TrimSpace(buildInfo.Workflow)
-	name := strings.TrimSpace(buildInfo.Name)
-	switch {
-	case workflow != "" && name != "" && !strings.EqualFold(workflow, name):
-		return workflow + " / " + name
-	case workflow != "":
-		return workflow
-	case name != "":
-		return name
-	default:
-		return ""
+func (program *Program) syncPullRequestBuildRunPopupViewState(document detailDocument, viewportHeight int) {
+	if program.pullRequestBuildRunPopup == nil {
+		return
 	}
+	program.pullRequestBuildRunPopup.viewState.sync(document, viewportHeight)
 }
 
-func renderPullRequestBuildInfoPopupContent(buildInfo githubcli.PullRequestBuildInfo) string {
-	lines := []string{fmt.Sprintf("Status: %s", pullRequestBuildInfoStateLabel(buildInfo))}
-	if workflow := strings.TrimSpace(buildInfo.Workflow); workflow != "" {
-		lines = append(lines, "Workflow: "+workflow)
+func (program *Program) currentPullRequestBuildRunPopupLink(view *gocui.View) (string, bool) {
+	popup := program.pullRequestBuildRunPopup
+	if popup == nil {
+		return "", false
 	}
-	if name := strings.TrimSpace(buildInfo.Name); name != "" {
-		lines = append(lines, "Name: "+name)
+
+	document := program.currentPullRequestBuildRunPopupDocument(view)
+	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
+	return document.linkAt(popup.viewState.cursor)
+}
+
+func pullRequestBuildRunPopupTitle(checkTitle string) string {
+	trimmedTitle := strings.TrimSpace(checkTitle)
+	if trimmedTitle == "" {
+		return "Build run"
 	}
-	if event := strings.TrimSpace(buildInfo.Event); event != "" {
-		lines = append(lines, "Event: "+event)
+	return "Build run · " + trimmedTitle
+}
+
+func renderPullRequestBuildRunPopupContent(content pullRequestBuildRunPopupContent) string {
+	lines := make([]string, 0, 3)
+	if runURL := strings.TrimSpace(content.runURL); runURL != "" {
+		lines = append(lines, "Run: "+runURL, "")
 	}
-	if startedAt := strings.TrimSpace(buildInfo.StartedAt); startedAt != "" {
-		lines = append(lines, "Started: "+formatTimestamp(startedAt))
+
+	body := strings.TrimSpace(content.body)
+	if body == "" {
+		body = "No build run details available."
 	}
-	if completedAt := strings.TrimSpace(buildInfo.CompletedAt); completedAt != "" {
-		lines = append(lines, "Completed: "+formatTimestamp(completedAt))
-	}
-	if description := strings.TrimSpace(buildInfo.Description); description != "" {
-		lines = append(lines, "Description: "+description)
-	}
-	if link := strings.TrimSpace(buildInfo.Link); link != "" {
-		lines = append(lines, "Link: "+link)
-	}
+	lines = append(lines, body)
 	return strings.Join(lines, "\n")
-}
-
-func pullRequestBuildInfoStateLabel(buildInfo githubcli.PullRequestBuildInfo) string {
-	switch strings.ToLower(strings.TrimSpace(buildInfo.Bucket)) {
-	case "pass":
-		return "Successful"
-	case "fail":
-		return "Failed"
-	case "pending":
-		return "Pending"
-	case "skipping":
-		return "Skipped"
-	case "cancel":
-		return "Cancelled"
-	}
-
-	switch strings.ToUpper(strings.TrimSpace(buildInfo.State)) {
-	case "SUCCESS":
-		return "Successful"
-	case "FAILURE", "ERROR":
-		return "Failed"
-	case "PENDING", "IN_PROGRESS", "QUEUED", "REQUESTED", "WAITING":
-		return "Pending"
-	case "SKIPPED":
-		return "Skipped"
-	case "CANCELLED":
-		return "Cancelled"
-	}
-
-	trimmedState := strings.TrimSpace(buildInfo.State)
-	if trimmedState == "" {
-		return "-"
-	}
-	return trimmedState
 }

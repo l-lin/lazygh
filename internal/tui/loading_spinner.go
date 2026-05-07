@@ -44,7 +44,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 }
 
 func (program *Program) shouldAnimateLoadingSpinner() bool {
-	return program.storyReviewLoading || program.activePullRequestsLoading() || program.selectedPullRequestDetailLoading()
+	return program.storyReviewLoading || program.activePullRequestsLoading() || program.selectedPullRequestDetailLoading() || program.pullRequestBuildRunLoading()
 }
 
 func (program *Program) activePullRequestsLoading() bool {
@@ -66,6 +66,10 @@ func (program *Program) selectedPullRequestDetailLoading() bool {
 	}
 
 	return program.pullRequestDetailLoadInFlight[pullRequestDetailKey(summary.Repository, summary.Number)]
+}
+
+func (program *Program) pullRequestBuildRunLoading() bool {
+	return program != nil && program.pullRequestBuildRunLoad != nil
 }
 
 func (program *Program) loadingSpinnerFrame() string {

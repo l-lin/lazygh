@@ -1298,10 +1298,10 @@ type fakePullRequestDetailLoader struct {
 	startReviewCalls          []string
 	startReviewID             string
 	startReviewErr            error
-	buildInfos                map[string]githubcli.PullRequestBuildInfo
-	buildInfoCalls            []string
-	buildInfoChecks           []githubcli.PullRequestStatusCheck
-	buildInfoErr              error
+	buildRuns                 map[string]string
+	buildRunCalls             []string
+	buildRunChecks            []githubcli.PullRequestStatusCheck
+	buildRunErr               error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -1515,18 +1515,18 @@ func (loader *fakePullRequestDetailLoader) StartPendingPullRequestReview(reposit
 	return reviewID, nil
 }
 
-func (loader *fakePullRequestDetailLoader) GetPullRequestBuildInfo(repository string, number int, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildInfo, error) {
-	loader.buildInfoCalls = append(loader.buildInfoCalls, repository+"#"+strconv.Itoa(number))
-	loader.buildInfoChecks = append(loader.buildInfoChecks, check)
-	if loader.buildInfoErr != nil {
-		return githubcli.PullRequestBuildInfo{}, loader.buildInfoErr
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error) {
+	loader.buildRunCalls = append(loader.buildRunCalls, strings.TrimSpace(repository))
+	loader.buildRunChecks = append(loader.buildRunChecks, check)
+	if loader.buildRunErr != nil {
+		return "", loader.buildRunErr
 	}
-	if loader.buildInfos != nil {
-		if actual, ok := loader.buildInfos[strings.TrimSpace(check.Link)]; ok {
+	if loader.buildRuns != nil {
+		if actual, ok := loader.buildRuns[strings.TrimSpace(check.Link)]; ok {
 			return actual, nil
 		}
 	}
-	return githubcli.PullRequestBuildInfo{}, githubcli.ErrPullRequestBuildInfoNotFound
+	return "", githubcli.ErrMissingPullRequestBuildLink
 }
 
 func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {

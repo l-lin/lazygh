@@ -42,7 +42,7 @@ type GitHubLoader interface {
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
-	GetPullRequestBuildInfo(repository string, number int, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildInfo, error)
+	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
 }
 
 type Program struct {
@@ -84,7 +84,8 @@ type Program struct {
 	themePicker                       *themePickerState
 	reviewSession                     reviewSessionState
 	browserCollapsedSectionStates     map[string]bool
-	pullRequestBuildInfoPopup         *pullRequestBuildInfoPopupState
+	pullRequestBuildRunLoad           *pullRequestBuildRunLoadState
+	pullRequestBuildRunPopup          *pullRequestBuildRunPopupState
 	modalEditor                       *modalEditorState
 	externalEditor                    externalEditor
 	linkOpener                        linkOpener

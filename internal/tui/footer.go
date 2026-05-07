@@ -84,7 +84,7 @@ func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {
 	if focus == FocusUserView || focus != program.model.Focus() || !program.model.PaneVisible(focus) {
 		return false
 	}
-	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildInfoPopupVisible() {
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
 		return false
 	}
 	return isMainPaneFocus(focus)

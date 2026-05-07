@@ -49,6 +49,9 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.reviewPullRequestURLActionsPopupAction(),
 		)
 	}
+	if program.model.Focus() == FocusDetailView && program.detailCursorHasBuildLink() {
+		actions = append(actions, program.pullRequestBuildRunActionsPopupAction())
+	}
 	if program.model.Focus() == FocusDetailView && program.detailCursorHasLink() {
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction())
 	}

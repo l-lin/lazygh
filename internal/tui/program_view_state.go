@@ -38,7 +38,7 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	if err := program.refreshOverlayView(gui, program.modalEditorVisible(), viewModalEditorName, program.configureModalEditorView, program.renderModalEditorView); err != nil {
 		return err
 	}
-	if err := program.refreshOverlayView(gui, program.pullRequestBuildInfoPopupVisible(), viewPullRequestBuildInfoName, program.configurePullRequestBuildInfoPopupView, program.renderPullRequestBuildInfoPopupView); err != nil {
+	if err := program.refreshOverlayView(gui, program.pullRequestBuildRunPopupVisible(), viewPullRequestBuildInfoName, program.configurePullRequestBuildRunPopupView, program.renderPullRequestBuildRunPopupView); err != nil {
 		return err
 	}
 	if err := program.refreshActionsPopupViews(gui); err != nil {
@@ -111,8 +111,8 @@ func (program *Program) shouldShowCursor() bool {
 		return true
 	case program.model.ActionsPopupVisible():
 		return false
-	case program.pullRequestBuildInfoPopupVisible():
-		return false
+	case program.pullRequestBuildRunPopupVisible():
+		return true
 	default:
 		return program.model.Focus() == FocusDetailView
 	}
@@ -131,7 +131,7 @@ func (program *Program) currentViewName() string {
 	if program.modalEditorVisible() {
 		return viewModalEditorName
 	}
-	if program.pullRequestBuildInfoPopupVisible() {
+	if program.pullRequestBuildRunPopupVisible() {
 		return viewPullRequestBuildInfoName
 	}
 	if program.model.ActionsPopupVisible() {

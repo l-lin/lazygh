@@ -65,7 +65,7 @@ func (program *Program) currentDetailCursorLink(view *gocui.View) (string, bool)
 }
 
 func (program *Program) buildLinkUnderCursor(document detailDocument) (string, bool) {
-	entry, ok := program.browserOverviewBuildEntryAtDetailCursor(document)
+	entry, ok := program.browserOverviewBuildEntryAtDetailCursorDocument(document)
 	if !ok {
 		return "", false
 	}
@@ -75,27 +75,6 @@ func (program *Program) buildLinkUnderCursor(document detailDocument) (string, b
 		return "", false
 	}
 	return actual, true
-}
-
-func (program *Program) browserOverviewBuildEntryAtDetailCursor(document detailDocument) (pullRequestOverviewEntry, bool) {
-	if program.reviewSession.active || !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != DescriptionDetailTab {
-		return pullRequestOverviewEntry{}, false
-	}
-
-	summary, ok := program.model.SelectedPullRequestSummary()
-	if !ok {
-		return pullRequestOverviewEntry{}, false
-	}
-	result, ok := program.pullRequestDetailForSummary(summary)
-	if !ok || result.err != nil {
-		return pullRequestOverviewEntry{}, false
-	}
-
-	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, result.detail, document.width, program.detailViewState.cursor.line)
-	if !ok || !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Builds") {
-		return pullRequestOverviewEntry{}, false
-	}
-	return pullRequestOverviewEntryAtBodyLine(sectionAtCursor.section, sectionAtCursor.bodyLine)
 }
 
 func pullRequestOverviewEntryAtBodyLine(section browserDetailSection, bodyLine int) (pullRequestOverviewEntry, bool) {

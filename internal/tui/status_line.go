@@ -122,6 +122,10 @@ func (program *Program) loadingStatusText() string {
 		return program.loadingSpinnerFrame()
 	}
 
+	if message := strings.TrimSpace(program.pullRequestBuildRunLoadingStatus()); message != "" {
+		return program.loadingSpinnerStatus(message)
+	}
+
 	if message := strings.TrimSpace(program.selectedPullRequestDetailLoadingStatus()); message != "" {
 		return program.loadingSpinnerStatus(message)
 	}
@@ -163,4 +167,15 @@ func (program *Program) selectedPullRequestDetailLoadingStatus() string {
 	}
 
 	return fmt.Sprintf("Running `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository))
+}
+
+func (program *Program) pullRequestBuildRunLoadingStatus() string {
+	if program.pullRequestBuildRunLoad == nil {
+		return ""
+	}
+	trimmedCommand := strings.TrimSpace(program.pullRequestBuildRunLoad.command)
+	if trimmedCommand == "" {
+		return ""
+	}
+	return fmt.Sprintf("Running `%s`.", trimmedCommand)
 }
