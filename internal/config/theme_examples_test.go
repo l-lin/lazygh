@@ -1,74 +1,68 @@
 package config
 
 import (
-	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestLoad_GivenBundledThemeExamples_WhenLoading_ThenEachExampleParsesIntoAResolvedPalette(t *testing.T) {
-	expectedExampleFileNames := []string{
-		"catppuccin-frappe.toml",
-		"catppuccin-latte.toml",
-		"catppuccin-macchiato.toml",
-		"catppuccin-mocha.toml",
-		"gruvbox-dark.toml",
-		"gruvbox-light.toml",
-		"kanagawa-dark.toml",
-		"kanagawa-light.toml",
-		"nord.toml",
-		"tokyonight-dark.toml",
-		"tokyonight-light.toml",
+func TestConfig_ResolvedTheme_GivenBundledPresetNames_WhenResolving_ThenEachPresetProducesItsBundledPalette(t *testing.T) {
+	expectedPresetNames := []string{
+		"catppuccin-frappe",
+		"catppuccin-latte",
+		"catppuccin-macchiato",
+		"catppuccin-mocha",
+		"gruvbox-dark",
+		"gruvbox-light",
+		"kanagawa-dark",
+		"kanagawa-light",
+		"nord",
+		"tokyonight-dark",
+		"tokyonight-light",
 	}
-	exampleDirectory := filepath.Join("..", "..", "themes")
 
-	for _, fileName := range expectedExampleFileNames {
-		configPath := filepath.Join(exampleDirectory, fileName)
-
-		actual, actualErr := Load(configPath)
-
-		then_noError(t, actualErr)
-		if reflect.DeepEqual(actual.Theme, theme.Palette{}) {
-			t.Fatalf("expected %q to define at least one theme override", fileName)
-		}
-		expectedPresetName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-		expectedOverrides, ok := theme.PresetOverrides(expectedPresetName)
+	for _, presetName := range expectedPresetNames {
+		actual, ok := theme.PresetOverrides(presetName)
 		if !ok {
-			t.Fatalf("expected %q to be available as a theme preset", expectedPresetName)
+			t.Fatalf("expected %q to be available as a theme preset", presetName)
 		}
-		if !reflect.DeepEqual(actual.Theme, expectedOverrides) {
-			t.Fatalf("expected %q overrides %+v, actual %+v", fileName, expectedOverrides, actual.Theme)
+		if reflect.DeepEqual(actual, theme.Palette{}) {
+			t.Fatalf("expected %q to define at least one theme override", presetName)
 		}
-		if actual.Theme.BackgroundHex == "" {
-			t.Fatalf("expected %q to define %q", fileName, "background")
+		if actual.BackgroundHex == "" {
+			t.Fatalf("expected %q to define %q", presetName, "background")
 		}
-		if actual.Theme.MarkdownHeadingBackgroundHex == "" {
-			t.Fatalf("expected %q to define %q", fileName, "markdown_heading_background")
+		if actual.MarkdownHeadingBackgroundHex == "" {
+			t.Fatalf("expected %q to define %q", presetName, "markdown_heading_background")
 		}
-		if actual.Theme.PullRequestReferenceHex == "" {
-			t.Fatalf("expected %q to define %q", fileName, "pull_request_reference")
+		if actual.PullRequestReferenceHex == "" {
+			t.Fatalf("expected %q to define %q", presetName, "pull_request_reference")
 		}
-		if actual.Theme.PullRequestTitleHex == "" {
-			t.Fatalf("expected %q to define %q", fileName, "pull_request_title")
+		if actual.PullRequestTitleHex == "" {
+			t.Fatalf("expected %q to define %q", presetName, "pull_request_title")
 		}
 		for key, value := range map[string]string{
-			"success":            actual.Theme.SuccessHex,
-			"success_background": actual.Theme.SuccessBackgroundHex,
-			"failure":            actual.Theme.FailureHex,
-			"failure_background": actual.Theme.FailureBackgroundHex,
-			"pending":            actual.Theme.PendingHex,
-			"pending_background": actual.Theme.PendingBackgroundHex,
-			"muted":              actual.Theme.MutedHex,
+			"success":            actual.SuccessHex,
+			"success_background": actual.SuccessBackgroundHex,
+			"failure":            actual.FailureHex,
+			"failure_background": actual.FailureBackgroundHex,
+			"pending":            actual.PendingHex,
+			"pending_background": actual.PendingBackgroundHex,
+			"muted":              actual.MutedHex,
 		} {
 			if value == "" {
-				t.Fatalf("expected %q to define %q", fileName, key)
+				t.Fatalf("expected %q to define %q", presetName, key)
 			}
 		}
-		if reflect.DeepEqual(actual.ResolvedTheme(), theme.DefaultPalette()) {
-			t.Fatalf("expected %q to change the default palette", fileName)
+
+		subject := Config{ThemePreset: presetName}
+		resolved := subject.ResolvedTheme()
+		if reflect.DeepEqual(resolved, theme.DefaultPalette()) {
+			t.Fatalf("expected %q to change the default palette", presetName)
+		}
+		if !reflect.DeepEqual(resolved, theme.ResolvePaletteWithPreset(presetName, theme.Palette{})) {
+			t.Fatalf("expected resolved preset %q to match the bundled palette", presetName)
 		}
 	}
 }

@@ -185,16 +185,14 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 
 	mergeChecksBackgroundHex := pullRequestMergeChecksBackgroundHex(pullRequest)
 	mergeChecksBackgroundPrefix := backgroundColorEscape(mergeChecksBackgroundHex)
-	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: mergeChecksBackgroundPrefix}
+	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: mergeChecksBackgroundPrefix, BackgroundHex: mergeChecksBackgroundHex, MinimumContrast: 3.0}
 	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
-		statusForegroundHex := pullRequestReadableForegroundHex(statusStyle.foregroundHex, mergeChecksBackgroundHex)
-		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusForegroundHex), mergeChecksBackgroundPrefix)
+		statusIconSegment.ForegroundHex = statusStyle.foregroundHex
+		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex) + mergeChecksBackgroundPrefix
 	}
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
 	titleSuffix := " " + valueOrDash(pullRequest.Title)
-	referenceForegroundHex := pullRequestReadableForegroundHex(theme.PullRequestReferenceHex, mergeChecksBackgroundHex)
-	titleForegroundHex := pullRequestReadableForegroundHex(theme.PullRequestTitleHex, mergeChecksBackgroundHex)
 
 	summaryCopy := pullRequest
 	return PullRequestRow{
@@ -203,8 +201,8 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
 				statusIconSegment,
-				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(referenceForegroundHex), mergeChecksBackgroundPrefix)},
-				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(titleForegroundHex), mergeChecksBackgroundPrefix)},
+				{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex) + mergeChecksBackgroundPrefix, ForegroundHex: theme.PullRequestReferenceHex, BackgroundHex: mergeChecksBackgroundHex},
+				{Text: titleSuffix, Prefix: foregroundColorEscape(theme.PullRequestTitleHex) + mergeChecksBackgroundPrefix, ForegroundHex: theme.PullRequestTitleHex, BackgroundHex: mergeChecksBackgroundHex},
 			},
 		},
 		Summary: &summaryCopy,
@@ -220,34 +218,6 @@ func pullRequestMergeChecksBackgroundHex(pullRequest githubcli.PullRequest) stri
 	default:
 		return ""
 	}
-}
-
-func pullRequestReadableForegroundHex(preferredHex string, backgroundHex string) string {
-	trimmedBackgroundHex := strings.TrimSpace(backgroundHex)
-	if trimmedBackgroundHex == "" {
-		return preferredHex
-	}
-	if pullRequestContrastRatio(preferredHex, trimmedBackgroundHex) >= 4.5 {
-		return preferredHex
-	}
-	for _, candidateHex := range []string{theme.BackgroundHex, theme.ActiveTextHex, theme.InactiveTextHex, readableMarkdownForegroundHex(trimmedBackgroundHex)} {
-		if pullRequestContrastRatio(candidateHex, trimmedBackgroundHex) >= 4.5 {
-			return candidateHex
-		}
-	}
-	return readableMarkdownForegroundHex(trimmedBackgroundHex)
-}
-
-func pullRequestContrastRatio(foregroundHex string, backgroundHex string) float64 {
-	foregroundLuminance, ok := relativeLuminance(strings.TrimSpace(foregroundHex))
-	if !ok {
-		return 0
-	}
-	backgroundLuminance, ok := relativeLuminance(strings.TrimSpace(backgroundHex))
-	if !ok {
-		return 0
-	}
-	return contrastRatio(foregroundLuminance, backgroundLuminance)
 }
 
 func (program *Program) restylePullRequestRows() {
@@ -294,10 +264,6 @@ func pullRequestMergeChecksReviewStatus(pullRequest githubcli.PullRequest) pullR
 		return pullRequestOverviewStatusPending
 	}
 	return reviewDecisionStatus
-}
-
-func pullRequestTitleSegmentPrefix(foregroundPrefix string, backgroundPrefix string) string {
-	return foregroundPrefix + backgroundPrefix
 }
 
 func pullRequestErrorItem(state pullRequestListState, err error) Item {

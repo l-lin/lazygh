@@ -18,8 +18,11 @@ const (
 )
 
 type ItemTitleSegment struct {
-	Text   string
-	Prefix string
+	Text            string
+	Prefix          string
+	ForegroundHex   string
+	BackgroundHex   string
+	MinimumContrast float64
 }
 
 type Item struct {

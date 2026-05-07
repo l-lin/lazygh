@@ -80,6 +80,8 @@ func TestChangeTheme_GivenPresetSelection_WhenSubmitting_ThenItSavesThePresetUpd
 func TestChangeTheme_GivenExistingPullRequestRows_WhenSubmitting_ThenItRestylesThemWithoutWaitingForADataRefresh(t *testing.T) {
 	t.Cleanup(theme.ResetPalette)
 	theme.ApplyPalette(theme.ResolvePaletteWithPreset("catppuccin-latte", theme.Palette{}))
+	oldReferenceHex := theme.PullRequestReferenceHex
+	oldTitleHex := theme.PullRequestTitleHex
 
 	store := &fakeThemePresetStore{}
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
@@ -103,8 +105,10 @@ func TestChangeTheme_GivenExistingPullRequestRows_WhenSubmitting_ThenItRestylesT
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, theme.PullRequestReferenceHex), "pull request reference after theme switch")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, theme.PullRequestTitleHex), "pull request title after theme switch")
+	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, oldReferenceHex), "pull request reference after theme switch")
+	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, oldTitleHex), "pull request title after theme switch")
+	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "pull request reference contrast after theme switch")
+	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "First PR", theme.SelectedLineBackgroundHex, 4.5, "pull request title contrast after theme switch")
 }
 
 func TestChangeTheme_GivenPresetSaveFailure_WhenSubmitting_ThenItKeepsThePickerOpenAndShowsTheError(t *testing.T) {

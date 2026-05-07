@@ -194,6 +194,7 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 			query:               query,
 			items:               program.reviewSessionFiles(),
 			selectedVisibleLine: program.reviewSessionSelectedVisibleLine(),
+			renderSelectedLine:  true,
 		})
 		return
 	}
@@ -203,6 +204,7 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 		query:               program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()),
 		items:               program.model.VisiblePullRequests(),
 		selectedVisibleLine: program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()),
+		renderSelectedLine:  true,
 	})
 }
 

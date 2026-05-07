@@ -16,6 +16,7 @@ type selectableListViewState struct {
 	query               string
 	items               []Item
 	selectedVisibleLine int
+	renderSelectedLine  bool
 }
 
 func (program *Program) configureSelectableListView(view *gocui.View, focus Focus, title string, query string) {
@@ -35,7 +36,7 @@ func (program *Program) renderSelectableListView(view *gocui.View, state selecta
 		return
 	}
 
-	showSelectedLine := program.usesManualSelectedLineRendering(state.query) && program.shouldHighlightSelection(state.focus, true)
+	showSelectedLine := program.shouldHighlightSelection(state.focus, true) && (state.renderSelectedLine || program.usesManualSelectedLineRendering(state.query))
 	for visibleIndex, item := range state.items {
 		program.renderItemLine(view, item, state.query, showSelectedLine && visibleIndex == state.selectedVisibleLine)
 	}
@@ -56,13 +57,16 @@ func (program *Program) renderItemLine(view *gocui.View, item Item, query string
 func (program *Program) renderHighlightedLine(view *gocui.View, text string, query string, selected bool) {
 	var highlightedText string
 	if selected {
-		selectedForegroundPrefix := foregroundColorEscapeForAttribute(view.SelFgColor)
-		selectedLinePrefix := ansiBold + selectedForegroundPrefix + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-		selectedMatchPrefix := ansiBold + selectedForegroundPrefix + backgroundColorEscape(theme.SearchHighlightHex)
+		selectedForegroundHex := readableForegroundHexForBackground(hexColorForAttribute(view.SelFgColor), theme.SelectedLineBackgroundHex, theme.ActiveTextHex, theme.InactiveTextHex, theme.BackgroundHex)
+		selectedLinePrefix := ansiBold + foregroundColorEscape(selectedForegroundHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+		selectedMatchForegroundHex := readableForegroundHexForBackground(hexColorForAttribute(view.SelFgColor), theme.SearchHighlightHex, theme.ActiveTextHex, theme.InactiveTextHex, theme.BackgroundHex)
+		selectedMatchPrefix := ansiBold + foregroundColorEscape(selectedMatchForegroundHex) + backgroundColorEscape(theme.SearchHighlightHex)
 		highlightedText, _ = highlightSearchMatchesWithPrefixes(text, query, selectedLinePrefix, selectedMatchPrefix)
 	} else {
-		foregroundPrefix := foregroundColorEscapeForAttribute(view.FgColor)
-		matchPrefix := foregroundPrefix + backgroundColorEscape(theme.SearchHighlightHex)
+		foregroundHex := readableForegroundHexForBackground(hexColorForAttribute(view.FgColor), "", theme.ActiveTextHex, theme.InactiveTextHex)
+		foregroundPrefix := foregroundColorEscape(foregroundHex)
+		matchForegroundHex := readableForegroundHexForBackground(foregroundHex, theme.SearchHighlightHex, theme.ActiveTextHex, theme.InactiveTextHex, theme.BackgroundHex)
+		matchPrefix := foregroundColorEscape(matchForegroundHex) + backgroundColorEscape(theme.SearchHighlightHex)
 		highlightedText, _ = highlightSearchMatchesWithPrefixes(text, query, foregroundPrefix, matchPrefix)
 	}
 	fmt.Fprintln(view, highlightedText)
@@ -74,12 +78,6 @@ func renderStyledItemTitle(title string, segments []ItemTitleSegment, query stri
 	}
 
 	matchRanges := titleMatchRanges(title, query)
-	selectedPrefix := ""
-	matchPrefix := backgroundColorEscape(theme.SearchHighlightHex)
-	if selected {
-		selectedPrefix = ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-		matchPrefix = ansiBold + backgroundColorEscape(theme.SearchHighlightHex)
-	}
 
 	var builder strings.Builder
 	currentPrefix := ""
@@ -91,10 +89,14 @@ func renderStyledItemTitle(title string, segments []ItemTitleSegment, query stri
 				rangeIndex++
 			}
 
-			prefix := segment.Prefix + selectedPrefix
-			if rangeIndex < len(matchRanges) && globalIndex >= matchRanges[rangeIndex].start && globalIndex < matchRanges[rangeIndex].end {
-				prefix = segment.Prefix + matchPrefix
+			backgroundHex := strings.TrimSpace(segment.BackgroundHex)
+			if selected {
+				backgroundHex = theme.SelectedLineBackgroundHex
 			}
+			if rangeIndex < len(matchRanges) && globalIndex >= matchRanges[rangeIndex].start && globalIndex < matchRanges[rangeIndex].end {
+				backgroundHex = theme.SearchHighlightHex
+			}
+			prefix := styledItemSegmentPrefix(segment, backgroundHex, selected)
 			if prefix != currentPrefix {
 				if currentPrefix != "" {
 					builder.WriteString(ansiReset)
@@ -114,6 +116,35 @@ func renderStyledItemTitle(title string, segments []ItemTitleSegment, query stri
 	}
 
 	return builder.String()
+}
+
+func styledItemSegmentPrefix(segment ItemTitleSegment, backgroundHex string, selected bool) string {
+	trimmedBackgroundHex := strings.TrimSpace(backgroundHex)
+	trimmedForegroundHex := strings.TrimSpace(segment.ForegroundHex)
+	if trimmedForegroundHex == "" && trimmedBackgroundHex == "" {
+		prefix := segment.Prefix
+		if selected {
+			prefix = ansiBold + prefix
+		}
+		return prefix
+	}
+
+	minimumContrast := segment.MinimumContrast
+	if minimumContrast <= 0 {
+		minimumContrast = 4.5
+	}
+	resolvedForegroundHex := readableForegroundHexForBackgroundWithMinimum(trimmedForegroundHex, trimmedBackgroundHex, minimumContrast, theme.ActiveTextHex, theme.InactiveTextHex, theme.BackgroundHex, theme.SelectedLineBackgroundHex)
+	prefix := ""
+	if selected {
+		prefix += ansiBold
+	}
+	if resolvedForegroundHex != "" {
+		prefix += foregroundColorEscape(resolvedForegroundHex)
+	}
+	if trimmedBackgroundHex != "" {
+		prefix += backgroundColorEscape(trimmedBackgroundHex)
+	}
+	return prefix
 }
 
 type titleMatchRange struct {

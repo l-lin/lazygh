@@ -207,9 +207,9 @@ func TestActionsPopup_GivenKeywordSearch_WhenFiltering_ThenItCanFindReviewAndEdi
 	}
 }
 
-func TestActionsPopup_GivenSearchQuery_WhenRendering_ThenTheMatchAndTheSelectedLineKeepTheThemeForeground(t *testing.T) {
+func TestActionsPopup_GivenSearchQuery_WhenRendering_ThenTheMatchUsesAReadableThemeForeground(t *testing.T) {
 	t.Cleanup(theme.ResetPalette)
-	theme.ApplyPalette(theme.ResolvePaletteWithPreset("kanagawa-dark", theme.Palette{}))
+	theme.ApplyPalette(theme.ResolvePaletteWithPreset("catppuccin-frappe", theme.Palette{}))
 
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
@@ -225,15 +225,15 @@ func TestActionsPopup_GivenSearchQuery_WhenRendering_ThenTheMatchAndTheSelectedL
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	for _, ch := range "start" {
+	for _, ch := range "theme" {
 		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
 		if !actualHandled {
 			t.Fatalf("expected typing %q to be handled", string(ch))
 		}
 	}
 
-	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, "Start", given_themeColorHex(t, theme.ActiveTextHex), "search match foreground")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, "review", given_themeColorHex(t, theme.ActiveTextHex), "selected line foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, "theme", given_themeColorHex(t, theme.BackgroundHex), "search match readable foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewActionsPopupName, 0, "theme", given_themeColorHex(t, theme.SearchHighlightHex), "search match background")
 }
 
 func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenThePendingReview_ThenItKeepsThePopupOpenAndShowsTheFailure(t *testing.T) {

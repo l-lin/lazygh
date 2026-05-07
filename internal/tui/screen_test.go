@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -47,6 +48,35 @@ func then_viewLineSegmentHasForegroundColor(t *testing.T, gui *gocui.Gui, viewNa
 		actual := foregroundColor.TrueColor().Hex()
 		if actual != expected {
 			t.Fatalf("expected %s color %#x at %s line %d offset %d, actual %#x", label, expected, viewName, lineIndex, offset, actual)
+		}
+	}
+}
+
+func then_viewLineSegmentDoesNotHaveForegroundColor(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string, unexpected int32, label string) {
+	t.Helper()
+
+	cells, width, x, y := given_screenCellsForViewSegment(t, gui, viewName, lineIndex, segment)
+	for offset := range utf8.RuneCountInString(segment) {
+		actualCell := cells[(y*width)+(x+offset)]
+		foregroundColor, _, _ := actualCell.Style.Decompose()
+		actual := foregroundColor.TrueColor().Hex()
+		if actual == unexpected {
+			t.Fatalf("expected %s color to differ from %#x at %s line %d offset %d", label, unexpected, viewName, lineIndex, offset)
+		}
+	}
+}
+
+func then_viewLineSegmentHasForegroundContrastAtLeast(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string, backgroundHex string, minimum float64, label string) {
+	t.Helper()
+
+	cells, width, x, y := given_screenCellsForViewSegment(t, gui, viewName, lineIndex, segment)
+	for offset := range utf8.RuneCountInString(segment) {
+		actualCell := cells[(y*width)+(x+offset)]
+		foregroundColor, _, _ := actualCell.Style.Decompose()
+		actual := foregroundColor.TrueColor().Hex()
+		actualHex := fmt.Sprintf("#%06X", actual)
+		if actualContrast := foregroundContrastRatio(actualHex, backgroundHex); actualContrast < minimum {
+			t.Fatalf("expected %s contrast at least %.2f at %s line %d offset %d, actual %.2f with foreground %s on %s", label, minimum, viewName, lineIndex, offset, actualContrast, actualHex, backgroundHex)
 		}
 	}
 }

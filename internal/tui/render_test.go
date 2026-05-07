@@ -383,6 +383,38 @@ func TestLayout_GivenCatppuccinFrappeFailureRowBackground_WhenRendering_ThenTheP
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "Blocked PR", given_themeColorHex(t, theme.BackgroundHex), "readable pull request title on bright failure background")
 }
 
+func TestLayout_GivenSelectedFailingRowsOnDarkCatppuccinThemes_WhenRendering_ThenTheStatusIconAndTextStayReadableOnTheSelectedBackground(t *testing.T) {
+	for _, presetName := range []string{"catppuccin-frappe", "catppuccin-macchiato", "catppuccin-mocha"} {
+		t.Run(presetName, func(t *testing.T) {
+			t.Cleanup(theme.ResetPalette)
+			theme.ApplyPalette(theme.ResolvePaletteWithPreset(presetName, theme.Palette{}))
+
+			model := NewModel(DefaultSeedData())
+			model.FocusPullRequestsView()
+			model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+				Title:                  "Blocked PR",
+				Number:                 42,
+				Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+				State:                  "OPEN",
+				ReviewDecision:         "CHANGES_REQUESTED",
+				MergeStateStatus:       "BLOCKED",
+				StatusCheckRollupState: "FAILURE",
+			})})
+			subject := NewProgramWithModel(model)
+			gui := given_headlessGui(t)
+			defer gui.Close()
+			subject.configureGUI(gui)
+
+			actualErr := subject.layout(gui)
+			then_noError(t, actualErr)
+
+			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "", theme.SelectedLineBackgroundHex, 4.5, "readable selected failure status icon")
+			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "readable selected failure reference")
+			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "Blocked PR", theme.SelectedLineBackgroundHex, 4.5, "readable selected failure title")
+		})
+	}
+}
+
 func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowDoesNotShowThem(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{

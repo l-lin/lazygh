@@ -76,7 +76,7 @@ path = "/tmp/lazygh/cache.sqlite3"
 
 Configure theme presets and palette overrides under `[theme]`.
 
-- `preset` selects a bundled theme. Available presets include `system`, `light`, and `dark`, plus the bundled example names listed below.
+- `preset` selects a bundled theme. Available presets include `system`, `light`, and `dark`, plus the bundled preset names defined in [`preset.go`](internal/theme/preset.go).
 - `preset = "system"` keeps the polarity-based built-in default.
 - Use the actions popup and pick `Change theme` to switch presets on the fly. It updates `~/.config/lazygh/config.toml` immediately and reapplies the TUI.
 - Every color key is optional. Override only what you want to change from the selected preset.

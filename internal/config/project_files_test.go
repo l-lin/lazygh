@@ -24,6 +24,13 @@ func TestProjectFiles_GivenMiseToml_WhenReadingTheTasks_ThenItDefinesInstallAndB
 	}
 }
 
+func TestProjectFiles_GivenTheRepo_WhenInspectingThemeSources_ThenItDoesNotShipAThemesDirectory(t *testing.T) {
+	_, actualErr := os.Stat(filepath.Join("..", "..", "themes"))
+	if !os.IsNotExist(actualErr) {
+		t.Fatalf("expected the themes directory to be absent, actual error %v", actualErr)
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheMiseSection_ThenItDocumentsGlobalAndRepoLocalUsage(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)
