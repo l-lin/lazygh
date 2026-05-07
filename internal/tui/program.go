@@ -102,6 +102,8 @@ type Program struct {
 	pullRequestSearches               []appconfig.PullRequestSearch
 	storyReviewConfig                 story.Config
 	themePresetStore                  themePresetStore
+	openedPullRequestSummary          *githubcli.PullRequest
+	openedPullRequestTab              PullRequestTab
 	pendingSelectionKeySequence       keySequenceState
 	pendingListViewportPlacements     map[string]viewportPlacement
 }

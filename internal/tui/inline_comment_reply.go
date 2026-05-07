@@ -86,10 +86,21 @@ func (program *Program) selectedPullRequestReviewThreadReplyTarget() (pullReques
 }
 
 func (program *Program) selectedBrowserInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 
+	switch program.activeDetailTab {
+	case CommentsDetailTab:
+		return program.selectedBrowserConversationsInlineCommentReplyTarget()
+	case ChangesDetailTab:
+		return program.selectedBrowserChangesInlineCommentReplyTarget()
+	default:
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+}
+
+func (program *Program) selectedBrowserConversationsInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
 	summary, ok := program.model.SelectedPullRequestSummary()
 	if !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
@@ -105,6 +116,34 @@ func (program *Program) selectedBrowserInlineCommentReplyTarget() (pullRequestRe
 	}
 	thread := *sectionAtCursor.section.inlineThread
 	if _, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, program.markdownRenderer, program.detailWrapWidth, sectionAtCursor.bodyLine); !ok {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	return pullRequestReviewThreadReplyTarget{
+		repository: repository,
+		number:     summary.Number,
+		threadID:   strings.TrimSpace(thread.ID),
+	}, true
+}
+
+func (program *Program) selectedBrowserChangesInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
+	summary, ok := program.model.SelectedPullRequestSummary()
+	if !ok {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+	result, ok := program.pullRequestDiffForSummary(summary)
+	if !ok || result.err != nil {
+		return pullRequestReviewThreadReplyTarget{}, false
+	}
+
+	detailDocument := program.currentDetailDocument(nil)
+	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
+	thread, _, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailViewState)
+	if !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 

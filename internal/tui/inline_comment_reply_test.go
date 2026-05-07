@@ -72,6 +72,35 @@ func TestActionsPopup_GivenBrowserConversationsCursorOnPullRequestComment_WhenOp
 	}
 }
 
+func TestActionsPopup_GivenBrowserChangesCursorOnInlineComment_WhenOpening_ThenItShowsReplyToInlineComment(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline thread body": "Rendered inline thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	subject.activeDetailTab = ChangesDetailTab
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), pullRequestInlineCommentReplyEditorTitle) {
+		t.Fatalf("expected the popup to contain %q, actual %q", pullRequestInlineCommentReplyEditorTitle, popupView.Buffer())
+	}
+}
+
 func TestActionsPopup_GivenReviewModeCursorOutsideInlineComment_WhenOpening_ThenItHidesReplyToInlineComment(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
@@ -158,6 +187,64 @@ func TestReplyToInlineComment_GivenBrowserConversationsAction_WhenSubmitting_The
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Rendered browser reply body") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered browser reply body", detailView.Buffer())
+	}
+	then_statusLineContains(t, gui, pullRequestInlineCommentReplySuccessMessage)
+}
+
+func TestReplyToInlineComment_GivenBrowserChangesAction_WhenSubmitting_ThenItRefreshesTheThreadAndShowsFeedback(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Inline thread body":    "Rendered inline thread body",
+		"Browser changes reply": "Rendered browser changes reply",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	subject.activeDetailTab = ChangesDetailTab
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("reply to inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "reply to inline comment"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	subject.modalEditor.editor.SetText("Browser changes reply")
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if !reflect.DeepEqual(loader.reviewThreadReplyReviewIDs, []string{""}) {
+		t.Fatalf("expected reply review ids %v, actual %v", []string{""}, loader.reviewThreadReplyReviewIDs)
+	}
+	if !reflect.DeepEqual(loader.reviewThreadReplyThreadIDs, []string{"thread-1"}) {
+		t.Fatalf("expected reply thread ids %v, actual %v", []string{"thread-1"}, loader.reviewThreadReplyThreadIDs)
+	}
+	if !reflect.DeepEqual(loader.reviewThreadReplyBodies, []string{"Browser changes reply"}) {
+		t.Fatalf("expected reply bodies %v, actual %v", []string{"Browser changes reply"}, loader.reviewThreadReplyBodies)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
+		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.diffCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered browser changes reply") {
+		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered browser changes reply", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestInlineCommentReplySuccessMessage)
 }

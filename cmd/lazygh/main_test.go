@@ -212,6 +212,29 @@ func TestRun_GivenReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequeste
 	}
 }
 
+func TestRun_GivenViewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequestedURLBeforeRunning(t *testing.T) {
+	expectedURL := "https://github.com/acme/widgets/pull/99"
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		[]string{"view", expectedURL},
+		func() (appconfig.Config, error) {
+			return appconfig.Config{}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if runner.viewURL != expectedURL {
+		t.Fatalf("expected view url %q, actual %q", expectedURL, runner.viewURL)
+	}
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "view", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "view", "run"}, runner.calls)
+	}
+}
+
 func TestRun_GivenReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturnsAnArgumentError(t *testing.T) {
 	runner := &fakeConfigurableRunner{}
 
@@ -239,6 +262,33 @@ func TestRun_GivenReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturn
 	}
 }
 
+func TestRun_GivenViewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturnsAnArgumentError(t *testing.T) {
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		[]string{"view"},
+		func() (appconfig.Config, error) {
+			return appconfig.Config{}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	if actualErr == nil {
+		t.Fatal("expected an error")
+	}
+	if actualErr.Error() != "view expects exactly one pull request URL" {
+		t.Fatalf("expected argument error %q, actual %q", "view expects exactly one pull request URL", actualErr.Error())
+	}
+	if runner.runCalled {
+		t.Fatal("expected the runner not to be called")
+	}
+	if runner.viewCalled {
+		t.Fatal("expected the view subcommand not to reach the runner")
+	}
+}
+
 type fakeConfigurableRunner struct {
 	appliedOverrides           appconfig.KeymapOverrides
 	appliedPullRequestSearches []appconfig.PullRequestSearch
@@ -246,10 +296,13 @@ type fakeConfigurableRunner struct {
 	appliedStoryReviewConfig   story.Config
 	appliedCacheConfig         appconfig.CacheConfig
 	reviewURL                  string
+	viewURL                    string
 	runCalled                  bool
 	reviewCalled               bool
+	viewCalled                 bool
 	runErr                     error
 	reviewErr                  error
+	viewErr                    error
 	applyCacheErr              error
 	calls                      []string
 }
@@ -285,6 +338,13 @@ func (runner *fakeConfigurableRunner) OpenReviewByURL(url string) error {
 	runner.reviewURL = url
 	runner.calls = append(runner.calls, "review")
 	return runner.reviewErr
+}
+
+func (runner *fakeConfigurableRunner) OpenPullRequestByURL(url string) error {
+	runner.viewCalled = true
+	runner.viewURL = url
+	runner.calls = append(runner.calls, "view")
+	return runner.viewErr
 }
 
 func (runner *fakeConfigurableRunner) Run() error {

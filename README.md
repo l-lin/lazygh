@@ -21,6 +21,7 @@ lazygh
 Run it once without a global install:
 
 ```sh
+mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh view https://github.com/acme/widgets/pull/42
 mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
 ```
 
@@ -36,6 +37,7 @@ mise run run
 ```sh
 mise run install
 mise run lazygh
+mise run lazygh view https://github.com/acme/widgets/pull/42
 mise run lazygh review https://github.com/acme/widgets/pull/42
 ```
 
@@ -49,6 +51,8 @@ mise run test
 mise run fmt
 mise run tidy
 ```
+
+Open a pull request directly in browser mode with `lazygh view <pr-url>`. Start review mode immediately with `lazygh review <pr-url>`.
 
 ## Config
 

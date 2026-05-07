@@ -87,8 +87,10 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.setPullRequestsLoading(tab, false)
 		if err == nil {
-			program.setPullRequestsCount(tab, len(pullRequests), true)
-			program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, pullRequests, nil))
+			rows := program.pullRequestRowsForTab(tab, pullRequests, nil)
+			program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
+			program.model.SetPullRequestRows(tab, rows)
+			program.selectOpenedPullRequestRow(tab)
 			return program.refreshViews(gui)
 		}
 
@@ -105,6 +107,9 @@ func (program *Program) listPullRequests(tab PullRequestTab) ([]githubcli.PullRe
 }
 
 func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+	if err == nil {
+		pullRequests = program.pullRequestsWithOpenedPullRequestSummary(tab, pullRequests)
+	}
 	return pullRequestStateRows(program.pullRequestListState(tab), pullRequests, err)
 }
 
