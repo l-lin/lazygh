@@ -213,7 +213,7 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 	for _, comment := range thread.Comments {
 		commentCopy := comment
 		body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
-		for _, boxLine := range strings.Split(renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, threadWidth, connectedUserLogin), "\n") {
+		for _, boxLine := range strings.Split(renderCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, threadWidth, connectedUserLogin), "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}
@@ -232,7 +232,7 @@ func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) strin
 	return renderInlineThreadHeaderLine(
 		pullRequestInlineCommentLocation(comment),
 		collapsed,
-		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated, thread.Comments),
+		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
 	)
 }
 

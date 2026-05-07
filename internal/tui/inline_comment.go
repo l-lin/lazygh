@@ -44,7 +44,7 @@ func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestRevi
 		renderInlineThreadHeaderLine(
 			pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(thread)),
 			collapsed,
-			inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated, thread.Comments),
+			inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
 		),
 	}
 	if collapsed {
@@ -100,7 +100,7 @@ func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestCom
 	renderedComments := make([]string, 0, len(comments))
 	for _, threadComment := range comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		renderedComments = append(renderedComments, renderCommentBoxWithMetadataForViewer(threadComment.Author, threadComment.CreatedAt, threadComment.ReactionGroups, body, threadWidth, connectedUserLogin))
+		renderedComments = append(renderedComments, renderCommentBoxWithMetadataBadgesForViewer(threadComment.Author, threadComment.CreatedAt, inlineThreadCommentMetadataBadges(threadComment), threadComment.ReactionGroups, body, threadWidth, connectedUserLogin))
 	}
 	return renderedComments
 }
@@ -112,25 +112,19 @@ func normalizedInlineThreadCommentBoxWidth(width int) int {
 	return width
 }
 
-func inlineThreadStatusBadges(resolved bool, outdated bool, comments []githubcli.PullRequestComment) []commentMetadataBadge {
-	badges := make([]commentMetadataBadge, 0, 3)
-	if pullRequestCommentsContainPendingState(comments) {
-		badges = append(badges, pendingInlineThreadStatusBadge())
-	}
-	badges = append(badges, inlineThreadResolutionStatusBadge(resolved))
+func inlineThreadStatusBadges(resolved bool, outdated bool) []commentMetadataBadge {
+	badges := []commentMetadataBadge{inlineThreadResolutionStatusBadge(resolved)}
 	if outdated {
 		badges = append(badges, outdatedInlineThreadStatusBadge())
 	}
 	return badges
 }
 
-func pullRequestCommentsContainPendingState(comments []githubcli.PullRequestComment) bool {
-	for _, comment := range comments {
-		if strings.EqualFold(strings.TrimSpace(comment.State), "PENDING") {
-			return true
-		}
+func inlineThreadCommentMetadataBadges(comment githubcli.PullRequestComment) []commentMetadataBadge {
+	if !strings.EqualFold(strings.TrimSpace(comment.State), "PENDING") {
+		return nil
 	}
-	return false
+	return []commentMetadataBadge{pendingInlineThreadStatusBadge()}
 }
 
 func pendingInlineThreadStatusBadge() commentMetadataBadge {

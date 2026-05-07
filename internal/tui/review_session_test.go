@@ -312,7 +312,7 @@ func TestReviewMode_GivenInlineReviewThreads_WhenRendering_ThenTheAuthorBadgeUse
 	}
 }
 
-func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItShowsStatusPillsOnTheHeaderLine(t *testing.T) {
+func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItShowsThreadStatesOnTheHeaderAndPendingOnTheComment(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -342,16 +342,20 @@ func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItS
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	headerLineIndex := given_viewLineIndexContaining(t, detailView, "internal/tui/render.go:3")
-	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
+	for _, expected := range []string{"Unresolved", "Outdated"} {
 		if !strings.Contains(detailView.BufferLines()[headerLineIndex], expected) {
 			t.Fatalf("expected the review header line to contain %q, actual %q", expected, detailView.BufferLines()[headerLineIndex])
 		}
 	}
+	if strings.Contains(detailView.BufferLines()[headerLineIndex], "Pending") {
+		t.Fatalf("expected the review header line to move the pending state onto the comment, actual %q", detailView.BufferLines()[headerLineIndex])
+	}
 	if strings.Contains(detailView.BufferLines()[headerLineIndex], "R3") || strings.Contains(detailView.BufferLines()[headerLineIndex], "L3") {
 		t.Fatalf("expected the review header line to drop the side anchor, actual %q", detailView.BufferLines()[headerLineIndex])
 	}
-	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, headerLineIndex, "Pending", given_themeColorHex(t, theme.PendingHex), "review thread pending header foreground")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, headerLineIndex, "Pending", given_themeColorHex(t, theme.PendingBackgroundHex), "review thread pending header background")
+	metadataLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, metadataLineIndex, "Pending", given_themeColorHex(t, theme.PendingHex), "review thread pending comment foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, metadataLineIndex, "Pending", given_themeColorHex(t, theme.PendingBackgroundHex), "review thread pending comment background")
 }
 
 func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxColorsAndFillsTheCommentBoxInterior(t *testing.T) {

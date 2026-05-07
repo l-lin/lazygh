@@ -525,7 +525,7 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 	}
 }
 
-func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsPendingUnresolvedAndOutdatedPillsOnTheHeaderLine(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsThreadStatesOnTheHeaderAndPendingOnTheComment(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 	inlineThreads := []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -543,19 +543,23 @@ func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_W
 	}}
 
 	actualDocument := newDetailDocument(renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120), 120)
-	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43")
+	_, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43")
+	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-inline")
 
-	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
+	for _, expected := range []string{"Unresolved", "Outdated"} {
 		if !strings.Contains(headerLine, expected) {
 			t.Fatalf("expected the header line to contain %q, actual %q", expected, headerLine)
 		}
 	}
+	if strings.Contains(headerLine, "Pending") {
+		t.Fatalf("expected the header line to move the pending state onto the comment, actual %q", headerLine)
+	}
 	if strings.Contains(headerLine, "R43") || strings.Contains(headerLine, "L43") {
 		t.Fatalf("expected the header line to drop the side anchor, actual %q", headerLine)
 	}
-	pendingIndex := given_runeIndexInString(t, headerLine, "Pending")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.PendingBackgroundHex)) {
-		t.Fatalf("expected the pending pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.PendingBackgroundHex), actualStylePrefix)
+	pendingIndex := given_runeIndexInString(t, metadataLine, "Pending")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[metadataLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.PendingBackgroundHex)) {
+		t.Fatalf("expected the pending comment pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.PendingBackgroundHex), actualStylePrefix)
 	}
 }
 
