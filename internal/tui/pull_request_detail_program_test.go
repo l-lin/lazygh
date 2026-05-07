@@ -141,7 +141,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected overview tab to hide comments, actual %q", detailView.Buffer())
 	}
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 0)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 0)
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101"}, loader.detailCalls)
 	}
@@ -160,7 +160,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 			t.Fatalf("expected the conversations tab to contain %q, actual %q", expected, detailView.Buffer())
 		}
 	}
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 1)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 1)
 
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
@@ -314,7 +314,7 @@ func TestLayout_GivenPullRequestChanges_WhenRendering_ThenTheBrowserChangesTabLo
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 3)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 3)
 	for _, expected := range []string{"internal/tui/render.go", "@@ -42,2 +42,2 @@", "42 : 42 │  context line", "43 :    │ -old line", "   : 43 │ +new line", "Rendered inline thread body"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the changes tab to contain %q, actual %q", expected, detailView.Buffer())

@@ -124,8 +124,8 @@ func TestLoadPullRequests_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResul
 
 func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSummaryVersion_WhenCheckingTheSelection_ThenItUsesTheCachedDetailWithoutTriggeringAGhRefresh(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
-	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
-	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "Fresh PR", Number: 42, Body: "Fresh body", State: "OPEN"}}}}
+	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "cached123", MessageHeadline: "Cached commit"}}}
+	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "Fresh PR", Number: 42, Body: "Fresh body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "fresh123", MessageHeadline: "Fresh commit"}}}}}}
 	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": {Detail: cachedDetail, SourceUpdatedAt: summary.UpdatedAt}}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())

@@ -889,7 +889,7 @@ func TestBrowserMode_GivenReviewRenderingSupport_WhenRefreshingThePullRequestDet
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 1)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 1)
 	if strings.Contains(detailView.Buffer(), "Conversation · resolved") {
 		t.Fatalf("expected browser mode to keep the existing comments-tab formatter, actual %q", detailView.Buffer())
 	}
