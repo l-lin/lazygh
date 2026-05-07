@@ -135,5 +135,17 @@ func cachedPullRequestNeedsRefresh(summary githubcli.PullRequest, cachedSourceUp
 }
 
 func pullRequestDetailMissingBrowserTabData(detail githubcli.PullRequestDetail) bool {
-	return len(detail.Commits) == 0
+	if len(detail.Commits) == 0 {
+		return true
+	}
+
+	for _, check := range detail.StatusCheckRollup {
+		if pullRequestOverviewStatusForCheck(check) == pullRequestOverviewStatusPending {
+			continue
+		}
+		if strings.TrimSpace(check.Link) == "" {
+			return true
+		}
+	}
+	return false
 }

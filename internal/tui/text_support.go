@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const underlineEscape = "\x1b[4m"
+
 func styleText(text string, prefixes ...string) string {
 	if text == "" {
 		return ""
@@ -15,6 +17,26 @@ func styleText(text string, prefixes ...string) string {
 		return text
 	}
 	return prefix + text + ansiReset
+}
+
+func hyperlinkText(target string, text string, prefixes ...string) string {
+	trimmedTarget := strings.TrimSpace(target)
+	if trimmedTarget == "" {
+		return styleText(text, prefixes...)
+	}
+	return openHyperlinkEscape(trimmedTarget) + styleText(text, prefixes...) + closeHyperlinkEscape()
+}
+
+func openHyperlinkEscape(target string) string {
+	trimmedTarget := strings.TrimSpace(target)
+	if trimmedTarget == "" {
+		return ""
+	}
+	return "\x1b]8;;" + trimmedTarget + "\x1b\\"
+}
+
+func closeHyperlinkEscape() string {
+	return "\x1b]8;;\x1b\\"
 }
 
 func filterEmptyStrings(values []string) []string {

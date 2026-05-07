@@ -148,6 +148,7 @@ type PullRequestStatusCheck struct {
 	Status       string `json:"status"`
 	Conclusion   string `json:"conclusion"`
 	WorkflowName string `json:"workflowName"`
+	Link         string `json:"link,omitempty"`
 }
 
 func (client *Client) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
@@ -160,6 +161,11 @@ func (client *Client) GetPullRequestDetail(repository string, number int) (PullR
 	var detail PullRequestDetail
 	if err := json.Unmarshal(result.Stdout, &detail); err != nil {
 		return PullRequestDetail{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestDetailResponse, err)
+	}
+	if len(detail.StatusCheckRollup) > 0 {
+		if buildInfos, buildErr := client.listPullRequestBuildInfos(trimmedRepository, number); buildErr == nil {
+			detail.StatusCheckRollup = mergePullRequestStatusCheckLinks(detail.StatusCheckRollup, buildInfos)
+		}
 	}
 
 	inlineComments, err := client.listPullRequestInlineComments(trimmedRepository, number)
@@ -441,5 +447,6 @@ func (check PullRequestStatusCheck) normalized() PullRequestStatusCheck {
 	check.Status = strings.TrimSpace(check.Status)
 	check.Conclusion = strings.TrimSpace(check.Conclusion)
 	check.WorkflowName = strings.TrimSpace(check.WorkflowName)
+	check.Link = strings.TrimSpace(check.Link)
 	return check
 }

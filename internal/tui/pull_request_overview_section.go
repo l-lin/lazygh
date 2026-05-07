@@ -43,6 +43,7 @@ type pullRequestOverviewEntry struct {
 	Detail   string
 	Status   pullRequestOverviewStatus
 	ShowIcon bool
+	Link     string
 }
 
 type pullRequestReviewerOverview struct {
@@ -136,7 +137,12 @@ func renderPullRequestOverviewEntryLabel(entry pullRequestOverviewEntry) string 
 	if entry.ShowIcon {
 		text = pullRequestOverviewStatusIcon(entry.Status) + " " + text
 	}
-	return styleText(text, foregroundColorEscape(pullRequestOverviewStatusHex(entry.Status)))
+	prefixes := []string{foregroundColorEscape(pullRequestOverviewStatusHex(entry.Status))}
+	if strings.TrimSpace(entry.Link) != "" {
+		prefixes = append(prefixes, underlineEscape)
+		return hyperlinkText(entry.Link, text, prefixes...)
+	}
+	return styleText(text, prefixes...)
 }
 
 func renderPullRequestOverviewEntryDetail(detail string) string {
@@ -385,10 +391,16 @@ func buildPullRequestBuildsBlock(detail githubcli.PullRequestDetail) pullRequest
 }
 
 func buildPullRequestBuildEntry(check githubcli.PullRequestStatusCheck) pullRequestOverviewEntry {
+	status := pullRequestOverviewStatusForCheck(check)
+	link := ""
+	if status != pullRequestOverviewStatusPending {
+		link = strings.TrimSpace(check.Link)
+	}
 	return pullRequestOverviewEntry{
 		Label:    fmt.Sprintf("%s (%s)", pullRequestOverviewCheckDisplayName(check), pullRequestOverviewCheckStateLabel(check)),
-		Status:   pullRequestOverviewStatusForCheck(check),
+		Status:   status,
 		ShowIcon: true,
+		Link:     link,
 	}
 }
 

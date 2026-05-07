@@ -465,6 +465,41 @@ func TestLayout_GivenFailedOverviewSections_WhenRendering_ThenOnlyFailedBlocksSt
 	}
 }
 
+func TestBrowserMode_GivenLinkedAndPendingBuilds_WhenRendering_ThenOnlyTheLinkedBuildIsUnderlined(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/underline-builds",
+				State:       "OPEN",
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{
+					{Name: "test", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "FAILURE", Link: "https://github.com/acme/widgets/actions/runs/42"},
+					{Name: "deploy", Status: "IN_PROGRESS"},
+				},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	linkedLineIndex := given_viewLineIndexContaining(t, detailView, "CI / test (Failed)")
+	pendingLineIndex := given_viewLineIndexContaining(t, detailView, "deploy (Pending)")
+	then_viewLineSegmentIsUnderlined(t, gui, viewDetailName, linkedLineIndex, "CI / test (Failed)")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewDetailName, pendingLineIndex, "deploy (Pending)")
+}
+
 func TestBrowserMode_GivenTheCursorOnAnOverviewSection_WhenPressingEnter_ThenItTogglesTheSectionVisibility(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

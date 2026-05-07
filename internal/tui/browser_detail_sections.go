@@ -15,14 +15,16 @@ const (
 )
 
 type browserDetailSection struct {
-	id                string
-	header            string
-	headerFocusOffset int
-	body              string
-	collapsed         bool
-	comment           *githubcli.PullRequestComment
-	inlineComment     *githubcli.PullRequestInlineComment
-	inlineThread      *githubcli.PullRequestReviewThread
+	id                 string
+	header             string
+	headerFocusOffset  int
+	body               string
+	collapsed          bool
+	overviewBlockTitle string
+	overviewEntries    []pullRequestOverviewEntry
+	comment            *githubcli.PullRequestComment
+	inlineComment      *githubcli.PullRequestInlineComment
+	inlineThread       *githubcli.PullRequestReviewThread
 }
 
 type browserDetailSectionCursor struct {
@@ -143,10 +145,12 @@ func (program *Program) currentPullRequestOverviewSections(summary githubcli.Pul
 		collapsedByDefault := block.Status != pullRequestOverviewStatusFailure
 		collapsed := program.browserDetailSectionCollapsed(sectionID, collapsedByDefault)
 		sections = append(sections, browserDetailSection{
-			id:        sectionID,
-			header:    renderBrowserDetailSectionHeader(pullRequestOverviewBlockHeadingText(block), collapsed, pullRequestOverviewStatusHex(block.Status)),
-			body:      renderRoundedCommentBox(entries, width),
-			collapsed: collapsed,
+			id:                 sectionID,
+			header:             renderBrowserDetailSectionHeader(pullRequestOverviewBlockHeadingText(block), collapsed, pullRequestOverviewStatusHex(block.Status)),
+			body:               renderRoundedCommentBox(entries, width),
+			collapsed:          collapsed,
+			overviewBlockTitle: block.Title,
+			overviewEntries:    append([]pullRequestOverviewEntry(nil), block.Entries...),
 		})
 	}
 	return sections

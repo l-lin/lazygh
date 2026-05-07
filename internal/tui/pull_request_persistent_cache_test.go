@@ -11,6 +11,17 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
+func TestPullRequestDetailMissingBrowserTabData_GivenCompletedBuildWithoutLink_WhenChecking_ThenItRequiresARefresh(t *testing.T) {
+	actual := pullRequestDetailMissingBrowserTabData(githubcli.PullRequestDetail{
+		Commits:           []githubcli.PullRequestCommit{{OID: "abc123", MessageHeadline: "hydrate cache"}},
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"}},
+	})
+
+	if !actual {
+		t.Fatal("expected completed builds without links to require a refresh")
+	}
+}
+
 func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBackgroundRefreshFinishes(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}}

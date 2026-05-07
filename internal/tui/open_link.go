@@ -58,7 +58,67 @@ func (program *Program) openCurrentLink(view *gocui.View) error {
 func (program *Program) currentDetailCursorLink(view *gocui.View) (string, bool) {
 	document := program.currentDetailDocument(view)
 	program.syncDetailViewState(document, viewPageSize(view))
-	return document.linkAt(program.detailViewState.cursor)
+	if actual, ok := document.linkAt(program.detailViewState.cursor); ok {
+		return actual, true
+	}
+	return program.buildLinkUnderCursor(document)
+}
+
+func (program *Program) buildLinkUnderCursor(document detailDocument) (string, bool) {
+	entry, ok := program.browserOverviewBuildEntryAtDetailCursor(document)
+	if !ok {
+		return "", false
+	}
+
+	actual := strings.TrimSpace(entry.Link)
+	if actual == "" {
+		return "", false
+	}
+	return actual, true
+}
+
+func (program *Program) browserOverviewBuildEntryAtDetailCursor(document detailDocument) (pullRequestOverviewEntry, bool) {
+	if program.reviewSession.active || !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != DescriptionDetailTab {
+		return pullRequestOverviewEntry{}, false
+	}
+
+	summary, ok := program.model.SelectedPullRequestSummary()
+	if !ok {
+		return pullRequestOverviewEntry{}, false
+	}
+	result, ok := program.pullRequestDetailForSummary(summary)
+	if !ok || result.err != nil {
+		return pullRequestOverviewEntry{}, false
+	}
+
+	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, result.detail, document.width, program.detailViewState.cursor.line)
+	if !ok || !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Builds") {
+		return pullRequestOverviewEntry{}, false
+	}
+	return pullRequestOverviewEntryAtBodyLine(sectionAtCursor.section, sectionAtCursor.bodyLine)
+}
+
+func pullRequestOverviewEntryAtBodyLine(section browserDetailSection, bodyLine int) (pullRequestOverviewEntry, bool) {
+	contentLineIndex := bodyLine - 1
+	if contentLineIndex < 0 {
+		return pullRequestOverviewEntry{}, false
+	}
+
+	for _, entry := range section.overviewEntries {
+		if strings.TrimSpace(entry.Label) != "" {
+			if contentLineIndex == 0 {
+				return entry, true
+			}
+			contentLineIndex--
+		}
+		if strings.TrimSpace(entry.Detail) != "" {
+			if contentLineIndex == 0 {
+				return pullRequestOverviewEntry{}, false
+			}
+			contentLineIndex--
+		}
+	}
+	return pullRequestOverviewEntry{}, false
 }
 
 func (program *Program) detailCursorHasLink() bool {

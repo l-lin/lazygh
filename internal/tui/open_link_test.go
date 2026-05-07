@@ -209,6 +209,88 @@ func TestOpenLinkUnderCursor_GivenGXOnADetailLink_WhenOpening_ThenItUsesTheConfi
 	then_statusLineContains(t, gui, openLinkSuccessMessage)
 }
 
+func TestOpenLinkUnderCursor_GivenGXOnABuildLine_WhenOpening_ThenItUsesTheConfiguredLinkOpener(t *testing.T) {
+	model := given_pullRequestCommentModel()
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(model, loader)
+	opener := &fakeLinkOpener{}
+	subject.linkOpener = opener
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+		Title:       "First PR",
+		Number:      42,
+		Body:        "Body 42",
+		BaseRefName: "main",
+		HeadRefName: "feature/build-link",
+		State:       "OPEN",
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+			Name:         "test",
+			WorkflowName: "CI",
+			Status:       "COMPLETED",
+			Conclusion:   "FAILURE",
+			Link:         "https://github.com/acme/widgets/actions/runs/42",
+		}},
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "CI / test (Failed)")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	goHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'g')
+	xHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'x')
+	actualErr = goHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = xHandler(gui, detailView)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(opener.urls, []string{"https://github.com/acme/widgets/actions/runs/42"}) {
+		t.Fatalf("expected opened links %v, actual %v", []string{"https://github.com/acme/widgets/actions/runs/42"}, opener.urls)
+	}
+	then_statusLineContains(t, gui, openLinkSuccessMessage)
+}
+
+func TestActionsPopup_GivenDetailCursorOnAPendingBuild_WhenOpening_ThenItHidesOpenLinkUnderCursorAction(t *testing.T) {
+	model := given_pullRequestCommentModel()
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(model, loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+		Title:       "First PR",
+		Number:      42,
+		Body:        "Body 42",
+		BaseRefName: "main",
+		HeadRefName: "feature/build-link",
+		State:       "OPEN",
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{
+			{Name: "test", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "FAILURE", Link: "https://github.com/acme/widgets/actions/runs/42"},
+			{Name: "deploy", Status: "IN_PROGRESS"},
+		},
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "deploy (Pending)")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Buffer(), "Open link under cursor") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "Open link under cursor", popupView.Buffer())
+	}
+}
+
 func TestActionsPopup_GivenDetailFocusWithALinkUnderCursor_WhenExecutingOpenLinkAction_ThenItUsesTheConfiguredLinkOpenerAndClosesThePopup(t *testing.T) {
 	model := given_pullRequestCommentModel()
 	model.OpenDetail()
