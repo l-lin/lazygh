@@ -1299,9 +1299,16 @@ type fakePullRequestDetailLoader struct {
 	startReviewID             string
 	startReviewErr            error
 	buildRuns                 map[string]string
+	buildRunJobs              map[string][]githubcli.PullRequestBuildRunJob
+	buildLogs                 map[int]string
 	buildRunCalls             []string
 	buildRunChecks            []githubcli.PullRequestStatusCheck
+	buildRunJobCalls          []string
+	buildRunJobChecks         []githubcli.PullRequestStatusCheck
+	buildLogCalls             []int
 	buildRunErr               error
+	buildRunJobsErr           error
+	buildLogErr               error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -1523,6 +1530,33 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRun(repository str
 	}
 	if loader.buildRuns != nil {
 		if actual, ok := loader.buildRuns[strings.TrimSpace(check.Link)]; ok {
+			return actual, nil
+		}
+	}
+	return "", githubcli.ErrMissingPullRequestBuildLink
+}
+
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error) {
+	loader.buildRunJobCalls = append(loader.buildRunJobCalls, strings.TrimSpace(repository))
+	loader.buildRunJobChecks = append(loader.buildRunJobChecks, check)
+	if loader.buildRunJobsErr != nil {
+		return nil, loader.buildRunJobsErr
+	}
+	if loader.buildRunJobs != nil {
+		if actual, ok := loader.buildRunJobs[strings.TrimSpace(check.Link)]; ok {
+			return append([]githubcli.PullRequestBuildRunJob(nil), actual...), nil
+		}
+	}
+	return nil, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLog(_ string, jobDatabaseID int) (string, error) {
+	loader.buildLogCalls = append(loader.buildLogCalls, jobDatabaseID)
+	if loader.buildLogErr != nil {
+		return "", loader.buildLogErr
+	}
+	if loader.buildLogs != nil {
+		if actual, ok := loader.buildLogs[jobDatabaseID]; ok {
 			return actual, nil
 		}
 	}

@@ -14,6 +14,13 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	if program.reactionPickerVisible() {
 		return program.currentReactionPickerActions()
 	}
+	if program.pullRequestBuildRunPopupVisible() {
+		actions := []actionsPopupAction{}
+		if program.pullRequestBuildRunPopupHasJobUnderCursor() {
+			actions = append(actions, program.pullRequestBuildRunLogsActionsPopupAction())
+		}
+		return actions
+	}
 	if !program.isPullRequestContext() {
 		return nil
 	}

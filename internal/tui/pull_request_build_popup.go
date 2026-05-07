@@ -1,33 +1,52 @@
 package tui
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 const (
-	pullRequestBuildRunPopupFallbackWidth = 90
-	pullRequestBuildRunPopupMinWidth      = 60
-	pullRequestBuildRunPopupMinHeight     = 16
+	pullRequestBuildRunPopupFallbackWidth  = 90
+	pullRequestBuildRunPopupMinWidth       = 60
+	pullRequestBuildRunPopupMinHeight      = 16
+	pullRequestBuildLogsPopupWidthPercent  = 90
+	pullRequestBuildLogsPopupHeightPercent = 90
 )
+
+var pullRequestBuildRunLogTimestampPattern = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T[^\s]+Z`)
 
 type pullRequestBuildRunLoadState struct {
 	command string
 }
 
 type pullRequestBuildRunPopupContent struct {
-	checkTitle string
-	runURL     string
-	body       string
+	title         string
+	checkTitle    string
+	runURL        string
+	repository    string
+	body          string
+	jobs          []githubcli.PullRequestBuildRunJob
+	previousPopup *pullRequestBuildRunPopupState
+	widthPercent  int
+	heightPercent int
 }
 
 type pullRequestBuildRunPopupState struct {
-	title     string
-	runURL    string
-	body      string
-	viewState detailViewState
-	documents map[int]detailDocument
+	title         string
+	runURL        string
+	repository    string
+	body          string
+	jobs          []githubcli.PullRequestBuildRunJob
+	previousPopup *pullRequestBuildRunPopupState
+	widthPercent  int
+	heightPercent int
+	viewState     detailViewState
+	documents     map[int]detailDocument
 }
 
 func (program *Program) pullRequestBuildRunPopupVisible() bool {
@@ -35,12 +54,23 @@ func (program *Program) pullRequestBuildRunPopupVisible() bool {
 }
 
 func (program *Program) openPullRequestBuildRunPopup(gui *gocui.Gui, content pullRequestBuildRunPopupContent) error {
+	title := strings.TrimSpace(content.title)
+	if title == "" {
+		title = pullRequestBuildRunPopupTitle(content.checkTitle)
+	}
+
+	copiedJobs := append([]githubcli.PullRequestBuildRunJob(nil), content.jobs...)
 	program.pullRequestBuildRunPopup = &pullRequestBuildRunPopupState{
-		title:     pullRequestBuildRunPopupTitle(content.checkTitle),
-		runURL:    strings.TrimSpace(content.runURL),
-		body:      renderPullRequestBuildRunPopupContent(content),
-		viewState: newDetailViewState(),
-		documents: map[int]detailDocument{},
+		title:         title,
+		runURL:        strings.TrimSpace(content.runURL),
+		repository:    strings.TrimSpace(content.repository),
+		body:          renderPullRequestBuildRunPopupContent(content),
+		jobs:          copiedJobs,
+		previousPopup: content.previousPopup,
+		widthPercent:  content.widthPercent,
+		heightPercent: content.heightPercent,
+		viewState:     newDetailViewState(),
+		documents:     map[int]detailDocument{},
 	}
 	if gui == nil {
 		return nil
@@ -53,6 +83,10 @@ func (program *Program) closePullRequestBuildRunPopup(gui *gocui.Gui, _ *gocui.V
 		popup.viewState.exitVisualMode()
 		return program.refreshViewsIfGUI(gui)
 	}
+	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.previousPopup != nil {
+		program.pullRequestBuildRunPopup = popup.previousPopup
+		return program.refreshViewsIfGUI(gui)
+	}
 
 	program.pullRequestBuildRunPopup = nil
 	return program.refreshViewsIfGUI(gui)
@@ -63,10 +97,17 @@ func (program *Program) layoutPullRequestBuildRunPopupView(gui *gocui.Gui) error
 	totalWidth := boundedHalfWidth(maxX, pullRequestBuildRunPopupMinWidth, pullRequestBuildRunPopupFallbackWidth)
 	totalHeight := pullRequestBuildRunPopupMinHeight
 	if popup := program.pullRequestBuildRunPopup; popup != nil {
-		totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(popup.body))+2)
-	}
-	if totalHeight > maxY-2 {
-		totalHeight = maxInt(3, maxY-2)
+		if popup.widthPercent > 0 {
+			totalWidth = maxInt(10, (maxX*popup.widthPercent)/100)
+		}
+		if popup.heightPercent > 0 {
+			totalHeight = maxInt(3, (maxY*popup.heightPercent)/100)
+		} else {
+			totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(popup.body))+2)
+			if totalHeight > maxY-2 {
+				totalHeight = maxInt(3, maxY-2)
+			}
+		}
 	}
 	frame := centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight)
 
@@ -158,16 +199,68 @@ func pullRequestBuildRunPopupTitle(checkTitle string) string {
 	return "Build run · " + trimmedTitle
 }
 
+func pullRequestBuildRunLogsPopupTitle(jobName string) string {
+	trimmedName := strings.TrimSpace(jobName)
+	if trimmedName == "" {
+		return "Build logs"
+	}
+	return "Build logs · " + trimmedName
+}
+
 func renderPullRequestBuildRunPopupContent(content pullRequestBuildRunPopupContent) string {
-	lines := make([]string, 0, 3)
+	sections := make([]string, 0, 3)
 	if runURL := strings.TrimSpace(content.runURL); runURL != "" {
-		lines = append(lines, "Run: "+runURL, "")
+		sections = append(sections, "Run: "+runURL)
 	}
 
 	body := strings.TrimSpace(content.body)
 	if body == "" {
 		body = "No build run details available."
 	}
-	lines = append(lines, body)
+	sections = append(sections, body)
+
+	if renderedJobs := renderPullRequestBuildRunPopupJobs(content.jobs); renderedJobs != "" {
+		sections = append(sections, renderedJobs)
+	}
+	return strings.Join(sections, "\n\n")
+}
+
+func renderPullRequestBuildRunPopupJobs(jobs []githubcli.PullRequestBuildRunJob) string {
+	if len(jobs) == 0 {
+		return ""
+	}
+
+	lines := []string{"Jobs"}
+	for _, job := range jobs {
+		lines = append(lines, renderPullRequestBuildRunPopupJobLine(job))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderPullRequestBuildRunPopupJobLine(job githubcli.PullRequestBuildRunJob) string {
+	jobName := strings.TrimSpace(job.Name)
+	if jobName == "" {
+		jobName = "Job"
+	}
+	if job.DatabaseID > 0 {
+		return fmt.Sprintf("Job: %s (#%d)", jobName, job.DatabaseID)
+	}
+	return "Job: " + jobName
+}
+
+func sanitizePullRequestBuildRunLog(raw string) string {
+	trimmedRaw := strings.TrimSpace(strings.ReplaceAll(raw, "\r", ""))
+	if trimmedRaw == "" {
+		return "No build logs available."
+	}
+
+	lines := strings.Split(trimmedRaw, "\n")
+	for index, line := range lines {
+		if match := pullRequestBuildRunLogTimestampPattern.FindStringIndex(line); match != nil && match[0] > 0 {
+			lines[index] = strings.TrimSpace(line[match[0]:])
+			continue
+		}
+		lines[index] = strings.TrimRight(line, " ")
+	}
 	return strings.Join(lines, "\n")
 }

@@ -43,6 +43,8 @@ type GitHubLoader interface {
 	EditPullRequestDescription(repository string, number int, body string) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
 	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
+	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)
+	GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error)
 }
 
 type Program struct {
