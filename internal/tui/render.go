@@ -155,6 +155,7 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 	view.HighlightInactive = showsSelection && !isUnderlyingFocus
 	view.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
 	view.TitleColor = gocui.GetColor(theme.InactiveTitleHex)
+	view.BgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	view.SelBgColor = gocui.GetColor(theme.SelectedLineBackgroundHex)
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	view.InactiveViewSelBgColor = gocui.GetColor(theme.SelectedLineBackgroundHex)

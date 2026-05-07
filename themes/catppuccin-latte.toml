@@ -1,5 +1,6 @@
 # Catppuccin Latte-inspired palette for lazygh.
 [theme]
+background = "#EFF1F5"
 active_border = "#1E66F5"
 inactive_border = "#8C8FA1"
 active_text = "#4C4F69"

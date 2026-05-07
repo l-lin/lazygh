@@ -165,6 +165,31 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 	}
 }
 
+func TestLayout_GivenThemeBackgroundOverride_WhenRendering_ThenItAppliesItToTheGUIAndVisibleViews(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{BackgroundHex: "#1F1F28"})
+
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	expectedBackground := gocui.GetColor(theme.BackgroundHex)
+	if gui.BgColor != expectedBackground {
+		t.Fatalf("expected gui background color %v, actual %v", expectedBackground, gui.BgColor)
+	}
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName, viewStatusLineName} {
+		view, viewErr := gui.View(viewName)
+		then_noError(t, viewErr)
+		if view.BgColor != expectedBackground {
+			t.Fatalf("expected view %q background color %v, actual %v", viewName, expectedBackground, view.BgColor)
+		}
+	}
+}
+
 func TestLayout_GivenDetailFocus_WhenRendering_ThenTheSourceViewKeepsTheSelectedLineBackground(t *testing.T) {
 	model := given_model()
 	model.NextSideView()

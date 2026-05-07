@@ -1,5 +1,6 @@
 # Kanagawa Lotus-inspired light palette for lazygh.
 [theme]
+background = "#F2ECBC"
 active_border = "#4D699B"
 inactive_border = "#8A8980"
 active_text = "#545464"

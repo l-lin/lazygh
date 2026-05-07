@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	darkDefaultBackgroundHex                = ""
 	darkDefaultActiveTextHex                = "#F0F6FC"
 	darkDefaultSelectedLineBackgroundHex    = "#21262D"
 	darkDefaultMarkdownHeadingHex           = "#F0F6FC"
@@ -20,6 +21,7 @@ const (
 	darkDefaultPendingBackgroundHex         = "#30363D"
 	darkDefaultMutedHex                     = "#8B949E"
 	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
+	lightDefaultBackgroundHex               = ""
 	lightDefaultActiveTextHex               = "#000000"
 	lightDefaultSelectedLineBackgroundHex   = "#E6E6E6"
 	lightDefaultPullRequestReferenceHex     = "#656D76"
@@ -95,6 +97,23 @@ func TestResolvePalette_GivenDarkSystemPolarityAndPartialOverrides_WhenResolving
 		t.Fatalf("expected addition foreground %q, actual %q", "#98BB6C", actual.DiffAdditionHex)
 	}
 	then_paletteUsesDarkDefaults(t, actual)
+}
+
+func TestResolvePaletteWithPreset_GivenDarkPreset_WhenResolving_ThenItUsesTheDarkPaletteWithoutForcingABackground(t *testing.T) {
+	actual := ResolvePaletteWithPreset(DarkPresetName, Palette{})
+
+	then_paletteUsesDarkDefaults(t, actual)
+}
+
+func TestResolvePaletteWithPreset_GivenBundledThemePreset_WhenResolving_ThenItUsesThePresetBackgroundColor(t *testing.T) {
+	actual := ResolvePaletteWithPreset("kanagawa-dark", Palette{})
+
+	if actual.BackgroundHex != "#1F1F28" {
+		t.Fatalf("expected background color %q, actual %q", "#1F1F28", actual.BackgroundHex)
+	}
+	if actual.ActiveTextHex != "#DCD7BA" {
+		t.Fatalf("expected active text color %q, actual %q", "#DCD7BA", actual.ActiveTextHex)
+	}
 }
 
 func TestResolvePalette_GivenGenericStatusColors_WhenResolving_ThenItCascadesToOpenDraftClosedAndDiffColors(t *testing.T) {
@@ -305,6 +324,9 @@ func given_systemPolarityDetector(t *testing.T, detector func() systemPolarity) 
 func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	t.Helper()
 
+	if actual.BackgroundHex != darkDefaultBackgroundHex {
+		t.Fatalf("expected background color %q, actual %q", darkDefaultBackgroundHex, actual.BackgroundHex)
+	}
 	if actual.ActiveTextHex != darkDefaultActiveTextHex {
 		t.Fatalf("expected active text color %q, actual %q", darkDefaultActiveTextHex, actual.ActiveTextHex)
 	}
@@ -337,6 +359,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	t.Helper()
 
+	if actual.BackgroundHex != lightDefaultBackgroundHex {
+		t.Fatalf("expected background color %q, actual %q", lightDefaultBackgroundHex, actual.BackgroundHex)
+	}
 	if actual.ActiveTextHex != lightDefaultActiveTextHex {
 		t.Fatalf("expected active text color %q, actual %q", lightDefaultActiveTextHex, actual.ActiveTextHex)
 	}

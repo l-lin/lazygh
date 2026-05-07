@@ -73,7 +73,7 @@ func (program *Program) configureBottomPromptView(view *gocui.View, editor gocui
 	view.FrameColor = gocui.GetColor(theme.ActiveBorderHex)
 	view.TitleColor = gocui.GetColor(theme.ActiveTextHex)
 	view.FgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.BgColor = gocui.ColorDefault
+	view.BgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	view.Wrap = false
 	view.Highlight = false
 	view.Editable = editable

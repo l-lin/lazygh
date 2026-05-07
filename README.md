@@ -101,10 +101,14 @@ path = "/tmp/lazygh/cache.sqlite3"
 ```
 
 ### Themes
-Configure palette overrides under `[theme]`.
+Configure theme presets and palette overrides under `[theme]`.
 
-- Every color key is optional.
+- `preset` selects a bundled theme. Available presets include `system`, `light`, and `dark`, plus the bundled example names listed below.
+- `preset = "system"` keeps the polarity-based built-in default.
+- Every color key is optional. Override only what you want to change from the selected preset.
 - Values must use the `#RRGGBB` format.
+- `background` fills the full TUI background.
+- The built-in `light` and `dark` presets keep the terminal's default background. The bundled example presets set their own `background`.
 - Unsuffixed keys such as `diff_addition`, `diff_deletion`, `pull_request_status_open`, and `comment_author_badge` set foreground colors. Only background colors keep the `_background` suffix.
 - `success`, `success_background`, `failure`, `failure_background`, `pending`, and `pending_background` are shared status colors. If you do not override the matching specific keys, `lazygh` reuses them for open, closed, and draft pills, and for diff addition and deletion colors.
 - `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
@@ -113,8 +117,15 @@ Configure palette overrides under `[theme]`.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
 - The PR description header reuses the diff addition and deletion colors for `+N` and `-N` counts.
-- Missing or invalid colors fall back to the built-in palette.
-- Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml` and tweak it if your eyes demand it.
+- Missing or invalid presets and colors fall back to the built-in palette.
+- Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml`, or set `preset` to the matching file name without `.toml`.
+
+Use the automatic preset.
+
+```toml
+[theme]
+preset = "system"
+```
 
 Bundled examples:
 - `themes/catppuccin-latte.toml`
@@ -129,10 +140,12 @@ Bundled examples:
 - `themes/gruvbox-light.toml`
 - `themes/nord.toml`
 
-This example overrides only a few colors.
+This example starts from `kanagawa-dark` and overrides a few colors.
 
 ```toml
 [theme]
+preset = "kanagawa-dark"
+background = "#1F1F28"
 active_border = "#7E9CD8"
 inactive_border = "#54546D"
 selected_line_background = "#363646"

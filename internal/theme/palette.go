@@ -3,6 +3,7 @@ package theme
 import "strings"
 
 type Palette struct {
+	BackgroundHex                        string `toml:"background"`
 	ActiveBorderHex                      string `toml:"active_border"`
 	InactiveBorderHex                    string `toml:"inactive_border"`
 	ActiveTextHex                        string `toml:"active_text"`
@@ -67,6 +68,7 @@ func newDefaultLightPalette() Palette {
 	mergedHex := "#8250DF"
 	mergedBackgroundHex := "#F5EDFF"
 	return Palette{
+		BackgroundHex:                        "",
 		ActiveBorderHex:                      "#000000",
 		InactiveBorderHex:                    "#CCCCCC",
 		ActiveTextHex:                        activeTextHex,
@@ -131,6 +133,7 @@ func newDefaultDarkPalette() Palette {
 	mergedHex := "#A371F7"
 	mergedBackgroundHex := "#3D2A5C"
 	return Palette{
+		BackgroundHex:                        "",
 		ActiveBorderHex:                      activeTextHex,
 		InactiveBorderHex:                    "#30363D",
 		ActiveTextHex:                        activeTextHex,
@@ -184,6 +187,7 @@ var systemPolarityDetector = detectSystemPolarity
 var initialDefaultPalette = defaultPaletteForPolarity(systemPolarityDetector())
 
 var (
+	BackgroundHex                        = initialDefaultPalette.BackgroundHex
 	ActiveBorderHex                      = initialDefaultPalette.ActiveBorderHex
 	InactiveBorderHex                    = initialDefaultPalette.InactiveBorderHex
 	ActiveTextHex                        = initialDefaultPalette.ActiveTextHex
@@ -248,10 +252,7 @@ func NormalizePalette(overrides Palette) Palette {
 }
 
 func ResolvePalette(overrides Palette) Palette {
-	normalized := NormalizePalette(overrides)
-	resolved := mergePalette(DefaultPalette(), normalized)
-	cascadePaletteColors(&resolved, normalized)
-	return resolved
+	return ResolvePaletteWithPreset(SystemPresetName, overrides)
 }
 
 func cascadePaletteColors(resolved *Palette, overrides Palette) {
@@ -291,6 +292,7 @@ func ResetPalette() {
 }
 
 func applyResolvedPalette(palette Palette) {
+	BackgroundHex = palette.BackgroundHex
 	ActiveBorderHex = palette.ActiveBorderHex
 	InactiveBorderHex = palette.InactiveBorderHex
 	ActiveTextHex = palette.ActiveTextHex
@@ -362,6 +364,7 @@ func visitPaletteColorPairs(left *Palette, right *Palette, visit func(leftColor 
 
 func paletteColorPointers(palette *Palette) []*string {
 	return []*string{
+		&palette.BackgroundHex,
 		&palette.ActiveBorderHex,
 		&palette.InactiveBorderHex,
 		&palette.ActiveTextHex,

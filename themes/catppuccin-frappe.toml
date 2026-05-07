@@ -1,5 +1,6 @@
 # Catppuccin Frappé-inspired palette for lazygh.
 [theme]
+background = "#303446"
 active_border = "#8CAAEE"
 inactive_border = "#737994"
 active_text = "#C6D0F5"

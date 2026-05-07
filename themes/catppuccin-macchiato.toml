@@ -1,5 +1,6 @@
 # Catppuccin Macchiato-inspired palette for lazygh.
 [theme]
+background = "#24273A"
 active_border = "#8AADF4"
 inactive_border = "#6E738D"
 active_text = "#CAD3F5"

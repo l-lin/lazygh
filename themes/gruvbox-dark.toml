@@ -1,5 +1,6 @@
 # Gruvbox dark palette for lazygh.
 [theme]
+background = "#282828"
 active_border = "#83A598"
 inactive_border = "#665C54"
 active_text = "#EBDBB2"

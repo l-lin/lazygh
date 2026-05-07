@@ -177,7 +177,7 @@ func (program *Program) configureGUI(gui *gocui.Gui) {
 	gui.InputEsc = true
 	gui.Cursor = false
 	gui.ShowListFooter = true
-	gui.BgColor = gocui.ColorDefault
+	gui.BgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	gui.FgColor = gocui.GetColor(theme.InactiveTextHex)
 	gui.FrameColor = gocui.GetColor(theme.InactiveBorderHex)
 	gui.SelBgColor = gocui.ColorDefault

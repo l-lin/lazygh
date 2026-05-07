@@ -21,6 +21,7 @@ const (
 type Config struct {
 	Keymaps      KeymapOverrides
 	PullRequests []PullRequestSearch
+	ThemePreset  string
 	Theme        theme.Palette
 	Links        LinksConfig
 	StoryReview  story.Config
@@ -45,10 +46,15 @@ type PullRequestSearch struct {
 type rawConfig struct {
 	Keymaps      map[string]map[string]any `toml:"keymaps"`
 	PullRequests rawPullRequestConfig      `toml:"pull_requests"`
-	Theme        theme.Palette             `toml:"theme"`
+	Theme        rawThemeConfig            `toml:"theme"`
 	Links        rawLinksConfig            `toml:"links"`
 	StoryReview  rawStoryReviewConfig      `toml:"story_review"`
 	Cache        rawCacheConfig            `toml:"cache"`
+}
+
+type rawThemeConfig struct {
+	Preset string `toml:"preset"`
+	theme.Palette
 }
 
 type rawPullRequestConfig struct {
@@ -103,7 +109,8 @@ func Load(configPath string) (Config, error) {
 	return Config{
 		Keymaps:      normalizeKeymapOverrides(raw.Keymaps),
 		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
-		Theme:        theme.NormalizePalette(raw.Theme),
+		ThemePreset:  theme.NormalizePresetName(raw.Theme.Preset),
+		Theme:        theme.NormalizePalette(raw.Theme.Palette),
 		Links:        normalizeLinksConfig(raw.Links),
 		StoryReview:  normalizeStoryReviewConfig(raw.StoryReview),
 		Cache:        normalizeCacheConfig(raw.Cache),
@@ -132,7 +139,7 @@ func (config Config) ResolvedPullRequestSearches() []PullRequestSearch {
 }
 
 func (config Config) ResolvedTheme() theme.Palette {
-	return theme.ResolvePalette(config.Theme)
+	return theme.ResolvePaletteWithPreset(config.ThemePreset, config.Theme)
 }
 
 func (config Config) ResolvedLinks() LinksConfig {

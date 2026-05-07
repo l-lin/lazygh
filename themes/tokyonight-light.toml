@@ -1,5 +1,6 @@
 # Tokyo Night Day-inspired light palette for lazygh.
 [theme]
+background = "#E1E2E7"
 active_border = "#2959AA"
 inactive_border = "#9699A3"
 active_text = "#343B58"

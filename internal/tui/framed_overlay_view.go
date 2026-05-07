@@ -20,5 +20,5 @@ func configureFramedOverlayView(view *gocui.View, title string, footer string) {
 	view.FrameColor = gocui.GetColor(theme.ActiveBorderHex)
 	view.TitleColor = gocui.GetColor(theme.ActiveTextHex)
 	view.FgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.BgColor = gocui.ColorDefault
+	view.BgColor = gocuiColorOrDefault(theme.BackgroundHex)
 }

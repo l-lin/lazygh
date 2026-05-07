@@ -1,5 +1,6 @@
 # Catppuccin Mocha-inspired palette for lazygh.
 [theme]
+background = "#1E1E2E"
 active_border = "#89B4FA"
 inactive_border = "#6C7086"
 active_text = "#CDD6F4"

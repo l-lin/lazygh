@@ -1,5 +1,6 @@
 # Kanagawa Wave-inspired dark palette for lazygh.
 [theme]
+background = "#1F1F28"
 active_border = "#7E9CD8"
 inactive_border = "#54546D"
 active_text = "#DCD7BA"

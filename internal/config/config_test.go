@@ -157,6 +157,39 @@ pending_background = "broken"
 	}
 }
 
+func TestLoad_GivenThemePresetAndOverrides_WhenLoading_ThenItPreservesThePresetAndValidConfiguredColors(t *testing.T) {
+	configPath := given_configFile(t, `
+[theme]
+preset = " Kanagawa-Dark "
+active_border = " #7E9CD8 "
+background = "broken"
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{ThemePreset: "kanagawa-dark", Theme: theme.Palette{ActiveBorderHex: "#7E9CD8"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoad_GivenAnInvalidThemePreset_WhenLoading_ThenItIgnoresIt(t *testing.T) {
+	configPath := given_configFile(t, `
+[theme]
+preset = "solarized"
+active_border = "#7E9CD8"
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{Theme: theme.Palette{ActiveBorderHex: "#7E9CD8"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenStoryReviewSettings_WhenLoading_ThenItPreservesTheConfiguredAgentCommandAndPrompt(t *testing.T) {
 	configPath := given_configFile(t, `
 [story_review]
@@ -279,6 +312,19 @@ func TestConfig_ResolvedTheme_GivenNoConfiguredTheme_WhenResolving_ThenItFallsBa
 	expected := theme.DefaultPalette()
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected palette %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedTheme_GivenThemePreset_WhenResolving_ThenItUsesThatPresetBase(t *testing.T) {
+	subject := Config{ThemePreset: "kanagawa-dark"}
+
+	actual := subject.ResolvedTheme()
+
+	if actual.BackgroundHex != "#1F1F28" {
+		t.Fatalf("expected background color %q, actual %q", "#1F1F28", actual.BackgroundHex)
+	}
+	if actual.ActiveTextHex != "#DCD7BA" {
+		t.Fatalf("expected active text color %q, actual %q", "#DCD7BA", actual.ActiveTextHex)
 	}
 }
 
