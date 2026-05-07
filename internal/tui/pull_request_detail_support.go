@@ -30,13 +30,20 @@ func effectivePullRequestStatus(state string, isDraft bool) string {
 }
 
 func renderPullRequestStatusBadge(status string) string {
-	label := strings.TrimSpace(detailStatusIcon + " " + status)
+	label := strings.TrimSpace(pullRequestStatusIcon(status) + " " + status)
 	statusStyle, ok := pullRequestStatusStyleFor(status)
 	if !ok {
 		return label
 	}
 
 	return renderRoundedPill(label, statusStyle.foregroundHex, statusStyle.backgroundHex)
+}
+
+func pullRequestStatusIcon(status string) string {
+	if strings.EqualFold(strings.TrimSpace(status), "DRAFT") {
+		return draftPullRequestIcon
+	}
+	return pullRequestIcon
 }
 
 type pullRequestStatusStyle struct {

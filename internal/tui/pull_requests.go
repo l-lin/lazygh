@@ -185,8 +185,9 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 
 	mergeChecksBackgroundHex := pullRequestMergeChecksBackgroundHex(pullRequest)
 	mergeChecksBackgroundPrefix := backgroundColorEscape(mergeChecksBackgroundHex)
-	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: mergeChecksBackgroundPrefix, BackgroundHex: mergeChecksBackgroundHex, MinimumContrast: 3.0}
-	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
+	status := effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)
+	statusIconSegment := ItemTitleSegment{Text: pullRequestStatusIcon(status) + " ", Prefix: mergeChecksBackgroundPrefix, BackgroundHex: mergeChecksBackgroundHex, MinimumContrast: 3.0}
+	if statusStyle, ok := pullRequestStatusStyleFor(status); ok {
 		statusIconSegment.ForegroundHex = statusStyle.foregroundHex
 		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex) + mergeChecksBackgroundPrefix
 	}

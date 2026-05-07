@@ -89,6 +89,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 	testCases := []struct {
 		name                    string
 		pullRequest             githubcli.PullRequest
+		expectedIconText        string
 		expectedIconPrefix      string
 		expectedVisibleTitle    string
 		expectedReferencePrefix string
@@ -102,6 +103,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
 				State:      "OPEN",
 			},
+			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusOpenHex),
 			expectedVisibleTitle:    " acme/widgets#42 Open PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
@@ -116,8 +118,9 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 				State:      "OPEN",
 				IsDraft:    true,
 			},
+			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusDraftHex),
-			expectedVisibleTitle:    " acme/widgets#43 Draft PR",
+			expectedVisibleTitle:    " acme/widgets#43 Draft PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
@@ -129,6 +132,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
 				State:      "CLOSED",
 			},
+			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusClosedHex),
 			expectedVisibleTitle:    " acme/widgets#44 Closed PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
@@ -142,6 +146,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
 				State:      "MERGED",
 			},
+			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusMergedHex),
 			expectedVisibleTitle:    " acme/widgets#45 Merged PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
@@ -159,8 +164,8 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			if len(actual.TitleSegments) != 3 {
 				t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
 			}
-			if actual.TitleSegments[0].Text != " " {
-				t.Fatalf("expected icon segment text %q, actual %q", " ", actual.TitleSegments[0].Text)
+			if actual.TitleSegments[0].Text != testCase.expectedIconText {
+				t.Fatalf("expected icon segment text %q, actual %q", testCase.expectedIconText, actual.TitleSegments[0].Text)
 			}
 			if actual.TitleSegments[0].Prefix != testCase.expectedIconPrefix {
 				t.Fatalf("expected icon segment prefix %q, actual %q", testCase.expectedIconPrefix, actual.TitleSegments[0].Prefix)

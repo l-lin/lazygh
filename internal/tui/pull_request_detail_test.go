@@ -741,6 +741,14 @@ func TestDetailStatus_GivenDraftMetadata_WhenFormatting_ThenItPrefersDRAFT(t *te
 	}
 }
 
+func TestRenderPullRequestStatusBadge_GivenDraftStatus_WhenFormatting_ThenItUsesTheDraftIcon(t *testing.T) {
+	actual := renderPullRequestStatusBadge("DRAFT")
+
+	if !strings.Contains(actual, " DRAFT") {
+		t.Fatalf("expected the draft status badge to contain %q, actual %q", " DRAFT", actual)
+	}
+}
+
 func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_ThenItUsesStateSpecificStatusBadgeBackgrounds(t *testing.T) {
 	testCases := []struct {
 		name                  string

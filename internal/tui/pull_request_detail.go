@@ -20,6 +20,7 @@ const (
 	detailCommitsIcon               = ""
 	detailChangesIcon               = ""
 	pullRequestIcon                 = ""
+	draftPullRequestIcon            = ""
 	detailRepositoryIcon            = pullRequestIcon
 	detailAuthorIcon                = ""
 	detailAssigneesIcon             = "󰀄"
