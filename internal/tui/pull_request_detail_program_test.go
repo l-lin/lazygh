@@ -414,6 +414,57 @@ func TestBrowserMode_GivenAResolvedChangesTabThread_WhenPressingEnterAndZA_ThenI
 	}
 }
 
+func TestLayout_GivenFailedOverviewSections_WhenRendering_ThenOnlyFailedBlocksStartExpanded(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:            "First PR",
+				Number:           42,
+				Body:             "Body 42",
+				BaseRefName:      "main",
+				HeadRefName:      "feature/failed-overview",
+				State:            "OPEN",
+				Mergeable:        "MERGEABLE",
+				MergeStateStatus: "CLEAN",
+				Reviews: []githubcli.PullRequestReview{{
+					Author:      &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"},
+					State:       "APPROVED",
+					SubmittedAt: "2026-04-21T10:00:00Z",
+				}},
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+					Name:         "test",
+					WorkflowName: "CI",
+					Status:       "COMPLETED",
+					Conclusion:   "FAILURE",
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 42": "Rendered body 42"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewSuccessIcon+" Reviewers (1/1)") {
+		t.Fatalf("expected non-failed reviewers to stay folded, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "@reviewer-approved") {
+		t.Fatalf("expected the folded reviewers block to hide its body, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewFailureIcon+" Merge Checks") || !strings.Contains(detailView.Buffer(), "1 reviewer has approved.") || !strings.Contains(detailView.Buffer(), "1 failing") {
+		t.Fatalf("expected failed merge checks to start expanded, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewFailureIcon+" Builds") || !strings.Contains(detailView.Buffer(), "CI / test (Failed)") {
+		t.Fatalf("expected failed builds to start expanded, actual %q", detailView.Buffer())
+	}
+}
+
 func TestBrowserMode_GivenTheCursorOnAnOverviewSection_WhenPressingEnter_ThenItTogglesTheSectionVisibility(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

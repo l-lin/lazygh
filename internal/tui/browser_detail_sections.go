@@ -140,7 +140,8 @@ func (program *Program) currentPullRequestOverviewSections(summary githubcli.Pul
 		}
 
 		sectionID := browserDetailSectionID(pullRequestKey, "overview", index, strings.ToLower(strings.ReplaceAll(strings.TrimSpace(block.Title), " ", "-")))
-		collapsed := program.browserDetailSectionCollapsed(sectionID, true)
+		collapsedByDefault := block.Status != pullRequestOverviewStatusFailure
+		collapsed := program.browserDetailSectionCollapsed(sectionID, collapsedByDefault)
 		sections = append(sections, browserDetailSection{
 			id:        sectionID,
 			header:    renderBrowserDetailSectionHeader(pullRequestOverviewBlockHeadingText(block), collapsed, pullRequestOverviewStatusHex(block.Status)),
