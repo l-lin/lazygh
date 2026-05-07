@@ -392,6 +392,54 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlace
 	}
 }
 
+func TestRenderReviewDiffFile_GivenInlineReviewThreadReplies_WhenRendering_ThenItRendersReplyRailsAndConnectors(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Root comment": "Rendered root comment",
+		"First reply":  "Rendered first reply",
+		"Last reply":   "Rendered last reply",
+	}}
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,2 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight}},
+		}},
+		Threads: []reviewDiffThread{{
+			ID:   "thread-1",
+			Path: "internal/tui/render.go",
+			Line: 11,
+			Side: reviewDiffLineSideRight,
+			Comments: []githubcli.PullRequestComment{
+				{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Root comment", CreatedAt: "2026-04-20T10:00:00Z", DiffHunk: "@@ -10,1 +10,2 @@\n context line\n+new line"},
+				{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, Body: "First reply", CreatedAt: "2026-04-20T10:05:00Z"},
+				{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-three"}, Body: "Last reply", CreatedAt: "2026-04-20T10:10:00Z"},
+			},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
+	_, middleReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "├─ Reply")
+	_, lastReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "╰─ Reply")
+	_, firstReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-two")
+	_, lastReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-three")
+
+	if middleReplyConnectorLine != "├─ Reply" {
+		t.Fatalf("expected the first reply connector line %q, actual %q", "├─ Reply", middleReplyConnectorLine)
+	}
+	if lastReplyConnectorLine != "╰─ Reply" {
+		t.Fatalf("expected the last reply connector line %q, actual %q", "╰─ Reply", lastReplyConnectorLine)
+	}
+	if !strings.HasPrefix(firstReplyMetadataLine, "│ │ ") {
+		t.Fatalf("expected the first reply metadata line to stay attached to the thread rail, actual %q", firstReplyMetadataLine)
+	}
+	if !strings.HasPrefix(lastReplyMetadataLine, "  │ ") {
+		t.Fatalf("expected the last reply metadata line to stay indented under the closing connector, actual %q", lastReplyMetadataLine)
+	}
+}
+
 func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_ThenItShowsThreadStatesOnTheHeaderAndPendingOnTheComment(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered thread body"}
 	file := reviewDiffFile{

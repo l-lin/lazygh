@@ -8,7 +8,15 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-const inlineThreadConversationMinimumDiffLines = 5
+const (
+	inlineThreadConversationMinimumDiffLines = 5
+	inlineThreadReplyLabel                   = "Reply"
+	inlineThreadReplyMiddlePrefix            = "├─ "
+	inlineThreadReplyLastPrefix              = "╰─ "
+	inlineThreadReplyContinuationPrefix      = "│ "
+	inlineThreadReplyIndentPrefix            = "  "
+	inlineThreadReplyBoxPrefixWidth          = 2
+)
 
 func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineComment, body string, width int) string {
 	return renderPullRequestInlineCommentSectionForViewer(comment, body, width, "")
@@ -68,7 +76,7 @@ func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequ
 		return strings.Join(lines, "\n")
 	}
 
-	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, renderer, threadWidth, connectedUserLogin)...)
+	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, renderer, width, connectedUserLogin)...)
 	lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
 	return strings.Join(lines, "\n")
 }
@@ -95,14 +103,66 @@ func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, ren
 }
 
 func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
-	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
-	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	renderedComments := make([]string, 0, len(comments))
-	for _, threadComment := range comments {
-		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		renderedComments = append(renderedComments, renderCommentBoxWithMetadataBadgesForViewer(threadComment.Author, threadComment.CreatedAt, inlineThreadCommentMetadataBadges(threadComment), threadComment.ReactionGroups, body, threadWidth, connectedUserLogin))
+	for commentIndex, threadComment := range comments {
+		renderedComments = append(renderedComments, renderInlineThreadCommentBlockForViewer(threadComment, renderer, width, commentIndex, len(comments), connectedUserLogin))
 	}
 	return renderedComments
+}
+
+func renderInlineThreadCommentBlock(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int) string {
+	return renderInlineThreadCommentBlockForViewer(comment, renderer, width, commentIndex, commentCount, "")
+}
+
+func renderInlineThreadCommentBlockForViewer(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int, connectedUserLogin string) string {
+	renderedCommentBox := renderInlineThreadCommentBoxForViewer(comment, renderer, width, connectedUserLogin, commentIndex > 0)
+	if commentIndex == 0 {
+		return renderedCommentBox
+	}
+	return renderInlineThreadReplyBlock(renderedCommentBox, commentIndex < commentCount-1)
+}
+
+func renderInlineThreadCommentBoxForViewer(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
+	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
+	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
+	body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
+	return renderCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
+}
+
+func renderInlineThreadReplyBlock(renderedCommentBox string, hasFollowingReplies bool) string {
+	lines := []string{styleCommentBorder("│"), styleCommentBorder(inlineThreadReplyLabelPrefix(hasFollowingReplies) + inlineThreadReplyLabel)}
+	lines = append(lines, prefixInlineThreadReplyBoxLines(strings.Split(renderedCommentBox, "\n"), hasFollowingReplies)...)
+	return strings.Join(lines, "\n")
+}
+
+func inlineThreadReplyLabelPrefix(hasFollowingReplies bool) string {
+	if hasFollowingReplies {
+		return inlineThreadReplyMiddlePrefix
+	}
+	return inlineThreadReplyLastPrefix
+}
+
+func prefixInlineThreadReplyBoxLines(lines []string, hasFollowingReplies bool) []string {
+	prefixedLines := make([]string, 0, len(lines))
+	boxLinePrefix := styleCommentBorder(inlineThreadReplyIndentPrefix)
+	if hasFollowingReplies {
+		boxLinePrefix = styleCommentBorder(inlineThreadReplyContinuationPrefix)
+	}
+	for _, line := range lines {
+		prefixedLines = append(prefixedLines, boxLinePrefix+line)
+	}
+	return prefixedLines
+}
+
+func inlineThreadCommentBoxWidth(width int, isReply bool) int {
+	commentBoxWidth := normalizedInlineThreadCommentBoxWidth(width)
+	if !isReply {
+		return commentBoxWidth
+	}
+	if commentBoxWidth <= inlineThreadReplyBoxPrefixWidth {
+		return 1
+	}
+	return commentBoxWidth - inlineThreadReplyBoxPrefixWidth
 }
 
 func normalizedInlineThreadCommentBoxWidth(width int) int {

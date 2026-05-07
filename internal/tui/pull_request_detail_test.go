@@ -525,6 +525,96 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 	}
 }
 
+func TestRenderPullRequestCommentsTab_GivenInlineThreadReplies_WhenFormatting_ThenItRendersReplyRailsAndConnectors(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Root comment": "Rendered root comment",
+		"First reply":  "Rendered first reply",
+		"Second reply": "Rendered second reply",
+	}}
+	inlineThreads := []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     43,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+				CreatedAt: "2026-04-18T14:15:00Z",
+				Body:      "Root comment",
+				DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+			},
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+				CreatedAt: "2026-04-18T14:45:00Z",
+				Body:      "First reply",
+			},
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "maintainer"},
+				CreatedAt: "2026-04-18T15:00:00Z",
+				Body:      "Second reply",
+			},
+		},
+	}}
+
+	actualDocument := newDetailDocument(renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120), 120)
+	_, middleReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "├─ Reply")
+	_, lastReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "╰─ Reply")
+	_, firstReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@octocat")
+	_, secondReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@maintainer")
+
+	if middleReplyConnectorLine != "├─ Reply" {
+		t.Fatalf("expected the first reply connector line %q, actual %q", "├─ Reply", middleReplyConnectorLine)
+	}
+	if lastReplyConnectorLine != "╰─ Reply" {
+		t.Fatalf("expected the last reply connector line %q, actual %q", "╰─ Reply", lastReplyConnectorLine)
+	}
+	if !strings.HasPrefix(firstReplyMetadataLine, "│ │ ") {
+		t.Fatalf("expected the first reply metadata line to stay attached to the thread rail, actual %q", firstReplyMetadataLine)
+	}
+	if !strings.HasPrefix(secondReplyMetadataLine, "  │ ") {
+		t.Fatalf("expected the last reply metadata line to stay indented under the closing connector, actual %q", secondReplyMetadataLine)
+	}
+}
+
+func TestPullRequestInlineThreadCommentAtBodyCursor_GivenReplyRails_WhenCursorIsOnAReplyLine_ThenItReturnsThatReply(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Root comment": "Rendered root comment",
+		"Final reply":  "Rendered final reply",
+	}}
+	thread := githubcli.PullRequestReviewThread{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     43,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{
+			{
+				ID:        "comment-1",
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+				CreatedAt: "2026-04-18T14:15:00Z",
+				Body:      "Root comment",
+				DiffHunk:  "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+			},
+			{
+				ID:        "comment-2",
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+				CreatedAt: "2026-04-18T14:45:00Z",
+				Body:      "Final reply",
+			},
+		},
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestInlineCommentThreadBody(thread, renderer, 120), 120)
+	cursorLine, _ := given_detailDocumentLineContaining(t, actualDocument, "Rendered final reply")
+
+	actualComment, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, renderer, 120, cursorLine)
+	if !ok {
+		t.Fatalf("expected the cursor to resolve to the reply comment")
+	}
+	if actualComment.ID != "comment-2" {
+		t.Fatalf("expected reply comment id %q, actual %q", "comment-2", actualComment.ID)
+	}
+}
+
 func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsThreadStatesOnTheHeaderAndPendingOnTheComment(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 	inlineThreads := []githubcli.PullRequestReviewThread{{
