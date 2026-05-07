@@ -220,11 +220,22 @@ func pullRequestMergeChecksBackgroundPrefix(pullRequest githubcli.PullRequest) s
 
 func pullRequestMergeChecksStatus(pullRequest githubcli.PullRequest) pullRequestOverviewStatus {
 	entries := []pullRequestOverviewEntry{
-		{Status: pullRequestOverviewStatusForReviewDecision(pullRequest.ReviewDecision)},
+		{Status: pullRequestMergeChecksReviewStatus(pullRequest)},
 		{Status: pullRequestOverviewStatusForStatusCheckRollupState(pullRequest.StatusCheckRollupState)},
 		{Status: pullRequestOverviewStatusForMergeability(pullRequest.Mergeable, pullRequest.MergeStateStatus)},
 	}
 	return pullRequestOverviewBlockStatus(entries)
+}
+
+func pullRequestMergeChecksReviewStatus(pullRequest githubcli.PullRequest) pullRequestOverviewStatus {
+	reviewDecisionStatus := pullRequestOverviewStatusForReviewDecision(pullRequest.ReviewDecision)
+	if reviewDecisionStatus == pullRequestOverviewStatusFailure {
+		return pullRequestOverviewStatusFailure
+	}
+	if len(pullRequest.ReviewRequests) > 0 {
+		return pullRequestOverviewStatusPending
+	}
+	return reviewDecisionStatus
 }
 
 func pullRequestTitleSegmentPrefix(foregroundPrefix string, backgroundPrefix string) string {

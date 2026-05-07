@@ -231,6 +231,31 @@ func TestPullRequestRow_GivenApprovedReviewsWithoutPassingMergeChecks_WhenBuildi
 	}
 }
 
+func TestPullRequestRow_GivenApprovedReviewsWithRequestedTeamReview_WhenBuildingTheListRow_ThenItKeepsTheDefaultBackground(t *testing.T) {
+	actual := pullRequestRow(githubcli.PullRequest{
+		Title:                  "Waiting on team",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		ReviewRequests:         []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "P3C", Slug: "p3c", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}}},
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "CLEAN",
+		StatusCheckRollupState: "SUCCESS",
+	}).Item
+
+	if actual.Title != " acme/widgets#42 Waiting on team" {
+		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Waiting on team", actual.Title)
+	}
+	for index, unexpectedBackground := range []string{backgroundColorEscape(theme.SuccessBackgroundHex), backgroundColorEscape(theme.FailureBackgroundHex)} {
+		for segmentIndex, segment := range actual.TitleSegments {
+			if strings.Contains(segment.Prefix, unexpectedBackground) {
+				t.Fatalf("expected title segment %d prefix %q to avoid unexpected background %d %q", segmentIndex, segment.Prefix, index, unexpectedBackground)
+			}
+		}
+	}
+}
+
 func TestPullRequestRow_GivenBlockedMergeStateWithPassingReviewsAndChecks_WhenBuildingTheListRow_ThenItKeepsTheDefaultBackground(t *testing.T) {
 	actual := pullRequestRow(githubcli.PullRequest{
 		Title:                  "Blocked by merge checks",

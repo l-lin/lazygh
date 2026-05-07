@@ -282,6 +282,31 @@ func TestLayout_GivenBlockedMergeStateWithPassingReviewsAndChecks_WhenRendering_
 	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewPullRequestsName, 0, 0, given_themeColorHex(t, theme.FailureBackgroundHex), "pending merge checks failure background")
 }
 
+func TestLayout_GivenApprovedReviewDecisionWithRequestedTeamReview_WhenRendering_ThenTheListRowKeepsTheDefaultBackground(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:                  "Waiting on team",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		ReviewRequests:         []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "P3C", Slug: "p3c", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}}},
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "CLEAN",
+		StatusCheckRollupState: "SUCCESS",
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewPullRequestsName, 0, 0, given_themeColorHex(t, theme.SuccessBackgroundHex), "requested team review success background")
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewPullRequestsName, 0, 0, given_themeColorHex(t, theme.FailureBackgroundHex), "requested team review failure background")
+}
+
 func TestLayout_GivenFailingMergeChecks_WhenRendering_ThenTheListRowUsesTheFailureBackground(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
