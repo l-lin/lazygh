@@ -158,6 +158,53 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSumma
 	}
 }
 
+func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_WhenCheckingTheSelection_ThenItRefreshesItInBackground(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
+	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
+	freshDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Fresh body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "abc1234", MessageHeadline: "Fresh commit"}}}
+	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": freshDetail}}}
+	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": {Detail: cachedDetail, SourceUpdatedAt: summary.UpdatedAt}}}
+	asyncRunner := &capturingAsyncRunner{}
+	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.pullRequestCache = cache
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	subject.maybeLoadSelectedPullRequestDetail(gui)
+	actualBeforeRefresh, ok := subject.pullRequestDetailForSummary(summary)
+	if !ok {
+		t.Fatal("expected the cached detail to be available immediately")
+	}
+	if actualBeforeRefresh.detail.Body != "Cached body" {
+		t.Fatalf("expected cached detail body %q before refresh, actual %q", "Cached body", actualBeforeRefresh.detail.Body)
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	actualAfterRefresh, ok := subject.pullRequestDetailForSummary(summary)
+	if !ok {
+		t.Fatal("expected a refreshed pull request detail")
+	}
+	if actualAfterRefresh.detail.Body != "Fresh body" || len(actualAfterRefresh.detail.Commits) != 1 {
+		t.Fatalf("expected refreshed detail body %q with commits, actual %+v", "Fresh body", actualAfterRefresh.detail)
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42"}, loader.detailCalls)
+	}
+}
+
 func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryVersion_WhenCheckingTheSelection_ThenItShowsTheCachedDetailAndRefreshesItInBackground(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}

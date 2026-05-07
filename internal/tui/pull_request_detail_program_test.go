@@ -228,7 +228,7 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 0)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (1)", ChangesDetailTab.Label()}, 0)
 
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)

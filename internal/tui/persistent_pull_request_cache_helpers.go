@@ -27,7 +27,7 @@ func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.Pull
 	program.pullRequestDetailCache[key] = pullRequestDetailResult{
 		detail:          cached.Detail,
 		sourceUpdatedAt: strings.TrimSpace(cached.SourceUpdatedAt),
-		needsRefresh:    cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt),
+		needsRefresh:    cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt) || pullRequestDetailMissingBrowserTabData(cached.Detail),
 	}
 	program.invalidatePullRequestDetailDocumentCache()
 	return true
@@ -132,4 +132,8 @@ func cachedPullRequestNeedsRefresh(summary githubcli.PullRequest, cachedSourceUp
 	}
 
 	return strings.TrimSpace(cachedSourceUpdatedAt) != currentVersion
+}
+
+func pullRequestDetailMissingBrowserTabData(detail githubcli.PullRequestDetail) bool {
+	return len(detail.Commits) == 0
 }
