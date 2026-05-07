@@ -64,7 +64,9 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 	detail := githubcli.PullRequestDetail{
 		ReviewRequests: []githubcli.PullRequestReviewRequest{
 			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}},
-			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Slug: "platform", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "VIBE", Slug: "vibe", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "P3C", Slug: "p3c", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "FYP", Slug: "fyp", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
 		},
 		Reviews: []githubcli.PullRequestReview{
 			{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"},
@@ -83,8 +85,9 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 	actualText := string(actualDocument.text)
 
 	for _, expected := range []string{
-		pullRequestOverviewFailureIcon + " Reviewers (1/4)",
-		"@acme/platform",
+		pullRequestOverviewFailureIcon + " Reviewers (1/6)",
+		"Requested teams",
+		"VIBE, P3C, FYP",
 		"@reviewer-approved",
 		"@reviewer-blocked",
 		pullRequestOverviewFailureIcon + " Merge Checks",
@@ -102,6 +105,11 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 			t.Fatalf("expected overview section to contain %q, actual %q", expected, actualText)
 		}
 	}
+	for _, unexpected := range []string{"@acme/vibe", "@acme/p3c", "@acme/fyp", "@vibe", "@p3c", "@fyp"} {
+		if strings.Contains(actualText, unexpected) {
+			t.Fatalf("expected overview section to omit %q, actual %q", unexpected, actualText)
+		}
+	}
 
 	borderLineIndex, borderLine := given_detailDocumentLineContaining(t, actualDocument, "╭")
 	if borderLine == "" {
@@ -111,10 +119,16 @@ func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_
 		t.Fatalf("expected overview box border prefix %q, actual %q", foregroundColorEscape(theme.InactiveBorderHex), actualStylePrefix)
 	}
 
-	reviewersHeadingLineIndex, reviewersHeadingLine := given_detailDocumentLineContaining(t, actualDocument, pullRequestOverviewFailureIcon+" Reviewers (1/4)")
+	reviewersHeadingLineIndex, reviewersHeadingLine := given_detailDocumentLineContaining(t, actualDocument, pullRequestOverviewFailureIcon+" Reviewers (1/6)")
 	reviewersHeadingIconIndex := given_runeIndexInString(t, reviewersHeadingLine, pullRequestOverviewFailureIcon)
 	if actualStylePrefix := actualDocument.lineStylePrefixes[reviewersHeadingLineIndex][reviewersHeadingIconIndex]; actualStylePrefix != foregroundColorEscape(theme.FailureHex) {
 		t.Fatalf("expected reviewers heading prefix %q, actual %q", foregroundColorEscape(theme.FailureHex), actualStylePrefix)
+	}
+
+	requestedTeamsLineIndex, requestedTeamsLine := given_detailDocumentLineContaining(t, actualDocument, "Requested teams")
+	requestedTeamsIconIndex := given_runeIndexInString(t, requestedTeamsLine, pullRequestOverviewPendingIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[requestedTeamsLineIndex][requestedTeamsIconIndex]; actualStylePrefix != foregroundColorEscape(theme.PendingHex) {
+		t.Fatalf("expected requested teams prefix %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
 	}
 
 	approvedLineIndex, approvedLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-approved")

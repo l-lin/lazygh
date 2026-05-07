@@ -205,7 +205,7 @@ func TestPullRequestRow_GivenAnApprovedReviewDecision_WhenBuildingTheListRow_The
 	}
 }
 
-func TestPullRequestRow_GivenRequestedReviewTeams_WhenBuildingTheListRow_ThenItAppendsOnlyTheTeamNames(t *testing.T) {
+func TestPullRequestRow_GivenRequestedReviewTeams_WhenBuildingTheListRow_ThenItDoesNotAppendThemToTheTitle(t *testing.T) {
 	actual := pullRequestRow(githubcli.PullRequest{
 		Title:      "Need teams",
 		Number:     42,
@@ -219,18 +219,14 @@ func TestPullRequestRow_GivenRequestedReviewTeams_WhenBuildingTheListRow_ThenItA
 		},
 	}).Item
 
-	expectedTitle := " acme/widgets#42 Need teams 󰀆 VIBE, P3C, FYP"
-	if actual.Title != expectedTitle {
-		t.Fatalf("expected title %q, actual %q", expectedTitle, actual.Title)
+	if actual.Title != " acme/widgets#42 Need teams" {
+		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Need teams", actual.Title)
 	}
-	if len(actual.TitleSegments) != 4 {
-		t.Fatalf("expected 4 title segments, actual %d", len(actual.TitleSegments))
+	if len(actual.TitleSegments) != 3 {
+		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
 	}
-	if actual.TitleSegments[3].Text != " "+detailReviewRequestsIcon+" VIBE, P3C, FYP" {
-		t.Fatalf("expected review team segment %q, actual %q", " "+detailReviewRequestsIcon+" VIBE, P3C, FYP", actual.TitleSegments[3].Text)
-	}
-	if actual.TitleSegments[3].Prefix != foregroundColorEscape(theme.PendingHex) {
-		t.Fatalf("expected review team segment prefix %q, actual %q", foregroundColorEscape(theme.PendingHex), actual.TitleSegments[3].Prefix)
+	if strings.Contains(actual.Title, "VIBE") || strings.Contains(actual.Title, detailReviewRequestsIcon) {
+		t.Fatalf("expected title to omit requested review teams, actual %q", actual.Title)
 	}
 }
 

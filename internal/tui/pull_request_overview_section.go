@@ -47,9 +47,11 @@ type pullRequestOverviewEntry struct {
 
 type pullRequestReviewerOverview struct {
 	Entries               []pullRequestOverviewEntry
+	RequestedTeamNames    []string
 	ApprovedCount         int
 	PendingCount          int
 	ChangesRequestedCount int
+	TotalCount            int
 }
 
 func buildPullRequestOverviewSection(detail githubcli.PullRequestDetail) pullRequestOverviewSection {
@@ -142,7 +144,11 @@ func renderPullRequestOverviewEntryDetail(detail string) string {
 }
 
 func buildPullRequestReviewersBlock(reviewers pullRequestReviewerOverview) pullRequestOverviewBlock {
-	entries := reviewers.Entries
+	entries := make([]pullRequestOverviewEntry, 0, len(reviewers.Entries)+1)
+	if requestedTeamsEntry, ok := pullRequestRequestedTeamsEntry(reviewers.RequestedTeamNames); ok {
+		entries = append(entries, requestedTeamsEntry)
+	}
+	entries = append(entries, reviewers.Entries...)
 	if len(entries) == 0 {
 		entries = []pullRequestOverviewEntry{{
 			Label:    "No reviewers yet.",
@@ -159,25 +165,66 @@ func buildPullRequestReviewersBlock(reviewers pullRequestReviewerOverview) pullR
 	}
 }
 
+func pullRequestRequestedTeamsEntry(requestedTeamNames []string) (pullRequestOverviewEntry, bool) {
+	if len(requestedTeamNames) == 0 {
+		return pullRequestOverviewEntry{}, false
+	}
+
+	label := "Requested teams"
+	if len(requestedTeamNames) == 1 {
+		label = "Requested team"
+	}
+	return pullRequestOverviewEntry{
+		Label:    label,
+		Detail:   strings.Join(requestedTeamNames, ", "),
+		Status:   pullRequestOverviewStatusPending,
+		ShowIcon: true,
+	}, true
+}
+
 func pullRequestReviewerSummary(reviewers pullRequestReviewerOverview) string {
-	if len(reviewers.Entries) == 0 {
+	if reviewers.TotalCount == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%d/%d", reviewers.ApprovedCount, len(reviewers.Entries))
+	return fmt.Sprintf("%d/%d", reviewers.ApprovedCount, reviewers.TotalCount)
 }
 
 func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRequestReviewerOverview {
 	latestReviews := latestPullRequestReviewsByLogin(detail.Reviews)
 	entriesByLabel := map[string]pullRequestOverviewEntry{}
+	reviewers := pullRequestReviewerOverview{}
 	for login, state := range latestReviews {
 		label := formatLogin(login)
 		if label == "-" {
 			continue
 		}
-		entriesByLabel[label] = pullRequestOverviewEntry{Label: label, Status: pullRequestOverviewStatusForReviewState(state), ShowIcon: true}
+
+		status := pullRequestOverviewStatusForReviewState(state)
+		entriesByLabel[label] = pullRequestOverviewEntry{Label: label, Status: status, ShowIcon: true}
+		reviewers.TotalCount++
+		switch status {
+		case pullRequestOverviewStatusSuccess:
+			reviewers.ApprovedCount++
+		case pullRequestOverviewStatusFailure:
+			reviewers.ChangesRequestedCount++
+		default:
+			reviewers.PendingCount++
+		}
 	}
 
+	seenRequestedTeamNames := map[string]bool{}
 	for _, reviewRequest := range detail.ReviewRequests {
+		if requestedTeamName := pullRequestReviewRequestTeamName(reviewRequest.RequestedReviewer); requestedTeamName != "" {
+			if seenRequestedTeamNames[requestedTeamName] {
+				continue
+			}
+			seenRequestedTeamNames[requestedTeamName] = true
+			reviewers.RequestedTeamNames = append(reviewers.RequestedTeamNames, requestedTeamName)
+			reviewers.PendingCount++
+			reviewers.TotalCount++
+			continue
+		}
+
 		label := pullRequestReviewRequestLabel(reviewRequest.RequestedReviewer)
 		if label == "-" {
 			continue
@@ -186,19 +233,12 @@ func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRe
 			continue
 		}
 		entriesByLabel[label] = pullRequestOverviewEntry{Label: label, Status: pullRequestOverviewStatusPending, ShowIcon: true}
+		reviewers.PendingCount++
+		reviewers.TotalCount++
 	}
 
 	entries := make([]pullRequestOverviewEntry, 0, len(entriesByLabel))
-	reviewers := pullRequestReviewerOverview{}
 	for _, entry := range entriesByLabel {
-		switch entry.Status {
-		case pullRequestOverviewStatusSuccess:
-			reviewers.ApprovedCount++
-		case pullRequestOverviewStatusFailure:
-			reviewers.ChangesRequestedCount++
-		default:
-			reviewers.PendingCount++
-		}
 		entries = append(entries, entry)
 	}
 
@@ -213,6 +253,19 @@ func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRe
 
 	reviewers.Entries = entries
 	return reviewers
+}
+
+func pullRequestReviewRequestTeamName(reviewer githubcli.PullRequestRequestedReviewer) string {
+	if !strings.EqualFold(strings.TrimSpace(reviewer.TypeName), "Team") {
+		return ""
+	}
+	if name := strings.TrimSpace(reviewer.Name); name != "" {
+		return name
+	}
+	if slug := strings.TrimSpace(reviewer.Slug); slug != "" {
+		return slug
+	}
+	return ""
 }
 
 func latestPullRequestReviewsByLogin(reviews []githubcli.PullRequestReview) map[string]string {
@@ -392,6 +445,7 @@ func pullRequestOverviewStatusForCheck(check githubcli.PullRequestStatusCheck) p
 }
 
 func pullRequestOverviewBlockStatus(entries []pullRequestOverviewEntry) pullRequestOverviewStatus {
+	hasPending := false
 	hasSuccess := false
 	hasMuted := false
 	for _, entry := range entries {
@@ -399,12 +453,15 @@ func pullRequestOverviewBlockStatus(entries []pullRequestOverviewEntry) pullRequ
 		case pullRequestOverviewStatusFailure:
 			return pullRequestOverviewStatusFailure
 		case pullRequestOverviewStatusPending:
-			return pullRequestOverviewStatusPending
+			hasPending = true
 		case pullRequestOverviewStatusSuccess:
 			hasSuccess = true
 		default:
 			hasMuted = true
 		}
+	}
+	if hasPending {
+		return pullRequestOverviewStatusPending
 	}
 	if hasMuted {
 		if hasSuccess {

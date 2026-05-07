@@ -255,7 +255,7 @@ func TestLayout_GivenAnApprovedPullRequest_WhenRendering_ThenTheListRowUsesTheSu
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
 }
 
-func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowShowsThemAfterTheTitle(t *testing.T) {
+func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowDoesNotShowThem(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
 		Title:      "Need teams",
@@ -279,9 +279,9 @@ func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowShowsThe
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	lineIndex := given_viewLineIndexContaining(t, pullRequestsView, detailReviewRequestsIcon+" VIBE, P3C, FYP")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, lineIndex, detailReviewRequestsIcon, given_themeColorHex(t, theme.PendingHex), "requested review teams icon")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, lineIndex, "VIBE", given_themeColorHex(t, theme.PendingHex), "requested review teams text")
+	if strings.Contains(pullRequestsView.Buffer(), detailReviewRequestsIcon+" VIBE, P3C, FYP") || strings.Contains(pullRequestsView.Buffer(), "VIBE") {
+		t.Fatalf("expected the pull request list to omit requested review teams, actual %q", pullRequestsView.Buffer())
+	}
 }
 
 func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(t *testing.T) {
