@@ -58,6 +58,23 @@ type PullRequestReviewRequest struct {
 	RequestedReviewer PullRequestRequestedReviewer `json:"requestedReviewer"`
 }
 
+func (reviewRequest *PullRequestReviewRequest) UnmarshalJSON(data []byte) error {
+	var wrapped struct {
+		RequestedReviewer *PullRequestRequestedReviewer `json:"requestedReviewer"`
+	}
+	if err := json.Unmarshal(data, &wrapped); err == nil && wrapped.RequestedReviewer != nil {
+		reviewRequest.RequestedReviewer = wrapped.RequestedReviewer.normalized()
+		return nil
+	}
+
+	var direct PullRequestRequestedReviewer
+	if err := json.Unmarshal(data, &direct); err != nil {
+		return err
+	}
+	reviewRequest.RequestedReviewer = direct.normalized()
+	return nil
+}
+
 type PullRequestRequestedReviewer struct {
 	TypeName     string                                `json:"__typename"`
 	Login        string                                `json:"login"`
