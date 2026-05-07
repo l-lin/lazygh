@@ -16,15 +16,15 @@ type commentMetadataBadge struct {
 }
 
 func renderPullRequestCommentSection(comment githubcli.PullRequestComment, body string, width int) string {
-	return renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, width)
+	return renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width)
 }
 
-func renderCommentBoxWithMetadata(author *githubcli.PullRequestCommentAuthor, createdAt string, body string, width int) string {
-	return renderCommentBoxWithMetadataBadges(author, createdAt, nil, body, width)
+func renderCommentBoxWithMetadata(author *githubcli.PullRequestCommentAuthor, createdAt string, reactionGroups []githubcli.ReactionGroup, body string, width int) string {
+	return renderCommentBoxWithMetadataBadges(author, createdAt, nil, reactionGroups, body, width)
 }
 
-func renderCommentBoxWithMetadataBadges(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, body string, width int) string {
-	metadataLine := renderCommentBoxMetadataLine(author, createdAt, badges)
+func renderCommentBoxWithMetadataBadges(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, body string, width int) string {
+	metadataLine := renderCommentBoxMetadataLine(author, createdAt, badges, reactionGroups)
 	innerWidth := maxInt(commentBoxInnerWidth(width), maxStyledTextLineWidth(metadataLine))
 	innerWidth = maxInt(innerWidth, maxStyledTextLineWidth(body))
 
@@ -83,8 +83,8 @@ func styleCommentBorder(text string) string {
 	return foregroundColorEscape(theme.InactiveBorderHex) + text + ansiReset
 }
 
-func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge) string {
-	segments := make([]string, 0, len(badges)+2)
+func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup) string {
+	segments := make([]string, 0, len(badges)+3)
 	if authorBadge := renderCommentAuthorBadge(author); authorBadge != "" {
 		segments = append(segments, authorBadge)
 	}
@@ -95,6 +95,9 @@ func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, cr
 		if renderedBadge := renderCommentMetadataBadge(badge); renderedBadge != "" {
 			segments = append(segments, renderedBadge)
 		}
+	}
+	if renderedReactionGroups := renderReactionGroups(reactionGroups); renderedReactionGroups != "" {
+		segments = append(segments, renderedReactionGroups)
 	}
 	return strings.Join(segments, "  ")
 }

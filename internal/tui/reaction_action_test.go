@@ -192,6 +192,11 @@ func TestAddReaction_GivenPullRequestReactionPickerSelection_WhenSubmitting_Then
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to contain the refreshed reaction group, actual %q", detailView.Buffer())
+	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
 }
@@ -246,6 +251,11 @@ func TestAddReaction_GivenReviewModeInlineCommentReactionPickerSelection_WhenSub
 	}
 	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
 		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.diffCalls)
+	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to contain the refreshed inline reaction group, actual %q", detailView.Buffer())
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)

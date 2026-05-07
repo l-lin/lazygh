@@ -209,7 +209,7 @@ func pullRequestInlineThreadCommentAtBodyCursor(thread githubcli.PullRequestRevi
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	for _, threadComment := range thread.Comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
+		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, threadComment.ReactionGroups, body, threadWidth))
 		if lineIndex < commentLineCount {
 			return threadComment, true
 		}

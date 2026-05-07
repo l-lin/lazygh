@@ -17,7 +17,7 @@ func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineCo
 	if diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
-	lines = append(lines, renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, width))
+	lines = append(lines, renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width))
 	return strings.Join(lines, "\n")
 }
 
@@ -84,7 +84,7 @@ func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, ren
 	renderedComments := make([]string, 0, len(comments))
 	for _, threadComment := range comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		renderedComments = append(renderedComments, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
+		renderedComments = append(renderedComments, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, threadComment.ReactionGroups, body, threadWidth))
 	}
 	return renderedComments
 }

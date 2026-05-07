@@ -189,7 +189,7 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	for _, comment := range thread.Comments {
 		commentCopy := comment
 		body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
-		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
+		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, threadWidth), "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}

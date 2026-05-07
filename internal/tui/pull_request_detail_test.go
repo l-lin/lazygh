@@ -301,6 +301,73 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRenders
 	}
 }
 
+func TestRenderPullRequestDetailHeader_GivenReactionGroups_WhenFormatting_ThenItShowsAReactionsLine(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42}
+	detail := githubcli.PullRequestDetail{
+		Title:          "First PR",
+		Number:         42,
+		State:          "OPEN",
+		ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 2, ViewerHasReacted: true}, {Content: githubcli.ReactionContentEyes, TotalCount: 1}},
+	}
+
+	actual := renderPullRequestDetailHeader(summary, detail)
+	actualDocument := newDetailDocument(actual, 120)
+	_, reactionLine := given_detailDocumentLineContaining(t, actualDocument, "Reactions:")
+
+	if !strings.Contains(reactionLine, "👍 2") {
+		t.Fatalf("expected the reactions line to contain %q, actual %q", "👍 2", reactionLine)
+	}
+	if !strings.Contains(reactionLine, "👀 1") {
+		t.Fatalf("expected the reactions line to contain %q, actual %q", "👀 1", reactionLine)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenCommentReactionGroups_WhenFormatting_ThenItShowsThemOnTheMetadataLine(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
+	comments := []githubcli.PullRequestComment{{
+		Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+		CreatedAt:      "2026-04-18T13:00:00Z",
+		Body:           "**Ship it**",
+		ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 2}, {Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}},
+	}}
+
+	actual := renderPullRequestCommentsTab(comments, nil, nil, renderer, 80)
+	actualDocument := newDetailDocument(actual, 80)
+	_, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-one")
+
+	if !strings.Contains(metadataLine, "👍 2") {
+		t.Fatalf("expected the metadata line to contain %q, actual %q", "👍 2", metadataLine)
+	}
+	if !strings.Contains(metadataLine, "❤️ 1") {
+		t.Fatalf("expected the metadata line to contain %q, actual %q", "❤️ 1", metadataLine)
+	}
+}
+
+func TestRenderPullRequestCommentsTab_GivenInlineThreadCommentReactionGroups_WhenFormatting_ThenItShowsThemOnTheMetadataLine(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
+	inlineThreads := []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     43,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			CreatedAt:      "2026-04-18T14:15:00Z",
+			Body:           "Needs more spacing",
+			ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentRocket, TotalCount: 1}},
+			DiffHunk:       "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\",",
+		}},
+	}}
+
+	actual := renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120)
+	actualDocument := newDetailDocument(actual, 120)
+	_, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-inline")
+
+	if !strings.Contains(metadataLine, "🚀 1") {
+		t.Fatalf("expected the metadata line to contain %q, actual %q", "🚀 1", metadataLine)
+	}
+}
+
 func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItShowsAFileIconLineRangeAndColoredChangeCounts(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 	inlineComments := []githubcli.PullRequestInlineComment{{

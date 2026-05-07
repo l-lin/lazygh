@@ -31,6 +31,7 @@ func renderPullRequestHeader(summary githubcli.PullRequest, detail githubcli.Pul
 	metadataLines := filterEmptyStrings([]string{
 		renderPullRequestMetaLineWithOptions(summary, detail, options.includeStatusChecks),
 		renderPullRequestLabelsLine(detail.Labels),
+		renderPullRequestReactionLine(detail.ReactionGroups),
 	})
 	if options.includeReviewers {
 		metadataLines = append(metadataLines, filterEmptyStrings([]string{
