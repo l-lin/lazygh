@@ -4,10 +4,38 @@
 
 ## Status
 The repo now boots into a three-view TUI:
-- view `0`: detail pane, including rich PR metadata, UTC created and updated timestamps, colored `+N` and `-N` churn counts, markdown body rendering, and comments from `gh pr view`
-- view `0` conversations keep inline threads compact: resolved threads start folded, status badges sit on the first comment metadata line, and diff hunk previews stay out of the way
+- view `0`: browser mode shows `Description`, `Comments`, `Commits`, and `Changes` tabs; review mode keeps its separate diff workflow
+- view `0` still renders rich PR metadata, UTC created and updated timestamps, colored `+N` and `-N` churn counts, markdown bodies, commit history, and a read-only full PR diff with inline threads
+- view `0` conversations stay compact: resolved threads start folded, status badges sit on the header line, and diff hunk previews stay out of the way
 - view `1`: connected user from `gh api user`
 - view `2`: pull requests from ordered, configurable `gh` searches, rendered as ` owner/repo#123 title` rows with tabs named from the config
+
+### Browser detail tabs
+When view `2` is active, view `0` shows four browser-only tabs.
+
+- `Description` shows the PR header, folded overview blocks, and the rendered body.
+- `Comments` shows general comments and inline review threads.
+- `Commits` shows the PR commits with short SHAs, authors, and timestamps.
+- `Changes` shows the read-only full PR diff, grouped by file headers, with inline threads rendered in place.
+
+Example:
+
+```text
+Commits
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ e9a3253 reintroduce interactive gh pr                                       │
+│ Authors: nate smith                                                         │
+│ Authored 2019-10-04 15:23 UTC  Committed 2019-10-04 15:57 UTC               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Changes
+ internal/tui/render.go  +1  -1
+
+@@ -42,2 +42,2 @@
+42 : 42 │  context line
+43 :    │ -old line
+   : 43 │ +new line
+```
 
 The next milestones can focus on layout polish and extra PR actions.
 
@@ -220,7 +248,7 @@ Use scoped tables under `[keymaps]`.
 
 The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It skips `view 1`, and it updates automatically when you remap keys, which is the bare minimum for honesty.
 
-For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious. In review mode on views `0` and `2`, `previous_tab` and `next_tab` become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments.
+For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. In browser mode on view `0`, `previous_tab` and `next_tab` cycle `Description`, `Comments`, `Commits`, and `Changes`. In review mode on views `0` and `2`, those same bindings become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious.
 
 This example mirrors the built-in defaults.
 
@@ -282,8 +310,9 @@ next_search_match = "n"
 previous_search_match = "N"
 enter_visual_mode = "v"
 enter_line_visual_mode = "V"
+# In browser mode, `[` and `]` cycle `Description`, `Comments`, `Commits`, and `Changes`.
 # In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
-# On diff lines in view `0`, `c` and the actions popup both add inline comments.
+# On diff lines in review mode view `0`, `c` and the actions popup both add inline comments.
 previous_tab = "["
 next_tab = "]"
 copy_pull_request_url = "y"
