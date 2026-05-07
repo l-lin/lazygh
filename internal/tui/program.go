@@ -79,6 +79,7 @@ type Program struct {
 	actionsPopupSearchEditor          *lineEditor
 	actionsPopupErrorMessage          string
 	reactionPicker                    *reactionPickerState
+	themePicker                       *themePickerState
 	reviewSession                     reviewSessionState
 	browserCollapsedSectionStates     map[string]bool
 	modalEditor                       *modalEditorState
@@ -92,6 +93,7 @@ type Program struct {
 	keymapOverrides                   appconfig.KeymapOverrides
 	pullRequestSearches               []appconfig.PullRequestSearch
 	storyReviewConfig                 story.Config
+	themePresetStore                  themePresetStore
 	pendingSelectionKeySequence       keySequenceState
 	pendingListViewportPlacements     map[string]viewportPlacement
 }
@@ -133,6 +135,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		linkOpener:                        newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand),
 		markdownRenderer:                  glamourMarkdownRenderer{},
 		storyGenerator:                    commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
+		themePresetStore:                  &defaultThemePresetStore{save: appconfig.SaveThemePresetDefault},
 		asyncRunner:                       goroutineAsyncRunner{},
 		uiUpdater:                         queuedUIUpdater{},
 		clipboardWriter:                   clip.NewSystemWriter(),

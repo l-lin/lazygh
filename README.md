@@ -31,6 +31,25 @@ git clone https://codeberg.org/l-lin/lazygh/cmd/lazygh
 mise run run
 ```
 
+### Install and use from this checkout
+
+```sh
+mise run install
+mise run lazygh
+mise run lazygh review https://github.com/acme/widgets/pull/42
+```
+
+### Tasks
+
+```sh
+mise run run
+mise run install
+mise run lazygh
+mise run test
+mise run fmt
+mise run tidy
+```
+
 ## Config
 
 `lazygh` looks for `~/.config/lazygh/config.toml`.
@@ -59,6 +78,7 @@ Configure theme presets and palette overrides under `[theme]`.
 
 - `preset` selects a bundled theme. Available presets include `system`, `light`, and `dark`, plus the bundled example names listed below.
 - `preset = "system"` keeps the polarity-based built-in default.
+- Use the actions popup and pick `Change theme` to switch presets on the fly. It updates `~/.config/lazygh/config.toml` immediately and reapplies the TUI.
 - Every color key is optional. Override only what you want to change from the selected preset.
 - Values must use the `#RRGGBB` format.
 - `background` fills the full TUI background.

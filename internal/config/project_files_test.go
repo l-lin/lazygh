@@ -71,6 +71,21 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 	}
 }
 
+func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsTheActionsPopupThemePicker(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"Change theme",
+		"updates `~/.config/lazygh/config.toml` immediately",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsTheMarkdownHeadingBackgroundOverride(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)

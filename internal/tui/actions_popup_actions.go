@@ -8,6 +8,9 @@ import (
 )
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
+	if program.themePickerVisible() {
+		return program.currentThemePickerActions()
+	}
 	if program.reactionPickerVisible() {
 		return program.currentReactionPickerActions()
 	}
@@ -21,6 +24,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
 			program.refreshPullRequestAction(),
+			program.changeThemeActionsPopupAction(),
 			program.submitPendingReviewApprovalAction(),
 			program.submitPendingReviewCommentAction(),
 			program.submitPendingReviewRequestChangesAction(),
@@ -35,6 +39,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
 			program.refreshPullRequestAction(),
+			program.changeThemeActionsPopupAction(),
 			program.reviewApproveAction(),
 			program.reviewCommentAction(),
 			program.reviewRequestChangesAction(),

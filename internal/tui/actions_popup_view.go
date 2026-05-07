@@ -110,7 +110,9 @@ func (program *Program) renderActionsPopupSearchView(view *gocui.View) {
 
 func (program *Program) actionsPopupTitle() string {
 	title := "Actions"
-	if program.reactionPickerVisible() {
+	if program.themePickerVisible() {
+		title = themePickerTitle
+	} else if program.reactionPickerVisible() {
 		title = reactionPickerTitle
 	}
 
@@ -128,7 +130,9 @@ func (program *Program) actionsPopupFooter() string {
 	}
 
 	itemLabel := "actions"
-	if program.reactionPickerVisible() {
+	if program.themePickerVisible() {
+		itemLabel = "themes"
+	} else if program.reactionPickerVisible() {
 		itemLabel = "reactions"
 	}
 	actions := program.currentActionsPopupActions()

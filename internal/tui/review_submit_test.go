@@ -32,6 +32,7 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
+		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
 		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
 		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
@@ -39,8 +40,8 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 	if strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Start review", popupView.Buffer())
 	}
-	if strings.Contains(popupView.Buffer(), "6 of 6 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "6 of 6 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "7 of 7 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "7 of 7 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)

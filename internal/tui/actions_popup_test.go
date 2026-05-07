@@ -55,6 +55,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
+		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
 		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
 		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
@@ -63,8 +64,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
 		" Review PR from URL",
 	})
-	if strings.Contains(popupView.Buffer(), "12 of 12 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "12 of 12 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "13 of 13 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "13 of 13 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
@@ -142,10 +143,10 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "1 of 12 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 12 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "1 of 13 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 13 actions", popupView.Buffer())
 	}
-	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 12 actions")
+	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 13 actions")
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
 	}
@@ -371,8 +372,8 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "12 of 12 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "12 of 12 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "13 of 13 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "13 of 13 actions", popupView.Buffer())
 	}
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty when the query is cleared, actual %q", popupView.Footer)

@@ -23,6 +23,7 @@ func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.reactionPicker = nil
+	program.themePicker = nil
 	program.model.OpenActionsPopup(len(actions))
 	program.actionsPopupSearchEditor = nil
 	program.actionsPopupErrorMessage = ""
@@ -39,6 +40,7 @@ func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	program.actionsPopupSearchEditor = nil
 	program.actionsPopupErrorMessage = ""
 	program.reactionPicker = nil
+	program.themePicker = nil
 	if gui == nil {
 		return nil
 	}
