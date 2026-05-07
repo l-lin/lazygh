@@ -13,7 +13,6 @@ const (
 	iconCommit             = ""
 	iconChanges            = ""
 	iconUser               = ""
-	iconAssignee           = "󰀄"
 	iconReviewRequest      = "󰀆"
 	iconLabel              = "󰓼"
 	iconChecks             = "󰄬"
@@ -31,13 +30,13 @@ const (
 	iconRequestChanges     = "󰅾"
 	iconPullRequestComment = "󰆆"
 	iconEdit               = ""
-	iconDelete             = ""
+	iconDelete             = ""
 	iconBuild              = ""
 	iconAddReaction        = "󰞅"
 	iconTheme              = "󰸌"
 	iconReviewURL          = ""
-	iconMetadata           = "󰋼"
-	iconChapter            = ""
+	iconMetadata           = "󰋽"
+	iconChapter            = "󰭤"
 	iconStatusSuccess      = ""
 	iconStatusFailure      = ""
 	iconStatusPending      = "󰦖"
@@ -86,7 +85,6 @@ const (
 	draftPullRequestIcon            = iconPullRequestDraft
 	detailRepositoryIcon            = iconPullRequest
 	detailAuthorIcon                = iconUser
-	detailAssigneesIcon             = iconAssignee
 	detailReviewRequestsIcon        = iconReviewRequest
 	detailLabelIcon                 = iconLabel
 	detailStatusIcon                = iconPullRequest

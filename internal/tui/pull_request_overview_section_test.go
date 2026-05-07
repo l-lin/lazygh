@@ -53,7 +53,7 @@ func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_T
 			t.Fatalf("expected browser header to contain %q, actual %q", expected, actualText)
 		}
 	}
-	for _, unexpected := range []string{detailChecksIcon, detailReviewRequestsIcon, detailApprovalIcon, detailAssigneesIcon} {
+	for _, unexpected := range []string{detailChecksIcon, detailReviewRequestsIcon, detailApprovalIcon} {
 		if strings.Contains(actualText, unexpected) {
 			t.Fatalf("expected browser header to omit %q, actual %q", unexpected, actualText)
 		}
