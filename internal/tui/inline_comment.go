@@ -20,35 +20,51 @@ func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineCo
 }
 
 func renderPullRequestInlineCommentThreadSection(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestInlineCommentThreadContent(thread, renderer, width)
+	header := renderPullRequestInlineCommentThreadHeader(thread, false, width)
+	body := renderPullRequestInlineCommentThreadBody(thread, renderer, width)
+	if strings.TrimSpace(body) == "" {
+		return header
+	}
+	return header + "\n" + body
 }
 
-func renderPullRequestInlineCommentThreadContent(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
-	comment := pullRequestInlineCommentFromThread(thread)
-	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
-	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
-	if len(thread.Comments) == 0 {
-		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth))
-		return strings.Join(lines, "\n")
+func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestReviewThread, collapsed bool, width int) string {
+	lines := []string{
+		renderReviewDiffThreadHorizontalBorder(width),
+		renderInlineThreadHeaderLine(
+			pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(thread)),
+			pullRequestInlineThreadAnchor(thread),
+			collapsed,
+			inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated, thread.Comments),
+		),
 	}
-
-	for _, commentBox := range renderInlineThreadCommentBoxes(thread.Comments, renderer, threadWidth, inlineThreadMetadataBadges(thread.IsResolved, thread.IsOutdated, thread.Comments)) {
-		lines = append(lines, commentBox)
+	if collapsed {
+		lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
 	}
 	return strings.Join(lines, "\n")
 }
 
-func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int, badges []commentMetadataBadge) []string {
+func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
+	if len(thread.Comments) == 0 {
+		return strings.Join([]string{
+			renderRoundedCommentBox("No comments in thread.", threadWidth),
+			renderReviewDiffThreadHorizontalBorder(width),
+		}, "\n")
+	}
+
+	lines := renderInlineThreadCommentBoxes(thread.Comments, renderer, threadWidth)
+	lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
+	return strings.Join(lines, "\n")
+}
+
+func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) []string {
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	renderedComments := make([]string, 0, len(comments))
-	for index, threadComment := range comments {
+	for _, threadComment := range comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		commentBadges := []commentMetadataBadge(nil)
-		if index == 0 {
-			commentBadges = badges
-		}
-		renderedComments = append(renderedComments, renderCommentBoxWithMetadataBadges(threadComment.Author, threadComment.CreatedAt, commentBadges, body, threadWidth))
+		renderedComments = append(renderedComments, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
 	}
 	return renderedComments
 }
@@ -60,14 +76,14 @@ func normalizedInlineThreadCommentBoxWidth(width int) int {
 	return width
 }
 
-func inlineThreadMetadataBadges(resolved bool, outdated bool, comments []githubcli.PullRequestComment) []commentMetadataBadge {
+func inlineThreadStatusBadges(resolved bool, outdated bool, comments []githubcli.PullRequestComment) []commentMetadataBadge {
 	badges := make([]commentMetadataBadge, 0, 3)
 	if pullRequestCommentsContainPendingState(comments) {
-		badges = append(badges, pendingInlineThreadMetadataBadge())
+		badges = append(badges, pendingInlineThreadStatusBadge())
 	}
-	badges = append(badges, inlineThreadResolutionMetadataBadge(resolved))
+	badges = append(badges, inlineThreadResolutionStatusBadge(resolved))
 	if outdated {
-		badges = append(badges, outdatedInlineThreadMetadataBadge())
+		badges = append(badges, outdatedInlineThreadStatusBadge())
 	}
 	return badges
 }
@@ -81,19 +97,48 @@ func pullRequestCommentsContainPendingState(comments []githubcli.PullRequestComm
 	return false
 }
 
-func pendingInlineThreadMetadataBadge() commentMetadataBadge {
+func pendingInlineThreadStatusBadge() commentMetadataBadge {
 	return commentMetadataBadge{Label: "Pending", ForegroundHex: theme.PendingHex, BackgroundHex: theme.SelectedLineBackgroundHex}
 }
 
-func inlineThreadResolutionMetadataBadge(resolved bool) commentMetadataBadge {
+func inlineThreadResolutionStatusBadge(resolved bool) commentMetadataBadge {
 	if resolved {
 		return commentMetadataBadge{Label: "Resolved", ForegroundHex: theme.DiffAdditionHex, BackgroundHex: theme.DiffAdditionBackgroundHex}
 	}
 	return commentMetadataBadge{Label: "Unresolved", ForegroundHex: theme.DiffDeletionHex, BackgroundHex: theme.DiffDeletionBackgroundHex}
 }
 
-func outdatedInlineThreadMetadataBadge() commentMetadataBadge {
+func outdatedInlineThreadStatusBadge() commentMetadataBadge {
 	return commentMetadataBadge{Label: "Outdated", ForegroundHex: theme.DiffHunkHeaderHex, BackgroundHex: theme.SelectedLineBackgroundHex}
+}
+
+func renderInlineThreadHeaderLine(location string, anchor string, collapsed bool, badges []commentMetadataBadge) string {
+	chevron := browserDetailExpandedChevron
+	if collapsed {
+		chevron = browserDetailCollapsedChevron
+	}
+
+	segments := []string{styleText(chevron, foregroundColorEscape(theme.DiffHunkHeaderHex))}
+	if trimmedLocation := strings.TrimSpace(location); trimmedLocation != "" {
+		segments = append(segments, styleText(trimmedLocation, foregroundColorEscape(theme.DiffHunkHeaderHex)))
+	}
+	if trimmedAnchor := strings.TrimSpace(anchor); trimmedAnchor != "" {
+		segments = append(segments, styleText(trimmedAnchor, foregroundColorEscape(theme.DiffHunkHeaderHex)))
+	}
+	for _, badge := range badges {
+		if renderedBadge := renderInlineThreadHeaderBadge(badge); renderedBadge != "" {
+			segments = append(segments, renderedBadge)
+		}
+	}
+	return strings.Join(segments, " ")
+}
+
+func renderInlineThreadHeaderBadge(badge commentMetadataBadge) string {
+	label := strings.TrimSpace(badge.Label)
+	if label == "" {
+		return ""
+	}
+	return styleText(label, foregroundColorEscape(badge.ForegroundHex), backgroundColorEscape(badge.BackgroundHex))
 }
 
 func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread) githubcli.PullRequestInlineComment {
@@ -114,6 +159,40 @@ func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread
 		break
 	}
 	return comment
+}
+
+func pullRequestInlineCommentFromReviewDiffThread(thread reviewDiffThread) githubcli.PullRequestInlineComment {
+	comment := githubcli.PullRequestInlineComment{
+		Path:              strings.TrimSpace(thread.Path),
+		Line:              thread.Line,
+		OriginalLine:      thread.OriginalLine,
+		StartLine:         thread.StartLine,
+		OriginalStartLine: thread.OriginalStartLine,
+		Side:              string(thread.Side),
+		StartSide:         string(thread.StartSide),
+	}
+	for _, threadComment := range thread.Comments {
+		if strings.TrimSpace(threadComment.DiffHunk) == "" {
+			continue
+		}
+		comment.DiffHunk = threadComment.DiffHunk
+		break
+	}
+	return comment
+}
+
+func pullRequestInlineThreadAnchor(thread githubcli.PullRequestReviewThread) string {
+	comment := pullRequestInlineCommentFromThread(thread)
+	line := pullRequestInlineCommentDisplayLine(comment)
+	return inlineThreadAnchorLabel(pullRequestInlineCommentSideLabel(comment), line)
+}
+
+func inlineThreadAnchorLabel(side string, line int) string {
+	trimmedSide := strings.TrimSpace(side)
+	if line <= 0 {
+		return trimmedSide
+	}
+	return fmt.Sprintf("%s%d", trimmedSide, line)
 }
 
 func renderPullRequestInlineCommentLocationLine(comment githubcli.PullRequestInlineComment) string {
@@ -180,4 +259,21 @@ func pullRequestInlineCommentTargetRange(comment githubcli.PullRequestInlineComm
 	startLine := firstPositive(comment.StartLine, comment.Line, comment.OriginalStartLine, comment.OriginalLine)
 	endLine := firstPositive(comment.Line, comment.StartLine, comment.OriginalLine, comment.OriginalStartLine)
 	return startLine, endLine, "RIGHT"
+}
+
+func pullRequestInlineCommentSideLabel(comment githubcli.PullRequestInlineComment) string {
+	_, _, side := pullRequestInlineCommentTargetRange(comment)
+	switch side {
+	case "LEFT":
+		return "L"
+	case "RIGHT":
+		return "R"
+	default:
+		return "?"
+	}
+}
+
+func pullRequestInlineCommentDisplayLine(comment githubcli.PullRequestInlineComment) int {
+	_, endLine, _ := pullRequestInlineCommentTargetRange(comment)
+	return endLine
 }

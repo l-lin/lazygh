@@ -187,22 +187,11 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 
 func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
 	lineIndex := cursorLine
-	comment := pullRequestInlineCommentFromThread(thread)
-	lineIndex -= renderedTextLineCount(renderPullRequestInlineCommentLocationLine(comment))
-	if lineIndex < 0 {
-		return pullRequestReviewCommentActionTarget{}, false
-	}
-
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
-	statusBadges := inlineThreadMetadataBadges(thread.IsResolved, thread.IsOutdated, thread.Comments)
-	for index, threadComment := range thread.Comments {
+	for _, threadComment := range thread.Comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		commentBadges := []commentMetadataBadge(nil)
-		if index == 0 {
-			commentBadges = statusBadges
-		}
-		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadataBadges(threadComment.Author, threadComment.CreatedAt, commentBadges, body, threadWidth))
+		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
 		if lineIndex < commentLineCount {
 			if strings.TrimSpace(threadComment.ID) == "" || !threadComment.ViewerDidAuthor {
 				return pullRequestReviewCommentActionTarget{}, false

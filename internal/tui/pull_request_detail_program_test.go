@@ -343,10 +343,10 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	resolvedHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " Comment on line R43 · resolved")
-	activeHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " Comment on line R57")
-	if activeHeaderLineIndex != resolvedHeaderLineIndex+1 {
-		t.Fatalf("expected consecutive conversation headers without blank spacer lines, actual %q", detailView.Buffer())
+	resolvedHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:43 R43 Resolved")
+	activeHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/model.go:57 R57 Unresolved")
+	if activeHeaderLineIndex != resolvedHeaderLineIndex+3 {
+		t.Fatalf("expected the collapsed thread to render as a bordered block before the next header block, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered resolved thread body") {
 		t.Fatalf("expected resolved threads to stay folded by default, actual %q", detailView.Buffer())
@@ -357,9 +357,12 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 	if strings.Contains(detailView.Buffer(), "@@ -42,2 +42,2 @@") || strings.Contains(detailView.Buffer(), "opusplan") || strings.Contains(detailView.Buffer(), "old value") {
 		t.Fatalf("expected inline thread conversations to hide diff previews, actual %q", detailView.Buffer())
 	}
+	if activeHeaderLineIndex == 0 || !strings.HasPrefix(detailView.BufferLines()[activeHeaderLineIndex-1], "────") {
+		t.Fatalf("expected the browser conversations tab to render the same top border as review mode, actual %q", detailView.Buffer())
+	}
 	metadataLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-active")
-	if !strings.Contains(detailView.BufferLines()[metadataLineIndex], "Unresolved") {
-		t.Fatalf("expected the active thread metadata line to show the unresolved badge, actual %q", detailView.BufferLines()[metadataLineIndex])
+	if strings.Contains(detailView.BufferLines()[metadataLineIndex], "Unresolved") {
+		t.Fatalf("expected the unresolved state to move off the comment metadata line, actual %q", detailView.BufferLines()[metadataLineIndex])
 	}
 }
 

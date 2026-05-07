@@ -15,18 +15,20 @@ const (
 )
 
 type browserDetailSection struct {
-	id           string
-	header       string
-	body         string
-	collapsed    bool
-	inlineThread *githubcli.PullRequestReviewThread
+	id                string
+	header            string
+	headerFocusOffset int
+	body              string
+	collapsed         bool
+	inlineThread      *githubcli.PullRequestReviewThread
 }
 
 type browserDetailSectionCursor struct {
-	section    browserDetailSection
-	headerLine int
-	bodyLine   int
-	inBody     bool
+	section         browserDetailSection
+	headerLine      int
+	headerFocusLine int
+	bodyLine        int
+	inBody          bool
 }
 
 func renderBrowserDetailSectionHeader(title string, collapsed bool, foregroundHex string) string {
@@ -63,18 +65,20 @@ func browserDetailSectionAtCursor(sections []browserDetailSection, cursorLine in
 	currentLine := 0
 	for sectionIndex, section := range sections {
 		headerLine := currentLine
-		if lineIndex == 0 {
-			return browserDetailSectionCursor{section: section, headerLine: headerLine, bodyLine: -1}, true
+		headerLineCount := renderedTextLineCount(strings.TrimSpace(section.header))
+		headerFocusLine := headerLine + minInt(section.headerFocusOffset, maxInt(headerLineCount-1, 0))
+		if lineIndex >= 0 && lineIndex < headerLineCount {
+			return browserDetailSectionCursor{section: section, headerLine: headerLine, headerFocusLine: headerFocusLine, bodyLine: -1}, true
 		}
-		lineIndex--
-		currentLine++
+		lineIndex -= headerLineCount
+		currentLine += headerLineCount
 
 		if !section.collapsed {
 			bodyLineCount := 0
 			if strings.TrimSpace(section.body) != "" {
 				bodyLineCount = renderedTextLineCount(strings.TrimSpace(section.body))
 				if lineIndex >= 0 && lineIndex < bodyLineCount {
-					return browserDetailSectionCursor{section: section, headerLine: headerLine, bodyLine: lineIndex, inBody: true}, true
+					return browserDetailSectionCursor{section: section, headerLine: headerLine, headerFocusLine: headerFocusLine, bodyLine: lineIndex, inBody: true}, true
 				}
 			}
 			lineIndex -= bodyLineCount
@@ -168,6 +172,7 @@ func (program *Program) browserOverviewSectionAtCursor(summary githubcli.PullReq
 		return browserDetailSectionCursor{}, false
 	}
 	sectionAtCursor.headerLine += overviewStartLine
+	sectionAtCursor.headerFocusLine += overviewStartLine
 	return sectionAtCursor, true
 }
 
@@ -194,11 +199,12 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 			sectionID := browserDetailSectionID(pullRequestKey, "thread", index, thread.ID)
 			collapsed := program.browserDetailSectionCollapsed(sectionID, thread.IsResolved)
 			sections = append(sections, browserDetailSection{
-				id:           sectionID,
-				header:       renderBrowserDetailSectionHeader(renderPullRequestInlineThreadConversationTitle(thread), collapsed, theme.InactiveTitleHex),
-				body:         renderPullRequestInlineCommentThreadBody(thread, program.markdownRenderer, width),
-				collapsed:    collapsed,
-				inlineThread: &thread,
+				id:                sectionID,
+				header:            renderPullRequestInlineCommentThreadHeader(thread, collapsed, width),
+				headerFocusOffset: 1,
+				body:              renderPullRequestInlineCommentThreadBody(thread, program.markdownRenderer, width),
+				collapsed:         collapsed,
+				inlineThread:      &thread,
 			})
 		}
 		return sections
@@ -248,30 +254,5 @@ func renderPullRequestInlineCommentConversationTitle(comment githubcli.PullReque
 
 func renderPullRequestInlineThreadConversationTitle(thread githubcli.PullRequestReviewThread) string {
 	comment := pullRequestInlineCommentFromThread(thread)
-	title := renderPullRequestInlineCommentConversationTitle(comment)
-	if thread.IsResolved {
-		title += " · resolved"
-	}
-	return title
-}
-
-func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestInlineCommentThreadContent(thread, renderer, width)
-}
-
-func pullRequestInlineCommentSideLabel(comment githubcli.PullRequestInlineComment) string {
-	_, _, side := pullRequestInlineCommentTargetRange(comment)
-	switch side {
-	case "LEFT":
-		return "L"
-	case "RIGHT":
-		return "R"
-	default:
-		return "?"
-	}
-}
-
-func pullRequestInlineCommentDisplayLine(comment githubcli.PullRequestInlineComment) int {
-	_, endLine, _ := pullRequestInlineCommentTargetRange(comment)
-	return endLine
+	return pullRequestInlineCommentLocation(comment)
 }

@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"github.com/jesseduffield/gocui"
 )
 
@@ -195,5 +193,5 @@ func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []
 }
 
 func reviewDiffRenderedRowIsThreadStatus(row reviewDiffRenderedRow) bool {
-	return row.Thread != nil && strings.Contains(row.Text, "Comment on line ")
+	return row.Thread != nil && row.Kind == reviewDiffRenderedRowKindInlineCommentHeader
 }

@@ -134,7 +134,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 	}
 
 	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-	program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerLine, column: 0}
+	program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
 	program.detailViewState.preferredColumn = 0
 	if gui == nil {
 		return nil
@@ -167,7 +167,7 @@ func reviewDiffThreadCollapsed(thread reviewDiffThread, collapsedThreadIDs map[s
 func reviewDiffThreadHeaderLineIndex(renderedRows []reviewDiffRenderedRow, threadID string) int {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	for index, row := range renderedRows {
-		if row.Thread == nil || strings.TrimSpace(row.Thread.ID) != trimmedThreadID {
+		if row.Kind != reviewDiffRenderedRowKindInlineCommentHeader || row.Thread == nil || strings.TrimSpace(row.Thread.ID) != trimmedThreadID {
 			continue
 		}
 		return index

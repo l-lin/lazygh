@@ -392,7 +392,7 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlace
 	}
 }
 
-func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_ThenItShowsThemOnTheMetadataLine(t *testing.T) {
+func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_ThenItShowsThemOnTheHeaderLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered thread body"}
 	file := reviewDiffFile{
 		Path:       "internal/tui/render.go",
@@ -414,15 +414,15 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreadStatusBadges_WhenRendering_
 	}
 
 	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
-	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-one")
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:11 R11")
 
 	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
-		if !strings.Contains(metadataLine, expected) {
-			t.Fatalf("expected the metadata line to contain %q, actual %q", expected, metadataLine)
+		if !strings.Contains(headerLine, expected) {
+			t.Fatalf("expected the header line to contain %q, actual %q", expected, headerLine)
 		}
 	}
-	pendingIndex := given_runeIndexInString(t, metadataLine, "Pending")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[metadataLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.SelectedLineBackgroundHex)) {
-		t.Fatalf("expected the pending badge prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.SelectedLineBackgroundHex), actualStylePrefix)
+	pendingIndex := given_runeIndexInString(t, headerLine, "Pending")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) {
+		t.Fatalf("expected the pending header prefix to contain %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
 	}
 }

@@ -378,7 +378,7 @@ func TestRenderPullRequestCommentsTab_GivenInlineComments_WhenFormatting_ThenItR
 	}
 }
 
-func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenFormatting_ThenItShowsTheResolvedBadgeOnTheFirstMetadataLineAndRendersRepliesTogether(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenFormatting_ThenItShowsTheResolvedStateOnTheHeaderLineAndRendersRepliesTogether(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
 		"Needs more spacing":     "Rendered inline comment",
 		"Fixed in the next push": "Rendered reply",
@@ -406,14 +406,14 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 
 	actual := renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120)
 	actualDocument := newDetailDocument(actual, 120)
-	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-inline")
-	resolvedIndex := given_runeIndexInString(t, metadataLine, "Resolved")
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43 R43")
+	resolvedIndex := given_runeIndexInString(t, headerLine, "Resolved")
 
-	if !strings.Contains(metadataLine, "Resolved") {
-		t.Fatalf("expected the first metadata line to mention the resolved state, actual %q", metadataLine)
+	if !strings.Contains(headerLine, " internal/tui/render.go:43 R43 Resolved") {
+		t.Fatalf("expected the header line to show the location and resolved state, actual %q", headerLine)
 	}
-	if actualStylePrefix := actualDocument.lineStylePrefixes[metadataLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.DiffAdditionBackgroundHex)) {
-		t.Fatalf("expected the resolved badge prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) {
+		t.Fatalf("expected the resolved header prefix to contain %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), actualStylePrefix)
 	}
 	if strings.Contains(actual, "@@ -42,2 +42,2 @@") || strings.Contains(actual, "opusplan") {
 		t.Fatalf("expected inline thread rendering to drop the diff preview, actual %q", actual)
@@ -423,7 +423,7 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 	}
 }
 
-func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsPendingUnresolvedAndOutdatedBadgesOnTheFirstMetadataLine(t *testing.T) {
+func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_WhenFormatting_ThenItShowsPendingUnresolvedAndOutdatedStatesOnTheHeaderLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 	inlineThreads := []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -441,16 +441,16 @@ func TestRenderPullRequestCommentsTab_GivenPendingOutdatedInlineCommentThreads_W
 	}}
 
 	actualDocument := newDetailDocument(renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120), 120)
-	metadataLineIndex, metadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-inline")
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "internal/tui/render.go:43 R43")
 
 	for _, expected := range []string{"Pending", "Unresolved", "Outdated"} {
-		if !strings.Contains(metadataLine, expected) {
-			t.Fatalf("expected the metadata line to contain %q, actual %q", expected, metadataLine)
+		if !strings.Contains(headerLine, expected) {
+			t.Fatalf("expected the header line to contain %q, actual %q", expected, headerLine)
 		}
 	}
-	pendingIndex := given_runeIndexInString(t, metadataLine, "Pending")
-	if actualStylePrefix := actualDocument.lineStylePrefixes[metadataLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.SelectedLineBackgroundHex)) {
-		t.Fatalf("expected the pending badge prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.PendingHex), backgroundColorEscape(theme.SelectedLineBackgroundHex), actualStylePrefix)
+	pendingIndex := given_runeIndexInString(t, headerLine, "Pending")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][pendingIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.PendingHex)) {
+		t.Fatalf("expected the pending header prefix to contain %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
 	}
 }
 

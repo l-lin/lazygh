@@ -17,6 +17,7 @@ const (
 	reviewDiffRenderedRowKindHunkHeader
 	reviewDiffRenderedRowKindDiffLine
 	reviewDiffRenderedRowKindInlineCommentDecoration
+	reviewDiffRenderedRowKindInlineCommentHeader
 	reviewDiffRenderedRowKindNote
 )
 
@@ -174,7 +175,7 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	rows = append(rows,
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy},
+		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentHeader, Text: renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy},
 	)
 	if collapsed {
 		rows = append(rows,
@@ -185,15 +186,10 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	}
 
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
-	statusBadges := inlineThreadMetadataBadges(thread.IsResolved, thread.IsOutdated, thread.Comments)
-	for index, comment := range thread.Comments {
+	for _, comment := range thread.Comments {
 		commentCopy := comment
 		body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
-		commentBadges := []commentMetadataBadge(nil)
-		if index == 0 {
-			commentBadges = statusBadges
-		}
-		for _, boxLine := range strings.Split(renderCommentBoxWithMetadataBadges(comment.Author, comment.CreatedAt, commentBadges, body, threadWidth), "\n") {
+		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, body, threadWidth), "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}
@@ -208,16 +204,13 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 }
 
 func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) string {
-	chevron := ""
-	if collapsed {
-		chevron = ""
-	}
-
-	status := fmt.Sprintf("%s Comment on line %s%d", chevron, reviewDiffThreadSideLabel(thread), reviewDiffThreadDisplayLine(thread))
-	if thread.IsResolved {
-		status += " · resolved"
-	}
-	return styleText(status, foregroundColorEscape(theme.DiffHunkHeaderHex))
+	comment := pullRequestInlineCommentFromReviewDiffThread(thread)
+	return renderInlineThreadHeaderLine(
+		pullRequestInlineCommentLocation(comment),
+		inlineThreadAnchorLabel(reviewDiffThreadSideLabel(thread), reviewDiffThreadDisplayLine(thread)),
+		collapsed,
+		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated, thread.Comments),
+	)
 }
 
 func renderReviewDiffThreadHorizontalBorder(width int) string {

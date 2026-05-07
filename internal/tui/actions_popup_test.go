@@ -772,8 +772,8 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenExec
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "· resolved") {
-		t.Fatalf("expected the detail buffer to refresh with the resolved state, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "Resolved") || strings.Contains(detailView.Buffer(), "@reviewer-inline  2026-04-18 10:30 UTC  Resolved") {
+		t.Fatalf("expected the detail buffer to refresh with the resolved state on the header, actual %q", detailView.Buffer())
 	}
 }
 
@@ -881,7 +881,7 @@ func TestActionsPopup_GivenReviewModeCursorOnAResolvedInlineThread_WhenOpening_T
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Comment on line R3 · resolved")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:3 R3 Resolved")
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
