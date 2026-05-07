@@ -1293,6 +1293,13 @@ type fakePullRequestDetailLoader struct {
 	reviewKeyByPendingID       map[string]string
 	openBrowserCalls           []string
 	openBrowserErr             error
+	assignableUsers            map[string][]githubcli.PullRequestAuthor
+	assignableUserCalls        []string
+	assignableUserErr          error
+	updateAssigneeCalls        []string
+	updateAssigneeAdditions    [][]string
+	updateAssigneeRemovals     [][]string
+	updateAssigneeErr          error
 	editTitleCalls             []string
 	editTitleValues            []string
 	editTitleErr               error
@@ -1490,6 +1497,70 @@ func (loader *fakePullRequestDetailLoader) AddReaction(subjectID string, content
 func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository string, number int) error {
 	loader.openBrowserCalls = append(loader.openBrowserCalls, repository+"#"+strconv.Itoa(number))
 	return loader.openBrowserErr
+}
+
+func (loader *fakePullRequestDetailLoader) ListAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, error) {
+	trimmedRepository := strings.TrimSpace(repository)
+	loader.assignableUserCalls = append(loader.assignableUserCalls, trimmedRepository)
+	if loader.assignableUserErr != nil {
+		return nil, loader.assignableUserErr
+	}
+	if loader.assignableUsers != nil {
+		if actual, ok := loader.assignableUsers[trimmedRepository]; ok {
+			return append([]githubcli.PullRequestAuthor(nil), actual...), nil
+		}
+	}
+	return nil, nil
+}
+
+func (loader *fakePullRequestDetailLoader) UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error {
+	loader.updateAssigneeCalls = append(loader.updateAssigneeCalls, repository+"#"+strconv.Itoa(number))
+	loader.updateAssigneeAdditions = append(loader.updateAssigneeAdditions, append([]string(nil), addLogins...))
+	loader.updateAssigneeRemovals = append(loader.updateAssigneeRemovals, append([]string(nil), removeLogins...))
+	if loader.updateAssigneeErr != nil {
+		return loader.updateAssigneeErr
+	}
+
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		updatedAssignees := append([]githubcli.PullRequestAuthor(nil), detail.Assignees...)
+		for _, login := range removeLogins {
+			trimmedLogin := strings.TrimSpace(login)
+			filteredAssignees := updatedAssignees[:0]
+			for _, assignee := range updatedAssignees {
+				if strings.TrimSpace(assignee.Login) == trimmedLogin {
+					continue
+				}
+				filteredAssignees = append(filteredAssignees, assignee)
+			}
+			updatedAssignees = filteredAssignees
+		}
+		for _, login := range addLogins {
+			trimmedLogin := strings.TrimSpace(login)
+			if trimmedLogin == "" {
+				continue
+			}
+			alreadyAssigned := false
+			for _, assignee := range updatedAssignees {
+				if strings.TrimSpace(assignee.Login) == trimmedLogin {
+					alreadyAssigned = true
+					break
+				}
+			}
+			if alreadyAssigned {
+				continue
+			}
+			assignee := githubcli.PullRequestAuthor{Login: trimmedLogin}
+			for _, candidate := range loader.assignableUsers[strings.TrimSpace(repository)] {
+				if strings.TrimSpace(candidate.Login) == trimmedLogin {
+					assignee = candidate
+					break
+				}
+			}
+			updatedAssignees = append(updatedAssignees, assignee)
+		}
+		detail.Assignees = updatedAssignees
+	})
+	return nil
 }
 
 func (loader *fakePullRequestDetailLoader) EditPullRequestTitle(repository string, number int, title string) error {

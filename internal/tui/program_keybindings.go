@@ -431,6 +431,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeDetail, "open_actions_popup", []string{viewDetailName}, program.openActionsPopup, runeBinding('a')),
 		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation_prefix", []string{viewDetailName}, program.armInlineConversationTogglePrefix, runeBinding('z')),
 		keybindingActionFor(keymapScopeDetail, "place_cursor_at_viewport_top", []string{viewDetailName}, program.moveDetailCursorToViewportTop, runeBinding('t')),
+		keybindingActionFor(keymapScopeDetail, "close_all_folds", []string{viewDetailName}, program.closeAllDetailFolds, runeBinding('M')),
+		keybindingActionFor(keymapScopeDetail, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds, runeBinding('R')),
 		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeDetail, "close", []string{viewDetailName}, program.closeDetail, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 
@@ -449,6 +451,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeActionsPopup, "recenter_selection", []string{viewActionsPopupName}, program.recenterActionsPopupSelection, runeBinding('z')),
 		keybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_top", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportTop, runeBinding('t')),
 		keybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportBottom, runeBinding('b')),
+		keybindingActionFor(keymapScopeActionsPopup, "toggle_selected_picker_item", []string{viewActionsPopupName}, program.toggleSelectedActionsPopupPickerItem, runeBinding(' ')),
 		keybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeActionsPopup, "close", []string{viewActionsPopupName}, program.closeActionsPopup, namedBinding(gocui.KeyEsc, "<esc>"), namedBinding(gocui.KeyCtrlLsqBracket, "<c-[>"), runeBinding('q')),
 

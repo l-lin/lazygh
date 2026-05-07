@@ -154,6 +154,15 @@ This example opens links with Firefox on macOS.
 open_command = ["open", "-a", "Firefox"]
 ```
 
+### Actions popup
+
+Use the actions popup on a pull request when you want a mutation without typing `gh` commands by hand.
+
+- `Assign PR` opens a searchable assignee picker.
+- The picker starts with the current assignees selected. Press `space` to toggle an assignee, then press `enter` to save.
+- GitHub only allows up to 10 assignees per pull request.
+- You still need permission to assign users in that repository.
+
 ### Story review
 
 Use the actions popup on a pull request and pick `Review PR as story`.
@@ -233,7 +242,7 @@ Use scoped tables under `[keymaps]`.
 
 The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It skips `view 1`, and it updates automatically when you remap keys, which is the bare minimum for honesty.
 
-For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations and also makes `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. In browser mode on view `0`, `previous_tab` and `next_tab` cycle `Description`, `Comments`, `Commits`, and `Changes`. In review mode on views `0` and `2`, those same bindings become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious.
+For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations, `zM` and `zR` close or open every fold in the current detail context, and `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. In browser mode on view `0`, `previous_tab` and `next_tab` cycle `Description`, `Comments`, `Commits`, and `Changes`. In review mode on views `0` and `2`, those same bindings become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious.
 
 This example mirrors the built-in defaults.
 
@@ -303,8 +312,10 @@ next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
-# `gx` opens the link under the cursor, `za` toggles inline conversations in review mode, and `zt`/`zz`/`zb` place the cursor at the top/center/bottom.
+# `gx` opens the link under the cursor, `za` toggles inline conversations in review mode, `zM` and `zR` close or open every fold in the current detail context, and `zt`/`zz`/`zb` place the cursor at the top/center/bottom.
 toggle_inline_conversation_prefix = "z"
+close_all_folds = "M"
+open_all_folds = "R"
 close = ["esc", "ctrl+[", "q"]
 
 [keymaps.search]

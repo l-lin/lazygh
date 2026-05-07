@@ -85,6 +85,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				program.reviewInlineCommentHelpEntry(),
 				{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse conversation"},
+				{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
 				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Review actions"},
 				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
@@ -151,6 +152,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			entries = append(entries,
 				program.pullRequestCommentHelpEntry(keymapScopeDetail),
 				helpEntry{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse section"},
+				helpEntry{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
 				helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "PR actions"},
 				helpEntry{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeDetail, action: "previous_tab"}), Description: "Previous detail tab"},
 				helpEntry{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeDetail, action: "next_tab"}), Description: "Next detail tab"},
@@ -298,6 +300,12 @@ func (program *Program) reviewCommentMotionHelpKeys(scope string) string {
 
 func (program *Program) inlineConversationToggleHelpKeys() string {
 	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation"}) + "/" + program.helpKeysOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}) + program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"})
+}
+
+func (program *Program) bulkFoldHelpKeys() string {
+	closeKeys := program.helpKeyChordOrFallback("z", "M", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}, keybindingActionID{scope: keymapScopeDetail, action: "close_all_folds"})
+	openKeys := program.helpKeyChordOrFallback("z", "R", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}, keybindingActionID{scope: keymapScopeDetail, action: "open_all_folds"})
+	return closeKeys + "/" + openKeys
 }
 
 func (program *Program) helpViewSize(maxX int, maxY int) (int, int) {

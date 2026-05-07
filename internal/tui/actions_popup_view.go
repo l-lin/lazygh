@@ -79,7 +79,7 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
 	query := program.model.ActionsPopupSearchQuery()
 	if len(filteredIndexes) == 0 {
-		fmt.Fprintln(view, "No matching actions.")
+		fmt.Fprintln(view, program.emptyActionsPopupMessage())
 		view.SetOrigin(0, 0)
 		view.SetCursor(0, 0)
 		return
@@ -110,7 +110,9 @@ func (program *Program) renderActionsPopupSearchView(view *gocui.View) {
 
 func (program *Program) actionsPopupTitle() string {
 	title := "Actions"
-	if program.themePickerVisible() {
+	if program.assigneePickerVisible() {
+		title = assigneePickerTitle
+	} else if program.themePickerVisible() {
 		title = themePickerTitle
 	} else if program.reactionPickerVisible() {
 		title = reactionPickerTitle
@@ -125,19 +127,30 @@ func (program *Program) actionsPopupTitle() string {
 
 func (program *Program) actionsPopupFooter() string {
 	query := strings.TrimSpace(program.model.ActionsPopupSearchQuery())
-	if query == "" {
-		return ""
-	}
-
 	itemLabel := "actions"
-	if program.themePickerVisible() {
+	if program.assigneePickerVisible() {
+		itemLabel = "assignees"
+	} else if program.themePickerVisible() {
 		itemLabel = "themes"
 	} else if program.reactionPickerVisible() {
 		itemLabel = "reactions"
 	}
+
 	actions := program.currentActionsPopupActions()
 	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
-	return fmt.Sprintf("%d of %d %s", len(filteredIndexes), len(actions), itemLabel)
+	countSummary := ""
+	if query != "" {
+		countSummary = fmt.Sprintf("%d of %d %s", len(filteredIndexes), len(actions), itemLabel)
+	}
+	if !program.assigneePickerVisible() {
+		return countSummary
+	}
+
+	hints := "space toggle · enter save"
+	if countSummary == "" {
+		return hints
+	}
+	return countSummary + " · " + hints
 }
 
 func (program *Program) currentActionsPopupSearchText() string {
@@ -152,4 +165,11 @@ func (program *Program) currentActionsPopupSearchCursor() int {
 		return program.actionsPopupSearchEditor.Cursor()
 	}
 	return utf8.RuneCountInString(program.model.ActionsPopupSearchQuery())
+}
+
+func (program *Program) emptyActionsPopupMessage() string {
+	if program.assigneePickerVisible() {
+		return "No matching assignees."
+	}
+	return "No matching actions."
 }

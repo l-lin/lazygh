@@ -194,7 +194,24 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 	for _, expected := range []string{
 		"`zt`, `zz`, and `zb` place the selected row",
 		"`za` for inline conversations",
+		"`zM` and `zR` close or open every fold in the current detail context",
 		"`zt`/`zz`/`zb` place the cursor at the top/center/bottom",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
+func TestProjectFiles_GivenTheReadme_WhenReadingTheActionsSection_ThenItDocumentsTheAssigneePickerAndGitHubConstraints(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"`Assign PR` opens a searchable assignee picker",
+		"GitHub only allows up to 10 assignees per pull request",
+		"permission to assign users in that repository",
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)

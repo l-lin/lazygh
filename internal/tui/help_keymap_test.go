@@ -76,6 +76,25 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheL
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
 }
 
+func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsZMAndZRForBulkFolds(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"}}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Close/open all folds", "zM/zR")
+}
+
 func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)

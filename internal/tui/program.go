@@ -40,6 +40,8 @@ type GitHubLoader interface {
 	UnresolvePullRequestReviewThread(threadID string) error
 	AddReaction(subjectID string, content githubcli.ReactionContent) error
 	OpenPullRequestInBrowser(repository string, number int) error
+	ListAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, error)
+	UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
@@ -86,6 +88,7 @@ type Program struct {
 	actionsPopupErrorMessage          string
 	reactionPicker                    *reactionPickerState
 	themePicker                       *themePickerState
+	assigneePicker                    *assigneePickerState
 	reviewSession                     reviewSessionState
 	browserCollapsedSectionStates     map[string]bool
 	pullRequestBuildRunLoad           *pullRequestBuildRunLoadState
