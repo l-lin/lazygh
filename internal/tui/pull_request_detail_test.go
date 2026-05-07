@@ -240,6 +240,33 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItKeepsUs
 	}
 }
 
+func TestRenderPullRequestCommitsTab_GivenCommits_WhenFormatting_ThenItShowsTheShortShaHeadlineAuthorsAndTimestamps(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{"this commit adds gh pr back": "Rendered commit body"}}
+	commits := []githubcli.PullRequestCommit{{
+		OID:             "e9a3253762e768badaa1d4a5b3d267416d1e42f4",
+		MessageHeadline: "reintroduce interactive gh pr",
+		MessageBody:     "this commit adds gh pr back",
+		AuthoredDate:    "2019-10-04T15:23:39Z",
+		CommittedDate:   "2019-10-04T15:57:48Z",
+		Authors: []githubcli.PullRequestCommitAuthor{{
+			Name:  "nate smith",
+			Login: "vilmibm",
+			Email: "vilmibm@github.com",
+		}},
+	}}
+
+	actual := renderPullRequestCommitsTab(commits, renderer, 72)
+
+	for _, expected := range []string{"e9a3253", "reintroduce interactive gh pr", "Authors: nate smith", "Authored 2019-10-04 15:23 UTC", "Committed 2019-10-04 15:57 UTC", "Rendered commit body"} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected commits tab to contain %q, actual %q", expected, actual)
+		}
+	}
+	if renderer.lastWidth != commentBoxInnerWidth(72) {
+		t.Fatalf("expected commit render width %d, actual %d", commentBoxInnerWidth(72), renderer.lastWidth)
+	}
+}
+
 func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItRendersEachCommentInsideAGreyRoundedBoxWithTheAuthorAndDateOnTheSameLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
 	comments := []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, CreatedAt: "2026-04-18T13:00:00Z", Body: "**Ship it**"}}

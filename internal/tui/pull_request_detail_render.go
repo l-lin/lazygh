@@ -7,6 +7,8 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
+const shortPullRequestCommitOIDLength = 7
+
 type pullRequestHeaderOptions struct {
 	includeStatusChecks bool
 	includeReviewers    bool
@@ -60,6 +62,116 @@ func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlin
 		texts = append(texts, section.text)
 	}
 	return strings.Join(texts, "\n\n")
+}
+
+func renderPullRequestCommitsTab(commits []githubcli.PullRequestCommit, renderer MarkdownRenderer, width int) string {
+	if len(commits) == 0 {
+		return "No commits yet."
+	}
+
+	sections := make([]string, 0, len(commits))
+	for _, commit := range commits {
+		sections = append(sections, renderPullRequestCommitSection(commit, renderer, width))
+	}
+	return strings.Join(sections, "\n\n")
+}
+
+func renderPullRequestChangesTab(files []reviewDiffFile, renderer MarkdownRenderer, width int) string {
+	if len(files) == 0 {
+		return "No changes yet."
+	}
+
+	renderedFiles := make([]string, 0, len(files))
+	for _, file := range files {
+		renderedFiles = append(renderedFiles, renderReviewDiffFile(file, renderer, width))
+	}
+	return strings.Join(renderedFiles, "\n\n")
+}
+
+func renderPullRequestCommitSection(commit githubcli.PullRequestCommit, renderer MarkdownRenderer, width int) string {
+	sectionParts := []string{renderPullRequestCommitHeader(commit)}
+	metadataLines := filterEmptyStrings([]string{
+		renderPullRequestCommitAuthorsLine(commit.Authors),
+		renderPullRequestCommitTimestampsLine(commit),
+	})
+	if len(metadataLines) > 0 {
+		sectionParts = append(sectionParts, strings.Join(metadataLines, "\n"))
+	}
+	if body := strings.TrimSpace(renderMarkdownWithFallback(commit.MessageBody, renderer, commentBoxInnerWidth(width), "")); body != "" {
+		sectionParts = append(sectionParts, body)
+	}
+	return renderRoundedCommentBox(strings.Join(sectionParts, "\n\n"), width)
+}
+
+func renderPullRequestCommitHeader(commit githubcli.PullRequestCommit) string {
+	shortOID := shortPullRequestCommitOID(commit.OID)
+	headline := strings.TrimSpace(commit.MessageHeadline)
+	switch {
+	case shortOID != "" && headline != "":
+		return stylePullRequestReferenceText(shortOID) + " " + stylePullRequestTitleText(headline)
+	case headline != "":
+		return stylePullRequestTitleText(headline)
+	case shortOID != "":
+		return stylePullRequestReferenceText(shortOID)
+	default:
+		return stylePullRequestTitleText("Commit")
+	}
+}
+
+func renderPullRequestCommitAuthorsLine(authors []githubcli.PullRequestCommitAuthor) string {
+	labels := pullRequestCommitAuthorLabels(authors)
+	if len(labels) == 0 {
+		return ""
+	}
+	return "Authors: " + strings.Join(labels, ", ")
+}
+
+func renderPullRequestCommitTimestampsLine(commit githubcli.PullRequestCommit) string {
+	parts := filterEmptyStrings([]string{
+		renderPullRequestCommitTimestampPart("Authored", commit.AuthoredDate),
+		renderPullRequestCommitTimestampPart("Committed", commit.CommittedDate),
+	})
+	return strings.Join(parts, "  ")
+}
+
+func renderPullRequestCommitTimestampPart(label string, value string) string {
+	formatted := formattedOptionalTimestamp(value)
+	if formatted == "" {
+		return ""
+	}
+	return strings.TrimSpace(label) + " " + formatted
+}
+
+func pullRequestCommitAuthorLabels(authors []githubcli.PullRequestCommitAuthor) []string {
+	labels := make([]string, 0, len(authors))
+	seen := map[string]bool{}
+	for _, author := range authors {
+		label := pullRequestCommitAuthorLabel(author)
+		if label == "" || seen[label] {
+			continue
+		}
+		seen[label] = true
+		labels = append(labels, label)
+	}
+	return labels
+}
+
+func pullRequestCommitAuthorLabel(author githubcli.PullRequestCommitAuthor) string {
+	if trimmedName := strings.TrimSpace(author.Name); trimmedName != "" {
+		return trimmedName
+	}
+	if login := formatLogin(author.Login); login != "-" {
+		return login
+	}
+	return strings.TrimSpace(author.Email)
+}
+
+func shortPullRequestCommitOID(oid string) string {
+	trimmedOID := strings.TrimSpace(oid)
+	if runeCountInt(trimmedOID) <= shortPullRequestCommitOIDLength {
+		return trimmedOID
+	}
+	return string([]rune(trimmedOID)[:shortPullRequestCommitOIDLength])
 }
 
 func renderPullRequestDetailLoading(summary githubcli.PullRequest, spinner string) string {

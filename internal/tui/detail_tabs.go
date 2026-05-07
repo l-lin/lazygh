@@ -15,12 +15,7 @@ func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
 	}
 
 	program.detailViewState.clearPendingPrefix()
-	switch program.activeDetailTab {
-	case CommentsDetailTab:
-		program.activeDetailTab = DescriptionDetailTab
-	default:
-		program.activeDetailTab = CommentsDetailTab
-	}
+	program.activeDetailTab = DetailTab((int(program.activeDetailTab) + 1) % len(browserDetailTabs))
 
 	return program.refreshViews(gui)
 }
@@ -30,7 +25,13 @@ func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) erro
 		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationBackward)
 	}
 
-	return program.nextDetailTab(gui, nil)
+	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
+		return nil
+	}
+
+	program.detailViewState.clearPendingPrefix()
+	program.activeDetailTab = DetailTab((int(program.activeDetailTab) + len(browserDetailTabs) - 1) % len(browserDetailTabs))
+	return program.refreshViews(gui)
 }
 
 func (program *Program) shouldShowPullRequestDetailTabs() bool {
@@ -42,8 +43,14 @@ func (program *Program) shouldShowPullRequestDetailTabs() bool {
 	return ok && row.Summary != nil
 }
 
+var browserDetailTabs = []DetailTab{DescriptionDetailTab, CommentsDetailTab, CommitsDetailTab, ChangesDetailTab}
+
 func (program *Program) detailTabLabels() []string {
-	return []string{program.detailTabLabel(DescriptionDetailTab), program.detailTabLabel(CommentsDetailTab)}
+	labels := make([]string, 0, len(browserDetailTabs))
+	for _, tab := range browserDetailTabs {
+		labels = append(labels, program.detailTabLabel(tab))
+	}
+	return labels
 }
 
 func (program *Program) detailTabLabel(tab DetailTab) string {

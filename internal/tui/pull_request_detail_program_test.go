@@ -141,7 +141,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	if strings.Contains(detailView.Buffer(), "Rendered comment 101") {
 		t.Fatalf("expected overview tab to hide comments, actual %q", detailView.Buffer())
 	}
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)"}, 0)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 0)
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101"}, loader.detailCalls)
 	}
@@ -160,7 +160,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 			t.Fatalf("expected the conversations tab to contain %q, actual %q", expected, detailView.Buffer())
 		}
 	}
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)"}, 1)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (2)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 1)
 
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
@@ -182,6 +182,76 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#101", "acme/widgets#102"}) {
 		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#101", "acme/widgets#102"}, loader.detailCalls)
+	}
+}
+
+func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDetailTabsAndRendersTheCommitTab(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/commits",
+				State:       "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:      "Comment body",
+					CreatedAt: "2026-04-18T10:00:00Z",
+				}},
+				Commits: []githubcli.PullRequestCommit{{
+					OID:             "e9a3253762e768badaa1d4a5b3d267416d1e42f4",
+					MessageHeadline: "reintroduce interactive gh pr",
+					MessageBody:     "this commit adds gh pr back",
+					AuthoredDate:    "2019-10-04T15:23:39Z",
+					CommittedDate:   "2019-10-04T15:57:48Z",
+					Authors: []githubcli.PullRequestCommitAuthor{{
+						Name:  "nate smith",
+						Login: "vilmibm",
+					}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42":                     "Rendered body 42",
+		"this commit adds gh pr back": "Rendered commit body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 0)
+
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	if subject.activeDetailTab != CommentsDetailTab {
+		t.Fatalf("expected active detail tab %v, actual %v", CommentsDetailTab, subject.activeDetailTab)
+	}
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	if subject.activeDetailTab != CommitsDetailTab {
+		t.Fatalf("expected active detail tab %v, actual %v", CommitsDetailTab, subject.activeDetailTab)
+	}
+	for _, expected := range []string{"e9a3253", "reintroduce interactive gh pr", "Authors: nate smith", "Authored 2019-10-04 15:23 UTC", "Committed 2019-10-04 15:57 UTC", "Rendered commit body"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected the commits tab to contain %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+
+	actualErr = subject.previousDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	if subject.activeDetailTab != CommentsDetailTab {
+		t.Fatalf("expected active detail tab %v after going backward, actual %v", CommentsDetailTab, subject.activeDetailTab)
 	}
 }
 

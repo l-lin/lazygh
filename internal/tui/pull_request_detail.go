@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"charm.land/glamour/v2"
@@ -36,6 +35,8 @@ type DetailTab int
 const (
 	DescriptionDetailTab DetailTab = iota
 	CommentsDetailTab
+	CommitsDetailTab
+	ChangesDetailTab
 )
 
 type MarkdownRenderer interface {
@@ -54,9 +55,13 @@ type pullRequestDetailResult struct {
 func (tab DetailTab) Label() string {
 	switch tab {
 	case CommentsDetailTab:
-		return fmt.Sprintf("%s Conversations", detailCommentsIcon)
+		return "Comments"
+	case CommitsDetailTab:
+		return "Commits"
+	case ChangesDetailTab:
+		return "Changes"
 	default:
-		return fmt.Sprintf("%s Overview", detailDescriptionIcon)
+		return "Description"
 	}
 }
 

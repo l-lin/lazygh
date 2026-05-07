@@ -19,14 +19,19 @@ func (program *Program) detailViewContent() string {
 					return renderPullRequestDetailError(*row.Summary, result.err)
 				}
 
-				if program.activeDetailTab == CommentsDetailTab {
+				switch program.activeDetailTab {
+				case CommentsDetailTab:
 					return program.renderCurrentPullRequestConversationsTab(*row.Summary, result.detail, program.detailWrapWidth)
+				case CommitsDetailTab:
+					return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailWrapWidth)
+				case ChangesDetailTab:
+					return renderPullRequestChangesTab(nil, program.markdownRenderer, program.detailWrapWidth)
+				default:
+					header := renderPullRequestBrowserHeader(*row.Summary, result.detail)
+					overview := program.renderCurrentPullRequestOverview(*row.Summary, result.detail, program.detailWrapWidth)
+					content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
+					return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
 				}
-
-				header := renderPullRequestBrowserHeader(*row.Summary, result.detail)
-				overview := program.renderCurrentPullRequestOverview(*row.Summary, result.detail, program.detailWrapWidth)
-				content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
-				return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
 			}
 			return renderPullRequestDetailLoading(*row.Summary, program.loadingSpinnerFrame())
 		}
