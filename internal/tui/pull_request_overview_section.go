@@ -455,15 +455,22 @@ func pullRequestOverviewStatusForStatusCheckRollupState(state string) pullReques
 func pullRequestOverviewStatusForMergeability(mergeable string, mergeState string) pullRequestOverviewStatus {
 	normalizedMergeable := strings.ToUpper(strings.TrimSpace(mergeable))
 	normalizedMergeState := strings.ToUpper(strings.TrimSpace(mergeState))
-	switch {
-	case normalizedMergeable == "MERGEABLE" || normalizedMergeState == "CLEAN":
-		return pullRequestOverviewStatusSuccess
-	case normalizedMergeable == "CONFLICTING" || normalizedMergeState == "DIRTY":
+	if normalizedMergeable == "CONFLICTING" {
 		return pullRequestOverviewStatusFailure
-	case normalizedMergeState != "" && normalizedMergeState != "UNKNOWN":
-		return pullRequestOverviewStatusPending
-	default:
+	}
+
+	switch normalizedMergeState {
+	case "CLEAN", "HAS_HOOKS":
+		return pullRequestOverviewStatusSuccess
+	case "DIRTY":
+		return pullRequestOverviewStatusFailure
+	case "", "UNKNOWN":
+		if normalizedMergeable == "MERGEABLE" {
+			return pullRequestOverviewStatusSuccess
+		}
 		return pullRequestOverviewStatusMuted
+	default:
+		return pullRequestOverviewStatusPending
 	}
 }
 

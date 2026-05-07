@@ -231,6 +231,30 @@ func TestPullRequestRow_GivenApprovedReviewsWithoutPassingMergeChecks_WhenBuildi
 	}
 }
 
+func TestPullRequestRow_GivenBlockedMergeStateWithPassingReviewsAndChecks_WhenBuildingTheListRow_ThenItKeepsTheDefaultBackground(t *testing.T) {
+	actual := pullRequestRow(githubcli.PullRequest{
+		Title:                  "Blocked by merge checks",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "BLOCKED",
+		StatusCheckRollupState: "SUCCESS",
+	}).Item
+
+	if actual.Title != " acme/widgets#42 Blocked by merge checks" {
+		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Blocked by merge checks", actual.Title)
+	}
+	for index, unexpectedBackground := range []string{backgroundColorEscape(theme.SuccessBackgroundHex), backgroundColorEscape(theme.FailureBackgroundHex)} {
+		for segmentIndex, segment := range actual.TitleSegments {
+			if strings.Contains(segment.Prefix, unexpectedBackground) {
+				t.Fatalf("expected title segment %d prefix %q to avoid unexpected background %d %q", segmentIndex, segment.Prefix, index, unexpectedBackground)
+			}
+		}
+	}
+}
+
 func TestPullRequestRow_GivenFailingMergeChecks_WhenBuildingTheListRow_ThenItUsesTheFailureBackgroundForEachTitleSegment(t *testing.T) {
 	actual := pullRequestRow(githubcli.PullRequest{
 		Title:                  "Blocked PR",

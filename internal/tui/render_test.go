@@ -258,6 +258,30 @@ func TestLayout_GivenSuccessfulMergeChecks_WhenRendering_ThenTheListRowUsesTheSu
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
 }
 
+func TestLayout_GivenBlockedMergeStateWithPassingReviewsAndChecks_WhenRendering_ThenTheListRowKeepsTheDefaultBackground(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:                  "Blocked by merge checks",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "BLOCKED",
+		StatusCheckRollupState: "SUCCESS",
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewPullRequestsName, 0, 0, given_themeColorHex(t, theme.SuccessBackgroundHex), "pending merge checks success background")
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewPullRequestsName, 0, 0, given_themeColorHex(t, theme.FailureBackgroundHex), "pending merge checks failure background")
+}
+
 func TestLayout_GivenFailingMergeChecks_WhenRendering_ThenTheListRowUsesTheFailureBackground(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
