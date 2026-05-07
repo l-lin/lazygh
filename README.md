@@ -188,27 +188,31 @@ Prompt examples live in `prompts/story-review/`:
 Configure ordered tabs under `[[pull_requests.searches]]`.
 
 - The configured list fully defines the pull-request tabs.
-- You can rename or remove the built-in `My PRs` and `Requested` tabs by replacing them in the list.
+- You can rename or remove the built-in `My PRs`, `My reviews`, and `Requested` tabs by replacing them in the list.
 - You can add extra searches by appending more entries.
-- If the list is missing or ends up empty after validation, `lazygh` falls back to the built-in `My PRs` and `Requested` tabs.
+- If the list is missing or ends up empty after validation, `lazygh` falls back to those three built-in tabs.
 
-`lazygh` runs `gh` itself, so configure only the arguments after `gh`. A string value is split on whitespace. If one argument needs spaces, use an array instead. Each command must return a JSON array with the fields `title,number,repository,url,body,state,isDraft,updatedAt`.
+`lazygh` runs `gh` itself, so configure only the arguments after `gh`. A string value is split on whitespace. If one argument needs spaces, use an array instead. `lazygh` always appends `--json title,number,repository,url,body,state,isDraft,updatedAt`, so do not set `--json` in your config. The built-in searches use `gh search prs --sort updated --order desc`. If order matters for a custom search, prefer `gh search prs` and set the sort flags yourself.
 
-This example renames the default tabs and adds a third one.
+This example keeps the built-in searches and adds a fourth tab.
 
 ```toml
 [[pull_requests.searches]]
 label = "My PRs"
-command = ["search", "prs", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+command = ["search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"]
+
+[[pull_requests.searches]]
+label = "My reviews"
+command = ["search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
 
 [[pull_requests.searches]]
 label = "Requested"
-command = ["search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+command = ["search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
 
 # New search
 [[pull_requests.searches]]
 label = "Escalated"
-command = ["search", "prs", "--search", "label:escalated state:open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+command = ["search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
 ```
 
 ### Keymap overrides
