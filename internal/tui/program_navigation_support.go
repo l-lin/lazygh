@@ -194,23 +194,23 @@ func (program *Program) refreshDetailView(gui *gocui.Gui) error {
 }
 
 func (program *Program) sideViewCyclingBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible()
+	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildInfoPopupVisible()
 }
 
 func (program *Program) mainPaneActionBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible()
+	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildInfoPopupVisible()
 }
 
 func (program *Program) detailTransitionBlocked() bool {
-	return program.model.SearchActive() || program.model.ActionsPopupVisible()
+	return program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildInfoPopupVisible()
 }
 
 func (program *Program) helpToggleBlocked() bool {
-	return program.model.SearchActive() || program.model.ActionsPopupVisible()
+	return program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildInfoPopupVisible()
 }
 
 func (program *Program) selectionChangeBlocked() bool {
-	return program.model.SearchActive()
+	return program.model.SearchActive() || program.pullRequestBuildInfoPopupVisible()
 }
 
 func (program *Program) scrollReadOnlyView(gui *gocui.Gui, view *gocui.View, fallbackName string, delta int) error {

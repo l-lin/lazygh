@@ -1298,6 +1298,10 @@ type fakePullRequestDetailLoader struct {
 	startReviewCalls          []string
 	startReviewID             string
 	startReviewErr            error
+	buildInfos                map[string]githubcli.PullRequestBuildInfo
+	buildInfoCalls            []string
+	buildInfoChecks           []githubcli.PullRequestStatusCheck
+	buildInfoErr              error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -1509,6 +1513,20 @@ func (loader *fakePullRequestDetailLoader) StartPendingPullRequestReview(reposit
 	}
 	loader.reviewKeyByPendingID[reviewID] = repository + "#" + strconv.Itoa(number)
 	return reviewID, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildInfo(repository string, number int, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildInfo, error) {
+	loader.buildInfoCalls = append(loader.buildInfoCalls, repository+"#"+strconv.Itoa(number))
+	loader.buildInfoChecks = append(loader.buildInfoChecks, check)
+	if loader.buildInfoErr != nil {
+		return githubcli.PullRequestBuildInfo{}, loader.buildInfoErr
+	}
+	if loader.buildInfos != nil {
+		if actual, ok := loader.buildInfos[strings.TrimSpace(check.Link)]; ok {
+			return actual, nil
+		}
+	}
+	return githubcli.PullRequestBuildInfo{}, githubcli.ErrPullRequestBuildInfoNotFound
 }
 
 func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {

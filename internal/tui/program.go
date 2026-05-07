@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	viewDetailName             = "detail"
-	viewUserName               = "user"
-	viewPullRequestsName       = "pull-requests"
-	viewSearchName             = "search"
-	viewStatusLineName         = "status-line"
-	viewStatusLineKeyHintsName = "status-line-key-hints"
-	viewActionsPopupName       = "actions-popup"
-	viewActionsPopupSearchName = "actions-popup-search"
+	viewDetailName               = "detail"
+	viewUserName                 = "user"
+	viewPullRequestsName         = "pull-requests"
+	viewSearchName               = "search"
+	viewStatusLineName           = "status-line"
+	viewStatusLineKeyHintsName   = "status-line-key-hints"
+	viewActionsPopupName         = "actions-popup"
+	viewActionsPopupSearchName   = "actions-popup-search"
+	viewPullRequestBuildInfoName = "pull-request-build-info"
 )
 
 type GitHubLoader interface {
@@ -41,6 +42,7 @@ type GitHubLoader interface {
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
+	GetPullRequestBuildInfo(repository string, number int, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildInfo, error)
 }
 
 type Program struct {
@@ -82,6 +84,7 @@ type Program struct {
 	themePicker                       *themePickerState
 	reviewSession                     reviewSessionState
 	browserCollapsedSectionStates     map[string]bool
+	pullRequestBuildInfoPopup         *pullRequestBuildInfoPopupState
 	modalEditor                       *modalEditorState
 	externalEditor                    externalEditor
 	linkOpener                        linkOpener

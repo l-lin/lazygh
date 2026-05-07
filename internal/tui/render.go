@@ -59,6 +59,9 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	if err := syncOverlayLayout(gui, program.modalEditorVisible(), program.layoutModalEditorView, viewModalEditorName); err != nil {
 		return err
 	}
+	if err := syncOverlayLayout(gui, program.pullRequestBuildInfoPopupVisible(), program.layoutPullRequestBuildInfoPopupView, viewPullRequestBuildInfoName); err != nil {
+		return err
+	}
 	if err := syncOverlayLayout(gui, program.model.ActionsPopupVisible(), program.layoutActionsPopupViews, viewActionsPopupSearchName, viewActionsPopupName); err != nil {
 		return err
 	}

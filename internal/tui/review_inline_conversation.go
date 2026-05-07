@@ -136,6 +136,9 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 	if !ok {
 		return nil
 	}
+	if actualErr, handled := program.handleBrowserOverviewBuildEnter(gui, summary, result.detail, detailDocument, sectionAtCursor); handled {
+		return actualErr
+	}
 
 	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
 	program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
