@@ -15,6 +15,7 @@ var (
 )
 
 type PullRequestDetail struct {
+	ID                   string                     `json:"id,omitempty"`
 	Title                string                     `json:"title"`
 	Number               int                        `json:"number"`
 	URL                  string                     `json:"url"`
@@ -31,6 +32,7 @@ type PullRequestDetail struct {
 	HeadRefName          string                     `json:"headRefName"`
 	MergeStateStatus     string                     `json:"mergeStateStatus"`
 	Mergeable            string                     `json:"mergeable"`
+	ReactionGroups       []ReactionGroup            `json:"reactionGroups,omitempty"`
 	Comments             []PullRequestComment       `json:"comments"`
 	Commits              []PullRequestCommit        `json:"commits"`
 	Reviews              []PullRequestReview        `json:"reviews"`
@@ -77,6 +79,7 @@ type PullRequestComment struct {
 	DiffHunk        string                    `json:"diffHunk"`
 	State           string                    `json:"state"`
 	ViewerDidAuthor bool                      `json:"viewerDidAuthor"`
+	ReactionGroups  []ReactionGroup           `json:"reactionGroups,omitempty"`
 }
 
 type PullRequestCommit struct {
@@ -109,6 +112,7 @@ type PullRequestInlineComment struct {
 	Side              string                    `json:"side"`
 	StartSide         string                    `json:"start_side"`
 	SubjectType       string                    `json:"subject_type"`
+	ReactionGroups    []ReactionGroup           `json:"reactionGroups,omitempty"`
 }
 
 type PullRequestCommentAuthor struct {
@@ -157,6 +161,28 @@ func (client *Client) GetPullRequestDetail(repository string, number int) (PullR
 		detail.InlineCommentThreads = inlineThreads
 	}
 
+	reactionTargets, err := client.listPullRequestReactionTargets(trimmedRepository, number)
+	if err != nil {
+		return PullRequestDetail{}, err
+	}
+	if strings.TrimSpace(reactionTargets.PullRequestID) != "" {
+		detail.ID = reactionTargets.PullRequestID
+	}
+	if len(reactionTargets.ReactionGroups) > 0 {
+		detail.ReactionGroups = reactionTargets.ReactionGroups
+	}
+	if len(reactionTargets.Comments) > 0 {
+		detail.Comments = reactionTargets.Comments
+	}
+
+	inlineCommentReactionGroups, err := client.listPullRequestReviewCommentReactionGroups(pullRequestInlineCommentReactionTargetIDs(detail.InlineComments))
+	if err != nil {
+		return PullRequestDetail{}, err
+	}
+	if len(inlineCommentReactionGroups) > 0 {
+		detail.InlineComments = mergePullRequestInlineCommentReactionGroups(detail.InlineComments, inlineCommentReactionGroups)
+	}
+
 	return detail.normalized(), nil
 }
 
@@ -182,7 +208,31 @@ func (client *Client) listPullRequestInlineComments(repository string, number in
 	return flattenedComments, nil
 }
 
+func pullRequestInlineCommentReactionTargetIDs(comments []PullRequestInlineComment) []string {
+	ids := make([]string, 0, len(comments))
+	for _, comment := range comments {
+		ids = append(ids, strings.TrimSpace(comment.ID))
+	}
+	return ids
+}
+
+func mergePullRequestInlineCommentReactionGroups(comments []PullRequestInlineComment, groupsByID map[string][]ReactionGroup) []PullRequestInlineComment {
+	if len(comments) == 0 || len(groupsByID) == 0 {
+		return comments
+	}
+
+	mergedComments := make([]PullRequestInlineComment, 0, len(comments))
+	for _, comment := range comments {
+		if reactionGroups, ok := groupsByID[strings.TrimSpace(comment.ID)]; ok {
+			comment.ReactionGroups = append([]ReactionGroup(nil), reactionGroups...)
+		}
+		mergedComments = append(mergedComments, comment)
+	}
+	return mergedComments
+}
+
 func (detail PullRequestDetail) normalized() PullRequestDetail {
+	detail.ID = strings.TrimSpace(detail.ID)
 	detail.Title = strings.TrimSpace(detail.Title)
 	detail.URL = strings.TrimSpace(detail.URL)
 	detail.Body = strings.TrimSpace(detail.Body)
@@ -218,6 +268,7 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		}
 		detail.ReviewRequests = normalizedReviewRequests
 	}
+	detail.ReactionGroups = normalizeReactionGroups(detail.ReactionGroups)
 	if len(detail.Comments) > 0 {
 		normalizedComments := make([]PullRequestComment, 0, len(detail.Comments))
 		for _, comment := range detail.Comments {
@@ -303,6 +354,7 @@ func (comment PullRequestComment) normalized() PullRequestComment {
 	comment.URL = strings.TrimSpace(comment.URL)
 	comment.DiffHunk = strings.TrimSpace(comment.DiffHunk)
 	comment.State = strings.TrimSpace(comment.State)
+	comment.ReactionGroups = normalizeReactionGroups(comment.ReactionGroups)
 	if comment.Author != nil {
 		normalizedAuthor := comment.Author.normalized()
 		comment.Author = &normalizedAuthor
@@ -343,6 +395,7 @@ func (comment PullRequestInlineComment) normalized() PullRequestInlineComment {
 	comment.Side = strings.TrimSpace(comment.Side)
 	comment.StartSide = strings.TrimSpace(comment.StartSide)
 	comment.SubjectType = strings.TrimSpace(comment.SubjectType)
+	comment.ReactionGroups = normalizeReactionGroups(comment.ReactionGroups)
 	if comment.Author != nil {
 		normalizedAuthor := comment.Author.normalized()
 		comment.Author = &normalizedAuthor

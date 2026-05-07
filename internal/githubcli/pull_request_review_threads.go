@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-const pullRequestReviewThreadsQuery = `query($owner:String!,$name:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id isResolved isOutdated viewerCanResolve viewerCanUnresolve path line originalLine startLine originalStartLine diffSide startDiffSide comments(first:100){pageInfo{hasNextPage endCursor}nodes{id viewerDidAuthor state author{login} body createdAt url diffHunk}}}}}}}`
-const pullRequestReviewThreadCommentsQuery = `query($threadID:ID!,$cursor:String!){node(id:$threadID){... on PullRequestReviewThread{comments(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id viewerDidAuthor state author{login} body createdAt url diffHunk}}}}}`
+const pullRequestReviewThreadsQuery = `query($owner:String!,$name:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id isResolved isOutdated viewerCanResolve viewerCanUnresolve path line originalLine startLine originalStartLine diffSide startDiffSide comments(first:100){pageInfo{hasNextPage endCursor}nodes{id viewerDidAuthor state author{login} body createdAt url diffHunk reactionGroups{content viewerHasReacted users{totalCount}}}}}}}}}`
+const pullRequestReviewThreadCommentsQuery = `query($threadID:ID!,$cursor:String!){node(id:$threadID){... on PullRequestReviewThread{comments(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id viewerDidAuthor state author{login} body createdAt url diffHunk reactionGroups{content viewerHasReacted users{totalCount}}}}}}}`
 
 var ErrInvalidPullRequestReviewThreadsResponse = fmt.Errorf("invalid pull request review threads response")
 

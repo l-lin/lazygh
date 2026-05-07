@@ -158,3 +158,25 @@ func TestGetPullRequestDiff_GivenPendingInlineReviewComments_WhenFetching_ThenIt
 		t.Fatalf("expected thread comment state %q, actual %+v", "PENDING", actual.Threads[0].Comments[0])
 	}
 }
+
+func TestGetPullRequestDiff_GivenThreadCommentReactions_WhenFetching_ThenItNormalizesReactionGroups(t *testing.T) {
+	runner := &fakeRunner{
+		responses: []fakeCommandResponse{
+			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
+			{stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":11,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"PRRC_1","author":{"login":"reviewer-one"},"body":"Reply","createdAt":"2026-04-20T10:00:00Z","reactionGroups":[{"content":"THUMBS_DOWN","viewerHasReacted":true,"users":{"totalCount":1}},{"content":"ROCKET","viewerHasReacted":false,"users":{"totalCount":4}}]}]}}]}}}}}`)},
+		},
+	}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.GetPullRequestDiff("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	expected := []ReactionGroup{
+		{Content: ReactionContentThumbsDown, TotalCount: 1, ViewerHasReacted: true},
+		{Content: ReactionContentRocket, TotalCount: 4},
+	}
+	if !reflect.DeepEqual(actual.Threads[0].Comments[0].ReactionGroups, expected) {
+		t.Fatalf("expected thread comment reactions %+v, actual %+v", expected, actual.Threads[0].Comments[0].ReactionGroups)
+	}
+}
