@@ -92,7 +92,6 @@ Configure theme presets and palette overrides under `[theme]`.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
 - The PR description header reuses the diff addition and deletion colors for `+N` and `-N` counts.
 - Missing or invalid presets and colors fall back to the built-in palette.
-- Bundled theme examples live in `themes/`. Copy one into `~/.config/lazygh/config.toml`, or set `preset` to the matching file name without `.toml`.
 
 Use the automatic preset.
 
@@ -101,19 +100,7 @@ Use the automatic preset.
 preset = "system"
 ```
 
-Bundled examples:
-
-- `themes/catppuccin-latte.toml`
-- `themes/catppuccin-frappe.toml`
-- `themes/catppuccin-macchiato.toml`
-- `themes/catppuccin-mocha.toml`
-- `themes/kanagawa-dark.toml`
-- `themes/kanagawa-light.toml`
-- `themes/tokyonight-dark.toml`
-- `themes/tokyonight-light.toml`
-- `themes/gruvbox-dark.toml`
-- `themes/gruvbox-light.toml`
-- `themes/nord.toml`
+List of presets can be found in [`preset.go`](internal/theme/preset.go).
 
 This example starts from `kanagawa-dark` and overrides a few colors.
 
