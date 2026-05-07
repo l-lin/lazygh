@@ -235,14 +235,17 @@ func TestLayout_GivenPullRequestListStatusIcon_WhenRenderingTheSelectedRow_ThenI
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, 0, "")
 }
 
-func TestLayout_GivenAnApprovedPullRequest_WhenRendering_ThenTheListRowUsesTheSuccessBackground(t *testing.T) {
+func TestLayout_GivenSuccessfulMergeChecks_WhenRendering_ThenTheListRowUsesTheSuccessBackground(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
-		Title:          "Approved PR",
-		Number:         42,
-		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
-		State:          "OPEN",
-		ReviewDecision: "APPROVED",
+		Title:                  "Approved PR",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "CLEAN",
+		StatusCheckRollupState: "SUCCESS",
 	})})
 	subject := NewProgramWithModel(model)
 	gui := given_headlessGui(t)
@@ -255,14 +258,16 @@ func TestLayout_GivenAnApprovedPullRequest_WhenRendering_ThenTheListRowUsesTheSu
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
 }
 
-func TestLayout_GivenAChangesRequestedPullRequest_WhenRendering_ThenTheListRowUsesTheWarningBackground(t *testing.T) {
+func TestLayout_GivenFailingMergeChecks_WhenRendering_ThenTheListRowUsesTheFailureBackground(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
-		Title:          "Blocked PR",
-		Number:         42,
-		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
-		State:          "OPEN",
-		ReviewDecision: "CHANGES_REQUESTED",
+		Title:                  "Blocked PR",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "CHANGES_REQUESTED",
+		MergeStateStatus:       "BLOCKED",
+		StatusCheckRollupState: "FAILURE",
 	})})
 	subject := NewProgramWithModel(model)
 	gui := given_headlessGui(t)
@@ -272,7 +277,7 @@ func TestLayout_GivenAChangesRequestedPullRequest_WhenRendering_ThenTheListRowUs
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Blocked PR", given_themeColorHex(t, theme.WarningBackgroundHex), "changes requested pull request background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Blocked PR", given_themeColorHex(t, theme.FailureBackgroundHex), "failed merge checks pull request background")
 }
 
 func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowDoesNotShowThem(t *testing.T) {

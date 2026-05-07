@@ -339,24 +339,23 @@ func buildPullRequestBuildSummaryEntry(checks []githubcli.PullRequestStatusCheck
 }
 
 func buildPullRequestMergeabilityEntry(detail githubcli.PullRequestDetail) pullRequestOverviewEntry {
-	mergeable := strings.ToUpper(strings.TrimSpace(detail.Mergeable))
 	mergeState := strings.ToUpper(strings.TrimSpace(detail.MergeStateStatus))
-	switch {
-	case mergeable == "MERGEABLE" || mergeState == "CLEAN":
+	switch pullRequestOverviewStatusForMergeability(detail.Mergeable, detail.MergeStateStatus) {
+	case pullRequestOverviewStatusSuccess:
 		return pullRequestOverviewEntry{
 			Label:    "No conflicts with base branch",
 			Detail:   "Changes can be cleanly merged.",
 			Status:   pullRequestOverviewStatusSuccess,
 			ShowIcon: true,
 		}
-	case mergeable == "CONFLICTING" || mergeState == "DIRTY":
+	case pullRequestOverviewStatusFailure:
 		return pullRequestOverviewEntry{
 			Label:    "Conflicts with base branch",
 			Detail:   "Conflicting files must be resolved before merging.",
 			Status:   pullRequestOverviewStatusFailure,
 			ShowIcon: true,
 		}
-	case mergeState != "" && mergeState != "UNKNOWN":
+	case pullRequestOverviewStatusPending:
 		return pullRequestOverviewEntry{
 			Label:    "Mergeability",
 			Detail:   "GitHub reports " + strings.ToLower(strings.ReplaceAll(mergeState, "_", " ")) + ".",
@@ -412,6 +411,21 @@ func pullRequestOverviewCheckStateLabel(check githubcli.PullRequestStatusCheck) 
 	return classifyPullRequestStatusCheck(check).StateLabel
 }
 
+func pullRequestOverviewStatusForReviewDecision(reviewDecision string) pullRequestOverviewStatus {
+	switch strings.ToUpper(strings.TrimSpace(reviewDecision)) {
+	case "APPROVED":
+		return pullRequestOverviewStatusSuccess
+	case "CHANGES_REQUESTED":
+		return pullRequestOverviewStatusFailure
+	case "REVIEW_REQUIRED":
+		return pullRequestOverviewStatusPending
+	case "":
+		return pullRequestOverviewStatusMuted
+	default:
+		return pullRequestOverviewStatusPending
+	}
+}
+
 func pullRequestOverviewStatusForReviewState(state string) pullRequestOverviewStatus {
 	switch strings.ToUpper(strings.TrimSpace(state)) {
 	case "APPROVED":
@@ -420,6 +434,36 @@ func pullRequestOverviewStatusForReviewState(state string) pullRequestOverviewSt
 		return pullRequestOverviewStatusFailure
 	default:
 		return pullRequestOverviewStatusPending
+	}
+}
+
+func pullRequestOverviewStatusForStatusCheckRollupState(state string) pullRequestOverviewStatus {
+	switch strings.ToUpper(strings.TrimSpace(state)) {
+	case "SUCCESS":
+		return pullRequestOverviewStatusSuccess
+	case "FAILURE", "ERROR":
+		return pullRequestOverviewStatusFailure
+	case "PENDING", "EXPECTED":
+		return pullRequestOverviewStatusPending
+	case "":
+		return pullRequestOverviewStatusMuted
+	default:
+		return pullRequestOverviewStatusPending
+	}
+}
+
+func pullRequestOverviewStatusForMergeability(mergeable string, mergeState string) pullRequestOverviewStatus {
+	normalizedMergeable := strings.ToUpper(strings.TrimSpace(mergeable))
+	normalizedMergeState := strings.ToUpper(strings.TrimSpace(mergeState))
+	switch {
+	case normalizedMergeable == "MERGEABLE" || normalizedMergeState == "CLEAN":
+		return pullRequestOverviewStatusSuccess
+	case normalizedMergeable == "CONFLICTING" || normalizedMergeState == "DIRTY":
+		return pullRequestOverviewStatusFailure
+	case normalizedMergeState != "" && normalizedMergeState != "UNKNOWN":
+		return pullRequestOverviewStatusPending
+	default:
+		return pullRequestOverviewStatusMuted
 	}
 }
 

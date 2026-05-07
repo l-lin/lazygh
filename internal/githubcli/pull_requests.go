@@ -20,6 +20,8 @@ query($ids:[ID!]!) {
     ... on PullRequest {
       id
       reviewDecision
+      mergeable
+      mergeStateStatus
       reviewRequests(first:100) {
         nodes {
           requestedReviewer {
@@ -38,6 +40,15 @@ query($ids:[ID!]!) {
           }
         }
       }
+      headRefStatusCheckRollup: commits(last:1) {
+        nodes {
+          commit {
+            statusCheckRollup {
+              state
+            }
+          }
+        }
+      }
     }
   }
 }`
@@ -48,32 +59,49 @@ type Repository struct {
 }
 
 type PullRequest struct {
-	ID             string                     `json:"id"`
-	Title          string                     `json:"title"`
-	Number         int                        `json:"number"`
-	Repository     Repository                 `json:"repository"`
-	URL            string                     `json:"url"`
-	Body           string                     `json:"body"`
-	State          string                     `json:"state"`
-	IsDraft        bool                       `json:"isDraft"`
-	UpdatedAt      string                     `json:"updatedAt"`
-	ReviewDecision string                     `json:"reviewDecision"`
-	ReviewRequests []PullRequestReviewRequest `json:"reviewRequests"`
+	ID                     string                     `json:"id"`
+	Title                  string                     `json:"title"`
+	Number                 int                        `json:"number"`
+	Repository             Repository                 `json:"repository"`
+	URL                    string                     `json:"url"`
+	Body                   string                     `json:"body"`
+	State                  string                     `json:"state"`
+	IsDraft                bool                       `json:"isDraft"`
+	UpdatedAt              string                     `json:"updatedAt"`
+	ReviewDecision         string                     `json:"reviewDecision"`
+	ReviewRequests         []PullRequestReviewRequest `json:"reviewRequests"`
+	MergeStateStatus       string                     `json:"mergeStateStatus"`
+	Mergeable              string                     `json:"mergeable"`
+	StatusCheckRollupState string                     `json:"statusCheckRollupState"`
 }
 
 type pullRequestListReviewMetadata struct {
-	ReviewDecision string
-	ReviewRequests []PullRequestReviewRequest
+	ReviewDecision         string
+	ReviewRequests         []PullRequestReviewRequest
+	MergeStateStatus       string
+	Mergeable              string
+	StatusCheckRollupState string
 }
 
 type pullRequestListReviewMetadataResponse struct {
 	Data *struct {
 		Nodes []*struct {
-			ID             string `json:"id"`
-			ReviewDecision string `json:"reviewDecision"`
-			ReviewRequests struct {
+			ID               string `json:"id"`
+			ReviewDecision   string `json:"reviewDecision"`
+			MergeStateStatus string `json:"mergeStateStatus"`
+			Mergeable        string `json:"mergeable"`
+			ReviewRequests   struct {
 				Nodes []PullRequestReviewRequest `json:"nodes"`
 			} `json:"reviewRequests"`
+			HeadRefStatusCheckRollup struct {
+				Nodes []struct {
+					Commit struct {
+						StatusCheckRollup *struct {
+							State string `json:"state"`
+						} `json:"statusCheckRollup"`
+					} `json:"commit"`
+				} `json:"nodes"`
+			} `json:"headRefStatusCheckRollup"`
 		} `json:"nodes"`
 	} `json:"data"`
 	Errors []struct {
@@ -106,6 +134,9 @@ func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest
 		if reviewMetadata, ok := reviewMetadataByID[pullRequests[index].ID]; ok {
 			pullRequests[index].ReviewDecision = reviewMetadata.ReviewDecision
 			pullRequests[index].ReviewRequests = append([]PullRequestReviewRequest(nil), reviewMetadata.ReviewRequests...)
+			pullRequests[index].MergeStateStatus = reviewMetadata.MergeStateStatus
+			pullRequests[index].Mergeable = reviewMetadata.Mergeable
+			pullRequests[index].StatusCheckRollupState = reviewMetadata.StatusCheckRollupState
 		}
 		pullRequests[index] = pullRequests[index].normalized()
 	}
@@ -170,7 +201,12 @@ func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestLi
 		if trimmedID == "" {
 			continue
 		}
-		reviewMetadata := pullRequestListReviewMetadata{ReviewDecision: strings.TrimSpace(node.ReviewDecision)}
+		reviewMetadata := pullRequestListReviewMetadata{
+			ReviewDecision:         strings.TrimSpace(node.ReviewDecision),
+			MergeStateStatus:       strings.TrimSpace(node.MergeStateStatus),
+			Mergeable:              strings.TrimSpace(node.Mergeable),
+			StatusCheckRollupState: pullRequestListStatusCheckRollupState(node.HeadRefStatusCheckRollup.Nodes),
+		}
 		if len(node.ReviewRequests.Nodes) > 0 {
 			reviewRequests := make([]PullRequestReviewRequest, 0, len(node.ReviewRequests.Nodes))
 			for _, reviewRequest := range node.ReviewRequests.Nodes {
@@ -181,6 +217,25 @@ func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestLi
 		reviewMetadataByID[trimmedID] = reviewMetadata
 	}
 	return reviewMetadataByID, nil
+}
+
+func pullRequestListStatusCheckRollupState(nodes []struct {
+	Commit struct {
+		StatusCheckRollup *struct {
+			State string `json:"state"`
+		} `json:"statusCheckRollup"`
+	} `json:"commit"`
+}) string {
+	for _, node := range nodes {
+		if node.Commit.StatusCheckRollup == nil {
+			continue
+		}
+		state := strings.TrimSpace(node.Commit.StatusCheckRollup.State)
+		if state != "" {
+			return state
+		}
+	}
+	return ""
 }
 
 func FormatPullRequestSearchCommand(commandArguments []string) string {
@@ -214,6 +269,9 @@ func (pullRequest PullRequest) normalized() PullRequest {
 	pullRequest.State = strings.TrimSpace(pullRequest.State)
 	pullRequest.UpdatedAt = strings.TrimSpace(pullRequest.UpdatedAt)
 	pullRequest.ReviewDecision = strings.TrimSpace(pullRequest.ReviewDecision)
+	pullRequest.MergeStateStatus = strings.TrimSpace(pullRequest.MergeStateStatus)
+	pullRequest.Mergeable = strings.TrimSpace(pullRequest.Mergeable)
+	pullRequest.StatusCheckRollupState = strings.TrimSpace(pullRequest.StatusCheckRollupState)
 	if len(pullRequest.ReviewRequests) > 0 {
 		normalizedReviewRequests := make([]PullRequestReviewRequest, 0, len(pullRequest.ReviewRequests))
 		for _, reviewRequest := range pullRequest.ReviewRequests {

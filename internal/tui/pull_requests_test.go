@@ -181,13 +181,16 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 	}
 }
 
-func TestPullRequestRow_GivenAnApprovedReviewDecision_WhenBuildingTheListRow_ThenItUsesTheSuccessBackgroundForEachTitleSegment(t *testing.T) {
+func TestPullRequestRow_GivenSuccessfulMergeChecks_WhenBuildingTheListRow_ThenItUsesTheSuccessBackgroundForEachTitleSegment(t *testing.T) {
 	actual := pullRequestRow(githubcli.PullRequest{
-		Title:          "Approved PR",
-		Number:         42,
-		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
-		State:          "OPEN",
-		ReviewDecision: "APPROVED",
+		Title:                  "Approved PR",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "CLEAN",
+		StatusCheckRollupState: "SUCCESS",
 	}).Item
 
 	if actual.Title != " acme/widgets#42 Approved PR" {
@@ -205,13 +208,38 @@ func TestPullRequestRow_GivenAnApprovedReviewDecision_WhenBuildingTheListRow_The
 	}
 }
 
-func TestPullRequestRow_GivenAChangesRequestedReviewDecision_WhenBuildingTheListRow_ThenItUsesTheWarningBackgroundForEachTitleSegment(t *testing.T) {
+func TestPullRequestRow_GivenApprovedReviewsWithoutPassingMergeChecks_WhenBuildingTheListRow_ThenItKeepsTheDefaultBackground(t *testing.T) {
 	actual := pullRequestRow(githubcli.PullRequest{
-		Title:          "Blocked PR",
-		Number:         42,
-		Repository:     githubcli.Repository{NameWithOwner: "acme/widgets"},
-		State:          "OPEN",
-		ReviewDecision: "CHANGES_REQUESTED",
+		Title:                  "Waiting PR",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "APPROVED",
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "CLEAN",
+		StatusCheckRollupState: "PENDING",
+	}).Item
+
+	if actual.Title != " acme/widgets#42 Waiting PR" {
+		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Waiting PR", actual.Title)
+	}
+	unexpectedBackground := backgroundColorEscape(theme.SuccessBackgroundHex)
+	for index, segment := range actual.TitleSegments {
+		if strings.Contains(segment.Prefix, unexpectedBackground) {
+			t.Fatalf("expected title segment %d prefix %q to avoid %q", index, segment.Prefix, unexpectedBackground)
+		}
+	}
+}
+
+func TestPullRequestRow_GivenFailingMergeChecks_WhenBuildingTheListRow_ThenItUsesTheFailureBackgroundForEachTitleSegment(t *testing.T) {
+	actual := pullRequestRow(githubcli.PullRequest{
+		Title:                  "Blocked PR",
+		Number:                 42,
+		Repository:             githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "CHANGES_REQUESTED",
+		MergeStateStatus:       "BLOCKED",
+		StatusCheckRollupState: "FAILURE",
 	}).Item
 
 	if actual.Title != " acme/widgets#42 Blocked PR" {
@@ -221,7 +249,7 @@ func TestPullRequestRow_GivenAChangesRequestedReviewDecision_WhenBuildingTheList
 		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
 	}
 
-	expectedBackground := backgroundColorEscape(theme.WarningBackgroundHex)
+	expectedBackground := backgroundColorEscape(theme.FailureBackgroundHex)
 	for index, segment := range actual.TitleSegments {
 		if !strings.Contains(segment.Prefix, expectedBackground) {
 			t.Fatalf("expected title segment %d prefix %q to contain %q", index, segment.Prefix, expectedBackground)

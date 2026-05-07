@@ -70,10 +70,10 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRevi
 	}
 }
 
-func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequestedReviewTeams(t *testing.T) {
+func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequestedReviewTeamsAndMergeCheckMetadata(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeCommandResponse{
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Need teams","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
-		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","reviewDecision":"REVIEW_REQUIRED","reviewRequests":{"nodes":[{"requestedReviewer":{"__typename":"User","login":"reviewer-one"}},{"requestedReviewer":{"__typename":"Team","name":"VIBE","slug":"vibe","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"P3C","slug":"p3c","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"FYP","slug":"fyp","organization":{"login":"acme"}}}]}}]}}`)},
+		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","reviewDecision":"REVIEW_REQUIRED","mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewRequests":{"nodes":[{"requestedReviewer":{"__typename":"User","login":"reviewer-one"}},{"requestedReviewer":{"__typename":"Team","name":"VIBE","slug":"vibe","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"P3C","slug":"p3c","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"FYP","slug":"fyp","organization":{"login":"acme"}}}]},"headRefStatusCheckRollup":{"nodes":[{"commit":{"statusCheckRollup":{"state":"SUCCESS"}}}]}}]}}`)},
 	}}
 	subject := NewClientWithRunner(runner)
 
@@ -81,12 +81,15 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequ
 
 	then_noError(t, actualErr)
 	expected := []PullRequest{{
-		ID:             "PR_kwDOA",
-		Title:          "Need teams",
-		Number:         42,
-		Repository:     Repository{NameWithOwner: "acme/widgets"},
-		State:          "OPEN",
-		ReviewDecision: "REVIEW_REQUIRED",
+		ID:                     "PR_kwDOA",
+		Title:                  "Need teams",
+		Number:                 42,
+		Repository:             Repository{NameWithOwner: "acme/widgets"},
+		State:                  "OPEN",
+		ReviewDecision:         "REVIEW_REQUIRED",
+		Mergeable:              "MERGEABLE",
+		MergeStateStatus:       "CLEAN",
+		StatusCheckRollupState: "SUCCESS",
 		ReviewRequests: []PullRequestReviewRequest{
 			{RequestedReviewer: PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-one"}},
 			{RequestedReviewer: PullRequestRequestedReviewer{TypeName: "Team", Name: "VIBE", Slug: "vibe", Organization: &PullRequestReviewRequestOrganization{Login: "acme"}}},

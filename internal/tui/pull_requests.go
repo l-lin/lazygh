@@ -183,10 +183,10 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 		body,
 	}
 
-	reviewDecisionBackgroundPrefix := pullRequestReviewDecisionBackgroundPrefix(pullRequest)
-	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: reviewDecisionBackgroundPrefix}
+	mergeChecksBackgroundPrefix := pullRequestMergeChecksBackgroundPrefix(pullRequest)
+	statusIconSegment := ItemTitleSegment{Text: pullRequestIcon + " ", Prefix: mergeChecksBackgroundPrefix}
 	if statusStyle, ok := pullRequestStatusStyleFor(effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)); ok {
-		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusStyle.foregroundHex), reviewDecisionBackgroundPrefix)
+		statusIconSegment.Prefix = pullRequestTitleSegmentPrefix(foregroundColorEscape(statusStyle.foregroundHex), mergeChecksBackgroundPrefix)
 	}
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
@@ -199,23 +199,32 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 			Detail: strings.Join(detailLines, "\n"),
 			TitleSegments: []ItemTitleSegment{
 				statusIconSegment,
-				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), reviewDecisionBackgroundPrefix)},
-				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), reviewDecisionBackgroundPrefix)},
+				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), mergeChecksBackgroundPrefix)},
+				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), mergeChecksBackgroundPrefix)},
 			},
 		},
 		Summary: &summaryCopy,
 	}
 }
 
-func pullRequestReviewDecisionBackgroundPrefix(pullRequest githubcli.PullRequest) string {
-	switch strings.ToUpper(strings.TrimSpace(pullRequest.ReviewDecision)) {
-	case "APPROVED":
+func pullRequestMergeChecksBackgroundPrefix(pullRequest githubcli.PullRequest) string {
+	switch pullRequestMergeChecksStatus(pullRequest) {
+	case pullRequestOverviewStatusSuccess:
 		return backgroundColorEscape(theme.SuccessBackgroundHex)
-	case "CHANGES_REQUESTED":
-		return backgroundColorEscape(theme.WarningBackgroundHex)
+	case pullRequestOverviewStatusFailure:
+		return backgroundColorEscape(theme.FailureBackgroundHex)
 	default:
 		return ""
 	}
+}
+
+func pullRequestMergeChecksStatus(pullRequest githubcli.PullRequest) pullRequestOverviewStatus {
+	entries := []pullRequestOverviewEntry{
+		{Status: pullRequestOverviewStatusForReviewDecision(pullRequest.ReviewDecision)},
+		{Status: pullRequestOverviewStatusForStatusCheckRollupState(pullRequest.StatusCheckRollupState)},
+		{Status: pullRequestOverviewStatusForMergeability(pullRequest.Mergeable, pullRequest.MergeStateStatus)},
+	}
+	return pullRequestOverviewBlockStatus(entries)
 }
 
 func pullRequestTitleSegmentPrefix(foregroundPrefix string, backgroundPrefix string) string {
