@@ -210,6 +210,7 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheActionsSection_ThenItDocument
 	actual := string(contents)
 	for _, expected := range []string{
 		"`Assign PR` opens a searchable assignee picker",
+		"Press `enter` to toggle an assignee, then press `alt+enter` to save.",
 		"GitHub only allows up to 10 assignees per pull request",
 		"permission to assign users in that repository",
 	} {

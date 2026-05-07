@@ -89,6 +89,8 @@ type Program struct {
 	reactionPicker                    *reactionPickerState
 	themePicker                       *themePickerState
 	assigneePicker                    *assigneePickerState
+	assigneePickerLoad                *assigneePickerLoadState
+	assignableUsersCache              map[string][]githubcli.PullRequestAuthor
 	reviewSession                     reviewSessionState
 	browserCollapsedSectionStates     map[string]bool
 	pullRequestBuildRunLoad           *pullRequestBuildRunLoadState
@@ -140,6 +142,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:       map[string]bool{},
 		reviewDiffRenderCache:             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
+		assignableUsersCache:              map[string][]githubcli.PullRequestAuthor{},
 		browserCollapsedSectionStates:     map[string]bool{},
 		additionalPullRequestsLoadStarted: map[PullRequestTab]bool{},
 		additionalPullRequestsLoading:     map[PullRequestTab]bool{},

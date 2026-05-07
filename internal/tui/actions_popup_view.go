@@ -75,6 +75,13 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	}
 
 	view.Clear()
+	if program.assigneePickerLoading() {
+		fmt.Fprintln(view, strings.TrimSpace(program.loadingSpinnerFrame()))
+		view.SetOrigin(0, 0)
+		view.SetCursor(0, 0)
+		return
+	}
+
 	actions := program.currentActionsPopupActions()
 	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
 	query := program.model.ActionsPopupSearchQuery()
@@ -110,7 +117,7 @@ func (program *Program) renderActionsPopupSearchView(view *gocui.View) {
 
 func (program *Program) actionsPopupTitle() string {
 	title := "Actions"
-	if program.assigneePickerVisible() {
+	if program.assigneePickerVisible() || program.assigneePickerLoading() {
 		title = assigneePickerTitle
 	} else if program.themePickerVisible() {
 		title = themePickerTitle
@@ -128,7 +135,7 @@ func (program *Program) actionsPopupTitle() string {
 func (program *Program) actionsPopupFooter() string {
 	query := strings.TrimSpace(program.model.ActionsPopupSearchQuery())
 	itemLabel := "actions"
-	if program.assigneePickerVisible() {
+	if program.assigneePickerVisible() || program.assigneePickerLoading() {
 		itemLabel = "assignees"
 	} else if program.themePickerVisible() {
 		itemLabel = "themes"
@@ -142,15 +149,7 @@ func (program *Program) actionsPopupFooter() string {
 	if query != "" {
 		countSummary = fmt.Sprintf("%d of %d %s", len(filteredIndexes), len(actions), itemLabel)
 	}
-	if !program.assigneePickerVisible() {
-		return countSummary
-	}
-
-	hints := "space toggle · enter save"
-	if countSummary == "" {
-		return hints
-	}
-	return countSummary + " · " + hints
+	return countSummary
 }
 
 func (program *Program) currentActionsPopupSearchText() string {

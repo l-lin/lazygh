@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 )
 
 var ErrInvalidAssignableUsersResponse = fmt.Errorf("invalid assignable users response")
@@ -92,6 +94,14 @@ func normalizeAssignableUsers(users []PullRequestAuthor) []PullRequestAuthor {
 		return normalizedUsers[i].Login < normalizedUsers[j].Login
 	})
 	return normalizedUsers
+}
+
+func FormatAssignableUsersCommand(repository string) string {
+	trimmedRepository := strings.TrimSpace(repository)
+	if trimmedRepository == "" || trimmedRepository == "-" {
+		return appconfig.FormatGHCommand([]string{"api"})
+	}
+	return appconfig.FormatGHCommand([]string{"api", fmt.Sprintf("repos/%s/assignees?per_page=%d", trimmedRepository, assignableUsersPerPage), "--paginate", "--slurp"})
 }
 
 func normalizePullRequestAssigneeLogins(logins []string) []string {

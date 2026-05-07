@@ -159,7 +159,9 @@ open_command = ["open", "-a", "Firefox"]
 Use the actions popup on a pull request when you want a mutation without typing `gh` commands by hand.
 
 - `Assign PR` opens a searchable assignee picker.
-- The picker starts with the current assignees selected. Press `space` to toggle an assignee, then press `enter` to save.
+- The picker starts with the current assignees at the top, and it pins `@me` first when your login is in the list.
+- `lazygh` caches assignable users per repository for the rest of the session, so reopening the picker skips another round-trip when it can.
+- Press `enter` to toggle an assignee, then press `alt+enter` to save.
 - GitHub only allows up to 10 assignees per pull request.
 - You still need permission to assign users in that repository.
 

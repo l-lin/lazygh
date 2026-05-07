@@ -8,6 +8,9 @@ import (
 )
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
+	if program.assigneePickerLoading() {
+		return nil
+	}
 	if program.assigneePickerVisible() {
 		return program.currentAssigneePickerActions()
 	}

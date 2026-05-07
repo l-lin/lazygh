@@ -45,6 +45,19 @@ func TestStatusLineKeyHints_GivenConfiguredKeyOverrides_WhenRendering_ThenItUses
 	then_statusLineKeyHintsAre(t, gui, "!: Help, s/<c-s>: Search, p: Action")
 }
 
+func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShowsDarkGreyPopupHintsRightAlignedOnTheBottomRow(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), given_pullRequestAssigneeLoader())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+
+	then_statusLineKeyHintsAre(t, gui, "/: Search, Enter: Toggle, Alt+Enter: Submit")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: Search, Enter: Toggle, Alt+Enter: Submit", given_themeColorHex(t, theme.InactiveTitleHex), "assignee picker key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "/: Search, Enter: Toggle, Alt+Enter: Submit")
+}
+
 func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterOrKeyHints(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)

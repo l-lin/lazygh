@@ -25,6 +25,7 @@ func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	program.reactionPicker = nil
 	program.themePicker = nil
 	program.assigneePicker = nil
+	program.assigneePickerLoad = nil
 	program.model.OpenActionsPopup(len(actions))
 	program.actionsPopupSearchEditor = nil
 	program.actionsPopupErrorMessage = ""
@@ -43,6 +44,7 @@ func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	program.reactionPicker = nil
 	program.themePicker = nil
 	program.assigneePicker = nil
+	program.assigneePickerLoad = nil
 	if gui == nil {
 		return nil
 	}
@@ -237,32 +239,30 @@ func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *goc
 		return nil
 	}
 
-	result := actionsPopupActionResult{}
 	if program.assigneePickerVisible() {
-		result = program.executeSubmitAssigneePickerAction(gui)
-	} else {
 		action, ok := program.selectedActionsPopupAction()
 		if !ok {
 			return nil
 		}
-		result = action.execute(gui)
-	}
-
-	return program.handleActionsPopupActionResult(gui, result)
-}
-
-func (program *Program) toggleSelectedActionsPopupPickerItem(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() || !program.assigneePickerVisible() {
-		return nil
+		return program.handleActionsPopupActionResult(gui, action.execute(gui))
 	}
 
 	action, ok := program.selectedActionsPopupAction()
 	if !ok {
 		return nil
 	}
-
 	return program.handleActionsPopupActionResult(gui, action.execute(gui))
+}
+
+func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	if !program.model.ActionsPopupVisible() {
+		return nil
+	}
+	if !program.assigneePickerVisible() {
+		return program.executeSelectedActionsPopupAction(gui, nil)
+	}
+	return program.handleActionsPopupActionResult(gui, program.executeSubmitAssigneePickerAction(gui))
 }
 
 func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result actionsPopupActionResult) error {

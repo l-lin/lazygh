@@ -72,6 +72,10 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 }
 
 func (program *Program) statusLineKeyHintsText() string {
+	if actionsPopupHints := strings.TrimSpace(program.actionsPopupKeyHintsText()); actionsPopupHints != "" {
+		return actionsPopupHints
+	}
+
 	focus := program.model.Focus()
 	if !program.shouldShowStatusLineKeyHints(focus) {
 		return ""
@@ -90,6 +94,32 @@ func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {
 	return isMainPaneFocus(focus)
 }
 
+func (program *Program) actionsPopupKeyHintsText() string {
+	if !program.shouldShowActionsPopupStatusLineKeyHints() {
+		return ""
+	}
+	if !program.assigneePickerVisible() && !program.assigneePickerLoading() {
+		return ""
+	}
+
+	hints := []string{
+		program.actionsPopupKeyHint("Search", "/", keybindingActionID{scope: keymapScopeActionsPopup, action: "focus_search"}),
+		program.actionsPopupKeyHint("Toggle", "Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "execute_selected_action"}),
+		program.actionsPopupKeyHint("Submit", "Alt+Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}),
+	}
+	return strings.Join(filterEmptyStrings(hints), ", ")
+}
+
+func (program *Program) shouldShowActionsPopupStatusLineKeyHints() bool {
+	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+		return false
+	}
+	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+		return false
+	}
+	return true
+}
+
 func (program *Program) paneFooterKeyHintsText(focus Focus) string {
 	hints := []string{
 		program.paneFooterKeyHint("Help", keybindingActionID{scope: keymapScopeMain, action: "toggle_help"}),
@@ -103,6 +133,14 @@ func (program *Program) paneFooterKeyHintsText(focus Focus) string {
 
 func (program *Program) paneFooterKeyHint(label string, actionIDs ...keybindingActionID) string {
 	resolvedKeys := strings.TrimSpace(program.resolvedKeyLabelsText(actionIDs...))
+	if resolvedKeys == "" {
+		return ""
+	}
+	return resolvedKeys + ": " + label
+}
+
+func (program *Program) actionsPopupKeyHint(label string, fallback string, actionIDs ...keybindingActionID) string {
+	resolvedKeys := strings.TrimSpace(program.helpKeysOrFallback(fallback, actionIDs...))
 	if resolvedKeys == "" {
 		return ""
 	}

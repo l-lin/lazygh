@@ -10,9 +10,22 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
-func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenExecuting_ThenItOpensTheAssigneePickerWithCurrentAssigneesSelected(t *testing.T) {
+func TestAssigneePicker_GivenSelectedAssigneesAndCurrentUser_WhenOpening_ThenItPlacesAtMeFirstAndKeepsSelectedAssigneesAtTheTop(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
+	loader.details["acme/widgets#42"] = githubcli.PullRequestDetail{
+		Title:       "First PR",
+		Number:      42,
+		Body:        "Body 42",
+		BaseRefName: "main",
+		HeadRefName: "feature/assignees",
+		State:       "OPEN",
+		Assignees: []githubcli.PullRequestAuthor{
+			{Login: "alice", Name: "Alice"},
+			{Login: "bob", Name: "Bob"},
+		},
+	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.connectedUserLogin = "bob"
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -23,13 +36,86 @@ func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenExecuting_ThenItO
 		t.Fatalf("expected popup title %q, actual %q", assigneePickerTitle, popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[x] @me (Bob)",
 		"[x] @alice (Alice)",
-		"[ ] @bob (Bob)",
 		"[ ] @charlie (Charlie)",
 	})
 	if !reflect.DeepEqual(loader.assignableUserCalls, []string{"acme/widgets"}) {
 		t.Fatalf("expected assignable user calls %v, actual %v", []string{"acme/widgets"}, loader.assignableUserCalls)
 	}
+}
+
+func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenLoadingAssignees_ThenItShowsASpinnerUntilTheAsyncLoadFinishes(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_openAssignPullRequestAction(t, gui, subject)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued assignee load, actual %d", len(asyncRunner.runs))
+	}
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if popupView.Title != assigneePickerTitle {
+		t.Fatalf("expected popup title %q while loading, actual %q", assigneePickerTitle, popupView.Title)
+	}
+	if actual := strings.TrimSpace(popupView.Buffer()); actual != string(loadingSpinnerFrames[0]) {
+		t.Fatalf("expected popup buffer %q while loading, actual %q", string(loadingSpinnerFrames[0]), popupView.Buffer())
+	}
+	then_statusLineContains(t, gui, "Running `gh api repos/acme/widgets/assignees?per_page=100 --paginate --slurp`.")
+
+	asyncRunner.runs[0]()
+
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[x] @alice (Alice)",
+		"[ ] @bob (Bob)",
+		"[ ] @charlie (Charlie)",
+	})
+}
+
+func TestActionsPopup_GivenCachedAssignableUsers_WhenOpeningTheAssigneePickerAgain_ThenItReusesTheCache(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_openAssignPullRequestAction(t, gui, subject)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued assignee load, actual %d", len(asyncRunner.runs))
+	}
+	asyncRunner.runs[0]()
+
+	actualErr := subject.closeActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	given_openAssignPullRequestAction(t, gui, subject)
+
+	if !reflect.DeepEqual(loader.assignableUserCalls, []string{"acme/widgets"}) {
+		t.Fatalf("expected cached assignee list to avoid reloads, actual calls %v", loader.assignableUserCalls)
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected cached assignee list to avoid new async runs, actual %d", len(asyncRunner.runs))
+	}
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[x] @alice (Alice)",
+		"[ ] @bob (Bob)",
+		"[ ] @charlie (Charlie)",
+	})
 }
 
 func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsMatchingAssigneesOnly(t *testing.T) {
@@ -57,7 +143,7 @@ func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsMatchingAssign
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{"[ ] @charlie (Charlie)"})
 }
 
-func TestAssignPullRequest_GivenChangedSelection_WhenSubmitting_ThenItAppliesTheAssigneeDiffAndRefreshesTheVisibleDetail(t *testing.T) {
+func TestAssignPullRequest_GivenChangedSelection_WhenTogglingWithEnterAndSubmittingWithAltEnter_ThenItAppliesTheAssigneeDiffAndRefreshesTheVisibleDetail(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -65,17 +151,17 @@ func TestAssignPullRequest_GivenChangedSelection_WhenSubmitting_ThenItAppliesThe
 	subject.configureGUI(gui)
 
 	popupView := given_openAssigneePicker(t, gui, subject)
-	spaceHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, ' ')
 	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, 'j')
 	enterHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyEnter)
+	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyAltEnter)
 
-	actualErr := spaceHandler(gui, popupView)
+	actualErr := enterHandler(gui, popupView)
 	then_noError(t, actualErr)
 	actualErr = moveDownHandler(gui, popupView)
 	then_noError(t, actualErr)
-	actualErr = spaceHandler(gui, popupView)
-	then_noError(t, actualErr)
 	actualErr = enterHandler(gui, popupView)
+	then_noError(t, actualErr)
+	actualErr = submitHandler(gui, popupView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
 
@@ -108,10 +194,10 @@ func TestAssignPullRequest_GivenPendingSelectionChanges_WhenCanceling_ThenItLeav
 	subject.configureGUI(gui)
 
 	popupView := given_openAssigneePicker(t, gui, subject)
-	spaceHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, ' ')
+	enterHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyEnter)
 	closeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyEsc)
 
-	actualErr := spaceHandler(gui, popupView)
+	actualErr := enterHandler(gui, popupView)
 	then_noError(t, actualErr)
 	actualErr = closeHandler(gui, popupView)
 	then_noError(t, actualErr)
@@ -204,7 +290,7 @@ func TestActionsPopup_GivenReviewDescription_WhenOpening_ThenItShowsAssignPR(t *
 	}
 }
 
-func given_openAssigneePicker(t *testing.T, gui *gocui.Gui, subject *Program) *gocui.View {
+func given_openAssignPullRequestAction(t *testing.T, gui *gocui.Gui, subject *Program) {
 	t.Helper()
 
 	actualErr := subject.layout(gui)
@@ -218,7 +304,12 @@ func given_openAssigneePicker(t *testing.T, gui *gocui.Gui, subject *Program) *g
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
+}
 
+func given_openAssigneePicker(t *testing.T, gui *gocui.Gui, subject *Program) *gocui.View {
+	t.Helper()
+
+	given_openAssignPullRequestAction(t, gui, subject)
 	actual, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	return actual
