@@ -8,6 +8,9 @@ import (
 )
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
+	if program.reactionPickerVisible() {
+		return program.currentReactionPickerActions()
+	}
 	if !program.isPullRequestContext() {
 		return nil
 	}
@@ -43,6 +46,9 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	}
 	if program.model.Focus() == FocusDetailView && program.detailCursorHasLink() {
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction())
+	}
+	if reactionAction, ok := program.currentReactionAction(); ok {
+		actions = append(actions, reactionAction)
 	}
 	actions = append(actions, program.currentInlineCommentEditActions()...)
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {

@@ -36,6 +36,7 @@ type GitHubLoader interface {
 	DeletePullRequestReviewComment(commentID string) error
 	ResolvePullRequestReviewThread(threadID string) error
 	UnresolvePullRequestReviewThread(threadID string) error
+	AddReaction(subjectID string, content githubcli.ReactionContent) error
 	OpenPullRequestInBrowser(repository string, number int) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
@@ -76,6 +77,7 @@ type Program struct {
 	searchEditor                      *lineEditor
 	actionsPopupSearchEditor          *lineEditor
 	actionsPopupErrorMessage          string
+	reactionPicker                    *reactionPickerState
 	reviewSession                     reviewSessionState
 	browserCollapsedSectionStates     map[string]bool
 	modalEditor                       *modalEditorState

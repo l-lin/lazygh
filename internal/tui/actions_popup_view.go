@@ -109,11 +109,16 @@ func (program *Program) renderActionsPopupSearchView(view *gocui.View) {
 }
 
 func (program *Program) actionsPopupTitle() string {
+	title := "Actions"
+	if program.reactionPickerVisible() {
+		title = reactionPickerTitle
+	}
+
 	message := strings.TrimSpace(program.actionsPopupErrorMessage)
 	if message == "" {
-		return "Actions"
+		return title
 	}
-	return fmt.Sprintf("Actions · %s", message)
+	return fmt.Sprintf("%s · %s", title, message)
 }
 
 func (program *Program) actionsPopupFooter() string {
@@ -122,9 +127,13 @@ func (program *Program) actionsPopupFooter() string {
 		return ""
 	}
 
+	itemLabel := "actions"
+	if program.reactionPickerVisible() {
+		itemLabel = "reactions"
+	}
 	actions := program.currentActionsPopupActions()
 	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
-	return fmt.Sprintf("%d of %d actions", len(filteredIndexes), len(actions))
+	return fmt.Sprintf("%d of %d %s", len(filteredIndexes), len(actions), itemLabel)
 }
 
 func (program *Program) currentActionsPopupSearchText() string {

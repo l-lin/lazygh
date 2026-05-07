@@ -186,11 +186,22 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 }
 
 func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
+	threadComment, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, renderer, width, cursorLine)
+	if !ok {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+	if strings.TrimSpace(threadComment.ID) == "" || !threadComment.ViewerDidAuthor {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+	return pullRequestReviewCommentActionTarget{commentID: strings.TrimSpace(threadComment.ID), body: threadComment.Body}, true
+}
+
+func pullRequestInlineThreadCommentAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (githubcli.PullRequestComment, bool) {
 	lineIndex := cursorLine
 	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
 		lineIndex -= renderedTextLineCount(diffPreview)
 		if lineIndex < 0 {
-			return pullRequestReviewCommentActionTarget{}, false
+			return githubcli.PullRequestComment{}, false
 		}
 	}
 
@@ -200,15 +211,12 @@ func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.Pul
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
 		commentLineCount := renderedTextLineCount(renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, body, threadWidth))
 		if lineIndex < commentLineCount {
-			if strings.TrimSpace(threadComment.ID) == "" || !threadComment.ViewerDidAuthor {
-				return pullRequestReviewCommentActionTarget{}, false
-			}
-			return pullRequestReviewCommentActionTarget{commentID: strings.TrimSpace(threadComment.ID), body: threadComment.Body}, true
+			return threadComment, true
 		}
 		lineIndex -= commentLineCount
 	}
 
-	return pullRequestReviewCommentActionTarget{}, false
+	return githubcli.PullRequestComment{}, false
 }
 
 func reviewDiffCommentAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (reviewDiffThread, githubcli.PullRequestComment, bool) {

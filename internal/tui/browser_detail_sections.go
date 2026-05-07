@@ -20,6 +20,8 @@ type browserDetailSection struct {
 	headerFocusOffset int
 	body              string
 	collapsed         bool
+	comment           *githubcli.PullRequestComment
+	inlineComment     *githubcli.PullRequestInlineComment
 	inlineThread      *githubcli.PullRequestReviewThread
 }
 
@@ -181,7 +183,8 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 	sections := make([]browserDetailSection, 0, len(detail.Comments)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
 
-	for index, comment := range detail.Comments {
+	for index, rawComment := range detail.Comments {
+		comment := rawComment
 		body := renderMarkdownWithFallback(comment.Body, program.markdownRenderer, commentBodyWidth, "No comment body.")
 		sectionID := browserDetailSectionID(pullRequestKey, "comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
@@ -190,6 +193,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 			header:    renderBrowserDetailSectionHeader(renderPullRequestCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
 			body:      renderPullRequestCommentSection(comment, body, width),
 			collapsed: collapsed,
+			comment:   &comment,
 		})
 	}
 
@@ -210,15 +214,17 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 		return sections
 	}
 
-	for index, comment := range detail.InlineComments {
+	for index, rawComment := range detail.InlineComments {
+		comment := rawComment
 		body := renderInlineCommentBody(comment.Body, program.markdownRenderer, commentBodyWidth)
 		sectionID := browserDetailSectionID(pullRequestKey, "inline-comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{
-			id:        sectionID,
-			header:    renderBrowserDetailSectionHeader(renderPullRequestInlineCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
-			body:      renderPullRequestInlineCommentSection(comment, body, width),
-			collapsed: collapsed,
+			id:            sectionID,
+			header:        renderBrowserDetailSectionHeader(renderPullRequestInlineCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
+			body:          renderPullRequestInlineCommentSection(comment, body, width),
+			collapsed:     collapsed,
+			inlineComment: &comment,
 		})
 	}
 

@@ -1057,6 +1057,9 @@ type fakePullRequestDetailLoader struct {
 	resolveReviewThreadErr    error
 	unresolveReviewThreadIDs  []string
 	unresolveReviewThreadErr  error
+	addReactionSubjectIDs     []string
+	addReactionContents       []githubcli.ReactionContent
+	addReactionErr            error
 	reviewKeyByPendingID      map[string]string
 	openBrowserCalls          []string
 	openBrowserErr            error
@@ -1218,6 +1221,17 @@ func (loader *fakePullRequestDetailLoader) UnresolvePullRequestReviewThread(thre
 	return nil
 }
 
+func (loader *fakePullRequestDetailLoader) AddReaction(subjectID string, content githubcli.ReactionContent) error {
+	trimmedSubjectID := strings.TrimSpace(subjectID)
+	loader.addReactionSubjectIDs = append(loader.addReactionSubjectIDs, trimmedSubjectID)
+	loader.addReactionContents = append(loader.addReactionContents, content)
+	if loader.addReactionErr != nil {
+		return loader.addReactionErr
+	}
+	loader.addReaction(trimmedSubjectID, content)
+	return nil
+}
+
 func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository string, number int) error {
 	loader.openBrowserCalls = append(loader.openBrowserCalls, repository+"#"+strconv.Itoa(number))
 	return loader.openBrowserErr
@@ -1295,6 +1309,75 @@ func (loader *fakePullRequestDetailLoader) updatePullRequestDetail(repository st
 	}
 	update(&detail)
 	loader.details[key] = detail
+}
+
+func (loader *fakePullRequestDetailLoader) addReaction(subjectID string, content githubcli.ReactionContent) {
+	trimmedSubjectID := strings.TrimSpace(subjectID)
+	if trimmedSubjectID == "" {
+		return
+	}
+
+	for key, detail := range loader.details {
+		updated := false
+		if strings.TrimSpace(detail.ID) == trimmedSubjectID {
+			detail.ReactionGroups = given_reactionGroupsWithAddedReaction(detail.ReactionGroups, content)
+			updated = true
+		}
+		for index := range detail.Comments {
+			if strings.TrimSpace(detail.Comments[index].ID) != trimmedSubjectID {
+				continue
+			}
+			detail.Comments[index].ReactionGroups = given_reactionGroupsWithAddedReaction(detail.Comments[index].ReactionGroups, content)
+			updated = true
+		}
+		for index := range detail.InlineComments {
+			if strings.TrimSpace(detail.InlineComments[index].ID) != trimmedSubjectID {
+				continue
+			}
+			detail.InlineComments[index].ReactionGroups = given_reactionGroupsWithAddedReaction(detail.InlineComments[index].ReactionGroups, content)
+			updated = true
+		}
+		for threadIndex := range detail.InlineCommentThreads {
+			for commentIndex := range detail.InlineCommentThreads[threadIndex].Comments {
+				if strings.TrimSpace(detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ID) != trimmedSubjectID {
+					continue
+				}
+				detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ReactionGroups = given_reactionGroupsWithAddedReaction(detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ReactionGroups, content)
+				updated = true
+			}
+		}
+		if updated {
+			loader.details[key] = detail
+		}
+	}
+	for key, diff := range loader.diffs {
+		updated := false
+		for threadIndex := range diff.Threads {
+			for commentIndex := range diff.Threads[threadIndex].Comments {
+				if strings.TrimSpace(diff.Threads[threadIndex].Comments[commentIndex].ID) != trimmedSubjectID {
+					continue
+				}
+				diff.Threads[threadIndex].Comments[commentIndex].ReactionGroups = given_reactionGroupsWithAddedReaction(diff.Threads[threadIndex].Comments[commentIndex].ReactionGroups, content)
+				updated = true
+			}
+		}
+		if updated {
+			loader.diffs[key] = diff
+		}
+	}
+}
+
+func given_reactionGroupsWithAddedReaction(groups []githubcli.ReactionGroup, content githubcli.ReactionContent) []githubcli.ReactionGroup {
+	updatedGroups := append([]githubcli.ReactionGroup(nil), groups...)
+	for index := range updatedGroups {
+		if strings.TrimSpace(string(updatedGroups[index].Content)) != strings.TrimSpace(string(content)) {
+			continue
+		}
+		updatedGroups[index].TotalCount++
+		updatedGroups[index].ViewerHasReacted = true
+		return updatedGroups
+	}
+	return append(updatedGroups, githubcli.ReactionGroup{Content: content, TotalCount: 1, ViewerHasReacted: true})
 }
 
 func (loader *fakePullRequestDetailLoader) updateReviewComment(commentID string, body string) {
