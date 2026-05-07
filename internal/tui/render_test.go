@@ -255,6 +255,35 @@ func TestLayout_GivenAnApprovedPullRequest_WhenRendering_ThenTheListRowUsesTheSu
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, " acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
 }
 
+func TestLayout_GivenPullRequestReviewTeams_WhenRendering_ThenTheListRowShowsThemAfterTheTitle(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
+		Title:      "Need teams",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		State:      "OPEN",
+		ReviewRequests: []githubcli.PullRequestReviewRequest{
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-one"}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "VIBE", Slug: "vibe", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "P3C", Slug: "p3c", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "FYP", Slug: "fyp", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}},
+		},
+	})})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	lineIndex := given_viewLineIndexContaining(t, pullRequestsView, detailReviewRequestsIcon+" VIBE, P3C, FYP")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, lineIndex, detailReviewRequestsIcon, given_themeColorHex(t, theme.PendingHex), "requested review teams icon")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, lineIndex, "VIBE", given_themeColorHex(t, theme.PendingHex), "requested review teams text")
+}
+
 func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesRoundBordersForAllViews(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)

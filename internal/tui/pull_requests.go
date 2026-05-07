@@ -191,19 +191,54 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 
 	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
 	titleSuffix := " " + valueOrDash(pullRequest.Title)
+	title := statusIconSegment.Text + titlePrefix + titleSuffix
+	titleSegments := []ItemTitleSegment{
+		statusIconSegment,
+		{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), approvedBackgroundPrefix)},
+		{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), approvedBackgroundPrefix)},
+	}
+	if reviewTeamNames := pullRequestRequestedReviewTeamNames(pullRequest.ReviewRequests); len(reviewTeamNames) > 0 {
+		reviewTeamSuffix := " " + detailReviewRequestsIcon + " " + strings.Join(reviewTeamNames, ", ")
+		title += reviewTeamSuffix
+		titleSegments = append(titleSegments, ItemTitleSegment{Text: reviewTeamSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PendingHex), approvedBackgroundPrefix)})
+	}
+
 	summaryCopy := pullRequest
 	return PullRequestRow{
 		Item: Item{
-			Title:  statusIconSegment.Text + titlePrefix + titleSuffix,
-			Detail: strings.Join(detailLines, "\n"),
-			TitleSegments: []ItemTitleSegment{
-				statusIconSegment,
-				{Text: titlePrefix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestReferenceHex), approvedBackgroundPrefix)},
-				{Text: titleSuffix, Prefix: pullRequestTitleSegmentPrefix(foregroundColorEscape(theme.PullRequestTitleHex), approvedBackgroundPrefix)},
-			},
+			Title:         title,
+			Detail:        strings.Join(detailLines, "\n"),
+			TitleSegments: titleSegments,
 		},
 		Summary: &summaryCopy,
 	}
+}
+
+func pullRequestRequestedReviewTeamNames(reviewRequests []githubcli.PullRequestReviewRequest) []string {
+	reviewTeamNames := make([]string, 0, len(reviewRequests))
+	seen := map[string]bool{}
+	for _, reviewRequest := range reviewRequests {
+		reviewTeamName := pullRequestRequestedReviewTeamName(reviewRequest.RequestedReviewer)
+		if reviewTeamName == "" || seen[reviewTeamName] {
+			continue
+		}
+		seen[reviewTeamName] = true
+		reviewTeamNames = append(reviewTeamNames, reviewTeamName)
+	}
+	return reviewTeamNames
+}
+
+func pullRequestRequestedReviewTeamName(reviewer githubcli.PullRequestRequestedReviewer) string {
+	if !strings.EqualFold(strings.TrimSpace(reviewer.TypeName), "Team") {
+		return ""
+	}
+	if name := strings.TrimSpace(reviewer.Name); name != "" {
+		return name
+	}
+	if slug := strings.TrimSpace(reviewer.Slug); slug != "" {
+		return slug
+	}
+	return ""
 }
 
 func pullRequestApprovedBackgroundPrefix(pullRequest githubcli.PullRequest) string {

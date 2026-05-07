@@ -59,3 +59,32 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRevi
 		t.Fatalf("expected pull requests %+v, actual %+v", expected, actual)
 	}
 }
+
+func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequestedReviewTeams(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Need teams","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
+		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","reviewDecision":"REVIEW_REQUIRED","reviewRequests":{"nodes":[{"requestedReviewer":{"__typename":"User","login":"reviewer-one"}},{"requestedReviewer":{"__typename":"Team","name":"VIBE","slug":"vibe","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"P3C","slug":"p3c","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"FYP","slug":"fyp","organization":{"login":"acme"}}}]}}]}}`)},
+	}}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
+
+	then_noError(t, actualErr)
+	expected := []PullRequest{{
+		ID:             "PR_kwDOA",
+		Title:          "Need teams",
+		Number:         42,
+		Repository:     Repository{NameWithOwner: "acme/widgets"},
+		State:          "OPEN",
+		ReviewDecision: "REVIEW_REQUIRED",
+		ReviewRequests: []PullRequestReviewRequest{
+			{RequestedReviewer: PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-one"}},
+			{RequestedReviewer: PullRequestRequestedReviewer{TypeName: "Team", Name: "VIBE", Slug: "vibe", Organization: &PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: PullRequestRequestedReviewer{TypeName: "Team", Name: "P3C", Slug: "p3c", Organization: &PullRequestReviewRequestOrganization{Login: "acme"}}},
+			{RequestedReviewer: PullRequestRequestedReviewer{TypeName: "Team", Name: "FYP", Slug: "fyp", Organization: &PullRequestReviewRequestOrganization{Login: "acme"}}},
+		},
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected pull requests %+v, actual %+v", expected, actual)
+	}
+}

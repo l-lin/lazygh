@@ -14,7 +14,7 @@ var (
 )
 
 const pullRequestSearchJSONFields = "title,number,repository,url,body,state,isDraft,updatedAt,id"
-const pullRequestListReviewMetadataQuery = `query($ids:[ID!]!){nodes(ids:$ids){... on PullRequest{id reviewDecision}}}`
+const pullRequestListReviewMetadataQuery = `query($ids:[ID!]!){nodes(ids:$ids){... on PullRequest{id reviewDecision reviewRequests(first:100){nodes{requestedReviewer{__typename ... on User{login name} ... on Team{name slug organization{login}}}}}}}`
 
 type Repository struct {
 	Name          string `json:"name"`
@@ -22,20 +22,22 @@ type Repository struct {
 }
 
 type PullRequest struct {
-	ID             string     `json:"id"`
-	Title          string     `json:"title"`
-	Number         int        `json:"number"`
-	Repository     Repository `json:"repository"`
-	URL            string     `json:"url"`
-	Body           string     `json:"body"`
-	State          string     `json:"state"`
-	IsDraft        bool       `json:"isDraft"`
-	UpdatedAt      string     `json:"updatedAt"`
-	ReviewDecision string     `json:"reviewDecision"`
+	ID             string                     `json:"id"`
+	Title          string                     `json:"title"`
+	Number         int                        `json:"number"`
+	Repository     Repository                 `json:"repository"`
+	URL            string                     `json:"url"`
+	Body           string                     `json:"body"`
+	State          string                     `json:"state"`
+	IsDraft        bool                       `json:"isDraft"`
+	UpdatedAt      string                     `json:"updatedAt"`
+	ReviewDecision string                     `json:"reviewDecision"`
+	ReviewRequests []PullRequestReviewRequest `json:"reviewRequests"`
 }
 
 type pullRequestListReviewMetadata struct {
 	ReviewDecision string
+	ReviewRequests []PullRequestReviewRequest
 }
 
 type pullRequestListReviewMetadataResponse struct {
@@ -43,6 +45,9 @@ type pullRequestListReviewMetadataResponse struct {
 		Nodes []*struct {
 			ID             string `json:"id"`
 			ReviewDecision string `json:"reviewDecision"`
+			ReviewRequests struct {
+				Nodes []PullRequestReviewRequest `json:"nodes"`
+			} `json:"reviewRequests"`
 		} `json:"nodes"`
 	} `json:"data"`
 	Errors []struct {
@@ -74,6 +79,7 @@ func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest
 	for index := range pullRequests {
 		if reviewMetadata, ok := reviewMetadataByID[pullRequests[index].ID]; ok {
 			pullRequests[index].ReviewDecision = reviewMetadata.ReviewDecision
+			pullRequests[index].ReviewRequests = append([]PullRequestReviewRequest(nil), reviewMetadata.ReviewRequests...)
 		}
 		pullRequests[index] = pullRequests[index].normalized()
 	}
@@ -138,7 +144,15 @@ func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestLi
 		if trimmedID == "" {
 			continue
 		}
-		reviewMetadataByID[trimmedID] = pullRequestListReviewMetadata{ReviewDecision: strings.TrimSpace(node.ReviewDecision)}
+		reviewMetadata := pullRequestListReviewMetadata{ReviewDecision: strings.TrimSpace(node.ReviewDecision)}
+		if len(node.ReviewRequests.Nodes) > 0 {
+			reviewRequests := make([]PullRequestReviewRequest, 0, len(node.ReviewRequests.Nodes))
+			for _, reviewRequest := range node.ReviewRequests.Nodes {
+				reviewRequests = append(reviewRequests, reviewRequest.normalized())
+			}
+			reviewMetadata.ReviewRequests = reviewRequests
+		}
+		reviewMetadataByID[trimmedID] = reviewMetadata
 	}
 	return reviewMetadataByID, nil
 }
@@ -174,6 +188,13 @@ func (pullRequest PullRequest) normalized() PullRequest {
 	pullRequest.State = strings.TrimSpace(pullRequest.State)
 	pullRequest.UpdatedAt = strings.TrimSpace(pullRequest.UpdatedAt)
 	pullRequest.ReviewDecision = strings.TrimSpace(pullRequest.ReviewDecision)
+	if len(pullRequest.ReviewRequests) > 0 {
+		normalizedReviewRequests := make([]PullRequestReviewRequest, 0, len(pullRequest.ReviewRequests))
+		for _, reviewRequest := range pullRequest.ReviewRequests {
+			normalizedReviewRequests = append(normalizedReviewRequests, reviewRequest.normalized())
+		}
+		pullRequest.ReviewRequests = normalizedReviewRequests
+	}
 	pullRequest.Repository = pullRequest.Repository.normalized()
 	return pullRequest
 }
