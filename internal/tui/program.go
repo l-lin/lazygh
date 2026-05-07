@@ -45,6 +45,7 @@ type GitHubLoader interface {
 	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
 	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)
 	GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error)
+	GetPullRequestBuildRunJobLogForCheck(repository string, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildRunJob, string, error)
 }
 
 type Program struct {

@@ -15,11 +15,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 		return program.currentReactionPickerActions()
 	}
 	if program.pullRequestBuildRunPopupVisible() {
-		actions := []actionsPopupAction{}
-		if program.pullRequestBuildRunPopupHasJobUnderCursor() {
-			actions = append(actions, program.pullRequestBuildRunLogsActionsPopupAction())
-		}
-		return actions
+		return nil
 	}
 	if !program.isPullRequestContext() {
 		return nil
@@ -57,7 +53,10 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 		)
 	}
 	if program.model.Focus() == FocusDetailView && program.detailCursorHasBuildLink() {
-		actions = append(actions, program.pullRequestBuildRunActionsPopupAction())
+		actions = append(actions,
+			program.pullRequestBuildRunActionsPopupAction(),
+			program.pullRequestBuildRunLogsActionsPopupAction(),
+		)
 	}
 	if program.model.Focus() == FocusDetailView && program.detailCursorHasLink() {
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction())

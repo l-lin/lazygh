@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -137,6 +138,12 @@ func TestBrowserMode_GivenTheCursorOnAPendingBuild_WhenPressingEnter_ThenItStill
 		t.Fatalf("expected no queued build run load, actual %d", len(asyncRunner.runs))
 	}
 	then_viewDoesNotExist(t, gui, viewPullRequestBuildInfoName)
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewFailureIcon+" Builds") {
+		t.Fatalf("expected enter to collapse the builds section, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "deploy (Pending)") {
+		t.Fatalf("expected the collapsed builds section to hide the pending build row, actual %q", detailView.Buffer())
+	}
 	then_currentViewNameIs(t, gui, viewDetailName)
 }
 
@@ -240,7 +247,7 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenYankingAVisualSelection_ThenI
 	then_statusLineContains(t, gui, detailYankSuccessMessage)
 }
 
-func TestActionsPopup_GivenDetailCursorOnBuildLink_WhenOpening_ThenItShowsTheBuildRunAction(t *testing.T) {
+func TestActionsPopup_GivenDetailCursorOnBuildLink_WhenOpening_ThenItShowsTheBuildRunAndJobLogsActions(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
@@ -279,9 +286,12 @@ func TestActionsPopup_GivenDetailCursorOnBuildLink_WhenOpening_ThenItShowsTheBui
 	if !strings.Contains(popupView.Buffer(), actionsPopupLabel(actionsPopupBuildRunIcon, pullRequestBuildRunActionTitle)) {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", actionsPopupLabel(actionsPopupBuildRunIcon, pullRequestBuildRunActionTitle), popupView.Buffer())
 	}
+	if !strings.Contains(popupView.Buffer(), actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle)) {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle), popupView.Buffer())
+	}
 }
 
-func TestActionsPopup_GivenTheCursorOffABuildLink_WhenOpening_ThenItHidesTheBuildRunAction(t *testing.T) {
+func TestActionsPopup_GivenTheCursorOffABuildLink_WhenOpening_ThenItHidesTheBuildRunAndJobLogsActions(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
@@ -291,10 +301,13 @@ func TestActionsPopup_GivenTheCursorOffABuildLink_WhenOpening_ThenItHidesTheBuil
 				BaseRefName: "main",
 				HeadRefName: "feature/build-run-action",
 				State:       "OPEN",
-				StatusCheckRollup: []githubcli.PullRequestStatusCheck{
-					{Name: "test", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "FAILURE", Link: "https://github.com/acme/widgets/actions/runs/42"},
-					{Name: "deploy", Status: "IN_PROGRESS"},
-				},
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+					Name:         "test",
+					WorkflowName: "CI",
+					Status:       "COMPLETED",
+					Conclusion:   "FAILURE",
+					Link:         "https://github.com/acme/widgets/actions/runs/42",
+				}},
 			},
 		},
 	}
@@ -307,7 +320,7 @@ func TestActionsPopup_GivenTheCursorOffABuildLink_WhenOpening_ThenItHidesTheBuil
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "deploy (Pending)")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Body 42")
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
@@ -316,6 +329,9 @@ func TestActionsPopup_GivenTheCursorOffABuildLink_WhenOpening_ThenItHidesTheBuil
 	then_noError(t, actualErr)
 	if strings.Contains(popupView.Buffer(), pullRequestBuildRunActionTitle) {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", pullRequestBuildRunActionTitle, popupView.Buffer())
+	}
+	if strings.Contains(popupView.Buffer(), pullRequestBuildRunLogsActionTitle) {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", pullRequestBuildRunLogsActionTitle, popupView.Buffer())
 	}
 }
 
@@ -397,7 +413,7 @@ func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenS
 	}
 }
 
-func TestActionsPopup_GivenBuildRunPopupCursorOnAJob_WhenOpening_ThenItShowsTheViewJobLogsAction(t *testing.T) {
+func TestActionsPopup_GivenBuildRunPopupVisible_WhenOpening_ThenItDoesNotShowTheViewJobLogsAction(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -415,78 +431,69 @@ func TestActionsPopup_GivenBuildRunPopupCursorOnAJob_WhenOpening_ThenItShowsTheV
 	then_noError(t, actualErr)
 
 	given_pullRequestBuildRunPopupCursorOnLineContaining(t, gui, subject, "Job: Test job (#1234)")
-	actualErr = subject.openActionsPopup(gui, nil)
-	then_noError(t, actualErr)
-
-	popupView, actualErr := gui.View(viewActionsPopupName)
-	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle)) {
-		t.Fatalf("expected popup buffer to contain %q, actual %q", actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle), popupView.Buffer())
-	}
-}
-
-func TestActionsPopup_GivenBuildRunPopupCursorOffAJob_WhenOpening_ThenItHidesTheViewJobLogsAction(t *testing.T) {
-	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
-	gui := given_headlessGui(t)
-	defer gui.Close()
-	subject.configureGUI(gui)
-
-	actualErr := subject.layout(gui)
-	then_noError(t, actualErr)
-	actualErr = subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
-		checkTitle: "CI / test",
-		runURL:     "https://github.com/acme/widgets/actions/runs/42",
-		repository: "acme/widgets",
-		body:       "Run #42\nStatus: completed",
-		jobs:       []githubcli.PullRequestBuildRunJob{{DatabaseID: 1234, Name: "Test job"}},
-	})
-	then_noError(t, actualErr)
-
-	given_pullRequestBuildRunPopupCursorOnLineContaining(t, gui, subject, "Run #42")
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 }
 
-func TestActionsPopup_GivenViewJobLogsActionSelected_WhenExecuting_ThenItClosesThePopupShowsSpinnerAndOpensASanitizedLargeLogsPopup(t *testing.T) {
-	loader := &fakePullRequestDetailLoader{buildLogs: map[int]string{
-		1234: strings.Join([]string{
-			"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
-			"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0137572Z Secret source: Actions",
-		}, "\n"),
-	}}
+func TestActionsPopup_GivenViewJobLogsActionSelectedFromTheBuildOverview_WhenExecuting_ThenItClosesThePopupShowsSpinnerAndOpensASanitizedLargeLogsPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		buildRunJobs: map[string][]githubcli.PullRequestBuildRunJob{
+			"https://github.com/acme/widgets/actions/runs/42": {
+				{DatabaseID: 999, Name: "lint", URL: "https://github.com/acme/widgets/actions/runs/42/job/999"},
+				{DatabaseID: 1234, Name: "test", URL: "https://github.com/acme/widgets/actions/runs/42/job/1234"},
+			},
+		},
+		buildLogs: map[int]string{
+			1234: strings.Join([]string{
+				"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
+				"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0137572Z Secret source: Actions",
+			}, "\n"),
+		},
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/build-run-action",
+				State:       "OPEN",
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+					Name:         "test",
+					WorkflowName: "CI",
+					Status:       "COMPLETED",
+					Conclusion:   "FAILURE",
+					Link:         "https://github.com/acme/widgets/actions/runs/42",
+				}},
+			},
+		},
+	}
 	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
-		checkTitle: "CI / test",
-		runURL:     "https://github.com/acme/widgets/actions/runs/42",
-		repository: "acme/widgets",
-		body:       "Run #42\nStatus: completed",
-		jobs:       []githubcli.PullRequestBuildRunJob{{DatabaseID: 1234, Name: "Test job", URL: "https://github.com/acme/widgets/actions/runs/42/job/1234"}},
-	})
+	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-
-	given_pullRequestBuildRunPopupCursorOnLineContaining(t, gui, subject, "Job: Test job (#1234)")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "CI / test (Failed)")
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("job logs", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "job logs"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
-	asyncRunner.runs = nil
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	then_statusLineContains(t, gui, "Running `gh run view --job=1234 --log --repo=acme/widgets`.")
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, "Running `gh run view 42 -R acme/widgets --json jobs`.")
 	if len(asyncRunner.runs) != 1 {
 		t.Fatalf("expected one queued job logs load, actual %d", len(asyncRunner.runs))
 	}
@@ -495,14 +502,20 @@ func TestActionsPopup_GivenViewJobLogsActionSelected_WhenExecuting_ThenItClosesT
 
 	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "Build logs · Test job") {
-		t.Fatalf("expected popup title to contain %q, actual %q", "Build logs · Test job", popupView.Title)
+	if !strings.Contains(popupView.Title, "Build logs · test") {
+		t.Fatalf("expected popup title to contain %q, actual %q", "Build logs · test", popupView.Title)
 	}
 	if !strings.Contains(popupView.Buffer(), "2026-04-24T17:36:05.0135694Z ##[endgroup]") {
 		t.Fatalf("expected sanitized logs popup to contain %q, actual %q", "2026-04-24T17:36:05.0135694Z ##[endgroup]", popupView.Buffer())
 	}
 	if strings.Contains(popupView.Buffer(), "Test / (RW) (GP) (Back) Test    UNKNOWN STEP") {
 		t.Fatalf("expected sanitized logs popup to hide the raw prefix, actual %q", popupView.Buffer())
+	}
+	if !reflect.DeepEqual(loader.buildRunJobCalls, []string{"acme/widgets"}) {
+		t.Fatalf("expected build run job calls %v, actual %v", []string{"acme/widgets"}, loader.buildRunJobCalls)
+	}
+	if !reflect.DeepEqual(loader.buildLogCalls, []int{1234}) {
+		t.Fatalf("expected build log calls %v, actual %v", []int{1234}, loader.buildLogCalls)
 	}
 	then_viewOccupiesAtLeastPercentOfScreen(t, gui, viewPullRequestBuildInfoName, 90, 90)
 	then_currentViewNameIs(t, gui, viewPullRequestBuildInfoName)

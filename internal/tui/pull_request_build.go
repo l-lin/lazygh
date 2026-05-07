@@ -23,34 +23,8 @@ type pullRequestBuildRunTarget struct {
 	popupContent pullRequestBuildRunPopupContent
 }
 
-type pullRequestBuildRunJobTarget struct {
-	repository string
-	job        githubcli.PullRequestBuildRunJob
-}
-
-func (program *Program) handleBrowserOverviewBuildEnter(gui *gocui.Gui, summary githubcli.PullRequest, detail githubcli.PullRequestDetail, _ detailDocument, sectionAtCursor browserDetailSectionCursor) (error, bool) {
-	if !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Builds") {
-		return nil, false
-	}
-
-	entry, ok := pullRequestOverviewEntryAtBodyLine(sectionAtCursor.section, sectionAtCursor.bodyLine)
-	if !ok || strings.TrimSpace(entry.Link) == "" {
-		return nil, true
-	}
-	check, ok := pullRequestStatusCheckMatchingEntry(detail.StatusCheckRollup, entry)
-	if !ok {
-		return nil, true
-	}
-	return program.startPullRequestBuildRunLoad(gui, summary, check), true
-}
-
 func (program *Program) detailCursorHasBuildLink() bool {
 	_, ok := program.currentPullRequestBuildRunTargetAtDetailCursor()
-	return ok
-}
-
-func (program *Program) pullRequestBuildRunPopupHasJobUnderCursor() bool {
-	_, ok := program.currentPullRequestBuildRunPopupJobTarget(program.resolveView(program.gui, nil, viewPullRequestBuildInfoName))
 	return ok
 }
 
@@ -89,34 +63,6 @@ func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRe
 			repository: repository,
 		},
 	}, true
-}
-
-func (program *Program) currentPullRequestBuildRunPopupJobTarget(view *gocui.View) (pullRequestBuildRunJobTarget, bool) {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil || len(popup.jobs) == 0 {
-		return pullRequestBuildRunJobTarget{}, false
-	}
-
-	actualView := view
-	if actualView == nil {
-		actualView = program.resolveView(program.gui, nil, viewPullRequestBuildInfoName)
-	}
-	document := program.currentPullRequestBuildRunPopupDocument(actualView)
-	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(actualView))
-	if popup.viewState.cursor.line < 0 || popup.viewState.cursor.line >= len(document.lines) {
-		return pullRequestBuildRunJobTarget{}, false
-	}
-	currentLine := strings.TrimSpace(string(document.lines[popup.viewState.cursor.line]))
-	if currentLine == "" {
-		return pullRequestBuildRunJobTarget{}, false
-	}
-
-	for _, job := range popup.jobs {
-		if strings.HasPrefix(currentLine, renderPullRequestBuildRunPopupJobLine(job)) {
-			return pullRequestBuildRunJobTarget{repository: popup.repository, job: job}, true
-		}
-	}
-	return pullRequestBuildRunJobTarget{}, false
 }
 
 func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary githubcli.PullRequest, check githubcli.PullRequestStatusCheck) error {
@@ -163,26 +109,26 @@ func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository strin
 	})
 }
 
-func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, target pullRequestBuildRunJobTarget) error {
+func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubcli.PullRequest, check githubcli.PullRequestStatusCheck) error {
 	if program.githubLoader == nil || program.pullRequestBuildRunLoad != nil {
 		return nil
 	}
-	trimmedRepository := strings.TrimSpace(target.repository)
-	if trimmedRepository == "" {
+
+	repository := pullRequestRepositoryName(summary.Repository)
+	if repository == "" || repository == "-" {
 		return nil
 	}
 
 	program.feedbackMessage = ""
-	previousPopup := program.pullRequestBuildRunPopup
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: githubcli.FormatPullRequestBuildRunJobLogCommand(trimmedRepository, target.job.DatabaseID)}
+	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: githubcli.FormatPullRequestBuildRunJobsCommand(repository, check)}
 	program.asyncRunner.Go(func() {
-		program.loadPullRequestBuildRunJobLog(gui, trimmedRepository, target.job, previousPopup)
+		program.loadPullRequestBuildRunJobLog(gui, repository, check)
 	})
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, job githubcli.PullRequestBuildRunJob, previousPopup *pullRequestBuildRunPopupState) {
-	rawLogOutput, err := program.githubLoader.GetPullRequestBuildRunJobLog(repository, job.DatabaseID)
+func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubcli.PullRequestStatusCheck) {
+	job, rawLogOutput, err := program.githubLoader.GetPullRequestBuildRunJobLogForCheck(repository, check)
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {
@@ -195,7 +141,6 @@ func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository
 			runURL:        strings.TrimSpace(job.URL),
 			repository:    repository,
 			body:          sanitizePullRequestBuildRunLog(rawLogOutput),
-			previousPopup: previousPopup,
 			widthPercent:  pullRequestBuildLogsPopupWidthPercent,
 			heightPercent: pullRequestBuildLogsPopupHeightPercent,
 		})
@@ -234,11 +179,11 @@ func (program *Program) executePullRequestBuildRunAction(gui *gocui.Gui) actions
 }
 
 func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) actionsPopupActionResult {
-	target, ok := program.currentPullRequestBuildRunPopupJobTarget(program.resolveView(gui, nil, viewPullRequestBuildInfoName))
+	target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if err := program.startPullRequestBuildRunJobLogLoad(gui, target); err != nil {
+	if err := program.startPullRequestBuildRunJobLogLoad(gui, target.summary, target.check); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 	return actionsPopupActionResult{closePopup: true}

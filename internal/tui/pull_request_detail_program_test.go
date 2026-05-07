@@ -1563,6 +1563,26 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLog(_ string
 	return "", githubcli.ErrMissingPullRequestBuildLink
 }
 
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLogForCheck(repository string, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildRunJob, string, error) {
+	jobs, err := loader.GetPullRequestBuildRunJobs(repository, check)
+	if err != nil {
+		return githubcli.PullRequestBuildRunJob{}, "", err
+	}
+
+	trimmedCheckName := strings.TrimSpace(check.Name)
+	for _, job := range jobs {
+		if strings.EqualFold(strings.TrimSpace(job.Name), trimmedCheckName) {
+			actualLog, actualErr := loader.GetPullRequestBuildRunJobLog(repository, job.DatabaseID)
+			return job, actualLog, actualErr
+		}
+	}
+	if len(jobs) == 1 {
+		actualLog, actualErr := loader.GetPullRequestBuildRunJobLog(repository, jobs[0].DatabaseID)
+		return jobs[0], actualLog, actualErr
+	}
+	return githubcli.PullRequestBuildRunJob{}, "", githubcli.ErrPullRequestBuildRunJobNotFound
+}
+
 func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {
 	for index := range loader.myPullRequests {
 		if loader.myPullRequests[index].Repository.NameWithOwner == repository && loader.myPullRequests[index].Number == number {

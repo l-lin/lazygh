@@ -13,11 +13,13 @@ import (
 )
 
 var (
-	ErrMissingPullRequestBuildLink = errors.New("missing pull request build link")
-	ErrInvalidPullRequestBuildLink = errors.New("invalid pull request build link")
+	ErrMissingPullRequestBuildLink    = errors.New("missing pull request build link")
+	ErrInvalidPullRequestBuildLink    = errors.New("invalid pull request build link")
+	ErrPullRequestBuildRunJobNotFound = errors.New("pull request build run job not found")
 
 	pullRequestBuildRunIDPattern      = regexp.MustCompile(`(?i)(?:^|/)actions/runs/(\d+)(?:/|$)`)
 	pullRequestBuildRunAttemptPattern = regexp.MustCompile(`(?i)/attempts/(\d+)(?:/|$)`)
+	pullRequestBuildRunJobIDPattern   = regexp.MustCompile(`(?i)(?:^|/)job/(\d+)(?:/|$)`)
 )
 
 type pullRequestBuildRunReference struct {
@@ -86,8 +88,34 @@ func (client *Client) GetPullRequestBuildRunJobLog(repository string, jobDatabas
 	return strings.TrimSpace(string(result.Stdout)), nil
 }
 
+func (client *Client) GetPullRequestBuildRunJobLogForCheck(repository string, check PullRequestStatusCheck) (PullRequestBuildRunJob, string, error) {
+	jobs, err := client.GetPullRequestBuildRunJobs(repository, check)
+	if err != nil {
+		return PullRequestBuildRunJob{}, "", err
+	}
+
+	job, ok := pullRequestBuildRunJobMatchingCheck(check, jobs)
+	if !ok {
+		return PullRequestBuildRunJob{}, "", ErrPullRequestBuildRunJobNotFound
+	}
+
+	logOutput, err := client.GetPullRequestBuildRunJobLog(repository, job.DatabaseID)
+	if err != nil {
+		return PullRequestBuildRunJob{}, "", err
+	}
+	return job, logOutput, nil
+}
+
 func FormatPullRequestBuildRunCommand(repository string, check PullRequestStatusCheck) string {
 	args, err := pullRequestBuildRunCommandArguments(repository, check)
+	if err != nil {
+		return appconfig.FormatGHCommand([]string{"run", "view"})
+	}
+	return appconfig.FormatGHCommand(args)
+}
+
+func FormatPullRequestBuildRunJobsCommand(repository string, check PullRequestStatusCheck) string {
+	args, err := pullRequestBuildRunJobsCommandArguments(repository, check)
 	if err != nil {
 		return appconfig.FormatGHCommand([]string{"run", "view"})
 	}
@@ -155,6 +183,34 @@ func pullRequestBuildRunCommandContext(repository string, check PullRequestStatu
 	return reference, trimmedRepository, nil
 }
 
+func pullRequestBuildRunJobMatchingCheck(check PullRequestStatusCheck, jobs []PullRequestBuildRunJob) (PullRequestBuildRunJob, bool) {
+	if len(jobs) == 0 {
+		return PullRequestBuildRunJob{}, false
+	}
+
+	if jobDatabaseID, ok := pullRequestBuildRunJobIDFromLink(check.Link); ok {
+		for _, job := range jobs {
+			if job.DatabaseID == jobDatabaseID {
+				return job, true
+			}
+		}
+	}
+
+	normalizedCheck := check.normalized()
+	if normalizedCheck.Name != "" {
+		for _, job := range jobs {
+			if strings.EqualFold(strings.TrimSpace(job.Name), normalizedCheck.Name) {
+				return job, true
+			}
+		}
+	}
+
+	if len(jobs) == 1 {
+		return jobs[0], true
+	}
+	return PullRequestBuildRunJob{}, false
+}
+
 func (job PullRequestBuildRunJob) normalized() PullRequestBuildRunJob {
 	job.Name = strings.TrimSpace(job.Name)
 	job.Status = strings.TrimSpace(job.Status)
@@ -169,11 +225,7 @@ func pullRequestBuildRunReferenceFromLink(raw string) (pullRequestBuildRunRefere
 		return pullRequestBuildRunReference{}, ErrMissingPullRequestBuildLink
 	}
 
-	path := trimmedLink
-	if parsedURL, err := url.Parse(trimmedLink); err == nil && strings.TrimSpace(parsedURL.Path) != "" {
-		path = parsedURL.Path
-	}
-
+	path := pullRequestBuildRunPathFromLink(trimmedLink)
 	matches := pullRequestBuildRunIDPattern.FindStringSubmatch(path)
 	if len(matches) < 2 {
 		return pullRequestBuildRunReference{}, ErrInvalidPullRequestBuildLink
@@ -186,4 +238,26 @@ func pullRequestBuildRunReferenceFromLink(raw string) (pullRequestBuildRunRefere
 		}
 	}
 	return reference, nil
+}
+
+func pullRequestBuildRunJobIDFromLink(raw string) (int, bool) {
+	matches := pullRequestBuildRunJobIDPattern.FindStringSubmatch(pullRequestBuildRunPathFromLink(raw))
+	if len(matches) < 2 {
+		return 0, false
+	}
+
+	jobDatabaseID, err := strconv.Atoi(strings.TrimSpace(matches[1]))
+	if err != nil || jobDatabaseID <= 0 {
+		return 0, false
+	}
+	return jobDatabaseID, true
+}
+
+func pullRequestBuildRunPathFromLink(raw string) string {
+	trimmedLink := strings.TrimSpace(raw)
+	path := trimmedLink
+	if parsedURL, err := url.Parse(trimmedLink); err == nil && strings.TrimSpace(parsedURL.Path) != "" {
+		path = parsedURL.Path
+	}
+	return path
 }

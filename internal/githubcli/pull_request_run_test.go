@@ -65,3 +65,50 @@ func TestGetPullRequestBuildRunJobLog_GivenAJobID_WhenFetching_ThenItUsesGhRunVi
 		t.Fatalf("expected logs %q, actual %q", "job logs", actual)
 	}
 }
+
+func TestGetPullRequestBuildRunJobLogForCheck_GivenAJobNameMatchingTheCheck_WhenFetching_ThenItLoadsThatJobLog(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`{"jobs":[{"databaseId":999,"name":"lint","url":"https://github.com/acme/widgets/actions/runs/42/job/999"},{"databaseId":1234,"name":"test","url":"https://github.com/acme/widgets/actions/runs/42/job/1234"}]}`)},
+		{stdout: []byte("job logs\n")},
+	}}
+	subject := NewClientWithRunner(runner)
+
+	actualJob, actualLog, actualErr := subject.GetPullRequestBuildRunJobLogForCheck("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
+
+	then_noError(t, actualErr)
+	expectedJob := PullRequestBuildRunJob{DatabaseID: 1234, Name: "test", URL: "https://github.com/acme/widgets/actions/runs/42/job/1234"}
+	if !reflect.DeepEqual(actualJob, expectedJob) {
+		t.Fatalf("expected job %+v, actual %+v", expectedJob, actualJob)
+	}
+	if actualLog != "job logs" {
+		t.Fatalf("expected logs %q, actual %q", "job logs", actualLog)
+	}
+	if len(runner.calls) != 2 {
+		t.Fatalf("expected 2 command calls, actual %d", len(runner.calls))
+	}
+	if actual := runner.calls[0]; actual.name != "gh" || !reflect.DeepEqual(actual.args, []string{"run", "view", "42", "-R", "acme/widgets", "--json", "jobs"}) {
+		t.Fatalf("expected first call gh %v, actual %s %v", []string{"run", "view", "42", "-R", "acme/widgets", "--json", "jobs"}, actual.name, actual.args)
+	}
+	if actual := runner.calls[1]; actual.name != "gh" || !reflect.DeepEqual(actual.args, []string{"run", "view", "--job=1234", "--log", "--repo=acme/widgets"}) {
+		t.Fatalf("expected second call gh %v, actual %s %v", []string{"run", "view", "--job=1234", "--log", "--repo=acme/widgets"}, actual.name, actual.args)
+	}
+}
+
+func TestGetPullRequestBuildRunJobLogForCheck_GivenOnlyOneJobWithoutANameMatch_WhenFetching_ThenItUsesThatJobLog(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`{"jobs":[{"databaseId":1234,"name":"lint","url":"https://github.com/acme/widgets/actions/runs/42/job/1234"}]}`)},
+		{stdout: []byte("job logs\n")},
+	}}
+	subject := NewClientWithRunner(runner)
+
+	actualJob, actualLog, actualErr := subject.GetPullRequestBuildRunJobLogForCheck("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
+
+	then_noError(t, actualErr)
+	expectedJob := PullRequestBuildRunJob{DatabaseID: 1234, Name: "lint", URL: "https://github.com/acme/widgets/actions/runs/42/job/1234"}
+	if !reflect.DeepEqual(actualJob, expectedJob) {
+		t.Fatalf("expected job %+v, actual %+v", expectedJob, actualJob)
+	}
+	if actualLog != "job logs" {
+		t.Fatalf("expected logs %q, actual %q", "job logs", actualLog)
+	}
+}
