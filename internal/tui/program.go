@@ -47,6 +47,7 @@ type Program struct {
 	model                             *Model
 	githubLoader                      GitHubLoader
 	connectedUserLoadStarted          bool
+	connectedUserLogin                string
 	myPullRequestsLoadStarted         bool
 	requestedPullRequestsLoadStarted  bool
 	myPullRequestsLoading             bool

@@ -30,11 +30,19 @@ type reviewDiffRenderedRow struct {
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
-	return renderReviewDiffFileWithCollapsedThreads(file, renderer, width, nil)
+	return renderReviewDiffFileForViewer(file, renderer, width, "")
+}
+
+func renderReviewDiffFileForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
+	return renderReviewDiffFileWithCollapsedThreadsForViewer(file, renderer, width, nil, connectedUserLogin)
 }
 
 func renderReviewDiffFileWithCollapsedThreads(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) string {
-	rows := buildReviewDiffRenderedRowsWithCollapsedThreads(file, renderer, width, collapsedThreadIDs)
+	return renderReviewDiffFileWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, "")
+}
+
+func renderReviewDiffFileWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) string {
+	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin)
 	lines := make([]string, 0, len(rows))
 	for _, row := range rows {
 		lines = append(lines, row.Text)
@@ -43,12 +51,20 @@ func renderReviewDiffFileWithCollapsedThreads(file reviewDiffFile, renderer Mark
 }
 
 func buildReviewDiffRenderedRows(file reviewDiffFile, renderer MarkdownRenderer, width int) []reviewDiffRenderedRow {
-	return buildReviewDiffRenderedRowsWithCollapsedThreads(file, renderer, width, nil)
+	return buildReviewDiffRenderedRowsForViewer(file, renderer, width, "")
+}
+
+func buildReviewDiffRenderedRowsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, connectedUserLogin string) []reviewDiffRenderedRow {
+	return buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, nil, connectedUserLogin)
 }
 
 func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) []reviewDiffRenderedRow {
+	return buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, "")
+}
+
+func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderReviewDiffFileHeader(file)}}
-	contentRows := buildReviewDiffFileContentRows(file, renderer, width, collapsedThreadIDs)
+	contentRows := buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin)
 	if len(contentRows) == 0 {
 		return rows
 	}
@@ -58,6 +74,10 @@ func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, render
 }
 
 func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) []reviewDiffRenderedRow {
+	return buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, "")
+}
+
+func buildReviewDiffFileContentRowsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0)
 	placeholder := reviewDiffPlaceholderText(file)
 	if placeholder != "" {
@@ -86,7 +106,7 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 					continue
 				}
 				matchedThreadIndexes[threadIndex] = true
-				rows = append(rows, renderReviewDiffThreadRows(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs))...)
+				rows = append(rows, renderReviewDiffThreadRowsForViewer(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs), connectedUserLogin)...)
 			}
 		}
 	}
@@ -100,7 +120,7 @@ func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRender
 	}
 	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindNote, Text: styleText("Inline discussion without visible diff context.", foregroundColorEscape(theme.DiffHunkHeaderHex))})
 	for _, thread := range unmatchedThreads {
-		rows = append(rows, renderReviewDiffThreadRows(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs))...)
+		rows = append(rows, renderReviewDiffThreadRowsForViewer(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs), connectedUserLogin)...)
 	}
 	return rows
 }
@@ -167,7 +187,11 @@ func (thread reviewDiffThread) anchorLineNumbers() []int {
 	return lineNumbers
 }
 
-func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, _ int, collapsed bool) []reviewDiffRenderedRow {
+func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int, collapsed bool) []reviewDiffRenderedRow {
+	return renderReviewDiffThreadRowsForViewer(thread, renderer, width, numberWidth, collapsed, "")
+}
+
+func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer MarkdownRenderer, width int, _ int, collapsed bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*8)
 	threadWidth := effectiveMarkdownWidth(width)
 	threadCopy := thread
@@ -189,7 +213,7 @@ func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRender
 	for _, comment := range thread.Comments {
 		commentCopy := comment
 		body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
-		for _, boxLine := range strings.Split(renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, threadWidth), "\n") {
+		for _, boxLine := range strings.Split(renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, threadWidth, connectedUserLogin), "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}

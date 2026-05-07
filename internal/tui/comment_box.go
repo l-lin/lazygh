@@ -16,15 +16,27 @@ type commentMetadataBadge struct {
 }
 
 func renderPullRequestCommentSection(comment githubcli.PullRequestComment, body string, width int) string {
-	return renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width)
+	return renderPullRequestCommentSectionForViewer(comment, body, width, "")
+}
+
+func renderPullRequestCommentSectionForViewer(comment githubcli.PullRequestComment, body string, width int, connectedUserLogin string) string {
+	return renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width, connectedUserLogin)
 }
 
 func renderCommentBoxWithMetadata(author *githubcli.PullRequestCommentAuthor, createdAt string, reactionGroups []githubcli.ReactionGroup, body string, width int) string {
-	return renderCommentBoxWithMetadataBadges(author, createdAt, nil, reactionGroups, body, width)
+	return renderCommentBoxWithMetadataForViewer(author, createdAt, reactionGroups, body, width, "")
+}
+
+func renderCommentBoxWithMetadataForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, reactionGroups []githubcli.ReactionGroup, body string, width int, connectedUserLogin string) string {
+	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, nil, reactionGroups, body, width, connectedUserLogin)
 }
 
 func renderCommentBoxWithMetadataBadges(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, body string, width int) string {
-	metadataLine := renderCommentBoxMetadataLine(author, createdAt, badges, reactionGroups)
+	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, badges, reactionGroups, body, width, "")
+}
+
+func renderCommentBoxWithMetadataBadgesForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, body string, width int, connectedUserLogin string) string {
+	metadataLine := renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, connectedUserLogin)
 	innerWidth := maxInt(commentBoxInnerWidth(width), maxStyledTextLineWidth(metadataLine))
 	innerWidth = maxInt(innerWidth, maxStyledTextLineWidth(body))
 
@@ -84,8 +96,12 @@ func styleCommentBorder(text string) string {
 }
 
 func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup) string {
+	return renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, "")
+}
+
+func renderCommentBoxMetadataLineForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, connectedUserLogin string) string {
 	segments := make([]string, 0, len(badges)+3)
-	if authorBadge := renderCommentAuthorBadge(author); authorBadge != "" {
+	if authorBadge := renderCommentAuthorBadgeForViewer(author, connectedUserLogin); authorBadge != "" {
 		segments = append(segments, authorBadge)
 	}
 	if timestamp := renderCommentMetadataTimestamp(createdAt); timestamp != "" {
@@ -103,11 +119,22 @@ func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, cr
 }
 
 func renderCommentAuthorBadge(author *githubcli.PullRequestCommentAuthor) string {
+	return renderCommentAuthorBadgeForViewer(author, "")
+}
+
+func renderCommentAuthorBadgeForViewer(author *githubcli.PullRequestCommentAuthor, connectedUserLogin string) string {
 	badgeText := commentAuthorBadgeText(author)
 	if badgeText == "" {
 		return ""
 	}
-	return styleCommentAuthorBadgeText(badgeText)
+	return styleCommentAuthorBadgeTextForViewer(badgeText, commentAuthorLogin(author), connectedUserLogin)
+}
+
+func commentAuthorLogin(author *githubcli.PullRequestCommentAuthor) string {
+	if author == nil {
+		return ""
+	}
+	return strings.TrimSpace(author.Login)
 }
 
 func renderCommentMetadataTimestamp(createdAt string) string {
@@ -134,7 +161,20 @@ func commentAuthorBadgeText(author *githubcli.PullRequestCommentAuthor) string {
 }
 
 func styleCommentAuthorBadgeText(text string) string {
-	return renderRoundedPill(text, theme.CommentAuthorBadgeHex, theme.CommentAuthorBadgeBackgroundHex)
+	return styleCommentAuthorBadgeTextForViewer(text, "", "")
+}
+
+func styleCommentAuthorBadgeTextForViewer(text string, authorLogin string, connectedUserLogin string) string {
+	foregroundHex, backgroundHex := commentAuthorBadgeColors(authorLogin, connectedUserLogin)
+	return renderRoundedPill(text, foregroundHex, backgroundHex)
+}
+
+func commentAuthorBadgeColors(authorLogin string, connectedUserLogin string) (string, string) {
+	trimmedConnectedUserLogin := strings.TrimSpace(connectedUserLogin)
+	if trimmedConnectedUserLogin != "" && !strings.EqualFold(strings.TrimSpace(authorLogin), trimmedConnectedUserLogin) {
+		return theme.PendingHex, theme.PendingBackgroundHex
+	}
+	return theme.CommentAuthorBadgeHex, theme.CommentAuthorBadgeBackgroundHex
 }
 
 func styleCommentMetadataText(text string) string {

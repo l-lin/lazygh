@@ -11,19 +11,27 @@ import (
 const inlineThreadConversationMinimumDiffLines = 5
 
 func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineComment, body string, width int) string {
+	return renderPullRequestInlineCommentSectionForViewer(comment, body, width, "")
+}
+
+func renderPullRequestInlineCommentSectionForViewer(comment githubcli.PullRequestInlineComment, body string, width int, connectedUserLogin string) string {
 	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
 
 	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
 	if diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
-	lines = append(lines, renderCommentBoxWithMetadata(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width))
+	lines = append(lines, renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width, connectedUserLogin))
 	return strings.Join(lines, "\n")
 }
 
 func renderPullRequestInlineCommentThreadSection(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestInlineCommentThreadSectionForViewer(thread, renderer, width, "")
+}
+
+func renderPullRequestInlineCommentThreadSectionForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
 	header := renderPullRequestInlineCommentThreadHeader(thread, false, width)
-	body := renderPullRequestInlineCommentThreadBody(thread, renderer, width)
+	body := renderPullRequestInlineCommentThreadBodyForViewer(thread, renderer, width, connectedUserLogin)
 	if strings.TrimSpace(body) == "" {
 		return header
 	}
@@ -46,6 +54,10 @@ func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestRevi
 }
 
 func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestInlineCommentThreadBodyForViewer(thread, renderer, width, "")
+}
+
+func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	lines := make([]string, 0, len(thread.Comments)+2)
 	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
@@ -56,7 +68,7 @@ func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReview
 		return strings.Join(lines, "\n")
 	}
 
-	lines = append(lines, renderInlineThreadCommentBoxes(thread.Comments, renderer, threadWidth)...)
+	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, renderer, threadWidth, connectedUserLogin)...)
 	lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
 	return strings.Join(lines, "\n")
 }
@@ -79,12 +91,16 @@ func renderPullRequestInlineCommentThreadDiffPreview(comment githubcli.PullReque
 }
 
 func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) []string {
+	return renderInlineThreadCommentBoxesForViewer(comments, renderer, width, "")
+}
+
+func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	commentBodyWidth := commentBoxInnerWidth(threadWidth)
 	renderedComments := make([]string, 0, len(comments))
 	for _, threadComment := range comments {
 		body := renderInlineCommentBody(threadComment.Body, renderer, commentBodyWidth)
-		renderedComments = append(renderedComments, renderCommentBoxWithMetadata(threadComment.Author, threadComment.CreatedAt, threadComment.ReactionGroups, body, threadWidth))
+		renderedComments = append(renderedComments, renderCommentBoxWithMetadataForViewer(threadComment.Author, threadComment.CreatedAt, threadComment.ReactionGroups, body, threadWidth, connectedUserLogin))
 	}
 	return renderedComments
 }

@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/jesseduffield/gocui"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
@@ -62,6 +64,15 @@ func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 	user, err := program.githubLoader.GetConnectedUser()
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+		connectedUserLogin := ""
+		if err == nil {
+			connectedUserLogin = strings.TrimSpace(user.Login)
+		}
+		if program.connectedUserLogin != connectedUserLogin {
+			program.connectedUserLogin = connectedUserLogin
+			program.invalidatePullRequestDetailDocumentCache()
+			program.invalidateReviewDiffRenderCache()
+		}
 		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
 		return program.refreshViews(gui)
 	})

@@ -12,7 +12,7 @@ func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width
 		return entry.rows
 	}
 
-	rows := buildReviewDiffRenderedRowsWithCollapsedThreads(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs)
+	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
 	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
 	entry.rows = rows
 	program.storeReviewDiffRenderEntry(cacheKey, entry)

@@ -724,6 +724,57 @@ func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailP
 	}
 }
 
+func TestLayout_GivenConnectedUserAndReviewerComments_WhenRenderingCommentsTab_ThenOnlyTheViewerKeepsTheHighlightedAuthorBadge(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 111, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#111": {
+				Title:       "Styled PR",
+				Number:      111,
+				Body:        "Body 111",
+				BaseRefName: "main",
+				HeadRefName: "feature-111",
+				State:       "OPEN",
+				Comments: []githubcli.PullRequestComment{
+					{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Needs changes", CreatedAt: "2026-04-18T10:00:00Z"},
+					{Author: &githubcli.PullRequestCommentAuthor{Login: "octocat"}, Body: "Already fixed", CreatedAt: "2026-04-18T10:30:00Z"},
+				},
+			},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.connectedUserLogin = "octocat"
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 111": "Rendered body 111", "Needs changes": "Rendered reviewer comment", "Already fixed": "Rendered viewer comment"}}
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	reviewerLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-one")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, reviewerLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.PendingBackgroundHex), "reviewer author badge background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, reviewerLineIndex, detailCommentsIcon+" @reviewer-one", given_themeColorHex(t, theme.PendingHex), "reviewer author badge foreground")
+	viewerLineIndex := given_viewLineIndexContaining(t, detailView, "@octocat")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, viewerLineIndex, detailCommentsIcon+" @octocat", given_themeColorHex(t, theme.CommentAuthorBadgeBackgroundHex), "viewer author badge background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, viewerLineIndex, detailCommentsIcon+" @octocat", given_themeColorHex(t, theme.CommentAuthorBadgeHex), "viewer author badge foreground")
+}
+
 func TestLayout_GivenMarkdownHeading_WhenRendering_ThenItsBackgroundFillsTheWholeVisibleLine(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

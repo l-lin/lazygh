@@ -182,6 +182,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	sections := make([]browserDetailSection, 0, len(detail.Comments)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
+	connectedUserLogin := program.currentConnectedUserLogin()
 
 	for index, rawComment := range detail.Comments {
 		comment := rawComment
@@ -191,7 +192,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 		sections = append(sections, browserDetailSection{
 			id:        sectionID,
 			header:    renderBrowserDetailSectionHeader(renderPullRequestCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
-			body:      renderPullRequestCommentSection(comment, body, width),
+			body:      renderPullRequestCommentSectionForViewer(comment, body, width, connectedUserLogin),
 			collapsed: collapsed,
 			comment:   &comment,
 		})
@@ -206,7 +207,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 				id:                sectionID,
 				header:            renderPullRequestInlineCommentThreadHeader(thread, collapsed, width),
 				headerFocusOffset: 1,
-				body:              renderPullRequestInlineCommentThreadBody(thread, program.markdownRenderer, width),
+				body:              renderPullRequestInlineCommentThreadBodyForViewer(thread, program.markdownRenderer, width, connectedUserLogin),
 				collapsed:         collapsed,
 				inlineThread:      &thread,
 			})
@@ -222,7 +223,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 		sections = append(sections, browserDetailSection{
 			id:            sectionID,
 			header:        renderBrowserDetailSectionHeader(renderPullRequestInlineCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
-			body:          renderPullRequestInlineCommentSection(comment, body, width),
+			body:          renderPullRequestInlineCommentSectionForViewer(comment, body, width, connectedUserLogin),
 			collapsed:     collapsed,
 			inlineComment: &comment,
 		})

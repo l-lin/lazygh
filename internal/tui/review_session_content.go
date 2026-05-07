@@ -68,7 +68,7 @@ func (program *Program) reviewSessionDetailContent() string {
 	if !ok {
 		return program.reviewSessionNoDiffDetail()
 	}
-	return renderReviewDiffFileWithCollapsedThreads(selectedFile, program.markdownRenderer, program.detailWrapWidth, program.reviewSession.collapsedThreadIDs)
+	return renderReviewDiffFileWithCollapsedThreadsForViewer(selectedFile, program.markdownRenderer, program.detailWrapWidth, program.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
 }
 
 func (program *Program) reviewSessionDescriptionContent() string {

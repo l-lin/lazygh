@@ -113,6 +113,10 @@ func (program *Program) detailViewWraps() bool {
 	return false
 }
 
+func (program *Program) currentConnectedUserLogin() string {
+	return strings.TrimSpace(program.connectedUserLogin)
+}
+
 func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
 	identity := program.currentDetailIdentity()
 	if identity != program.lastDetailIdentity {
