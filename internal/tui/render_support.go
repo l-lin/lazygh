@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 func (program *Program) detailViewContent() string {
@@ -25,7 +27,7 @@ func (program *Program) detailViewContent() string {
 				case CommitsDetailTab:
 					return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailWrapWidth)
 				case ChangesDetailTab:
-					return renderPullRequestChangesTab(nil, program.markdownRenderer, program.detailWrapWidth)
+					return program.renderCurrentPullRequestChangesTab(*row.Summary, program.detailWrapWidth)
 				default:
 					header := renderPullRequestBrowserHeader(*row.Summary, result.detail)
 					overview := program.renderCurrentPullRequestOverview(*row.Summary, result.detail, program.detailWrapWidth)
@@ -43,6 +45,17 @@ func (program *Program) detailViewContent() string {
 	}
 
 	return program.fallbackDetailViewContent(item)
+}
+
+func (program *Program) renderCurrentPullRequestChangesTab(summary githubcli.PullRequest, width int) string {
+	result, ok := program.pullRequestDiffForSummary(summary)
+	if !ok {
+		return strings.TrimSpace(program.loadingSpinnerFrame())
+	}
+	if result.err != nil {
+		return renderPullRequestChangesTabError(result.err)
+	}
+	return renderPullRequestChangesTab(result.data.Files, program.markdownRenderer, width)
 }
 
 func (program *Program) fallbackDetailViewContent(item Item) string {

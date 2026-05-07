@@ -255,6 +255,76 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 	}
 }
 
+func TestLayout_GivenPullRequestChanges_WhenRendering_ThenTheBrowserChangesTabLoadsTheDiffAndShowsTheRenderedFilesAndInlineComments(t *testing.T) {
+	diff := githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/internal/tui/render.go b/internal/tui/render.go",
+			"index 1111111..2222222 100644",
+			"--- a/internal/tui/render.go",
+			"+++ b/internal/tui/render.go",
+			"@@ -42,2 +42,2 @@",
+			" context line",
+			"-old line",
+			"+new line",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{{Path: "internal/tui/render.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+		Threads: []githubcli.PullRequestReviewThread{{
+			ID:       "thread-1",
+			Path:     "internal/tui/render.go",
+			Line:     43,
+			DiffSide: "RIGHT",
+			Comments: []githubcli.PullRequestComment{{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+				Body:      "Inline thread body",
+				CreatedAt: "2026-04-18T10:30:00Z",
+			}},
+		}},
+	}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label(), ChangesDetailTab.Label()}, 3)
+	for _, expected := range []string{"internal/tui/render.go", "@@ -42,2 +42,2 @@", "42 : 42 │  context line", "43 :    │ -old line", "   : 43 │ +new line", "Rendered inline thread body"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected the changes tab to contain %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42"}, loader.diffCalls)
+	}
+}
+
 func TestBrowserMode_GivenTheCursorOnAnOverviewSection_WhenPressingEnter_ThenItTogglesTheSectionVisibility(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

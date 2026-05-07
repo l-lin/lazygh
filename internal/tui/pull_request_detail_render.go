@@ -88,6 +88,14 @@ func renderPullRequestChangesTab(files []reviewDiffFile, renderer MarkdownRender
 	return strings.Join(renderedFiles, "\n\n")
 }
 
+func renderPullRequestChangesTabError(err error) string {
+	message := strings.TrimSpace(err.Error())
+	if message == "" {
+		message = "Unknown error. GitHub misplaced the diff again."
+	}
+	return fmt.Sprintf("Could not load pull request changes.\n\n%s", message)
+}
+
 func renderPullRequestCommitSection(commit githubcli.PullRequestCommit, renderer MarkdownRenderer, width int) string {
 	sectionParts := []string{renderPullRequestCommitHeader(commit)}
 	metadataLines := filterEmptyStrings([]string{

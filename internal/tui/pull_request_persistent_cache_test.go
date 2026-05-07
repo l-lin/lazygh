@@ -278,6 +278,79 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 	}
 }
 
+func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedDiff_WhenCheckingTheSelection_ThenItShowsTheCachedDiffAndRefreshesItInBackground(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
+	cachedDiff := githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/main.go b/main.go",
+			"index 1111111..2222222 100644",
+			"--- a/main.go",
+			"+++ b/main.go",
+			"@@ -1,1 +1,1 @@",
+			"-old line",
+			"+cached line",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+	}
+	freshDiff := githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/main.go b/main.go",
+			"index 1111111..2222222 100644",
+			"--- a/main.go",
+			"+++ b/main.go",
+			"@@ -1,1 +1,1 @@",
+			"-old line",
+			"+fresh line",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+	}
+	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": freshDiff}}}
+	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: "2026-05-05T10:00:00Z"}}}
+	asyncRunner := &capturingAsyncRunner{}
+	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.pullRequestCache = cache
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.activeDetailTab = ChangesDetailTab
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	subject.maybeLoadSelectedPullRequestDiff(gui)
+	actualBeforeRefresh, ok := subject.pullRequestDiffForSummary(summary)
+	if !ok {
+		t.Fatal("expected the stale cached diff to be available immediately")
+	}
+	if len(actualBeforeRefresh.data.Files) != 1 || actualBeforeRefresh.data.Files[0].Path != "main.go" {
+		t.Fatalf("expected cached diff files %+v, actual %+v", []string{"main.go"}, actualBeforeRefresh.data.Files)
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued diff refresh, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	actualAfterRefresh, ok := subject.pullRequestDiffForSummary(summary)
+	if !ok {
+		t.Fatal("expected a refreshed pull request diff")
+	}
+	if len(actualAfterRefresh.data.Files) != 1 || actualAfterRefresh.data.Files[0].Path != "main.go" || len(actualAfterRefresh.data.Files[0].Hunks) != 1 || len(actualAfterRefresh.data.Files[0].Hunks[0].Lines) != 2 || actualAfterRefresh.data.Files[0].Hunks[0].Lines[1].Text != "fresh line" {
+		t.Fatalf("expected refreshed diff data to contain the fresh change, actual %+v", actualAfterRefresh.data.Files)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected diff refresh calls %v, actual %v", []string{"acme/widgets#42"}, loader.diffCalls)
+	}
+	if actual := cache.savedDiffs["acme/widgets#42"]; !reflect.DeepEqual(actual.Diff, freshDiff) || actual.SourceUpdatedAt != summary.UpdatedAt {
+		t.Fatalf("expected saved cached diff %+v with version %q, actual %+v", freshDiff, summary.UpdatedAt, actual)
+	}
+}
+
 func TestLoadPullRequestDiff_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}

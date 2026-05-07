@@ -17,11 +17,15 @@ type pullRequestDiffResult struct {
 }
 
 func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
-	if gui == nil || !program.reviewSession.active {
+	if gui == nil {
 		return
 	}
 
-	summary := program.reviewSession.summary
+	summary, ok := program.selectedPullRequestSummaryForDiff()
+	if !ok {
+		return
+	}
+
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	if key == "" || program.pullRequestDiffLoadInFlight[key] {
 		return
@@ -55,6 +59,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 		if err == nil || !program.canKeepPullRequestDiffOnRefreshError(key) {
 			program.pullRequestDiffCache[key] = result
 			program.invalidateReviewDiffRenderCache()
+			program.invalidatePullRequestDetailDocumentCache()
 			program.clampReviewSessionSelection()
 			return program.refreshViews(gui)
 		}
@@ -63,8 +68,28 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
 		cachedResult.needsRefresh = false
 		program.pullRequestDiffCache[key] = cachedResult
+		program.invalidatePullRequestDetailDocumentCache()
 		return program.refreshViews(gui)
 	})
+}
+
+func (program *Program) selectedPullRequestSummaryForDiff() (githubcli.PullRequest, bool) {
+	if program.reviewSession.active {
+		summary := program.reviewSession.summary
+		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+			return githubcli.PullRequest{}, false
+		}
+		return summary, true
+	}
+	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != ChangesDetailTab {
+		return githubcli.PullRequest{}, false
+	}
+
+	summary, ok := program.model.SelectedPullRequestSummary()
+	if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+		return githubcli.PullRequest{}, false
+	}
+	return summary, true
 }
 
 func (program *Program) pullRequestDiffForSummary(summary githubcli.PullRequest) (pullRequestDiffResult, bool) {
@@ -76,11 +101,13 @@ func (program *Program) invalidatePullRequestDiff(repository string, number int)
 	delete(program.pullRequestDiffCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
 	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidateReviewDiffRenderCache()
+	program.invalidatePullRequestDetailDocumentCache()
 }
 
 func (program *Program) selectedPullRequestDiffLoading() bool {
-	if !program.reviewSession.active {
+	summary, ok := program.selectedPullRequestSummaryForDiff()
+	if !ok {
 		return false
 	}
-	return program.pullRequestDiffLoadInFlight[pullRequestDetailKey(program.reviewSession.summary.Repository, program.reviewSession.summary.Number)]
+	return program.pullRequestDiffLoadInFlight[pullRequestDetailKey(summary.Repository, summary.Number)]
 }
