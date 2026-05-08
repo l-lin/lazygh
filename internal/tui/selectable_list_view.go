@@ -133,7 +133,10 @@ func styledItemSegmentPrefix(segment ItemTitleSegment, backgroundHex string, sel
 	if minimumContrast <= 0 {
 		minimumContrast = 4.5
 	}
-	resolvedForegroundHex := readableForegroundHexForBackgroundWithMinimum(trimmedForegroundHex, trimmedBackgroundHex, minimumContrast, theme.ActiveTextHex, theme.InactiveTextHex, theme.BackgroundHex, theme.SelectedLineBackgroundHex)
+	resolvedForegroundHex := trimmedForegroundHex
+	if !segment.PreserveForeground {
+		resolvedForegroundHex = readableForegroundHexForBackgroundWithMinimum(trimmedForegroundHex, trimmedBackgroundHex, minimumContrast, theme.ActiveTextHex, theme.InactiveTextHex, theme.BackgroundHex, theme.SelectedLineBackgroundHex)
+	}
 	prefix := ""
 	if selected {
 		prefix += ansiBold

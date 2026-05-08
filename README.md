@@ -92,7 +92,8 @@ Configure theme presets and palette overrides under `[theme]`.
 - `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
 - `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
 - `markdown_heading_background` controls the full-line heading fill.
-- `actions_popup_group_background` controls the grouped header background in the actions popup.
+- `actions_popup_group_foreground` controls the grouped header text color in the actions popup.
+- Grouped action headers reuse `markdown_heading_background` for their background.
 - `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
 - The PR description header reuses the diff addition and deletion colors for `+N` and `-N` counts.

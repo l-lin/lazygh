@@ -29,10 +29,11 @@ func (line actionsPopupVisibleLine) item(viewWidth int) Item {
 	return Item{
 		Title: centeredTitle,
 		TitleSegments: []ItemTitleSegment{{
-			Text:            centeredTitle,
-			ForegroundHex:   theme.InactiveTitleHex,
-			BackgroundHex:   theme.ActionsPopupGroupBackgroundHex,
-			MinimumContrast: 4.5,
+			Text:               centeredTitle,
+			ForegroundHex:      theme.ActionsPopupGroupForegroundHex,
+			BackgroundHex:      theme.MarkdownHeadingBackgroundHex,
+			MinimumContrast:    4.5,
+			PreserveForeground: true,
 		}},
 	}
 }
