@@ -1260,6 +1260,12 @@ type fakePullRequestDetailLoader struct {
 	requestedPullRequests      []githubcli.PullRequest
 	notifications              []githubcli.Notification
 	notificationsErr           error
+	issueDetails               map[string]githubcli.IssueDetail
+	issueDetailErrors          map[string]error
+	issueDetailCalls           []string
+	releaseDetails             map[string]githubcli.ReleaseDetail
+	releaseDetailErrors        map[string]error
+	releaseDetailCalls         []string
 	approveCalls               []string
 	approveErr                 error
 	reviewCommentCalls         []string
@@ -1349,6 +1355,38 @@ func (loader *fakePullRequestDetailLoader) ListNotifications() ([]githubcli.Noti
 		return nil, loader.notificationsErr
 	}
 	return append([]githubcli.Notification(nil), loader.notifications...), nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error) {
+	key := repository + "#" + strconv.Itoa(number)
+	loader.issueDetailCalls = append(loader.issueDetailCalls, key)
+	if loader.issueDetailErrors != nil {
+		if err, ok := loader.issueDetailErrors[key]; ok {
+			return githubcli.IssueDetail{}, err
+		}
+	}
+	if loader.issueDetails != nil {
+		if detail, ok := loader.issueDetails[key]; ok {
+			return detail, nil
+		}
+	}
+	return githubcli.IssueDetail{}, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error) {
+	key := repository + "#" + strconv.Itoa(id)
+	loader.releaseDetailCalls = append(loader.releaseDetailCalls, key)
+	if loader.releaseDetailErrors != nil {
+		if err, ok := loader.releaseDetailErrors[key]; ok {
+			return githubcli.ReleaseDetail{}, err
+		}
+	}
+	if loader.releaseDetails != nil {
+		if detail, ok := loader.releaseDetails[key]; ok {
+			return detail, nil
+		}
+	}
+	return githubcli.ReleaseDetail{}, nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error) {

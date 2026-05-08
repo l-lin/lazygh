@@ -28,6 +28,8 @@ type GitHubLoader interface {
 	ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error)
 	ListNotifications() ([]githubcli.Notification, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
+	GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error)
+	GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error)
 	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
 	CommentOnPullRequest(repository string, number int, body string) error
 	ApprovePullRequest(repository string, number int) error
@@ -80,6 +82,10 @@ type Program struct {
 	pullRequestDetailDocumentCache          map[pullRequestDetailDocumentCacheKey]detailDocument
 	pullRequestDiffCache                    map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight             map[string]bool
+	issueDetailCache                        map[string]issueDetailResult
+	issueDetailLoadInFlight                 map[string]bool
+	releaseDetailCache                      map[string]releaseDetailResult
+	releaseDetailLoadInFlight               map[string]bool
 	reviewDiffRenderCache                   map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
 	storyReviewLoading                      bool
 	loadingSpinnerFrameIndex                int
@@ -149,6 +155,10 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		pullRequestDetailDocumentCache:    map[pullRequestDetailDocumentCacheKey]detailDocument{},
 		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:       map[string]bool{},
+		issueDetailCache:                  map[string]issueDetailResult{},
+		issueDetailLoadInFlight:           map[string]bool{},
+		releaseDetailCache:                map[string]releaseDetailResult{},
+		releaseDetailLoadInFlight:         map[string]bool{},
 		reviewDiffRenderCache:             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
 		assignableUsersCache:              map[string][]githubcli.PullRequestAuthor{},
 		browserCollapsedSectionStates:     map[string]bool{},

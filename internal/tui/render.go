@@ -25,6 +25,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadActivePullRequests(gui)
 	if !program.reviewSession.active {
 		program.maybeLoadNotifications(gui)
+		program.maybeLoadSelectedNotificationDetail(gui)
 	}
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)

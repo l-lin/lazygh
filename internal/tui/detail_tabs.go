@@ -37,12 +37,11 @@ func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) erro
 }
 
 func (program *Program) shouldShowPullRequestDetailTabs() bool {
-	if program.reviewSession.active || program.model.currentSideFocus() != FocusPullRequestsView {
+	if program.reviewSession.active {
 		return false
 	}
-
-	row, ok := program.model.SelectedPullRequestRow()
-	return ok && row.Summary != nil
+	_, ok := program.selectedPullRequestSummaryForDetail()
+	return ok
 }
 
 var browserDetailTabs = []DetailTab{DescriptionDetailTab, CommentsDetailTab, CommitsDetailTab, ChangesDetailTab}
@@ -93,14 +92,14 @@ func (program *Program) selectedPullRequestDetailCommitCount() (int, bool) {
 }
 
 func (program *Program) selectedPullRequestDetailForTabs() (githubcli.PullRequestDetail, bool) {
-	if program.reviewSession.active || program.model.currentSideFocus() != FocusPullRequestsView {
+	if program.reviewSession.active {
 		return githubcli.PullRequestDetail{}, false
 	}
-	row, ok := program.model.SelectedPullRequestRow()
-	if !ok || row.Summary == nil {
+	summary, ok := program.selectedPullRequestSummaryForDetail()
+	if !ok {
 		return githubcli.PullRequestDetail{}, false
 	}
-	result, ok := program.pullRequestDetailForSummary(*row.Summary)
+	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
 		return githubcli.PullRequestDetail{}, false
 	}

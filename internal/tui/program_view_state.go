@@ -7,6 +7,9 @@ type viewRenderer func(*gocui.View)
 
 func (program *Program) refreshViews(gui *gocui.Gui) error {
 	program.gui = gui
+	if !program.reviewSession.active {
+		program.maybeLoadSelectedNotificationDetail(gui)
+	}
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
 

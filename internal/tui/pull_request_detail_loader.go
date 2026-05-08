@@ -71,19 +71,29 @@ func (program *Program) selectedPullRequestSummaryForDetail() (githubcli.PullReq
 		}
 		return summary, true
 	}
-	if program.model.currentSideFocus() != FocusPullRequestsView {
+	switch program.model.currentSideFocus() {
+	case FocusPullRequestsView:
+		summary, ok := program.model.SelectedPullRequestSummary()
+		if !ok {
+			return githubcli.PullRequest{}, false
+		}
+		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+			return githubcli.PullRequest{}, false
+		}
+		return summary, true
+	case FocusNotificationsView:
+		notification, ok := program.model.SelectedNotification()
+		if !ok {
+			return githubcli.PullRequest{}, false
+		}
+		summary, ok := notification.PullRequestSummary()
+		if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+			return githubcli.PullRequest{}, false
+		}
+		return summary, true
+	default:
 		return githubcli.PullRequest{}, false
 	}
-
-	summary, ok := program.model.SelectedPullRequestSummary()
-	if !ok {
-		return githubcli.PullRequest{}, false
-	}
-	if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
-		return githubcli.PullRequest{}, false
-	}
-
-	return summary, true
 }
 
 func (program *Program) pullRequestDetailForSummary(summary githubcli.PullRequest) (pullRequestDetailResult, bool) {
@@ -105,7 +115,15 @@ func (program *Program) currentDetailIdentity() string {
 		}
 		return fmt.Sprintf("pr-state:%d:%d", program.model.ActivePullRequestTab(), program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))
 	case FocusNotificationsView:
-		return fmt.Sprintf("notification:%d", program.model.SelectedNotificationIndex())
+		if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
+			if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
+				return fmt.Sprintf("notification-pr:%s:tab:%d", key, program.activeDetailTab)
+			}
+		}
+		if notification, ok := program.model.SelectedNotification(); ok {
+			return fmt.Sprintf("notification:%s", strings.TrimSpace(notification.ID))
+		}
+		return fmt.Sprintf("notification-state:%d", program.model.SelectedNotificationIndex())
 	default:
 		return fmt.Sprintf("user:%d", program.model.SelectedUserIndex())
 	}

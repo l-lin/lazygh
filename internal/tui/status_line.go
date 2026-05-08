@@ -134,6 +134,10 @@ func (program *Program) loadingStatusText() string {
 		return program.loadingSpinnerStatus(message)
 	}
 
+	if message := strings.TrimSpace(program.selectedNotificationDetailLoadingStatus()); message != "" {
+		return program.loadingSpinnerStatus(message)
+	}
+
 	if message := strings.TrimSpace(program.activePullRequestsLoadingStatus()); message != "" {
 		return program.loadingSpinnerStatus(message)
 	}

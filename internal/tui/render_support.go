@@ -13,29 +13,49 @@ func (program *Program) detailViewContent() string {
 	if program.reviewSession.active {
 		return program.reviewSessionDetailContent()
 	}
-	if program.model.currentSideFocus() == FocusPullRequestsView {
-		row, ok := program.model.SelectedPullRequestRow()
-		if ok && row.Summary != nil && pullRequestDetailKey(row.Summary.Repository, row.Summary.Number) != "" {
-			if result, ok := program.pullRequestDetailForSummary(*row.Summary); ok {
-				if result.err != nil {
-					return renderPullRequestDetailError(*row.Summary, result.err)
-				}
-
-				switch program.activeDetailTab {
-				case CommentsDetailTab:
-					return program.renderCurrentPullRequestConversationsTab(*row.Summary, result.detail, program.detailWrapWidth)
-				case CommitsDetailTab:
-					return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailWrapWidth)
-				case ChangesDetailTab:
-					return program.renderCurrentPullRequestChangesTab(*row.Summary, program.detailWrapWidth)
-				default:
-					header := renderPullRequestBrowserHeader(*row.Summary, result.detail)
-					overview := program.renderCurrentPullRequestOverview(*row.Summary, result.detail, program.detailWrapWidth)
-					content := renderPullRequestDescription(*row.Summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
-					return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
-				}
+	if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
+		if result, ok := program.pullRequestDetailForSummary(summary); ok {
+			if result.err != nil {
+				return renderPullRequestDetailError(summary, result.err)
 			}
-			return renderPullRequestDetailLoading(*row.Summary, program.loadingSpinnerFrame())
+
+			switch program.activeDetailTab {
+			case CommentsDetailTab:
+				return program.renderCurrentPullRequestConversationsTab(summary, result.detail, program.detailWrapWidth)
+			case CommitsDetailTab:
+				return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailWrapWidth)
+			case ChangesDetailTab:
+				return program.renderCurrentPullRequestChangesTab(summary, program.detailWrapWidth)
+			default:
+				header := renderPullRequestBrowserHeader(summary, result.detail)
+				overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailWrapWidth)
+				content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
+				return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
+			}
+		}
+		return renderPullRequestDetailLoading(summary, program.loadingSpinnerFrame())
+	}
+	if program.model.currentSideFocus() == FocusNotificationsView {
+		if notification, ok := program.model.SelectedNotification(); ok {
+			if repository, _, ok := notification.IssueIdentity(); ok {
+				if result, ok := program.issueDetailForNotification(notification); ok {
+					if result.err != nil {
+						return renderIssueDetailError(notification, repository, result.err)
+					}
+					return renderIssueDetail(repository, result.detail, program.markdownRenderer, program.detailWrapWidth)
+				}
+				return renderNotificationDetailLoading(notification, repository, program.loadingSpinnerFrame())
+			}
+			if repository, _, ok := notification.ReleaseIdentity(); ok {
+				if result, ok := program.releaseDetailForNotification(notification); ok {
+					if result.err != nil {
+						return renderReleaseDetailError(notification, repository, result.err)
+					}
+					return renderReleaseDetail(repository, result.detail, program.markdownRenderer, program.detailWrapWidth)
+				}
+				return renderNotificationDetailLoading(notification, repository, program.loadingSpinnerFrame())
+			}
+			return renderUnsupportedNotificationDetail(notification)
 		}
 	}
 

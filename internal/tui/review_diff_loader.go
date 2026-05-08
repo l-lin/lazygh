@@ -85,7 +85,7 @@ func (program *Program) selectedPullRequestSummaryForDiff() (githubcli.PullReque
 		return githubcli.PullRequest{}, false
 	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 		return githubcli.PullRequest{}, false
 	}

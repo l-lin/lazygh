@@ -10,11 +10,8 @@ func (program *Program) currentPullRequestDetailDocumentCacheKey(width int) (pul
 	if program.reviewSession.active || width < 1 {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
-	if program.model.currentSideFocus() != FocusPullRequestsView {
-		return pullRequestDetailDocumentCacheKey{}, false
-	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}

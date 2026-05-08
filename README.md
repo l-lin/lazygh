@@ -86,9 +86,9 @@ By default, it will use the `system` preset if not set:
 preset = "system"
 ```
 
-List of presets can be found in [`preset.go`](internal/theme/preset.go).
+List of presets can be found in [`preset.go`](internal/theme/preset.go). Available presets include `system`, `light`, and `dark`.
 
-You can find the list of palette variables in [palette.go](internal/theme/palette.go).
+You can find the list of palette variables in [palette.go](internal/theme/palette.go). Use `Change theme` from the actions popup when you want to switch presets at runtime, it updates `~/.config/lazygh/config.toml` immediately.
 
 This example starts from `kanagawa-dark` and overrides a few colors.
 
@@ -120,6 +120,10 @@ pull_request_status_merged_background = "#252535"
 diff_addition_highlight_background = "#35513B"
 diff_deletion_highlight_background = "#5A2E35"
 ```
+
+The `background` color fills the full TUI background. `markdown_heading_background` controls the full-line heading fill. `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists, and `pull_request_title` colors the pull-request title text in pull-request lists.
+
+Use `pull_request_status_*_background` when you want status-specific pull-request colors. It also colors the `` status icon in pull-request lists. `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
 
 ### Links
 
@@ -186,9 +190,38 @@ label = "Escalated"
 command = ["search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
 ```
 
+### Notifications
+
+Browser mode now has a third side pane for notifications. Browser mode cycles across side views `1`, `2`, and `3`. `tab`, `shift+tab`, `h`, and `l` move between Connected user, Pull Requests, and Notifications. Press `3` to jump straight to Notifications.
+
+When view 3 is inactive, it stays at three lines. When view 3 is active, it expands and view 2 collapses to three lines. Pull request notifications reuse the browser PR detail with overview and tabs. Issue notifications open an issue document. Release notifications open a release document.
+
+Notification loading uses `gh api /notifications?all=true`. GitHub returns unread and read threads there, but done threads stay excluded from the list. In practice, `gh auth login` with a user token that can read the target repos is enough. Private notifications still need repository access.
+
+```text
+╭[1]- Connected user──────────────╮╭[0]-Detail─────────────────────────────╮
+│ @octocat                         ││  Add notifications                    │
+╰──────────────────────────────────╯│ acme/widgets#42                        │
+╭[2] My PRs (12)───────────────────╮│ ...                                    │
+│  acme/widgets#42 Add ...        ││                                         │
+│ ...                              ││                                         │
+╰──────────────────────────────────╯│                                         │
+╭[3] Notifications─────────────────╯│
+│  acme/widgets#42 Add notifications│
+╰──────────────────────────────────╯
+```
+
+### Actions
+
+`Assign PR` opens a searchable assignee picker. Press `enter` to toggle an assignee, then press `alt+enter` to save. GitHub only allows up to 10 assignees per pull request, and your account still needs permission to assign users in that repository.
+
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.
+
+Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
+
+In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context.
 
 ```toml
 [keymaps.global]
@@ -200,6 +233,7 @@ previous_side_view = "shift+tab"
 toggle_help = "?"
 focus_user_view = "1"
 focus_pull_requests_view = "2"
+focus_notifications_view = "3"
 open_search = "/"
 move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
@@ -231,6 +265,10 @@ next_tab = "]"
 open_detail = "enter"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
+open_actions_popup = "a"
+
+[keymaps.notifications]
+open_detail = "enter"
 open_actions_popup = "a"
 
 [keymaps.detail]
