@@ -63,6 +63,24 @@ type Repository struct {
 	NameWithOwner string `json:"nameWithOwner"`
 }
 
+func (repository *Repository) UnmarshalJSON(data []byte) error {
+	var payload struct {
+		Name          string `json:"name"`
+		NameWithOwner string `json:"nameWithOwner"`
+		FullName      string `json:"full_name"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return err
+	}
+
+	repository.Name = payload.Name
+	repository.NameWithOwner = payload.NameWithOwner
+	if strings.TrimSpace(repository.NameWithOwner) == "" {
+		repository.NameWithOwner = payload.FullName
+	}
+	return nil
+}
+
 type PullRequest struct {
 	ID                     string                     `json:"id"`
 	Title                  string                     `json:"title"`

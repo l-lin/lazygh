@@ -1,0 +1,20 @@
+{
+  "html_url": "https://github.com/acme/opencode/issues/3235",
+  "title": " Support for skills ",
+  "number": 3235,
+  "body": "Add skill loading to the coding agent.",
+  "user": {
+    "login": "octocat"
+  },
+  "state": " open ",
+  "created_at": "2025-10-17T06:36:09Z",
+  "updated_at": "2025-12-23T04:29:48Z",
+  "labels": [
+    {"name": " enhancement "},
+    {"name": " ai "}
+  ],
+  "assignees": [
+    {"login": " monalisa "}
+  ],
+  "comments": 51
+}

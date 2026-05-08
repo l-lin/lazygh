@@ -1,0 +1,14 @@
+{
+  "html_url": "https://github.com/acme/doctoboot/releases/tag/v3.5.0",
+  "body": "## What's Changed\n\n- Add notifications view\n- Route detail by subject type",
+  "created_at": "2025-11-13T12:07:43Z",
+  "updated_at": "2025-11-13T17:13:32Z",
+  "draft": false,
+  "prerelease": true,
+  "published_at": "2025-11-13T17:11:41Z",
+  "name": " Notifications 3.5.0 ",
+  "tag_name": " v3.5.0 ",
+  "author": {
+    "login": " release-bot "
+  }
+}
