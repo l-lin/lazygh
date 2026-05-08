@@ -44,7 +44,10 @@ func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShow
 	if !strings.Contains(composerView.Title, "Comment on PR") {
 		t.Fatalf("expected composer title to contain %q, actual %q", "Comment on PR", composerView.Title)
 	}
-	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewModalEditorName, "<Alt-Enter> to submit")
+	if composerView.Footer != "" {
+		t.Fatalf("expected the modal footer to stay empty, actual %q", composerView.Footer)
+	}
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: Submit")
 
 	x0, y0, x1, y1, actualErr := gui.ViewPosition(viewModalEditorName)
 	then_noError(t, actualErr)

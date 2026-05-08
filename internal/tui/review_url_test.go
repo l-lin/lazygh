@@ -52,7 +52,10 @@ func TestReviewPRURLInput_GivenEnterPressedInTheURLPrompt_WhenSubmittingAValidUR
 	if !strings.Contains(modalView.Title, "Review PR from URL") {
 		t.Fatalf("expected modal title to contain %q, actual %q", "Review PR from URL", modalView.Title)
 	}
-	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewModalEditorName, "<Enter> to submit")
+	if modalView.Footer != "" {
+		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
+	}
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: Submit")
 
 	subject.modalEditor.lineEditor.SetText(" https://github.com/acme/rocket/pull/77/files#diff-1 ")
 	actualHandled := subject.editModalEditor(modalView, gocui.KeyEnter, 0, gocui.ModNone)

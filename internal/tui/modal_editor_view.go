@@ -32,7 +32,7 @@ func (program *Program) layoutModalEditorView(gui *gocui.Gui) error {
 }
 
 func (program *Program) configureModalEditorView(view *gocui.View) {
-	configureFramedOverlayView(view, program.modalEditorTitle(), program.modalEditorFooter())
+	configureFramedOverlayView(view, program.modalEditorTitle(), "")
 	view.Wrap = false
 	view.Highlight = false
 	view.Editable = true
@@ -86,16 +86,6 @@ func (program *Program) modalEditorTitle() string {
 	}
 
 	return fmt.Sprintf("%s · %s", title, message)
-}
-
-func (program *Program) modalEditorFooter() string {
-	if program == nil || program.modalEditor == nil {
-		return ""
-	}
-	if program.modalEditor.lineEditor != nil {
-		return "<Enter> to submit"
-	}
-	return "<Alt-Enter> to submit"
 }
 
 func (program *Program) setMultilineInputCursor(view *gocui.View, column int, row int) {

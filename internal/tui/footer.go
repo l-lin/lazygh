@@ -72,6 +72,9 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 }
 
 func (program *Program) statusLineKeyHintsText() string {
+	if modalEditorHints := strings.TrimSpace(program.modalEditorKeyHintsText()); modalEditorHints != "" {
+		return modalEditorHints
+	}
 	if actionsPopupHints := strings.TrimSpace(program.actionsPopupKeyHintsText()); actionsPopupHints != "" {
 		return actionsPopupHints
 	}
@@ -94,6 +97,24 @@ func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {
 	return isMainPaneFocus(focus)
 }
 
+func (program *Program) modalEditorKeyHintsText() string {
+	if !program.shouldShowModalEditorStatusLineKeyHints() {
+		return ""
+	}
+
+	return program.statusLineKeyHint("Submit", "Alt+Enter", keybindingActionID{scope: keymapScopeModalEditor, action: "submit"})
+}
+
+func (program *Program) shouldShowModalEditorStatusLineKeyHints() bool {
+	if !program.modalEditorVisible() {
+		return false
+	}
+	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildRunPopupVisible() {
+		return false
+	}
+	return true
+}
+
 func (program *Program) actionsPopupKeyHintsText() string {
 	if !program.shouldShowActionsPopupStatusLineKeyHints() {
 		return ""
@@ -103,9 +124,9 @@ func (program *Program) actionsPopupKeyHintsText() string {
 	}
 
 	hints := []string{
-		program.actionsPopupKeyHint("Search", "/", keybindingActionID{scope: keymapScopeActionsPopup, action: "focus_search"}),
-		program.actionsPopupKeyHint("Toggle", "Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "execute_selected_action"}),
-		program.actionsPopupKeyHint("Submit", "Alt+Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}),
+		program.statusLineKeyHint("Search", "/", keybindingActionID{scope: keymapScopeActionsPopup, action: "focus_search"}),
+		program.statusLineKeyHint("Toggle", "Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "execute_selected_action"}),
+		program.statusLineKeyHint("Submit", "Alt+Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}),
 	}
 	return strings.Join(filterEmptyStrings(hints), ", ")
 }
@@ -131,20 +152,23 @@ func (program *Program) paneFooterKeyHintsText(focus Focus) string {
 	return strings.Join(filterEmptyStrings(hints), ", ")
 }
 
-func (program *Program) paneFooterKeyHint(label string, actionIDs ...keybindingActionID) string {
-	resolvedKeys := strings.TrimSpace(program.resolvedKeyLabelsText(actionIDs...))
+func (program *Program) statusLineKeyHint(label string, fallback string, actionIDs ...keybindingActionID) string {
+	resolvedKeys := strings.TrimSpace(program.statusLineKeyHintKeys(fallback, actionIDs...))
 	if resolvedKeys == "" {
 		return ""
 	}
 	return resolvedKeys + ": " + label
 }
 
-func (program *Program) actionsPopupKeyHint(label string, fallback string, actionIDs ...keybindingActionID) string {
-	resolvedKeys := strings.TrimSpace(program.helpKeysOrFallback(fallback, actionIDs...))
-	if resolvedKeys == "" {
-		return ""
+func (program *Program) statusLineKeyHintKeys(fallback string, actionIDs ...keybindingActionID) string {
+	if strings.TrimSpace(fallback) != "" {
+		return strings.TrimSpace(program.helpKeysOrFallback(fallback, actionIDs...))
 	}
-	return resolvedKeys + ": " + label
+	return strings.TrimSpace(program.resolvedKeyLabelsText(actionIDs...))
+}
+
+func (program *Program) paneFooterKeyHint(label string, actionIDs ...keybindingActionID) string {
+	return program.statusLineKeyHint(label, "", actionIDs...)
 }
 
 func (program *Program) paneFooterActionsHint(focus Focus) string {
