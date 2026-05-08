@@ -27,9 +27,25 @@ func (program *Program) setAllDetailFolds(gui *gocui.Gui, view *gocui.View, coll
 	}
 
 	if program.reviewSession.active {
+		if program.reviewSessionShowsDescription() {
+			return program.setAllReviewDescriptionFolds(gui, view, collapsed)
+		}
 		return program.setAllReviewInlineConversationFolds(gui, view, collapsed)
 	}
 	return program.setAllBrowserDetailFolds(gui, view, collapsed)
+}
+
+func (program *Program) setAllReviewDescriptionFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
+	summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
+	if !ok {
+		return nil
+	}
+
+	actualView := program.resolveView(gui, view, viewDetailName)
+	viewportHeight := viewPageSize(actualView)
+	detailDocument := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(detailDocument, viewportHeight)
+	return program.setAllBrowserOverviewFolds(gui, summary, detail, detailDocument, viewportHeight, collapsed)
 }
 
 func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {

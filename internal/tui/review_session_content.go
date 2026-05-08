@@ -41,16 +41,18 @@ func (program *Program) reviewSessionDetailContent() string {
 
 func (program *Program) reviewSessionDescriptionContent() string {
 	summary := program.reviewSession.summary
-	detail := githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, Body: summary.Body, State: summary.State, UpdatedAt: summary.UpdatedAt}
-	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
-		detail = result.detail
+	if result, ok := program.pullRequestDetailForSummary(summary); ok {
+		if result.err != nil {
+			return renderPullRequestDetailError(summary, result.err)
+		}
+
+		header := renderPullRequestBrowserHeader(summary, result.detail)
+		overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailWrapWidth)
+		content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
+		return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
 	}
 
-	return renderPullRequestDetailContentWithSeparator(
-		renderPullRequestDetailHeader(summary, detail),
-		renderPullRequestDescription(summary, detail, program.markdownRenderer, program.detailWrapWidth),
-		program.detailWrapWidth,
-	)
+	return renderPullRequestDetailLoading(summary, program.loadingSpinnerFrame())
 }
 
 func (program *Program) reviewSessionStoryChapterContent() string {
@@ -70,6 +72,19 @@ func (program *Program) reviewSessionStoryChapterContent() string {
 		}
 	}
 	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), program.markdownRenderer, program.detailWrapWidth, "No chapter narrative is available.")
+}
+
+func (program *Program) reviewSessionDescriptionSummaryAndDetail() (githubcli.PullRequest, githubcli.PullRequestDetail, bool) {
+	if !program.reviewSessionShowsDescription() {
+		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+	}
+
+	summary := program.reviewSession.summary
+	result, ok := program.pullRequestDetailForSummary(summary)
+	if !ok || result.err != nil {
+		return summary, githubcli.PullRequestDetail{}, false
+	}
+	return summary, result.detail, true
 }
 
 func (program *Program) reviewSessionShowsDescription() bool {

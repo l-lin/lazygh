@@ -70,6 +70,66 @@ func TestBrowserMode_GivenDescriptionOverviewSections_WhenPressingZMAndZR_ThenIt
 	then_reviewModeDetailCursorLineContains(t, gui, subject, "Merge Checks")
 }
 
+func TestReviewMode_GivenDescriptionOverviewSections_WhenPressingZMAndZR_ThenItClosesAndOpensEverySectionWhileKeepingTheCursorOnTheSameSection(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/review-overview-folds",
+				State:       "OPEN",
+				Reviews: []githubcli.PullRequestReview{{
+					Author:      &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"},
+					State:       "APPROVED",
+					SubmittedAt: "2026-04-21T10:00:00Z",
+				}},
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "test", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "FAILURE"}},
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Merge Checks")
+
+	prefixHandler, closeAllHandler, openAllHandler := given_detailBulkFoldHandlers(t, subject)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = openAllHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "@reviewer-approved") || !strings.Contains(detailView.Buffer(), "CI / test (Failed)") {
+		t.Fatalf("expected zR to expand every review overview section, actual %q", detailView.Buffer())
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "Merge Checks")
+
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = closeAllHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "@reviewer-approved") || strings.Contains(detailView.Buffer(), "CI / test (Failed)") {
+		t.Fatalf("expected zM to collapse every review overview section, actual %q", detailView.Buffer())
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "Merge Checks")
+}
+
 func TestBrowserMode_GivenCommentsTabInlineConversations_WhenPressingZMAndZR_ThenItClosesAndOpensEveryConversationWhileKeepingTheCursorOnTheSameThread(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

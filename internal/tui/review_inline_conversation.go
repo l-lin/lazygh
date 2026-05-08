@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
+
+	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
 func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {
@@ -54,9 +56,20 @@ func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view 
 		return nil
 	}
 	if program.reviewSession.active {
+		if program.reviewSessionShowsDescription() {
+			return program.toggleReviewDescriptionSectionVisibility(gui, view)
+		}
 		return program.toggleReviewInlineConversationVisibility(gui, view)
 	}
 	return program.toggleBrowserDetailSectionVisibility(gui, view)
+}
+
+func (program *Program) toggleReviewDescriptionSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
+	summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
+	if !ok {
+		return nil
+	}
+	return program.toggleOverviewSectionVisibility(gui, view, summary, detail)
 }
 
 func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
@@ -125,14 +138,36 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 		return program.toggleBrowserChangesThreadVisibility(gui, summary, detailDocument)
 	}
 
-	cursorLine := program.detailViewState.cursor.line
-	var sectionAtCursor browserDetailSectionCursor
-	switch program.activeDetailTab {
-	case CommentsDetailTab:
-		sectionAtCursor, ok = program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, cursorLine)
-	default:
-		sectionAtCursor, ok = program.browserOverviewSectionAtCursor(summary, result.detail, detailDocument.width, cursorLine)
+	if program.activeDetailTab == CommentsDetailTab {
+		sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, program.detailViewState.cursor.line)
+		if !ok {
+			return nil
+		}
+		program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
+		program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
+		program.detailViewState.preferredColumn = 0
+		if gui == nil {
+			return nil
+		}
+		return program.refreshViews(gui)
 	}
+
+	return program.toggleOverviewSectionVisibility(gui, view, summary, result.detail)
+}
+
+func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *gocui.View, summary githubcli.PullRequest, detail githubcli.PullRequestDetail) error {
+	actualView := view
+	if actualView == nil && gui != nil {
+		detailView, err := gui.View(viewDetailName)
+		if err == nil {
+			actualView = detailView
+		}
+	}
+	viewportHeight := viewPageSize(actualView)
+	detailDocument := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(detailDocument, viewportHeight)
+
+	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailViewState.cursor.line)
 	if !ok {
 		return nil
 	}
