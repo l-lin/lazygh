@@ -508,7 +508,11 @@ func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubc
 }
 
 func (cache *fakePersistentPullRequestCache) InvalidatePullRequest(repository string, number int) error {
-	cache.invalidatedPullRequests = append(cache.invalidatedPullRequests, strings.TrimSpace(repository)+"#"+itoa(number))
+	key := strings.TrimSpace(repository) + "#" + itoa(number)
+	cache.invalidatedPullRequests = append(cache.invalidatedPullRequests, key)
+	cache.pullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
+	delete(cache.details, key)
+	delete(cache.diffs, key)
 	return nil
 }
 

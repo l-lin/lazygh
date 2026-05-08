@@ -1306,6 +1306,12 @@ type fakePullRequestDetailLoader struct {
 	editDescriptionCalls       []string
 	editDescriptionBodies      []string
 	editDescriptionErr         error
+	markReadyForReviewCalls    []string
+	markReadyForReviewErr      error
+	convertToDraftCalls        []string
+	convertToDraftErr          error
+	squashMergeCalls           []string
+	squashMergeErr             error
 	startReviewCalls           []string
 	startReviewID              string
 	startReviewErr             error
@@ -1591,6 +1597,64 @@ func (loader *fakePullRequestDetailLoader) EditPullRequestDescription(repository
 	})
 	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
 		detail.Body = body
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) MarkPullRequestReadyForReview(repository string, number int) error {
+	loader.markReadyForReviewCalls = append(loader.markReadyForReviewCalls, repository+"#"+strconv.Itoa(number))
+	if loader.markReadyForReviewErr != nil {
+		return loader.markReadyForReviewErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.State = "OPEN"
+		pullRequest.IsDraft = false
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.State = "OPEN"
+		detail.IsDraft = false
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) ConvertPullRequestToDraft(repository string, number int) error {
+	loader.convertToDraftCalls = append(loader.convertToDraftCalls, repository+"#"+strconv.Itoa(number))
+	if loader.convertToDraftErr != nil {
+		return loader.convertToDraftErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.State = "OPEN"
+		pullRequest.IsDraft = true
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.State = "OPEN"
+		detail.IsDraft = true
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) SquashMergePullRequest(repository string, number int) error {
+	loader.squashMergeCalls = append(loader.squashMergeCalls, repository+"#"+strconv.Itoa(number))
+	if loader.squashMergeErr != nil {
+		return loader.squashMergeErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.State = "MERGED"
+		pullRequest.IsDraft = false
+		pullRequest.ReviewDecision = ""
+		pullRequest.ReviewRequests = nil
+		pullRequest.Mergeable = ""
+		pullRequest.MergeStateStatus = ""
+		pullRequest.StatusCheckRollupState = ""
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.State = "MERGED"
+		detail.IsDraft = false
+		detail.Mergeable = ""
+		detail.MergeStateStatus = ""
 	})
 	return nil
 }

@@ -65,8 +65,12 @@ func (program *Program) clearActionsPopupPendingConfirmation() {
 }
 
 func (program *Program) actionsPopupConfirmationMessage() string {
-	if strings.TrimSpace(program.actionsPopupPendingConfirmationActionID) == clearCacheActionTitle {
+	switch strings.TrimSpace(program.actionsPopupPendingConfirmationActionID) {
+	case clearCacheActionTitle:
 		return clearCacheConfirmationPromptMessage
+	case squashMergePullRequestActionTitle:
+		return squashMergePullRequestConfirmationPromptMessage
+	default:
+		return ""
 	}
-	return ""
 }

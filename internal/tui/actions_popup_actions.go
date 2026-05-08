@@ -77,6 +77,9 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
 			actions = append(actions, assignAction.withGroup(actionsPopupGroupPullRequest))
 		}
+		if stateActions := program.currentPullRequestStageAndMergeActions(); len(stateActions) > 0 {
+			actions = append(actions, actionsPopupGrouped(actionsPopupGroupPullRequest, stateActions...)...)
+		}
 		actions = append(actions,
 			actionsPopupGrouped(actionsPopupGroupPullRequest,
 				program.editPullRequestTitleAction(),

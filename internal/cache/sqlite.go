@@ -281,16 +281,30 @@ func (store *Store) InvalidatePullRequest(repository string, number int) error {
 		return actualErr
 	}
 
-	_, actualErr = store.db.Exec(`
+	transaction, actualErr := store.db.Begin()
+	if actualErr != nil {
+		return actualErr
+	}
+	defer rollbackOnFailure(transaction)
+
+	if _, actualErr = transaction.Exec(`
 		UPDATE pull_requests
-		SET detail_json = NULL,
+		SET summary_json = '',
+			summary_updated_at = '',
+			detail_json = NULL,
 			detail_updated_at = '',
 			diff_json = NULL,
 			diff_updated_at = '',
 			updated_at = CURRENT_TIMESTAMP
 		WHERE repository = ? AND number = ?
-	`, trimmedRepository, normalizedNumber)
-	return actualErr
+	`, trimmedRepository, normalizedNumber); actualErr != nil {
+		return actualErr
+	}
+	if _, actualErr = transaction.Exec(`DELETE FROM pull_request_lists`); actualErr != nil {
+		return actualErr
+	}
+
+	return transaction.Commit()
 }
 
 func (store *Store) initialize() error {

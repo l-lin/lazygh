@@ -44,6 +44,9 @@ type GitHubLoader interface {
 	UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
+	MarkPullRequestReadyForReview(repository string, number int) error
+	ConvertPullRequestToDraft(repository string, number int) error
+	SquashMergePullRequest(repository string, number int) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
 	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
 	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)

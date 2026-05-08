@@ -90,7 +90,7 @@ func TestStore_PullRequestDiff_GivenAStoredDiff_WhenReading_ThenItReturnsTheDiff
 	}
 }
 
-func TestStore_InvalidatePullRequest_GivenStoredRichData_WhenInvalidating_ThenItDropsOnlyTheDetailAndDiffEntries(t *testing.T) {
+func TestStore_InvalidatePullRequest_GivenStoredRichData_WhenInvalidating_ThenItDropsTheCachedListDetailAndDiffEntries(t *testing.T) {
 	subject := given_cacheStore(t)
 	search := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
@@ -114,11 +114,8 @@ func TestStore_InvalidatePullRequest_GivenStoredRichData_WhenInvalidating_ThenIt
 	}
 	actualPullRequests, pullRequestsOK, actualErr := subject.PullRequests(search)
 	then_noError(t, actualErr)
-	if !pullRequestsOK {
-		t.Fatal("expected the cached list to remain available")
-	}
-	if !reflect.DeepEqual(actualPullRequests, []githubcli.PullRequest{summary}) {
-		t.Fatalf("expected cached pull requests %+v, actual %+v", []githubcli.PullRequest{summary}, actualPullRequests)
+	if pullRequestsOK {
+		t.Fatalf("expected cached pull-request list miss, actual %+v", actualPullRequests)
 	}
 }
 
