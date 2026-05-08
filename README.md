@@ -62,6 +62,7 @@ If the file is missing, `lazygh` starts with the built-in defaults. If the TOML 
 
 ### Cache
 
+`lazygh` uses SQLite as cache storage to improve user experience.
 Use `[cache]` to control the persistent SQLite cache.
 
 - By default, `lazygh` stores the cache at `$XDG_DATA_HOME/lazygh/cache.sqlite3`.
@@ -69,7 +70,7 @@ Use `[cache]` to control the persistent SQLite cache.
 - `lazygh` shows cached pull-request lists immediately, then refreshes the active list in the background.
 - Cached PR detail and review diff entries refresh only when the live list reports a newer `updatedAt`, or when `lazygh` mutates that PR and invalidates the cached entry.
 
-This example overrides the cache path.
+This example overrides the cache path:
 
 ```toml
 [cache]
@@ -78,28 +79,7 @@ path = "/tmp/lazygh/cache.sqlite3"
 
 ### Themes
 
-Configure theme presets and palette overrides under `[theme]`.
-
-- `preset` selects a bundled theme. Available presets include `system`, `light`, and `dark`, plus the bundled preset names defined in [`preset.go`](internal/theme/preset.go).
-- `preset = "system"` keeps the polarity-based built-in default.
-- Use the actions popup and pick `Change theme` to switch presets on the fly. It updates `~/.config/lazygh/config.toml` immediately and reapplies the TUI.
-- Every color key is optional. Override only what you want to change from the selected preset.
-- Values must use the `#RRGGBB` format.
-- `background` fills the full TUI background.
-- The built-in `light` and `dark` presets keep the terminal's default background. The bundled example presets set their own `background`.
-- Unsuffixed keys such as `diff_addition`, `diff_deletion`, `pull_request_status_open`, and `comment_author_badge` set foreground colors. Only background colors keep the `_background` suffix.
-- `success`, `success_background`, `failure`, `failure_background`, `pending`, and `pending_background` are shared status colors. If you do not override the matching specific keys, `lazygh` reuses them for open, closed, and draft pills, and for diff addition and deletion colors.
-- `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
-- `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
-- `markdown_heading_background` controls the full-line heading fill.
-- `actions_popup_group_foreground` controls the grouped header text color in the actions popup.
-- Grouped action headers reuse `markdown_heading_background` for their background.
-- `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
-- `pull_request_title` colors the pull-request title text in pull-request lists.
-- The PR description header reuses the diff addition and deletion colors for `+N` and `-N` counts.
-- Missing or invalid presets and colors fall back to the built-in palette.
-
-Use the automatic preset.
+By default, it will use the `system` preset if not set:
 
 ```toml
 [theme]
@@ -108,11 +88,14 @@ preset = "system"
 
 List of presets can be found in [`preset.go`](internal/theme/preset.go).
 
+You can find the list of palette variables in [palette.go](internal/theme/palette.go).
+
 This example starts from `kanagawa-dark` and overrides a few colors.
 
 ```toml
 [theme]
 preset = "kanagawa-dark"
+# Values must use the `#RRGGBB` format.
 background = "#1F1F28"
 active_border = "#7E9CD8"
 inactive_border = "#54546D"
@@ -140,63 +123,35 @@ diff_deletion_highlight_background = "#5A2E35"
 
 ### Links
 
-Use the actions popup in pull-request detail when the cursor is on a link, or press `gx` in any detail view, to open the link under the cursor.
-
-The popup entry appears only when `view 0` has a hyperlink target or a visible URL under the cursor.
+You can open a link either from the actions popup (default keymap `a`), or by pressing `gx`.
 
 - By default, `lazygh` uses `open` on macOS.
 - By default, `lazygh` uses `xdg-open` on Linux.
-- Override the opener under `[links]` when your desktop environment demands a different ritual.
-- `open_command` can be a string or an array of strings. `lazygh` appends the resolved URL as the last argument.
-
-This example opens links with Firefox on macOS.
 
 ```toml
 [links]
+# Example opens links with Firefox on macOS.
+# Can be a string or an array of strings. `lazygh` appends the resolved URL as the last argument.
 open_command = ["open", "-a", "Firefox"]
 ```
 
-### Actions popup
-
-Use the actions popup from any main view when you want a shortcut without typing `gh` commands by hand.
-
-- `lazygh` groups actions under headers such as `Pull request`, `Review`, `Navigation`, `Theme`, and `Cache`.
-- Group headers stay visible, centered, and non-selectable.
-- Search matches action titles, keywords, and useful group names.
-- Pull-request-specific actions still hide themselves when the current view cannot use them.
-- `Assign PR` opens a searchable assignee picker.
-- The picker starts with the current assignees at the top, and it pins `@me` first when your login is in the list.
-- `lazygh` caches assignable users per repository for the rest of the session, so reopening the picker skips another round-trip when it can.
-- Press `enter` to toggle an assignee, then press `alt+enter` to save.
-- GitHub only allows up to 10 assignees per pull request.
-- `Clear cache` appears when persistent caching is configured. It asks for confirmation, wipes the SQLite cache, clears in-memory PR render caches, and refreshes the visible UI.
-- You still need permission to assign users in that repository.
-
 ### Story review
 
-Use the actions popup on a pull request and pick `Review PR as story`.
+You can start a PR review as a story, which groups changes by logical "chapters", to help you review.
 
-- `lazygh` asks an external AI command to group changed files into review chapters.
-- If `[story_review].agent_command` is missing, the action fails and tells you to configure it.
-- If `[story_review].prompt` is missing, `lazygh` uses the built-in professional prompt.
-- In story review mode, view `2` shows chapters with nested files. Selecting a chapter shows its narrative in view `0`. Selecting a file shows the diff again, because chaos has limits.
-- In review-mode diff view `0`, press `c` or use the actions popup to add an inline comment when the cursor or visual selection resolves to valid diff lines.
+It uses an external AI coding tool, like claude-code, pi, codex, etc...
 
-Configure the AI command under `[story_review]`.
-
-- `agent_command` can be a string or an array of strings.
-- Use `{{prompt_file}}` anywhere in the command to inject the generated prompt file path.
-- If the command does not contain `{{prompt_file}}`, `lazygh` appends the prompt file path as the last argument.
-- `prompt` is optional. It controls the tone and chaptering guidance that `lazygh` wraps around the PR metadata and diff.
-
-This example uses `pi` and the built-in default prompt.
+To have this feature, configure the `story_review.agent_command`:
+Configure the AI command under `[story_review]`:
 
 ```toml
 [story_review]
 agent_command = ["pi", "--models", "anthropic/claude-sonnet-4-6", "--no-session", "-p", "@{{prompt_file}}"]
 ```
 
-This example overrides the prompt.
+By default, it will use the prompt in [prompt.go](internal/story/prompt.go).
+
+You can override the prompt to use:
 
 ```toml
 [story_review]
@@ -206,25 +161,11 @@ Group the changes into a logical, reviewer-friendly story. Use a professional to
 """
 ```
 
-Prompt examples live in `prompts/story-review/`:
-
-- `prompts/story-review/default.md`
-- `prompts/story-review/sanderson.md`
-- `prompts/story-review/caveman.md`
-- `prompts/story-review/emoji.md`
+You can find some prompt examples in [`prompts/story-review/`](./prompts/story-review/).
 
 ### Pull request searches
 
-Configure ordered tabs under `[[pull_requests.searches]]`.
-
-- The configured list fully defines the pull-request tabs.
-- You can rename or remove the built-in `My PRs`, `My reviews`, and `Requested` tabs by replacing them in the list.
-- You can add extra searches by appending more entries.
-- If the list is missing or ends up empty after validation, `lazygh` falls back to those three built-in tabs.
-
-`lazygh` runs `gh` itself, so configure only the arguments after `gh`. A string value is split on whitespace. If one argument needs spaces, use an array instead. `lazygh` always appends `--json title,number,repository,url,body,state,isDraft,updatedAt,id`, so do not set `--json` in your config. The built-in searches use `gh search prs --sort updated --order desc`. If order matters for a custom search, prefer `gh search prs` and set the sort flags yourself.
-
-This example keeps the built-in searches and adds a fourth tab.
+You can customize your own pull request searches under `[[pull_requests.searches]]`.
 
 ```toml
 [[pull_requests.searches]]
@@ -248,12 +189,6 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--sort", 
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.
-
-The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It updates automatically when you remap keys, which is the bare minimum for honesty.
-
-For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations, `zM` and `zR` close or open every fold in the current detail context, and `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. In browser mode on view `0`, `previous_tab` and `next_tab` cycle `Description`, `Comments`, `Commits`, and `Changes`. In review mode on views `0` and `2`, those same bindings become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious.
-
-This example mirrors the built-in defaults.
 
 ```toml
 [keymaps.global]
@@ -360,13 +295,3 @@ full_page_up = ["ctrl+b", "pageup"]
 close = ["esc", "ctrl+[", "q"]
 ```
 
-For example, this override makes the active PR list footer show `!: Help, s: Search, p: Action`.
-
-```toml
-[keymaps.main]
-toggle_help = "!"
-open_search = "s"
-
-[keymaps.pull_requests]
-open_actions_popup = "p"
-```
