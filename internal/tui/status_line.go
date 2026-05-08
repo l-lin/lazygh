@@ -138,6 +138,10 @@ func (program *Program) loadingStatusText() string {
 		return program.loadingSpinnerStatus(message)
 	}
 
+	if message := strings.TrimSpace(program.notificationsLoadingStatus()); message != "" {
+		return program.loadingSpinnerStatus(message)
+	}
+
 	return ""
 }
 
@@ -171,6 +175,13 @@ func (program *Program) selectedPullRequestDetailLoadingStatus() string {
 	}
 
 	return fmt.Sprintf("Running `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository))
+}
+
+func (program *Program) notificationsLoadingStatus() string {
+	if !program.notificationsLoading {
+		return ""
+	}
+	return notificationsLoadingDetail
 }
 
 func (program *Program) assigneePickerLoadingStatus() string {

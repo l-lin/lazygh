@@ -135,6 +135,10 @@ func (program *Program) detailViewTitle() string {
 	return "[0]-Detail"
 }
 
+func (program *Program) notificationsViewTitle() string {
+	return "Notifications"
+}
+
 func (program *Program) pullRequestsViewTitle() string {
 	if program.reviewSession.active {
 		if program.reviewSession.mode == reviewSessionModeStory {

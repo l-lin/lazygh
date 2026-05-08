@@ -179,6 +179,21 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopePullRequests, action: "next_tab"}), Description: "Next tab"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open detail"},
 		}
+	case FocusNotificationsView:
+		return []helpEntry{
+			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
+			{Key: "gg/G", Description: "First/last notification"},
+			{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}), Description: "Selection to top/center/bottom"},
+			{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
+			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
+			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
+			{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
+			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
+			{Key: "+/-", Description: "Resize panes"},
+			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search notifications"},
+			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeNotifications, action: "open_actions_popup"}), Description: "Actions"},
+			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeNotifications, action: "open_detail"}), Description: "Open detail"},
+		}
 	default:
 		return []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
@@ -210,7 +225,7 @@ func (program *Program) globalHelpEntries() []helpEntry {
 		{Key: program.helpKeysOrFallback("?", keybindingActionID{scope: keymapScopeMain, action: "toggle_help"}), Description: "Toggle help"},
 		{Key: program.helpKeysOrFallback("tab", keybindingActionID{scope: keymapScopeGlobal, action: "next_side_view"}), Description: "Switch side view"},
 		{Key: program.helpKeysOrFallback("shift+tab", keybindingActionID{scope: keymapScopeGlobal, action: "previous_side_view"}), Description: "Switch side view backwards"},
-		{Key: "0/1/2", Description: "Jump to a view"},
+		{Key: "0/1/2/3", Description: "Jump to a view"},
 		{Key: program.helpKeysOrFallback("<c-c>", keybindingActionID{scope: keymapScopeGlobal, action: "quit"}), Description: "Quit"},
 	}
 }

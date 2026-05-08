@@ -8,6 +8,12 @@ func (model *Model) detailItem() (Item, bool) {
 			return Item{}, false
 		}
 		return row.Item, true
+	case FocusNotificationsView:
+		row, ok := model.SelectedNotificationRow()
+		if !ok {
+			return Item{}, false
+		}
+		return row.Item, true
 	default:
 		return itemAt(model.users, model.selectedUserIndex)
 	}
@@ -18,15 +24,18 @@ func (model *Model) currentSideFocus() Focus {
 		return model.lastSideFocus
 	}
 
-	if model.focus == FocusPullRequestsView {
+	switch model.focus {
+	case FocusPullRequestsView:
 		return FocusPullRequestsView
+	case FocusNotificationsView:
+		return FocusNotificationsView
+	default:
+		return FocusUserView
 	}
-
-	return FocusUserView
 }
 
 func (model *Model) setSideFocus(focus Focus) {
-	if focus != FocusUserView && focus != FocusPullRequestsView {
+	if focus != FocusUserView && focus != FocusPullRequestsView && focus != FocusNotificationsView {
 		return
 	}
 	if model.paneLayoutSize == PaneLayoutFullscreen && focus != model.fullscreenPane {
@@ -43,6 +52,8 @@ func (model *Model) adjustSelectionBy(change int) {
 		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), change)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(change)
+	case FocusNotificationsView:
+		model.adjustNotificationSelection(change)
 	}
 }
 
@@ -51,6 +62,10 @@ func (model *Model) adjustPullRequestSelection(change int) {
 	selectedIndex := model.selectedPullRequestIndexes[tab]
 	visibleIndexes := model.visiblePullRequestIndexes(tab)
 	model.selectedPullRequestIndexes[tab] = adjustVisibleSelection(selectedIndex, visibleIndexes, change)
+}
+
+func (model *Model) adjustNotificationSelection(change int) {
+	model.selectedNotificationIndex = adjustVisibleSelection(model.selectedNotificationIndex, model.visibleNotificationIndexes(), change)
 }
 
 func adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int) int {

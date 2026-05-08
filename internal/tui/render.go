@@ -23,15 +23,21 @@ func (program *Program) layout(gui *gocui.Gui) error {
 
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadActivePullRequests(gui)
+	if !program.reviewSession.active {
+		program.maybeLoadNotifications(gui)
+	}
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
 
-	mainPaneLayout := calculateMainPaneLayoutWithUserViewHeight(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.sidebarTopPaneHeight())
+	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.model.Focus(), program.sidebarTopPaneHeight(), !program.reviewSession.active)
 
 	if err := program.layoutMainPane(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user, program.configureUserView, program.renderUserView); err != nil {
 		return err
 	}
 	if err := program.layoutMainPane(gui, viewPullRequestsName, mainPaneLayout.pullRequestsVisible, mainPaneLayout.pullRequests, program.configurePullRequestsView, program.renderPullRequestsView); err != nil {
+		return err
+	}
+	if err := program.layoutMainPane(gui, viewNotificationsName, mainPaneLayout.notificationsVisible, mainPaneLayout.notifications, program.configureNotificationsView, program.renderNotificationsView); err != nil {
 		return err
 	}
 	if err := program.layoutMainPane(gui, viewDetailName, mainPaneLayout.detailVisible, mainPaneLayout.detail, program.configureDetailView, program.renderDetailView); err != nil {
@@ -142,6 +148,11 @@ func (program *Program) configurePullRequestsView(view *gocui.View) {
 	view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
 }
 
+func (program *Program) configureNotificationsView(view *gocui.View) {
+	program.configureSelectableListView(view, FocusNotificationsView, program.notificationsViewTitle(), program.model.NotificationSearchQuery())
+	view.TitlePrefix = "[3]"
+}
+
 func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title string, selectable bool) {
 	isUnderlyingFocus := program.model.Focus() == focus
 	showsSelection := program.shouldHighlightSelection(focus, selectable)
@@ -205,6 +216,16 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 		query:               program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()),
 		items:               program.model.VisiblePullRequests(),
 		selectedVisibleLine: program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()),
+		renderSelectedLine:  true,
+	})
+}
+
+func (program *Program) renderNotificationsView(view *gocui.View) {
+	program.renderSelectableListView(view, selectableListViewState{
+		focus:               FocusNotificationsView,
+		query:               program.model.NotificationSearchQuery(),
+		items:               program.model.VisibleNotifications(),
+		selectedVisibleLine: program.model.SelectedVisibleNotificationIndex(),
 		renderSelectedLine:  true,
 	})
 }

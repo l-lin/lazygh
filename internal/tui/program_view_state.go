@@ -16,6 +16,9 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	if err := program.refreshExistingView(gui, viewPullRequestsName, program.configurePullRequestsView, program.renderPullRequestsView); err != nil {
 		return err
 	}
+	if err := program.refreshExistingView(gui, viewNotificationsName, program.configureNotificationsView, program.renderNotificationsView); err != nil {
+		return err
+	}
 	if err := program.refreshExistingView(gui, viewDetailName, program.configureDetailView, program.renderDetailView); err != nil {
 		return err
 	}
@@ -155,6 +158,8 @@ func (program *Program) currentViewName() string {
 	switch focus {
 	case FocusPullRequestsView:
 		return viewPullRequestsName
+	case FocusNotificationsView:
+		return viewNotificationsName
 	case FocusDetailView:
 		return viewDetailName
 	default:

@@ -7,6 +7,7 @@ type Focus int
 const (
 	FocusUserView Focus = iota
 	FocusPullRequestsView
+	FocusNotificationsView
 	FocusDetailView
 )
 
@@ -37,6 +38,11 @@ type PullRequestRow struct {
 	Summary *githubcli.PullRequest
 }
 
+type NotificationRow struct {
+	Item         Item
+	Notification *githubcli.Notification
+}
+
 type PullRequestTabSeed struct {
 	Label        string
 	PullRequests []Item
@@ -46,6 +52,7 @@ type SeedData struct {
 	Users                 []Item
 	MyPullRequests        []Item
 	RequestedPullRequests []Item
+	Notifications         []Item
 	PullRequestTabs       []PullRequestTabSeed
 }
 
@@ -59,9 +66,11 @@ type Model struct {
 	lastSideFocus              Focus
 	users                      []Item
 	pullRequestTabs            []pullRequestTabState
+	notifications              []NotificationRow
 	selectedUserIndex          int
 	activePullRequestTab       PullRequestTab
 	selectedPullRequestIndexes map[PullRequestTab]int
+	selectedNotificationIndex  int
 	paneLayoutSize             PaneLayoutSize
 	fullscreenPane             Focus
 	detailFullscreenReturnSize PaneLayoutSize
@@ -71,6 +80,7 @@ type Model struct {
 	searchDraft                string
 	userSearchQuery            string
 	detailSearchQuery          string
+	notificationSearchQuery    string
 	pullRequestSearchQueries   map[PullRequestTab]string
 	actionsPopup               actionsPopupState
 }
@@ -80,16 +90,19 @@ func NewModel(seed SeedData) *Model {
 		focus:                      FocusUserView,
 		lastSideFocus:              FocusUserView,
 		users:                      copyItems(seed.Users),
+		notifications:              notificationRowsFromItems(seed.notifications()),
 		selectedPullRequestIndexes: map[PullRequestTab]int{},
 		pullRequestSearchQueries:   map[PullRequestTab]string{},
 	}
 	model.SetPullRequestTabs(seed.pullRequestTabs())
+	model.selectedNotificationIndex = clampIndex(model.selectedNotificationIndex, len(model.notifications))
 	return model
 }
 
 func DefaultSeedData() SeedData {
 	return SeedData{
-		Users: []Item{connectedUserLoadingItem()},
+		Users:         []Item{connectedUserLoadingItem()},
+		Notifications: []Item{notificationsLoadingItem()},
 		PullRequestTabs: []PullRequestTabSeed{
 			{Label: "My PRs", PullRequests: []Item{myPullRequestsLoadingItem()}},
 			{Label: "Requested", PullRequests: []Item{requestedPullRequestsLoadingItem()}},
@@ -106,6 +119,13 @@ func (seed SeedData) pullRequestTabs() []PullRequestTabSeed {
 		{Label: "My PRs", PullRequests: copyItems(seed.MyPullRequests)},
 		{Label: "Requested", PullRequests: copyItems(seed.RequestedPullRequests)},
 	}
+}
+
+func (seed SeedData) notifications() []Item {
+	if len(seed.Notifications) > 0 {
+		return copyItems(seed.Notifications)
+	}
+	return copyItems(DefaultSeedData().Notifications)
 }
 
 func copyPullRequestTabSeeds(seeds []PullRequestTabSeed) []PullRequestTabSeed {
@@ -193,6 +213,10 @@ func (model *Model) SelectedPullRequestIndex(tab PullRequestTab) int {
 	return model.selectedPullRequestIndexes[tab]
 }
 
+func (model *Model) SelectedNotificationIndex() int {
+	return model.selectedNotificationIndex
+}
+
 func (model *Model) Users() []Item {
 	return copyItems(model.users)
 }
@@ -226,6 +250,24 @@ func (model *Model) SetPullRequestRows(tab PullRequestTab, pullRequests []PullRe
 	model.clampSearchSelectionForPullRequestTab(tab)
 }
 
+func (model *Model) Notifications() []Item {
+	return notificationItems(model.notifications)
+}
+
+func (model *Model) NotificationRows() []NotificationRow {
+	return copyNotificationRows(model.notifications)
+}
+
+func (model *Model) SetNotifications(notifications []Item) {
+	model.SetNotificationRows(notificationRowsFromItems(notifications))
+}
+
+func (model *Model) SetNotificationRows(rows []NotificationRow) {
+	model.notifications = copyNotificationRows(rows)
+	model.selectedNotificationIndex = clampIndex(model.selectedNotificationIndex, len(model.notifications))
+	model.clampSearchSelectionForNotificationsView()
+}
+
 func (model *Model) CurrentPullRequests() []Item {
 	return model.PullRequests(model.activePullRequestTab)
 }
@@ -234,6 +276,18 @@ func (model *Model) SelectedPullRequestRow() (PullRequestRow, bool) {
 	rows := model.pullRequestRows(model.activePullRequestTab)
 	selectedIndex := model.selectedPullRequestIndexes[model.activePullRequestTab]
 	return pullRequestRowAt(rows, selectedIndex)
+}
+
+func (model *Model) SelectedNotificationRow() (NotificationRow, bool) {
+	return notificationRowAt(model.notifications, model.selectedNotificationIndex)
+}
+
+func (model *Model) SelectedNotification() (githubcli.Notification, bool) {
+	row, ok := model.SelectedNotificationRow()
+	if !ok || row.Notification == nil {
+		return githubcli.Notification{}, false
+	}
+	return *row.Notification, true
 }
 
 func (model *Model) SelectedPullRequestSummary() (githubcli.PullRequest, bool) {
@@ -260,19 +314,28 @@ func (model *Model) NextSideView() {
 	}
 
 	switch model.currentSideFocus() {
+	case FocusUserView:
+		model.setSideFocus(FocusPullRequestsView)
+	case FocusPullRequestsView:
+		model.setSideFocus(FocusNotificationsView)
+	default:
+		model.setSideFocus(FocusUserView)
+	}
+}
+
+func (model *Model) PreviousSideView() {
+	if model.focus == FocusDetailView || model.paneLayoutSize == PaneLayoutFullscreen {
+		return
+	}
+
+	switch model.currentSideFocus() {
+	case FocusUserView:
+		model.setSideFocus(FocusNotificationsView)
 	case FocusPullRequestsView:
 		model.setSideFocus(FocusUserView)
 	default:
 		model.setSideFocus(FocusPullRequestsView)
 	}
-}
-
-func (model *Model) PreviousSideView() {
-	if model.focus == FocusDetailView {
-		return
-	}
-
-	model.NextSideView()
 }
 
 func (model *Model) OpenDetail() {
@@ -296,6 +359,10 @@ func (model *Model) FocusPullRequestsView() {
 	model.setSideFocus(FocusPullRequestsView)
 }
 
+func (model *Model) FocusNotificationsView() {
+	model.setSideFocus(FocusNotificationsView)
+}
+
 func (model *Model) CloseDetail() {
 	if model.focus != FocusDetailView {
 		return
@@ -313,6 +380,8 @@ func (model *Model) MoveSelectionDown() {
 		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), 1)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(1)
+	case FocusNotificationsView:
+		model.adjustNotificationSelection(1)
 	}
 }
 
@@ -322,6 +391,8 @@ func (model *Model) MoveSelectionUp() {
 		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), -1)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(-1)
+	case FocusNotificationsView:
+		model.adjustNotificationSelection(-1)
 	}
 }
 
@@ -331,6 +402,8 @@ func (model *Model) MoveSelectionToTop() {
 		model.selectedUserIndex = firstVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
 	case FocusPullRequestsView:
 		model.selectedPullRequestIndexes[model.activePullRequestTab] = firstVisibleIndex(model.selectedPullRequestIndexes[model.activePullRequestTab], model.visiblePullRequestIndexes(model.activePullRequestTab))
+	case FocusNotificationsView:
+		model.selectedNotificationIndex = firstVisibleIndex(model.selectedNotificationIndex, model.visibleNotificationIndexes())
 	}
 }
 
@@ -340,6 +413,8 @@ func (model *Model) MoveSelectionToBottom() {
 		model.selectedUserIndex = lastVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
 	case FocusPullRequestsView:
 		model.selectedPullRequestIndexes[model.activePullRequestTab] = lastVisibleIndex(model.selectedPullRequestIndexes[model.activePullRequestTab], model.visiblePullRequestIndexes(model.activePullRequestTab))
+	case FocusNotificationsView:
+		model.selectedNotificationIndex = lastVisibleIndex(model.selectedNotificationIndex, model.visibleNotificationIndexes())
 	}
 }
 

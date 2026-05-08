@@ -13,10 +13,17 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	program.model.NextSideView()
 	if program.reviewSession.active {
+		switch program.model.Focus() {
+		case FocusUserView:
+			program.model.FocusPullRequestsView()
+		case FocusPullRequestsView:
+			program.model.FocusUserView()
+		}
 		return program.refreshViewsIfGUI(gui)
 	}
+
+	program.model.NextSideView()
 	return program.syncCurrentView(gui)
 }
 
@@ -27,10 +34,17 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	program.model.PreviousSideView()
 	if program.reviewSession.active {
+		switch program.model.Focus() {
+		case FocusUserView:
+			program.model.FocusPullRequestsView()
+		case FocusPullRequestsView:
+			program.model.FocusUserView()
+		}
 		return program.refreshViewsIfGUI(gui)
 	}
+
+	program.model.PreviousSideView()
 	return program.syncCurrentView(gui)
 }
 
@@ -342,6 +356,17 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 	if program.reviewSession.active {
 		return program.refreshViewsIfGUI(gui)
 	}
+	return program.syncCurrentView(gui)
+}
+
+func (program *Program) focusNotificationsView(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	if program.mainPaneActionBlocked() || program.reviewSession.active {
+		return nil
+	}
+
+	program.detailViewState.clearPendingPrefix()
+	program.model.FocusNotificationsView()
 	return program.syncCurrentView(gui)
 }
 

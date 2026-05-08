@@ -265,6 +265,7 @@ func given_pullRequestCommentProgram(model *Model, loader *fakePullRequestDetail
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
+	subject.notificationsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	return subject

@@ -2,7 +2,7 @@ package tui
 
 import "testing"
 
-func TestNextSideView_GivenUserFocus_WhenCyclingForward_ThenFocusMovesToPullRequestsAndBack(t *testing.T) {
+func TestNextSideView_GivenUserFocus_WhenCyclingForward_ThenFocusMovesToPullRequestsNotificationsAndBackToUser(t *testing.T) {
 	subject := given_model()
 
 	when_movingToNextSideView(subject)
@@ -13,12 +13,18 @@ func TestNextSideView_GivenUserFocus_WhenCyclingForward_ThenFocusMovesToPullRequ
 
 	when_movingToNextSideView(subject)
 	actual = subject.Focus()
+	if actual != FocusNotificationsView {
+		t.Fatalf("expected focus %v, actual %v", FocusNotificationsView, actual)
+	}
+
+	when_movingToNextSideView(subject)
+	actual = subject.Focus()
 	if actual != FocusUserView {
 		t.Fatalf("expected focus %v, actual %v", FocusUserView, actual)
 	}
 }
 
-func TestPreviousSideView_GivenPullRequestsFocus_WhenCyclingBackward_ThenFocusMovesToUserAndBack(t *testing.T) {
+func TestPreviousSideView_GivenPullRequestsFocus_WhenCyclingBackward_ThenFocusMovesToUserThenNotifications(t *testing.T) {
 	subject := given_model()
 	subject.NextSideView()
 
@@ -30,8 +36,8 @@ func TestPreviousSideView_GivenPullRequestsFocus_WhenCyclingBackward_ThenFocusMo
 
 	when_movingToPreviousSideView(subject)
 	actual = subject.Focus()
-	if actual != FocusPullRequestsView {
-		t.Fatalf("expected focus %v, actual %v", FocusPullRequestsView, actual)
+	if actual != FocusNotificationsView {
+		t.Fatalf("expected focus %v, actual %v", FocusNotificationsView, actual)
 	}
 }
 
@@ -280,6 +286,13 @@ func TestDetailContent_GivenFocusedSourceSelectionChanges_WhenRenderingDetail_Th
 	if actual != "Requested PR detail 2" {
 		t.Fatalf("expected detail %q, actual %q", "Requested PR detail 2", actual)
 	}
+
+	subject.FocusNotificationsView()
+	subject.MoveSelectionDown()
+	actual = subject.DetailContent()
+	if actual != "Notification detail 2" {
+		t.Fatalf("expected detail %q, actual %q", "Notification detail 2", actual)
+	}
 }
 
 func TestPullRequestTabLabel_GivenAMissingConfiguredTab_WhenReadingTheFallbackLabel_ThenItUsesAGenericName(t *testing.T) {
@@ -337,6 +350,18 @@ func TestFocusPullRequestsView_GivenDetailFocus_WhenJumpingToViewTwo_ThenFocusMo
 	}
 }
 
+func TestFocusNotificationsView_GivenDetailFocus_WhenJumpingToViewThree_ThenFocusMovesToTheNotificationsView(t *testing.T) {
+	subject := given_model()
+	subject.OpenDetail()
+
+	when_focusingNotificationsView(subject)
+
+	actual := subject.Focus()
+	if actual != FocusNotificationsView {
+		t.Fatalf("expected focus %v, actual %v", FocusNotificationsView, actual)
+	}
+}
+
 func given_model() *Model {
 	return NewModel(SeedData{
 		Users: []Item{
@@ -350,6 +375,10 @@ func given_model() *Model {
 		RequestedPullRequests: []Item{
 			{Title: "requested-pr-1", Detail: "Requested PR detail 1"},
 			{Title: "requested-pr-2", Detail: "Requested PR detail 2"},
+		},
+		Notifications: []Item{
+			{Title: "notification-1", Detail: "Notification detail 1"},
+			{Title: "notification-2", Detail: "Notification detail 2"},
 		},
 	})
 }
@@ -404,4 +433,8 @@ func when_focusingUserView(subject *Model) {
 
 func when_focusingPullRequestsView(subject *Model) {
 	subject.FocusPullRequestsView()
+}
+
+func when_focusingNotificationsView(subject *Model) {
+	subject.FocusNotificationsView()
 }

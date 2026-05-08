@@ -1258,6 +1258,8 @@ type fakePullRequestDetailLoader struct {
 	commentErr                 error
 	myPullRequests             []githubcli.PullRequest
 	requestedPullRequests      []githubcli.PullRequest
+	notifications              []githubcli.Notification
+	notificationsErr           error
 	approveCalls               []string
 	approveErr                 error
 	reviewCommentCalls         []string
@@ -1340,6 +1342,13 @@ func (loader *fakePullRequestDetailLoader) ListPullRequests(commandArguments []s
 	}
 
 	return append([]githubcli.PullRequest(nil), loader.myPullRequests...), nil
+}
+
+func (loader *fakePullRequestDetailLoader) ListNotifications() ([]githubcli.Notification, error) {
+	if loader.notificationsErr != nil {
+		return nil, loader.notificationsErr
+	}
+	return append([]githubcli.Notification(nil), loader.notifications...), nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error) {

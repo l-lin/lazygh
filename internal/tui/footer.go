@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	viewUserFooterName         = "user-footer"
-	viewPullRequestsFooterName = "pull-requests-footer"
-	viewDetailFooterName       = "detail-footer"
+	viewUserFooterName          = "user-footer"
+	viewPullRequestsFooterName  = "pull-requests-footer"
+	viewNotificationsFooterName = "notifications-footer"
+	viewDetailFooterName        = "detail-footer"
 
 	pullRequestDetailLoadingTitle = "Loading pull request detail..."
 )
@@ -28,13 +29,20 @@ func (state paneFooterState) Visible() bool {
 }
 
 func (program *Program) layoutPaneFooterViews(gui *gocui.Gui) error {
-	for _, focus := range []Focus{FocusUserView, FocusPullRequestsView, FocusDetailView} {
+	for _, focus := range program.mainPaneFooterFocuses() {
 		if err := program.layoutPaneFooterView(gui, focus); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (program *Program) mainPaneFooterFocuses() []Focus {
+	if program.reviewSession.active {
+		return []Focus{FocusUserView, FocusPullRequestsView, FocusDetailView}
+	}
+	return []Focus{FocusUserView, FocusPullRequestsView, FocusNotificationsView, FocusDetailView}
 }
 
 func (program *Program) layoutPaneFooterView(gui *gocui.Gui, focus Focus) error {
@@ -259,6 +267,8 @@ func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {
 		return keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}, true
 	case FocusPullRequestsView:
 		return keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}, true
+	case FocusNotificationsView:
+		return keybindingActionID{scope: keymapScopeNotifications, action: "open_actions_popup"}, true
 	case FocusDetailView:
 		return keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}, true
 	default:
@@ -284,6 +294,9 @@ func (program *Program) appliedSearchFooterText(focus Focus) string {
 	case FocusPullRequestsView:
 		query := program.model.appliedSearchQuery(FocusPullRequestsView, program.model.ActivePullRequestTab())
 		return searchSummaryText(query, len(program.model.VisiblePullRequests()))
+	case FocusNotificationsView:
+		query := program.model.appliedSearchQuery(FocusNotificationsView, MyPullRequestsTab)
+		return searchSummaryText(query, len(program.model.VisibleNotifications()))
 	case FocusDetailView:
 		query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
 		return searchSummaryText(query, program.detailSearchMatchCount(query))
@@ -331,6 +344,8 @@ func paneFooterViewName(focus Focus) string {
 	switch focus {
 	case FocusPullRequestsView:
 		return viewPullRequestsFooterName
+	case FocusNotificationsView:
+		return viewNotificationsFooterName
 	case FocusDetailView:
 		return viewDetailFooterName
 	default:
@@ -342,6 +357,8 @@ func paneViewName(focus Focus) string {
 	switch focus {
 	case FocusPullRequestsView:
 		return viewPullRequestsName
+	case FocusNotificationsView:
+		return viewNotificationsName
 	case FocusDetailView:
 		return viewDetailName
 	default:

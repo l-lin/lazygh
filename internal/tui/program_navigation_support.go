@@ -89,6 +89,8 @@ func (program *Program) currentSideViewName() string {
 		return viewUserName
 	case FocusPullRequestsView:
 		return viewPullRequestsName
+	case FocusNotificationsView:
+		return viewNotificationsName
 	default:
 		return ""
 	}
@@ -149,6 +151,8 @@ func (program *Program) currentSideListState() (string, int, int) {
 	switch program.model.Focus() {
 	case FocusPullRequestsView:
 		return viewPullRequestsName, program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()), len(program.model.VisiblePullRequests())
+	case FocusNotificationsView:
+		return viewNotificationsName, program.model.SelectedVisibleNotificationIndex(), len(program.model.VisibleNotifications())
 	case FocusUserView:
 		return viewUserName, program.model.SelectedVisibleUserIndex(), len(program.model.VisibleUsers())
 	default:

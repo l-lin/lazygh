@@ -104,6 +104,8 @@ func (program *Program) currentDetailIdentity() string {
 			}
 		}
 		return fmt.Sprintf("pr-state:%d:%d", program.model.ActivePullRequestTab(), program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))
+	case FocusNotificationsView:
+		return fmt.Sprintf("notification:%d", program.model.SelectedNotificationIndex())
 	default:
 		return fmt.Sprintf("user:%d", program.model.SelectedUserIndex())
 	}

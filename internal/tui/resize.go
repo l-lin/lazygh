@@ -76,6 +76,8 @@ func (model *Model) resizablePaneFocus() (Focus, bool) {
 		return FocusUserView, true
 	case FocusPullRequestsView:
 		return FocusPullRequestsView, true
+	case FocusNotificationsView:
+		return FocusNotificationsView, true
 	case FocusDetailView:
 		return FocusDetailView, true
 	default:
@@ -96,7 +98,7 @@ func (model *Model) toggleDetailFullscreen() {
 
 func isMainPaneFocus(focus Focus) bool {
 	switch focus {
-	case FocusUserView, FocusPullRequestsView, FocusDetailView:
+	case FocusUserView, FocusPullRequestsView, FocusNotificationsView, FocusDetailView:
 		return true
 	default:
 		return false

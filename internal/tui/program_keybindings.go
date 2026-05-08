@@ -48,6 +48,7 @@ const (
 	keymapScopeSide                 = "side"
 	keymapScopeUser                 = "user"
 	keymapScopePullRequests         = "pull_requests"
+	keymapScopeNotifications        = "notifications"
 	keymapScopeDetail               = "detail"
 	keymapScopeSearch               = "search"
 	keymapScopeActionsPopup         = "actions_popup"
@@ -57,8 +58,8 @@ const (
 	keymapScopeHelp                 = "help"
 )
 
-var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewDetailName}
-var sidePaneViewNames = []string{viewUserName, viewPullRequestsName}
+var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName, viewDetailName}
+var sidePaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName}
 
 func escapeKeybindingDefinitions(handler func(*gocui.Gui, *gocui.View) error) []keybindingDefinition {
 	return []keybindingDefinition{
@@ -376,6 +377,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeMain, "toggle_help", mainPaneViewNames, program.toggleHelp, runeBinding('?')),
 		keybindingActionFor(keymapScopeMain, "focus_user_view", mainPaneViewNames, program.focusUserView, runeBinding('1')),
 		keybindingActionFor(keymapScopeMain, "focus_pull_requests_view", mainPaneViewNames, program.focusPullRequestsView, runeBinding('2')),
+		keybindingActionFor(keymapScopeMain, "focus_notifications_view", mainPaneViewNames, program.focusNotificationsView, runeBinding('3')),
 		keybindingActionFor(keymapScopeMain, "open_search", mainPaneViewNames, program.openSearch, runeBinding('/')),
 		keybindingActionFor(keymapScopeMain, "move_selection_down", mainPaneViewNames, program.moveSelectionDown, runeBinding('j'), namedBinding(gocui.KeyArrowDown, "<down>")),
 		keybindingActionFor(keymapScopeMain, "move_selection_up", mainPaneViewNames, program.moveSelectionUp, runeBinding('k'), namedBinding(gocui.KeyArrowUp, "<up>")),
@@ -410,6 +412,9 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopePullRequests, "open_actions_popup", []string{viewPullRequestsName}, program.openActionsPopup, runeBinding('a')),
 		keybindingActionFor(keymapScopePullRequests, "next_search_match", []string{viewPullRequestsName}, program.nextReviewFileTreeSearchMatch, runeBinding('n')),
 		keybindingActionFor(keymapScopePullRequests, "previous_search_match", []string{viewPullRequestsName}, program.previousReviewFileTreeSearchMatch, runeBinding('N')),
+
+		keybindingActionFor(keymapScopeNotifications, "open_detail", []string{viewNotificationsName}, program.openDetail, namedBinding(gocui.KeyEnter, "<enter>")),
+		keybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup, runeBinding('a')),
 
 		keybindingActionFor(keymapScopeDetail, "move_cursor_left", []string{viewDetailName}, program.moveDetailCursorLeft, runeBinding('h')),
 		keybindingActionFor(keymapScopeDetail, "move_cursor_right", []string{viewDetailName}, program.moveDetailCursorRight, runeBinding('l')),

@@ -18,6 +18,15 @@ func pullRequestRowAt(rows []PullRequestRow, selectedIndex int) (PullRequestRow,
 	return rows[index], true
 }
 
+func notificationRowAt(rows []NotificationRow, selectedIndex int) (NotificationRow, bool) {
+	if len(rows) == 0 {
+		return NotificationRow{}, false
+	}
+
+	index := clampIndex(selectedIndex, len(rows))
+	return rows[index], true
+}
+
 func clampIndex(index int, itemCount int) int {
 	if itemCount == 0 {
 		return 0
@@ -72,6 +81,19 @@ func copyPullRequestRows(rows []PullRequestRow) []PullRequestRow {
 	return copiedRows
 }
 
+func copyNotificationRows(rows []NotificationRow) []NotificationRow {
+	copiedRows := make([]NotificationRow, 0, len(rows))
+	for _, row := range rows {
+		copiedRow := NotificationRow{Item: copyItem(row.Item)}
+		if row.Notification != nil {
+			notificationCopy := *row.Notification
+			copiedRow.Notification = &notificationCopy
+		}
+		copiedRows = append(copiedRows, copiedRow)
+	}
+	return copiedRows
+}
+
 func copyItem(item Item) Item {
 	copied := Item{Title: item.Title, Detail: item.Detail}
 	if len(item.TitleSegments) == 0 {
@@ -91,6 +113,22 @@ func pullRequestRowsFromItems(items []Item) []PullRequestRow {
 }
 
 func pullRequestItems(rows []PullRequestRow) []Item {
+	items := make([]Item, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, row.Item)
+	}
+	return items
+}
+
+func notificationRowsFromItems(items []Item) []NotificationRow {
+	rows := make([]NotificationRow, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, NotificationRow{Item: copyItem(item)})
+	}
+	return rows
+}
+
+func notificationItems(rows []NotificationRow) []Item {
 	items := make([]Item, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, row.Item)

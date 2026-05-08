@@ -49,6 +49,8 @@ func (model *Model) SubmitSearch() {
 		model.pullRequestSearchQueries[tab] = model.searchDraft
 	case FocusDetailView:
 		model.detailSearchQuery = model.searchDraft
+	case FocusNotificationsView:
+		model.notificationSearchQuery = model.searchDraft
 	default:
 		model.userSearchQuery = model.searchDraft
 	}
@@ -80,12 +82,20 @@ func (model *Model) VisiblePullRequests() []Item {
 	return filterItemsByIndexes(model.CurrentPullRequests(), model.visiblePullRequestIndexes(model.activePullRequestTab))
 }
 
+func (model *Model) VisibleNotifications() []Item {
+	return filterItemsByIndexes(model.Notifications(), model.visibleNotificationIndexes())
+}
+
 func (model *Model) SelectedVisibleUserIndex() int {
 	return model.selectedVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
 }
 
 func (model *Model) SelectedVisiblePullRequestIndex(tab PullRequestTab) int {
 	return model.selectedVisibleIndex(model.selectedPullRequestIndexes[tab], model.visiblePullRequestIndexes(tab))
+}
+
+func (model *Model) SelectedVisibleNotificationIndex() int {
+	return model.selectedVisibleIndex(model.selectedNotificationIndex, model.visibleNotificationIndexes())
 }
 
 func (model *Model) UserSearchQuery() string {
@@ -100,6 +110,10 @@ func (model *Model) PullRequestSearchQuery(tab PullRequestTab) string {
 	return model.effectiveSearchQuery(FocusPullRequestsView, tab)
 }
 
+func (model *Model) NotificationSearchQuery() string {
+	return model.effectiveSearchQuery(FocusNotificationsView, MyPullRequestsTab)
+}
+
 func (model *Model) visibleUserIndexes() []int {
 	return matchingItemIndexes(model.users, model.UserSearchQuery())
 }
@@ -108,12 +122,20 @@ func (model *Model) visiblePullRequestIndexes(tab PullRequestTab) []int {
 	return matchingItemIndexes(model.PullRequests(tab), model.PullRequestSearchQuery(tab))
 }
 
+func (model *Model) visibleNotificationIndexes() []int {
+	return matchingItemIndexes(model.Notifications(), model.NotificationSearchQuery())
+}
+
 func (model *Model) clampSearchSelectionForUserView() {
 	model.clampSearchSelectionForTarget(FocusUserView, MyPullRequestsTab, model.UserSearchQuery())
 }
 
 func (model *Model) clampSearchSelectionForPullRequestTab(tab PullRequestTab) {
 	model.clampSearchSelectionForTarget(FocusPullRequestsView, tab, model.PullRequestSearchQuery(tab))
+}
+
+func (model *Model) clampSearchSelectionForNotificationsView() {
+	model.clampSearchSelectionForTarget(FocusNotificationsView, MyPullRequestsTab, model.NotificationSearchQuery())
 }
 
 func (model *Model) clampSearchSelectionForTarget(target Focus, tab PullRequestTab, query string) {
@@ -132,6 +154,14 @@ func (model *Model) clampSearchSelectionForTarget(target Focus, tab PullRequestT
 		}
 	case FocusDetailView:
 		return
+	case FocusNotificationsView:
+		visibleIndexes := matchingItemIndexes(model.Notifications(), query)
+		if len(visibleIndexes) == 0 {
+			return
+		}
+		if indexOfInt(visibleIndexes, model.selectedNotificationIndex) < 0 {
+			model.selectedNotificationIndex = visibleIndexes[0]
+		}
 	default:
 		visibleIndexes := matchingItemIndexes(model.users, query)
 		if len(visibleIndexes) == 0 {
@@ -172,6 +202,8 @@ func (model *Model) appliedSearchQuery(target Focus, tab PullRequestTab) string 
 		return model.pullRequestSearchQueries[tab]
 	case FocusDetailView:
 		return model.detailSearchQuery
+	case FocusNotificationsView:
+		return model.notificationSearchQuery
 	default:
 		return model.userSearchQuery
 	}
@@ -180,6 +212,7 @@ func (model *Model) appliedSearchQuery(target Focus, tab PullRequestTab) string 
 func (model *Model) ClearPaneSearchQueries() {
 	model.userSearchQuery = ""
 	model.detailSearchQuery = ""
+	model.notificationSearchQuery = ""
 	for tab := range model.pullRequestSearchQueries {
 		model.pullRequestSearchQueries[tab] = ""
 	}
@@ -190,13 +223,22 @@ func (model *Model) clearAppliedSearchQueriesForOtherViews(target Focus) {
 	case FocusPullRequestsView:
 		model.userSearchQuery = ""
 		model.detailSearchQuery = ""
+		model.notificationSearchQuery = ""
 	case FocusDetailView:
 		model.userSearchQuery = ""
+		model.notificationSearchQuery = ""
+		for tab := range model.pullRequestSearchQueries {
+			model.pullRequestSearchQueries[tab] = ""
+		}
+	case FocusNotificationsView:
+		model.userSearchQuery = ""
+		model.detailSearchQuery = ""
 		for tab := range model.pullRequestSearchQueries {
 			model.pullRequestSearchQueries[tab] = ""
 		}
 	default:
 		model.detailSearchQuery = ""
+		model.notificationSearchQuery = ""
 		for tab := range model.pullRequestSearchQueries {
 			model.pullRequestSearchQueries[tab] = ""
 		}

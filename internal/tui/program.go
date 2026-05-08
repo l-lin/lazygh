@@ -14,6 +14,7 @@ const (
 	viewDetailName               = "detail"
 	viewUserName                 = "user"
 	viewPullRequestsName         = "pull-requests"
+	viewNotificationsName        = "notifications"
 	viewSearchName               = "search"
 	viewStatusLineName           = "status-line"
 	viewStatusLineKeyHintsName   = "status-line-key-hints"
@@ -25,6 +26,7 @@ const (
 type GitHubLoader interface {
 	GetConnectedUser() (githubcli.ConnectedUser, error)
 	ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error)
+	ListNotifications() ([]githubcli.Notification, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
 	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
 	CommentOnPullRequest(repository string, number int, body string) error
@@ -61,8 +63,10 @@ type Program struct {
 	connectedUserLogin                      string
 	myPullRequestsLoadStarted               bool
 	requestedPullRequestsLoadStarted        bool
+	notificationsLoadStarted                bool
 	myPullRequestsLoading                   bool
 	requestedPullRequestsLoading            bool
+	notificationsLoading                    bool
 	myPullRequestsCount                     int
 	myPullRequestsCountKnown                bool
 	requestedPullRequestsCount              int

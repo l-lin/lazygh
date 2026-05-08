@@ -30,6 +30,7 @@ func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBa
 	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
+	subject.notificationsLoadStarted = true
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.model.FocusUserView()
@@ -58,6 +59,7 @@ func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering
 	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
+	subject.notificationsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.model.FocusUserView()

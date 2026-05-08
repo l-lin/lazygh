@@ -59,7 +59,7 @@ func (program *Program) renderCurrentPullRequestChangesTab(summary githubcli.Pul
 }
 
 func (program *Program) fallbackDetailViewContent(item Item) string {
-	if program.isPullRequestLoadingItem(item) {
+	if program.isPullRequestLoadingItem(item) || program.isNotificationLoadingItem(item) {
 		return program.loadingSpinnerFrame()
 	}
 
@@ -74,8 +74,11 @@ func (program *Program) fallbackDetailViewContent(item Item) string {
 
 func (program *Program) detailHeader(item Item) string {
 	source := "Connected user"
-	if program.model.currentSideFocus() == FocusPullRequestsView {
+	switch program.model.currentSideFocus() {
+	case FocusPullRequestsView:
 		source = fmt.Sprintf("%s tab", program.model.PullRequestTabLabel(program.model.ActivePullRequestTab()))
+	case FocusNotificationsView:
+		source = "Notifications"
 	}
 
 	return fmt.Sprintf("%s\n%s", source, program.displayItemTitle(item))

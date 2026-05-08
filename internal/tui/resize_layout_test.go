@@ -2,39 +2,51 @@ package tui
 
 import "testing"
 
-func TestCalculateMainPaneLayout_GivenDefaultResizeState_WhenCalculatingCoordinates_ThenItKeepsTheNormalThreePaneSplit(t *testing.T) {
+func TestCalculateMainPaneLayout_GivenDefaultResizeState_WhenCalculatingCoordinates_ThenItKeepsTheNormalBrowserSplitWithNotifications(t *testing.T) {
 	actual := calculateMainPaneLayout(120, 30, PaneLayoutDefault, FocusUserView)
 
-	then_paneVisibilityIs(t, actual, true, true, true)
+	then_paneVisibilityIs(t, actual, true, true, true, true)
 	then_paneFrameIs(t, actual.user, 0, 0, 41, 2)
-	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 29)
+	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 26)
+	then_paneFrameIs(t, actual.notifications, 0, 27, 41, 29)
 	then_paneFrameIs(t, actual.detail, 42, 0, 119, 29)
 }
 
-func TestCalculateMainPaneLayout_GivenHalfWidthResizeState_WhenCalculatingCoordinates_ThenTheSidebarUsesHalfOfTheScreen(t *testing.T) {
+func TestCalculateMainPaneLayout_GivenHalfWidthResizeState_WhenCalculatingCoordinates_ThenTheSidebarUsesHalfOfTheScreenAndKeepsNotificationsCollapsed(t *testing.T) {
 	actual := calculateMainPaneLayout(120, 30, PaneLayoutHalfWidth, FocusPullRequestsView)
 
-	then_paneVisibilityIs(t, actual, true, true, true)
+	then_paneVisibilityIs(t, actual, true, true, true, true)
 	then_paneFrameIs(t, actual.user, 0, 0, 59, 2)
-	then_paneFrameIs(t, actual.pullRequests, 0, 3, 59, 29)
+	then_paneFrameIs(t, actual.pullRequests, 0, 3, 59, 26)
+	then_paneFrameIs(t, actual.notifications, 0, 27, 59, 29)
 	then_paneFrameIs(t, actual.detail, 60, 0, 119, 29)
+}
+
+func TestCalculateMainPaneLayout_GivenNotificationsFocus_WhenCalculatingCoordinates_ThenTheNotificationsPaneExpandsAndPullRequestsCollapse(t *testing.T) {
+	actual := calculateMainPaneLayoutWithSidebarState(120, 30, PaneLayoutDefault, FocusNotificationsView, FocusNotificationsView, userViewTotalHeight, true)
+
+	then_paneVisibilityIs(t, actual, true, true, true, true)
+	then_paneFrameIs(t, actual.user, 0, 0, 41, 2)
+	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 5)
+	then_paneFrameIs(t, actual.notifications, 0, 6, 41, 29)
+	then_paneFrameIs(t, actual.detail, 42, 0, 119, 29)
 }
 
 func TestCalculateMainPaneLayout_GivenFullscreenResizeState_WhenCalculatingCoordinates_ThenOnlyTheFocusedSidePaneUsesTheWholeContentArea(t *testing.T) {
 	actual := calculateMainPaneLayout(120, 30, PaneLayoutFullscreen, FocusPullRequestsView)
 
-	then_paneVisibilityIs(t, actual, false, true, false)
+	then_paneVisibilityIs(t, actual, false, true, false, false)
 	then_paneFrameIs(t, actual.pullRequests, 0, 0, 119, 29)
 }
 
 func TestCalculateMainPaneLayout_GivenDetailFullscreenResizeState_WhenCalculatingCoordinates_ThenOnlyTheDetailPaneUsesTheWholeContentArea(t *testing.T) {
 	actual := calculateMainPaneLayout(120, 30, PaneLayoutFullscreen, FocusDetailView)
 
-	then_paneVisibilityIs(t, actual, false, false, true)
+	then_paneVisibilityIs(t, actual, false, false, false, true)
 	then_paneFrameIs(t, actual.detail, 0, 0, 119, 29)
 }
 
-func then_paneVisibilityIs(t *testing.T, actual mainPaneLayout, expectedUser bool, expectedPullRequests bool, expectedDetail bool) {
+func then_paneVisibilityIs(t *testing.T, actual mainPaneLayout, expectedUser bool, expectedPullRequests bool, expectedNotifications bool, expectedDetail bool) {
 	t.Helper()
 
 	if actual.userVisible != expectedUser {
@@ -42,6 +54,9 @@ func then_paneVisibilityIs(t *testing.T, actual mainPaneLayout, expectedUser boo
 	}
 	if actual.pullRequestsVisible != expectedPullRequests {
 		t.Fatalf("expected pull requests visibility %t, actual %t", expectedPullRequests, actual.pullRequestsVisible)
+	}
+	if actual.notificationsVisible != expectedNotifications {
+		t.Fatalf("expected notifications visibility %t, actual %t", expectedNotifications, actual.notificationsVisible)
 	}
 	if actual.detailVisible != expectedDetail {
 		t.Fatalf("expected detail visibility %t, actual %t", expectedDetail, actual.detailVisible)
