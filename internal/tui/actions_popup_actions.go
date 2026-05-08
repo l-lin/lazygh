@@ -81,7 +81,6 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 			actionsPopupGrouped(actionsPopupGroupPullRequest,
 				program.editPullRequestTitleAction(),
 				program.editPullRequestDescriptionAction(),
-				program.reviewPullRequestURLActionsPopupAction(),
 			)...,
 		)
 		actions = append(actions,
