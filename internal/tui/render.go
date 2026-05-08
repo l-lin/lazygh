@@ -30,7 +30,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
 
-	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.model.Focus(), program.sidebarTopPaneHeight(), !program.reviewSession.active)
+	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.model.currentSideFocus(), program.sidebarTopPaneHeight(), !program.reviewSession.active)
 
 	if err := program.layoutMainPane(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user, program.configureUserView, program.renderUserView); err != nil {
 		return err
