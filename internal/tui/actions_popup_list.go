@@ -1,6 +1,10 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
+)
 
 const (
 	actionsPopupGroupPullRequest = "Pull request"
@@ -14,6 +18,23 @@ type actionsPopupVisibleLine struct {
 	text        string
 	actionIndex int
 	selectable  bool
+}
+
+func (line actionsPopupVisibleLine) item(viewWidth int) Item {
+	if line.selectable {
+		return Item{Title: line.text}
+	}
+
+	centeredTitle := centeredActionsPopupGroupTitle(line.text, viewWidth)
+	return Item{
+		Title: centeredTitle,
+		TitleSegments: []ItemTitleSegment{{
+			Text:            centeredTitle,
+			ForegroundHex:   theme.InactiveTitleHex,
+			BackgroundHex:   theme.PendingBackgroundHex,
+			MinimumContrast: 4.5,
+		}},
+	}
 }
 
 func actionsPopupGrouped(group string, actions ...actionsPopupAction) []actionsPopupAction {
@@ -62,4 +83,16 @@ func (program *Program) currentActionsPopupSelectedRenderedLine() int {
 
 func (program *Program) currentActionsPopupRenderedLineCount() int {
 	return len(program.currentActionsPopupVisibleLines())
+}
+
+func centeredActionsPopupGroupTitle(title string, viewWidth int) string {
+	trimmedTitle := strings.TrimSpace(title)
+	if trimmedTitle == "" || viewWidth <= len([]rune(trimmedTitle)) {
+		return trimmedTitle
+	}
+
+	padding := viewWidth - len([]rune(trimmedTitle))
+	leftPadding := padding / 2
+	rightPadding := padding - leftPadding
+	return strings.Repeat(" ", leftPadding) + trimmedTitle + strings.Repeat(" ", rightPadding)
 }

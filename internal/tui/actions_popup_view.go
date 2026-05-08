@@ -94,7 +94,7 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	selectedRenderedLine := program.currentActionsPopupSelectedRenderedLine()
 	showSelectedLine := program.usesManualSelectedLineRendering(query)
 	for visibleIndex, line := range visibleLines {
-		program.renderHighlightedLine(view, line.text, query, showSelectedLine && line.selectable && visibleIndex == selectedRenderedLine)
+		program.renderItemLine(view, line.item(view.InnerWidth()), query, showSelectedLine && line.selectable && visibleIndex == selectedRenderedLine)
 	}
 
 	if selectedRenderedLine < 0 {

@@ -3,7 +3,9 @@ package tui
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
+	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
 )
 
@@ -68,6 +70,26 @@ func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenFiltering_ThenItSh
 	})
 }
 
+func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAndUsesABackgroundColor(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_viewLineHasBackgroundColor(t, gui, viewActionsPopupName, 0, given_themeColorHex(t, theme.PendingBackgroundHex), "actions popup group header background")
+	then_viewLineSegmentIsCenteredInView(t, gui, viewActionsPopupName, 0, actionsPopupGroupPullRequest)
+	if actual := strings.TrimSpace(popupView.BufferLines()[0]); actual != actionsPopupGroupPullRequest {
+		t.Fatalf("expected grouped header %q, actual %q", actionsPopupGroupPullRequest, actual)
+	}
+}
+
 func TestActionsPopup_GivenNoPersistentCache_WhenOpening_ThenItHidesTheClearCacheAction(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
@@ -83,5 +105,21 @@ func TestActionsPopup_GivenNoPersistentCache_WhenOpening_ThenItHidesTheClearCach
 	then_noError(t, actualErr)
 	if strings.Contains(popupView.Buffer(), "Clear cache") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Clear cache", popupView.Buffer())
+	}
+}
+
+func then_viewLineSegmentIsCenteredInView(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) {
+	t.Helper()
+
+	view, actualErr := gui.View(viewName)
+	then_noError(t, actualErr)
+	x0, _, _, _, actualErr := gui.ViewPosition(viewName)
+	then_noError(t, actualErr)
+	_, _, actualX, _ := given_screenCellsForViewSegment(t, gui, viewName, lineIndex, segment)
+
+	expectedStartColumn := maxInt(0, (view.InnerWidth()-utf8.RuneCountInString(segment))/2)
+	actualStartColumn := actualX - (x0 + 1)
+	if actualStartColumn != expectedStartColumn {
+		t.Fatalf("expected %q in %s line %d to start at centered column %d, actual %d", segment, viewName, lineIndex, expectedStartColumn, actualStartColumn)
 	}
 }

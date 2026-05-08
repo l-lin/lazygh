@@ -565,7 +565,7 @@ func TestActionsPopup_GivenYankActionSelected_WhenExecuting_ThenItReusesTheCopyP
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"https://github.com/acme/widgets/pull/42"}, clipboardWriter.writes)
 	}
 	then_statusLineContains(t, gui, yankSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
@@ -1251,7 +1251,8 @@ func then_popupBufferContainsOrderedActionLines(t *testing.T, buffer string, exp
 		t.Fatalf("expected %d popup action lines, actual %d: %q", len(expected), len(actual), buffer)
 	}
 	for index, expectedLine := range expected {
-		if actual[index] != expectedLine {
+		actualLine := strings.TrimSpace(actual[index])
+		if actualLine != strings.TrimSpace(expectedLine) {
 			t.Fatalf("expected popup action line %d to be %q, actual %q", index, expectedLine, actual[index])
 		}
 	}
