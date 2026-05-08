@@ -34,14 +34,14 @@ func (program *Program) executeClearCacheAction(_ *gocui.Gui) actionsPopupAction
 	}
 
 	program.clearActionsPopupPendingConfirmation()
-	if err := program.clearPullRequestCaches(); err != nil {
+	if err := program.clearCachedData(); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 	program.setFeedback(program.model.Focus(), clearCacheSuccessMessage)
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func (program *Program) clearPullRequestCaches() error {
+func (program *Program) clearCachedData() error {
 	if program.pullRequestCache == nil {
 		return errors.New("persistent cache is unavailable")
 	}
@@ -53,10 +53,17 @@ func (program *Program) clearPullRequestCaches() error {
 	program.pullRequestDetailLoadInFlight = map[string]bool{}
 	program.pullRequestDiffCache = map[string]pullRequestDiffResult{}
 	program.pullRequestDiffLoadInFlight = map[string]bool{}
+	program.issueDetailCache = map[string]issueDetailResult{}
+	program.issueDetailLoadInFlight = map[string]bool{}
+	program.releaseDetailCache = map[string]releaseDetailResult{}
+	program.releaseDetailLoadInFlight = map[string]bool{}
+	program.notificationsLoadStarted = false
+	program.notificationsLoading = false
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestSearchState()
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.pullRequestSearches))
+	program.model.SetNotifications([]Item{notificationsLoadingItem()})
 	return nil
 }
 

@@ -46,6 +46,35 @@ func TestStore_PullRequests_GivenAStoredSearchResult_WhenReading_ThenItReturnsTh
 	}
 }
 
+func TestStore_Notifications_GivenStoredNotifications_WhenReading_ThenItReturnsTheCachedNotifications(t *testing.T) {
+	subject := given_cacheStore(t)
+	expected := []githubcli.Notification{{
+		ID:         "1001",
+		Unread:     true,
+		Reason:     "review_requested",
+		UpdatedAt:  "2026-05-08T16:53:11Z",
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		Subject: githubcli.NotificationSubject{
+			Title: "ship notifications",
+			Type:  githubcli.NotificationSubjectTypePullRequest,
+			URL:   "https://api.github.com/repos/acme/widgets/pulls/42",
+		},
+	}}
+
+	actualErr := subject.SaveNotifications(expected)
+	then_noError(t, actualErr)
+
+	actual, ok, actualErr := subject.Notifications()
+
+	then_noError(t, actualErr)
+	if !ok {
+		t.Fatal("expected cached notifications")
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected notifications %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestStore_PullRequestDetail_GivenAStoredDetail_WhenReading_ThenItReturnsTheDetailAndSummaryVersion(t *testing.T) {
 	subject := given_cacheStore(t)
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}

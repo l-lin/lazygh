@@ -20,8 +20,8 @@ func TestLayout_GivenBrowserMode_WhenRendering_ThenViewThreeShowsNotificationsAn
 	if notificationsView.TitlePrefix != "[3]" {
 		t.Fatalf("expected notifications title prefix %q, actual %q", "[3]", notificationsView.TitlePrefix)
 	}
-	if notificationsView.InnerHeight() != 1 {
-		t.Fatalf("expected collapsed notifications inner height %d, actual %d", 1, notificationsView.InnerHeight())
+	if notificationsView.InnerHeight() != 3 {
+		t.Fatalf("expected collapsed notifications inner height %d, actual %d", 3, notificationsView.InnerHeight())
 	}
 	if pullRequestsView.InnerHeight() <= notificationsView.InnerHeight() {
 		t.Fatalf("expected pull requests inner height %d to exceed notifications inner height %d", pullRequestsView.InnerHeight(), notificationsView.InnerHeight())
@@ -45,8 +45,8 @@ func TestFocusNotificationsView_GivenBrowserMode_WhenJumpingToViewThree_ThenTheN
 	then_noError(t, actualErr)
 	notificationsView, actualErr := gui.View(viewNotificationsName)
 	then_noError(t, actualErr)
-	if pullRequestsView.InnerHeight() != 1 {
-		t.Fatalf("expected collapsed pull requests inner height %d, actual %d", 1, pullRequestsView.InnerHeight())
+	if pullRequestsView.InnerHeight() != 3 {
+		t.Fatalf("expected collapsed pull requests inner height %d, actual %d", 3, pullRequestsView.InnerHeight())
 	}
 	if notificationsView.InnerHeight() <= pullRequestsView.InnerHeight() {
 		t.Fatalf("expected notifications inner height %d to exceed pull requests inner height %d", notificationsView.InnerHeight(), pullRequestsView.InnerHeight())

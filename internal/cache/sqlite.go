@@ -16,7 +16,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const sqliteDriverName = "sqlite"
+const (
+	sqliteDriverName         = "sqlite"
+	notificationListCacheKey = "all"
+)
 
 type Store struct {
 	db *sql.DB
@@ -105,6 +108,9 @@ func (store *Store) Clear() error {
 	if _, actualErr = transaction.Exec(`DELETE FROM pull_request_lists`); actualErr != nil {
 		return actualErr
 	}
+	if _, actualErr = transaction.Exec(`DELETE FROM notification_lists`); actualErr != nil {
+		return actualErr
+	}
 	if _, actualErr = transaction.Exec(`DELETE FROM pull_requests`); actualErr != nil {
 		return actualErr
 	}
@@ -165,6 +171,44 @@ func (store *Store) SavePullRequests(search appconfig.PullRequestSearch, pullReq
 	}
 
 	return transaction.Commit()
+}
+
+func (store *Store) Notifications() ([]githubcli.Notification, bool, error) {
+	var payload string
+	actualErr := store.db.QueryRow(`
+		SELECT payload_json
+		FROM notification_lists
+		WHERE cache_key = ?
+	`, notificationListCacheKey).Scan(&payload)
+	if errors.Is(actualErr, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	if actualErr != nil {
+		return nil, false, actualErr
+	}
+
+	var notifications []githubcli.Notification
+	if actualErr := json.Unmarshal([]byte(payload), &notifications); actualErr != nil {
+		return nil, false, fmt.Errorf("decode cached notifications: %w", actualErr)
+	}
+
+	return notifications, true, nil
+}
+
+func (store *Store) SaveNotifications(notifications []githubcli.Notification) error {
+	payloadJSON, actualErr := marshalJSON(notifications)
+	if actualErr != nil {
+		return actualErr
+	}
+
+	_, actualErr = store.db.Exec(`
+		INSERT INTO notification_lists (cache_key, payload_json)
+		VALUES (?, ?)
+		ON CONFLICT(cache_key) DO UPDATE SET
+			payload_json = excluded.payload_json,
+			updated_at = CURRENT_TIMESTAMP
+	`, notificationListCacheKey, payloadJSON)
+	return actualErr
 }
 
 func (store *Store) PullRequestDetail(repository string, number int) (CachedPullRequestDetail, bool, error) {
@@ -315,6 +359,11 @@ func (store *Store) initialize() error {
 			search_key TEXT PRIMARY KEY,
 			search_label TEXT NOT NULL,
 			command_json TEXT NOT NULL,
+			payload_json TEXT NOT NULL,
+			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS notification_lists (
+			cache_key TEXT PRIMARY KEY,
 			payload_json TEXT NOT NULL,
 			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,

@@ -18,7 +18,7 @@ type mainPaneLayout struct {
 	detailVisible        bool
 }
 
-const browserCollapsedSidebarPaneHeight = 3
+const browserCollapsedSidebarPaneTotalHeight = 5
 
 func calculateMainPaneLayout(maxX int, contentMaxY int, layoutSize PaneLayoutSize, fullscreenPane Focus) mainPaneLayout {
 	return calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, layoutSize, fullscreenPane, FocusUserView, userViewTotalHeight, true)
@@ -156,10 +156,10 @@ func collapsedSidebarPaneHeight(remainingHeight int) int {
 	if remainingHeight < 4 {
 		return maxInt(2, remainingHeight/2)
 	}
-	if browserCollapsedSidebarPaneHeight >= remainingHeight {
+	if browserCollapsedSidebarPaneTotalHeight >= remainingHeight {
 		return maxInt(2, remainingHeight/2)
 	}
-	return browserCollapsedSidebarPaneHeight
+	return browserCollapsedSidebarPaneTotalHeight
 }
 
 func calculateSidebarSplitY(contentMaxY int, userHeight int) (int, int) {

@@ -7,7 +7,12 @@ import (
 )
 
 func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
-	if gui == nil || program.githubLoader == nil || program.reviewSession.active || program.notificationsLoadStarted || !program.notificationsPendingLoad() {
+	if gui == nil || program.reviewSession.active || program.notificationsLoadStarted {
+		return
+	}
+
+	program.hydrateNotificationsFromCache()
+	if program.githubLoader == nil {
 		return
 	}
 
@@ -28,6 +33,9 @@ func (program *Program) notificationsPendingLoad() bool {
 
 func (program *Program) loadNotifications(gui *gocui.Gui) {
 	notifications, err := program.githubLoader.ListNotifications()
+	if err == nil {
+		program.cacheNotifications(notifications)
+	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.notificationsLoading = false
@@ -35,8 +43,9 @@ func (program *Program) loadNotifications(gui *gocui.Gui) {
 			program.model.SetNotificationRows(notificationRows(notifications))
 			return program.refreshViews(gui)
 		}
-
-		program.model.SetNotificationRows(notificationsStateRows(nil, err))
+		if !program.shouldPreserveNotificationRowsOnRefreshError() {
+			program.model.SetNotificationRows(notificationsStateRows(nil, err))
+		}
 		return program.refreshViews(gui)
 	})
 }

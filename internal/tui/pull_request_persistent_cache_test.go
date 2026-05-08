@@ -458,9 +458,11 @@ func (loader *cacheAwarePullRequestLoader) ListPullRequests(commandArguments []s
 
 type fakePersistentPullRequestCache struct {
 	pullRequestsBySearchKey      map[string][]githubcli.PullRequest
+	notifications                []githubcli.Notification
 	details                      map[string]persistcache.CachedPullRequestDetail
 	diffs                        map[string]persistcache.CachedPullRequestDiff
 	savedPullRequestsBySearchKey map[string][]githubcli.PullRequest
+	savedNotifications           []githubcli.Notification
 	savedDetails                 map[string]persistcache.CachedPullRequestDetail
 	savedDiffs                   map[string]persistcache.CachedPullRequestDiff
 	invalidatedPullRequests      []string
@@ -480,6 +482,18 @@ func (cache *fakePersistentPullRequestCache) SavePullRequests(search appconfig.P
 		cache.savedPullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
 	}
 	cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(search)] = append([]githubcli.PullRequest(nil), pullRequests...)
+	return nil
+}
+
+func (cache *fakePersistentPullRequestCache) Notifications() ([]githubcli.Notification, bool, error) {
+	if cache.notifications == nil {
+		return nil, false, nil
+	}
+	return append([]githubcli.Notification(nil), cache.notifications...), true, nil
+}
+
+func (cache *fakePersistentPullRequestCache) SaveNotifications(notifications []githubcli.Notification) error {
+	cache.savedNotifications = append([]githubcli.Notification(nil), notifications...)
 	return nil
 }
 
@@ -521,6 +535,7 @@ func (cache *fakePersistentPullRequestCache) InvalidatePullRequest(repository st
 func (cache *fakePersistentPullRequestCache) Clear() error {
 	cache.clearCalls++
 	cache.pullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
+	cache.notifications = nil
 	cache.details = map[string]persistcache.CachedPullRequestDetail{}
 	cache.diffs = map[string]persistcache.CachedPullRequestDiff{}
 	return nil

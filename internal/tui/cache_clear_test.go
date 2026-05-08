@@ -52,10 +52,13 @@ func TestActionsPopup_GivenClearCacheActionSelected_WhenExecutingOnce_ThenItAsks
 
 func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsPersistentAndInMemoryCachesReloadsAndShowsTheEmptyState(t *testing.T) {
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{}}}
-	subject := NewProgramWithModelAndLoader(given_pullRequestCommentModel(), loader)
+	model := given_pullRequestCommentModel()
+	model.SetNotificationRows([]NotificationRow{notificationRow(given_cachedNotification("n-cached", "Cached notification"))})
+	subject := NewProgramWithModelAndLoader(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
+	subject.notificationsLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	cache := &fakePersistentPullRequestCache{
@@ -68,6 +71,7 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 		diffs: map[string]persistcache.CachedPullRequestDiff{
 			"acme/widgets#42": {Diff: githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}},
 		},
+		notifications: []githubcli.Notification{given_cachedNotification("n-cached", "Cached notification")},
 	}
 	subject.pullRequestCache = cache
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "Cached PR", Number: 42, Body: "Cached body"}}
@@ -112,6 +116,14 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	then_noError(t, actualErr)
 	if !strings.Contains(pullRequestsView.Buffer(), myPullRequestsEmptyTitle) {
 		t.Fatalf("expected pull requests buffer to contain %q after clearing the cache, actual %q", myPullRequestsEmptyTitle, pullRequestsView.Buffer())
+	}
+	notificationsView, actualErr := gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(notificationsView.Buffer(), notificationsEmptyTitle) {
+		t.Fatalf("expected notifications buffer to contain %q after clearing the cache, actual %q", notificationsEmptyTitle, notificationsView.Buffer())
+	}
+	if strings.Contains(notificationsView.Buffer(), "Cached notification") {
+		t.Fatalf("expected notifications cache clear to remove %q, actual %q", "Cached notification", notificationsView.Buffer())
 	}
 	then_statusLineContains(t, gui, "Cache cleared.")
 }

@@ -7,8 +7,8 @@ func TestCalculateMainPaneLayout_GivenDefaultResizeState_WhenCalculatingCoordina
 
 	then_paneVisibilityIs(t, actual, true, true, true, true)
 	then_paneFrameIs(t, actual.user, 0, 0, 41, 2)
-	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 26)
-	then_paneFrameIs(t, actual.notifications, 0, 27, 41, 29)
+	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 24)
+	then_paneFrameIs(t, actual.notifications, 0, 25, 41, 29)
 	then_paneFrameIs(t, actual.detail, 42, 0, 119, 29)
 }
 
@@ -17,8 +17,8 @@ func TestCalculateMainPaneLayout_GivenHalfWidthResizeState_WhenCalculatingCoordi
 
 	then_paneVisibilityIs(t, actual, true, true, true, true)
 	then_paneFrameIs(t, actual.user, 0, 0, 59, 2)
-	then_paneFrameIs(t, actual.pullRequests, 0, 3, 59, 26)
-	then_paneFrameIs(t, actual.notifications, 0, 27, 59, 29)
+	then_paneFrameIs(t, actual.pullRequests, 0, 3, 59, 24)
+	then_paneFrameIs(t, actual.notifications, 0, 25, 59, 29)
 	then_paneFrameIs(t, actual.detail, 60, 0, 119, 29)
 }
 
@@ -27,8 +27,8 @@ func TestCalculateMainPaneLayout_GivenNotificationsFocus_WhenCalculatingCoordina
 
 	then_paneVisibilityIs(t, actual, true, true, true, true)
 	then_paneFrameIs(t, actual.user, 0, 0, 41, 2)
-	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 5)
-	then_paneFrameIs(t, actual.notifications, 0, 6, 41, 29)
+	then_paneFrameIs(t, actual.pullRequests, 0, 3, 41, 7)
+	then_paneFrameIs(t, actual.notifications, 0, 8, 41, 29)
 	then_paneFrameIs(t, actual.detail, 42, 0, 119, 29)
 }
 

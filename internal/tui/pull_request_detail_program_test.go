@@ -1153,6 +1153,7 @@ func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
+	subject.notificationsLoadStarted = true
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#301"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 301, Body: "Cached detail body"}}
@@ -1202,6 +1203,7 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
+	subject.notificationsLoadStarted = true
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
