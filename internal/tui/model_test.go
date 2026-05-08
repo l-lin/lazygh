@@ -282,6 +282,18 @@ func TestDetailContent_GivenFocusedSourceSelectionChanges_WhenRenderingDetail_Th
 	}
 }
 
+func TestPullRequestTabLabel_GivenAMissingConfiguredTab_WhenReadingTheFallbackLabel_ThenItUsesAGenericName(t *testing.T) {
+	subject := NewModel(SeedData{
+		PullRequestTabs: []PullRequestTabSeed{{Label: "Mine", PullRequests: []Item{{Title: "mine-1", Detail: "detail-1"}}}},
+	})
+
+	actual := subject.PullRequestTabLabel(RequestedPullRequestsTab)
+
+	if actual != "Pull Requests" {
+		t.Fatalf("expected label %q, actual %q", "Pull Requests", actual)
+	}
+}
+
 func TestFocusDetailView_GivenPullRequestsFocus_WhenJumpingToViewZero_ThenFocusMovesToDetailAndKeepsThePullRequestSource(t *testing.T) {
 	subject := given_model()
 	subject.NextSideView()

@@ -84,12 +84,5 @@ func lastVisibleIndex(selectedIndex int, visibleIndexes []int) int {
 }
 
 func (tab PullRequestTab) Label() string {
-	switch tab {
-	case RequestedPullRequestsTab:
-		return "Requested"
-	case MyPullRequestsTab:
-		return "My PRs"
-	default:
-		return "Pull Requests"
-	}
+	return "Pull Requests"
 }

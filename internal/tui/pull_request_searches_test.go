@@ -68,7 +68,7 @@ func TestApplyPullRequestSearches_GivenAConfiguredReplacementList_WhenApplying_T
 	if len(actualPullRequests) != 1 {
 		t.Fatalf("expected 1 pull request row, actual %d", len(actualPullRequests))
 	}
-	if actualPullRequests[0].Title != "Loading Mine..." {
-		t.Fatalf("expected title %q, actual %q", "Loading Mine...", actualPullRequests[0].Title)
+	if actualPullRequests[0].Title != myPullRequestsLoadingTitle {
+		t.Fatalf("expected title %q, actual %q", myPullRequestsLoadingTitle, actualPullRequests[0].Title)
 	}
 }

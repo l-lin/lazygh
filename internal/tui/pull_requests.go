@@ -11,22 +11,26 @@ import (
 )
 
 const (
-	myPullRequestsLoadingTitle                 = "Loading my pull requests..."
-	myPullRequestsEmptyTitle                   = "No open pull requests"
-	myPullRequestsEmptyDetail                  = "GitHub returned no open pull requests authored by the authenticated user."
-	myPullRequestsUnauthenticatedTitle         = "GitHub authentication required"
-	myPullRequestsUnauthenticatedDetail        = "GitHub CLI is not authenticated.\n\nRun `gh auth login`, then restart `lazygh`."
-	myPullRequestsUnavailableTitle             = "`gh` not found"
-	myPullRequestsUnavailableDetail            = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
-	myPullRequestsGenericErrorTitle            = "Could not load my pull requests"
-	requestedPullRequestsLoadingTitle          = "Loading My reviews..."
-	requestedPullRequestsEmptyTitle            = "No requested pull requests"
-	requestedPullRequestsEmptyDetail           = "GitHub returned no open pull requests requesting review from the authenticated user."
-	requestedPullRequestsUnauthenticatedTitle  = "GitHub authentication required"
-	requestedPullRequestsUnauthenticatedDetail = "GitHub CLI is not authenticated.\n\nRun `gh auth login`, then restart `lazygh`."
-	requestedPullRequestsUnavailableTitle      = "`gh` not found"
-	requestedPullRequestsUnavailableDetail     = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
-	requestedPullRequestsGenericErrorTitle     = "Could not load requested pull requests"
+	myPullRequestsLoadingTitle                   = "Loading my pull requests..."
+	myPullRequestsEmptyTitle                     = "No open pull requests"
+	myPullRequestsEmptyDetail                    = "GitHub returned no open pull requests authored by the authenticated user."
+	myPullRequestsUnauthenticatedTitle           = "GitHub authentication required"
+	myPullRequestsUnauthenticatedDetail          = "GitHub CLI is not authenticated.\n\nRun `gh auth login`, then restart `lazygh`."
+	myPullRequestsUnavailableTitle               = "`gh` not found"
+	myPullRequestsUnavailableDetail              = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
+	myPullRequestsGenericErrorTitle              = "Could not load my pull requests"
+	requestedPullRequestsLoadingTitle            = "Loading my reviews..."
+	requestedPullRequestsEmptyTitle              = "No reviewed pull requests"
+	requestedPullRequestsEmptyDetail             = "GitHub returned no open pull requests reviewed by the authenticated user."
+	requestedPullRequestsUnauthenticatedTitle    = "GitHub authentication required"
+	requestedPullRequestsUnauthenticatedDetail   = "GitHub CLI is not authenticated.\n\nRun `gh auth login`, then restart `lazygh`."
+	requestedPullRequestsUnavailableTitle        = "`gh` not found"
+	requestedPullRequestsUnavailableDetail       = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
+	requestedPullRequestsGenericErrorTitle       = "Could not load my reviews"
+	reviewRequestedPullRequestsLoadingTitle      = "Loading review requests..."
+	reviewRequestedPullRequestsEmptyTitle        = "No requested pull requests"
+	reviewRequestedPullRequestsEmptyDetail       = "GitHub returned no open pull requests requesting review from the authenticated user."
+	reviewRequestedPullRequestsGenericErrorTitle = "Could not load review requests"
 )
 
 type pullRequestListState struct {
@@ -55,47 +59,118 @@ var (
 func buildPullRequestListState(search appconfig.PullRequestSearch) pullRequestListState {
 	commandLine := githubcli.FormatPullRequestSearchCommand(search.Command)
 	label := strings.TrimSpace(search.Label)
-	switch label {
-	case "Requested":
-		return pullRequestListState{
-			loadingTitle:          requestedPullRequestsLoadingTitle,
-			loadingDetail:         fmt.Sprintf("Running `%s` to load review requests.", commandLine),
-			emptyTitle:            requestedPullRequestsEmptyTitle,
-			emptyDetail:           requestedPullRequestsEmptyDetail,
-			unauthenticatedTitle:  requestedPullRequestsUnauthenticatedTitle,
-			unauthenticatedDetail: requestedPullRequestsUnauthenticatedDetail,
-			unavailableTitle:      requestedPullRequestsUnavailableTitle,
-			unavailableDetail:     requestedPullRequestsUnavailableDetail,
-			genericErrorTitle:     requestedPullRequestsGenericErrorTitle,
-			genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
-		}
-	case "My PRs":
-		return pullRequestListState{
-			loadingTitle:          myPullRequestsLoadingTitle,
-			loadingDetail:         fmt.Sprintf("Running `%s` to load authored pull requests.", commandLine),
-			emptyTitle:            myPullRequestsEmptyTitle,
-			emptyDetail:           myPullRequestsEmptyDetail,
-			unauthenticatedTitle:  myPullRequestsUnauthenticatedTitle,
-			unauthenticatedDetail: myPullRequestsUnauthenticatedDetail,
-			unavailableTitle:      myPullRequestsUnavailableTitle,
-			unavailableDetail:     myPullRequestsUnavailableDetail,
-			genericErrorTitle:     myPullRequestsGenericErrorTitle,
-			genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
-		}
+	switch pullRequestSearchKind(search.Command) {
+	case pullRequestSearchKindReviewRequested:
+		return newPullRequestListState(
+			reviewRequestedPullRequestsLoadingTitle,
+			fmt.Sprintf("Running `%s` to load review requests.", commandLine),
+			reviewRequestedPullRequestsEmptyTitle,
+			reviewRequestedPullRequestsEmptyDetail,
+			reviewRequestedPullRequestsGenericErrorTitle,
+			commandLine,
+		)
+	case pullRequestSearchKindReviewed:
+		return newPullRequestListState(
+			requestedPullRequestsLoadingTitle,
+			fmt.Sprintf("Running `%s` to load reviewed pull requests.", commandLine),
+			requestedPullRequestsEmptyTitle,
+			requestedPullRequestsEmptyDetail,
+			requestedPullRequestsGenericErrorTitle,
+			commandLine,
+		)
+	case pullRequestSearchKindAuthored:
+		return newPullRequestListState(
+			myPullRequestsLoadingTitle,
+			fmt.Sprintf("Running `%s` to load authored pull requests.", commandLine),
+			myPullRequestsEmptyTitle,
+			myPullRequestsEmptyDetail,
+			myPullRequestsGenericErrorTitle,
+			commandLine,
+		)
 	default:
-		return pullRequestListState{
-			loadingTitle:          fmt.Sprintf("Loading %s...", label),
-			loadingDetail:         fmt.Sprintf("Running `%s` to load pull requests for %s.", commandLine, label),
-			emptyTitle:            fmt.Sprintf("No pull requests for %s", label),
-			emptyDetail:           fmt.Sprintf("GitHub returned no open pull requests for %s.", label),
-			unauthenticatedTitle:  requestedPullRequestsUnauthenticatedTitle,
-			unauthenticatedDetail: requestedPullRequestsUnauthenticatedDetail,
-			unavailableTitle:      requestedPullRequestsUnavailableTitle,
-			unavailableDetail:     requestedPullRequestsUnavailableDetail,
-			genericErrorTitle:     fmt.Sprintf("Could not load %s", label),
-			genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
+		return newPullRequestListState(
+			fmt.Sprintf("Loading %s...", label),
+			fmt.Sprintf("Running `%s` to load pull requests for %s.", commandLine, label),
+			fmt.Sprintf("No pull requests for %s", label),
+			fmt.Sprintf("GitHub returned no open pull requests for %s.", label),
+			fmt.Sprintf("Could not load %s", label),
+			commandLine,
+		)
+	}
+}
+
+func newPullRequestListState(loadingTitle string, loadingDetail string, emptyTitle string, emptyDetail string, genericErrorTitle string, commandLine string) pullRequestListState {
+	return pullRequestListState{
+		loadingTitle:          loadingTitle,
+		loadingDetail:         loadingDetail,
+		emptyTitle:            emptyTitle,
+		emptyDetail:           emptyDetail,
+		unauthenticatedTitle:  requestedPullRequestsUnauthenticatedTitle,
+		unauthenticatedDetail: requestedPullRequestsUnauthenticatedDetail,
+		unavailableTitle:      requestedPullRequestsUnavailableTitle,
+		unavailableDetail:     requestedPullRequestsUnavailableDetail,
+		genericErrorTitle:     genericErrorTitle,
+		genericErrorPrefix:    fmt.Sprintf("Failed to run `%s`.", commandLine),
+	}
+}
+
+type pullRequestSearchKindType int
+
+const (
+	pullRequestSearchKindGeneric pullRequestSearchKindType = iota
+	pullRequestSearchKindAuthored
+	pullRequestSearchKindReviewed
+	pullRequestSearchKindReviewRequested
+)
+
+func pullRequestSearchKind(command []string) pullRequestSearchKindType {
+	if pullRequestSearchMatches(command, "--review-requested", "review-requested:") {
+		return pullRequestSearchKindReviewRequested
+	}
+	if pullRequestSearchMatches(command, "--reviewed-by", "reviewed-by:") {
+		return pullRequestSearchKindReviewed
+	}
+	if pullRequestSearchMatches(command, "--author", "author:") {
+		return pullRequestSearchKindAuthored
+	}
+	return pullRequestSearchKindGeneric
+}
+
+func pullRequestSearchMatches(command []string, flag string, queryPrefix string) bool {
+	normalizedCommand := normalizedPullRequestSearchCommand(command)
+	for index, argument := range normalizedCommand {
+		if argument == flag || strings.HasPrefix(argument, flag+"=") {
+			return true
+		}
+		if argument == "--search" && index+1 < len(normalizedCommand) && pullRequestSearchQueryContains(normalizedCommand[index+1], queryPrefix) {
+			return true
+		}
+		if strings.HasPrefix(argument, "--search=") && pullRequestSearchQueryContains(strings.TrimPrefix(argument, "--search="), queryPrefix) {
+			return true
 		}
 	}
+	return false
+}
+
+func normalizedPullRequestSearchCommand(command []string) []string {
+	normalized := make([]string, 0, len(command))
+	for _, argument := range command {
+		trimmedArgument := strings.ToLower(strings.TrimSpace(argument))
+		if trimmedArgument == "" {
+			continue
+		}
+		normalized = append(normalized, trimmedArgument)
+	}
+	return normalized
+}
+
+func pullRequestSearchQueryContains(query string, prefix string) bool {
+	for _, term := range strings.Fields(strings.TrimSpace(query)) {
+		if strings.HasPrefix(term, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func myPullRequestsLoadingItem() Item {

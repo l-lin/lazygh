@@ -6,7 +6,7 @@ import (
 	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 )
 
-func TestApplyPullRequestSearches_GivenCustomSearches_WhenReadingTheConfiguredLoadingItem_ThenItShowsTheConfiguredCommand(t *testing.T) {
+func TestApplyPullRequestSearches_GivenCustomReviewRequestedSearch_WhenReadingTheConfiguredLoadingItem_ThenItUsesReviewRequestMessagingInsteadOfTheLabel(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	subject := NewProgramWithModel(model)
 	subject.ApplyPullRequestSearches([]appconfig.PullRequestSearch{{
@@ -19,13 +19,13 @@ func TestApplyPullRequestSearches_GivenCustomSearches_WhenReadingTheConfiguredLo
 	if len(actualPullRequests) != 1 {
 		t.Fatalf("expected 1 pull request row, actual %d", len(actualPullRequests))
 	}
-	expected := "Running `gh pr list --search review-requested:@me --state open --json title,number,repository,url,body,state,isDraft,updatedAt,id` to load pull requests for Team Review."
+	expected := "Running `gh pr list --search review-requested:@me --state open --json title,number,repository,url,body,state,isDraft,updatedAt,id` to load review requests."
 	if actualPullRequests[0].Detail != expected {
 		t.Fatalf("expected loading detail %q, actual %q", expected, actualPullRequests[0].Detail)
 	}
 }
 
-func TestStatusLineText_GivenConfiguredSearchWhileLoading_WhenReadingTheStatusLine_ThenItUsesTheConfiguredCommand(t *testing.T) {
+func TestStatusLineText_GivenCustomAuthoredSearchWhileLoading_WhenReadingTheStatusLine_ThenItUsesAuthoredMessagingInsteadOfTheLabel(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModel(model)
@@ -37,7 +37,7 @@ func TestStatusLineText_GivenConfiguredSearchWhileLoading_WhenReadingTheStatusLi
 
 	actual := subject.statusLineText()
 
-	expected := string(loadingSpinnerFrames[0]) + " Running `gh pr list --search author:@me status:open --json title,number,repository,url,body,state,isDraft,updatedAt,id` to load pull requests for Mine."
+	expected := string(loadingSpinnerFrames[0]) + " Running `gh pr list --search author:@me status:open --json title,number,repository,url,body,state,isDraft,updatedAt,id` to load authored pull requests."
 	if actual != expected {
 		t.Fatalf("expected status line %q, actual %q", expected, actual)
 	}
