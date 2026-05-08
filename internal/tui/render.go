@@ -11,7 +11,7 @@ const (
 	minimumSidebarWidth          = 32
 	minimumDetailWidth           = 40
 	userViewTotalHeight          = 3
-	reviewModeMetadataViewHeight = 13
+	reviewModeMetadataViewHeight = 3
 )
 
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}

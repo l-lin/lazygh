@@ -774,6 +774,9 @@ func TestReviewMode_GivenReviewMetadata_WhenRendering_ThenViewOneShowsOnlyThePul
 
 	metadataView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
+	if metadataView.InnerHeight() != 1 {
+		t.Fatalf("expected review metadata inner height %d, actual %d", 1, metadataView.InnerHeight())
+	}
 	if actual := strings.TrimSpace(metadataView.Buffer()); actual != "acme/widgets#42" {
 		t.Fatalf("expected review metadata buffer %q, actual %q", "acme/widgets#42", actual)
 	}
