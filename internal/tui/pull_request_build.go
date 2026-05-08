@@ -27,16 +27,8 @@ func (program *Program) detailCursorHasBuildLink() bool {
 }
 
 func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRequestBuildRunTarget, bool) {
-	if program.reviewSession.active || !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != DescriptionDetailTab {
-		return pullRequestBuildRunTarget{}, false
-	}
-
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, detail, ok := program.currentPullRequestDescriptionSummaryAndDetail()
 	if !ok {
-		return pullRequestBuildRunTarget{}, false
-	}
-	result, ok := program.pullRequestDetailForSummary(summary)
-	if !ok || result.err != nil {
 		return pullRequestBuildRunTarget{}, false
 	}
 
@@ -47,7 +39,7 @@ func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRe
 	if !ok || strings.TrimSpace(entry.Link) == "" {
 		return pullRequestBuildRunTarget{}, false
 	}
-	check, ok := pullRequestStatusCheckMatchingEntry(result.detail.StatusCheckRollup, entry)
+	check, ok := pullRequestStatusCheckMatchingEntry(detail.StatusCheckRollup, entry)
 	if !ok {
 		return pullRequestBuildRunTarget{}, false
 	}
@@ -220,20 +212,12 @@ func (program *Program) browserOverviewBuildEntryAtDetailCursor(view *gocui.View
 }
 
 func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document detailDocument) (pullRequestOverviewEntry, bool) {
-	if program.reviewSession.active || !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != DescriptionDetailTab {
-		return pullRequestOverviewEntry{}, false
-	}
-
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, detail, ok := program.currentPullRequestDescriptionSummaryAndDetail()
 	if !ok {
 		return pullRequestOverviewEntry{}, false
 	}
-	result, ok := program.pullRequestDetailForSummary(summary)
-	if !ok || result.err != nil {
-		return pullRequestOverviewEntry{}, false
-	}
 
-	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, result.detail, document.width, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, document.width, program.detailViewState.cursor.line)
 	if !ok || !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Builds") {
 		return pullRequestOverviewEntry{}, false
 	}
@@ -242,4 +226,30 @@ func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document
 		return pullRequestOverviewEntry{}, false
 	}
 	return entry, true
+}
+
+func (program *Program) currentPullRequestDescriptionSummaryAndDetail() (githubcli.PullRequest, githubcli.PullRequestDetail, bool) {
+	if program.reviewSession.active {
+		return program.reviewSessionDescriptionSummaryAndDetail()
+	}
+	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != DescriptionDetailTab {
+		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+	}
+
+	summary, ok := program.selectedPullRequestSummaryForDetail()
+	if !ok {
+		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+	}
+	result, ok := program.pullRequestDetailForSummary(summary)
+	if !ok || result.err != nil {
+		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+	}
+	return summary, result.detail, true
+}
+
+func (program *Program) detailCursorActionsAvailable() bool {
+	if program.model.Focus() == FocusDetailView {
+		return true
+	}
+	return program.reviewSession.active && program.model.Focus() == FocusUserView && program.reviewSessionShowsDescription()
 }

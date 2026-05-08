@@ -94,7 +94,7 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 			)...,
 		)
 	}
-	if program.model.Focus() == FocusDetailView && program.detailCursorHasBuildLink() {
+	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
 		actions = append(actions,
 			actionsPopupGrouped(actionsPopupGroupNavigation,
 				program.pullRequestBuildRunActionsPopupAction(),
@@ -102,7 +102,7 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 			)...,
 		)
 	}
-	if program.model.Focus() == FocusDetailView && program.detailCursorHasLink() {
+	if program.detailCursorActionsAvailable() && program.detailCursorHasLink() {
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
 	}
 	if reactionAction, ok := program.currentReactionAction(); ok {

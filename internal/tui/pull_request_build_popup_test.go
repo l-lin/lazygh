@@ -293,6 +293,59 @@ func TestActionsPopup_GivenDetailCursorOnBuildLink_WhenOpening_ThenItShowsTheBui
 	}
 }
 
+func TestReviewMode_GivenViewOneFocusedOnADescriptionBuild_WhenOpeningActionsPopup_ThenItShowsTheBuildAndLinkActions(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/build-run-action",
+				State:       "OPEN",
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+					Name:         "test",
+					WorkflowName: "CI",
+					Status:       "COMPLETED",
+					Conclusion:   "FAILURE",
+					Link:         "https://github.com/acme/widgets/actions/runs/42",
+				}},
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "CI / test (Failed)")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	for _, expected := range []string{
+		actionsPopupLabel(actionsPopupBuildRunIcon, pullRequestBuildRunActionTitle),
+		actionsPopupLabel(actionsPopupBuildRunLogsIcon, pullRequestBuildRunLogsActionTitle),
+		actionsPopupLabel(actionsPopupOpenLinkIcon, "Open link under cursor"),
+	} {
+		if !strings.Contains(popupView.Buffer(), expected) {
+			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
+		}
+	}
+}
+
 func TestActionsPopup_GivenTheCursorOffABuildLink_WhenOpening_ThenItHidesTheBuildRunAndJobLogsActions(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
