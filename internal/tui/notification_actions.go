@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/jesseduffield/gocui"
 
@@ -19,27 +18,27 @@ const (
 	notificationMarkAllDoneActionTitle = "Mark all notifications as done"
 	notificationOpenBrowserActionTitle = "Open notification in browser"
 
-	notificationAlreadyReadMessage             = iconUnavailable + " Notification already read"
-	notificationMarkedReadMessage              = iconStatusSuccess + " Notification marked as read"
-	notificationMarkedDoneMessage              = iconStatusSuccess + " Notification marked as done"
-	notificationMarkedAllReadMessage           = iconStatusSuccess + " All notifications marked as read"
-	notificationMarkedAllDoneMessage           = iconStatusSuccess + " All notifications marked as done"
-	notificationBulkReadStillProcessingMessage = iconStatusPending + " GitHub is still marking notifications as read"
-	notificationOpenBrowserSuccessMessage      = iconLink + " Notification opened"
-	notificationNoNotificationsLoadedMessage   = iconUnavailable + " No notifications loaded"
+	notificationAlreadyReadMessage           = iconUnavailable + " Notification already read"
+	notificationMarkedReadMessage            = iconStatusSuccess + " Notification marked as read"
+	notificationMarkedDoneMessage            = iconStatusSuccess + " Notification marked as done"
+	notificationMarkedAllReadMessage         = iconStatusSuccess + " All notifications marked as read"
+	notificationMarkedAllDoneMessage         = iconStatusSuccess + " All notifications marked as done"
+	notificationOpenBrowserSuccessMessage    = iconLink + " Notification opened"
+	notificationNoNotificationsLoadedMessage = iconUnavailable + " No notifications loaded"
 
 	notificationReadLoadingMessage    = "Marking notification as read..."
 	notificationDoneLoadingMessage    = "Marking notification as done..."
 	notificationAllReadLoadingMessage = "Marking all notifications as read..."
-
-	notificationBulkReadPollAttempts = 5
 )
-
-var notificationBulkReadPollInterval = 200 * time.Millisecond
 
 type notificationActionTarget struct {
 	notification githubcli.Notification
 	threadID     string
+}
+
+type notificationMutationSnapshot struct {
+	rows          []NotificationRow
+	selectedIndex int
 }
 
 func (program *Program) isNotificationContext() bool {
@@ -89,7 +88,10 @@ func (program *Program) selectedNotificationActionTarget() (notificationActionTa
 }
 
 func (program *Program) loadedNotifications() []githubcli.Notification {
-	rows := program.model.NotificationRows()
+	return notificationValues(program.model.NotificationRows())
+}
+
+func notificationValues(rows []NotificationRow) []githubcli.Notification {
 	notifications := make([]githubcli.Notification, 0, len(rows))
 	for _, row := range rows {
 		if row.Notification == nil {
@@ -98,6 +100,58 @@ func (program *Program) loadedNotifications() []githubcli.Notification {
 		notifications = append(notifications, *row.Notification)
 	}
 	return notifications
+}
+
+func (program *Program) captureNotificationMutationSnapshot() notificationMutationSnapshot {
+	return notificationMutationSnapshot{
+		rows:          program.model.NotificationRows(),
+		selectedIndex: program.model.SelectedNotificationIndex(),
+	}
+}
+
+func (program *Program) restoreNotificationMutationSnapshot(snapshot notificationMutationSnapshot) {
+	program.model.SetNotificationRows(snapshot.rows)
+	program.model.selectedNotificationIndex = clampIndex(snapshot.selectedIndex, len(program.model.notifications))
+	program.model.clampSearchSelectionForNotificationsView()
+}
+
+func markNotificationReadState(notifications []githubcli.Notification, threadID string, unread bool) bool {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	if trimmedThreadID == "" {
+		return false
+	}
+	for index := range notifications {
+		if strings.TrimSpace(notifications[index].ID) != trimmedThreadID {
+			continue
+		}
+		notifications[index].Unread = unread
+		return true
+	}
+	return false
+}
+
+func removeNotificationWithThreadID(notifications []githubcli.Notification, threadID string) ([]githubcli.Notification, bool) {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	if trimmedThreadID == "" {
+		return append([]githubcli.Notification(nil), notifications...), false
+	}
+
+	filteredNotifications := make([]githubcli.Notification, 0, len(notifications))
+	removed := false
+	for _, notification := range notifications {
+		if strings.TrimSpace(notification.ID) == trimmedThreadID {
+			removed = true
+			continue
+		}
+		filteredNotifications = append(filteredNotifications, notification)
+	}
+	return filteredNotifications, removed
+}
+
+func markAllNotificationsRead(notifications []githubcli.Notification) {
+	for index := range notifications {
+		notifications[index].Unread = false
+	}
 }
 
 func (program *Program) markNotificationReadAction() actionsPopupAction {
@@ -195,16 +249,20 @@ func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {
 		return program.refreshViewsIfGUI(gui)
 	}
 
-	return program.startNotificationMutation(gui, notificationReadLoadingMessage, func() ([]githubcli.Notification, string, error) {
-		if err := program.githubLoader.MarkNotificationRead(target.threadID); err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		notifications, err := program.githubLoader.ListNotifications()
-		if err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		return notifications, notificationMarkedReadMessage, nil
-	})
+	optimisticNotifications := program.loadedNotifications()
+	if !markNotificationReadState(optimisticNotifications, target.threadID, false) {
+		return errActionsPopupActionUnavailable
+	}
+
+	return program.startNotificationMutation(
+		gui,
+		notificationReadLoadingMessage,
+		notificationMarkedReadMessage,
+		notificationRows(optimisticNotifications),
+		func() error {
+			return normalizedNotificationMutationError(program.githubLoader.MarkNotificationRead(target.threadID))
+		},
+	)
 }
 
 func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
@@ -213,16 +271,20 @@ func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
 		return errActionsPopupActionUnavailable
 	}
 
-	return program.startNotificationMutation(gui, notificationDoneLoadingMessage, func() ([]githubcli.Notification, string, error) {
-		if err := program.githubLoader.MarkNotificationDone(target.threadID); err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		notifications, err := program.githubLoader.ListNotifications()
-		if err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		return notifications, notificationMarkedDoneMessage, nil
-	})
+	optimisticNotifications, removed := removeNotificationWithThreadID(program.loadedNotifications(), target.threadID)
+	if !removed {
+		return errActionsPopupActionUnavailable
+	}
+
+	return program.startNotificationMutation(
+		gui,
+		notificationDoneLoadingMessage,
+		notificationMarkedDoneMessage,
+		notificationRows(optimisticNotifications),
+		func() error {
+			return normalizedNotificationMutationError(program.githubLoader.MarkNotificationDone(target.threadID))
+		},
+	)
 }
 
 func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
@@ -232,17 +294,18 @@ func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
 		return program.refreshViewsIfGUI(gui)
 	}
 
-	return program.startNotificationMutation(gui, notificationAllReadLoadingMessage, func() ([]githubcli.Notification, string, error) {
-		result, err := program.githubLoader.MarkAllNotificationsRead()
-		if err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		notifications, feedbackMessage, err := program.notificationsAfterBulkRead(result.Accepted)
-		if err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		return notifications, feedbackMessage, nil
-	})
+	optimisticNotifications := append([]githubcli.Notification(nil), loadedNotifications...)
+	markAllNotificationsRead(optimisticNotifications)
+	return program.startNotificationMutation(
+		gui,
+		notificationAllReadLoadingMessage,
+		notificationMarkedAllReadMessage,
+		notificationRows(optimisticNotifications),
+		func() error {
+			_, err := program.githubLoader.MarkAllNotificationsRead()
+			return normalizedNotificationMutationError(err)
+		},
+	)
 }
 
 func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
@@ -253,49 +316,16 @@ func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 	}
 
 	loadingMessage := fmt.Sprintf("Marking %d notifications as done...", len(loadedNotifications))
-	return program.startNotificationMutation(gui, loadingMessage, func() ([]githubcli.Notification, string, error) {
-		if _, err := program.githubLoader.MarkAllNotificationsDone(loadedNotifications); err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		notifications, err := program.githubLoader.ListNotifications()
-		if err != nil {
-			return nil, "", normalizedNotificationMutationError(err)
-		}
-		return notifications, notificationMarkedAllDoneMessage, nil
-	})
-}
-
-func (program *Program) notificationsAfterBulkRead(accepted bool) ([]githubcli.Notification, string, error) {
-	notifications, err := program.githubLoader.ListNotifications()
-	if err != nil {
-		return nil, "", err
-	}
-	if !accepted {
-		return notifications, notificationMarkedAllReadMessage, nil
-	}
-
-	for attempt := 0; attempt < notificationBulkReadPollAttempts && notificationsHaveUnreadThreads(notifications); attempt++ {
-		if notificationBulkReadPollInterval > 0 {
-			time.Sleep(notificationBulkReadPollInterval)
-		}
-		notifications, err = program.githubLoader.ListNotifications()
-		if err != nil {
-			return nil, "", err
-		}
-	}
-	if notificationsHaveUnreadThreads(notifications) {
-		return notifications, notificationBulkReadStillProcessingMessage, nil
-	}
-	return notifications, notificationMarkedAllReadMessage, nil
-}
-
-func notificationsHaveUnreadThreads(notifications []githubcli.Notification) bool {
-	for _, notification := range notifications {
-		if notification.Unread {
-			return true
-		}
-	}
-	return false
+	return program.startNotificationMutation(
+		gui,
+		loadingMessage,
+		notificationMarkedAllDoneMessage,
+		notificationRows(nil),
+		func() error {
+			_, err := program.githubLoader.MarkAllNotificationsDone(loadedNotifications)
+			return normalizedNotificationMutationError(err)
+		},
+	)
 }
 
 func (program *Program) openSelectedNotificationInBrowser(gui *gocui.Gui) error {
@@ -368,49 +398,42 @@ func (program *Program) handleNotificationKeyAction(gui *gocui.Gui, action func(
 	return nil
 }
 
-func (program *Program) startNotificationMutation(gui *gocui.Gui, loadingMessage string, work func() ([]githubcli.Notification, string, error)) error {
+func (program *Program) startNotificationMutation(gui *gocui.Gui, loadingMessage string, successFeedbackMessage string, optimisticRows []NotificationRow, work func() error) error {
 	if program.githubLoader == nil {
 		return errors.New("github loader is unavailable")
 	}
 
-	if gui == nil {
-		notifications, feedbackMessage, err := work()
-		return program.finishNotificationMutation(gui, notifications, feedbackMessage, err)
-	}
-
+	snapshot := program.captureNotificationMutationSnapshot()
+	program.model.SetNotificationRows(optimisticRows)
 	program.feedbackMessage = ""
 	program.notificationsLoading = true
 	program.notificationsLoadingDetailMessage = strings.TrimSpace(loadingMessage)
+	if gui == nil {
+		err := work()
+		return program.finishNotificationMutation(gui, snapshot, successFeedbackMessage, err)
+	}
+
 	program.asyncRunner.Go(func() {
-		notifications, feedbackMessage, err := work()
+		err := work()
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			return program.finishNotificationMutation(gui, notifications, feedbackMessage, err)
+			return program.finishNotificationMutation(gui, snapshot, successFeedbackMessage, err)
 		})
 	})
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) finishNotificationMutation(gui *gocui.Gui, notifications []githubcli.Notification, feedbackMessage string, err error) error {
+func (program *Program) finishNotificationMutation(gui *gocui.Gui, snapshot notificationMutationSnapshot, successFeedbackMessage string, err error) error {
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""
 	if err != nil {
+		program.restoreNotificationMutationSnapshot(snapshot)
 		program.setFeedback(program.model.Focus(), strings.TrimSpace(err.Error()))
 		return program.refreshViewsIfGUI(gui)
 	}
 
-	program.cacheNotifications(notifications)
-	program.model.SetNotificationRows(notificationRows(notifications))
-	program.invalidateNotificationMutationDetailState()
-	program.setFeedback(program.model.Focus(), feedbackMessage)
+	program.cacheNotifications(program.loadedNotifications())
+	program.setFeedback(program.model.Focus(), successFeedbackMessage)
 	return program.refreshViewsIfGUI(gui)
-}
-
-func (program *Program) invalidateNotificationMutationDetailState() {
-	program.issueDetailCache = map[string]issueDetailResult{}
-	program.issueDetailLoadInFlight = map[string]bool{}
-	program.releaseDetailCache = map[string]releaseDetailResult{}
-	program.releaseDetailLoadInFlight = map[string]bool{}
-	program.invalidatePullRequestDetailDocumentCache()
 }
 
 func normalizedNotificationMutationError(err error) error {

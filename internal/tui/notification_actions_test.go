@@ -38,6 +38,40 @@ func TestNotificationsView_GivenUnreadNotification_WhenPressingR_ThenItMarksTheN
 	}
 }
 
+func TestNotificationsView_GivenUnreadNotification_WhenPressingR_ThenItMarksTheRowReadBeforeGitHubConfirmsTheMutation(t *testing.T) {
+	notifications := []githubcli.Notification{
+		given_unsupportedNotification("n-push-1", true, "Push notification one"),
+		given_unsupportedNotification("n-push-2", false, "Push notification two"),
+	}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), notifications...)}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	initialQueuedRuns := len(asyncRunner.runs)
+
+	handler := given_handlerForBinding(t, subject.keybindingSpecs(), viewNotificationsName, 'r')
+	actualErr = handler(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != initialQueuedRuns+1 {
+		t.Fatalf("expected queued async runs %d, actual %d", initialQueuedRuns+1, len(asyncRunner.runs))
+	}
+	if len(loader.markNotificationReadIDs) != 0 {
+		t.Fatalf("expected no read mutation call before the async work runs, actual %v", loader.markNotificationReadIDs)
+	}
+	actualRows := subject.model.NotificationRows()
+	if actualRows[0].Notification == nil || actualRows[0].Notification.Unread {
+		t.Fatalf("expected the selected notification to become read immediately, actual %+v", actualRows[0].Notification)
+	}
+	then_statusLineContains(t, gui, notificationReadLoadingMessage)
+}
+
 func TestNotificationsView_GivenReadNotification_WhenPressingR_ThenItShowsNoopFeedbackWithoutCallingGitHub(t *testing.T) {
 	notifications := []githubcli.Notification{
 		given_notificationValue(t, given_pullRequestNotificationRow()),
@@ -91,6 +125,43 @@ func TestNotificationsView_GivenSelectedNotification_WhenPressingD_ThenItMarksTh
 	if actualRows[0].Notification == nil || actualRows[0].Notification.ID != "n-issue" {
 		t.Fatalf("expected the remaining notification id %q, actual %+v", "n-issue", actualRows[0].Notification)
 	}
+}
+
+func TestNotificationsView_GivenSelectedNotification_WhenPressingD_ThenItRemovesTheRowBeforeGitHubConfirmsTheMutation(t *testing.T) {
+	notifications := []githubcli.Notification{
+		given_unsupportedNotification("n-push-1", true, "Push notification one"),
+		given_unsupportedNotification("n-push-2", false, "Push notification two"),
+	}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), notifications...)}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	initialQueuedRuns := len(asyncRunner.runs)
+
+	handler := given_handlerForBinding(t, subject.keybindingSpecs(), viewNotificationsName, 'd')
+	actualErr = handler(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != initialQueuedRuns+1 {
+		t.Fatalf("expected queued async runs %d, actual %d", initialQueuedRuns+1, len(asyncRunner.runs))
+	}
+	if len(loader.markNotificationDoneIDs) != 0 {
+		t.Fatalf("expected no done mutation call before the async work runs, actual %v", loader.markNotificationDoneIDs)
+	}
+	actualRows := subject.model.NotificationRows()
+	if len(actualRows) != 1 {
+		t.Fatalf("expected the selected notification to disappear immediately, actual %+v", actualRows)
+	}
+	if actualRows[0].Notification == nil || actualRows[0].Notification.ID != "n-push-2" {
+		t.Fatalf("expected the remaining notification id %q, actual %+v", "n-push-2", actualRows[0].Notification)
+	}
+	then_statusLineContains(t, gui, notificationDoneLoadingMessage)
 }
 
 func TestActionsPopup_GivenNotificationContext_WhenOpening_ThenItShowsOnlyNotificationActions(t *testing.T) {
@@ -155,22 +226,16 @@ func TestActionsPopup_GivenNotificationReadAction_WhenExecuting_ThenItRefreshesT
 	}
 }
 
-func TestActionsPopup_GivenBulkNotificationReadAccepted_WhenExecuting_ThenItShowsAnHonestFollowUpMessage(t *testing.T) {
+func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksAllLoadedRowsRead(t *testing.T) {
 	notifications := []githubcli.Notification{
 		given_notificationValue(t, given_pullRequestNotificationRow()),
 		given_notificationValue(t, given_issueNotificationRow()),
 	}
 	loader := &fakePullRequestDetailLoader{
-		notifications:                     append([]githubcli.Notification(nil), notifications...),
-		markAllNotificationsReadAccepted:  true,
-		markAllNotificationsReadPollLoads: notificationBulkReadPollAttempts + 2,
+		notifications:                    append([]githubcli.Notification(nil), notifications...),
+		markAllNotificationsReadAccepted: true,
 	}
 	subject := given_notificationActionProgram(loader.notifications, loader)
-	originalPollInterval := notificationBulkReadPollInterval
-	notificationBulkReadPollInterval = 0
-	defer func() {
-		notificationBulkReadPollInterval = originalPollInterval
-	}()
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -190,10 +255,90 @@ func TestActionsPopup_GivenBulkNotificationReadAccepted_WhenExecuting_ThenItShow
 		t.Fatalf("expected bulk read calls %d, actual %d", 1, loader.markAllNotificationsReadCalls)
 	}
 	actualRows := subject.model.NotificationRows()
-	if actualRows[0].Notification == nil || !actualRows[0].Notification.Unread {
-		t.Fatalf("expected the notification to stay unread while GitHub still processes the bulk read, actual %+v", actualRows[0].Notification)
+	for _, row := range actualRows {
+		if row.Notification != nil && row.Notification.Unread {
+			t.Fatalf("expected all notification rows to be marked read, actual %+v", actualRows)
+		}
 	}
-	then_statusLineContains(t, gui, notificationBulkReadStillProcessingMessage)
+	then_statusLineContains(t, gui, notificationMarkedAllReadMessage)
+}
+
+func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksAllLoadedRowsReadBeforeGitHubConfirmsTheMutation(t *testing.T) {
+	notifications := []githubcli.Notification{
+		given_unsupportedNotification("n-push-1", true, "Push notification one"),
+		given_unsupportedNotification("n-push-2", false, "Push notification two"),
+	}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), notifications...)}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	initialQueuedRuns := len(asyncRunner.runs)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("mark all notifications as read", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark all notifications as read"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != initialQueuedRuns+1 {
+		t.Fatalf("expected queued async runs %d, actual %d", initialQueuedRuns+1, len(asyncRunner.runs))
+	}
+	if loader.markAllNotificationsReadCalls != 0 {
+		t.Fatalf("expected no bulk read mutation call before the async work runs, actual %d", loader.markAllNotificationsReadCalls)
+	}
+	actualRows := subject.model.NotificationRows()
+	for _, row := range actualRows {
+		if row.Notification != nil && row.Notification.Unread {
+			t.Fatalf("expected all notification rows to become read immediately, actual %+v", actualRows)
+		}
+	}
+	then_statusLineContains(t, gui, notificationAllReadLoadingMessage)
+}
+
+func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemovesAllLoadedNotificationRowsBeforeGitHubConfirmsTheMutation(t *testing.T) {
+	notifications := []githubcli.Notification{
+		given_unsupportedNotification("n-push-1", true, "Push notification one"),
+		given_unsupportedNotification("n-push-2", false, "Push notification two"),
+	}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), notifications...)}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	initialQueuedRuns := len(asyncRunner.runs)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("mark all notifications as done", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark all notifications as done"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != initialQueuedRuns+1 {
+		t.Fatalf("expected queued async runs %d, actual %d", initialQueuedRuns+1, len(asyncRunner.runs))
+	}
+	if len(loader.markAllNotificationsDoneIDs) != 0 {
+		t.Fatalf("expected no bulk done mutation call before the async work runs, actual %v", loader.markAllNotificationsDoneIDs)
+	}
+	actualRows := subject.model.NotificationRows()
+	if len(actualRows) != 1 || actualRows[0].Item.Title != notificationsEmptyTitle || actualRows[0].Notification != nil {
+		t.Fatalf("expected the notifications list to become empty immediately, actual %+v", actualRows)
+	}
+	then_statusLineContains(t, gui, "Marking 2 notifications as done...")
 }
 
 func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemovesAllLoadedNotificationRows(t *testing.T) {
@@ -313,4 +458,20 @@ func given_notificationValue(t *testing.T, row NotificationRow) githubcli.Notifi
 		t.Fatal("expected a notification row with a notification value")
 	}
 	return *row.Notification
+}
+
+func given_unsupportedNotification(threadID string, unread bool, title string) githubcli.Notification {
+	return githubcli.Notification{
+		ID:        threadID,
+		Unread:    unread,
+		Reason:    "manual",
+		UpdatedAt: "2026-05-08T16:53:11Z",
+		Repository: githubcli.Repository{
+			NameWithOwner: "acme/widgets",
+		},
+		Subject: githubcli.NotificationSubject{
+			Type:  "Push",
+			Title: title,
+		},
+	}
 }
