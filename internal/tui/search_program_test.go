@@ -101,6 +101,8 @@ func TestSearchPrompt_GivenDetailFocus_WhenOpeningSearch_ThenThePromptUsesTheGlo
 	if actualDetailY1 != detailY1 {
 		t.Fatalf("expected the detail pane height to stay unchanged, actual y1=%d expected y1=%d", actualDetailY1, detailY1)
 	}
+	then_statusLineKeyHintsAre(t, gui, "Enter: submit, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter: submit, Escape: cancel")
 }
 
 func TestSearchFooter_GivenSubmittedPullRequestsSearch_WhenRendering_ThenTheAppliedQueryMovesToThePaneFooter(t *testing.T) {
@@ -122,7 +124,7 @@ func TestSearchFooter_GivenSubmittedPullRequestsSearch_WhenRendering_ThenTheAppl
 	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/2 (1 match)" {
 		t.Fatalf("expected pull requests footer %q, actual %q", "/2 (1 match)", actual)
 	}
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
@@ -152,7 +154,7 @@ func TestSearchFooter_GivenSubmittedDetailSearch_WhenRendering_ThenTheAppliedQue
 	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/Alpha (1 match)" {
 		t.Fatalf("expected detail footer %q, actual %q", "/Alpha (1 match)", actual)
 	}
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)

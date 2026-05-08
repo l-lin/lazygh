@@ -55,7 +55,7 @@ func TestReviewPRURLInput_GivenEnterPressedInTheURLPrompt_WhenSubmittingAValidUR
 	if modalView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: Submit")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Escape: cancel")
 
 	subject.modalEditor.lineEditor.SetText(" https://github.com/acme/rocket/pull/77/files#diff-1 ")
 	actualHandled := subject.editModalEditor(modalView, gocui.KeyEnter, 0, gocui.ModNone)

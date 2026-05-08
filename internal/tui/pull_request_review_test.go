@@ -42,7 +42,7 @@ func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesT
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_statusLineContains(t, gui, pullRequestReviewSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 

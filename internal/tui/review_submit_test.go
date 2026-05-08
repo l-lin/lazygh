@@ -97,7 +97,7 @@ func TestActionsPopup_GivenReviewModeSubmitCommentActionSelected_WhenSubmitting_
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 
 	then_statusLineContains(t, gui, pullRequestReviewSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	actualErr = subject.openActionsPopup(gui, nil)

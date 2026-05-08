@@ -47,7 +47,7 @@ func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShow
 	if composerView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", composerView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: Submit")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Escape: cancel")
 
 	x0, y0, x1, y1, actualErr := gui.ViewPosition(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -173,7 +173,7 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 	}
 
 	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
@@ -229,7 +229,7 @@ func TestPullRequestCommentComposer_GivenPullRequestDetail_WhenSubmitting_ThenIt
 	}
 
 	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 

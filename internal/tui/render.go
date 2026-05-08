@@ -44,9 +44,6 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	if err := program.layoutStatusLineView(gui); err != nil {
 		return err
 	}
-	if err := program.layoutStatusLineKeyHintsView(gui); err != nil {
-		return err
-	}
 
 	if err := syncOverlayLayout(gui, program.helpVisible, program.layoutHelpView, viewHelpName); err != nil {
 		return err
@@ -67,6 +64,9 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		if err := syncOverlayLayout(gui, program.model.ActionsPopupSearchActive(), program.layoutActionsPopupSearchView, viewActionsPopupSearchName); err != nil {
 			return err
 		}
+	}
+	if err := program.layoutStatusLineKeyHintsView(gui); err != nil {
+		return err
 	}
 
 	return program.syncCurrentView(gui)

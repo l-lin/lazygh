@@ -1114,7 +1114,7 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpe
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 
 	actualErr = given_startingReviewMode(t, gui, subject)
@@ -1144,7 +1144,7 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenPressingQFromTheFileTree_ThenIt
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 

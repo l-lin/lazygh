@@ -10,7 +10,7 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestStatusLineKeyHints_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedHintsRightAlignedOnTheBottomRow(t *testing.T) {
+func TestStatusLineKeyHints_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedLowercaseHintsRightAlignedOnTheBottomRow(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -19,9 +19,9 @@ func TestStatusLineKeyHints_GivenActivePullRequestsView_WhenRendering_ThenItShow
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "?: Help, /: Search, a: Action", given_themeColorHex(t, theme.InactiveTitleHex), "status line key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "?: help, /: search, a: action", given_themeColorHex(t, theme.InactiveTitleHex), "status line key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
 
@@ -42,7 +42,41 @@ func TestStatusLineKeyHints_GivenConfiguredKeyOverrides_WhenRendering_ThenItUses
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "!: Help, s/<c-s>: Search, p: Action")
+	then_statusLineKeyHintsAre(t, gui, "!: help, s/<c-s>: search, p: action")
+}
+
+func TestStatusLineKeyHints_GivenActionsPopupVisible_WhenRendering_ThenItShowsLowercasePopupHintsIncludingCancelRightAlignedOnTheBottomRow(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "/: search, Enter: execute, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, Enter: execute, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Enter: execute, Escape: cancel")
+}
+
+func TestStatusLineKeyHints_GivenActionsPopupSearchVisible_WhenRendering_ThenItShowsLowercasePopupSearchHintsIncludingCancelRightAlignedOnTheBottomRow(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusActionsPopupSearch(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "Enter/Tab: list, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Enter/Tab: list, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup search key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter/Tab: list, Escape: cancel")
 }
 
 func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShowsDarkGreyPopupHintsRightAlignedOnTheBottomRow(t *testing.T) {
@@ -53,9 +87,9 @@ func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShows
 
 	_ = given_openAssigneePicker(t, gui, subject)
 
-	then_statusLineKeyHintsAre(t, gui, "/: Search, Enter: Toggle, Alt+Enter: Submit")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: Search, Enter: Toggle, Alt+Enter: Submit", given_themeColorHex(t, theme.InactiveTitleHex), "assignee picker key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "/: Search, Enter: Toggle, Alt+Enter: Submit")
+	then_statusLineKeyHintsAre(t, gui, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "assignee picker key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel")
 }
 
 func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterAndTheResolvedKeyHints(t *testing.T) {
@@ -68,7 +102,7 @@ func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenIt
 	then_noError(t, actualErr)
 
 	then_viewDoesNotExist(t, gui, viewUserFooterName)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_statusLineIs(t, gui, "")
 }
 
@@ -86,7 +120,7 @@ func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItSh
 	then_noError(t, actualErr)
 
 	then_footerTextIs(t, gui, viewUserFooterName, "/2 (1 match)")
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_statusLineIs(t, gui, "")
 }
 
@@ -124,13 +158,13 @@ func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingBrowserModeP
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, p: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, p: action")
 
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, d: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, d: action")
 }
 
 func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDiff_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
@@ -170,11 +204,11 @@ func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingReviewModeFi
 
 	actualErr = subject.focusPullRequestsView(gui, nil)
 	then_noError(t, actualErr)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, p: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, p: action")
 
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, d: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, d: action")
 }
 
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {

@@ -75,8 +75,14 @@ func (program *Program) statusLineKeyHintsText() string {
 	if modalEditorHints := strings.TrimSpace(program.modalEditorKeyHintsText()); modalEditorHints != "" {
 		return modalEditorHints
 	}
+	if actionsPopupSearchHints := strings.TrimSpace(program.actionsPopupSearchKeyHintsText()); actionsPopupSearchHints != "" {
+		return actionsPopupSearchHints
+	}
 	if actionsPopupHints := strings.TrimSpace(program.actionsPopupKeyHintsText()); actionsPopupHints != "" {
 		return actionsPopupHints
+	}
+	if searchHints := strings.TrimSpace(program.searchKeyHintsText()); searchHints != "" {
+		return searchHints
 	}
 
 	focus := program.model.Focus()
@@ -102,7 +108,10 @@ func (program *Program) modalEditorKeyHintsText() string {
 		return ""
 	}
 
-	return program.statusLineKeyHint("Submit", "Alt+Enter", keybindingActionID{scope: keymapScopeModalEditor, action: "submit"})
+	return program.statusLineKeyHints(
+		statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "submit"}}},
+		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "close"}}},
+	)
 }
 
 func (program *Program) shouldShowModalEditorStatusLineKeyHints() bool {
@@ -115,20 +124,50 @@ func (program *Program) shouldShowModalEditorStatusLineKeyHints() bool {
 	return true
 }
 
+func (program *Program) actionsPopupSearchKeyHintsText() string {
+	if !program.shouldShowActionsPopupSearchStatusLineKeyHints() {
+		return ""
+	}
+
+	return program.statusLineKeyHints(
+		statusLineHintSpec{label: "list", fallback: "Enter/Tab", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "focus_list"}}},
+		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "close"}}},
+	)
+}
+
+func (program *Program) shouldShowActionsPopupSearchStatusLineKeyHints() bool {
+	if !program.model.ActionsPopupVisible() || !program.model.ActionsPopupSearchActive() {
+		return false
+	}
+	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+		return false
+	}
+	return true
+}
+
 func (program *Program) actionsPopupKeyHintsText() string {
 	if !program.shouldShowActionsPopupStatusLineKeyHints() {
 		return ""
 	}
-	if !program.assigneePickerVisible() && !program.assigneePickerLoading() {
-		return ""
+	if program.assigneePickerLoading() {
+		return program.statusLineKeyHints(
+			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "close"}}},
+		)
+	}
+	if program.assigneePickerVisible() {
+		return program.statusLineKeyHints(
+			statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "focus_search"}}},
+			statusLineHintSpec{label: "toggle", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "execute_selected_action"}}},
+			statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}}},
+			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "close"}}},
+		)
 	}
 
-	hints := []string{
-		program.statusLineKeyHint("Search", "/", keybindingActionID{scope: keymapScopeActionsPopup, action: "focus_search"}),
-		program.statusLineKeyHint("Toggle", "Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "execute_selected_action"}),
-		program.statusLineKeyHint("Submit", "Alt+Enter", keybindingActionID{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}),
-	}
-	return strings.Join(filterEmptyStrings(hints), ", ")
+	return program.statusLineKeyHints(
+		statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "focus_search"}}},
+		statusLineHintSpec{label: "execute", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "execute_selected_action"}}},
+		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "close"}}},
+	)
 }
 
 func (program *Program) shouldShowActionsPopupStatusLineKeyHints() bool {
@@ -141,13 +180,48 @@ func (program *Program) shouldShowActionsPopupStatusLineKeyHints() bool {
 	return true
 }
 
+func (program *Program) searchKeyHintsText() string {
+	if !program.shouldShowSearchStatusLineKeyHints() {
+		return ""
+	}
+
+	return program.statusLineKeyHints(
+		statusLineHintSpec{label: "submit", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "submit"}}},
+		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "cancel"}}},
+	)
+}
+
+func (program *Program) shouldShowSearchStatusLineKeyHints() bool {
+	if !program.model.SearchActive() {
+		return false
+	}
+	if program.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+		return false
+	}
+	return true
+}
+
 func (program *Program) paneFooterKeyHintsText(focus Focus) string {
 	hints := []string{
-		program.paneFooterKeyHint("Help", keybindingActionID{scope: keymapScopeMain, action: "toggle_help"}),
-		program.paneFooterKeyHint("Search", keybindingActionID{scope: keymapScopeMain, action: "open_search"}),
+		program.paneFooterKeyHint("help", keybindingActionID{scope: keymapScopeMain, action: "toggle_help"}),
+		program.paneFooterKeyHint("search", keybindingActionID{scope: keymapScopeMain, action: "open_search"}),
 	}
 	if actionsHint := program.paneFooterActionsHint(focus); actionsHint != "" {
 		hints = append(hints, actionsHint)
+	}
+	return strings.Join(filterEmptyStrings(hints), ", ")
+}
+
+type statusLineHintSpec struct {
+	label     string
+	fallback  string
+	actionIDs []keybindingActionID
+}
+
+func (program *Program) statusLineKeyHints(specs ...statusLineHintSpec) string {
+	hints := make([]string, 0, len(specs))
+	for _, spec := range specs {
+		hints = append(hints, program.statusLineKeyHint(spec.label, spec.fallback, spec.actionIDs...))
 	}
 	return strings.Join(filterEmptyStrings(hints), ", ")
 }
@@ -176,7 +250,7 @@ func (program *Program) paneFooterActionsHint(focus Focus) string {
 	if !ok || len(program.currentActionsPopupActions()) == 0 {
 		return ""
 	}
-	return program.paneFooterKeyHint("Action", actionID)
+	return program.paneFooterKeyHint("action", actionID)
 }
 
 func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {

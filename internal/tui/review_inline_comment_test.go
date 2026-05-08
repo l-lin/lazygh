@@ -159,7 +159,7 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Please add context", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestReviewInlineCommentSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
@@ -191,7 +191,7 @@ func TestReviewMode_GivenTheDetailCursorOnAnInvalidRow_WhenOpeningTheInlineComme
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 
 	then_statusLineContains(t, gui, reviewThreadTargetUnavailableMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 

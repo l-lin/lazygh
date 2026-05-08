@@ -130,7 +130,7 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefresh
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Renamed PR", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestTitleEditSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
@@ -347,7 +347,7 @@ func TestEditPullRequestDescription_GivenSuccessfulSubmit_WhenSubmitting_ThenItR
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Updated body", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestDescriptionEditSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
