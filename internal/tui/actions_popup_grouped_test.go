@@ -70,7 +70,10 @@ func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenFiltering_ThenItSh
 	})
 }
 
-func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAndUsesABackgroundColor(t *testing.T) {
+func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAndUsesItsDedicatedBackgroundColor(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.ResolvePalette(theme.Palette{ActionsPopupGroupBackgroundHex: "#204060", SelectedLineBackgroundHex: "#802020"}))
+
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -83,11 +86,12 @@ func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAn
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_viewLineHasBackgroundColor(t, gui, viewActionsPopupName, 0, given_themeColorHex(t, theme.PendingBackgroundHex), "actions popup group header background")
+	then_viewLineHasBackgroundColor(t, gui, viewActionsPopupName, 0, given_themeColorHex(t, theme.ActionsPopupGroupBackgroundHex), "actions popup group header background")
 	then_viewLineSegmentIsCenteredInView(t, gui, viewActionsPopupName, 0, actionsPopupGroupPullRequest)
 	if actual := strings.TrimSpace(popupView.BufferLines()[0]); actual != actionsPopupGroupPullRequest {
 		t.Fatalf("expected grouped header %q, actual %q", actionsPopupGroupPullRequest, actual)
 	}
+	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewActionsPopupName, 0, 0, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "actions popup group header selected background")
 }
 
 func TestActionsPopup_GivenNoPersistentCache_WhenOpening_ThenItHidesTheClearCacheAction(t *testing.T) {

@@ -6,33 +6,35 @@ import (
 )
 
 const (
-	darkDefaultBackgroundHex                = ""
-	darkDefaultActiveTextHex                = "#F0F6FC"
-	darkDefaultSelectedLineBackgroundHex    = "#21262D"
-	darkDefaultMarkdownHeadingHex           = "#F0F6FC"
-	darkDefaultMarkdownHeadingBackgroundHex = "#58A6FF"
-	darkDefaultPullRequestReferenceHex      = "#8B949E"
-	darkDefaultPullRequestTitleHex          = "#F0F6FC"
-	darkDefaultSuccessHex                   = "#3FB950"
-	darkDefaultSuccessBackgroundHex         = "#033A16"
-	darkDefaultFailureHex                   = "#F85149"
-	darkDefaultFailureBackgroundHex         = "#67060C"
-	darkDefaultPendingHex                   = "#8B949E"
-	darkDefaultPendingBackgroundHex         = "#30363D"
-	darkDefaultMutedHex                     = "#8B949E"
-	darkDefaultDiffAdditionBackgroundHex    = "#033A16"
-	lightDefaultBackgroundHex               = ""
-	lightDefaultActiveTextHex               = "#000000"
-	lightDefaultSelectedLineBackgroundHex   = "#E6E6E6"
-	lightDefaultPullRequestReferenceHex     = "#656D76"
-	lightDefaultPullRequestTitleHex         = "#000000"
-	lightDefaultSuccessHex                  = "#1A7F37"
-	lightDefaultSuccessBackgroundHex        = "#DFF3E4"
-	lightDefaultFailureHex                  = "#CF222E"
-	lightDefaultFailureBackgroundHex        = "#FFE2E5"
-	lightDefaultPendingHex                  = "#656D76"
-	lightDefaultPendingBackgroundHex        = "#E6E6E6"
-	lightDefaultMutedHex                    = "#636363"
+	darkDefaultBackgroundHex                   = ""
+	darkDefaultActiveTextHex                   = "#F0F6FC"
+	darkDefaultSelectedLineBackgroundHex       = "#21262D"
+	darkDefaultMarkdownHeadingHex              = "#F0F6FC"
+	darkDefaultMarkdownHeadingBackgroundHex    = "#58A6FF"
+	darkDefaultPullRequestReferenceHex         = "#8B949E"
+	darkDefaultPullRequestTitleHex             = "#F0F6FC"
+	darkDefaultSuccessHex                      = "#3FB950"
+	darkDefaultSuccessBackgroundHex            = "#033A16"
+	darkDefaultFailureHex                      = "#F85149"
+	darkDefaultFailureBackgroundHex            = "#67060C"
+	darkDefaultPendingHex                      = "#8B949E"
+	darkDefaultPendingBackgroundHex            = "#30363D"
+	darkDefaultMutedHex                        = "#8B949E"
+	darkDefaultActionsPopupGroupBackgroundHex  = "#223249"
+	darkDefaultDiffAdditionBackgroundHex       = "#033A16"
+	lightDefaultBackgroundHex                  = ""
+	lightDefaultActiveTextHex                  = "#000000"
+	lightDefaultSelectedLineBackgroundHex      = "#E6E6E6"
+	lightDefaultActionsPopupGroupBackgroundHex = "#DDF4FF"
+	lightDefaultPullRequestReferenceHex        = "#656D76"
+	lightDefaultPullRequestTitleHex            = "#000000"
+	lightDefaultSuccessHex                     = "#1A7F37"
+	lightDefaultSuccessBackgroundHex           = "#DFF3E4"
+	lightDefaultFailureHex                     = "#CF222E"
+	lightDefaultFailureBackgroundHex           = "#FFE2E5"
+	lightDefaultPendingHex                     = "#656D76"
+	lightDefaultPendingBackgroundHex           = "#E6E6E6"
+	lightDefaultMutedHex                       = "#636363"
 )
 
 func TestDefaultPalette_GivenDarkSystemPolarity_WhenResolving_ThenItUsesDarkDefaults(t *testing.T) {
@@ -249,6 +251,24 @@ func TestApplyPalette_GivenOverrides_WhenApplying_ThenItUpdatesThePackageColors(
 	}
 }
 
+func TestResolvePalette_GivenActionsPopupGroupBackgroundOverride_WhenResolving_ThenItKeepsTheOverride(t *testing.T) {
+	actual := ResolvePalette(Palette{ActionsPopupGroupBackgroundHex: "#224466"})
+
+	if actual.ActionsPopupGroupBackgroundHex != "#224466" {
+		t.Fatalf("expected actions popup group background %q, actual %q", "#224466", actual.ActionsPopupGroupBackgroundHex)
+	}
+}
+
+func TestApplyPalette_GivenActionsPopupGroupBackgroundOverride_WhenApplying_ThenItUpdatesThePackageColors(t *testing.T) {
+	t.Cleanup(ResetPalette)
+
+	ApplyPalette(Palette{ActionsPopupGroupBackgroundHex: "#224466"})
+
+	if ActionsPopupGroupBackgroundHex != "#224466" {
+		t.Fatalf("expected actions popup group background %q, actual %q", "#224466", ActionsPopupGroupBackgroundHex)
+	}
+}
+
 func TestApplyPalette_GivenGenericStatusBackgroundOverrides_WhenApplying_ThenItUpdatesTheDerivedPackageColors(t *testing.T) {
 	t.Cleanup(ResetPalette)
 
@@ -333,6 +353,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.SelectedLineBackgroundHex != darkDefaultSelectedLineBackgroundHex {
 		t.Fatalf("expected selected line background %q, actual %q", darkDefaultSelectedLineBackgroundHex, actual.SelectedLineBackgroundHex)
 	}
+	if actual.ActionsPopupGroupBackgroundHex != darkDefaultActionsPopupGroupBackgroundHex {
+		t.Fatalf("expected actions popup group background %q, actual %q", darkDefaultActionsPopupGroupBackgroundHex, actual.ActionsPopupGroupBackgroundHex)
+	}
 	if actual.MarkdownHeadingHex != darkDefaultMarkdownHeadingHex {
 		t.Fatalf("expected markdown heading color %q, actual %q", darkDefaultMarkdownHeadingHex, actual.MarkdownHeadingHex)
 	}
@@ -367,6 +390,9 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.SelectedLineBackgroundHex != lightDefaultSelectedLineBackgroundHex {
 		t.Fatalf("expected selected line background %q, actual %q", lightDefaultSelectedLineBackgroundHex, actual.SelectedLineBackgroundHex)
+	}
+	if actual.ActionsPopupGroupBackgroundHex != lightDefaultActionsPopupGroupBackgroundHex {
+		t.Fatalf("expected actions popup group background %q, actual %q", lightDefaultActionsPopupGroupBackgroundHex, actual.ActionsPopupGroupBackgroundHex)
 	}
 	if actual.PullRequestReferenceHex != lightDefaultPullRequestReferenceHex {
 		t.Fatalf("expected pull request reference color %q, actual %q", lightDefaultPullRequestReferenceHex, actual.PullRequestReferenceHex)
