@@ -91,6 +91,27 @@ func (store *Store) Close() error {
 	return store.db.Close()
 }
 
+func (store *Store) Clear() error {
+	if store == nil || store.db == nil {
+		return nil
+	}
+
+	transaction, actualErr := store.db.Begin()
+	if actualErr != nil {
+		return actualErr
+	}
+	defer rollbackOnFailure(transaction)
+
+	if _, actualErr = transaction.Exec(`DELETE FROM pull_request_lists`); actualErr != nil {
+		return actualErr
+	}
+	if _, actualErr = transaction.Exec(`DELETE FROM pull_requests`); actualErr != nil {
+		return actualErr
+	}
+
+	return transaction.Commit()
+}
+
 func (store *Store) PullRequests(search appconfig.PullRequestSearch) ([]githubcli.PullRequest, bool, error) {
 	var payload string
 	actualErr := store.db.QueryRow(`

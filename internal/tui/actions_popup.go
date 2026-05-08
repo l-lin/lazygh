@@ -9,10 +9,16 @@ import (
 
 type actionsPopupAction struct {
 	id       string
+	group    string
 	title    string
 	icon     string
 	keywords []string
 	execute  func(*gocui.Gui) actionsPopupActionResult
+}
+
+func (action actionsPopupAction) withGroup(group string) actionsPopupAction {
+	action.group = strings.TrimSpace(group)
+	return action
 }
 
 func (action actionsPopupAction) label() string {

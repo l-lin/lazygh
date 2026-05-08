@@ -14,5 +14,6 @@ type persistentPullRequestCache interface {
 	PullRequestDiff(repository string, number int) (persistcache.CachedPullRequestDiff, bool, error)
 	SavePullRequestDiff(summary githubcli.PullRequest, diff githubcli.PullRequestDiff) error
 	InvalidatePullRequest(repository string, number int) error
+	Clear() error
 	Close() error
 }

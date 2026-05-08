@@ -156,13 +156,18 @@ open_command = ["open", "-a", "Firefox"]
 
 ### Actions popup
 
-Use the actions popup on a pull request when you want a mutation without typing `gh` commands by hand.
+Use the actions popup from any main view when you want a shortcut without typing `gh` commands by hand.
 
+- `lazygh` groups actions under headers such as `Pull request`, `Review`, `Navigation`, `Theme`, and `Cache`.
+- Group headers stay visible but are not selectable, because fake affordances are tacky.
+- Search matches action titles, keywords, and useful group names.
+- Pull-request-specific actions still hide themselves when the current view cannot use them.
 - `Assign PR` opens a searchable assignee picker.
 - The picker starts with the current assignees at the top, and it pins `@me` first when your login is in the list.
 - `lazygh` caches assignable users per repository for the rest of the session, so reopening the picker skips another round-trip when it can.
 - Press `enter` to toggle an assignee, then press `alt+enter` to save.
 - GitHub only allows up to 10 assignees per pull request.
+- `Clear cache` appears when persistent caching is configured. It asks for confirmation, wipes the SQLite cache, clears in-memory PR render caches, and refreshes the visible UI.
 - You still need permission to assign users in that repository.
 
 ### Story review
@@ -242,7 +247,7 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--sort", 
 
 Use scoped tables under `[keymaps]`.
 
-The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It skips `view 1`, and it updates automatically when you remap keys, which is the bare minimum for honesty.
+The active pane footer shows resolved key hints for `Help`, `Search`, and, when available, `Action`, right-aligned above the bottom border. It updates automatically when you remap keys, which is the bare minimum for honesty.
 
 For multi-key motions, configure the prefix key once. `move_selection_to_top = "g"` and `move_cursor_to_top = "g"` make `gg` go to the top. `recenter_selection = "z"` makes `zt`, `zz`, and `zb` place the selected row at the top, center, and bottom in side panes and the actions popup. In the detail pane, `toggle_inline_conversation_prefix = "z"` keeps `za` for inline conversations, `zM` and `zR` close or open every fold in the current detail context, and `zt`, `zz`, and `zb` place the cursor at the top, center, and bottom. In browser mode on view `0`, `previous_tab` and `next_tab` cycle `Description`, `Comments`, `Commits`, and `Changes`. In review mode on views `0` and `2`, those same bindings become prefix keys. With the defaults, `[[` and `]]` move between files, and `[c` and `]c` move between comments. `page_down` and `page_up` move half a page and recenter on every supported view. `full_page_down` and `full_page_up` move a full page in read-only views and pop-ups. With the defaults, that means `ctrl-d`/`ctrl-u` for half pages and `ctrl-f`/`ctrl-b` plus `PageDown`/`PageUp` for full pages. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, because breaking emacs-style editing again would be tedious.
 

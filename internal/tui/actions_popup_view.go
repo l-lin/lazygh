@@ -20,7 +20,7 @@ func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 	contentMaxY := program.layoutContentHeight(maxY)
 	totalWidth := boundedHalfWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
-	totalHeight := maxInt(actionsPopupMinHeight, len(program.currentActionsPopupActions())+2)
+	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+2)
 	if totalHeight > contentMaxY-2 {
 		totalHeight = maxInt(3, contentMaxY-2)
 	}
@@ -82,29 +82,25 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 		return
 	}
 
-	actions := program.currentActionsPopupActions()
-	filteredIndexes := program.model.ActionsPopupFilteredActionIndexes()
 	query := program.model.ActionsPopupSearchQuery()
-	if len(filteredIndexes) == 0 {
+	if len(program.model.ActionsPopupFilteredActionIndexes()) == 0 {
 		fmt.Fprintln(view, program.emptyActionsPopupMessage())
 		view.SetOrigin(0, 0)
 		view.SetCursor(0, 0)
 		return
 	}
 
-	selectedVisibleIndex := program.model.ActionsPopupSelectedVisibleIndex()
+	visibleLines := program.currentActionsPopupVisibleLines()
+	selectedRenderedLine := program.currentActionsPopupSelectedRenderedLine()
 	showSelectedLine := program.usesManualSelectedLineRendering(query)
-	for visibleIndex, index := range filteredIndexes {
-		if index < 0 || index >= len(actions) {
-			continue
-		}
-		program.renderHighlightedLine(view, actions[index].label(), query, showSelectedLine && visibleIndex == selectedVisibleIndex)
+	for visibleIndex, line := range visibleLines {
+		program.renderHighlightedLine(view, line.text, query, showSelectedLine && line.selectable && visibleIndex == selectedRenderedLine)
 	}
 
-	if selectedVisibleIndex < 0 {
-		selectedVisibleIndex = 0
+	if selectedRenderedLine < 0 {
+		selectedRenderedLine = 0
 	}
-	program.selectListLine(view, selectedVisibleIndex, len(filteredIndexes))
+	program.selectListLine(view, selectedRenderedLine, len(visibleLines))
 }
 
 func (program *Program) configureActionsPopupSearchView(view *gocui.View) {
@@ -126,6 +122,9 @@ func (program *Program) actionsPopupTitle() string {
 	}
 
 	message := strings.TrimSpace(program.actionsPopupErrorMessage)
+	if message == "" {
+		message = strings.TrimSpace(program.actionsPopupConfirmationMessage())
+	}
 	if message == "" {
 		return title
 	}

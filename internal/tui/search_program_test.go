@@ -152,7 +152,7 @@ func TestSearchFooter_GivenSubmittedDetailSearch_WhenRendering_ThenTheAppliedQue
 	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/Alpha (1 match)" {
 		t.Fatalf("expected detail footer %q, actual %q", "/Alpha (1 match)", actual)
 	}
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)

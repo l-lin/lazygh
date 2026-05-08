@@ -12,14 +12,14 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpensItOnlyInPullRequestContextsAndThePopupSupportsSearchNavigationAndClose(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpensItFromEveryMainViewAndThePopupSupportsSearchNavigationAndClose(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'a', handler: subject.openActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'a', handler: subject.openActionsPopup})
-	then_bindingDoesNotExist(t, actual, viewUserName, 'a')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: '/', handler: subject.focusActionsPopupSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'j', handler: subject.moveActionsPopupSelectionDown})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyArrowDown, handler: subject.moveActionsPopupSelectionDown})
@@ -34,7 +34,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyTab, handler: subject.focusActionsPopupList})
 }
 
-func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedPullRequestActionsAndTakesFocus(t *testing.T) {
+func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRequestReviewAndThemeActionsAndTakesFocus(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -52,19 +52,22 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"Pull request",
 		actionsPopupLabel(actionsPopupStartReviewIcon, "Start review"),
 		actionsPopupLabel(actionsPopupReviewStoryIcon, reviewStoryActionTitle),
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
-		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
-		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
-		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
-		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
 		actionsPopupLabel(actionsPopupReviewPullRequestURLIcon, reviewPullRequestURLEditorTitle),
+		"Review",
+		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
+		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
+		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
+		"Theme",
+		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 	})
 	if strings.Contains(popupView.Buffer(), "13 of 13 actions") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "13 of 13 actions", popupView.Buffer())
@@ -72,14 +75,19 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsAllRequestedP
 	if popupView.Footer != "" {
 		t.Fatalf("expected popup footer to stay empty without a search query, actual %q", popupView.Footer)
 	}
+	_, actualCursorY := popupView.Cursor()
+	if actualCursorY != 1 {
+		t.Fatalf("expected the first selectable action to start below the header, actual cursor row %d", actualCursorY)
+	}
 
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
 }
 
-func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItDoesNothing(t *testing.T) {
+func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalActionsAndTakesFocus(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
+	subject.pullRequestCache = &fakePersistentPullRequestCache{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -89,8 +97,15 @@ func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItDoesNothing(t *
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewDetailName)
-	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"Theme",
+		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
+		"Cache",
+		actionsPopupLabel(iconDelete, "Clear cache"),
+	})
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
 }
 
@@ -233,8 +248,8 @@ func TestActionsPopup_GivenSearchQuery_WhenRendering_ThenTheMatchUsesAReadableTh
 		}
 	}
 
-	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, "theme", given_themeColorHex(t, theme.BackgroundHex), "search match readable foreground")
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewActionsPopupName, 0, "theme", given_themeColorHex(t, theme.SearchHighlightHex), "search match background")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 1, "theme", given_themeColorHex(t, theme.BackgroundHex), "search match readable foreground")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewActionsPopupName, 1, "theme", given_themeColorHex(t, theme.SearchHighlightHex), "search match background")
 }
 
 func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenThePendingReview_ThenItKeepsThePopupOpenAndShowsTheFailure(t *testing.T) {
@@ -291,11 +306,11 @@ func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeeps
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 0, "Approve")
-	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 0, "Review: ")
-	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 0, "Approve")
-	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 0, "Approve")
-	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 0, "Review: ")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, 1, "Approve")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewActionsPopupName, 1, "Review: ")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewActionsPopupName, 1, "Approve")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 1, "Approve")
+	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, 1, "Review: ")
 }
 
 func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSearchingWithoutExecutingTheAction(t *testing.T) {
@@ -567,8 +582,8 @@ func TestHelpPopup_GivenPullRequestContext_WhenTogglingHelp_ThenItListsTheAction
 
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
-	if !strings.Contains(helpView.Buffer(), "PR actions") {
-		t.Fatalf("expected help buffer to contain %q, actual %q", "PR actions", helpView.Buffer())
+	if !strings.Contains(helpView.Buffer(), "Actions") {
+		t.Fatalf("expected help buffer to contain %q, actual %q", "Actions", helpView.Buffer())
 	}
 }
 

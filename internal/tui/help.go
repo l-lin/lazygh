@@ -86,7 +86,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				program.reviewInlineCommentHelpEntry(),
 				{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse conversation"},
 				{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
-				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Review actions"},
+				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Actions"},
 				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
@@ -113,7 +113,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + program.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
 				program.pullRequestYankHelpEntry(keymapScopePullRequests),
 				program.pullRequestCommentHelpEntry(keymapScopePullRequests),
-				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Review actions"},
+				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},
 				{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open diff"},
 				{Key: "<esc>/q", Description: "Exit review mode"},
 			}
@@ -122,6 +122,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				program.pullRequestYankHelpEntry(keymapScopeUser),
 				program.pullRequestCommentHelpEntry(keymapScopeUser),
+				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}), Description: "Actions"},
 				{Key: program.helpKeysOrFallback("0", keybindingActionID{scope: keymapScopeSide, action: "focus_detail_view"}), Description: "Focus diff"},
 				{Key: "<esc>/q", Description: "Exit review mode"},
 			}
@@ -148,12 +149,12 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search detail"},
 			{Key: "<esc>/q", Description: "Exit visual / return"},
 		}
+		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Actions"})
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries,
 				program.pullRequestCommentHelpEntry(keymapScopeDetail),
 				helpEntry{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse section"},
 				helpEntry{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
-				helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "PR actions"},
 				helpEntry{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeDetail, action: "previous_tab"}), Description: "Previous detail tab"},
 				helpEntry{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeDetail, action: "next_tab"}), Description: "Next detail tab"},
 			)
@@ -173,7 +174,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search pull requests"},
 			program.pullRequestYankHelpEntry(keymapScopePullRequests),
 			program.pullRequestCommentHelpEntry(keymapScopePullRequests),
-			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "PR actions"},
+			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},
 			{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopePullRequests, action: "previous_tab"}), Description: "Previous tab"},
 			{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopePullRequests, action: "next_tab"}), Description: "Next tab"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open detail"},
@@ -190,6 +191,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Resize panes"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search users"},
+			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}), Description: "Actions"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeUser, action: "open_detail"}), Description: "Open detail"},
 		}
 	}

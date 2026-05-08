@@ -88,7 +88,7 @@ func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZT_ThenItPlace
 
 	actualView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewPlacesSelectionAtTheTopOfTheViewport(t, actualView, targetIndex, len(subject.currentActionsPopupActions()))
+	then_listViewPlacesSelectionAtTheTopOfTheViewport(t, actualView, targetIndex, subject.currentActionsPopupRenderedLineCount())
 }
 
 func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZZ_ThenItPlacesTheSelectionAtTheCenterOfThePopup(t *testing.T) {
@@ -100,7 +100,7 @@ func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZZ_ThenItPlace
 
 	actualView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewPlacesSelectionAtTheCenterOfTheViewport(t, actualView, targetIndex, len(subject.currentActionsPopupActions()))
+	then_listViewPlacesSelectionAtTheCenterOfTheViewport(t, actualView, targetIndex, subject.currentActionsPopupRenderedLineCount())
 }
 
 func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZB_ThenItPlacesTheSelectionAtTheBottomOfThePopup(t *testing.T) {
@@ -112,7 +112,7 @@ func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZB_ThenItPlace
 
 	actualView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewPlacesSelectionAtTheBottomOfTheViewport(t, actualView, targetIndex, len(subject.currentActionsPopupActions()))
+	then_listViewPlacesSelectionAtTheBottomOfTheViewport(t, actualView, targetIndex, subject.currentActionsPopupRenderedLineCount())
 }
 
 func TestViewportPlacement_GivenARemappedSidePrefix_WhenPressingXTXXAndXB_ThenItUsesTheRemappedPrefixForTopCenterAndBottomPlacement(t *testing.T) {
@@ -229,18 +229,18 @@ func given_actionsPopupPlacementScenario(t *testing.T, subject *Program) (*gocui
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	targetIndex := popupView.InnerHeight() + 1
-	if targetIndex >= len(subject.currentActionsPopupActions()) {
-		targetIndex = len(subject.currentActionsPopupActions()) - 1
+	targetActionIndex := popupView.InnerHeight() + 1
+	if targetActionIndex >= len(subject.currentActionsPopupActions()) {
+		targetActionIndex = len(subject.currentActionsPopupActions()) - 1
 	}
-	for range targetIndex {
+	for range targetActionIndex {
 		actualErr = subject.moveActionsPopupSelectionDown(gui, popupView)
 		then_noError(t, actualErr)
 	}
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 
-	return gui, popupView, targetIndex
+	return gui, popupView, subject.currentActionsPopupSelectedRenderedLine()
 }
 
 func when_pressingKeySequence(t *testing.T, subject *Program, gui *gocui.Gui, viewName string, view *gocui.View, keys ...any) {

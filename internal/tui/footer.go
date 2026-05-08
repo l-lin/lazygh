@@ -85,7 +85,7 @@ func (program *Program) statusLineKeyHintsText() string {
 }
 
 func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {
-	if focus == FocusUserView || focus != program.model.Focus() || !program.model.PaneVisible(focus) {
+	if focus != program.model.Focus() || !program.model.PaneVisible(focus) {
 		return false
 	}
 	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
@@ -157,6 +157,8 @@ func (program *Program) paneFooterActionsHint(focus Focus) string {
 
 func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {
 	switch focus {
+	case FocusUserView:
+		return keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}, true
 	case FocusPullRequestsView:
 		return keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}, true
 	case FocusDetailView:

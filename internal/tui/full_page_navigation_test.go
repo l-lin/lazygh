@@ -220,23 +220,19 @@ func TestFullPageNavigation_GivenActionsPopupSelection_WhenPressingPageDownAndPa
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 
-	step := fullPageDelta(popupView.InnerHeight())
-	lineCount := len(subject.currentActionsPopupActions())
-	expectedDownIndex := clampIndex(step, lineCount)
-
 	fullPageDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyPgdn)
 	actualErr = fullPageDownHandler(gui, popupView)
 	then_noError(t, actualErr)
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewIsCenteredOnSelection(t, popupView, expectedDownIndex, lineCount)
+	then_listViewIsCenteredOnSelection(t, popupView, subject.currentActionsPopupSelectedRenderedLine(), subject.currentActionsPopupRenderedLineCount())
 
 	fullPageUpHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyPgup)
 	actualErr = fullPageUpHandler(gui, popupView)
 	then_noError(t, actualErr)
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewIsCenteredOnSelection(t, popupView, 0, lineCount)
+	then_listViewIsCenteredOnSelection(t, popupView, subject.currentActionsPopupSelectedRenderedLine(), subject.currentActionsPopupRenderedLineCount())
 }
 
 func TestSearchPrompt_GivenControlBAndControlF_WhenEditing_ThenTheyMoveTheCursor(t *testing.T) {

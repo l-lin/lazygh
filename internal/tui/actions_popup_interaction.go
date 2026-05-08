@@ -6,6 +6,10 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
+func (program *Program) actionsPopupSelectionLineState() (int, int) {
+	return program.currentActionsPopupSelectedRenderedLine(), program.currentActionsPopupRenderedLineCount()
+}
+
 func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	if program.model.Focus() == FocusDetailView && program.detailViewState.consumeInlineConversationTogglePrefix() {
 		return program.toggleInlineConversationVisibility(gui, nil)
@@ -13,6 +17,7 @@ func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 
 	program.clearPendingSelectionPrefix()
 	program.detailViewState.clearPendingPrefix()
+	program.clearActionsPopupPendingConfirmation()
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}
@@ -40,6 +45,7 @@ func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
 	program.model.CloseActionsPopup()
 	program.actionsPopupSearchEditor = nil
+	program.clearActionsPopupPendingConfirmation()
 	program.actionsPopupErrorMessage = ""
 	program.reactionPicker = nil
 	program.themePicker = nil
@@ -59,6 +65,7 @@ func (program *Program) focusActionsPopupSearch(gui *gocui.Gui, _ *gocui.View) e
 	}
 
 	program.model.ClearPaneSearchQueries()
+	program.clearActionsPopupPendingConfirmation()
 	program.actionsPopupSearchEditor = newLineEditor("")
 	program.updateActionsPopupSearch("")
 	program.model.FocusActionsPopupSearch()
@@ -76,6 +83,7 @@ func (program *Program) focusActionsPopupList(gui *gocui.Gui, _ *gocui.View) err
 		return nil
 	}
 
+	program.clearActionsPopupPendingConfirmation()
 	program.model.BlurActionsPopupSearch()
 	if gui == nil {
 		return nil
@@ -90,6 +98,7 @@ func (program *Program) moveActionsPopupSelectionDown(gui *gocui.Gui, _ *gocui.V
 		return nil
 	}
 
+	program.clearActionsPopupPendingConfirmation()
 	program.model.MoveActionsPopupSelectionDown()
 	program.actionsPopupErrorMessage = ""
 	if gui == nil {
@@ -105,6 +114,7 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 		return nil
 	}
 
+	program.clearActionsPopupPendingConfirmation()
 	program.model.MoveActionsPopupSelectionUp()
 	program.actionsPopupErrorMessage = ""
 	if gui == nil {
@@ -121,9 +131,11 @@ func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) e
 	}
 
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
+	program.clearActionsPopupPendingConfirmation()
 	program.model.PageActionsPopupDown(viewPageSize(actualView))
 	program.actionsPopupErrorMessage = ""
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
 
 func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
@@ -133,9 +145,11 @@ func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) err
 	}
 
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
+	program.clearActionsPopupPendingConfirmation()
 	program.model.PageActionsPopupUp(viewPageSize(actualView))
 	program.actionsPopupErrorMessage = ""
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
 
 func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
@@ -145,9 +159,11 @@ func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.Vie
 	}
 
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
+	program.clearActionsPopupPendingConfirmation()
 	program.model.FullPageActionsPopupDown(viewPageSize(actualView))
 	program.actionsPopupErrorMessage = ""
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
 
 func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
@@ -157,9 +173,11 @@ func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View)
 	}
 
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
+	program.clearActionsPopupPendingConfirmation()
 	program.model.FullPageActionsPopupUp(viewPageSize(actualView))
 	program.actionsPopupErrorMessage = ""
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
 
 func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocui.View) error {
@@ -170,7 +188,8 @@ func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocu
 
 	target := actionsPopupViewportPlacementTarget()
 	return program.armOrHandleSelectionKeySequence(target, func() error {
-		return program.recenterListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()))
+		selectedLine, lineCount := program.actionsPopupSelectionLineState()
+		return program.recenterListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount)
 	})
 }
 
@@ -184,7 +203,8 @@ func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, v
 		return nil
 	}
 
-	return program.placeListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()), viewportPlacementTop)
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, viewportPlacementTop)
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
@@ -197,7 +217,8 @@ func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui
 		return nil
 	}
 
-	return program.placeListSelection(gui, view, viewActionsPopupName, program.model.ActionsPopupSelectedVisibleIndex(), len(program.model.ActionsPopupFilteredActionIndexes()), viewportPlacementBottom)
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, viewportPlacementBottom)
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
@@ -208,6 +229,7 @@ func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.
 
 	target := keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "move_selection_to_top")
 	return program.armOrHandleSelectionKeySequence(target, func() error {
+		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToTop()
 		program.actionsPopupErrorMessage = ""
 		if gui == nil {
@@ -224,6 +246,7 @@ func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *goc
 		return nil
 	}
 
+	program.clearActionsPopupPendingConfirmation()
 	program.model.MoveActionsPopupSelectionToBottom()
 	program.actionsPopupErrorMessage = ""
 	if gui == nil {
@@ -303,6 +326,7 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 		return false
 	}
 
+	program.clearActionsPopupPendingConfirmation()
 	program.updateActionsPopupSearch(program.actionsPopupSearchEditor.Text())
 	program.actionsPopupErrorMessage = ""
 	if program.gui != nil {

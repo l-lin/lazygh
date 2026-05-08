@@ -23,6 +23,20 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	if program.pullRequestBuildRunPopupVisible() {
 		return nil
 	}
+
+	actions := program.currentContextualActionsPopupActions()
+	return append(actions, program.currentGlobalActionsPopupActions()...)
+}
+
+func (program *Program) currentGlobalActionsPopupActions() []actionsPopupAction {
+	actions := actionsPopupGrouped(actionsPopupGroupTheme, program.changeThemeActionsPopupAction())
+	if program.pullRequestCache != nil {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupCache, program.clearCacheActionsPopupAction())...)
+	}
+	return actions
+}
+
+func (program *Program) currentContextualActionsPopupActions() []actionsPopupAction {
 	if !program.isPullRequestContext() {
 		return nil
 	}
@@ -30,60 +44,76 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	actions := []actionsPopupAction{}
 	if program.reviewSession.active {
 		actions = append(actions,
-			program.yankPullRequestURLActionsPopupAction(),
-			program.openPullRequestInBrowserActionsPopupAction(),
-			program.refreshPullRequestAction(),
-			program.changeThemeActionsPopupAction(),
-			program.submitPendingReviewApprovalAction(),
-			program.submitPendingReviewCommentAction(),
-			program.submitPendingReviewRequestChangesAction(),
+			actionsPopupGrouped(actionsPopupGroupPullRequest,
+				program.yankPullRequestURLActionsPopupAction(),
+				program.openPullRequestInBrowserActionsPopupAction(),
+				program.refreshPullRequestAction(),
+			)...,
 		)
 		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
-			actions = append(actions, assignAction)
+			actions = append(actions, assignAction.withGroup(actionsPopupGroupPullRequest))
 		}
+		actions = append(actions,
+			actionsPopupGrouped(actionsPopupGroupReview,
+				program.submitPendingReviewApprovalAction(),
+				program.submitPendingReviewCommentAction(),
+				program.submitPendingReviewRequestChangesAction(),
+			)...,
+		)
 		if inlineCommentAction, ok := program.currentReviewInlineCommentAction(); ok {
-			actions = append(actions, inlineCommentAction)
+			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
 		}
 	} else {
 		actions = append(actions,
-			program.startReviewAction(),
-			program.reviewStoryAction(),
-			program.yankPullRequestURLActionsPopupAction(),
-			program.openPullRequestInBrowserActionsPopupAction(),
-			program.refreshPullRequestAction(),
-			program.changeThemeActionsPopupAction(),
-			program.reviewApproveAction(),
-			program.reviewCommentAction(),
-			program.reviewRequestChangesAction(),
-			program.commendOnPrAction(),
+			actionsPopupGrouped(actionsPopupGroupPullRequest,
+				program.startReviewAction(),
+				program.reviewStoryAction(),
+				program.yankPullRequestURLActionsPopupAction(),
+				program.openPullRequestInBrowserActionsPopupAction(),
+				program.refreshPullRequestAction(),
+				program.commendOnPrAction(),
+			)...,
 		)
 		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
-			actions = append(actions, assignAction)
+			actions = append(actions, assignAction.withGroup(actionsPopupGroupPullRequest))
 		}
 		actions = append(actions,
-			program.editPullRequestTitleAction(),
-			program.editPullRequestDescriptionAction(),
-			program.reviewPullRequestURLActionsPopupAction(),
+			actionsPopupGrouped(actionsPopupGroupPullRequest,
+				program.editPullRequestTitleAction(),
+				program.editPullRequestDescriptionAction(),
+				program.reviewPullRequestURLActionsPopupAction(),
+			)...,
+		)
+		actions = append(actions,
+			actionsPopupGrouped(actionsPopupGroupReview,
+				program.reviewApproveAction(),
+				program.reviewCommentAction(),
+				program.reviewRequestChangesAction(),
+			)...,
 		)
 	}
 	if program.model.Focus() == FocusDetailView && program.detailCursorHasBuildLink() {
 		actions = append(actions,
-			program.pullRequestBuildRunActionsPopupAction(),
-			program.pullRequestBuildRunLogsActionsPopupAction(),
+			actionsPopupGrouped(actionsPopupGroupNavigation,
+				program.pullRequestBuildRunActionsPopupAction(),
+				program.pullRequestBuildRunLogsActionsPopupAction(),
+			)...,
 		)
 	}
 	if program.model.Focus() == FocusDetailView && program.detailCursorHasLink() {
-		actions = append(actions, program.openLinkUnderCursorActionsPopupAction())
+		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
 	}
 	if reactionAction, ok := program.currentReactionAction(); ok {
-		actions = append(actions, reactionAction)
+		actions = append(actions, reactionAction.withGroup(actionsPopupGroupReview))
 	}
 	if replyAction, ok := program.currentInlineCommentReplyAction(); ok {
-		actions = append(actions, replyAction)
+		actions = append(actions, replyAction.withGroup(actionsPopupGroupReview))
 	}
-	actions = append(actions, program.currentInlineCommentEditActions()...)
+	for _, action := range program.currentInlineCommentEditActions() {
+		actions = append(actions, action.withGroup(actionsPopupGroupReview))
+	}
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
-		actions = append(actions, inlineCommentAction)
+		actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
 	}
 	return actions
 }
@@ -138,6 +168,9 @@ func actionsPopupActionMatchesQuery(action actionsPopupAction, query string) boo
 		return true
 	}
 	if strings.Contains(strings.ToLower(action.title), query) {
+		return true
+	}
+	if strings.Contains(strings.ToLower(strings.TrimSpace(action.group)), query) {
 		return true
 	}
 	for _, keyword := range action.keywords {

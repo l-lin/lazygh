@@ -462,6 +462,7 @@ type fakePersistentPullRequestCache struct {
 	savedDetails                 map[string]persistcache.CachedPullRequestDetail
 	savedDiffs                   map[string]persistcache.CachedPullRequestDiff
 	invalidatedPullRequests      []string
+	clearCalls                   int
 }
 
 func (cache *fakePersistentPullRequestCache) PullRequests(search appconfig.PullRequestSearch) ([]githubcli.PullRequest, bool, error) {
@@ -508,6 +509,14 @@ func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubc
 
 func (cache *fakePersistentPullRequestCache) InvalidatePullRequest(repository string, number int) error {
 	cache.invalidatedPullRequests = append(cache.invalidatedPullRequests, strings.TrimSpace(repository)+"#"+itoa(number))
+	return nil
+}
+
+func (cache *fakePersistentPullRequestCache) Clear() error {
+	cache.clearCalls++
+	cache.pullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
+	cache.details = map[string]persistcache.CachedPullRequestDetail{}
+	cache.diffs = map[string]persistcache.CachedPullRequestDiff{}
 	return nil
 }
 

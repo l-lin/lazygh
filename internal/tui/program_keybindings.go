@@ -400,6 +400,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 
 		keybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail, namedBinding(gocui.KeyEnter, "<enter>")),
 		keybindingActionFor(keymapScopeUser, "copy_pull_request_url", []string{viewUserName}, program.copyPullRequestURL, runeBinding('y')),
+		keybindingActionFor(keymapScopeUser, "open_actions_popup", []string{viewUserName}, program.openActionsPopup, runeBinding('a')),
 
 		keybindingActionFor(keymapScopePullRequests, "previous_tab", []string{viewPullRequestsName}, program.previousPullRequestTab, runeBinding('[')),
 		keybindingActionFor(keymapScopePullRequests, "next_tab", []string{viewPullRequestsName}, program.nextPullRequestTab, runeBinding(']')),

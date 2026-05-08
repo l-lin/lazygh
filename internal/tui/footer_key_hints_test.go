@@ -58,7 +58,7 @@ func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShows
 	then_statusLineKeyHintsAreRightAligned(t, gui, "/: Search, Enter: Toggle, Alt+Enter: Submit")
 }
 
-func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterOrKeyHints(t *testing.T) {
+func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterAndTheResolvedKeyHints(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -68,11 +68,11 @@ func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenIt
 	then_noError(t, actualErr)
 
 	then_viewDoesNotExist(t, gui, viewUserFooterName)
-	then_viewDoesNotExist(t, gui, viewStatusLineKeyHintsName)
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 	then_statusLineIs(t, gui, "")
 }
 
-func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItShowsOnlyTheSearchSummary(t *testing.T) {
+func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItShowsTheSearchSummaryAndKeyHints(t *testing.T) {
 	model := given_model()
 	model.StartSearch()
 	model.UpdateSearchDraft("2")
@@ -86,7 +86,7 @@ func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItSh
 	then_noError(t, actualErr)
 
 	then_footerTextIs(t, gui, viewUserFooterName, "/2 (1 match)")
-	then_viewDoesNotExist(t, gui, viewStatusLineKeyHintsName)
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 	then_statusLineIs(t, gui, "")
 }
 

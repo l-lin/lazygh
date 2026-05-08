@@ -122,7 +122,7 @@ func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_T
 	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)" {
 		t.Fatalf("expected detail footer %q, actual %q", "/detail 1 (1 match)", actual)
 	}
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 
 	actualErr = subject.focusUserView(gui, nil)
 	then_noError(t, actualErr)
@@ -149,7 +149,7 @@ func TestPaneResize_GivenDetailFocusWithAnAppliedSearch_WhenTogglingFullscreen_T
 	if actual := strings.TrimSpace(detailFooterView.Buffer()); actual != "/detail 1 (1 match)" {
 		t.Fatalf("expected detail footer %q after restoring the layout, actual %q", "/detail 1 (1 match)", actual)
 	}
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 }
 
 func TestPaneResize_GivenUserFocusWithAnAppliedSearch_WhenCyclingMinusThroughFullscreenAndBack_ThenTheDefaultLayoutReturnsExactly(t *testing.T) {

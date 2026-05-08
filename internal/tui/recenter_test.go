@@ -137,8 +137,9 @@ func TestRecenter_GivenActionsPopupSelection_WhenPressingZZ_ThenTheSelectionMove
 
 	_, actualOriginY := popupView.Origin()
 	_, actualCursorY := popupView.Cursor()
-	expectedOriginY := centeredViewportOrigin(targetIndex, popupView.InnerHeight(), len(subject.currentActionsPopupActions()))
-	expectedCursorY := targetIndex - expectedOriginY
+	expectedSelectedLine := subject.currentActionsPopupSelectedRenderedLine()
+	expectedOriginY := centeredViewportOrigin(expectedSelectedLine, popupView.InnerHeight(), subject.currentActionsPopupRenderedLineCount())
+	expectedCursorY := expectedSelectedLine - expectedOriginY
 	if actualOriginY != expectedOriginY {
 		t.Fatalf("expected actions popup origin y %d, actual %d", expectedOriginY, actualOriginY)
 	}
@@ -242,7 +243,6 @@ func TestPaging_GivenActionsPopupSelection_WhenPressingControlDAndControlU_ThenI
 	then_noError(t, actualErr)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	step := maxInt(1, popupView.InnerHeight()/2)
 	initialIndex := 1
 	for range initialIndex {
 		actualErr = subject.moveActionsPopupSelectionDown(gui, popupView)
@@ -255,13 +255,13 @@ func TestPaging_GivenActionsPopupSelection_WhenPressingControlDAndControlU_ThenI
 	then_noError(t, actualErr)
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewIsCenteredOnSelection(t, popupView, initialIndex+step, len(subject.currentActionsPopupActions()))
+	then_listViewIsCenteredOnSelection(t, popupView, subject.currentActionsPopupSelectedRenderedLine(), subject.currentActionsPopupRenderedLineCount())
 
 	actualErr = subject.pageActionsPopupUp(gui, popupView)
 	then_noError(t, actualErr)
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_listViewIsCenteredOnSelection(t, popupView, initialIndex, len(subject.currentActionsPopupActions()))
+	then_listViewIsCenteredOnSelection(t, popupView, subject.currentActionsPopupSelectedRenderedLine(), subject.currentActionsPopupRenderedLineCount())
 }
 
 func then_listViewIsCenteredOnSelection(t *testing.T, view *gocui.View, expectedSelectedIndex int, lineCount int) {

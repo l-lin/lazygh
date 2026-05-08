@@ -210,7 +210,7 @@ func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_Th
 	}
 
 	then_statusLineContains(t, gui, detailYankSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
@@ -251,7 +251,7 @@ func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenIt
 	}
 
 	then_statusLineContains(t, gui, detailYankSuccessMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
@@ -289,7 +289,7 @@ func TestCopyPullRequestURL_GivenDetailVisualModeAndClipboardFailure_WhenYanking
 	}
 
 	then_statusLineContains(t, gui, detailYankFailureMessage)
-	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search")
+	then_statusLineKeyHintsAre(t, gui, "?: Help, /: Search, a: Action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
