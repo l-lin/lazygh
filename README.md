@@ -194,9 +194,9 @@ command = ["search", "prs", "--search", "label:escalated state:open", "--sort", 
 
 Browser mode now has a third side pane for notifications. Browser mode cycles across side views `1`, `2`, and `3`. `tab`, `shift+tab`, `h`, and `l` move between Connected user, Pull Requests, and Notifications. Press `3` to jump straight to Notifications.
 
-When view 3 is inactive, it stays at three lines. When view 3 is active, it expands and view 2 collapses to three lines. Pull request notifications reuse the browser PR detail with overview and tabs. Issue notifications open an issue document. Release notifications open a release document.
+When view 3 is inactive, it stays at three lines. When view 3 is active, it expands and view 2 collapses to three lines. If you jump from notifications into view 0, view 3 keeps that expanded height. Pull request notifications reuse the browser PR detail with overview and tabs. Issue notifications open an issue document. Release notifications open a release document.
 
-Notification loading uses `gh api /notifications?all=true`. GitHub returns unread and read threads there, but done threads stay excluded from the list. Press `r` in view `3` to mark the selected notification as read, press `d` to mark it as done, and use `a` for bulk read, bulk done, and browser-opening actions. In this MVP, `r` is read-only: it marks a notification as read, but it does not toggle anything back to unread.
+Notification loading uses `gh api /notifications?all=true`. GitHub returns unread and read threads there, but done threads stay excluded from the list. Press `r` in view `3` to mark the selected notification as read, press `d` to mark it as done, and use `a` for bulk read, bulk done, and browser-opening actions. The UI updates optimistically, so read actions flip the icon immediately, done actions remove rows immediately, and bulk actions do the same. In this MVP, `r` is read-only: it marks a notification as read, but it does not toggle anything back to unread.
 
 If GitHub rejects notification mutations because of the active credential type or missing scopes, re-authenticate `gh` with a user credential that supports notification endpoints. A personal access token (classic) with the `notifications` scope and `repo` access for private repositories is the safest option.
 
@@ -217,7 +217,7 @@ If GitHub rejects notification mutations because of the active credential type o
 
 `Assign PR` opens a searchable assignee picker. Press `enter` to toggle an assignee, then press `alt+enter` to save. GitHub only allows up to 10 assignees per pull request, and your account still needs permission to assign users in that repository.
 
-In notification context, the actions popup offers `Mark notification as read`, `Mark notification as done`, `Mark all notifications as read`, `Mark all notifications as done`, and `Open notification in browser`.
+In the notification list, the actions popup offers `Mark notification as read`, `Mark notification as done`, `Mark all notifications as read`, `Mark all notifications as done`, and `Open notification in browser`. In view 0 on a pull request notification, the popup switches to the usual pull request actions, including `Start review`, `Review PR as story`, and `Yank URL to clipboard`.
 
 ### Keymap overrides
 

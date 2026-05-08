@@ -52,7 +52,7 @@ func (program *Program) startReviewAction() actionsPopupAction {
 }
 
 func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActionResult {
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.currentPullRequestSummary()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}

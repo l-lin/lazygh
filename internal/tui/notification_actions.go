@@ -50,7 +50,11 @@ func (program *Program) isNotificationContext() bool {
 	case FocusNotificationsView:
 		return true
 	case FocusDetailView:
-		return program.model.currentSideFocus() == FocusNotificationsView
+		if program.model.currentSideFocus() != FocusNotificationsView {
+			return false
+		}
+		_, ok := program.selectedPullRequestSummaryForDetail()
+		return !ok
 	default:
 		return false
 	}

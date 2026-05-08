@@ -14,13 +14,18 @@ type pullRequestActionTarget struct {
 }
 
 func (program *Program) currentPullRequestSummary() (githubcli.PullRequest, bool) {
-	if !program.isPullRequestContext() {
-		return githubcli.PullRequest{}, false
-	}
 	if program.reviewSession.active {
 		return program.reviewSession.summary, true
 	}
-	return program.model.SelectedPullRequestSummary()
+
+	switch program.model.Focus() {
+	case FocusPullRequestsView:
+		return program.model.SelectedPullRequestSummary()
+	case FocusDetailView:
+		return program.selectedPullRequestSummaryForDetail()
+	default:
+		return githubcli.PullRequest{}, false
+	}
 }
 
 func (program *Program) selectedPullRequestActionTarget() (pullRequestActionTarget, bool) {

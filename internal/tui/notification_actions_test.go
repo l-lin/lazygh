@@ -197,6 +197,70 @@ func TestActionsPopup_GivenNotificationContext_WhenOpening_ThenItShowsOnlyNotifi
 	}
 }
 
+func TestActionsPopup_GivenPullRequestNotificationDetailFocus_WhenOpening_ThenItShowsTheUsualPullRequestActions(t *testing.T) {
+	notifications := []githubcli.Notification{given_notificationValue(t, given_pullRequestNotificationRow())}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), notifications...)}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	for _, expected := range []string{
+		"Start review",
+		"Review PR as story",
+		"Yank URL to clipboard",
+		"Open PR in browser",
+		"Refresh current PR information",
+	} {
+		if !strings.Contains(popupView.Buffer(), expected) {
+			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
+		}
+	}
+	for _, hidden := range []string{"Mark notification as read", "Mark notification as done", "Mark all notifications as read", "Mark all notifications as done"} {
+		if strings.Contains(popupView.Buffer(), hidden) {
+			t.Fatalf("expected popup buffer to hide %q in pull request notification detail, actual %q", hidden, popupView.Buffer())
+		}
+	}
+}
+
+func TestActionsPopup_GivenPullRequestNotificationDetailFocus_WhenExecutingStartReview_ThenItStartsReviewMode(t *testing.T) {
+	notifications := []githubcli.Notification{given_notificationValue(t, given_pullRequestNotificationRow())}
+	loader := &fakePullRequestDetailLoader{
+		notifications: append([]githubcli.Notification(nil), notifications...),
+		startReviewID: "PRR_pending",
+	}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	if !subject.reviewSession.active {
+		t.Fatal("expected review mode to become active")
+	}
+	if subject.reviewSession.pendingReviewID != "PRR_pending" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.reviewSession.pendingReviewID)
+	}
+	if subject.reviewSession.summary.Number != 42 {
+		t.Fatalf("expected review summary number %d, actual %d", 42, subject.reviewSession.summary.Number)
+	}
+}
+
 func TestActionsPopup_GivenNotificationReadAction_WhenExecuting_ThenItRefreshesTheNotificationRowState(t *testing.T) {
 	notifications := []githubcli.Notification{
 		given_notificationValue(t, given_pullRequestNotificationRow()),

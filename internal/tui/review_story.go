@@ -46,7 +46,7 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 		return program.storyReviewStatusLineErrorResult(errors.New(storyReviewConfigureAgentMessage))
 	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.currentPullRequestSummary()
 	if !ok {
 		return program.storyReviewStatusLineErrorResult(errActionsPopupActionUnavailable)
 	}
