@@ -1,8 +1,10 @@
 package githubcli
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -134,6 +136,119 @@ func TestGetReleaseDetail_GivenARealFixture_WhenFetching_ThenItReturnsTheNormali
 	}
 	if !actual.PreRelease {
 		t.Fatal("expected the release to be a prerelease")
+	}
+}
+
+func TestMarkNotificationRead_GivenThreadID_WhenMarking_ThenItCallsTheThreadReadEndpoint(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.MarkNotificationRead("1001")
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"api", "/notifications/threads/1001", "--method", "PATCH"})
+}
+
+func TestMarkNotificationDone_GivenThreadID_WhenMarking_ThenItCallsTheThreadDoneEndpoint(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.MarkNotificationDone("1001")
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"api", "/notifications/threads/1001", "--method", "DELETE"})
+}
+
+func TestMarkAllNotificationsRead_GivenAcceptedResponse_WhenMarking_ThenItReturnsAcceptedStatus(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte(strings.Join([]string{
+		"HTTP/2.0 202 Accepted",
+		"X-Poll-Interval: 60",
+		"",
+		`{"message":"Notifications are being marked as read in the background."}`,
+	}, "\n"))}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.MarkAllNotificationsRead()
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"api", "/notifications", "--method", "PUT", "--include"})
+	if !actual.Accepted {
+		t.Fatal("expected the bulk read response to be marked as accepted")
+	}
+}
+
+func TestMarkAllNotificationsDone_GivenLoadedNotifications_WhenMarking_ThenItDeletesEachLoadedThread(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewClientWithRunner(runner)
+	notifications := []Notification{{ID: "1001"}, {ID: "1002"}, {ID: ""}, {ID: "1003"}}
+
+	actualCount, actualErr := subject.MarkAllNotificationsDone(notifications)
+
+	then_noError(t, actualErr)
+	if actualCount != 3 {
+		t.Fatalf("expected marked count %d, actual %d", 3, actualCount)
+	}
+	then_commandsAre(t, runner, []fakeCommandCall{
+		{name: "gh", args: []string{"api", "/notifications/threads/1001", "--method", "DELETE"}, stdin: nil},
+		{name: "gh", args: []string{"api", "/notifications/threads/1002", "--method", "DELETE"}, stdin: nil},
+		{name: "gh", args: []string{"api", "/notifications/threads/1003", "--method", "DELETE"}, stdin: nil},
+	})
+}
+
+func TestMarkNotificationRead_GivenUnsupportedCredentialError_WhenMarking_ThenItReturnsActionableGuidance(t *testing.T) {
+	runner := &fakeRunner{stderr: []byte("Resource not accessible by personal access token"), err: errors.New("exit status 1")}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.MarkNotificationRead("1001")
+
+	if !errors.Is(actualErr, ErrNotificationEndpointAuthRefused) {
+		t.Fatalf("expected error %v, actual %v", ErrNotificationEndpointAuthRefused, actualErr)
+	}
+	for _, expected := range []string{"personal access token (classic)", "notifications", "repo"} {
+		if !strings.Contains(actualErr.Error(), expected) {
+			t.Fatalf("expected actionable notification error to mention %q, actual %q", expected, actualErr.Error())
+		}
+	}
+}
+
+func TestNotificationIncludedHTTPStatus_GivenIncludedResponse_WhenParsing_ThenItReturnsTheStatusCode(t *testing.T) {
+	actual := notificationIncludedHTTPStatus([]byte("HTTP/2.0 205 Reset Content\r\nX-Poll-Interval: 60\r\n\r\n"))
+
+	if actual != 205 {
+		t.Fatalf("expected status code %d, actual %d", 205, actual)
+	}
+}
+
+func TestNormalizeNotificationEndpointError_GivenScopeError_WhenNormalizing_ThenItReturnsActionableGuidance(t *testing.T) {
+	actual := normalizeNotificationEndpointError(errors.New("run `gh api notifications read`: exit status 1: Requires one of the following scopes: ['notifications']"))
+
+	if !errors.Is(actual, ErrNotificationEndpointAuthRefused) {
+		t.Fatalf("expected error %v, actual %v", ErrNotificationEndpointAuthRefused, actual)
+	}
+	if !strings.Contains(actual.Error(), "notifications") || !strings.Contains(actual.Error(), "repo") {
+		t.Fatalf("expected actionable scope guidance, actual %q", actual.Error())
+	}
+}
+
+func TestNotificationThreadAPIPath_GivenBlankThreadID_WhenFormatting_ThenItRejectsTheTarget(t *testing.T) {
+	_, actualErr := notificationThreadAPIPath("   ")
+
+	if !errors.Is(actualErr, ErrMissingNotificationThreadID) {
+		t.Fatalf("expected error %v, actual %v", ErrMissingNotificationThreadID, actualErr)
+	}
+}
+
+func TestNormalizedNotifications_GivenNotifications_WhenNormalizing_ThenItReturnsANewSlice(t *testing.T) {
+	original := []Notification{{ID: " 1001 "}}
+
+	actual := normalizedNotifications(original)
+
+	actual[0].ID = "changed"
+	if original[0].ID != " 1001 " {
+		t.Fatalf("expected the original notification id %q to stay unchanged, actual %q", " 1001 ", original[0].ID)
+	}
+	if actual[0].ID != "changed" {
+		t.Fatalf("expected normalized id %q, actual %q", "1001", actual[0].ID)
 	}
 }
 

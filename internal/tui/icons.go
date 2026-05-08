@@ -51,6 +51,8 @@ const (
 	iconNotificationPullRequest = iconPullRequest
 	iconNotificationIssue       = ""
 	iconNotificationRelease     = ""
+	iconNotificationUnread      = "●"
+	iconNotificationRead        = "○"
 
 	iconFileGo         = ""
 	iconFileRuby       = ""
@@ -107,25 +109,30 @@ const (
 	pullRequestOverviewPendingIcon = iconStatusPending
 	pullRequestOverviewMutedIcon   = iconStatusMuted
 
-	actionsPopupStartReviewIcon            = iconReview
-	actionsPopupYankPullRequestURLIcon     = iconCopy
-	actionsPopupOpenPullRequestBrowserIcon = iconOpenBrowser
-	actionsPopupOpenLinkIcon               = iconLink
-	actionsPopupRefreshPullRequestIcon     = iconRefresh
-	actionsPopupReviewApproveIcon          = iconReviewApprove
-	actionsPopupReviewCommentIcon          = iconReviewComment
-	actionsPopupReviewRequestChangesIcon   = iconRequestChanges
-	actionsPopupCommentOnPullRequestIcon   = iconPullRequestComment
-	actionsPopupEditPullRequestIcon        = iconEdit
-	actionsPopupDeleteInlineCommentIcon    = iconDelete
-	actionsPopupResolveInlineCommentIcon   = iconChecks
-	actionsPopupBuildActionIcon            = iconBuild
-	actionsPopupBuildRunIcon               = iconBuild
-	actionsPopupBuildRunLogsIcon           = iconBuild
-	actionsPopupAddReactionIcon            = iconAddReaction
-	actionsPopupReviewPullRequestURLIcon   = iconReviewURL
-	actionsPopupChangeThemeIcon            = iconTheme
-	actionsPopupReviewStoryIcon            = iconReview
+	actionsPopupStartReviewIcon              = iconReview
+	actionsPopupYankPullRequestURLIcon       = iconCopy
+	actionsPopupOpenPullRequestBrowserIcon   = iconOpenBrowser
+	actionsPopupOpenLinkIcon                 = iconLink
+	actionsPopupRefreshPullRequestIcon       = iconRefresh
+	actionsPopupReviewApproveIcon            = iconReviewApprove
+	actionsPopupReviewCommentIcon            = iconReviewComment
+	actionsPopupReviewRequestChangesIcon     = iconRequestChanges
+	actionsPopupCommentOnPullRequestIcon     = iconPullRequestComment
+	actionsPopupEditPullRequestIcon          = iconEdit
+	actionsPopupDeleteInlineCommentIcon      = iconDelete
+	actionsPopupMarkNotificationReadIcon     = iconStatusSuccess
+	actionsPopupMarkNotificationDoneIcon     = iconDelete
+	actionsPopupMarkAllNotificationsReadIcon = iconStatusSuccess
+	actionsPopupMarkAllNotificationsDoneIcon = iconDelete
+	actionsPopupOpenNotificationBrowserIcon  = iconOpenBrowser
+	actionsPopupResolveInlineCommentIcon     = iconChecks
+	actionsPopupBuildActionIcon              = iconBuild
+	actionsPopupBuildRunIcon                 = iconBuild
+	actionsPopupBuildRunLogsIcon             = iconBuild
+	actionsPopupAddReactionIcon              = iconAddReaction
+	actionsPopupReviewPullRequestURLIcon     = iconReviewURL
+	actionsPopupChangeThemeIcon              = iconTheme
+	actionsPopupReviewStoryIcon              = iconReview
 
 	reviewDiffTreeCommentCountIcon = iconCommentCount
 )

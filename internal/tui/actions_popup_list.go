@@ -7,11 +7,12 @@ import (
 )
 
 const (
-	actionsPopupGroupPullRequest = "Pull request"
-	actionsPopupGroupReview      = "Review"
-	actionsPopupGroupNavigation  = "Navigation"
-	actionsPopupGroupTheme       = "Theme"
-	actionsPopupGroupCache       = "Cache"
+	actionsPopupGroupPullRequest   = "Pull request"
+	actionsPopupGroupReview        = "Review"
+	actionsPopupGroupNavigation    = "Navigation"
+	actionsPopupGroupNotifications = "Notifications"
+	actionsPopupGroupTheme         = "Theme"
+	actionsPopupGroupCache         = "Cache"
 )
 
 type actionsPopupVisibleLine struct {

@@ -62,9 +62,9 @@ func notificationsErrorItem(err error) Item {
 func notificationRow(notification githubcli.Notification) NotificationRow {
 	reference := notificationDisplayReference(notification)
 	title := strings.TrimSpace(notification.Subject.Title)
-	rowTitle := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{notificationIcon(notification.Subject.Type), reference, title}), " "))
+	rowTitle := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{notificationReadStateIcon(notification.Unread), notificationIcon(notification.Subject.Type), reference, title}), " "))
 	if rowTitle == "" {
-		rowTitle = notificationIcon(notification.Subject.Type)
+		rowTitle = notificationReadStateIcon(notification.Unread)
 	}
 
 	detailLines := []string{
@@ -102,6 +102,13 @@ func notificationDisplayReference(notification githubcli.Notification) string {
 		return repository
 	}
 	return strings.TrimSpace(notification.Repository.NameWithOwner)
+}
+
+func notificationReadStateIcon(unread bool) string {
+	if unread {
+		return iconNotificationUnread
+	}
+	return iconNotificationRead
 }
 
 func notificationTypeLabel(kind string) string {

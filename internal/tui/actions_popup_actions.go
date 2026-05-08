@@ -37,6 +37,9 @@ func (program *Program) currentGlobalActionsPopupActions() []actionsPopupAction 
 }
 
 func (program *Program) currentContextualActionsPopupActions() []actionsPopupAction {
+	if program.isNotificationContext() {
+		return program.currentNotificationActionsPopupActions()
+	}
 	if !program.isPullRequestContext() {
 		return nil
 	}

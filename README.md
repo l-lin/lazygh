@@ -196,7 +196,9 @@ Browser mode now has a third side pane for notifications. Browser mode cycles ac
 
 When view 3 is inactive, it stays at three lines. When view 3 is active, it expands and view 2 collapses to three lines. Pull request notifications reuse the browser PR detail with overview and tabs. Issue notifications open an issue document. Release notifications open a release document.
 
-Notification loading uses `gh api /notifications?all=true`. GitHub returns unread and read threads there, but done threads stay excluded from the list. In practice, `gh auth login` with a user token that can read the target repos is enough. Private notifications still need repository access.
+Notification loading uses `gh api /notifications?all=true`. GitHub returns unread and read threads there, but done threads stay excluded from the list. Press `r` in view `3` to mark the selected notification as read, press `d` to mark it as done, and use `a` for bulk read, bulk done, and browser-opening actions. In this MVP, `r` is read-only: it marks a notification as read, but it does not toggle anything back to unread.
+
+If GitHub rejects notification mutations because of the active credential type or missing scopes, re-authenticate `gh` with a user credential that supports notification endpoints. A personal access token (classic) with the `notifications` scope and `repo` access for private repositories is the safest option.
 
 ```text
 ╭[1]- Connected user──────────────╮╭[0]-Detail─────────────────────────────╮
@@ -214,6 +216,8 @@ Notification loading uses `gh api /notifications?all=true`. GitHub returns unrea
 ### Actions
 
 `Assign PR` opens a searchable assignee picker. Press `enter` to toggle an assignee, then press `alt+enter` to save. GitHub only allows up to 10 assignees per pull request, and your account still needs permission to assign users in that repository.
+
+In notification context, the actions popup offers `Mark notification as read`, `Mark notification as done`, `Mark all notifications as read`, `Mark all notifications as done`, and `Open notification in browser`.
 
 ### Keymap overrides
 
@@ -269,6 +273,8 @@ open_actions_popup = "a"
 
 [keymaps.notifications]
 open_detail = "enter"
+mark_notification_read = "r"
+mark_notification_done = "d"
 open_actions_popup = "a"
 
 [keymaps.detail]

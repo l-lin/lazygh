@@ -59,6 +59,7 @@ func (program *Program) clearCachedData() error {
 	program.releaseDetailLoadInFlight = map[string]bool{}
 	program.notificationsLoadStarted = false
 	program.notificationsLoading = false
+	program.notificationsLoadingDetailMessage = ""
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestSearchState()

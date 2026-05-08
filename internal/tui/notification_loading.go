@@ -18,6 +18,7 @@ func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
 
 	program.notificationsLoadStarted = true
 	program.notificationsLoading = true
+	program.notificationsLoadingDetailMessage = notificationsLoadingDetail
 	program.asyncRunner.Go(func() {
 		program.loadNotifications(gui)
 	})
@@ -39,6 +40,7 @@ func (program *Program) loadNotifications(gui *gocui.Gui) {
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.notificationsLoading = false
+		program.notificationsLoadingDetailMessage = ""
 		if err == nil {
 			program.model.SetNotificationRows(notificationRows(notifications))
 			return program.refreshViews(gui)

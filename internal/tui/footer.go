@@ -214,6 +214,14 @@ func (program *Program) paneFooterKeyHintsText(focus Focus) string {
 		program.paneFooterKeyHint("help", keybindingActionID{scope: keymapScopeMain, action: "toggle_help"}),
 		program.paneFooterKeyHint("search", keybindingActionID{scope: keymapScopeMain, action: "open_search"}),
 	}
+	if focus == FocusNotificationsView {
+		if _, ok := program.selectedNotificationActionTarget(); ok {
+			hints = append(hints,
+				program.paneFooterKeyHint("read", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_read"}),
+				program.paneFooterKeyHint("done", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_done"}),
+			)
+		}
+	}
 	if actionsHint := program.paneFooterActionsHint(focus); actionsHint != "" {
 		hints = append(hints, actionsHint)
 	}

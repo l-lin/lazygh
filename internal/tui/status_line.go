@@ -185,6 +185,9 @@ func (program *Program) notificationsLoadingStatus() string {
 	if !program.notificationsLoading {
 		return ""
 	}
+	if message := strings.TrimSpace(program.notificationsLoadingDetailMessage); message != "" {
+		return message
+	}
 	return notificationsLoadingDetail
 }
 

@@ -1249,93 +1249,103 @@ func given_viewLineIndexContaining(t *testing.T, view *gocui.View, segment strin
 }
 
 type fakePullRequestDetailLoader struct {
-	details                    map[string]githubcli.PullRequestDetail
-	detailErrors               map[string]error
-	detailCalls                []string
-	diffs                      map[string]githubcli.PullRequestDiff
-	diffErrors                 map[string]error
-	diffCalls                  []string
-	commentCalls               []string
-	commentBodies              []string
-	commentErr                 error
-	myPullRequests             []githubcli.PullRequest
-	requestedPullRequests      []githubcli.PullRequest
-	notifications              []githubcli.Notification
-	notificationsErr           error
-	issueDetails               map[string]githubcli.IssueDetail
-	issueDetailErrors          map[string]error
-	issueDetailCalls           []string
-	releaseDetails             map[string]githubcli.ReleaseDetail
-	releaseDetailErrors        map[string]error
-	releaseDetailCalls         []string
-	approveCalls               []string
-	approveErr                 error
-	reviewCommentCalls         []string
-	reviewCommentBodies        []string
-	reviewCommentErr           error
-	requestChangesCalls        []string
-	requestChangesBodies       []string
-	requestChangesErr          error
-	submitReviewIDs            []string
-	submitReviewEvents         []githubcli.PullRequestReviewEvent
-	submitReviewBodies         []string
-	submitReviewErr            error
-	reviewThreadReviewIDs      []string
-	reviewThreadBodies         []string
-	reviewThreadTargets        []githubcli.PullRequestReviewThreadTarget
-	reviewThreadErr            error
-	reviewThreadReplyReviewIDs []string
-	reviewThreadReplyThreadIDs []string
-	reviewThreadReplyBodies    []string
-	reviewThreadReplyErr       error
-	updateReviewCommentIDs     []string
-	updateReviewCommentBodies  []string
-	updateReviewCommentErr     error
-	deleteReviewCommentIDs     []string
-	deleteReviewCommentErr     error
-	resolveReviewThreadIDs     []string
-	resolveReviewThreadErr     error
-	unresolveReviewThreadIDs   []string
-	unresolveReviewThreadErr   error
-	addReactionSubjectIDs      []string
-	addReactionContents        []githubcli.ReactionContent
-	addReactionErr             error
-	reviewKeyByPendingID       map[string]string
-	openBrowserCalls           []string
-	openBrowserErr             error
-	assignableUsers            map[string][]githubcli.PullRequestAuthor
-	assignableUserCalls        []string
-	assignableUserErr          error
-	updateAssigneeCalls        []string
-	updateAssigneeAdditions    [][]string
-	updateAssigneeRemovals     [][]string
-	updateAssigneeErr          error
-	editTitleCalls             []string
-	editTitleValues            []string
-	editTitleErr               error
-	editDescriptionCalls       []string
-	editDescriptionBodies      []string
-	editDescriptionErr         error
-	markReadyForReviewCalls    []string
-	markReadyForReviewErr      error
-	convertToDraftCalls        []string
-	convertToDraftErr          error
-	squashMergeCalls           []string
-	squashMergeErr             error
-	startReviewCalls           []string
-	startReviewID              string
-	startReviewErr             error
-	buildRuns                  map[string]string
-	buildRunJobs               map[string][]githubcli.PullRequestBuildRunJob
-	buildLogs                  map[int]string
-	buildRunCalls              []string
-	buildRunChecks             []githubcli.PullRequestStatusCheck
-	buildRunJobCalls           []string
-	buildRunJobChecks          []githubcli.PullRequestStatusCheck
-	buildLogCalls              []int
-	buildRunErr                error
-	buildRunJobsErr            error
-	buildLogErr                error
+	details                           map[string]githubcli.PullRequestDetail
+	detailErrors                      map[string]error
+	detailCalls                       []string
+	diffs                             map[string]githubcli.PullRequestDiff
+	diffErrors                        map[string]error
+	diffCalls                         []string
+	commentCalls                      []string
+	commentBodies                     []string
+	commentErr                        error
+	myPullRequests                    []githubcli.PullRequest
+	requestedPullRequests             []githubcli.PullRequest
+	notifications                     []githubcli.Notification
+	notificationsErr                  error
+	markNotificationReadIDs           []string
+	markNotificationReadErr           error
+	markNotificationDoneIDs           []string
+	markNotificationDoneErr           error
+	markAllNotificationsReadCalls     int
+	markAllNotificationsReadAccepted  bool
+	markAllNotificationsReadErr       error
+	markAllNotificationsReadPollLoads int
+	markAllNotificationsDoneIDs       [][]string
+	markAllNotificationsDoneErr       error
+	issueDetails                      map[string]githubcli.IssueDetail
+	issueDetailErrors                 map[string]error
+	issueDetailCalls                  []string
+	releaseDetails                    map[string]githubcli.ReleaseDetail
+	releaseDetailErrors               map[string]error
+	releaseDetailCalls                []string
+	approveCalls                      []string
+	approveErr                        error
+	reviewCommentCalls                []string
+	reviewCommentBodies               []string
+	reviewCommentErr                  error
+	requestChangesCalls               []string
+	requestChangesBodies              []string
+	requestChangesErr                 error
+	submitReviewIDs                   []string
+	submitReviewEvents                []githubcli.PullRequestReviewEvent
+	submitReviewBodies                []string
+	submitReviewErr                   error
+	reviewThreadReviewIDs             []string
+	reviewThreadBodies                []string
+	reviewThreadTargets               []githubcli.PullRequestReviewThreadTarget
+	reviewThreadErr                   error
+	reviewThreadReplyReviewIDs        []string
+	reviewThreadReplyThreadIDs        []string
+	reviewThreadReplyBodies           []string
+	reviewThreadReplyErr              error
+	updateReviewCommentIDs            []string
+	updateReviewCommentBodies         []string
+	updateReviewCommentErr            error
+	deleteReviewCommentIDs            []string
+	deleteReviewCommentErr            error
+	resolveReviewThreadIDs            []string
+	resolveReviewThreadErr            error
+	unresolveReviewThreadIDs          []string
+	unresolveReviewThreadErr          error
+	addReactionSubjectIDs             []string
+	addReactionContents               []githubcli.ReactionContent
+	addReactionErr                    error
+	reviewKeyByPendingID              map[string]string
+	openBrowserCalls                  []string
+	openBrowserErr                    error
+	assignableUsers                   map[string][]githubcli.PullRequestAuthor
+	assignableUserCalls               []string
+	assignableUserErr                 error
+	updateAssigneeCalls               []string
+	updateAssigneeAdditions           [][]string
+	updateAssigneeRemovals            [][]string
+	updateAssigneeErr                 error
+	editTitleCalls                    []string
+	editTitleValues                   []string
+	editTitleErr                      error
+	editDescriptionCalls              []string
+	editDescriptionBodies             []string
+	editDescriptionErr                error
+	markReadyForReviewCalls           []string
+	markReadyForReviewErr             error
+	convertToDraftCalls               []string
+	convertToDraftErr                 error
+	squashMergeCalls                  []string
+	squashMergeErr                    error
+	startReviewCalls                  []string
+	startReviewID                     string
+	startReviewErr                    error
+	buildRuns                         map[string]string
+	buildRunJobs                      map[string][]githubcli.PullRequestBuildRunJob
+	buildLogs                         map[int]string
+	buildRunCalls                     []string
+	buildRunChecks                    []githubcli.PullRequestStatusCheck
+	buildRunJobCalls                  []string
+	buildRunJobChecks                 []githubcli.PullRequestStatusCheck
+	buildLogCalls                     []int
+	buildRunErr                       error
+	buildRunJobsErr                   error
+	buildLogErr                       error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -1356,7 +1366,65 @@ func (loader *fakePullRequestDetailLoader) ListNotifications() ([]githubcli.Noti
 	if loader.notificationsErr != nil {
 		return nil, loader.notificationsErr
 	}
+	if loader.markAllNotificationsReadPollLoads > 0 {
+		loader.markAllNotificationsReadPollLoads--
+		if loader.markAllNotificationsReadPollLoads == 0 {
+			loader.markLoadedNotificationsRead()
+		}
+	}
 	return append([]githubcli.Notification(nil), loader.notifications...), nil
+}
+
+func (loader *fakePullRequestDetailLoader) MarkNotificationRead(threadID string) error {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	loader.markNotificationReadIDs = append(loader.markNotificationReadIDs, trimmedThreadID)
+	if loader.markNotificationReadErr != nil {
+		return loader.markNotificationReadErr
+	}
+	loader.markNotificationRead(trimmedThreadID)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) MarkNotificationDone(threadID string) error {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	loader.markNotificationDoneIDs = append(loader.markNotificationDoneIDs, trimmedThreadID)
+	if loader.markNotificationDoneErr != nil {
+		return loader.markNotificationDoneErr
+	}
+	loader.removeNotification(trimmedThreadID)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) MarkAllNotificationsRead() (githubcli.NotificationBulkReadResult, error) {
+	loader.markAllNotificationsReadCalls++
+	if loader.markAllNotificationsReadErr != nil {
+		return githubcli.NotificationBulkReadResult{}, loader.markAllNotificationsReadErr
+	}
+	if loader.markAllNotificationsReadAccepted {
+		loader.markAllNotificationsReadPollLoads = maxInt(loader.markAllNotificationsReadPollLoads, 1)
+		return githubcli.NotificationBulkReadResult{Accepted: true}, nil
+	}
+	loader.markLoadedNotificationsRead()
+	return githubcli.NotificationBulkReadResult{}, nil
+}
+
+func (loader *fakePullRequestDetailLoader) MarkAllNotificationsDone(notifications []githubcli.Notification) (int, error) {
+	ids := make([]string, 0, len(notifications))
+	for _, notification := range notifications {
+		trimmedThreadID := strings.TrimSpace(notification.ID)
+		if trimmedThreadID == "" {
+			continue
+		}
+		ids = append(ids, trimmedThreadID)
+	}
+	loader.markAllNotificationsDoneIDs = append(loader.markAllNotificationsDoneIDs, append([]string(nil), ids...))
+	if loader.markAllNotificationsDoneErr != nil {
+		return 0, loader.markAllNotificationsDoneErr
+	}
+	for _, threadID := range ids {
+		loader.removeNotification(threadID)
+	}
+	return len(ids), nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error) {
@@ -1809,6 +1877,38 @@ func (loader *fakePullRequestDetailLoader) updatePullRequestDetail(repository st
 	}
 	update(&detail)
 	loader.details[key] = detail
+}
+
+func (loader *fakePullRequestDetailLoader) markLoadedNotificationsRead() {
+	for index := range loader.notifications {
+		loader.notifications[index].Unread = false
+	}
+}
+
+func (loader *fakePullRequestDetailLoader) markNotificationRead(threadID string) {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	for index := range loader.notifications {
+		if strings.TrimSpace(loader.notifications[index].ID) != trimmedThreadID {
+			continue
+		}
+		loader.notifications[index].Unread = false
+		return
+	}
+}
+
+func (loader *fakePullRequestDetailLoader) removeNotification(threadID string) {
+	trimmedThreadID := strings.TrimSpace(threadID)
+	if trimmedThreadID == "" || len(loader.notifications) == 0 {
+		return
+	}
+	filteredNotifications := loader.notifications[:0]
+	for _, notification := range loader.notifications {
+		if strings.TrimSpace(notification.ID) == trimmedThreadID {
+			continue
+		}
+		filteredNotifications = append(filteredNotifications, notification)
+	}
+	loader.notifications = append([]githubcli.Notification(nil), filteredNotifications...)
 }
 
 func (loader *fakePullRequestDetailLoader) addReaction(subjectID string, content githubcli.ReactionContent) {

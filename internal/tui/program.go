@@ -27,6 +27,10 @@ type GitHubLoader interface {
 	GetConnectedUser() (githubcli.ConnectedUser, error)
 	ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error)
 	ListNotifications() ([]githubcli.Notification, error)
+	MarkNotificationRead(threadID string) error
+	MarkNotificationDone(threadID string) error
+	MarkAllNotificationsRead() (githubcli.NotificationBulkReadResult, error)
+	MarkAllNotificationsDone(notifications []githubcli.Notification) (int, error)
 	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
 	GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error)
 	GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error)
@@ -69,6 +73,7 @@ type Program struct {
 	myPullRequestsLoading                   bool
 	requestedPullRequestsLoading            bool
 	notificationsLoading                    bool
+	notificationsLoadingDetailMessage       string
 	myPullRequestsCount                     int
 	myPullRequestsCountKnown                bool
 	requestedPullRequestsCount              int

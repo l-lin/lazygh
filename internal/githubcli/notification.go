@@ -72,7 +72,7 @@ type ReleaseDetail struct {
 func (client *Client) ListNotifications() ([]Notification, error) {
 	result, err := client.runGH("gh api notifications", "api", notificationsListAPIPath, "--paginate", "--slurp")
 	if err != nil {
-		return nil, err
+		return nil, normalizeNotificationEndpointError(err)
 	}
 
 	var pagedNotifications [][]Notification
