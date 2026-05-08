@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	actionsPopupFallbackWidth = 60
-	actionsPopupMinWidth      = 40
+	actionsPopupFallbackWidth = 20
+	actionsPopupMinWidth      = 20
 	actionsPopupMinHeight     = 6
 )
 
 func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 	contentMaxY := program.layoutContentHeight(maxY)
-	totalWidth := boundedHalfWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
+	totalWidth := boundedQuarterWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
 	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+2)
 	if totalHeight > contentMaxY-2 {
 		totalHeight = maxInt(3, contentMaxY-2)

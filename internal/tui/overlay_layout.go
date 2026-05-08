@@ -1,7 +1,19 @@
 package tui
 
 func boundedHalfWidth(maxWidth int, minWidth int, fallbackWidth int) int {
-	totalWidth := maxWidth / 2
+	return boundedFractionWidth(maxWidth, minWidth, fallbackWidth, 2)
+}
+
+func boundedQuarterWidth(maxWidth int, minWidth int, fallbackWidth int) int {
+	return boundedFractionWidth(maxWidth, minWidth, fallbackWidth, 4)
+}
+
+func boundedFractionWidth(maxWidth int, minWidth int, fallbackWidth int, divisor int) int {
+	if divisor < 1 {
+		divisor = 1
+	}
+
+	totalWidth := maxWidth / divisor
 	if totalWidth < minWidth {
 		totalWidth = fallbackWidth
 	}
