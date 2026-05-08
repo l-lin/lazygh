@@ -11,19 +11,17 @@ import (
 )
 
 const (
-	actionsPopupFallbackWidth = 20
-	actionsPopupMinWidth      = 20
-	actionsPopupMinHeight     = 6
+	actionsPopupFallbackWidth    = 20
+	actionsPopupMinWidth         = 20
+	actionsPopupMinHeight        = 6
+	actionsPopupCompactMinHeight = 4
 )
 
 func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
 	contentMaxY := program.layoutContentHeight(maxY)
 	totalWidth := boundedQuarterWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
-	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+2)
-	if totalHeight > contentMaxY-2 {
-		totalHeight = maxInt(3, contentMaxY-2)
-	}
+	totalHeight := program.actionsPopupHeight(contentMaxY)
 	frame := centeredOverlayFrame(maxX, contentMaxY, totalWidth, totalHeight)
 
 	popupView, err := gui.SetView(viewActionsPopupName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
@@ -52,6 +50,26 @@ func (program *Program) layoutActionsPopupSearchView(gui *gocui.Gui) error {
 		return nil
 	}
 	return err
+}
+
+func (program *Program) actionsPopupHeight(contentMaxY int) int {
+	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+2)
+	if program.assigneePickerVisible() {
+		totalHeight = maxInt(actionsPopupCompactMinHeight, actionsPopupCompactHeight(program.currentActionsPopupRenderedLineCount()))
+	} else if program.assigneePickerLoading() {
+		totalHeight = actionsPopupCompactMinHeight
+	}
+	if totalHeight > contentMaxY-2 {
+		totalHeight = maxInt(3, contentMaxY-2)
+	}
+	return totalHeight
+}
+
+func actionsPopupCompactHeight(renderedLineCount int) int {
+	if renderedLineCount < 1 {
+		return actionsPopupCompactMinHeight
+	}
+	return (renderedLineCount+1)/2 + 2
 }
 
 func (program *Program) configureActionsPopupView(view *gocui.View) {

@@ -84,11 +84,14 @@ func (program *Program) refreshActionsPopupViews(gui *gocui.Gui) error {
 	}
 
 	program.syncActionsPopupSearch()
-	if err := program.refreshOverlayView(gui, true, viewActionsPopupName, program.configureActionsPopupView, program.renderActionsPopupView); err != nil {
+	if err := program.layoutActionsPopupViews(gui); err != nil {
 		return err
 	}
+	if program.model.ActionsPopupSearchActive() {
+		return program.layoutActionsPopupSearchView(gui)
+	}
 
-	return program.refreshOverlayView(gui, program.model.ActionsPopupSearchActive(), viewActionsPopupSearchName, program.configureActionsPopupSearchView, program.renderActionsPopupSearchView)
+	return deleteViewIfPresent(gui, viewActionsPopupSearchName)
 }
 
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {

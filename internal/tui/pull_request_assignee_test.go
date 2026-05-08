@@ -45,6 +45,36 @@ func TestAssigneePicker_GivenSelectedAssigneesAndCurrentUser_WhenOpening_ThenItP
 	}
 }
 
+func TestAssigneePicker_GivenManyCandidates_WhenOpening_ThenItUsesAHalfHeightPopup(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	loader.assignableUsers["acme/widgets"] = []githubcli.PullRequestAuthor{
+		{Login: "alice", Name: "Alice"},
+		{Login: "bob", Name: "Bob"},
+		{Login: "charlie", Name: "Charlie"},
+		{Login: "dora", Name: "Dora"},
+		{Login: "eve", Name: "Eve"},
+		{Login: "frank", Name: "Frank"},
+		{Login: "gina", Name: "Gina"},
+		{Login: "henry", Name: "Henry"},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_, y0, _, y1, actualErr := gui.ViewPosition(viewActionsPopupName)
+	if actualErr == nil {
+		t.Fatal("expected the popup to be absent before opening the assignee picker")
+	}
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	_, y0, _, y1, actualErr = gui.ViewPosition(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if actual := y1 - y0 + 1; actual != 6 {
+		t.Fatalf("expected popup height %d, actual %d", 6, actual)
+	}
+}
+
 func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenLoadingAssignees_ThenItShowsASpinnerUntilTheAsyncLoadFinishes(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	asyncRunner := &capturingAsyncRunner{}
