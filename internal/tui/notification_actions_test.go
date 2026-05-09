@@ -1,10 +1,12 @@
 package tui
 
 import (
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
+	persistcache "codeberg.org/l-lin/lazygh/internal/cache"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
 
@@ -162,6 +164,41 @@ func TestNotificationsView_GivenSelectedNotification_WhenPressingD_ThenItRemoves
 		t.Fatalf("expected the remaining notification id %q, actual %+v", "n-push-2", actualRows[0].Notification)
 	}
 	then_statusLineContains(t, gui, notificationDoneLoadingMessage)
+}
+
+func TestNotificationsView_GivenNotificationMarkedDone_WhenClearingCacheAndReloading_ThenItKeepsTheThreadHidden(t *testing.T) {
+	notifications := []githubcli.Notification{
+		given_notificationValue(t, given_pullRequestNotificationRow()),
+		given_notificationValue(t, given_issueNotificationRow()),
+	}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), notifications...)}
+	cache := &fakePersistentPullRequestCache{}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	subject.pullRequestCache = cache
+	doneStore, actualErr := persistcache.OpenNotificationDoneStore(filepath.Join(t.TempDir(), "notification-done.json"))
+	then_noError(t, actualErr)
+	subject.notificationDoneStore = doneStore
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+
+	handler := given_handlerForBinding(t, subject.keybindingSpecs(), viewNotificationsName, 'd')
+	actualErr = handler(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.clearCachedData()
+	then_noError(t, actualErr)
+	subject.loadNotifications(gui)
+
+	actualRows := subject.model.NotificationRows()
+	if len(actualRows) != 1 {
+		t.Fatalf("expected notification row count %d after reload, actual %d", 1, len(actualRows))
+	}
+	if actualRows[0].Notification == nil || actualRows[0].Notification.ID != "n-issue" {
+		t.Fatalf("expected the remaining notification id %q, actual %+v", "n-issue", actualRows[0].Notification)
+	}
 }
 
 func TestActionsPopup_GivenNotificationContext_WhenOpening_ThenItShowsOnlyNotificationActions(t *testing.T) {

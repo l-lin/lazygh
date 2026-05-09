@@ -82,6 +82,7 @@ type Program struct {
 	additionalPullRequestsLoading           map[PullRequestTab]bool
 	additionalPullRequestsCounts            map[PullRequestTab]pullRequestCountState
 	pullRequestCache                        persistentPullRequestCache
+	notificationDoneStore                   notificationDoneStore
 	pullRequestDetailCache                  map[string]pullRequestDetailResult
 	pullRequestDetailLoadInFlight           map[string]bool
 	pullRequestDetailDocumentCache          map[pullRequestDetailDocumentCacheKey]detailDocument
@@ -170,6 +171,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		additionalPullRequestsLoadStarted: map[PullRequestTab]bool{},
 		additionalPullRequestsLoading:     map[PullRequestTab]bool{},
 		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},
+		notificationDoneStore:             noopNotificationDoneStore{},
 		externalEditor:                    systemExternalEditor{},
 		linkOpener:                        newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand),
 		markdownRenderer:                  glamourMarkdownRenderer{},

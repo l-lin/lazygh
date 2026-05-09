@@ -10,6 +10,7 @@ func (program *Program) ApplyCacheConfig(config appconfig.CacheConfig) error {
 		_ = program.pullRequestCache.Close()
 		program.pullRequestCache = nil
 	}
+	program.notificationDoneStore = noopNotificationDoneStore{}
 	if config.Path == "" {
 		return nil
 	}
@@ -18,7 +19,13 @@ func (program *Program) ApplyCacheConfig(config appconfig.CacheConfig) error {
 	if actualErr != nil {
 		return actualErr
 	}
+	doneStore, actualErr := persistcache.OpenNotificationDoneStore(persistcache.NotificationDoneStorePath(config.Path))
+	if actualErr != nil {
+		_ = store.Close()
+		return actualErr
+	}
 
 	program.pullRequestCache = store
+	program.notificationDoneStore = doneStore
 	return nil
 }

@@ -35,6 +35,7 @@ func (program *Program) notificationsPendingLoad() bool {
 func (program *Program) loadNotifications(gui *gocui.Gui) {
 	notifications, err := program.githubLoader.ListNotifications()
 	if err == nil {
+		notifications = program.filterDoneNotifications(notifications)
 		program.cacheNotifications(notifications)
 	}
 

@@ -12,7 +12,7 @@ func (program *Program) hydrateNotificationsFromCache() bool {
 		return false
 	}
 
-	program.model.SetNotificationRows(notificationRows(notifications))
+	program.model.SetNotificationRows(notificationRows(program.filterDoneNotifications(notifications)))
 	return true
 }
 
@@ -30,7 +30,7 @@ func (program *Program) cacheNotifications(notifications []githubcli.Notificatio
 		return
 	}
 
-	_ = program.pullRequestCache.SaveNotifications(notifications)
+	_ = program.pullRequestCache.SaveNotifications(program.filterDoneNotifications(notifications))
 }
 
 func (program *Program) shouldPreserveNotificationRowsOnRefreshError() bool {

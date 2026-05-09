@@ -286,7 +286,11 @@ func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
 		notificationMarkedDoneMessage,
 		notificationRows(optimisticNotifications),
 		func() error {
-			return normalizedNotificationMutationError(program.githubLoader.MarkNotificationDone(target.threadID))
+			if err := normalizedNotificationMutationError(program.githubLoader.MarkNotificationDone(target.threadID)); err != nil {
+				return err
+			}
+			program.hideDoneNotificationsBestEffort([]githubcli.Notification{target.notification})
+			return nil
 		},
 	)
 }
@@ -327,7 +331,11 @@ func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 		notificationRows(nil),
 		func() error {
 			_, err := program.githubLoader.MarkAllNotificationsDone(loadedNotifications)
-			return normalizedNotificationMutationError(err)
+			if err = normalizedNotificationMutationError(err); err != nil {
+				return err
+			}
+			program.hideDoneNotificationsBestEffort(loadedNotifications)
+			return nil
 		},
 	)
 }
