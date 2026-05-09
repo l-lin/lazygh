@@ -113,6 +113,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + program.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
 				program.pullRequestYankHelpEntry(keymapScopePullRequests),
 				program.pullRequestCommentHelpEntry(keymapScopePullRequests),
+				{Key: program.reviewTreeToggleHelpKeys(), Description: "Expand/collapse fold"},
+				{Key: program.reviewTreeBulkFoldHelpKeys(), Description: "Close/open all folds"},
 				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},
 				{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open diff"},
 				{Key: "<esc>/q", Description: "Exit review mode"},
@@ -321,9 +323,19 @@ func (program *Program) inlineConversationToggleHelpKeys() string {
 	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation"}) + "/" + program.helpKeysOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}) + program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"})
 }
 
+func (program *Program) reviewTreeToggleHelpKeys() string {
+	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}) + "/" + program.helpKeyChordOrFallback("z", "a", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"})
+}
+
 func (program *Program) bulkFoldHelpKeys() string {
 	closeKeys := program.helpKeyChordOrFallback("z", "M", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}, keybindingActionID{scope: keymapScopeDetail, action: "close_all_folds"})
 	openKeys := program.helpKeyChordOrFallback("z", "R", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}, keybindingActionID{scope: keymapScopeDetail, action: "open_all_folds"})
+	return closeKeys + "/" + openKeys
+}
+
+func (program *Program) reviewTreeBulkFoldHelpKeys() string {
+	closeKeys := program.helpKeyChordOrFallback("z", "M", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopePullRequests, action: "close_all_folds"})
+	openKeys := program.helpKeyChordOrFallback("z", "R", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopePullRequests, action: "open_all_folds"})
 	return closeKeys + "/" + openKeys
 }
 

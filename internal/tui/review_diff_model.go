@@ -85,12 +85,15 @@ const (
 )
 
 type reviewDiffTreeRow struct {
+	ID              string
 	VisibleRowIndex int
 	Depth           int
 	Label           string
 	FileIndex       int
 	ChapterIndex    int
 	Kind            reviewDiffTreeRowKind
+	Foldable        bool
+	Collapsed       bool
 }
 
 type reviewDiffTree struct {

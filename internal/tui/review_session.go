@@ -37,6 +37,7 @@ type reviewSessionState struct {
 	pendingReviewID              string
 	selectedFileTreeRow          int
 	fileTreeSearchQuery          string
+	collapsedTreeRowIDs          map[string]bool
 	collapsedThreadIDs           map[string]bool
 	story                        reviewStoryData
 }
@@ -82,6 +83,8 @@ func (program *Program) startReviewSessionWithMode(summary githubcli.PullRequest
 		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
 		summary:                      summary,
 		pendingReviewID:              strings.TrimSpace(pendingReviewID),
+		selectedFileTreeRow:          -1,
+		collapsedTreeRowIDs:          map[string]bool{},
 		collapsedThreadIDs:           map[string]bool{},
 		story:                        story,
 	}
@@ -176,16 +179,40 @@ func (program *Program) reviewSessionSelectedVisibleLine() int {
 
 func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
 	row, files, ok := program.selectedReviewSessionTreeRow()
-	if !ok || row.FileIndex < 0 || row.FileIndex >= len(files) {
+	if !ok {
 		return reviewDiffFile{}, false
 	}
-	return files[row.FileIndex], true
+	fileIndex := row.FileIndex
+	if fileIndex < 0 {
+		rawTree, _, rawTreeOK := program.reviewSessionRawTree()
+		if !rawTreeOK {
+			return reviewDiffFile{}, false
+		}
+		fileIndex, ok = reviewDiffTreeFirstDescendantFileIndex(rawTree, row.ID)
+		if !ok {
+			return reviewDiffFile{}, false
+		}
+	}
+	if fileIndex < 0 || fileIndex >= len(files) {
+		return reviewDiffFile{}, false
+	}
+	return files[fileIndex], true
 }
 
 func (program *Program) clampReviewSessionSelection() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok || len(selectableRows) == 0 {
 		program.reviewSession.selectedFileTreeRow = 0
+		return
+	}
+	if program.reviewSession.selectedFileTreeRow < 0 {
+		if program.reviewSession.mode != reviewSessionModeStory {
+			if fileRows, fileRowsOK := program.reviewSessionFileRows(); fileRowsOK && len(fileRows) > 0 {
+				program.reviewSession.selectedFileTreeRow = fileRows[0]
+				return
+			}
+		}
+		program.reviewSession.selectedFileTreeRow = selectableRows[0]
 		return
 	}
 
@@ -227,13 +254,10 @@ func (program *Program) reviewSessionSelectableRows() ([]int, bool) {
 	if !ok {
 		return nil, false
 	}
-	if program.reviewSession.mode == reviewSessionModeStory {
-		return reviewDiffSelectableRowIndexesIncludingChapters(tree), true
-	}
-	return reviewDiffSelectableRowIndexes(tree), true
+	return reviewDiffSelectableTreeRowIndexes(tree), true
 }
 
-func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiffFile, bool) {
+func (program *Program) reviewSessionRawTree() (reviewDiffTree, []reviewDiffFile, bool) {
 	result, ok := program.reviewSessionDiffResult()
 	if !ok || result.err != nil {
 		return reviewDiffTree{}, nil, false
@@ -242,6 +266,14 @@ func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiff
 		return program.reviewSession.story.Tree, result.data.Files, true
 	}
 	return result.data.FileTree, result.data.Files, true
+}
+
+func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiffFile, bool) {
+	tree, files, ok := program.reviewSessionRawTree()
+	if !ok {
+		return reviewDiffTree{}, nil, false
+	}
+	return reviewDiffTreeVisibleRows(tree, program.reviewSession.collapsedTreeRowIDs), files, true
 }
 
 func (program *Program) selectedReviewSessionTreeRow() (reviewDiffTreeRow, []reviewDiffFile, bool) {

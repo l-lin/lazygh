@@ -46,9 +46,10 @@ func buildReviewStoryData(review story.Review, files []reviewDiffFile) reviewSto
 			}
 		}
 		chapters = append(chapters, reviewChapter)
-		appendReviewDiffTreeRow(&rows, 0, reviewStoryChapterLabel(chapterIndex, reviewChapter.Title, len(reviewChapter.FileIndexes)), -1, chapterIndex, reviewDiffTreeRowKindChapter)
+		chapterRowID := reviewDiffTreeRowIDForChapter(reviewChapter.ID, chapterIndex)
+		appendReviewDiffTreeRow(&rows, chapterRowID, 0, reviewStoryChapterLabel(chapterIndex, reviewChapter.Title, len(reviewChapter.FileIndexes)), -1, chapterIndex, reviewDiffTreeRowKindChapter, len(reviewChapter.FileIndexes) > 0)
 		for _, fileIndex := range reviewChapter.FileIndexes {
-			appendReviewDiffTreeRow(&rows, 1, files[fileIndex].Path, fileIndex, 0, reviewDiffTreeRowKindDirectory)
+			appendReviewDiffTreeRow(&rows, chapterRowID+":"+reviewDiffTreeRowIDForFile(files[fileIndex].Path), 1, files[fileIndex].Path, fileIndex, 0, reviewDiffTreeRowKindFile, false)
 		}
 	}
 

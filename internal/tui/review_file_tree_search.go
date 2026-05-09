@@ -99,10 +99,10 @@ func (program *Program) reviewFileTreeSearchMatchRows(query string) []int {
 		return nil
 	}
 
-	return reviewDiffTreeSearchMatchRows(tree, query, program.reviewSession.mode == reviewSessionModeStory)
+	return reviewDiffTreeSearchMatchRows(tree, query)
 }
 
-func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, query string, includeChapters bool) []int {
+func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, query string) []int {
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" {
 		return nil
@@ -111,10 +111,7 @@ func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, query string, includeCha
 	matchRows := make([]int, 0, len(tree.Rows))
 	loweredQuery := strings.ToLower(trimmedQuery)
 	for _, row := range tree.Rows {
-		if row.FileIndex < 0 && row.Kind != reviewDiffTreeRowKindChapter {
-			continue
-		}
-		if row.Kind == reviewDiffTreeRowKindChapter && !includeChapters {
+		if !row.Foldable && row.FileIndex < 0 {
 			continue
 		}
 		if strings.Contains(strings.ToLower(row.Label), loweredQuery) {

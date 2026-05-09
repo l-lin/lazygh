@@ -154,10 +154,10 @@ func TestBuildReviewDiffFileTree_GivenSingleChildDirectoryChains_WhenProjecting_
 	actual := buildReviewDiffFileTree(files)
 
 	expected := []reviewDiffTreeRow{
-		{VisibleRowIndex: 0, Depth: 0, Label: "internal/tui/", FileIndex: -1},
-		{VisibleRowIndex: 1, Depth: 1, Label: "render.go", FileIndex: 0},
-		{VisibleRowIndex: 2, Depth: 0, Label: "cmd/lazygh/", FileIndex: -1},
-		{VisibleRowIndex: 3, Depth: 1, Label: "main.go", FileIndex: 1},
+		{ID: reviewDiffTreeRowIDForDirectory("internal/tui/"), VisibleRowIndex: 0, Depth: 0, Label: "internal/tui/", FileIndex: -1, Kind: reviewDiffTreeRowKindDirectory, Foldable: true},
+		{ID: reviewDiffTreeRowIDForFile("internal/tui/render.go"), VisibleRowIndex: 1, Depth: 1, Label: "render.go", FileIndex: 0, Kind: reviewDiffTreeRowKindFile},
+		{ID: reviewDiffTreeRowIDForDirectory("cmd/lazygh/"), VisibleRowIndex: 2, Depth: 0, Label: "cmd/lazygh/", FileIndex: -1, Kind: reviewDiffTreeRowKindDirectory, Foldable: true},
+		{ID: reviewDiffTreeRowIDForFile("cmd/lazygh/main.go"), VisibleRowIndex: 3, Depth: 1, Label: "main.go", FileIndex: 1, Kind: reviewDiffTreeRowKindFile},
 	}
 	if !reflect.DeepEqual(actual.Rows, expected) {
 		t.Fatalf("expected rows %+v, actual %+v", expected, actual.Rows)
@@ -174,12 +174,12 @@ func TestBuildReviewDiffFileTree_GivenMixedSiblingDirectories_WhenProjecting_The
 	actual := buildReviewDiffFileTree(files)
 
 	expected := []reviewDiffTreeRow{
-		{VisibleRowIndex: 0, Depth: 0, Label: "internal/", FileIndex: -1},
-		{VisibleRowIndex: 1, Depth: 1, Label: "tui/", FileIndex: -1},
-		{VisibleRowIndex: 2, Depth: 2, Label: "render.go", FileIndex: 0},
-		{VisibleRowIndex: 3, Depth: 2, Label: "model.go", FileIndex: 1},
-		{VisibleRowIndex: 4, Depth: 1, Label: "githubcli/", FileIndex: -1},
-		{VisibleRowIndex: 5, Depth: 2, Label: "client.go", FileIndex: 2},
+		{ID: reviewDiffTreeRowIDForDirectory("internal/"), VisibleRowIndex: 0, Depth: 0, Label: "internal/", FileIndex: -1, Kind: reviewDiffTreeRowKindDirectory, Foldable: true},
+		{ID: reviewDiffTreeRowIDForDirectory("internal/tui/"), VisibleRowIndex: 1, Depth: 1, Label: "tui/", FileIndex: -1, Kind: reviewDiffTreeRowKindDirectory, Foldable: true},
+		{ID: reviewDiffTreeRowIDForFile("internal/tui/render.go"), VisibleRowIndex: 2, Depth: 2, Label: "render.go", FileIndex: 0, Kind: reviewDiffTreeRowKindFile},
+		{ID: reviewDiffTreeRowIDForFile("internal/tui/model.go"), VisibleRowIndex: 3, Depth: 2, Label: "model.go", FileIndex: 1, Kind: reviewDiffTreeRowKindFile},
+		{ID: reviewDiffTreeRowIDForDirectory("internal/githubcli/"), VisibleRowIndex: 4, Depth: 1, Label: "githubcli/", FileIndex: -1, Kind: reviewDiffTreeRowKindDirectory, Foldable: true},
+		{ID: reviewDiffTreeRowIDForFile("internal/githubcli/client.go"), VisibleRowIndex: 5, Depth: 2, Label: "client.go", FileIndex: 2, Kind: reviewDiffTreeRowKindFile},
 	}
 	if !reflect.DeepEqual(actual.Rows, expected) {
 		t.Fatalf("expected rows %+v, actual %+v", expected, actual.Rows)
@@ -188,16 +188,16 @@ func TestBuildReviewDiffFileTree_GivenMixedSiblingDirectories_WhenProjecting_The
 
 func TestReviewDiffTreeItems_GivenDirectoriesAndFiles_WhenFormatting_ThenItPrefixesRowsWithIcons(t *testing.T) {
 	tree := reviewDiffTree{Rows: []reviewDiffTreeRow{
-		{VisibleRowIndex: 0, Depth: 0, Label: "internal/", FileIndex: -1},
-		{VisibleRowIndex: 1, Depth: 1, Label: "tui/", FileIndex: -1},
+		{VisibleRowIndex: 0, Depth: 0, Label: "internal/", FileIndex: -1, Foldable: true},
+		{VisibleRowIndex: 1, Depth: 1, Label: "tui/", FileIndex: -1, Foldable: true},
 		{VisibleRowIndex: 2, Depth: 2, Label: "notes.txt", FileIndex: 0},
 	}}
 
 	actual := reviewDiffTreeItems(tree, nil)
 
 	expected := []Item{
-		{Title: " internal/"},
-		{Title: "   tui/"},
+		{Title: "  internal/"},
+		{Title: "    tui/"},
 		{Title: "     notes.txt"},
 	}
 	if !reflect.DeepEqual(actual, expected) {

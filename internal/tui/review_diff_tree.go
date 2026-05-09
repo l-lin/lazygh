@@ -43,50 +43,59 @@ func buildReviewDiffFileTree(files []reviewDiffFile) reviewDiffTree {
 
 	rows := make([]reviewDiffTreeRow, 0)
 	for _, childNode := range root.children {
-		appendReviewDiffTreeRows(childNode, 0, &rows)
+		appendReviewDiffTreeRows(childNode, []string{childNode.name}, 0, &rows)
 	}
 	return reviewDiffTree{Rows: rows}
 }
 
-func appendReviewDiffTreeRows(node *reviewDiffTreeNode, depth int, rows *[]reviewDiffTreeRow) {
+func appendReviewDiffTreeRows(node *reviewDiffTreeNode, pathSegments []string, depth int, rows *[]reviewDiffTreeRow) {
 	if node == nil {
 		return
 	}
 	if node.isFile() {
-		appendReviewDiffTreeRow(rows, depth, node.name, node.fileIndex, 0, reviewDiffTreeRowKindDirectory)
+		filePath := strings.Join(pathSegments, "/")
+		appendReviewDiffTreeRow(rows, reviewDiffTreeRowIDForFile(filePath), depth, node.name, node.fileIndex, 0, reviewDiffTreeRowKindFile, false)
 		return
 	}
 
-	pathSegments := []string{node.name}
+	currentPathSegments := append([]string(nil), pathSegments...)
+	labelSegments := []string{node.name}
 	currentNode := node
 	for currentNode.isDirectory() && len(currentNode.children) == 1 {
 		onlyChild := currentNode.children[0]
 		if onlyChild.isFile() {
-			appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1, 0, reviewDiffTreeRowKindDirectory)
-			appendReviewDiffTreeRow(rows, depth+1, onlyChild.name, onlyChild.fileIndex, 0, reviewDiffTreeRowKindDirectory)
+			directoryPath := strings.Join(currentPathSegments, "/") + "/"
+			directoryLabel := strings.Join(labelSegments, "/") + "/"
+			appendReviewDiffTreeRow(rows, reviewDiffTreeRowIDForDirectory(directoryPath), depth, directoryLabel, -1, 0, reviewDiffTreeRowKindDirectory, true)
+			appendReviewDiffTreeRow(rows, reviewDiffTreeRowIDForFile(directoryPath+onlyChild.name), depth+1, onlyChild.name, onlyChild.fileIndex, 0, reviewDiffTreeRowKindFile, false)
 			return
 		}
-		pathSegments = append(pathSegments, onlyChild.name)
+		currentPathSegments = append(currentPathSegments, onlyChild.name)
+		labelSegments = append(labelSegments, onlyChild.name)
 		currentNode = onlyChild
 	}
 
-	appendReviewDiffTreeRow(rows, depth, strings.Join(pathSegments, "/")+"/", -1, 0, reviewDiffTreeRowKindDirectory)
+	directoryPath := strings.Join(currentPathSegments, "/") + "/"
+	directoryLabel := strings.Join(labelSegments, "/") + "/"
+	appendReviewDiffTreeRow(rows, reviewDiffTreeRowIDForDirectory(directoryPath), depth, directoryLabel, -1, 0, reviewDiffTreeRowKindDirectory, true)
 	for _, childNode := range currentNode.children {
-		appendReviewDiffTreeRows(childNode, depth+1, rows)
+		appendReviewDiffTreeRows(childNode, append(append([]string(nil), currentPathSegments...), childNode.name), depth+1, rows)
 	}
 }
 
-func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, depth int, label string, fileIndex int, chapterIndex int, kind reviewDiffTreeRowKind) {
+func appendReviewDiffTreeRow(rows *[]reviewDiffTreeRow, id string, depth int, label string, fileIndex int, chapterIndex int, kind reviewDiffTreeRowKind, foldable bool) {
 	if rows == nil {
 		return
 	}
 	*rows = append(*rows, reviewDiffTreeRow{
+		ID:              strings.TrimSpace(id),
 		VisibleRowIndex: len(*rows),
 		Depth:           depth,
 		Label:           label,
 		FileIndex:       fileIndex,
 		ChapterIndex:    chapterIndex,
 		Kind:            kind,
+		Foldable:        foldable,
 	})
 }
 
@@ -99,7 +108,16 @@ func reviewDiffTreeItems(tree reviewDiffTree, files []reviewDiffFile) []Item {
 }
 
 func reviewDiffTreeRowText(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowIcon(row) + " " + reviewDiffTreeRowDisplayLabel(row, files)
+	return reviewDiffTreeRowPrefix(row, files) + reviewDiffTreeRowDisplayLabel(row, files)
+}
+
+func reviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	parts := make([]string, 0, 2)
+	if chevron := reviewDiffTreeRowChevron(row); chevron != "" {
+		parts = append(parts, chevron)
+	}
+	parts = append(parts, reviewDiffTreeRowIcon(row))
+	return strings.Join(parts, " ") + " "
 }
 
 func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -131,11 +149,32 @@ func reviewDiffTreeRowStyledText(row reviewDiffTreeRow, files []reviewDiffFile) 
 }
 
 func reviewDiffTreeRowStyledPrefix(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowIndent(row) + reviewDiffTreeRowStyledIcon(row, files) + " "
+	return reviewDiffTreeRowIndent(row) + reviewDiffTreeRowStyledLeadingIcons(row, files)
+}
+
+func reviewDiffTreeRowStyledLeadingIcons(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	parts := make([]string, 0, 2)
+	if chevron := reviewDiffTreeRowStyledChevron(row, files); chevron != "" {
+		parts = append(parts, chevron)
+	}
+	parts = append(parts, reviewDiffTreeRowStyledIcon(row, files))
+	return strings.Join(parts, " ") + " "
 }
 
 func reviewDiffTreeRowIndent(row reviewDiffTreeRow) string {
 	return strings.Repeat("  ", row.Depth)
+}
+
+func reviewDiffTreeRowStyledChevron(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	chevron := reviewDiffTreeRowChevron(row)
+	if chevron == "" {
+		return ""
+	}
+	foregroundHex := reviewDiffTreeRowForegroundHex(row, files)
+	if strings.TrimSpace(foregroundHex) != "" && foregroundHex != theme.ActiveTextHex {
+		return styleText(chevron, foregroundColorEscape(foregroundHex))
+	}
+	return chevron
 }
 
 func reviewDiffTreeRowStyledIcon(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -169,10 +208,6 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 }
 
 func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, query string, selected bool) string {
-	if row.FileIndex < 0 && row.Kind != reviewDiffTreeRowKindChapter {
-		query = ""
-	}
-
 	commentSuffix := reviewDiffTreeRowCommentSuffix(row, files)
 	if !selected {
 		highlightedLabel, _ := highlightSearchMatches(row.Label, query)
@@ -188,13 +223,18 @@ func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, quer
 func renderSelectedReviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile, selectedPrefix string) string {
 	indent := applyPrefix(reviewDiffTreeRowIndent(row), selectedPrefix)
 	foregroundHex := reviewDiffTreeRowForegroundHex(row, files)
-	icon := reviewDiffTreeRowIcon(row)
-	if strings.TrimSpace(foregroundHex) != "" && foregroundHex != theme.ActiveTextHex {
-		icon = selectedPrefix + foregroundColorEscape(foregroundHex) + icon + ansiReset
-	} else {
-		icon = applyPrefix(icon, selectedPrefix)
+	segments := make([]string, 0, 2)
+	for _, segment := range []string{reviewDiffTreeRowChevron(row), reviewDiffTreeRowIcon(row)} {
+		if segment == "" {
+			continue
+		}
+		if strings.TrimSpace(foregroundHex) != "" && foregroundHex != theme.ActiveTextHex {
+			segments = append(segments, selectedPrefix+foregroundColorEscape(foregroundHex)+segment+ansiReset)
+			continue
+		}
+		segments = append(segments, applyPrefix(segment, selectedPrefix))
 	}
-	return indent + icon + applyPrefix(" ", selectedPrefix)
+	return indent + strings.Join(segments, applyPrefix(" ", selectedPrefix)) + applyPrefix(" ", selectedPrefix)
 }
 
 func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDiffTree, files []reviewDiffFile, query string, selectedVisibleLine int) {
@@ -208,6 +248,24 @@ func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDi
 		fmt.Fprintln(view, renderReviewDiffTreeRow(row, files, query, showSelectedLine && row.VisibleRowIndex == selectedVisibleLine))
 	}
 	program.selectListLine(view, selectedVisibleLine, len(tree.Rows))
+}
+
+func reviewDiffTreeRowChevron(row reviewDiffTreeRow) string {
+	if !row.Foldable {
+		return ""
+	}
+	if row.Collapsed {
+		return browserDetailCollapsedChevron
+	}
+	return browserDetailExpandedChevron
+}
+
+func reviewDiffSelectableTreeRowIndexes(tree reviewDiffTree) []int {
+	indexes := make([]int, 0, len(tree.Rows))
+	for _, row := range tree.Rows {
+		indexes = append(indexes, row.VisibleRowIndex)
+	}
+	return indexes
 }
 
 func reviewDiffSelectableRowIndexes(tree reviewDiffTree) []int {

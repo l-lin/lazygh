@@ -10,9 +10,19 @@ func (program *Program) actionsPopupSelectionLineState() (int, int) {
 	return program.currentActionsPopupSelectedRenderedLine(), program.currentActionsPopupRenderedLineCount()
 }
 
-func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
+func (program *Program) openActionsPopup(gui *gocui.Gui, view *gocui.View) error {
 	if program.model.Focus() == FocusDetailView && program.detailViewState.consumeInlineConversationTogglePrefix() {
 		return program.toggleInlineConversationVisibility(gui, nil)
+	}
+	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
+		viewName := viewPullRequestsName
+		if view != nil && strings.TrimSpace(view.Name()) != "" {
+			viewName = view.Name()
+		}
+		if program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
+			_, actualErr := program.toggleSelectedReviewTreeRowVisibility(gui)
+			return actualErr
+		}
 	}
 
 	program.clearPendingSelectionPrefix()

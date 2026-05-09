@@ -140,6 +140,8 @@ func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileA
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
+	then_helpEntryUsesKey(t, actualBuffer, "Expand/collapse fold", "<enter>/za")
+	then_helpEntryUsesKey(t, actualBuffer, "Close/open all folds", "zM/zR")
 }
 
 func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {

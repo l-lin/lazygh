@@ -111,6 +111,7 @@ func TestFullPageNavigation_GivenReviewFilesViewSelection_WhenPressingPageDownAn
 	initialRow := subject.reviewSession.selectedFileTreeRow
 	step := fullPageDelta(filesView.InnerHeight())
 	expectedDownRow := adjustVisibleSelection(initialRow, selectableRows, step)
+	expectedUpRow := adjustVisibleSelection(expectedDownRow, selectableRows, -step)
 	lineCount := len(subject.reviewSessionFiles())
 	if tree, _, ok := subject.reviewSessionCurrentTree(); ok {
 		lineCount = len(tree.Rows)
@@ -131,10 +132,10 @@ func TestFullPageNavigation_GivenReviewFilesViewSelection_WhenPressingPageDownAn
 	then_noError(t, actualErr)
 	filesView, actualErr = gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != initialRow {
-		t.Fatalf("expected selected review row %d after paging back up, actual %d", initialRow, subject.reviewSession.selectedFileTreeRow)
+	if subject.reviewSession.selectedFileTreeRow != expectedUpRow {
+		t.Fatalf("expected selected review row %d after paging back up, actual %d", expectedUpRow, subject.reviewSession.selectedFileTreeRow)
 	}
-	then_listViewIsCenteredOnSelection(t, filesView, initialRow, lineCount)
+	then_listViewIsCenteredOnSelection(t, filesView, expectedUpRow, lineCount)
 }
 
 func TestFullPageNavigation_GivenDetailCursor_WhenPressingControlFAndControlB_ThenItMovesAFullPageAndRecenters(t *testing.T) {
