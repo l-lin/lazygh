@@ -11,6 +11,7 @@ type styledTextLine struct {
 	runes            []rune
 	stylePrefixes    []string
 	hyperlinkTargets []string
+	controls         []styledTextControl
 }
 
 func splitStyledTextLines(text string) []styledTextLine {
@@ -24,6 +25,12 @@ func splitStyledTextLines(text string) []styledTextLine {
 				if strings.HasSuffix(sequence, "m") {
 					currentStylePrefix = updatedANSIStylePrefix(currentStylePrefix, sequence)
 				}
+				index = nextIndex
+				continue
+			}
+			if imageSpec, nextIndex, ok := parseDetailImageMarkerSequence(text, index); ok {
+				line := &lines[len(lines)-1]
+				line.controls = append(line.controls, styledTextControl{column: len(line.runes), image: &imageSpec})
 				index = nextIndex
 				continue
 			}
@@ -71,6 +78,11 @@ func trimTrailingStyledSpaces(line styledTextLine) styledTextLine {
 	line.runes = line.runes[:trimmedLength]
 	line.stylePrefixes = line.stylePrefixes[:trimmedLength]
 	line.hyperlinkTargets = line.hyperlinkTargets[:trimmedLength]
+	for controlIndex := range line.controls {
+		if line.controls[controlIndex].column > trimmedLength {
+			line.controls[controlIndex].column = trimmedLength
+		}
+	}
 	return line
 }
 
@@ -153,13 +165,23 @@ func renderStyledPadding(prefix string, width int) string {
 }
 
 func renderStyledTextLine(line styledTextLine) string {
-	if len(line.runes) == 0 {
+	if len(line.runes) == 0 && len(line.controls) == 0 {
 		return ""
 	}
 
 	var builder strings.Builder
 	currentPrefix := ""
-	for index, character := range line.runes {
+	for index := 0; index <= len(line.runes); index++ {
+		for _, control := range line.controls {
+			if control.column != index || control.image == nil {
+				continue
+			}
+			builder.WriteString(encodeDetailImageMarker(*control.image))
+		}
+		if index >= len(line.runes) {
+			break
+		}
+
 		prefix := ""
 		if index < len(line.stylePrefixes) {
 			prefix = line.stylePrefixes[index]
@@ -173,7 +195,7 @@ func renderStyledTextLine(line styledTextLine) string {
 			}
 			currentPrefix = prefix
 		}
-		builder.WriteRune(character)
+		builder.WriteRune(line.runes[index])
 	}
 	if currentPrefix != "" {
 		builder.WriteString(ansiReset)

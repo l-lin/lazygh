@@ -119,6 +119,8 @@ type Program struct {
 	modalEditor                             *modalEditorState
 	externalEditor                          externalEditor
 	linkOpener                              linkOpener
+	detailImageStore                        detailImageStore
+	detailImageManager                      detailImageManager
 	markdownRenderer                        MarkdownRenderer
 	storyGenerator                          reviewStoryGenerator
 	asyncRunner                             asyncRunner
@@ -154,6 +156,9 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		model = NewModel(DefaultSeedData())
 	}
 
+	imageStore := newMemoryDetailImageStore()
+	imageProtocol := kittyImageProtocol{}
+
 	return &Program{
 		model:                             model,
 		githubLoader:                      githubLoader,
@@ -175,7 +180,9 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		notificationDoneStore:             noopNotificationDoneStore{},
 		externalEditor:                    systemExternalEditor{},
 		linkOpener:                        newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand),
-		markdownRenderer:                  glamourMarkdownRenderer{},
+		detailImageStore:                  imageStore,
+		detailImageManager:                &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}},
+		markdownRenderer:                  glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
 		storyGenerator:                    commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
 		themePresetStore:                  &defaultThemePresetStore{save: appconfig.SaveThemePresetDefault},
 		asyncRunner:                       goroutineAsyncRunner{},

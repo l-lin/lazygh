@@ -40,6 +40,7 @@ type detailDocument struct {
 	lines                [][]rune
 	lineStylePrefixes    [][]string
 	lineHyperlinkTargets [][]string
+	images               []detailImagePlacement
 	width                int
 	wrap                 bool
 	lineStartOffsets     []int

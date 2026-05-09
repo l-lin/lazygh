@@ -22,6 +22,7 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 		lines:                make([][]rune, 0, len(styledLines)),
 		lineStylePrefixes:    make([][]string, 0, len(styledLines)),
 		lineHyperlinkTargets: make([][]string, 0, len(styledLines)),
+		images:               make([]detailImagePlacement, 0),
 		width:                width,
 		wrap:                 wrap,
 		lineStartOffsets:     make([]int, 0, len(styledLines)),
@@ -39,6 +40,12 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 		document.lineHyperlinkTargets = append(document.lineHyperlinkTargets, lineHyperlinkTargets)
 		document.lineStartOffsets = append(document.lineStartOffsets, offset)
 		document.lineStartRows = append(document.lineStartRows, rowIndex)
+		for _, control := range styledLine.controls {
+			if control.image == nil {
+				continue
+			}
+			document.images = append(document.images, detailImagePlacement{line: lineIndex, column: control.column, imageID: control.image.imageID, columns: control.image.columns, rows: control.image.rows})
+		}
 
 		if len(lineRunes) == 0 {
 			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: 0, empty: true})

@@ -30,7 +30,11 @@ type MarkdownRenderer interface {
 	Render(markdown string, width int) (string, error)
 }
 
-type glamourMarkdownRenderer struct{}
+type glamourMarkdownRenderer struct {
+	imageStore       detailImageStore
+	imageProtocol    detailImageProtocol
+	terminalCellSize terminalCellSizeProvider
+}
 
 type pullRequestDetailResult struct {
 	detail          githubcli.PullRequestDetail
@@ -52,8 +56,8 @@ func (tab DetailTab) Label() string {
 	}
 }
 
-func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
-	return renderMarkdownWithGlamourStyle(markdown, width, prettyMarkdownStyle())
+func (renderer glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
+	return renderMarkdownWithImageMarkers(markdown, width, renderer.actualImageStore(), renderer.actualImageProtocol(), renderer.actualTerminalCellSize())
 }
 
 func renderMarkdownWithGlamour(markdown string) (string, error) {
