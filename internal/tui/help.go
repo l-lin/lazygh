@@ -324,7 +324,7 @@ func (program *Program) inlineConversationToggleHelpKeys() string {
 }
 
 func (program *Program) reviewTreeToggleHelpKeys() string {
-	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}) + "/" + program.helpKeyChordOrFallback("z", "a", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"})
+	return program.helpKeyChordOrFallback("z", "a", keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"})
 }
 
 func (program *Program) bulkFoldHelpKeys() string {

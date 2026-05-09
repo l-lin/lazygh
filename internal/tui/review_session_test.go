@@ -924,7 +924,7 @@ func TestReviewMode_GivenTheSelectedFileTreeRow_WhenRendering_ThenViewTwoKeepsIt
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
 }
 
-func TestReviewMode_GivenADirectoryRowInTheFilesPane_WhenPressingEnterAndZA_ThenItTogglesTheDirectoryWithoutLeavingViewTwo(t *testing.T) {
+func TestReviewMode_GivenADirectoryRowInTheFilesPane_WhenPressingEnter_ThenItOpensViewZeroWithoutTogglingTheDirectory(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		diffs: map[string]githubcli.PullRequestDiff{
@@ -948,36 +948,21 @@ func TestReviewMode_GivenADirectoryRowInTheFilesPane_WhenPressingEnterAndZA_Then
 	directoryLineIndex := given_viewLineIndexContaining(t, filesView, "internal/tui/")
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/")
 
-	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEnter)
-	actualErr = toggleHandler(gui, filesView)
+	openDetailHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEnter)
+	actualErr = openDetailHandler(gui, filesView)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	if !strings.Contains(filesView.Buffer(), " "+reviewDiffDirectoryIcon+" internal/tui/") {
-		t.Fatalf("expected enter to collapse the directory, actual %q", filesView.Buffer())
-	}
-	for _, hidden := range []string{"render.go", "model.go"} {
-		if strings.Contains(filesView.Buffer(), hidden) {
-			t.Fatalf("expected enter to hide %q from the collapsed directory, actual %q", hidden, filesView.Buffer())
-		}
-	}
-
-	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'z')
-	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'a')
-	actualErr = prefixHandler(gui, filesView)
-	then_noError(t, actualErr)
-	actualErr = collapseHandler(gui, filesView)
-	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
 	if !strings.Contains(filesView.Buffer(), " "+reviewDiffDirectoryIcon+" internal/tui/") {
-		t.Fatalf("expected za to expand the directory, actual %q", filesView.Buffer())
+		t.Fatalf("expected enter to keep the directory expanded, actual %q", filesView.Buffer())
 	}
 	for _, expected := range []string{"render.go", "model.go"} {
 		if !strings.Contains(filesView.Buffer(), expected) {
-			t.Fatalf("expected za to restore %q to the directory listing, actual %q", expected, filesView.Buffer())
+			t.Fatalf("expected enter to keep %q visible in the file tree, actual %q", expected, filesView.Buffer())
 		}
 	}
 }
 
-func TestReviewMode_GivenTheSelectedFileIsInsideADirectory_WhenPressingEnterAndZA_ThenItTogglesTheContainingDirectory(t *testing.T) {
+func TestReviewMode_GivenTheSelectedFileIsInsideADirectory_WhenPressingZA_ThenItTogglesTheContainingDirectory(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		diffs: map[string]githubcli.PullRequestDiff{
@@ -999,31 +984,6 @@ func TestReviewMode_GivenTheSelectedFileIsInsideADirectory_WhenPressingEnterAndZ
 	selectedLineIndex := given_viewLineIndexContaining(t, filesView, "render.go")
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
 
-	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEnter)
-	actualErr = toggleHandler(gui, filesView)
-	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	if !strings.Contains(filesView.Buffer(), " "+reviewDiffDirectoryIcon+" internal/tui/") {
-		t.Fatalf("expected enter on a child file to collapse the containing directory, actual %q", filesView.Buffer())
-	}
-	for _, hidden := range []string{"render.go", "model.go"} {
-		if strings.Contains(filesView.Buffer(), hidden) {
-			t.Fatalf("expected enter on a child file to hide %q, actual %q", hidden, filesView.Buffer())
-		}
-	}
-	directoryLineIndex := given_viewLineIndexContaining(t, filesView, "internal/tui/")
-	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/")
-
-	actualErr = toggleHandler(gui, filesView)
-	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), "render.go") || !strings.Contains(filesView.Buffer(), "model.go") {
-		t.Fatalf("expected enter to reopen the containing directory, actual %q", filesView.Buffer())
-	}
-	actualErr = subject.moveSelectionDown(gui, nil)
-	then_noError(t, actualErr)
-	selectedLineIndex = given_viewLineIndexContaining(t, filesView, "render.go")
-	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
-
 	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'z')
 	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'a')
 	actualErr = prefixHandler(gui, filesView)
@@ -1038,7 +998,20 @@ func TestReviewMode_GivenTheSelectedFileIsInsideADirectory_WhenPressingEnterAndZ
 			t.Fatalf("expected za on a child file to hide %q, actual %q", hidden, filesView.Buffer())
 		}
 	}
+	directoryLineIndex := given_viewLineIndexContaining(t, filesView, "internal/tui/")
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, directoryLineIndex, "internal/tui/")
+
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = collapseHandler(gui, filesView)
+	then_noError(t, actualErr)
+	if !strings.Contains(filesView.Buffer(), "render.go") || !strings.Contains(filesView.Buffer(), "model.go") {
+		t.Fatalf("expected za to reopen the containing directory, actual %q", filesView.Buffer())
+	}
+	actualErr = subject.moveSelectionDown(gui, nil)
+	then_noError(t, actualErr)
+	selectedLineIndex = given_viewLineIndexContaining(t, filesView, "render.go")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
 }
 
 func TestReviewMode_GivenTheFilesPane_WhenPressingZMAndZR_ThenItClosesAndOpensEveryDirectoryWhileKeepingSelectionOnTheContainingDirectory(t *testing.T) {

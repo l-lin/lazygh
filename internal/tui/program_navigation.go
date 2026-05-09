@@ -373,12 +373,6 @@ func (program *Program) focusNotificationsView(gui *gocui.Gui, _ *gocui.View) er
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
 	program.detailViewState.clearPendingPrefix()
-	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
-		toggled, actualErr := program.toggleSelectedReviewTreeRowVisibility(gui)
-		if toggled || actualErr != nil {
-			return actualErr
-		}
-	}
 	if program.detailTransitionBlocked() {
 		return nil
 	}
