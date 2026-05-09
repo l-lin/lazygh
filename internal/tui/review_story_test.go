@@ -223,6 +223,76 @@ func TestReviewStoryMode_GivenAChapterRow_WhenPressingEnterAndZA_ThenItTogglesTh
 	}
 }
 
+func TestReviewStoryMode_GivenTheSelectedFileIsInsideAChapter_WhenPressingEnterAndZA_ThenItTogglesTheContainingChapter(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_story",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	storyGenerator := &fakeStoryGenerator{review: story.Review{
+		Chapters: []story.Chapter{
+			{ID: "chapter-1", Title: "The Renderer Wakes", Files: []string{"internal/tui/render.go"}},
+			{ID: "chapter-2", Title: "The Model Answers", Files: []string{"internal/tui/model.go"}},
+		},
+	}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	subject.storyGenerator = storyGenerator
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingStoryReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.moveSelectionDown(gui, nil)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	selectedLineIndex := given_viewLineIndexContaining(t, filesView, "render.go")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEnter)
+	actualErr = toggleHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+		t.Fatalf("expected enter on a chapter file to collapse the containing chapter, actual %q", filesView.Buffer())
+	}
+	if strings.Contains(filesView.Buffer(), "render.go") {
+		t.Fatalf("expected enter on a chapter file to hide the chapter files, actual %q", filesView.Buffer())
+	}
+	chapterLineIndex := given_viewLineIndexContaining(t, filesView, "The Renderer Wakes")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, chapterLineIndex, "The Renderer Wakes")
+
+	actualErr = toggleHandler(gui, filesView)
+	then_noError(t, actualErr)
+	if !strings.Contains(filesView.Buffer(), "render.go") {
+		t.Fatalf("expected enter to reopen the containing chapter, actual %q", filesView.Buffer())
+	}
+	actualErr = subject.moveSelectionDown(gui, nil)
+	then_noError(t, actualErr)
+	selectedLineIndex = given_viewLineIndexContaining(t, filesView, "render.go")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, selectedLineIndex, "render.go")
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'z')
+	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'a')
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = collapseHandler(gui, filesView)
+	then_noError(t, actualErr)
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+		t.Fatalf("expected za on a chapter file to collapse the containing chapter, actual %q", filesView.Buffer())
+	}
+	if strings.Contains(filesView.Buffer(), "render.go") {
+		t.Fatalf("expected za on a chapter file to hide the chapter files, actual %q", filesView.Buffer())
+	}
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, chapterLineIndex, "The Renderer Wakes")
+}
+
 func TestReviewStoryMode_GivenTheChapterTree_WhenPressingZMAndZR_ThenItClosesAndOpensEveryChapterWhileKeepingSelectionOnTheCurrentChapter(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_story",

@@ -17,17 +17,18 @@ func (program *Program) toggleSelectedReviewTreeRowVisibility(gui *gocui.Gui) (b
 	}
 	selectedRowIndex := clampIndex(program.reviewSession.selectedFileTreeRow, len(visibleTree.Rows))
 	selectedRow := visibleTree.Rows[selectedRowIndex]
-	if !selectedRow.Foldable {
-		return false, nil
-	}
 
 	rawTree, _, rawTreeOK := program.reviewSessionRawTree()
 	if !rawTreeOK {
 		return false, nil
 	}
-	program.setReviewTreeRowCollapsed(selectedRow.ID, !selectedRow.Collapsed)
+	targetRow, ok := reviewDiffTreeNearestFoldableRow(rawTree, selectedRow.ID)
+	if !ok {
+		return false, nil
+	}
+	program.setReviewTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.reviewSession.collapsedTreeRowIDs))
 	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
-	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRow.ID)
+	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID)
 	return true, program.refreshViewsIfGUI(gui)
 }
 

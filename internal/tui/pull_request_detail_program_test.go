@@ -391,6 +391,77 @@ func TestBrowserMode_GivenAChangesTabFileHeader_WhenPressingEnterAndZA_ThenItTog
 	}
 }
 
+func TestBrowserMode_GivenTheCursorOnAChangesDiffLine_WhenPressingEnterAndZA_ThenItTogglesTheContainingFileVisibility(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "+new line")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") {
+		t.Fatalf("expected enter on a diff line to collapse the containing file, actual %q", detailView.Buffer())
+	}
+	for _, hidden := range []string{"@@ -1,2 +1,3 @@", "+another line"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected enter on a diff line to hide %q, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go")
+
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "+another line") {
+		t.Fatalf("expected enter to re-expand the containing file, actual %q", detailView.Buffer())
+	}
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "+new line")
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
+	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = collapseHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") {
+		t.Fatalf("expected za on a diff line to collapse the containing file, actual %q", detailView.Buffer())
+	}
+	for _, hidden := range []string{"@@ -1,2 +1,3 @@", "+another line"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected za on a diff line to hide %q, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go")
+}
+
 func TestBrowserMode_GivenAResolvedChangesTabThread_WhenPressingEnterAndZA_ThenItTogglesTheThreadVisibility(t *testing.T) {
 	diff := githubcli.PullRequestDiff{
 		UnifiedDiff: strings.Join([]string{

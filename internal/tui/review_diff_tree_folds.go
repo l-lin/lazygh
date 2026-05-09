@@ -97,6 +97,29 @@ func reviewDiffTreeFirstDescendantFileIndex(tree reviewDiffTree, rowID string) (
 	return 0, false
 }
 
+func reviewDiffTreeNearestFoldableRow(tree reviewDiffTree, rowID string) (reviewDiffTreeRow, bool) {
+	row, index, ok := reviewDiffTreeRowByID(tree, rowID)
+	if !ok {
+		return reviewDiffTreeRow{}, false
+	}
+	if row.Foldable {
+		return row, true
+	}
+
+	currentDepth := row.Depth
+	for previousIndex := index - 1; previousIndex >= 0; previousIndex-- {
+		candidate := tree.Rows[previousIndex]
+		if candidate.Depth >= currentDepth {
+			continue
+		}
+		currentDepth = candidate.Depth
+		if candidate.Foldable {
+			return candidate, true
+		}
+	}
+	return reviewDiffTreeRow{}, false
+}
+
 func reviewDiffTreePreferredVisibleRowIndex(rawTree reviewDiffTree, visibleTree reviewDiffTree, rowID string) int {
 	if visibleRowIndex, ok := reviewDiffTreeVisibleRowIndexByID(visibleTree, rowID); ok {
 		return visibleRowIndex

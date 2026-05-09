@@ -97,11 +97,14 @@ func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary g
 	}
 
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	filePath, cursorOnFileHeader := reviewDiffFileHeaderAtCursor(renderedRows, detailDocument, program.detailViewState)
-	if cursorOnFileHeader {
-		return program.toggleBrowserChangesFileVisibility(gui, summary, result.data.Files, detailDocument.width, filePath)
+	if _, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState); ok {
+		return program.toggleBrowserChangesThreadVisibility(gui, summary, result.data.Files, detailDocument)
 	}
-	return program.toggleBrowserChangesThreadVisibility(gui, summary, result.data.Files, detailDocument)
+	filePath, ok := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailViewState)
+	if !ok {
+		return nil
+	}
+	return program.toggleBrowserChangesFileVisibility(gui, summary, result.data.Files, detailDocument.width, filePath)
 }
 
 func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summary githubcli.PullRequest, files []reviewDiffFile, width int, filePath string) error {
