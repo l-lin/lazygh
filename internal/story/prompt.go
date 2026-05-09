@@ -40,7 +40,7 @@ func BuildPrompt(request Request, prompt string) string {
 		`    {`,
 		`      "id": "chapter-1",`,
 		`      "title": "<short chapter title>",`,
-		`      "narrative": "## Why\n\n- Explain the behavior shift\n- Call out reviewer checkpoints",`,
+		`      "narrative": "<markdown chapter narrative>",`,
 		`      "files": ["path/to/file.go"]`,
 		`    }`,
 		`  ]`,

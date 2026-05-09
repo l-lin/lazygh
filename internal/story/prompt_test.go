@@ -28,7 +28,7 @@ func TestBuildPrompt_GivenStoryReviewRequest_WhenBuilding_ThenItExplainsHowToEnc
 	for _, expected := range []string{
 		"Markdown inside the `narrative` field is allowed and encouraged.",
 		`Use escaped newlines (\n) inside the JSON string`,
-		`"narrative": "## Why\n\n- Explain the behavior shift\n- Call out reviewer checkpoints"`,
+		`"narrative": "<markdown chapter narrative>"`,
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected prompt to contain %q, actual %q", expected, actual)
