@@ -2,10 +2,17 @@
 
 `lazygh` is a Go CLI that aims to make GitHub pull request work less annoying with a lazygit-like TUI.
 
+![PR list|500](./doc/pr_list.png)
+![PR changes|500](./doc/pr_changes.png)
+![PR comments|500](./doc/comments.png)
+![PR review|500](./doc/review.png)
+![PR story review|500](./doc/story_review.png)
+![Change theme|500](./doc/change_theme.png)
+
 ## Prerequisites
 
 - `mise`
-- Go `1.25.9` through `mise`
+- Go `1.25.9`
 - `gh` for the connected user view and the later GitHub-backed milestones
 
 ## Installation
