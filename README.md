@@ -31,6 +31,10 @@ mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh view https://
 mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
 ```
 
+### Directly from release page
+
+You can download the binary directly from the [release page](https://github.com/l-lin/lazygh/releases) and use it.
+
 ### Run from source
 
 ```sh
