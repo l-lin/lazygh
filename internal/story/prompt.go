@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const defaultPrompt = "Group the changes into a logical, reviewer-friendly story. Use a professional tone. Prefer chapters that reflect one cohesive behavior change, refactor step, or debugging thread. Explain what each chapter is doing, why it exists, and what a reviewer should mentally connect across the listed files. Keep the narrative concise, concrete, and useful for code review."
+const defaultPrompt = "Group the changes into a logical, reviewer-friendly story. Use a professional tone. Prefer chapters that reflect one cohesive behavior change, refactor step, or debugging thread. Explain what each chapter is doing, why it exists, and what a reviewer should mentally connect across the listed files. Write each chapter narrative as readable markdown with short paragraphs, lists, emphasis, links, and code fences when they help the review. Prefer multiple lines with spacing over one dense sentence. Keep the narrative concise, concrete, and useful for code review."
 
 func DefaultPrompt() string {
 	return defaultPrompt
@@ -30,7 +30,9 @@ func BuildPrompt(request Request, prompt string) string {
 		resolvedPrompt,
 		"",
 		"## Output",
-		"Return JSON only. No markdown fences or commentary outside the JSON. Markdown inside the `narrative` field is allowed.",
+		"Return JSON only. No markdown fences or commentary outside the JSON.",
+		"Markdown inside the `narrative` field is allowed and encouraged.",
+		`Use escaped newlines (\n) inside the JSON string so the rendered chapter can include paragraphs, lists, headings, links, emphasis, blockquotes, and code fences when useful.`,
 		"Use this exact schema:",
 		`{`,
 		`  "summary": "<2-3 sentence overview of the PR arc>",`,
@@ -38,7 +40,7 @@ func BuildPrompt(request Request, prompt string) string {
 		`    {`,
 		`      "id": "chapter-1",`,
 		`      "title": "<short chapter title>",`,
-		`      "narrative": "<markdown chapter narrative>",`,
+		`      "narrative": "## Why\n\n- Explain the behavior shift\n- Call out reviewer checkpoints",`,
 		`      "files": ["path/to/file.go"]`,
 		`    }`,
 		`  ]`,
@@ -51,6 +53,7 @@ func BuildPrompt(request Request, prompt string) string {
 		"- Group files by reviewer intent, behavior change, refactor step, or shared debugging thread.",
 		"- Keep titles concise and specific.",
 		"- Explain what each chapter is about and why it matters for review.",
+		"- Prefer readable markdown structure over one dense sentence: short paragraphs, bullets, and code fences are welcome when they help review.",
 		"- The narrative is guidance for a reviewer, not a code review verdict.",
 		"",
 		fmt.Sprintf("# Pull Request #%d: %s", metadata.Number, valueOrFallback(metadata.Title, "PR")),
