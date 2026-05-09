@@ -182,6 +182,37 @@ func TestKeybindingSpecs_GivenGlobalSideViewSwitchOverride_WhenListingBindings_T
 	}
 }
 
+func TestSideViewSwitchSequenceOverride_GivenAConflictingGlobalPrefix_WhenPressingTheConfiguredSequenceInASidePane_ThenItStillSwitchesThePane(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"global": {
+			"next_side_view":     {"zi"},
+			"previous_side_view": {"zo"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	userView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+
+	firstStepHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewUserName, 'z')
+	secondStepHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewUserName, 'i')
+
+	actualErr = firstStepHandler(gui, userView)
+	then_noError(t, actualErr)
+	if subject.model.Focus() != FocusUserView {
+		t.Fatalf("expected focus %v after the first key, actual %v", FocusUserView, subject.model.Focus())
+	}
+
+	actualErr = secondStepHandler(gui, userView)
+	then_noError(t, actualErr)
+	if subject.model.Focus() != FocusPullRequestsView {
+		t.Fatalf("expected focus %v after the configured sequence, actual %v", FocusPullRequestsView, subject.model.Focus())
+	}
+}
+
 func TestKeybindingSpecs_GivenGlobalFullPageOverride_WhenListingBindings_ThenItAppliesAcrossScopes(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {

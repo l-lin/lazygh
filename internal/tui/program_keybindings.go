@@ -139,8 +139,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 	}
 
 	for _, action := range actions {
-		for _, viewName := range action.action.viewNames {
-			for _, binding := range action.bindings {
+		for _, binding := range action.bindings {
+			for _, viewName := range bindingViewNames(action.action, binding) {
 				if len(binding.keys) == 0 {
 					continue
 				}
@@ -259,6 +259,44 @@ func copyConfiguredKeySequences(bindings []configuredKeySequence) []configuredKe
 	return copied
 }
 
+var multiStepGlobalBindingViewNames = []string{
+	viewUserName,
+	viewPullRequestsName,
+	viewNotificationsName,
+	viewDetailName,
+	viewActionsPopupName,
+	viewPullRequestBuildInfoName,
+	viewHelpName,
+}
+
+func bindingViewNames(action keybindingAction, binding configuredKeySequence) []string {
+	viewNames := append([]string(nil), action.viewNames...)
+	if len(binding.keys) <= 1 || !containsViewName(viewNames, "") {
+		return viewNames
+	}
+
+	viewNames = append(viewNames, multiStepGlobalBindingViewNames...)
+	uniqueViewNames := make([]string, 0, len(viewNames))
+	seen := map[string]struct{}{}
+	for _, viewName := range viewNames {
+		if _, ok := seen[viewName]; ok {
+			continue
+		}
+		seen[viewName] = struct{}{}
+		uniqueViewNames = append(uniqueViewNames, viewName)
+	}
+	return uniqueViewNames
+}
+
+func containsViewName(viewNames []string, candidate string) bool {
+	for _, viewName := range viewNames {
+		if viewName == candidate {
+			return true
+		}
+	}
+	return false
+}
+
 func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool {
 	conflicting := map[int]bool{}
 	seenTargets := map[keybindingTarget]int{}
@@ -277,8 +315,8 @@ func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool
 	}
 
 	for actionIndex, action := range actions {
-		for _, viewName := range action.action.viewNames {
-			for _, binding := range action.bindings {
+		for _, binding := range action.bindings {
+			for _, viewName := range bindingViewNames(action.action, binding) {
 				switch len(binding.keys) {
 				case 0:
 					continue
