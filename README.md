@@ -229,17 +229,7 @@ Use scoped tables under `[keymaps]`.
 
 A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
 
-`0`, `1`, `2`, and `3` stay fixed. They are not configurable. There is no `[keymaps.help]` table, help uses the other keymaps and is not configurable on its own.
-
-Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.folds` covers shared fold toggles, `keymaps.review` covers review-mode file and comment motions, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
-
-Actions popups reuse `keymaps.global.open_search`, and the popup search prompt reuses `keymaps.search.submit`.
-
-Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
-
-`w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
-
-In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `enter` still toggles the current section or inline conversation, `zt`/`zz`/`zb` place the cursor at the top/center/bottom, and `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys, so `gg`, `gx`, `w`, `e`, `b`, `W`, `E`, and `B` behave there too, and `/` searches the popup body.
+Here are the default keymaps:
 
 ```toml
 [keymaps.global]
