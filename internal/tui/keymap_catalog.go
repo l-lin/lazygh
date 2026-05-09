@@ -103,6 +103,7 @@ func keybindingActionFor(scope string, action string, viewNames []string, handle
 		defaultBindings: mustConfiguredKeySequences(bindings...),
 		handler:         handler,
 		allowSequences:  true,
+		bindingSlice:    keybindingBindingSliceAll,
 	}
 }
 
@@ -121,6 +122,11 @@ func fixedKeybindingActionFor(scope string, action string, viewNames []string, h
 
 func keybindingActionWithConfigID(definition keybindingAction, scope string, action string) keybindingAction {
 	definition.configID = keybindingActionID{scope: scope, action: action}
+	return definition
+}
+
+func keybindingActionWithBindingSlice(definition keybindingAction, bindingSlice keybindingBindingSlice) keybindingAction {
+	definition.bindingSlice = bindingSlice
 	return definition
 }
 
@@ -146,8 +152,8 @@ func closeKeybindingActionFor(scope string, viewNames []string, handler func(*go
 func (program *Program) keybindingActions() []keybindingAction {
 	return []keybindingAction{
 		keybindingActionFor(keymapScopeGlobal, "quit", []string{""}, program.quit, "ctrl+c"),
-		keybindingActionFor(keymapScopeGlobal, "next_side_view", []string{""}, program.nextSideView, "tab"),
-		keybindingActionFor(keymapScopeGlobal, "previous_side_view", []string{""}, program.previousSideView, "shift+tab"),
+		keybindingActionWithBindingSlice(keybindingActionFor(keymapScopeGlobal, "next_side_view", []string{""}, program.nextSideView, "tab", "l"), keybindingBindingSliceFirst),
+		keybindingActionWithBindingSlice(keybindingActionFor(keymapScopeGlobal, "previous_side_view", []string{""}, program.previousSideView, "shift+tab", "h"), keybindingBindingSliceFirst),
 
 		sharedKeybindingActionFor(keymapScopeMain, "toggle_help", mainPaneViewNames, program.toggleHelp),
 		fixedKeybindingActionFor(keymapScopeMain, "focus_user_view", mainPaneViewNames, program.focusUserView, "1"),
@@ -165,8 +171,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeMain, "grow_focused_pane", mainPaneViewNames, program.growFocusedPane),
 		sharedKeybindingActionFor(keymapScopeMain, "shrink_focused_pane", mainPaneViewNames, program.shrinkFocusedPane),
 
-		keybindingActionFor(keymapScopeSide, "next_side_view", sidePaneViewNames, program.nextSideView, "l"),
-		keybindingActionFor(keymapScopeSide, "previous_side_view", sidePaneViewNames, program.previousSideView, "h"),
+		keybindingActionWithBindingSlice(keybindingActionWithConfigID(keybindingActionFor(keymapScopeSide, "next_side_view", sidePaneViewNames, program.nextSideView, "tab", "l"), keymapScopeGlobal, "next_side_view"), keybindingBindingSliceRest),
+		keybindingActionWithBindingSlice(keybindingActionWithConfigID(keybindingActionFor(keymapScopeSide, "previous_side_view", sidePaneViewNames, program.previousSideView, "shift+tab", "h"), keymapScopeGlobal, "previous_side_view"), keybindingBindingSliceRest),
 		fixedKeybindingActionFor(keymapScopeSide, "focus_detail_view", sidePaneViewNames, program.focusDetailView, "0"),
 		sharedKeybindingActionFor(keymapScopeSide, "move_selection_to_top", sidePaneViewNames, program.moveSideSelectionToTop),
 		sharedKeybindingActionFor(keymapScopeSide, "move_selection_to_bottom", sidePaneViewNames, program.moveSideSelectionToBottom),

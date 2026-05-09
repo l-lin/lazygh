@@ -246,6 +246,8 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 		"shared behavior-first scopes",
 		"`keymaps.global` covers actions that work across multiple panes",
 		"`keymaps.global.previous_tab` and `keymaps.global.next_tab` cover tab switches",
+		"`keymaps.global.next_side_view` and `keymaps.global.previous_side_view` share both the global and side-pane aliases",
+		"first binding stays global and later bindings stay side-pane-only",
 		"`keymaps.modal_editor.cancel` covers the modal editor",
 		"help, detail, and actions popup search reuse shared scopes",
 		"`0`, `1`, `2`, and `3` stay fixed",
@@ -268,6 +270,8 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 		"move_cursor_right = [\"l\", \"right\"]",
 		"close = [\"esc\", \"q\"]",
 		"[keymaps.modal_editor]",
+		"next_side_view = [\"tab\", \"l\"]",
+		"previous_side_view = [\"shift+tab\", \"h\"]",
 		"previous_tab = \"[\"",
 		"next_tab = \"]\"",
 	} {

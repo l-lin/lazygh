@@ -102,3 +102,26 @@ func TestKeybindingActions_GivenProgram_WhenListingActions_ThenLegacyViewScopesS
 		}
 	}
 }
+
+func TestKeybindingActions_GivenProgram_WhenListingActions_ThenSideViewSwitchAliasesReuseTheGlobalConfigEntries(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actualConfigScopes := map[keybindingActionID]keybindingActionID{}
+	for _, action := range subject.keybindingActions() {
+		actualConfigScopes[action.id] = action.configID
+	}
+
+	for _, actionID := range []keybindingActionID{
+		{scope: keymapScopeSide, action: "next_side_view"},
+		{scope: keymapScopeSide, action: "previous_side_view"},
+	} {
+		actualConfigID, ok := actualConfigScopes[actionID]
+		if !ok {
+			t.Fatalf("expected action %+v to exist", actionID)
+		}
+		expected := keybindingActionID{scope: keymapScopeGlobal, action: actionID.action}
+		if actualConfigID != expected {
+			t.Fatalf("expected action %+v to use config id %+v, actual %+v", actionID, expected, actualConfigID)
+		}
+	}
+}

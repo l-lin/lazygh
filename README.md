@@ -229,13 +229,21 @@ Use scoped tables under `[keymaps]`.
 
 A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
 
+The keymaps use shared behavior-first scopes. `keymaps.global` covers actions that work across multiple panes. `keymaps.global.previous_tab` and `keymaps.global.next_tab` cover tab switches. `keymaps.global.next_side_view` and `keymaps.global.previous_side_view` share both the global and side-pane aliases, and the first binding stays global and later bindings stay side-pane-only. `keymaps.modal_editor.cancel` covers the modal editor. That means help, detail, and actions popup search reuse shared scopes instead of their own tables. `0`, `1`, `2`, and `3` stay fixed.
+
+`ctrl-d`/`ctrl-u` do half-page movement. `ctrl-f`/`ctrl-b` do full-page movement. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
+
+`zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the viewport. `zt`/`zz`/`zb` place the cursor at the top/center/bottom in cursor-driven panes. Use `za` for inline conversations. `zM` and `zR` close or open every fold in the current detail context.
+
+`w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions.
+
 Here are the default keymaps:
 
 ```toml
 [keymaps.global]
 quit = "ctrl+c"
-next_side_view = "tab"
-previous_side_view = "shift+tab"
+next_side_view = ["tab", "l"]
+previous_side_view = ["shift+tab", "h"]
 toggle_help = "?"
 open_search = "/"
 move_selection_down = ["j", "down"]

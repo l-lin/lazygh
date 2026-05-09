@@ -35,6 +35,14 @@ type keybindingActionID struct {
 	action string
 }
 
+type keybindingBindingSlice int
+
+const (
+	keybindingBindingSliceAll keybindingBindingSlice = iota
+	keybindingBindingSliceFirst
+	keybindingBindingSliceRest
+)
+
 type keybindingAction struct {
 	id              keybindingActionID
 	configID        keybindingActionID
@@ -43,6 +51,7 @@ type keybindingAction struct {
 	defaultBindings []configuredKeySequence
 	handler         func(*gocui.Gui, *gocui.View) error
 	allowSequences  bool
+	bindingSlice    keybindingBindingSlice
 }
 
 type resolvedKeybindingAction struct {
@@ -217,7 +226,7 @@ func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {
 	defaults := program.keybindingActions()
 	resolved := make([]resolvedKeybindingAction, 0, len(defaults))
 	for _, action := range defaults {
-		bindings := copyConfiguredKeySequences(action.defaultBindings)
+		bindings := action.selectBindings(copyConfiguredKeySequences(action.defaultBindings))
 		overridden := false
 		if overrideBindings, ok := program.overrideBindings(action); ok {
 			bindings = overrideBindings
@@ -228,7 +237,7 @@ func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {
 
 	conflictingOverrides := conflictingOverrideIndexes(resolved)
 	for index := range conflictingOverrides {
-		resolved[index].bindings = copyConfiguredKeySequences(resolved[index].action.defaultBindings)
+		resolved[index].bindings = resolved[index].action.selectBindings(copyConfiguredKeySequences(resolved[index].action.defaultBindings))
 		resolved[index].overridden = false
 	}
 
@@ -317,7 +326,11 @@ func (program *Program) overrideBindings(action keybindingAction) ([]configuredK
 		return nil, false
 	}
 
-	return program.parseOverrideBindings(action.configID.scope, action.configID.action, action.allowSequences)
+	bindings, ok := program.parseOverrideBindings(action.configID.scope, action.configID.action, action.allowSequences)
+	if !ok {
+		return nil, false
+	}
+	return action.selectBindings(bindings), true
 }
 
 func (program *Program) parseOverrideBindings(scope string, action string, allowSequences bool) ([]configuredKeySequence, bool) {
@@ -348,6 +361,23 @@ func containsMultiStepBinding(bindings []configuredKeySequence) bool {
 		}
 	}
 	return false
+}
+
+func (action keybindingAction) selectBindings(bindings []configuredKeySequence) []configuredKeySequence {
+	switch action.bindingSlice {
+	case keybindingBindingSliceFirst:
+		if len(bindings) == 0 {
+			return nil
+		}
+		return copyConfiguredKeySequences(bindings[:1])
+	case keybindingBindingSliceRest:
+		if len(bindings) <= 1 {
+			return nil
+		}
+		return copyConfiguredKeySequences(bindings[1:])
+	default:
+		return copyConfiguredKeySequences(bindings)
+	}
 }
 
 func parseConfiguredBindings(values []string) ([]configuredKeySequence, bool) {

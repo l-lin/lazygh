@@ -160,6 +160,28 @@ func TestKeybindingSpecs_GivenSearchCancelOverride_WhenListingBindings_ThenItApp
 	then_bindingDoesNotExist(t, actual, viewModalEditorName, 'X')
 }
 
+func TestKeybindingSpecs_GivenGlobalSideViewSwitchOverride_WhenListingBindings_ThenTheFirstBindingStaysGlobalAndTheRestStaySideOnly(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"global": {
+			"next_side_view":     {"x", "l"},
+			"previous_side_view": {"X", "h"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: "", key: 'x', handler: subject.nextSideView})
+	then_bindingExists(t, actual, keybindingSpec{viewName: "", key: 'X', handler: subject.previousSideView})
+	then_bindingDoesNotExist(t, actual, "", 'l')
+	then_bindingDoesNotExist(t, actual, "", 'h')
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewNotificationsName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'l', handler: subject.nextSideView})
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'h', handler: subject.previousSideView})
+		then_bindingDoesNotExist(t, actual, viewName, 'x')
+		then_bindingDoesNotExist(t, actual, viewName, 'X')
+	}
+}
+
 func TestKeybindingSpecs_GivenGlobalFullPageOverride_WhenListingBindings_ThenItAppliesAcrossScopes(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {
