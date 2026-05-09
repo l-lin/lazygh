@@ -86,9 +86,21 @@ By default, it will use the `system` preset if not set:
 preset = "system"
 ```
 
-List of presets can be found in [`preset.go`](internal/theme/preset.go).
+Available presets include `system`, `light`, and `dark`, plus the additional presets listed in [`preset.go`](internal/theme/preset.go).
+
+You can switch presets from inside the app too. `Change theme` in the actions popup updates `~/.config/lazygh/config.toml` immediately.
 
 You can find the list of palette variables in [palette.go](internal/theme/palette.go).
+
+A few palette entries do more than their names suggest:
+
+- `background` fills the full TUI background.
+- `markdown_heading_background` controls the full-line heading fill.
+
+- `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
+- `pull_request_title` colors the pull-request title text in pull-request lists.
+- `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
+- `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
 
 This example starts from `kanagawa-dark` and overrides a few colors.
 
@@ -137,21 +149,40 @@ open_command = ["open", "-a", "Firefox"]
 
 ### Story review
 
-You can start a PR review as a story, which groups changes by logical "chapters", to help you review.
+Story review powers `lazygh` story mode. It shells out to an external coding agent and expects the final answer to be JSON only.
 
-It uses an external AI coding tool, like claude-code, pi, codex, etc...
+Configure `story_review.agent_command` under `[story_review]`. `lazygh` writes the generated prompt to a temporary file and replaces `{{prompt_file}}` in the configured command. If your command does not include `{{prompt_file}}`, `lazygh` appends the prompt file path as the last argument.
 
-To have this feature, configure the `story_review.agent_command`:
-Configure the AI command under `[story_review]`:
+A direct `pi` example:
 
 ```toml
 [story_review]
 agent_command = ["pi", "--models", "anthropic/claude-sonnet-4-6", "--no-session", "-p", "@{{prompt_file}}"]
 ```
 
-By default, it will use the prompt in [prompt.go](internal/story/prompt.go).
+If your agent wants prompt text instead of a prompt-file flag, wrap it with `bash -lc` and read the file inside the shell.
 
-You can override the prompt to use:
+```toml
+# Claude Code (`claude-code`, or `claude` on some installs)
+[story_review]
+agent_command = ["bash", "-lc", "claude -p --output-format json \"$(<{{prompt_file}})\""]
+```
+
+```toml
+# Codex
+[story_review]
+agent_command = ["bash", "-lc", "codex exec \"$(<{{prompt_file}})\""]
+```
+
+```toml
+# OpenCode
+[story_review]
+agent_command = ["bash", "-lc", "opencode run \"$(<{{prompt_file}})\""]
+```
+
+By default, `lazygh` uses the prompt in [prompt.go](internal/story/prompt.go).
+
+You can override the prompt too:
 
 ```toml
 [story_review]
@@ -186,13 +217,19 @@ label = "Escalated"
 command = ["search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
 ```
 
+### Actions
+
+Press `a` to open the actions popup for the focused view.
+
+`Assign PR` opens a searchable assignee picker. Press `enter` to toggle an assignee, then press `alt+enter` to save. GitHub only allows up to 10 assignees per pull request, and your account still needs permission to assign users in that repository.
+
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.
 
 Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
 
-In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context.
+In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys and add `/` to search the popup body.
 
 ```toml
 [keymaps.global]

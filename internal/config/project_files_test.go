@@ -235,3 +235,20 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheLinksSection_ThenItDocumentsT
 		}
 	}
 }
+
+func TestProjectFiles_GivenTheReadme_WhenReadingTheStoryReviewSection_ThenItDocumentsClaudeCodeCodexAndOpencodeExamples(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"story mode",
+		"claude-code",
+		"codex",
+		"opencode",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
