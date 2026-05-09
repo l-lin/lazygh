@@ -35,7 +35,7 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	if err := program.refreshOverlayView(gui, program.helpVisible, viewHelpName, program.configureHelpView, program.renderHelpView); err != nil {
 		return err
 	}
-	if err := program.refreshOverlayView(gui, program.model.SearchActive(), viewSearchName, program.configureSearchView, program.renderSearchView); err != nil {
+	if err := program.refreshOverlayView(gui, program.searchPromptVisible(), viewSearchName, program.configureSearchView, program.renderSearchView); err != nil {
 		return err
 	}
 	if err := program.refreshOverlayView(gui, program.modalEditorVisible(), viewModalEditorName, program.configureModalEditorView, program.renderModalEditorView); err != nil {
@@ -116,7 +116,7 @@ func (program *Program) shouldShowCursor() bool {
 		return true
 	case program.model.ActionsPopupSearchActive():
 		return true
-	case program.model.SearchActive():
+	case program.searchPromptVisible():
 		return true
 	case program.model.ActionsPopupVisible():
 		return false
@@ -140,17 +140,17 @@ func (program *Program) currentViewName() string {
 	if program.modalEditorVisible() {
 		return viewModalEditorName
 	}
-	if program.pullRequestBuildRunPopupVisible() {
-		return viewPullRequestBuildInfoName
-	}
 	if program.model.ActionsPopupVisible() {
 		if program.model.ActionsPopupSearchActive() {
 			return viewActionsPopupSearchName
 		}
 		return viewActionsPopupName
 	}
-	if program.model.SearchActive() {
+	if program.searchPromptVisible() {
 		return viewSearchName
+	}
+	if program.pullRequestBuildRunPopupVisible() {
+		return viewPullRequestBuildInfoName
 	}
 
 	focus := program.model.Focus()

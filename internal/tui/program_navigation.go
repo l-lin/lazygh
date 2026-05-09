@@ -398,6 +398,11 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
+	if program.pullRequestBuildRunPopupVisible() {
+		program.startPullRequestBuildRunPopupSearch()
+		program.searchEditor = newLineEditor("")
+		return program.layout(gui)
+	}
 	if program.mainPaneActionBlocked() || (program.reviewSession.active && program.model.Focus() == FocusUserView) {
 		return nil
 	}
@@ -416,6 +421,9 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.pullRequestBuildRunPopupSearchActive() {
+		return program.submitPullRequestBuildRunPopupSearch(gui)
+	}
 	if program.activeSearchIsReviewFileTreeSearch() {
 		program.submitReviewFileTreeSearch()
 		program.searchEditor = nil
@@ -436,6 +444,9 @@ func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.pullRequestBuildRunPopupSearchActive() {
+		return program.cancelPullRequestBuildRunPopupSearch(gui)
+	}
 	if program.activeSearchIsReviewFileTreeSearch() {
 		program.cancelReviewFileTreeSearch()
 		return program.closeSearch(gui)

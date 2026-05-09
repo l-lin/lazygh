@@ -483,6 +483,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_previous_word", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToPreviousWord, runeBinding('b')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "enter_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupVisualMode, runeBinding('v')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "enter_line_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupLineVisualMode, runeBinding('V')),
+		keybindingActionFor(keymapScopePullRequestBuildInfo, "open_search", []string{viewPullRequestBuildInfoName}, program.openSearch, runeBinding('/')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "copy_content", []string{viewPullRequestBuildInfoName}, program.copyPullRequestBuildRunPopupContent, runeBinding('y')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "open_actions_popup", []string{viewPullRequestBuildInfoName}, program.openActionsPopup, runeBinding('a')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "page_down", []string{viewPullRequestBuildInfoName}, program.pagePullRequestBuildRunPopupDown, namedBinding(gocui.KeyCtrlD, "<c-d>")),

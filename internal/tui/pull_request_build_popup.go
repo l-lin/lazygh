@@ -43,6 +43,8 @@ type pullRequestBuildRunPopupState struct {
 	previousPopup *pullRequestBuildRunPopupState
 	widthPercent  int
 	heightPercent int
+	searchQuery   string
+	searchActive  bool
 	viewState     detailViewState
 	documents     map[int]detailDocument
 }
@@ -141,6 +143,7 @@ func (program *Program) renderPullRequestBuildRunPopupView(view *gocui.View) {
 	}
 
 	document := program.currentPullRequestBuildRunPopupDocument(view)
+	program.pullRequestBuildRunPopup.viewState.syncSearch(document, program.pullRequestBuildRunPopup.searchQuery)
 	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
 	renderDetailDocumentView(view, document, program.pullRequestBuildRunPopup.viewState)
 }

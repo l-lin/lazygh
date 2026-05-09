@@ -92,6 +92,9 @@ func (program *Program) statusLineKeyHintsText() string {
 	if searchHints := strings.TrimSpace(program.searchKeyHintsText()); searchHints != "" {
 		return searchHints
 	}
+	if buildPopupHints := strings.TrimSpace(program.pullRequestBuildRunPopupKeyHintsText()); buildPopupHints != "" {
+		return buildPopupHints
+	}
 
 	focus := program.model.Focus()
 	if !program.shouldShowStatusLineKeyHints(focus) {
@@ -200,10 +203,32 @@ func (program *Program) searchKeyHintsText() string {
 }
 
 func (program *Program) shouldShowSearchStatusLineKeyHints() bool {
-	if !program.model.SearchActive() {
+	if !program.searchPromptVisible() {
 		return false
 	}
-	if program.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+	if program.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+		return false
+	}
+	return true
+}
+
+func (program *Program) pullRequestBuildRunPopupKeyHintsText() string {
+	if !program.shouldShowPullRequestBuildRunPopupStatusLineKeyHints() {
+		return ""
+	}
+
+	return program.statusLineKeyHints(
+		statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "open_search"}}},
+		statusLineHintSpec{label: "copy", fallback: "y", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "copy_content"}}},
+		statusLineHintSpec{label: "back", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "close"}}},
+	)
+}
+
+func (program *Program) shouldShowPullRequestBuildRunPopupStatusLineKeyHints() bool {
+	if !program.pullRequestBuildRunPopupVisible() || program.searchPromptVisible() {
+		return false
+	}
+	if program.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return false
 	}
 	return true

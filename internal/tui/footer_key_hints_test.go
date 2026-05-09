@@ -92,6 +92,26 @@ func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShows
 	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel")
 }
 
+func TestStatusLineKeyHints_GivenBuildRunPopupVisible_WhenRendering_ThenItShowsPopupHintsRightAlignedOnTheBottomRow(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
+		checkTitle: "CI / test",
+		runURL:     "https://github.com/acme/widgets/actions/runs/42",
+		body:       "Run #42\nStatus: completed",
+	})
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "/: search, y: copy, Escape: back")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, y: copy, Escape: back", given_themeColorHex(t, theme.InactiveTitleHex), "build run popup key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, y: copy, Escape: back")
+}
+
 func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterAndTheResolvedKeyHints(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)
