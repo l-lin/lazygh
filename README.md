@@ -233,6 +233,8 @@ A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`.
 
 Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
 
+Actions popups reuse `keymaps.global.open_search`, and the popup search prompt reuses `keymaps.search.submit`.
+
 Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
 
 `w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
@@ -311,18 +313,14 @@ mark_notification_done = "d"
 toggle_inline_conversation = ["enter", "za"]
 
 [keymaps.search]
-submit = ["enter", "ctrl+j"]
+submit = ["enter", "ctrl+j", "ctrl+s"]
 cancel = ["esc"]
 next_search_match = "n"
 previous_search_match = "N"
 
 [keymaps.actions_popup]
-focus_search = "/"
 execute_selected_action = "enter"
 submit_selected_picker = "alt+enter"
-
-[keymaps.actions_popup_search]
-focus_list = ["enter", "tab", "ctrl+s"]
 
 [keymaps.modal_editor]
 submit = ["alt+enter", "ctrl+s"]

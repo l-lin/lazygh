@@ -141,7 +141,7 @@ func (program *Program) actionsPopupSearchKeyHintsText() string {
 	}
 
 	return program.statusLineKeyHints(
-		statusLineHintSpec{label: "list", fallback: "Enter/Tab", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "focus_list"}}},
+		statusLineHintSpec{label: "list", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "submit"}}},
 		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "close"}}},
 	)
 }
@@ -167,7 +167,7 @@ func (program *Program) actionsPopupKeyHintsText() string {
 	}
 	if program.assigneePickerVisible() {
 		return program.statusLineKeyHints(
-			statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "focus_search"}}},
+			statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "open_search"}}},
 			statusLineHintSpec{label: "toggle", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "execute_selected_action"}}},
 			statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}}},
 			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "close"}}},
@@ -175,7 +175,7 @@ func (program *Program) actionsPopupKeyHintsText() string {
 	}
 
 	return program.statusLineKeyHints(
-		statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "focus_search"}}},
+		statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "open_search"}}},
 		statusLineHintSpec{label: "execute", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "execute_selected_action"}}},
 		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "close"}}},
 	)

@@ -232,7 +232,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, "enter", "ctrl+j", "ctrl+s"),
 		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, "esc"),
 
-		keybindingActionFor(keymapScopeActionsPopup, "focus_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch, "/"),
+		sharedKeybindingActionFor(keymapScopeActionsPopup, "open_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_down", []string{viewActionsPopupName}, program.moveActionsPopupSelectionDown),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_up", []string{viewActionsPopupName}, program.moveActionsPopupSelectionUp),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "page_down", []string{viewActionsPopupName}, program.pageActionsPopupDown),
@@ -248,7 +248,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupName}, program.submitSelectedActionsPopupAction, "alt+enter"),
 		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup, true),
 
-		keybindingActionFor(keymapScopeActionsPopupSearch, "focus_list", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, "enter", "tab", "ctrl+s"),
+		aliasedKeybindingActionFor(keymapScopeActionsPopupSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, "enter", "ctrl+j", "ctrl+s"),
 		closeKeybindingActionFor(keymapScopeActionsPopupSearch, []string{viewActionsPopupSearchName}, program.closeActionsPopup, false),
 
 		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, "alt+enter", "ctrl+s"),

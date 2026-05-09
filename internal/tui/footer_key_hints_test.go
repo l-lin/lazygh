@@ -72,9 +72,9 @@ func TestStatusLineKeyHints_GivenActionsPopupSearchVisible_WhenRendering_ThenItS
 	actualErr = subject.focusActionsPopupSearch(gui, nil)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "Enter/Tab: list, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Enter/Tab: list, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup search key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter/Tab: list, Escape: cancel")
+	then_statusLineKeyHintsAre(t, gui, "Enter: list, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Enter: list, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup search key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter: list, Escape: cancel")
 }
 
 func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShowsDarkGreyPopupHintsRightAlignedOnTheBottomRow(t *testing.T) {

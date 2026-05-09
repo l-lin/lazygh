@@ -7,7 +7,7 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestKeybindingSpecs_GivenGlobalOpenSearchOverride_WhenListingBindings_ThenItAppliesToMainPanesAndTheBuildPopup(t *testing.T) {
+func TestKeybindingSpecs_GivenGlobalOpenSearchOverride_WhenListingBindings_ThenItAppliesToMainPanesTheActionsPopupAndTheBuildPopup(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {
 			"open_search": {"s"},
@@ -20,6 +20,8 @@ func TestKeybindingSpecs_GivenGlobalOpenSearchOverride_WhenListingBindings_ThenI
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 's', handler: subject.openSearch})
 		then_bindingDoesNotExist(t, actual, viewName, '/')
 	}
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 's', handler: subject.focusActionsPopupSearch})
+	then_bindingDoesNotExist(t, actual, viewActionsPopupName, '/')
 }
 
 func TestKeybindingSpecs_GivenSideOpenDetailOverride_WhenListingBindings_ThenItAppliesAcrossEverySideView(t *testing.T) {
@@ -73,6 +75,22 @@ func TestKeybindingSpecs_GivenFullPageOverride_WhenListingBindings_ThenItKeepsHa
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyCtrlD, handler: subject.pageDown})
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyCtrlU, handler: subject.pageUp})
 	}
+}
+
+func TestKeybindingSpecs_GivenSearchSubmitOverride_WhenListingBindings_ThenItAppliesToTheActionsPopupSearchPrompt(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"search": {
+			"submit": {"x"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: 'x', handler: subject.submitSearch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: 'x', handler: subject.focusActionsPopupList})
+	then_bindingDoesNotExist(t, actual, viewSearchName, gocui.KeyEnter)
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyEnter)
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyTab)
 }
 
 func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppliesToEveryClosableView(t *testing.T) {
