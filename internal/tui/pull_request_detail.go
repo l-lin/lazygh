@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"charm.land/glamour/v2"
+	glamouransi "charm.land/glamour/v2/ansi"
 
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 )
@@ -52,11 +53,18 @@ func (tab DetailTab) Label() string {
 }
 
 func (glamourMarkdownRenderer) Render(markdown string, width int) (string, error) {
-	markdownStyle := prettyMarkdownStyle()
-	registerMarkdownChromaStyle(markdownStyle)
+	return renderMarkdownWithGlamourStyle(markdown, width, prettyMarkdownStyle())
+}
+
+func renderMarkdownWithGlamour(markdown string) (string, error) {
+	return renderMarkdownWithGlamourStyle(markdown, disabledMarkdownWordWrap, prettyMarkdownStyle())
+}
+
+func renderMarkdownWithGlamourStyle(markdown string, width int, style glamouransi.StyleConfig) (string, error) {
+	registerMarkdownChromaStyle(style)
 
 	renderer, err := glamour.NewTermRenderer(
-		glamour.WithStyles(markdownStyle),
+		glamour.WithStyles(style),
 		glamour.WithWordWrap(markdownWordWrap(width)),
 		glamour.WithPreservedNewLines(),
 		glamour.WithChromaFormatter("terminal16m"),
