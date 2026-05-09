@@ -290,16 +290,13 @@ move_detail_view_down = "J"
 move_detail_view_up = "K"
 
 [keymaps.side]
-exit_review_mode = ["esc", "q"]
-
-[keymaps.user]
 open_detail = "enter"
+exit_review_mode = ["esc", "q"]
 
 [keymaps.pull_requests]
 # In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
 previous_tab = "["
 next_tab = "]"
-open_detail = "enter"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 toggle_fold = "za"
@@ -307,7 +304,6 @@ close_all_folds = "zM"
 open_all_folds = "zR"
 
 [keymaps.notifications]
-open_detail = "enter"
 mark_notification_read = "r"
 mark_notification_done = "d"
 

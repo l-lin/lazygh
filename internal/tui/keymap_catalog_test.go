@@ -22,6 +22,7 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 		{name: "grow focused pane", action: "grow_focused_pane", expectedScope: keymapScopeGlobal, expectedBindings: []string{"+"}, expectedAllowSequences: true},
 		{name: "shrink focused pane", action: "shrink_focused_pane", expectedScope: keymapScopeGlobal, expectedBindings: []string{"-"}, expectedAllowSequences: true},
 		{name: "open actions popup", action: "open_actions_popup", expectedScope: keymapScopeGlobal, expectedBindings: []string{"a"}, expectedAllowSequences: true},
+		{name: "open detail", action: "open_detail", expectedScope: keymapScopeSide, expectedBindings: []string{"enter"}, expectedAllowSequences: true},
 		{name: "close all folds", action: "close_all_folds", expectedScope: keymapScopePullRequests, expectedBindings: []string{"zM"}, expectedAllowSequences: true},
 		{name: "open all folds", action: "open_all_folds", expectedScope: keymapScopePullRequests, expectedBindings: []string{"zR"}, expectedAllowSequences: true},
 		{name: "next search match", action: "next_search_match", expectedScope: keymapScopeSearch, expectedBindings: []string{"n"}, expectedAllowSequences: true},

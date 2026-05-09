@@ -22,33 +22,36 @@ func TestKeybindingSpecs_GivenGlobalOpenSearchOverride_WhenListingBindings_ThenI
 	}
 }
 
-func TestKeybindingSpecs_GivenPullRequestsOpenDetailOverride_WhenListingBindings_ThenItReplacesOnlyThatScopedAction(t *testing.T) {
+func TestKeybindingSpecs_GivenSideOpenDetailOverride_WhenListingBindings_ThenItAppliesAcrossEverySideView(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"pull_requests": {
+		"side": {
 			"open_detail": {"o"},
 		},
 	})
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'o', handler: subject.openDetail})
-	then_bindingDoesNotExist(t, actual, viewPullRequestsName, gocui.KeyEnter)
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: gocui.KeyEnter, handler: subject.openDetail})
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewNotificationsName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'o', handler: subject.openDetail})
+		then_bindingDoesNotExist(t, actual, viewName, gocui.KeyEnter)
+	}
 }
 
-func TestKeybindingSpecs_GivenConflictingPullRequestsOverride_WhenListingBindings_ThenItIgnoresTheBadEntry(t *testing.T) {
+func TestKeybindingSpecs_GivenConflictingSideOpenDetailOverride_WhenListingBindings_ThenItIgnoresTheBadEntry(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"pull_requests": {
-			"open_detail": {"y"},
+		"side": {
+			"open_detail": {"?"},
 		},
 	})
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: gocui.KeyEnter, handler: subject.openDetail})
-	actualHandler := given_handlerForBinding(t, actual, viewPullRequestsName, 'y')
-	if !sameHandler(actualHandler, subject.copyPullRequestURL) {
-		t.Fatalf("expected %q to keep the copy URL handler", "y")
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewNotificationsName} {
+		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: gocui.KeyEnter, handler: subject.openDetail})
+	}
+	actualHandler := given_handlerForBinding(t, actual, viewPullRequestsName, '?')
+	if !sameHandler(actualHandler, subject.toggleHelp) {
+		t.Fatalf("expected %q to keep the toggle help handler", "?")
 	}
 }
 

@@ -36,6 +36,7 @@ var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"grow_focused_pane":                  sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "+"),
 	"shrink_focused_pane":                sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "-"),
 	"open_actions_popup":                 sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "a"),
+	"open_detail":                        sharedKeybindingDefinitionWithBindings(keymapScopeSide, "enter"),
 	"move_selection_to_top":              sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "gg"),
 	"move_selection_to_bottom":           sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "G"),
 	"place_selection_at_viewport_top":    sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "zt"),
@@ -177,13 +178,13 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeSide, "place_selection_at_viewport_bottom", sidePaneViewNames, program.moveSideSelectionToViewportBottom),
 		keybindingActionFor(keymapScopeSide, "exit_review_mode", sidePaneViewNames, program.exitReviewMode, "esc", "q"),
 
-		keybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail, "enter"),
+		sharedKeybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail),
 		sharedKeybindingActionFor(keymapScopeUser, "copy_pull_request_url", []string{viewUserName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopeUser, "open_actions_popup", []string{viewUserName}, program.openActionsPopup),
 
 		sharedKeybindingActionFor(keymapScopePullRequests, "previous_tab", []string{viewPullRequestsName}, program.previousPullRequestTab),
 		sharedKeybindingActionFor(keymapScopePullRequests, "next_tab", []string{viewPullRequestsName}, program.nextPullRequestTab),
-		keybindingActionFor(keymapScopePullRequests, "open_detail", []string{viewPullRequestsName}, program.openDetail, "enter"),
+		sharedKeybindingActionFor(keymapScopePullRequests, "open_detail", []string{viewPullRequestsName}, program.openDetail),
 		sharedKeybindingActionFor(keymapScopePullRequests, "copy_pull_request_url", []string{viewPullRequestsName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopePullRequests, "comment_on_pull_request", []string{viewPullRequestsName}, program.openPullRequestCommentComposer),
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_actions_popup", []string{viewPullRequestsName}, program.openActionsPopup),
@@ -193,7 +194,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequests, "next_search_match", []string{viewPullRequestsName}, program.nextReviewFileTreeSearchMatch),
 		sharedKeybindingActionFor(keymapScopePullRequests, "previous_search_match", []string{viewPullRequestsName}, program.previousReviewFileTreeSearchMatch),
 
-		keybindingActionFor(keymapScopeNotifications, "open_detail", []string{viewNotificationsName}, program.openDetail, "enter"),
+		sharedKeybindingActionFor(keymapScopeNotifications, "open_detail", []string{viewNotificationsName}, program.openDetail),
 		keybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead, "r"),
 		keybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone, "d"),
 		sharedKeybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup),
