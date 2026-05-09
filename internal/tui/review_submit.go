@@ -18,31 +18,28 @@ type pendingPullRequestReviewTarget struct {
 
 func (program *Program) submitPendingReviewCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "submit-pending-review-comment",
-		title:    pullRequestReviewCommentComposerTitle,
-		icon:     actionsPopupReviewCommentIcon,
-		keywords: []string{"review", "comment", "feedback", "submit", "finish", "pending", "submit comment"},
-		execute:  program.executeSubmitPendingReviewCommentAction,
+		id:      "submit-pending-review-comment",
+		title:   pullRequestReviewCommentComposerTitle,
+		icon:    actionsPopupReviewCommentIcon,
+		execute: program.executeSubmitPendingReviewCommentAction,
 	}
 }
 
 func (program *Program) submitPendingReviewApprovalAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "submit-pending-review-approval",
-		title:    pullRequestReviewApprovalTitle,
-		icon:     actionsPopupReviewApproveIcon,
-		keywords: []string{"review", "approve", "approval", "lgtm", "shipit", "submit", "pending", "submit approval"},
-		execute:  program.executeSubmitPendingReviewApprovalAction,
+		id:      "submit-pending-review-approval",
+		title:   pullRequestReviewApprovalTitle,
+		icon:    actionsPopupReviewApproveIcon,
+		execute: program.executeSubmitPendingReviewApprovalAction,
 	}
 }
 
 func (program *Program) submitPendingReviewRequestChangesAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "submit-pending-review-request-changes",
-		title:    pullRequestRequestChangesComposerTitle,
-		icon:     actionsPopupReviewRequestChangesIcon,
-		keywords: []string{"review", "request", "changes", "block", "submit", "pending", "submit request changes"},
-		execute:  program.executeSubmitPendingReviewRequestChangesAction,
+		id:      "submit-pending-review-request-changes",
+		title:   pullRequestRequestChangesComposerTitle,
+		icon:    actionsPopupReviewRequestChangesIcon,
+		execute: program.executeSubmitPendingReviewRequestChangesAction,
 	}
 }
 

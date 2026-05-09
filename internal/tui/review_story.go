@@ -30,11 +30,10 @@ func (generator commandReviewStoryGenerator) Generate(config story.Config, reque
 
 func (program *Program) reviewStoryAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "review-pr-as-story",
-		title:    reviewStoryActionTitle,
-		icon:     actionsPopupReviewStoryIcon,
-		keywords: []string{"review", "story", "chapter", "ai", "narrative"},
-		execute:  program.executeReviewStoryAction,
+		id:      "review-pr-as-story",
+		title:   reviewStoryActionTitle,
+		icon:    actionsPopupReviewStoryIcon,
+		execute: program.executeReviewStoryAction,
 	}
 }
 

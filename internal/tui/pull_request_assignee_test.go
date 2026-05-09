@@ -339,6 +339,32 @@ func TestActionsPopup_GivenReviewDescription_WhenOpening_ThenItShowsAssignPR(t *
 	}
 }
 
+func TestActionsPopup_GivenReviewSearch_WhenMatchingActions_ThenItDoesNotTreatAssignPROnlyAliasesAsOccurrences(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	actions := subject.currentActionsPopupActions()
+	actualIndexes := matchingActionsPopupIndexes(actions, "review")
+	for _, actualIndex := range actualIndexes {
+		if actualIndex < 0 || actualIndex >= len(actions) {
+			continue
+		}
+		if actions[actualIndex].title == assignPullRequestActionTitle {
+			t.Fatalf("expected %q to stay out of the review search matches, actual indexes %v", assignPullRequestActionTitle, actualIndexes)
+		}
+	}
+}
+
 func given_openAssignPullRequestAction(t *testing.T, gui *gocui.Gui, subject *Program) {
 	t.Helper()
 

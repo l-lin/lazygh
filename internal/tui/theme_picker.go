@@ -37,11 +37,10 @@ func (program *Program) themePickerVisible() bool {
 
 func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "change-theme",
-		title:    themePickerActionTitle,
-		icon:     actionsPopupChangeThemeIcon,
-		keywords: []string{"theme", "color", "colorscheme", "palette", "appearance", "light", "dark"},
-		execute:  program.executeOpenThemePickerAction,
+		id:      "change-theme",
+		title:   themePickerActionTitle,
+		icon:    actionsPopupChangeThemeIcon,
+		execute: program.executeOpenThemePickerAction,
 	}
 }
 
@@ -69,21 +68,12 @@ func (program *Program) currentThemePickerActions() []actionsPopupAction {
 func (program *Program) themePickerAction(preset theme.Preset) actionsPopupAction {
 	normalizedName := theme.NormalizePresetName(preset.Name)
 	return actionsPopupAction{
-		id:       "theme-" + normalizedName,
-		title:    strings.TrimSpace(preset.Label),
-		keywords: themePickerKeywords(preset),
+		id:    "theme-" + normalizedName,
+		title: strings.TrimSpace(preset.Label),
 		execute: func(gui *gocui.Gui) actionsPopupActionResult {
 			return program.executeThemePickerPresetAction(gui, preset)
 		},
 	}
-}
-
-func themePickerKeywords(preset theme.Preset) []string {
-	keywords := []string{strings.TrimSpace(preset.Name), strings.TrimSpace(preset.Label)}
-	if strings.EqualFold(strings.TrimSpace(preset.Name), theme.SystemPresetName) {
-		keywords = append(keywords, "auto", "default", "system")
-	}
-	return keywords
 }
 
 func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset theme.Preset) actionsPopupActionResult {

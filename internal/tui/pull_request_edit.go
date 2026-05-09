@@ -17,11 +17,10 @@ const (
 
 func (program *Program) editPullRequestTitleAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "edit-pull-request-title",
-		title:    pullRequestTitleEditorTitle,
-		icon:     actionsPopupEditPullRequestIcon,
-		keywords: []string{"edit", "title", "rename", "subject"},
-		execute:  program.executeEditPullRequestTitleAction,
+		id:      "edit-pull-request-title",
+		title:   pullRequestTitleEditorTitle,
+		icon:    actionsPopupEditPullRequestIcon,
+		execute: program.executeEditPullRequestTitleAction,
 	}
 }
 
@@ -51,11 +50,10 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 
 func (program *Program) editPullRequestDescriptionAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "edit-pull-request-description",
-		title:    pullRequestDescriptionEditorTitle,
-		icon:     actionsPopupEditPullRequestIcon,
-		keywords: []string{"edit", "description", "body", "summary"},
-		execute:  program.executeEditPullRequestDescriptionAction,
+		id:      "edit-pull-request-description",
+		title:   pullRequestDescriptionEditorTitle,
+		icon:    actionsPopupEditPullRequestIcon,
+		execute: program.executeEditPullRequestDescriptionAction,
 	}
 }
 

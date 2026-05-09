@@ -28,11 +28,10 @@ func (program *Program) currentReactionAction() (actionsPopupAction, bool) {
 
 func (program *Program) addReactionAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "add-reaction",
-		title:    reactionPickerTitle,
-		icon:     actionsPopupAddReactionIcon,
-		keywords: []string{"reaction", "react", "emoji", "+1", "thumbs up", "thumbs down", "laugh", "hooray", "confused", "heart", "rocket", "eyes"},
-		execute:  program.executeOpenReactionPickerAction,
+		id:      "add-reaction",
+		title:   reactionPickerTitle,
+		icon:    actionsPopupAddReactionIcon,
+		execute: program.executeOpenReactionPickerAction,
 	}
 }
 
@@ -61,38 +60,36 @@ func (program *Program) currentReactionPickerActions() []actionsPopupAction {
 }
 
 func (program *Program) reactionPickerAction(content githubcli.ReactionContent) actionsPopupAction {
-	title, keywords := reactionPickerActionMetadata(content)
+	title := reactionPickerActionMetadata(content)
 	return actionsPopupAction{
-		id:       "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
-		title:    title,
-		keywords: keywords,
+		id:    "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
+		title: title,
 		execute: func(_ *gocui.Gui) actionsPopupActionResult {
 			return program.executeReactionPickerAction(content)
 		},
 	}
 }
 
-func reactionPickerActionMetadata(content githubcli.ReactionContent) (string, []string) {
+func reactionPickerActionMetadata(content githubcli.ReactionContent) string {
 	switch content {
 	case githubcli.ReactionContentThumbsUp:
-		return "👍 Thumbs up (+1)", []string{"thumbs up", "+1", "approve", "like"}
+		return "👍 Thumbs up (+1)"
 	case githubcli.ReactionContentThumbsDown:
-		return "👎 Thumbs down (-1)", []string{"thumbs down", "-1", "dislike"}
+		return "👎 Thumbs down (-1)"
 	case githubcli.ReactionContentLaugh:
-		return "😄 Laugh", []string{"laugh", "smile", "funny"}
+		return "😄 Laugh"
 	case githubcli.ReactionContentHooray:
-		return "🎉 Hooray", []string{"hooray", "celebrate", "party"}
+		return "🎉 Hooray"
 	case githubcli.ReactionContentConfused:
-		return "😕 Confused", []string{"confused", "question", "unsure"}
+		return "😕 Confused"
 	case githubcli.ReactionContentHeart:
-		return "❤️ Heart", []string{"heart", "love"}
+		return "❤️ Heart"
 	case githubcli.ReactionContentRocket:
-		return "🚀 Rocket", []string{"rocket", "ship", "launch"}
+		return "🚀 Rocket"
 	case githubcli.ReactionContentEyes:
-		return "👀 Eyes", []string{"eyes", "watching", "look"}
+		return "👀 Eyes"
 	default:
-		trimmedContent := strings.TrimSpace(string(content))
-		return trimmedContent, []string{trimmedContent}
+		return strings.TrimSpace(string(content))
 	}
 }
 

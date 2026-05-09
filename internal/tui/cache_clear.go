@@ -15,11 +15,10 @@ const (
 
 func (program *Program) clearCacheActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "clear-cache",
-		title:    clearCacheActionTitle,
-		icon:     iconDelete,
-		keywords: []string{"cache", "clear", "cleanup", "wipe", "reset"},
-		execute:  program.executeClearCacheAction,
+		id:      "clear-cache",
+		title:   clearCacheActionTitle,
+		icon:    iconDelete,
+		execute: program.executeClearCacheAction,
 	}
 }
 

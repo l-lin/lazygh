@@ -44,11 +44,10 @@ type reviewSessionState struct {
 
 func (program *Program) startReviewAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "start-review",
-		title:    "Start review",
-		icon:     actionsPopupStartReviewIcon,
-		keywords: []string{"start", "review", "pending", "session", "inline"},
-		execute:  program.executeStartReviewAction,
+		id:      "start-review",
+		title:   "Start review",
+		icon:    actionsPopupStartReviewIcon,
+		execute: program.executeStartReviewAction,
 	}
 }
 

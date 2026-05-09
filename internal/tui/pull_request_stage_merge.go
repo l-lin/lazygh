@@ -67,31 +67,28 @@ func (program *Program) currentPullRequestStageAndMergeStatus() (string, bool) {
 
 func (program *Program) markPullRequestReadyForReviewAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "mark-pull-request-ready-for-review",
-		title:    markPullRequestReadyForReviewActionTitle,
-		icon:     actionsPopupEditPullRequestIcon,
-		keywords: []string{"ready", "review", "draft", "publish"},
-		execute:  program.executeMarkPullRequestReadyForReviewAction,
+		id:      "mark-pull-request-ready-for-review",
+		title:   markPullRequestReadyForReviewActionTitle,
+		icon:    actionsPopupEditPullRequestIcon,
+		execute: program.executeMarkPullRequestReadyForReviewAction,
 	}
 }
 
 func (program *Program) convertPullRequestToDraftAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "convert-pull-request-to-draft",
-		title:    convertPullRequestToDraftActionTitle,
-		icon:     actionsPopupEditPullRequestIcon,
-		keywords: []string{"draft", "undo ready", "wip"},
-		execute:  program.executeConvertPullRequestToDraftAction,
+		id:      "convert-pull-request-to-draft",
+		title:   convertPullRequestToDraftActionTitle,
+		icon:    actionsPopupEditPullRequestIcon,
+		execute: program.executeConvertPullRequestToDraftAction,
 	}
 }
 
 func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "squash-merge-pull-request",
-		title:    squashMergePullRequestActionTitle,
-		icon:     actionsPopupReviewApproveIcon,
-		keywords: []string{"merge", "squash", "ship", "land"},
-		execute:  program.executeSquashMergePullRequestAction,
+		id:      "squash-merge-pull-request",
+		title:   squashMergePullRequestActionTitle,
+		icon:    actionsPopupReviewApproveIcon,
+		execute: program.executeSquashMergePullRequestAction,
 	}
 }
 

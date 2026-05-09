@@ -9,11 +9,10 @@ const (
 
 func (program *Program) refreshPullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "refresh-current-pull-request-information",
-		title:    pullRequestRefreshActionTitle,
-		icon:     actionsPopupRefreshPullRequestIcon,
-		keywords: []string{"refresh", "reload", "sync", "current", "pull request", "stale"},
-		execute:  program.executeRefreshPullRequestAction,
+		id:      "refresh-current-pull-request-information",
+		title:   pullRequestRefreshActionTitle,
+		icon:    actionsPopupRefreshPullRequestIcon,
+		execute: program.executeRefreshPullRequestAction,
 	}
 }
 

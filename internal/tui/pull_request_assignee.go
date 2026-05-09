@@ -54,11 +54,10 @@ func (program *Program) currentAssignPullRequestAction() (actionsPopupAction, bo
 
 func (program *Program) assignPullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "assign-pull-request",
-		title:    assignPullRequestActionTitle,
-		icon:     actionsPopupEditPullRequestIcon,
-		keywords: []string{"assign", "assignee", "owner", "reviewer", "people"},
-		execute:  program.executeOpenAssigneePickerAction,
+		id:      "assign-pull-request",
+		title:   assignPullRequestActionTitle,
+		icon:    actionsPopupEditPullRequestIcon,
+		execute: program.executeOpenAssigneePickerAction,
 	}
 }
 
@@ -287,26 +286,14 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 	for _, candidate := range program.assigneePicker.candidates {
 		candidate := candidate
 		actions = append(actions, actionsPopupAction{
-			id:       "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
-			title:    program.assigneePickerLabel(candidate),
-			keywords: assigneePickerKeywords(candidate, program.assigneePicker.viewerLogin),
+			id:    "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
+			title: program.assigneePickerLabel(candidate),
 			execute: func(_ *gocui.Gui) actionsPopupActionResult {
 				return program.toggleAssigneePickerSelection(candidate)
 			},
 		})
 	}
 	return actions
-}
-
-func assigneePickerKeywords(candidate githubcli.PullRequestAuthor, viewerLogin string) []string {
-	keywords := []string{strings.TrimSpace(candidate.Login)}
-	if trimmedName := strings.TrimSpace(candidate.Name); trimmedName != "" {
-		keywords = append(keywords, trimmedName)
-	}
-	if strings.TrimSpace(candidate.Login) != "" && strings.TrimSpace(candidate.Login) == strings.TrimSpace(viewerLogin) {
-		keywords = append(keywords, "me")
-	}
-	return keywords
 }
 
 func (program *Program) assigneePickerLabel(candidate githubcli.PullRequestAuthor) string {

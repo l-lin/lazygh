@@ -16,11 +16,10 @@ const (
 
 func (program *Program) reviewApproveAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "review-approve",
-		title:    pullRequestReviewApprovalTitle,
-		icon:     actionsPopupReviewApproveIcon,
-		keywords: []string{"review", "approve", "lgtm", "shipit"},
-		execute:  program.executeApprovePullRequestAction,
+		id:      "review-approve",
+		title:   pullRequestReviewApprovalTitle,
+		icon:    actionsPopupReviewApproveIcon,
+		execute: program.executeApprovePullRequestAction,
 	}
 }
 
@@ -44,11 +43,10 @@ func (program *Program) executeApprovePullRequestAction(_ *gocui.Gui) actionsPop
 
 func (program *Program) reviewCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "review-comment",
-		title:    pullRequestReviewCommentComposerTitle,
-		icon:     actionsPopupReviewCommentIcon,
-		keywords: []string{"review", "comment", "feedback"},
-		execute:  program.executeReviewCommentAction,
+		id:      "review-comment",
+		title:   pullRequestReviewCommentComposerTitle,
+		icon:    actionsPopupReviewCommentIcon,
+		execute: program.executeReviewCommentAction,
 	}
 }
 
@@ -73,11 +71,10 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupA
 
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "review-request-changes",
-		title:    pullRequestRequestChangesComposerTitle,
-		icon:     actionsPopupReviewRequestChangesIcon,
-		keywords: []string{"review", "request", "changes", "block"},
-		execute:  program.executeRequestChangesAction,
+		id:      "review-request-changes",
+		title:   pullRequestRequestChangesComposerTitle,
+		icon:    actionsPopupReviewRequestChangesIcon,
+		execute: program.executeRequestChangesAction,
 	}
 }
 

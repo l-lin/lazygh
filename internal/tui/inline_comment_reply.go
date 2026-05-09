@@ -28,11 +28,10 @@ func (program *Program) currentInlineCommentReplyAction() (actionsPopupAction, b
 
 func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "reply-to-inline-comment",
-		title:    pullRequestInlineCommentReplyEditorTitle,
-		icon:     actionsPopupCommentOnPullRequestIcon,
-		keywords: []string{"inline", "comment", "reply", "thread", "discussion"},
-		execute:  program.executeReplyToInlineCommentAction,
+		id:      "reply-to-inline-comment",
+		title:   pullRequestInlineCommentReplyEditorTitle,
+		icon:    actionsPopupCommentOnPullRequestIcon,
+		execute: program.executeReplyToInlineCommentAction,
 	}
 }
 

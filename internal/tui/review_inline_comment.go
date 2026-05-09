@@ -50,11 +50,10 @@ func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, 
 
 func (program *Program) addInlineReviewCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "add-inline-review-comment",
-		title:    "Add inline comment",
-		icon:     actionsPopupCommentOnPullRequestIcon,
-		keywords: []string{"inline", "comment", "review", "diff", "suggestion"},
-		execute:  program.executeAddInlineReviewCommentAction,
+		id:      "add-inline-review-comment",
+		title:   "Add inline comment",
+		icon:    actionsPopupCommentOnPullRequestIcon,
+		execute: program.executeAddInlineReviewCommentAction,
 	}
 }
 

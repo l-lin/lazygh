@@ -106,7 +106,7 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("mark ready", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark ready"))
+	subject.model.UpdateActionsPopupSearch(markPullRequestReadyForReviewActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), markPullRequestReadyForReviewActionTitle))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 

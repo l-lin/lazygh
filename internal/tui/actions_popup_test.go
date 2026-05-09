@@ -176,7 +176,7 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 		}
 	}
 }
-func TestActionsPopup_GivenKeywordSearch_WhenHighlighting_ThenItCanStillJumpToReviewAndEditActionsWithoutHidingTheOthers(t *testing.T) {
+func TestActionsPopup_GivenTitleSearch_WhenHighlighting_ThenItCanStillJumpToReviewAndEditActionsWithoutHidingTheOthers(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -191,8 +191,8 @@ func TestActionsPopup_GivenKeywordSearch_WhenHighlighting_ThenItCanStillJumpToRe
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	expectedReviewIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "lgtm")
-	for _, ch := range "lgtm" {
+	expectedReviewIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestReviewApprovalTitle)
+	for _, ch := range pullRequestReviewApprovalTitle {
 		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
 		if !actualHandled {
 			t.Fatalf("expected typing %q to be handled", string(ch))
@@ -217,8 +217,8 @@ func TestActionsPopup_GivenKeywordSearch_WhenHighlighting_ThenItCanStillJumpToRe
 	then_noError(t, actualErr)
 	searchView, actualErr = gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	expectedEditIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "rename")
-	for _, ch := range "rename" {
+	expectedEditIndexes := matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestTitleEditorTitle)
+	for _, ch := range pullRequestTitleEditorTitle {
 		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
 		if !actualHandled {
 			t.Fatalf("expected typing %q to be handled", string(ch))
@@ -604,7 +604,7 @@ func TestActionsPopup_GivenCommentActionSelected_WhenExecuting_ThenItReusesTheCo
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("discussion", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "discussion"))
+	subject.model.UpdateActionsPopupSearch(pullRequestCommentComposerTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestCommentComposerTitle))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

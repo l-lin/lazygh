@@ -32,21 +32,19 @@ func (program *Program) currentInlineCommentResolutionAction() (actionsPopupActi
 
 func (program *Program) resolveInlineCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "resolve-inline-comment",
-		title:    "Mark inline comment as resolved",
-		icon:     actionsPopupResolveInlineCommentIcon,
-		keywords: []string{"inline", "comment", "resolve", "thread", "discussion"},
-		execute:  program.executeResolveInlineCommentAction,
+		id:      "resolve-inline-comment",
+		title:   "Mark inline comment as resolved",
+		icon:    actionsPopupResolveInlineCommentIcon,
+		execute: program.executeResolveInlineCommentAction,
 	}
 }
 
 func (program *Program) unresolveInlineCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "unresolve-inline-comment",
-		title:    "Mark inline comment as unresolved",
-		icon:     actionsPopupResolveInlineCommentIcon,
-		keywords: []string{"inline", "comment", "unresolve", "unresolved", "reopen", "thread", "discussion"},
-		execute:  program.executeUnresolveInlineCommentAction,
+		id:      "unresolve-inline-comment",
+		title:   "Mark inline comment as unresolved",
+		icon:    actionsPopupResolveInlineCommentIcon,
+		execute: program.executeUnresolveInlineCommentAction,
 	}
 }
 

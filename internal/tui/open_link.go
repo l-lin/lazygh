@@ -102,11 +102,10 @@ func (program *Program) detailCursorHasLink() bool {
 
 func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "open-link-under-cursor",
-		title:    "Open link under cursor",
-		icon:     actionsPopupOpenLinkIcon,
-		keywords: []string{"open", "link", "cursor", "url", "browser"},
-		execute:  program.executeOpenLinkUnderCursorAction,
+		id:      "open-link-under-cursor",
+		title:   "Open link under cursor",
+		icon:    actionsPopupOpenLinkIcon,
+		execute: program.executeOpenLinkUnderCursorAction,
 	}
 }
 

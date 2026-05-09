@@ -26,13 +26,12 @@ func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool
 		return actionsPopupAction{}, false
 	}
 
-	reactionTitle, keywords := reactionPickerActionMetadata(target.content)
+	reactionTitle := reactionPickerActionMetadata(target.content)
 	reactionID := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(target.content)), "+", "plus"), "-", "minus")
 	return actionsPopupAction{
-		id:       "remove-reaction-" + reactionID,
-		title:    "Remove reaction " + reactionTitle,
-		icon:     actionsPopupRemoveReactionIcon,
-		keywords: append([]string{"remove reaction", "unreact", "delete reaction"}, keywords...),
+		id:    "remove-reaction-" + reactionID,
+		title: "Remove reaction " + reactionTitle,
+		icon:  actionsPopupRemoveReactionIcon,
 		execute: func(_ *gocui.Gui) actionsPopupActionResult {
 			return program.executeRemoveReactionAction(target)
 		},

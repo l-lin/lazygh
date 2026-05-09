@@ -160,51 +160,46 @@ func markAllNotificationsRead(notifications []githubcli.Notification) {
 
 func (program *Program) markNotificationReadAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "mark-notification-read",
-		title:    notificationMarkReadActionTitle,
-		icon:     actionsPopupMarkNotificationReadIcon,
-		keywords: []string{"notification", "read", "thread"},
-		execute:  program.executeMarkNotificationReadAction,
+		id:      "mark-notification-read",
+		title:   notificationMarkReadActionTitle,
+		icon:    actionsPopupMarkNotificationReadIcon,
+		execute: program.executeMarkNotificationReadAction,
 	}
 }
 
 func (program *Program) markNotificationDoneAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "mark-notification-done",
-		title:    notificationMarkDoneActionTitle,
-		icon:     actionsPopupMarkNotificationDoneIcon,
-		keywords: []string{"notification", "done", "thread", "dismiss"},
-		execute:  program.executeMarkNotificationDoneAction,
+		id:      "mark-notification-done",
+		title:   notificationMarkDoneActionTitle,
+		icon:    actionsPopupMarkNotificationDoneIcon,
+		execute: program.executeMarkNotificationDoneAction,
 	}
 }
 
 func (program *Program) markAllNotificationsReadAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "mark-all-notifications-read",
-		title:    notificationMarkAllReadActionTitle,
-		icon:     actionsPopupMarkAllNotificationsReadIcon,
-		keywords: []string{"notification", "read", "all", "bulk"},
-		execute:  program.executeMarkAllNotificationsReadAction,
+		id:      "mark-all-notifications-read",
+		title:   notificationMarkAllReadActionTitle,
+		icon:    actionsPopupMarkAllNotificationsReadIcon,
+		execute: program.executeMarkAllNotificationsReadAction,
 	}
 }
 
 func (program *Program) markAllNotificationsDoneAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "mark-all-notifications-done",
-		title:    notificationMarkAllDoneActionTitle,
-		icon:     actionsPopupMarkAllNotificationsDoneIcon,
-		keywords: []string{"notification", "done", "all", "bulk", "dismiss"},
-		execute:  program.executeMarkAllNotificationsDoneAction,
+		id:      "mark-all-notifications-done",
+		title:   notificationMarkAllDoneActionTitle,
+		icon:    actionsPopupMarkAllNotificationsDoneIcon,
+		execute: program.executeMarkAllNotificationsDoneAction,
 	}
 }
 
 func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "open-notification-in-browser",
-		title:    notificationOpenBrowserActionTitle,
-		icon:     actionsPopupOpenNotificationBrowserIcon,
-		keywords: []string{"notification", "browser", "open", "link", "url"},
-		execute:  program.executeOpenNotificationInBrowserAction,
+		id:      "open-notification-in-browser",
+		title:   notificationOpenBrowserActionTitle,
+		icon:    actionsPopupOpenNotificationBrowserIcon,
+		execute: program.executeOpenNotificationInBrowserAction,
 	}
 }
 

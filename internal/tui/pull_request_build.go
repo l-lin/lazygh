@@ -139,21 +139,19 @@ func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository
 
 func (program *Program) pullRequestBuildRunActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "view-build-run",
-		title:    pullRequestBuildRunActionTitle,
-		icon:     actionsPopupBuildRunIcon,
-		keywords: []string{"build", "run", "workflow", "checks", "details"},
-		execute:  program.executePullRequestBuildRunAction,
+		id:      "view-build-run",
+		title:   pullRequestBuildRunActionTitle,
+		icon:    actionsPopupBuildRunIcon,
+		execute: program.executePullRequestBuildRunAction,
 	}
 }
 
 func (program *Program) pullRequestBuildRunLogsActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "view-build-run-job-logs",
-		title:    pullRequestBuildRunLogsActionTitle,
-		icon:     actionsPopupBuildRunLogsIcon,
-		keywords: []string{"job", "logs", "build", "run", "workflow"},
-		execute:  program.executePullRequestBuildRunLogsAction,
+		id:      "view-build-run-job-logs",
+		title:   pullRequestBuildRunLogsActionTitle,
+		icon:    actionsPopupBuildRunLogsIcon,
+		execute: program.executePullRequestBuildRunLogsAction,
 	}
 }
 

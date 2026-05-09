@@ -32,21 +32,19 @@ func (program *Program) currentInlineCommentEditActions() []actionsPopupAction {
 
 func (program *Program) updateInlineCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "update-inline-comment",
-		title:    inlineCommentUpdateEditorTitle,
-		icon:     actionsPopupEditPullRequestIcon,
-		keywords: []string{"inline", "comment", "update", "edit", "rewrite"},
-		execute:  program.executeUpdateInlineCommentAction,
+		id:      "update-inline-comment",
+		title:   inlineCommentUpdateEditorTitle,
+		icon:    actionsPopupEditPullRequestIcon,
+		execute: program.executeUpdateInlineCommentAction,
 	}
 }
 
 func (program *Program) deleteInlineCommentAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "delete-inline-comment",
-		title:    inlineCommentDeleteActionTitle,
-		icon:     actionsPopupDeleteInlineCommentIcon,
-		keywords: []string{"inline", "comment", "delete", "remove"},
-		execute:  program.executeDeleteInlineCommentAction,
+		id:      "delete-inline-comment",
+		title:   inlineCommentDeleteActionTitle,
+		icon:    actionsPopupDeleteInlineCommentIcon,
+		execute: program.executeDeleteInlineCommentAction,
 	}
 }
 

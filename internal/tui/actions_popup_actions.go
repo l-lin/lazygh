@@ -178,44 +178,33 @@ func actionsPopupActionMatchesQuery(action actionsPopupAction, query string) boo
 	if strings.Contains(strings.ToLower(action.title), query) {
 		return true
 	}
-	if strings.Contains(strings.ToLower(strings.TrimSpace(action.group)), query) {
-		return true
-	}
-	for _, keyword := range action.keywords {
-		if strings.Contains(strings.ToLower(keyword), query) {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(strings.ToLower(strings.TrimSpace(action.group)), query)
 }
 
 func (program *Program) yankPullRequestURLActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "yank-pull-request-url",
-		title:    "Yank URL to clipboard",
-		icon:     actionsPopupYankPullRequestURLIcon,
-		keywords: []string{"yank", "copy", "clipboard", "url", "link"},
-		execute:  program.executeYankPullRequestURLAction,
+		id:      "yank-pull-request-url",
+		title:   "Yank URL to clipboard",
+		icon:    actionsPopupYankPullRequestURLIcon,
+		execute: program.executeYankPullRequestURLAction,
 	}
 }
 
 func (program *Program) openPullRequestInBrowserActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "open-pull-request-in-browser",
-		title:    "Open PR in browser",
-		icon:     actionsPopupOpenPullRequestBrowserIcon,
-		keywords: []string{"open", "browser", "web", "url", "link"},
-		execute:  program.executeOpenPullRequestInBrowserAction,
+		id:      "open-pull-request-in-browser",
+		title:   "Open PR in browser",
+		icon:    actionsPopupOpenPullRequestBrowserIcon,
+		execute: program.executeOpenPullRequestInBrowserAction,
 	}
 }
 
 func (program *Program) commendOnPrAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:       "comment-on-pr",
-		title:    pullRequestCommentComposerTitle,
-		icon:     actionsPopupCommentOnPullRequestIcon,
-		keywords: []string{"comment", "reply", "discussion"},
-		execute:  program.executeCommentOnPullRequestAction,
+		id:      "comment-on-pr",
+		title:   pullRequestCommentComposerTitle,
+		icon:    actionsPopupCommentOnPullRequestIcon,
+		execute: program.executeCommentOnPullRequestAction,
 	}
 }
 
