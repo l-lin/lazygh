@@ -20,7 +20,7 @@ const (
 	darkDefaultPendingHex                      = "#8B949E"
 	darkDefaultPendingBackgroundHex            = "#30363D"
 	darkDefaultMutedHex                        = "#8B949E"
-	darkDefaultActionsPopupGroupForegroundHex  = "#000000"
+	darkDefaultActionsPopupGroupForegroundHex  = darkDefaultMarkdownHeadingHex
 	darkDefaultDiffAdditionBackgroundHex       = "#033A16"
 	lightDefaultBackgroundHex                  = ""
 	lightDefaultActiveTextHex                  = "#000000"
@@ -115,6 +115,14 @@ func TestResolvePaletteWithPreset_GivenBundledThemePreset_WhenResolving_ThenItUs
 	}
 	if actual.ActiveTextHex != "#DCD7BA" {
 		t.Fatalf("expected active text color %q, actual %q", "#DCD7BA", actual.ActiveTextHex)
+	}
+}
+
+func TestResolvePaletteWithPreset_GivenADarkBundledThemeWithoutPopupOverride_WhenResolving_ThenTheActionsPopupGroupForegroundTracksTheHeadingColor(t *testing.T) {
+	actual := ResolvePaletteWithPreset("catppuccin-mocha", Palette{})
+
+	if actual.ActionsPopupGroupForegroundHex != actual.MarkdownHeadingHex {
+		t.Fatalf("expected actions popup group foreground %q to match the heading color, actual %q", actual.MarkdownHeadingHex, actual.ActionsPopupGroupForegroundHex)
 	}
 }
 

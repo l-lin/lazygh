@@ -121,6 +121,7 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 	then_noError(t, actualErr)
 
 	activeTextColor := gocui.GetColor(theme.ActiveTextHex)
+	inactiveTextColor := gocui.GetColor(theme.InactiveTextHex)
 	activeBorderColor := gocui.GetColor(theme.ActiveBorderHex)
 	inactiveBorderColor := gocui.GetColor(theme.InactiveBorderHex)
 
@@ -144,11 +145,11 @@ func TestLayout_GivenFreshProgram_WhenRendering_ThenUsesActiveAndInactiveViewCol
 	if userView.FgColor != activeTextColor {
 		t.Fatalf("expected active user text color %v, actual %v", activeTextColor, userView.FgColor)
 	}
-	if detailView.FgColor != activeTextColor {
-		t.Fatalf("expected inactive detail text color %v, actual %v", activeTextColor, detailView.FgColor)
+	if detailView.FgColor != inactiveTextColor {
+		t.Fatalf("expected inactive detail text color %v, actual %v", inactiveTextColor, detailView.FgColor)
 	}
-	if pullRequestsView.FgColor != activeTextColor {
-		t.Fatalf("expected inactive pull request text color %v, actual %v", activeTextColor, pullRequestsView.FgColor)
+	if pullRequestsView.FgColor != inactiveTextColor {
+		t.Fatalf("expected inactive pull request text color %v, actual %v", inactiveTextColor, pullRequestsView.FgColor)
 	}
 	if !userView.Highlight {
 		t.Fatal("expected the active side view to be highlighted")

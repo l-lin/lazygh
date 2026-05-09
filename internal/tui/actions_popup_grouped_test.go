@@ -99,6 +99,23 @@ func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAn
 	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewActionsPopupName, 0, 0, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "actions popup group header selected background")
 }
 
+func TestActionsPopup_GivenADarkBundledTheme_WhenRenderingGroupedHeaders_ThenItUsesThePresetHeadingForeground(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.ResolvePaletteWithPreset("catppuccin-mocha", theme.Palette{}))
+
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, actionsPopupGroupPullRequest, given_themeColorHex(t, theme.MarkdownHeadingHex), "actions popup group header preset foreground")
+}
+
 func TestActionsPopup_GivenNoPersistentCache_WhenOpening_ThenItHidesTheClearCacheAction(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)

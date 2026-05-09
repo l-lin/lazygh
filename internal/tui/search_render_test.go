@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
 func TestHighlightSearchMatches_GivenDetailQuery_WhenRendering_ThenMatchesUseTheSearchBackgroundColor(t *testing.T) {
@@ -12,7 +14,7 @@ func TestHighlightSearchMatches_GivenDetailQuery_WhenRendering_ThenMatchesUseThe
 		t.Fatalf("expected 2 matches, actual %d", actualCount)
 	}
 
-	expectedSequence := "\x1b[48;2;249;234;179mworld\x1b[0m"
+	expectedSequence := backgroundColorEscape(theme.SearchHighlightHex) + "world" + ansiReset
 	if !strings.Contains(actual, expectedSequence) {
 		t.Fatalf("expected highlighted output to contain %q, actual %q", expectedSequence, actual)
 	}

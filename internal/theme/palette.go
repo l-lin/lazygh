@@ -85,7 +85,7 @@ func newDefaultLightPalette() Palette {
 		PullRequestReferenceHex:              pendingHex,
 		PullRequestTitleHex:                  activeTextHex,
 		SelectedLineBackgroundHex:            pendingBackgroundHex,
-		ActionsPopupGroupForegroundHex:       "#000000",
+		ActionsPopupGroupForegroundHex:       activeTextHex,
 		SearchHighlightHex:                   searchHighlightHex,
 		MarkdownHeadingHex:                   activeTextHex,
 		MarkdownHeadingBackgroundHex:         searchHighlightHex,
@@ -151,7 +151,7 @@ func newDefaultDarkPalette() Palette {
 		PullRequestReferenceHex:              pendingHex,
 		PullRequestTitleHex:                  activeTextHex,
 		SelectedLineBackgroundHex:            "#21262D",
-		ActionsPopupGroupForegroundHex:       "#000000",
+		ActionsPopupGroupForegroundHex:       activeTextHex,
 		SearchHighlightHex:                   "#633C01",
 		MarkdownHeadingHex:                   activeTextHex,
 		MarkdownHeadingBackgroundHex:         "#58A6FF",
@@ -260,6 +260,7 @@ func ResolvePalette(overrides Palette) Palette {
 }
 
 func cascadePaletteColors(resolved *Palette, overrides Palette) {
+	inheritColor(&resolved.ActionsPopupGroupForegroundHex, overrides.ActionsPopupGroupForegroundHex, resolved.MarkdownHeadingHex, overrides.MarkdownHeadingHex)
 	inheritColor(&resolved.PullRequestStatusOpenHex, overrides.PullRequestStatusOpenHex, resolved.SuccessHex, overrides.SuccessHex)
 	inheritColor(&resolved.PullRequestStatusOpenBackgroundHex, overrides.PullRequestStatusOpenBackgroundHex, resolved.SuccessBackgroundHex, overrides.SuccessBackgroundHex)
 	inheritColor(&resolved.PullRequestStatusDraftHex, overrides.PullRequestStatusDraftHex, resolved.PendingHex, overrides.PendingHex)
