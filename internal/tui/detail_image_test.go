@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGlamourMarkdownRenderer_GivenALoadedImageAndKittyProtocol_WhenRendering_ThenItTracksAnImagePlacementAndShowsTheFallbackCaption(t *testing.T) {
+func TestGlamourMarkdownRenderer_GivenALoadedImageAndKittyProtocol_WhenRendering_ThenItTracksAnImagePlacementWithoutFallbackText(t *testing.T) {
 	renderer := glamourMarkdownRenderer{
 		imageStore: &fakeDetailImageStore{
 			imagesBySource: map[string]storedDetailImage{"https://example.com/diagram.png": {imageID: 42, pixelWidth: 40, pixelHeight: 20, pngData: []byte("png")}},
@@ -28,30 +28,39 @@ func TestGlamourMarkdownRenderer_GivenALoadedImageAndKittyProtocol_WhenRendering
 	if actualImage.columns != 4 || actualImage.rows != 2 {
 		t.Fatalf("expected the image placement to use 4 columns and 2 rows, actual %d columns and %d rows", actualImage.columns, actualImage.rows)
 	}
-	if !strings.Contains(actual, "[Image: Architecture]") {
-		t.Fatalf("expected the rendered markdown to keep the fallback caption, actual %q", actual)
+	if actualDocument.rowCount() != 2 {
+		t.Fatalf("expected the rendered markdown to keep %d image rows, actual %d", 2, actualDocument.rowCount())
 	}
-	if !strings.Contains(actual, "https://example.com/diagram.png") {
-		t.Fatalf("expected the rendered markdown to keep the image URL, actual %q", actual)
+	if strings.Contains(actual, "Architecture") {
+		t.Fatalf("expected the rendered markdown to drop the fallback alt text once the image is displayed, actual %q", actual)
+	}
+	if strings.Contains(actual, "https://example.com/diagram.png") {
+		t.Fatalf("expected the rendered markdown to drop the fallback URL once the image is displayed, actual %q", actual)
 	}
 }
 
-func TestGlamourMarkdownRenderer_GivenAnUnloadedImage_WhenRendering_ThenItFallsBackToCaptionAndLinkOnly(t *testing.T) {
+func TestGlamourMarkdownRenderer_GivenAnUnloadedImage_WhenRendering_ThenItFallsBackToAnInlineLabelAndAnUnderlinedLink(t *testing.T) {
 	renderer := glamourMarkdownRenderer{
 		imageStore:       &fakeDetailImageStore{},
 		imageProtocol:    kittyImageProtocol{support: fakeImageProtocolSupport{supported: true}},
 		terminalCellSize: fixedTerminalCellSize{width: 10, height: 10},
 	}
 
-	actual, actualErr := renderer.Render("![Architecture](https://example.com/diagram.png)", 12)
+	actual, actualErr := renderer.Render("![Architecture](https://example.com/diagram.png)", 80)
 
 	then_noError(t, actualErr)
-	actualDocument := newDetailDocumentWithWrap(actual, 12, false)
+	actualDocument := newDetailDocumentWithWrap(actual, 80, false)
 	if len(actualDocument.images) != 0 {
 		t.Fatalf("expected no tracked image placements without a loaded image, actual %d", len(actualDocument.images))
 	}
-	if !strings.Contains(actual, "[Image: Architecture]") || !strings.Contains(actual, "https://example.com/diagram.png") {
-		t.Fatalf("expected a plain fallback caption and link, actual %q", actual)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, "https://example.com/diagram.png")
+	expected := iconMarkdownImage + " Architecture https://example.com/diagram.png"
+	if visibleLine != expected {
+		t.Fatalf("expected the fallback line %q, actual %q", expected, visibleLine)
+	}
+	urlIndex := given_runeIndexInString(t, visibleLine, "https://example.com/diagram.png")
+	if !strings.Contains(actualDocument.lineStylePrefixes[lineIndex][urlIndex], underlineEscape) {
+		t.Fatalf("expected the fallback URL to be underlined, actual prefix %q", actualDocument.lineStylePrefixes[lineIndex][urlIndex])
 	}
 }
 

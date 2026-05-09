@@ -237,9 +237,7 @@ func consumeFollowingGlamourImageURLToken(rendered string, startIndex int) (stri
 }
 
 func renderRenderedMarkdownImageBlock(altText string, imageURL string, width int, imageStore detailImageStore, imageProtocol detailImageProtocol, terminalCellSize terminalCellSizeProvider) string {
-	caption := renderMarkdownImageCaption(altText)
-	link := renderMarkdownImageLink(imageURL)
-	fallback := strings.Join([]string{caption, link}, "\n")
+	fallback := renderMarkdownImageFallback(altText, imageURL)
 	if imageStore == nil || strings.TrimSpace(imageURL) == "" || imageProtocol == nil || !imageProtocol.Supported() {
 		return fallback
 	}
@@ -262,23 +260,30 @@ func renderRenderedMarkdownImageBlock(altText string, imageURL string, width int
 		return fallback
 	}
 
-	lines := make([]string, 0, imageRows+2)
+	lines := make([]string, 0, imageRows)
 	lines = append(lines, encodeDetailImageMarker(detailImageSpec{imageID: storedImage.imageID, columns: imageColumns, rows: imageRows}))
 	for row := 1; row < imageRows; row++ {
-		lines = append(lines, "")
+		lines = append(lines, ansiReset)
 	}
-	lines = append(lines, caption, link)
 	return strings.Join(lines, "\n")
 }
 
-func renderMarkdownImageCaption(altText string) string {
+func renderMarkdownImageFallback(altText string, imageURL string) string {
+	return strings.Join(filterEmptyStrings([]string{renderMarkdownImageLabel(altText), renderMarkdownImageLink(imageURL)}), " ")
+}
+
+func renderMarkdownImageLabel(altText string) string {
 	trimmedAltText := strings.TrimSpace(altText)
 	if trimmedAltText == "" {
 		trimmedAltText = "Image"
 	}
-	return styleText(fmt.Sprintf("[Image: %s]", trimmedAltText), foregroundColorEscape(theme.InactiveTitleHex))
+	return styleText(iconMarkdownImage+" "+trimmedAltText, foregroundColorEscape(theme.InactiveTitleHex))
 }
 
 func renderMarkdownImageLink(imageURL string) string {
-	return styleText(strings.TrimSpace(imageURL), foregroundColorEscape(theme.MarkdownLinkHex))
+	trimmedImageURL := strings.TrimSpace(imageURL)
+	if trimmedImageURL == "" {
+		return ""
+	}
+	return styleText(trimmedImageURL, foregroundColorEscape(theme.MarkdownLinkHex), underlineEscape)
 }

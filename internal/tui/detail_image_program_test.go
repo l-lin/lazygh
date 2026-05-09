@@ -34,7 +34,7 @@ func TestLayout_GivenMarkdownWithoutImages_WhenRendering_ThenItQueuesNoImageWork
 	}
 }
 
-func TestLayout_GivenAnHTMLImageTag_WhenRendering_ThenItShowsTheFallbackCaptionAndQueuesTheImageLoad(t *testing.T) {
+func TestLayout_GivenAnHTMLImageTag_WhenRendering_ThenItShowsTheInlineFallbackAndQueuesTheImageLoad(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: `<img src="https://example.com/diagram.png" alt="Architecture">`, State: "OPEN"}}
 	asyncRunner := &recordingAsyncRunner{}
@@ -50,15 +50,19 @@ func TestLayout_GivenAnHTMLImageTag_WhenRendering_ThenItShowsTheFallbackCaptionA
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "[Image: Architecture]") {
-		t.Fatalf("expected the detail view to keep the fallback caption for HTML images, actual %q", detailView.Buffer())
+	expectedFallback := iconMarkdownImage + " Architecture https://example.com/diagram.png"
+	if !strings.Contains(detailView.Buffer(), expectedFallback) {
+		t.Fatalf("expected the detail view to keep the inline fallback for HTML images, actual %q", detailView.Buffer())
 	}
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, _ := given_detailDocumentLineContaining(t, document, "https://example.com/diagram.png")
+	then_viewLineSegmentIsUnderlined(t, gui, viewDetailName, lineIndex, "https://example.com/diagram.png")
 	if len(asyncRunner.runs) != 1 {
 		t.Fatalf("expected one queued image load for the HTML image, actual %d", len(asyncRunner.runs))
 	}
 }
 
-func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsFallbackAndSkipsGitHubMarkdownRendering(t *testing.T) {
+func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsTheInlineFallbackAndSkipsGitHubMarkdownRendering(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
 	asyncRunner := &recordingAsyncRunner{}
@@ -74,12 +78,13 @@ func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsFallbackAndSk
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "[Image: Architecture]") {
-		t.Fatalf("expected the detail view to keep the fallback caption, actual %q", detailView.Buffer())
+	expectedFallback := iconMarkdownImage + " Architecture https://example.com/diagram.png"
+	if !strings.Contains(detailView.Buffer(), expectedFallback) {
+		t.Fatalf("expected the detail view to keep the inline fallback, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), "https://example.com/diagram.png") {
-		t.Fatalf("expected the detail view to keep the image URL, actual %q", detailView.Buffer())
-	}
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, _ := given_detailDocumentLineContaining(t, document, "https://example.com/diagram.png")
+	then_viewLineSegmentIsUnderlined(t, gui, viewDetailName, lineIndex, "https://example.com/diagram.png")
 	loader := subject.githubLoader.(*fakePullRequestDetailLoader)
 	if len(loader.renderMarkdownHTMLCalls) != 0 {
 		t.Fatalf("expected public images to skip GitHub markdown rendering, actual %v", loader.renderMarkdownHTMLCalls)
@@ -89,9 +94,52 @@ func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsFallbackAndSk
 	}
 }
 
-func TestLayout_GivenAnImageLoadFailure_WhenAsyncLoading_ThenItKeepsTheFallbackPlaceholderVisible(t *testing.T) {
+func TestLayout_GivenAPublicMarkdownImage_WhenTheAsyncImageLoadCompletes_ThenItShowsOnlyTheImage(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
+	asyncRunner := &recordingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.imageHTTPClient = &http.Client{Transport: &stubImageRoundTripper{statusCode: http.StatusOK, body: given_pngImageBytes(t, 40, 20)}}
+	subject.markdownRenderer = glamourMarkdownRenderer{imageStore: subject.detailImageStore, imageProtocol: kittyImageProtocol{support: fakeImageProtocolSupport{supported: true}}, terminalCellSize: fixedTerminalCellSize{width: 10, height: 10}}
+	manager := &capturingDetailImageManager{}
+	subject.detailImageManager = manager
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued image load, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Architecture") {
+		t.Fatalf("expected the loaded image to drop the fallback alt text, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "https://example.com/diagram.png") {
+		t.Fatalf("expected the loaded image to drop the fallback URL, actual %q", detailView.Buffer())
+	}
+	document := subject.currentDetailDocument(detailView)
+	if len(document.images) != 1 {
+		t.Fatalf("expected one tracked image placement after the image load, actual %d", len(document.images))
+	}
+	if actual := bufferLineCountContaining(detailView.BufferLines(), string(kittyImagePlaceholderRune)); actual != 2 {
+		t.Fatalf("expected the loaded image to render %d placeholder rows, actual %d in %q", 2, actual, detailView.Buffer())
+	}
+	if len(manager.images) != 1 {
+		t.Fatalf("expected one synced image placement after the image load, actual %d", len(manager.images))
+	}
+}
+
+func TestLayout_GivenAnImageLoadFailure_WhenAsyncLoading_ThenItKeepsTheInlineFallbackVisible(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
+	asyncRunner := &recordingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 	subject.imageHTTPClient = &http.Client{Transport: &stubImageRoundTripper{statusCode: http.StatusBadGateway, body: []byte("boom")}}
 	subject.markdownRenderer = glamourMarkdownRenderer{imageStore: subject.detailImageStore, imageProtocol: kittyImageProtocol{support: fakeImageProtocolSupport{supported: true}}, terminalCellSize: fixedTerminalCellSize{width: 10, height: 10}}
 	subject.detailImageManager = &capturingDetailImageManager{}
@@ -101,15 +149,21 @@ func TestLayout_GivenAnImageLoadFailure_WhenAsyncLoading_ThenItKeepsTheFallbackP
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued image load, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "[Image: Architecture]") {
-		t.Fatalf("expected the fallback caption to remain visible after the failed image load, actual %q", detailView.Buffer())
+	expectedFallback := iconMarkdownImage + " Architecture https://example.com/diagram.png"
+	if !strings.Contains(detailView.Buffer(), expectedFallback) {
+		t.Fatalf("expected the inline fallback to remain visible after the failed image load, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), "https://example.com/diagram.png") {
-		t.Fatalf("expected the fallback URL to remain visible after the failed image load, actual %q", detailView.Buffer())
-	}
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, _ := given_detailDocumentLineContaining(t, document, "https://example.com/diagram.png")
+	then_viewLineSegmentIsUnderlined(t, gui, viewDetailName, lineIndex, "https://example.com/diagram.png")
 	if !subject.detailImageLoadFailed["https://example.com/diagram.png"] {
 		t.Fatalf("expected the failed image source to be marked as failed")
 	}
@@ -154,6 +208,31 @@ func TestLayout_GivenAPrivateGitHubMarkdownImage_WhenRendering_ThenItLoadsRender
 	if len(manager.images) != 1 {
 		t.Fatalf("expected one synced image placement after the private image load, actual %d", len(manager.images))
 	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Architecture") {
+		t.Fatalf("expected the loaded private image to drop the fallback alt text, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "https://raw.githubusercontent.com/acme/widgets/main/docs/diagram.png") {
+		t.Fatalf("expected the loaded private image to drop the fallback URL, actual %q", detailView.Buffer())
+	}
+	document := subject.currentDetailDocument(detailView)
+	if len(document.images) != 1 {
+		t.Fatalf("expected one tracked image placement after resolving the private image, actual %d", len(document.images))
+	}
+	if actual := bufferLineCountContaining(detailView.BufferLines(), string(kittyImagePlaceholderRune)); actual != 2 {
+		t.Fatalf("expected the loaded private image to render %d placeholder rows, actual %d in %q", 2, actual, detailView.Buffer())
+	}
+}
+
+func bufferLineCountContaining(lines []string, segment string) int {
+	count := 0
+	for _, line := range lines {
+		if strings.Contains(line, segment) {
+			count++
+		}
+	}
+	return count
 }
 
 type recordingAsyncRunner struct {
