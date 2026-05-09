@@ -1,6 +1,9 @@
 [tools]
 go = "1.25.9"
 
+[env]
+GORELEASER_CROSS_IMAGE = "ghcr.io/goreleaser/goreleaser-cross:v1.25.9"
+
 [tasks.run]
 description = "Run the lazygh CLI from source"
 raw = true
@@ -33,3 +36,13 @@ run = "gofmt -w ."
 [tasks.tidy]
 description = "Tidy Go module files"
 run = "go mod tidy"
+
+[tasks.release-check]
+description = "Validate the GoReleaser configuration"
+raw = true
+run = "docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -e GOCACHE=/tmp/go-build -e GOMODCACHE=/tmp/go-mod -v \"$(pwd)\":/work -w /work \"$GORELEASER_CROSS_IMAGE\" check --config .goreleaser.yaml"
+
+[tasks.release-snapshot]
+description = "Build release archives locally without publishing"
+raw = true
+run = "docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -e GOCACHE=/tmp/go-build -e GOMODCACHE=/tmp/go-mod -v \"$(pwd)\":/work -w /work \"$GORELEASER_CROSS_IMAGE\" release --snapshot --clean --skip=publish --config .goreleaser.yaml"
