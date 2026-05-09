@@ -89,9 +89,27 @@ func (program *Program) movePullRequestBuildRunPopupCursorToWordEnd(gui *gocui.G
 	})
 }
 
+func (program *Program) movePullRequestBuildRunPopupCursorToNextBigWord(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+		state.moveToNextBigWord(document, viewportHeight)
+	})
+}
+
+func (program *Program) movePullRequestBuildRunPopupCursorToBigWordEnd(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+		state.moveToBigWordEnd(document, viewportHeight)
+	})
+}
+
 func (program *Program) movePullRequestBuildRunPopupCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
 		state.moveToPreviousWord(document, viewportHeight)
+	})
+}
+
+func (program *Program) movePullRequestBuildRunPopupCursorToPreviousBigWord(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+		state.moveToPreviousBigWord(document, viewportHeight)
 	})
 }
 

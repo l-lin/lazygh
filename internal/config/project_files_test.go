@@ -203,6 +203,24 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 	}
 }
 
+func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsWordAndWORDMotions(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"`w`, `e`, and `b` follow vim word motions",
+		"`W`, `E`, and `B` use whitespace-delimited `WORD` motions",
+		"move_cursor_to_next_big_word = \"W\"",
+		"move_cursor_to_big_word_end = \"E\"",
+		"move_cursor_to_previous_big_word = \"B\"",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheActionsSection_ThenItDocumentsTheAssigneePickerAndGitHubConstraints(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)

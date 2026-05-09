@@ -80,7 +80,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.reviewFileMotionHelpKeys(keymapScopeDetail), Description: "Previous/next file"},
 				{Key: program.reviewCommentMotionHelpKeys(keymapScopeDetail), Description: "Previous/next comment"},
 				{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Cursor to top/center/bottom"},
-				{Key: "w/e/b", Description: "Next/end/previous word"},
+				{Key: program.wordMotionHelpKeys(keymapScopeDetail), Description: "Next/end/previous word/WORD"},
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				program.reviewInlineCommentHelpEntry(),
@@ -139,7 +139,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "gg/G", Description: "First/last line"},
 			{Key: program.helpKeyChordOrFallback("g", "x", keybindingActionID{scope: keymapScopeDetail, action: "move_cursor_to_top"}, keybindingActionID{scope: keymapScopeDetail, action: "open_link_under_cursor"}), Description: "Open link under cursor"},
 			{Key: program.helpViewportPlacementKeysOrFallback("z", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation_prefix"}), Description: "Cursor to top/center/bottom"},
-			{Key: "w/e/b", Description: "Next/end/previous word"},
+			{Key: program.wordMotionHelpKeys(keymapScopeDetail), Description: "Next/end/previous word/WORD"},
 			{Key: "n/N", Description: "Next/previous match"},
 			{Key: "v/V", Description: "Start char/line visual selection"},
 			{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
@@ -317,6 +317,18 @@ func (program *Program) reviewFileMotionHelpKeys(scope string) string {
 
 func (program *Program) reviewCommentMotionHelpKeys(scope string) string {
 	return program.helpKeyChordOrFallback("[", "c", keybindingActionID{scope: scope, action: "previous_tab"}, keybindingActionID{scope: scope, action: "comment_on_pull_request"}) + "/" + program.helpKeyChordOrFallback("]", "c", keybindingActionID{scope: scope, action: "next_tab"}, keybindingActionID{scope: scope, action: "comment_on_pull_request"})
+}
+
+func (program *Program) wordMotionHelpKeys(scope string) string {
+	keys := []string{
+		program.helpKeysOrFallback("w", keybindingActionID{scope: scope, action: "move_cursor_to_next_word"}),
+		program.helpKeysOrFallback("e", keybindingActionID{scope: scope, action: "move_cursor_to_word_end"}),
+		program.helpKeysOrFallback("b", keybindingActionID{scope: scope, action: "move_cursor_to_previous_word"}),
+		program.helpKeysOrFallback("W", keybindingActionID{scope: scope, action: "move_cursor_to_next_big_word"}),
+		program.helpKeysOrFallback("E", keybindingActionID{scope: scope, action: "move_cursor_to_big_word_end"}),
+		program.helpKeysOrFallback("B", keybindingActionID{scope: scope, action: "move_cursor_to_previous_big_word"}),
+	}
+	return strings.Join(keys, "/")
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {

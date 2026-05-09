@@ -229,6 +229,8 @@ Use scoped tables under `[keymaps]`.
 
 Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
 
+`w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
+
 In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys and add `/` to search the popup body.
 
 ```toml
@@ -292,6 +294,9 @@ move_cursor_to_bottom = "G"
 move_cursor_to_next_word = "w"
 move_cursor_to_word_end = "e"
 move_cursor_to_previous_word = "b"
+move_cursor_to_next_big_word = "W"
+move_cursor_to_big_word_end = "E"
+move_cursor_to_previous_big_word = "B"
 next_search_match = "n"
 previous_search_match = "N"
 enter_visual_mode = "v"

@@ -77,6 +77,40 @@ func TestDetailViewState_GivenRenderedDetailText_WhenUsingVimMotions_ThenItNavig
 	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 4})
 }
 
+func TestDetailViewState_GivenMixedPunctuation_WhenUsingWordAndWORDMotions_ThenItMatchesVimBoundaries(t *testing.T) {
+	document := newDetailDocument("alpha/beta gamma-delta", 40)
+
+	nextWord := newDetailViewState()
+	nextWord.moveToNextWord(document, 3)
+	then_detailCursorIs(t, nextWord, detailPosition{line: 0, column: 5})
+	nextWord.moveToNextWord(document, 3)
+	then_detailCursorIs(t, nextWord, detailPosition{line: 0, column: 6})
+
+	nextWORD := newDetailViewState()
+	nextWORD.moveToNextBigWord(document, 3)
+	then_detailCursorIs(t, nextWORD, detailPosition{line: 0, column: 11})
+
+	wordEnd := newDetailViewState()
+	wordEnd.moveToWordEnd(document, 3)
+	then_detailCursorIs(t, wordEnd, detailPosition{line: 0, column: 4})
+	wordEnd.moveToWordEnd(document, 3)
+	then_detailCursorIs(t, wordEnd, detailPosition{line: 0, column: 5})
+
+	WORDEnd := newDetailViewState()
+	WORDEnd.moveToBigWordEnd(document, 3)
+	then_detailCursorIs(t, WORDEnd, detailPosition{line: 0, column: 9})
+
+	previousWord := newDetailViewState()
+	previousWord.cursor = detailPosition{line: 0, column: 11}
+	previousWord.moveToPreviousWord(document, 3)
+	then_detailCursorIs(t, previousWord, detailPosition{line: 0, column: 6})
+
+	previousWORD := newDetailViewState()
+	previousWORD.cursor = detailPosition{line: 0, column: 11}
+	previousWORD.moveToPreviousBigWord(document, 3)
+	then_detailCursorIs(t, previousWORD, detailPosition{line: 0, column: 0})
+}
+
 func TestDetailViewState_GivenVisualMode_WhenMovingTheCursor_ThenTheAnchorStaysFixedWhileTheSelectionGrowsAndShrinks(t *testing.T) {
 	document := newDetailDocument("abcdef", 4)
 	subject := newDetailViewState()

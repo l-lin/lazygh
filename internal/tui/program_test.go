@@ -196,13 +196,17 @@ func TestSideViewNavigation_GivenPullRequestsFocus_WhenPressingGGOrG_ThenItMoves
 	}
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsWordAndLineVisualMotions(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDetailViewSupportsWordWORDAndLineVisualMotions(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'w', handler: subject.moveDetailCursorToNextWord})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'e', handler: subject.moveDetailCursorToWordEnd})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'b', handler: subject.moveDetailCursorToPreviousWord})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'W', handler: subject.moveDetailCursorToNextBigWord})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'E', handler: subject.moveDetailCursorToBigWordEnd})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'B', handler: subject.moveDetailCursorToPreviousBigWord})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'V', handler: subject.enterDetailLineVisualMode})
 }
 

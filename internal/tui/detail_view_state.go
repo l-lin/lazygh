@@ -223,9 +223,30 @@ func (state *detailViewState) moveToWordEnd(document detailDocument, viewportHei
 	state.sync(document, viewportHeight)
 }
 
+func (state *detailViewState) moveToNextBigWord(document detailDocument, viewportHeight int) {
+	state.clearPendingPrefix()
+	state.cursor = document.moveToNextBigWord(state.cursor)
+	state.preferredColumn = document.screenColumnForPosition(state.cursor)
+	state.sync(document, viewportHeight)
+}
+
+func (state *detailViewState) moveToBigWordEnd(document detailDocument, viewportHeight int) {
+	state.clearPendingPrefix()
+	state.cursor = document.moveToBigWordEnd(state.cursor)
+	state.preferredColumn = document.screenColumnForPosition(state.cursor)
+	state.sync(document, viewportHeight)
+}
+
 func (state *detailViewState) moveToPreviousWord(document detailDocument, viewportHeight int) {
 	state.clearPendingPrefix()
 	state.cursor = document.moveToPreviousWord(state.cursor)
+	state.preferredColumn = document.screenColumnForPosition(state.cursor)
+	state.sync(document, viewportHeight)
+}
+
+func (state *detailViewState) moveToPreviousBigWord(document detailDocument, viewportHeight int) {
+	state.clearPendingPrefix()
+	state.cursor = document.moveToPreviousBigWord(state.cursor)
 	state.preferredColumn = document.screenColumnForPosition(state.cursor)
 	state.sync(document, viewportHeight)
 }

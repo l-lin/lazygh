@@ -49,17 +49,49 @@ func (document detailDocument) positionForGlobalIndex(index int) detailPosition 
 	return detailPosition{line: lineIndex, column: column}
 }
 
+type wordMotionKind int
+
+const (
+	wordMotionSmall wordMotionKind = iota
+	wordMotionBig
+)
+
+const (
+	wordMotionWhitespaceClass = iota
+	wordMotionKeywordClass
+	wordMotionPunctuationClass
+)
+
 func (document detailDocument) moveToNextWord(position detailPosition) detailPosition {
+	return document.moveToNextWordWithKind(position, wordMotionSmall)
+}
+
+func (document detailDocument) moveToNextBigWord(position detailPosition) detailPosition {
+	return document.moveToNextWordWithKind(position, wordMotionBig)
+}
+
+func (document detailDocument) moveToNextWordWithKind(position detailPosition, kind wordMotionKind) detailPosition {
 	if len(document.text) == 0 {
 		return position
 	}
 
 	cursor := document.globalIndex(position)
-	for cursor < len(document.text) && !unicode.IsSpace(document.text[cursor]) {
-		cursor++
+	if cursor >= len(document.text) {
+		return document.lastPosition()
 	}
-	for cursor < len(document.text) && unicode.IsSpace(document.text[cursor]) {
-		cursor++
+
+	currentClass := wordMotionClass(document.text[cursor], kind)
+	if currentClass == wordMotionWhitespaceClass {
+		for cursor < len(document.text) && wordMotionClass(document.text[cursor], kind) == wordMotionWhitespaceClass {
+			cursor++
+		}
+	} else {
+		for cursor < len(document.text) && wordMotionClass(document.text[cursor], kind) == currentClass {
+			cursor++
+		}
+		for cursor < len(document.text) && wordMotionClass(document.text[cursor], kind) == wordMotionWhitespaceClass {
+			cursor++
+		}
 	}
 	if cursor >= len(document.text) {
 		return document.lastPosition()
@@ -69,6 +101,14 @@ func (document detailDocument) moveToNextWord(position detailPosition) detailPos
 }
 
 func (document detailDocument) moveToWordEnd(position detailPosition) detailPosition {
+	return document.moveToWordEndWithKind(position, wordMotionSmall)
+}
+
+func (document detailDocument) moveToBigWordEnd(position detailPosition) detailPosition {
+	return document.moveToWordEndWithKind(position, wordMotionBig)
+}
+
+func (document detailDocument) moveToWordEndWithKind(position detailPosition, kind wordMotionKind) detailPosition {
 	if len(document.text) == 0 {
 		return position
 	}
@@ -78,16 +118,17 @@ func (document detailDocument) moveToWordEnd(position detailPosition) detailPosi
 		return document.lastPosition()
 	}
 
-	if unicode.IsSpace(document.text[cursor]) {
-		for cursor < len(document.text) && unicode.IsSpace(document.text[cursor]) {
+	currentClass := wordMotionClass(document.text[cursor], kind)
+	if currentClass == wordMotionWhitespaceClass {
+		for cursor < len(document.text) && wordMotionClass(document.text[cursor], kind) == wordMotionWhitespaceClass {
 			cursor++
 		}
 		if cursor >= len(document.text) {
 			return document.lastPosition()
 		}
-	} else if cursor+1 < len(document.text) && unicode.IsSpace(document.text[cursor+1]) {
+	} else if cursor+1 >= len(document.text) || wordMotionClass(document.text[cursor+1], kind) != currentClass {
 		cursor++
-		for cursor < len(document.text) && unicode.IsSpace(document.text[cursor]) {
+		for cursor < len(document.text) && wordMotionClass(document.text[cursor], kind) == wordMotionWhitespaceClass {
 			cursor++
 		}
 		if cursor >= len(document.text) {
@@ -95,7 +136,8 @@ func (document detailDocument) moveToWordEnd(position detailPosition) detailPosi
 		}
 	}
 
-	for cursor+1 < len(document.text) && !unicode.IsSpace(document.text[cursor+1]) {
+	currentClass = wordMotionClass(document.text[cursor], kind)
+	for cursor+1 < len(document.text) && wordMotionClass(document.text[cursor+1], kind) == currentClass {
 		cursor++
 	}
 
@@ -103,6 +145,14 @@ func (document detailDocument) moveToWordEnd(position detailPosition) detailPosi
 }
 
 func (document detailDocument) moveToPreviousWord(position detailPosition) detailPosition {
+	return document.moveToPreviousWordWithKind(position, wordMotionSmall)
+}
+
+func (document detailDocument) moveToPreviousBigWord(position detailPosition) detailPosition {
+	return document.moveToPreviousWordWithKind(position, wordMotionBig)
+}
+
+func (document detailDocument) moveToPreviousWordWithKind(position detailPosition, kind wordMotionKind) detailPosition {
 	if len(document.text) == 0 {
 		return position
 	}
@@ -111,14 +161,34 @@ func (document detailDocument) moveToPreviousWord(position detailPosition) detai
 	if cursor <= 0 {
 		return document.firstPosition()
 	}
-	for cursor > 0 && unicode.IsSpace(document.text[cursor-1]) {
+
+	cursor--
+	for cursor >= 0 && wordMotionClass(document.text[cursor], kind) == wordMotionWhitespaceClass {
 		cursor--
 	}
-	for cursor > 0 && !unicode.IsSpace(document.text[cursor-1]) {
+	if cursor < 0 {
+		return document.firstPosition()
+	}
+
+	currentClass := wordMotionClass(document.text[cursor], kind)
+	for cursor > 0 && wordMotionClass(document.text[cursor-1], kind) == currentClass {
 		cursor--
 	}
 
 	return document.positionForGlobalIndex(cursor)
+}
+
+func wordMotionClass(value rune, kind wordMotionKind) int {
+	if unicode.IsSpace(value) {
+		return wordMotionWhitespaceClass
+	}
+	if kind == wordMotionBig {
+		return wordMotionKeywordClass
+	}
+	if unicode.IsLetter(value) || unicode.IsNumber(value) || value == '_' {
+		return wordMotionKeywordClass
+	}
+	return wordMotionPunctuationClass
 }
 
 func (document detailDocument) comparePositions(left detailPosition, right detailPosition) int {

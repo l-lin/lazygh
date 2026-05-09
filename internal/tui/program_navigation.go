@@ -263,6 +263,18 @@ func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.Vi
 	})
 }
 
+func (program *Program) moveDetailCursorToNextBigWord(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToNextBigWord(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToBigWordEnd(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToBigWordEnd(document, viewportHeight)
+	})
+}
+
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
 	if program.detailViewState.pendingKeySequence.consume(detailViewportPlacementTarget()) {
 		return program.moveDetailCursorToViewportBottom(gui, view)
@@ -270,6 +282,12 @@ func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *goc
 
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.moveToPreviousWord(document, viewportHeight)
+	})
+}
+
+func (program *Program) moveDetailCursorToPreviousBigWord(gui *gocui.Gui, view *gocui.View) error {
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.moveToPreviousBigWord(document, viewportHeight)
 	})
 }
 
