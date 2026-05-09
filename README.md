@@ -86,9 +86,9 @@ By default, it will use the `system` preset if not set:
 preset = "system"
 ```
 
-List of presets can be found in [`preset.go`](internal/theme/preset.go). Available presets include `system`, `light`, and `dark`.
+List of presets can be found in [`preset.go`](internal/theme/preset.go).
 
-You can find the list of palette variables in [palette.go](internal/theme/palette.go). Use `Change theme` from the actions popup when you want to switch presets at runtime, it updates `~/.config/lazygh/config.toml` immediately.
+You can find the list of palette variables in [palette.go](internal/theme/palette.go).
 
 This example starts from `kanagawa-dark` and overrides a few colors.
 
@@ -120,10 +120,6 @@ pull_request_status_merged_background = "#252535"
 diff_addition_highlight_background = "#35513B"
 diff_deletion_highlight_background = "#5A2E35"
 ```
-
-The `background` color fills the full TUI background. `markdown_heading_background` controls the full-line heading fill. `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists, and `pull_request_title` colors the pull-request title text in pull-request lists.
-
-Use `pull_request_status_*_background` when you want status-specific pull-request colors. It also colors the `` status icon in pull-request lists. `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
 
 ### Links
 
@@ -189,35 +185,6 @@ command = ["search", "prs", "--review-requested", "@me", "--limit", "100", "--st
 label = "Escalated"
 command = ["search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
 ```
-
-### Notifications
-
-Browser mode now has a third side pane for notifications. Browser mode cycles across side views `1`, `2`, and `3`. `tab`, `shift+tab`, `h`, and `l` move between Connected user, Pull Requests, and Notifications. Press `3` to jump straight to Notifications.
-
-When view 3 is inactive, it stays at three lines. When view 3 is active, it expands and view 2 collapses to three lines. If you jump from notifications into view 0, view 3 keeps that expanded height. Pull request notifications reuse the browser PR detail with overview and tabs. Issue notifications open an issue document. Release notifications open a release document.
-
-Notification loading uses `gh api /notifications?all=true`. GitHub returns unread and read threads there, but done threads stay excluded from the list. Press `r` in view `3` to mark the selected notification as read, press `d` to mark it as done, and use `a` for bulk read, bulk done, and browser-opening actions. The UI updates optimistically, so read actions flip the icon immediately, done actions remove rows immediately, and bulk actions do the same. In this MVP, `r` is read-only: it marks a notification as read, but it does not toggle anything back to unread.
-
-If GitHub rejects notification mutations because of the active credential type or missing scopes, re-authenticate `gh` with a user credential that supports notification endpoints. A personal access token (classic) with the `notifications` scope and `repo` access for private repositories is the safest option.
-
-```text
-╭[1]- Connected user──────────────╮╭[0]-Detail─────────────────────────────╮
-│ @octocat                         ││  Add notifications                    │
-╰──────────────────────────────────╯│ acme/widgets#42                        │
-╭[2] My PRs (12)───────────────────╮│ ...                                    │
-│  acme/widgets#42 Add ...        ││                                         │
-│ ...                              ││                                         │
-╰──────────────────────────────────╯│                                         │
-╭[3] Notifications─────────────────╯│
-│  acme/widgets#42 Add notifications│
-╰──────────────────────────────────╯
-```
-
-### Actions
-
-`Assign PR` opens a searchable assignee picker. Press `enter` to toggle an assignee, then press `alt+enter` to save. GitHub only allows up to 10 assignees per pull request, and your account still needs permission to assign users in that repository.
-
-In the notification list, the actions popup offers `Mark notification as read`, `Mark notification as done`, `Mark all notifications as read`, `Mark all notifications as done`, and `Open notification in browser`. In view 0 on a pull request notification, the popup switches to the usual pull request actions, including `Start review`, `Review PR as story`, and `Yank URL to clipboard`.
 
 ### Keymap overrides
 
