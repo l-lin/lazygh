@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/jesseduffield/gocui"
+import (
+	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	"github.com/jesseduffield/gocui"
+)
 
 const (
 	keymapScopePrefix               = "_prefix"
@@ -25,50 +28,50 @@ var sidePaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotific
 var reviewPaneViewNames = []string{viewPullRequestsName, viewDetailName}
 
 var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
-	"toggle_help":                        sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "?"),
-	"open_search":                        sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "/"),
-	"move_selection_down":                sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "j", "down"),
-	"move_selection_up":                  sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "k", "up"),
-	"page_down":                          sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "ctrl+d"),
-	"page_up":                            sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "ctrl+u"),
-	"full_page_down":                     sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "ctrl+f", "pagedown"),
-	"full_page_up":                       sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "ctrl+b", "pageup"),
-	"grow_focused_pane":                  sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "+"),
-	"shrink_focused_pane":                sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "-"),
-	"open_actions_popup":                 sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "a"),
-	"open_detail":                        sharedKeybindingDefinitionWithBindings(keymapScopeSide, "enter"),
-	"move_selection_to_top":              sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "gg"),
-	"move_selection_to_bottom":           sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "G"),
-	"place_selection_at_viewport_top":    sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "zt"),
-	"recenter_selection":                 sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "zz"),
-	"place_selection_at_viewport_bottom": sharedKeybindingDefinitionWithBindings(keymapScopeSelection, "zb"),
-	"move_cursor_left":                   sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "h", "left"),
-	"move_cursor_right":                  sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "l", "right"),
-	"move_cursor_to_row_start":           sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "0"),
-	"move_cursor_to_row_end":             sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "$"),
-	"move_cursor_to_top":                 sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "gg"),
-	"open_link_under_cursor":             sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "gx"),
-	"move_cursor_to_bottom":              sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "G"),
-	"move_cursor_to_next_word":           sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "w"),
-	"move_cursor_to_word_end":            sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "e"),
-	"move_cursor_to_previous_word":       sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "b"),
-	"move_cursor_to_next_big_word":       sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "W"),
-	"move_cursor_to_big_word_end":        sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "E"),
-	"move_cursor_to_previous_big_word":   sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "B"),
-	"enter_visual_mode":                  sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "v"),
-	"enter_line_visual_mode":             sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "V"),
-	"recenter_cursor":                    sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "zz"),
-	"place_cursor_at_viewport_top":       sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "zt"),
-	"place_cursor_at_viewport_bottom":    sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "zb"),
-	"copy_pull_request_url":              sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "y"),
-	"comment_on_pull_request":            sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "c"),
-	"previous_tab":                       sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "["),
-	"next_tab":                           sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "]"),
-	"toggle_fold":                        sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "za"),
-	"close_all_folds":                    sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "zM"),
-	"open_all_folds":                     sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "zR"),
-	"next_search_match":                  sharedKeybindingDefinitionWithBindings(keymapScopeSearch, "n"),
-	"previous_search_match":              sharedKeybindingDefinitionWithBindings(keymapScopeSearch, "N"),
+	"toggle_help":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "toggle_help"),
+	"open_search":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "open_search"),
+	"move_selection_down":                sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "move_selection_down"),
+	"move_selection_up":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "move_selection_up"),
+	"page_down":                          sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "page_down"),
+	"page_up":                            sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "page_up"),
+	"full_page_down":                     sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "full_page_down"),
+	"full_page_up":                       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "full_page_up"),
+	"grow_focused_pane":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "grow_focused_pane"),
+	"shrink_focused_pane":                sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "shrink_focused_pane"),
+	"open_actions_popup":                 sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "open_actions_popup"),
+	"open_detail":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSide, "open_detail"),
+	"move_selection_to_top":              sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSelection, "move_selection_to_top"),
+	"move_selection_to_bottom":           sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSelection, "move_selection_to_bottom"),
+	"place_selection_at_viewport_top":    sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSelection, "place_selection_at_viewport_top"),
+	"recenter_selection":                 sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSelection, "recenter_selection"),
+	"place_selection_at_viewport_bottom": sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSelection, "place_selection_at_viewport_bottom"),
+	"move_cursor_left":                   sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_left"),
+	"move_cursor_right":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_right"),
+	"move_cursor_to_row_start":           sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_row_start"),
+	"move_cursor_to_row_end":             sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_row_end"),
+	"move_cursor_to_top":                 sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_top"),
+	"open_link_under_cursor":             sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "open_link_under_cursor"),
+	"move_cursor_to_bottom":              sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_bottom"),
+	"move_cursor_to_next_word":           sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_next_word"),
+	"move_cursor_to_word_end":            sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_word_end"),
+	"move_cursor_to_previous_word":       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_previous_word"),
+	"move_cursor_to_next_big_word":       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_next_big_word"),
+	"move_cursor_to_big_word_end":        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_big_word_end"),
+	"move_cursor_to_previous_big_word":   sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_previous_big_word"),
+	"enter_visual_mode":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "enter_visual_mode"),
+	"enter_line_visual_mode":             sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "enter_line_visual_mode"),
+	"recenter_cursor":                    sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "recenter_cursor"),
+	"place_cursor_at_viewport_top":       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "place_cursor_at_viewport_top"),
+	"place_cursor_at_viewport_bottom":    sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "place_cursor_at_viewport_bottom"),
+	"copy_pull_request_url":              sharedKeybindingDefinitionWithDefaultBindings(keymapScopePullRequests, "copy_pull_request_url"),
+	"comment_on_pull_request":            sharedKeybindingDefinitionWithDefaultBindings(keymapScopePullRequests, "comment_on_pull_request"),
+	"previous_tab":                       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "previous_tab"),
+	"next_tab":                           sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "next_tab"),
+	"toggle_fold":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeFolds, "toggle_fold"),
+	"close_all_folds":                    sharedKeybindingDefinitionWithDefaultBindings(keymapScopeFolds, "close_all_folds"),
+	"open_all_folds":                     sharedKeybindingDefinitionWithDefaultBindings(keymapScopeFolds, "open_all_folds"),
+	"next_search_match":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSearch, "next_search_match"),
+	"previous_search_match":              sharedKeybindingDefinitionWithDefaultBindings(keymapScopeSearch, "previous_search_match"),
 }
 
 type sharedKeybindingDefinition struct {
@@ -81,6 +84,10 @@ func sharedKeybindingDefinitionWithBindings(scope string, bindings ...string) sh
 	return sharedKeybindingDefinition{scope: scope, bindings: append([]string(nil), bindings...), allowSequences: true}
 }
 
+func sharedKeybindingDefinitionWithDefaultBindings(scope string, action string) sharedKeybindingDefinition {
+	return sharedKeybindingDefinitionWithBindings(scope, mustDefaultKeymapBindings(scope, action)...)
+}
+
 func sharedKeybindingDefinitionFor(action string) (sharedKeybindingDefinition, bool) {
 	definition, ok := sharedKeybindingDefinitions[action]
 	if !ok {
@@ -91,6 +98,26 @@ func sharedKeybindingDefinitionFor(action string) (sharedKeybindingDefinition, b
 		bindings:       append([]string(nil), definition.bindings...),
 		allowSequences: definition.allowSequences,
 	}, true
+}
+
+func mustDefaultKeymapBindings(scope string, action string) []string {
+	actions, ok := appconfig.DefaultKeymaps()[scope]
+	if !ok {
+		panic("missing default keymap scope " + scope)
+	}
+	bindings, ok := actions[action]
+	if !ok {
+		panic("missing default keymap action " + scope + "." + action)
+	}
+	return append([]string(nil), bindings...)
+}
+
+func configuredKeybindingActionFor(scope string, action string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error) keybindingAction {
+	return keybindingActionFor(scope, action, viewNames, handler, mustDefaultKeymapBindings(scope, action)...)
+}
+
+func aliasedConfiguredKeybindingActionFor(scope string, action string, configScope string, configAction string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error) keybindingAction {
+	return aliasedKeybindingActionFor(scope, action, configScope, configAction, viewNames, handler, mustDefaultKeymapBindings(configScope, configAction)...)
 }
 
 func keybindingActionFor(scope string, action string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, bindings ...string) keybindingAction {
@@ -145,15 +172,15 @@ func aliasedKeybindingActionFor(scope string, action string, configScope string,
 	return keybindingActionWithConfigID(keybindingActionFor(scope, action, viewNames, handler, bindings...), configScope, configAction)
 }
 
-func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, bindings ...string) keybindingAction {
-	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, bindings...), keymapScopeGlobal, "close")
+func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error) keybindingAction {
+	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, mustDefaultKeymapBindings(keymapScopeGlobal, "close")...), keymapScopeGlobal, "close")
 }
 
 func (program *Program) keybindingActions() []keybindingAction {
 	return []keybindingAction{
-		keybindingActionFor(keymapScopeGlobal, "quit", []string{""}, program.quit, "ctrl+c"),
-		keybindingActionWithBindingSlice(keybindingActionFor(keymapScopeGlobal, "next_side_view", []string{""}, program.nextSideView, "tab", "l"), keybindingBindingSliceFirst),
-		keybindingActionWithBindingSlice(keybindingActionFor(keymapScopeGlobal, "previous_side_view", []string{""}, program.previousSideView, "shift+tab", "h"), keybindingBindingSliceFirst),
+		configuredKeybindingActionFor(keymapScopeGlobal, "quit", []string{""}, program.quit),
+		keybindingActionWithBindingSlice(configuredKeybindingActionFor(keymapScopeGlobal, "next_side_view", []string{""}, program.nextSideView), keybindingBindingSliceFirst),
+		keybindingActionWithBindingSlice(configuredKeybindingActionFor(keymapScopeGlobal, "previous_side_view", []string{""}, program.previousSideView), keybindingBindingSliceFirst),
 
 		sharedKeybindingActionFor(keymapScopeMain, "toggle_help", mainPaneViewNames, program.toggleHelp),
 		fixedKeybindingActionFor(keymapScopeMain, "focus_user_view", mainPaneViewNames, program.focusUserView, "1"),
@@ -162,8 +189,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeMain, "open_search", mainPaneViewNames, program.openSearch),
 		sharedKeybindingActionFor(keymapScopeMain, "move_selection_down", mainPaneViewNames, program.moveSelectionDown),
 		sharedKeybindingActionFor(keymapScopeMain, "move_selection_up", mainPaneViewNames, program.moveSelectionUp),
-		keybindingActionFor(keymapScopeMain, "move_detail_view_down", mainPaneViewNames, program.moveDetailViewDown, "J"),
-		keybindingActionFor(keymapScopeMain, "move_detail_view_up", mainPaneViewNames, program.moveDetailViewUp, "K"),
+		configuredKeybindingActionFor(keymapScopeMain, "move_detail_view_down", mainPaneViewNames, program.moveDetailViewDown),
+		configuredKeybindingActionFor(keymapScopeMain, "move_detail_view_up", mainPaneViewNames, program.moveDetailViewUp),
 		sharedKeybindingActionFor(keymapScopeMain, "page_down", mainPaneViewNames, program.pageDown),
 		sharedKeybindingActionFor(keymapScopeMain, "page_up", mainPaneViewNames, program.pageUp),
 		sharedKeybindingActionFor(keymapScopeMain, "full_page_down", mainPaneViewNames, program.fullPageDown),
@@ -171,15 +198,15 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeMain, "grow_focused_pane", mainPaneViewNames, program.growFocusedPane),
 		sharedKeybindingActionFor(keymapScopeMain, "shrink_focused_pane", mainPaneViewNames, program.shrinkFocusedPane),
 
-		keybindingActionWithBindingSlice(keybindingActionWithConfigID(keybindingActionFor(keymapScopeSide, "next_side_view", sidePaneViewNames, program.nextSideView, "tab", "l"), keymapScopeGlobal, "next_side_view"), keybindingBindingSliceRest),
-		keybindingActionWithBindingSlice(keybindingActionWithConfigID(keybindingActionFor(keymapScopeSide, "previous_side_view", sidePaneViewNames, program.previousSideView, "shift+tab", "h"), keymapScopeGlobal, "previous_side_view"), keybindingBindingSliceRest),
+		keybindingActionWithBindingSlice(aliasedConfiguredKeybindingActionFor(keymapScopeSide, "next_side_view", keymapScopeGlobal, "next_side_view", sidePaneViewNames, program.nextSideView), keybindingBindingSliceRest),
+		keybindingActionWithBindingSlice(aliasedConfiguredKeybindingActionFor(keymapScopeSide, "previous_side_view", keymapScopeGlobal, "previous_side_view", sidePaneViewNames, program.previousSideView), keybindingBindingSliceRest),
 		fixedKeybindingActionFor(keymapScopeSide, "focus_detail_view", sidePaneViewNames, program.focusDetailView, "0"),
 		sharedKeybindingActionFor(keymapScopeSide, "move_selection_to_top", sidePaneViewNames, program.moveSideSelectionToTop),
 		sharedKeybindingActionFor(keymapScopeSide, "move_selection_to_bottom", sidePaneViewNames, program.moveSideSelectionToBottom),
 		sharedKeybindingActionFor(keymapScopeSide, "recenter_selection", sidePaneViewNames, program.recenterSideSelection),
 		sharedKeybindingActionFor(keymapScopeSide, "place_selection_at_viewport_top", sidePaneViewNames, program.moveSideSelectionToViewportTop),
 		sharedKeybindingActionFor(keymapScopeSide, "place_selection_at_viewport_bottom", sidePaneViewNames, program.moveSideSelectionToViewportBottom),
-		keybindingActionFor(keymapScopeSide, "exit_review_mode", sidePaneViewNames, program.exitReviewMode, "esc", "q"),
+		configuredKeybindingActionFor(keymapScopeSide, "exit_review_mode", sidePaneViewNames, program.exitReviewMode),
 
 		sharedKeybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail),
 		sharedKeybindingActionFor(keymapScopeUser, "copy_pull_request_url", []string{viewUserName}, program.copyPullRequestURL),
@@ -198,14 +225,14 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequests, "previous_search_match", []string{viewPullRequestsName}, program.previousReviewFileTreeSearchMatch),
 
 		sharedKeybindingActionFor(keymapScopeNotifications, "open_detail", []string{viewNotificationsName}, program.openDetail),
-		keybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead, "r"),
-		keybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone, "d"),
+		configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead),
+		configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone),
 		sharedKeybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup),
 
-		keybindingActionFor(keymapScopeReview, "previous_file", reviewPaneViewNames, program.previousReviewFile, "[["),
-		keybindingActionFor(keymapScopeReview, "next_file", reviewPaneViewNames, program.nextReviewFile, "]]"),
-		keybindingActionFor(keymapScopeReview, "previous_comment", reviewPaneViewNames, program.previousReviewComment, "[c"),
-		keybindingActionFor(keymapScopeReview, "next_comment", reviewPaneViewNames, program.nextReviewComment, "]c"),
+		configuredKeybindingActionFor(keymapScopeReview, "previous_file", reviewPaneViewNames, program.previousReviewFile),
+		configuredKeybindingActionFor(keymapScopeReview, "next_file", reviewPaneViewNames, program.nextReviewFile),
+		configuredKeybindingActionFor(keymapScopeReview, "previous_comment", reviewPaneViewNames, program.previousReviewComment),
+		configuredKeybindingActionFor(keymapScopeReview, "next_comment", reviewPaneViewNames, program.nextReviewComment),
 
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_left", []string{viewDetailName}, program.moveDetailCursorLeft),
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_right", []string{viewDetailName}, program.moveDetailCursorRight),
@@ -236,10 +263,10 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeFolds, "toggle_fold", []string{viewDetailName}, program.toggleInlineConversationVisibility),
 		sharedKeybindingActionFor(keymapScopeFolds, "close_all_folds", []string{viewDetailName}, program.closeAllDetailFolds),
 		sharedKeybindingActionFor(keymapScopeFolds, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds),
-		closeKeybindingActionFor(keymapScopeGlobal, []string{viewDetailName}, program.closeDetail, "esc", "q"),
+		closeKeybindingActionFor(keymapScopeGlobal, []string{viewDetailName}, program.closeDetail),
 
-		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, "enter", "ctrl+j", "ctrl+s"),
-		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, "esc"),
+		configuredKeybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch),
+		configuredKeybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch),
 
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "open_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_down", []string{viewActionsPopupName}, program.moveActionsPopupSelectionDown),
@@ -253,19 +280,19 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "recenter_selection", []string{viewActionsPopupName}, program.recenterActionsPopupSelection),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_top", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportTop),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportBottom),
-		keybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction, "enter"),
-		keybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupName}, program.submitSelectedActionsPopupAction, "alt+enter"),
-		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup, "esc", "q"),
+		configuredKeybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction),
+		configuredKeybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupName}, program.submitSelectedActionsPopupAction),
+		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup),
 
-		aliasedKeybindingActionFor(keymapScopeSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, "enter", "ctrl+j", "ctrl+s"),
-		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewActionsPopupSearchName}, program.closeActionsPopup, "esc"),
+		aliasedConfiguredKeybindingActionFor(keymapScopeSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList),
+		configuredKeybindingActionFor(keymapScopeSearch, "cancel", []string{viewActionsPopupSearchName}, program.closeActionsPopup),
 
-		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, "alt+enter", "ctrl+s"),
-		keybindingActionFor(keymapScopeModalEditor, "cancel", []string{viewModalEditorName}, program.closeModalEditor, "esc"),
+		configuredKeybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor),
+		configuredKeybindingActionFor(keymapScopeModalEditor, "cancel", []string{viewModalEditorName}, program.closeModalEditor),
 
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_left", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorLeft),
-		aliasedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_down", keymapScopeGlobal, "move_selection_down", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorDown, "j", "down"),
-		aliasedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_up", keymapScopeGlobal, "move_selection_up", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorUp, "k", "up"),
+		aliasedConfiguredKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_down", keymapScopeGlobal, "move_selection_down", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorDown),
+		aliasedConfiguredKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_up", keymapScopeGlobal, "move_selection_up", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorUp),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_right", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorRight),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_row_start", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToRowStart),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_row_end", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToRowEnd),
@@ -283,16 +310,16 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "enter_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupVisualMode),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "enter_line_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupLineVisualMode),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "open_search", []string{viewPullRequestBuildInfoName}, program.openSearch),
-		keybindingActionFor(keymapScopePullRequestBuildInfo, "copy_content", []string{viewPullRequestBuildInfoName}, program.copyPullRequestBuildRunPopupContent, "y"),
+		configuredKeybindingActionFor(keymapScopePullRequestBuildInfo, "copy_content", []string{viewPullRequestBuildInfoName}, program.copyPullRequestBuildRunPopupContent),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "open_actions_popup", []string{viewPullRequestBuildInfoName}, program.openActionsPopup),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "page_down", []string{viewPullRequestBuildInfoName}, program.pagePullRequestBuildRunPopupDown),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "page_up", []string{viewPullRequestBuildInfoName}, program.pagePullRequestBuildRunPopupUp),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "full_page_down", []string{viewPullRequestBuildInfoName}, program.fullPagePullRequestBuildRunPopupDown),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "full_page_up", []string{viewPullRequestBuildInfoName}, program.fullPagePullRequestBuildRunPopupUp),
-		closeKeybindingActionFor(keymapScopePullRequestBuildInfo, []string{viewPullRequestBuildInfoName}, program.closePullRequestBuildRunPopup, "esc", "q"),
+		closeKeybindingActionFor(keymapScopePullRequestBuildInfo, []string{viewPullRequestBuildInfoName}, program.closePullRequestBuildRunPopup),
 
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown),
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
-		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp, "esc", "q"),
+		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp),
 	}
 }
