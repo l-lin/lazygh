@@ -74,7 +74,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheL
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
 }
 
-func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsZMAndZRForBulkFolds(t *testing.T) {
+func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSharedFoldKeys(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -90,6 +90,7 @@ func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsZMAnd
 
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Expand/collapse section", "<enter>/za")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Close/open all folds", "zM/zR")
 }
 
@@ -102,7 +103,7 @@ func TestHelpPopup_GivenReviewFilesFocusAndCustomizedFoldBindings_WhenTogglingHe
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
-		"pull_requests": {
+		"folds": {
 			"toggle_fold":     {"o"},
 			"close_all_folds": {"zX"},
 			"open_all_folds":  {"zO"},

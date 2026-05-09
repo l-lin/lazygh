@@ -13,6 +13,7 @@ const (
 	keymapScopeDetail               = "detail"
 	keymapScopeSelection            = "selection"
 	keymapScopeCursor               = "cursor"
+	keymapScopeFolds                = "folds"
 	keymapScopeSearch               = "search"
 	keymapScopeActionsPopup         = "actions_popup"
 	keymapScopeActionsPopupSearch   = "actions_popup_search"
@@ -64,8 +65,9 @@ var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"comment_on_pull_request":            sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "c"),
 	"previous_tab":                       sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "["),
 	"next_tab":                           sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "]"),
-	"close_all_folds":                    sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "zM"),
-	"open_all_folds":                     sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "zR"),
+	"toggle_fold":                        sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "za"),
+	"close_all_folds":                    sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "zM"),
+	"open_all_folds":                     sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "zR"),
 	"next_search_match":                  sharedKeybindingDefinitionWithBindings(keymapScopeSearch, "n"),
 	"previous_search_match":              sharedKeybindingDefinitionWithBindings(keymapScopeSearch, "N"),
 }
@@ -188,7 +190,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequests, "copy_pull_request_url", []string{viewPullRequestsName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopePullRequests, "comment_on_pull_request", []string{viewPullRequestsName}, program.openPullRequestCommentComposer),
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_actions_popup", []string{viewPullRequestsName}, program.openActionsPopup),
-		keybindingActionFor(keymapScopePullRequests, "toggle_fold", []string{viewPullRequestsName}, program.togglePullRequestFold, "za"),
+		sharedKeybindingActionFor(keymapScopePullRequests, "toggle_fold", []string{viewPullRequestsName}, program.togglePullRequestFold),
 		sharedKeybindingActionFor(keymapScopePullRequests, "close_all_folds", []string{viewPullRequestsName}, program.closeAllReviewTreeFolds),
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_all_folds", []string{viewPullRequestsName}, program.openAllReviewTreeFolds),
 		sharedKeybindingActionFor(keymapScopePullRequests, "next_search_match", []string{viewPullRequestsName}, program.nextReviewFileTreeSearchMatch),
@@ -224,7 +226,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeDetail, "recenter_cursor", []string{viewDetailName}, program.recenterDetailView),
 		sharedKeybindingActionFor(keymapScopeDetail, "place_cursor_at_viewport_top", []string{viewDetailName}, program.moveDetailCursorToViewportTop),
 		sharedKeybindingActionFor(keymapScopeDetail, "place_cursor_at_viewport_bottom", []string{viewDetailName}, program.moveDetailCursorToViewportBottom),
-		keybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, "enter", "za"),
+		fixedKeybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, "enter"),
+		sharedKeybindingActionFor(keymapScopeDetail, "toggle_fold", []string{viewDetailName}, program.toggleInlineConversationVisibility),
 		sharedKeybindingActionFor(keymapScopeDetail, "close_all_folds", []string{viewDetailName}, program.closeAllDetailFolds),
 		sharedKeybindingActionFor(keymapScopeDetail, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds),
 		closeKeybindingActionFor(keymapScopeDetail, []string{viewDetailName}, program.closeDetail, true),

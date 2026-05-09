@@ -331,7 +331,7 @@ func (program *Program) wordMotionHelpKeys(scope string) string {
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {
-	return program.helpKeysOrFallback("<enter>/za", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation"})
+	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation"}) + "/" + program.helpKeysOrFallback("za", keybindingActionID{scope: keymapScopeDetail, action: "toggle_fold"})
 }
 
 func (program *Program) reviewTreeToggleHelpKeys() string {

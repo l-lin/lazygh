@@ -231,7 +231,7 @@ A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`.
 
 `0`, `1`, `2`, and `3` stay fixed. They are not configurable. There is no `[keymaps.help]` table, help uses the other keymaps and is not configurable on its own.
 
-Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
+Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.folds` covers shared fold toggles, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
 
 Actions popups reuse `keymaps.global.open_search`, and the popup search prompt reuses `keymaps.search.submit`.
 
@@ -239,7 +239,7 @@ Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move b
 
 `w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
 
-In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys, so `gg`, `gx`, `w`, `e`, `b`, `W`, `E`, and `B` behave there too, and `/` searches the popup body.
+In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `enter` still toggles the current section or inline conversation, `zt`/`zz`/`zb` place the cursor at the top/center/bottom, and `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys, so `gg`, `gx`, `w`, `e`, `b`, `W`, `E`, and `B` behave there too, and `/` searches the popup body.
 
 ```toml
 [keymaps.global]
@@ -295,22 +295,21 @@ move_detail_view_up = "K"
 open_detail = "enter"
 exit_review_mode = ["esc", "q"]
 
+[keymaps.folds]
+toggle_fold = "za"
+close_all_folds = "zM"
+open_all_folds = "zR"
+
 [keymaps.pull_requests]
 # In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
 previous_tab = "["
 next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
-toggle_fold = "za"
-close_all_folds = "zM"
-open_all_folds = "zR"
 
 [keymaps.notifications]
 mark_notification_read = "r"
 mark_notification_done = "d"
-
-[keymaps.detail]
-toggle_inline_conversation = ["enter", "za"]
 
 [keymaps.search]
 submit = ["enter", "ctrl+j", "ctrl+s"]

@@ -35,7 +35,7 @@ func TestBindingsForViews_GivenMultipleViewsAndDefinitions_WhenExpanding_ThenItC
 	}
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUsesBracketsEnterEscapeAndQForItsLocalActions(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUsesBracketsEnterFoldEscapeAndQForItsLocalActions(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
@@ -43,6 +43,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUs
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: '[', handler: subject.previousDetailTab})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: ']', handler: subject.nextDetailTab})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEnter, handler: subject.toggleInlineConversationVisibility})
+	then_bindingKeyExists(t, actual, viewDetailName, 'z')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEsc, handler: subject.closeDetail})
 	then_bindingDoesNotExist(t, actual, viewDetailName, gocui.KeyCtrlLsqBracket)
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'q', handler: subject.closeDetail})

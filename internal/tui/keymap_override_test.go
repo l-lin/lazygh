@@ -196,18 +196,19 @@ func TestKeybindingSpecs_GivenFocusViewOverrides_WhenListingBindings_ThenTheNume
 	then_bindingDoesNotExist(t, actual, viewUserName, 'd')
 }
 
-func TestKeybindingSpecs_GivenPullRequestsToggleFoldOverride_WhenListingBindings_ThenItSupportsSingleCharacterCustomization(t *testing.T) {
+func TestKeybindingSpecs_GivenFoldToggleOverride_WhenListingBindings_ThenItAppliesToTheReviewTreeAndDetailSections(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"pull_requests": {
+		"folds": {
 			"toggle_fold": {"o"},
 		},
 	})
 
-	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'o')
-	if actualHandler == nil {
-		t.Fatal("expected a binding for the customized fold toggle")
-	}
-	then_bindingExists(t, subject.keybindingSpecs(), keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'o', handler: subject.togglePullRequestFold})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'o', handler: subject.toggleInlineConversationVisibility})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEnter, handler: subject.toggleInlineConversationVisibility})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
 }
 
 func TestResolvedKeyLabels_GivenTwoStepTabOverrides_WhenResolving_ThenItKeepsTheConfiguredSequences(t *testing.T) {
