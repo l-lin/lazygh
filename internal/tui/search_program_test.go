@@ -7,7 +7,7 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSearchFromAnyMainPaneAndSearchViewSupportsSubmitAndEscapeShortcuts(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSearchFromAnyMainPaneAndSearchViewSupportsSubmitAndEscapeWithoutControlBracket(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
@@ -19,6 +19,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingSearchBindings_ThenSlashOpensSe
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyCtrlJ, handler: subject.submitSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyCtrlS, handler: subject.submitSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: gocui.KeyEsc, handler: subject.cancelSearch})
+	then_bindingDoesNotExist(t, actual, viewSearchName, gocui.KeyCtrlLsqBracket)
 }
 
 func TestSearchPrompt_GivenPullRequestsFocus_WhenOpeningSearch_ThenThePromptUsesTheGlobalStatusLineWithoutShrinkingTheLayout(t *testing.T) {

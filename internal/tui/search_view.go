@@ -96,7 +96,7 @@ func (program *Program) renderBottomPromptView(view *gocui.View, text string, cu
 }
 
 func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	if key == gocui.KeyEnter || key == gocui.KeyCtrlJ || key == gocui.KeyEsc || key == gocui.KeyCtrlLsqBracket {
+	if key == gocui.KeyEnter || key == gocui.KeyCtrlJ || key == gocui.KeyEsc {
 		return false
 	}
 	if program.searchEditor == nil {

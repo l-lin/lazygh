@@ -255,8 +255,8 @@ full_page_up = ["ctrl+b", "pageup"]
 grow_focused_pane = "+"
 shrink_focused_pane = "-"
 open_actions_popup = "a"
-# `close` is shared. Text inputs default to `esc` and `ctrl+[` only. Read-only panes also add `q`.
-close = ["esc", "ctrl+["]
+# `close` is shared. Text inputs default to `esc` only. Read-only panes also add `q`.
+close = ["esc"]
 
 [keymaps.selection]
 move_selection_to_top = "gg"
@@ -290,7 +290,7 @@ move_detail_view_down = "J"
 move_detail_view_up = "K"
 
 [keymaps.side]
-exit_review_mode = ["esc", "ctrl+[", "q"]
+exit_review_mode = ["esc", "q"]
 
 [keymaps.user]
 open_detail = "enter"
@@ -316,7 +316,7 @@ toggle_inline_conversation = ["enter", "za"]
 
 [keymaps.search]
 submit = ["enter", "ctrl+j"]
-cancel = ["esc", "ctrl+["]
+cancel = ["esc"]
 next_search_match = "n"
 previous_search_match = "N"
 

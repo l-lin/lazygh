@@ -138,7 +138,7 @@ func aliasedKeybindingActionFor(scope string, action string, configScope string,
 }
 
 func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, includeQuitKey bool) keybindingAction {
-	bindings := []string{"esc", "ctrl+["}
+	bindings := []string{"esc"}
 	if includeQuitKey {
 		bindings = append(bindings, "q")
 	}
@@ -175,7 +175,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeSide, "recenter_selection", sidePaneViewNames, program.recenterSideSelection),
 		sharedKeybindingActionFor(keymapScopeSide, "place_selection_at_viewport_top", sidePaneViewNames, program.moveSideSelectionToViewportTop),
 		sharedKeybindingActionFor(keymapScopeSide, "place_selection_at_viewport_bottom", sidePaneViewNames, program.moveSideSelectionToViewportBottom),
-		keybindingActionFor(keymapScopeSide, "exit_review_mode", sidePaneViewNames, program.exitReviewMode, "esc", "ctrl+[", "q"),
+		keybindingActionFor(keymapScopeSide, "exit_review_mode", sidePaneViewNames, program.exitReviewMode, "esc", "q"),
 
 		keybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail, "enter"),
 		sharedKeybindingActionFor(keymapScopeUser, "copy_pull_request_url", []string{viewUserName}, program.copyPullRequestURL),
@@ -229,7 +229,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		closeKeybindingActionFor(keymapScopeDetail, []string{viewDetailName}, program.closeDetail, true),
 
 		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, "enter", "ctrl+j", "ctrl+s"),
-		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, "esc", "ctrl+["),
+		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, "esc"),
 
 		keybindingActionFor(keymapScopeActionsPopup, "focus_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch, "/"),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_down", []string{viewActionsPopupName}, program.moveActionsPopupSelectionDown),

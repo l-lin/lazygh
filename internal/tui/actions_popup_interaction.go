@@ -298,7 +298,7 @@ func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result ac
 }
 
 func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	if key == gocui.KeyEnter || key == gocui.KeyEsc || key == gocui.KeyCtrlLsqBracket {
+	if key == gocui.KeyEnter || key == gocui.KeyEsc {
 		return false
 	}
 	if program.actionsPopupSearchEditor == nil {

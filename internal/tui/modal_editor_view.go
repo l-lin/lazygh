@@ -52,7 +52,7 @@ func (program *Program) renderModalEditorView(view *gocui.View) {
 }
 
 func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	if key == gocui.KeyAltEnter || key == gocui.KeyEsc || key == gocui.KeyCtrlLsqBracket {
+	if key == gocui.KeyAltEnter || key == gocui.KeyEsc {
 		return false
 	}
 	if program.modalEditor == nil {
