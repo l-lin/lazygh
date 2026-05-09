@@ -100,7 +100,7 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}

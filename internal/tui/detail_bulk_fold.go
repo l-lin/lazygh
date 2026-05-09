@@ -107,7 +107,7 @@ func (program *Program) setAllBrowserDetailFolds(gui *gocui.Gui, view *gocui.Vie
 		return nil
 	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return nil
 	}

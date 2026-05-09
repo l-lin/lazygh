@@ -101,7 +101,7 @@ func (program *Program) selectedBrowserInlineCommentReplyTarget() (pullRequestRe
 }
 
 func (program *Program) selectedBrowserConversationsInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
@@ -131,7 +131,7 @@ func (program *Program) selectedBrowserConversationsInlineCommentReplyTarget() (
 }
 
 func (program *Program) selectedBrowserChangesInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}

@@ -129,7 +129,7 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
 	}

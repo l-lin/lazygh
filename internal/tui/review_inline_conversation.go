@@ -114,7 +114,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 		return nil
 	}
 
-	summary, ok := program.model.SelectedPullRequestSummary()
+	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return nil
 	}

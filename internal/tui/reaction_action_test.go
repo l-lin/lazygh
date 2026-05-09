@@ -201,6 +201,48 @@ func TestAddReaction_GivenPullRequestReactionPickerSelection_WhenSubmitting_Then
 	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
 }
 
+func TestAddReaction_GivenPullRequestNotificationDetailFocus_WhenSubmitting_ThenItUsesTheNotificationPullRequestIdentity(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/rocket#7":   {ID: "PR_list", Title: "List PR", Number: 7, Body: "Body 7", State: "OPEN"},
+			"acme/widgets#42": {ID: "PR_notification", Title: "Notification PR", Number: 42, Body: "Body 42", State: "OPEN"},
+		},
+	}
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "List PR", Number: 7, Repository: githubcli.Repository{NameWithOwner: "acme/rocket"}, URL: "https://github.com/acme/rocket/pull/7", Body: "Body 7"}),
+	})
+	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
+	model.FocusPullRequestsView()
+	subject := given_pullRequestCommentProgram(model, loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.focusNotificationsView(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("add reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.addReactionSubjectIDs, []string{"PR_notification"}) {
+		t.Fatalf("expected reaction subject ids %v, actual %v", []string{"PR_notification"}, loader.addReactionSubjectIDs)
+	}
+	if !reflect.DeepEqual(loader.addReactionContents, []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}) {
+		t.Fatalf("expected reaction contents %v, actual %v", []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}, loader.addReactionContents)
+	}
+}
+
 func TestAddReaction_GivenReviewModeInlineCommentReactionPickerSelection_WhenSubmitting_ThenItAddsTheReactionRefreshesTheDiffAndShowsFeedback(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{

@@ -41,7 +41,7 @@ func (program *Program) selectedPullRequestReactionActionTarget() (pullRequestRe
 
 	switch program.model.Focus() {
 	case FocusDetailView:
-		summary, ok := program.model.SelectedPullRequestSummary()
+		summary, ok := program.selectedPullRequestSummaryForDetail()
 		if !ok {
 			return pullRequestReactionActionTarget{}, false
 		}
