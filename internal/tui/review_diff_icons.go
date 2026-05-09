@@ -6,7 +6,7 @@ func reviewDiffFileIcon(filePath string) string {
 
 func reviewDiffTreeRowIcon(row reviewDiffTreeRow) string {
 	if row.Kind == reviewDiffTreeRowKindChapter {
-		return reviewDiffDirectoryIcon
+		return reviewModeChapterIcon
 	}
 	if row.FileIndex >= 0 {
 		return reviewDiffFileIcon(row.Label)
