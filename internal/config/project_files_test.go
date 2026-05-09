@@ -245,10 +245,10 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 		"single key like `\"q\"` or a two-key sequence like `\"za\"`",
 		"shared behavior-first scopes",
 		"`keymaps.global` covers actions that work across multiple panes",
-		"`keymaps.global.cancel` covers text-entry views",
+		"`keymaps.global.previous_tab` and `keymaps.global.next_tab` cover tab switches",
+		"`keymaps.modal_editor.cancel` covers the modal editor",
+		"help, detail, and actions popup search reuse shared scopes",
 		"`0`, `1`, `2`, and `3` stay fixed",
-		"`[keymaps.help]`",
-		"not configurable on its own",
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
@@ -267,7 +267,9 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 		"move_cursor_left = [\"h\", \"left\"]",
 		"move_cursor_right = [\"l\", \"right\"]",
 		"close = [\"esc\", \"q\"]",
-		"cancel = \"esc\"",
+		"[keymaps.modal_editor]",
+		"previous_tab = \"[\"",
+		"next_tab = \"]\"",
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)

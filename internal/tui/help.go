@@ -79,15 +79,15 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "gg/G", Description: "First/last line"},
 				{Key: program.reviewFileMotionHelpKeys(), Description: "Previous/next file"},
 				{Key: program.reviewCommentMotionHelpKeys(), Description: "Previous/next comment"},
-				{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeDetail, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeDetail, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeDetail, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
-				{Key: program.wordMotionHelpKeys(keymapScopeDetail), Description: "Next/end/previous word/WORD"},
+				{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeCursor, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
+				{Key: program.wordMotionHelpKeys(keymapScopeCursor), Description: "Next/end/previous word/WORD"},
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				program.reviewInlineCommentHelpEntry(),
 				{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse conversation"},
 				{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
-				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Actions"},
-				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
+				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"},
+				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
 				{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
@@ -137,12 +137,12 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},
 			{Key: "0/$", Description: "Line start/end"},
 			{Key: "gg/G", Description: "First/last line"},
-			{Key: program.helpKeysOrFallback("gx", keybindingActionID{scope: keymapScopeDetail, action: "open_link_under_cursor"}), Description: "Open link under cursor"},
-			{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeDetail, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeDetail, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeDetail, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
-			{Key: program.wordMotionHelpKeys(keymapScopeDetail), Description: "Next/end/previous word/WORD"},
+			{Key: program.helpKeysOrFallback("gx", keybindingActionID{scope: keymapScopeCursor, action: "open_link_under_cursor"}), Description: "Open link under cursor"},
+			{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeCursor, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
+			{Key: program.wordMotionHelpKeys(keymapScopeCursor), Description: "Next/end/previous word/WORD"},
 			{Key: "n/N", Description: "Next/previous match"},
 			{Key: "v/V", Description: "Start char/line visual selection"},
-			{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeDetail, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
+			{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
 			{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
@@ -151,14 +151,14 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search detail"},
 			{Key: "<esc>/q", Description: "Exit visual / return"},
 		}
-		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}), Description: "Actions"})
+		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"})
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries,
-				program.pullRequestCommentHelpEntry(keymapScopeDetail),
+				program.pullRequestCommentHelpEntry(keymapScopePullRequests),
 				helpEntry{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse section"},
 				helpEntry{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
-				helpEntry{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeDetail, action: "previous_tab"}), Description: "Previous detail tab"},
-				helpEntry{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeDetail, action: "next_tab"}), Description: "Next detail tab"},
+				helpEntry{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeGlobal, action: "previous_tab"}), Description: "Previous detail tab"},
+				helpEntry{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeGlobal, action: "next_tab"}), Description: "Next detail tab"},
 			)
 		}
 		return entries
@@ -177,8 +177,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 			program.pullRequestYankHelpEntry(keymapScopePullRequests),
 			program.pullRequestCommentHelpEntry(keymapScopePullRequests),
 			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},
-			{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopePullRequests, action: "previous_tab"}), Description: "Previous tab"},
-			{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopePullRequests, action: "next_tab"}), Description: "Next tab"},
+			{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeGlobal, action: "previous_tab"}), Description: "Previous tab"},
+			{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeGlobal, action: "next_tab"}), Description: "Next tab"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open detail"},
 		}
 	case FocusNotificationsView:
@@ -331,7 +331,7 @@ func (program *Program) wordMotionHelpKeys(scope string) string {
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {
-	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeDetail, action: "toggle_inline_conversation"}) + "/" + program.helpKeysOrFallback("za", keybindingActionID{scope: keymapScopeDetail, action: "toggle_fold"})
+	return program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeFolds, action: "toggle_inline_conversation"}) + "/" + program.helpKeysOrFallback("za", keybindingActionID{scope: keymapScopeFolds, action: "toggle_fold"})
 }
 
 func (program *Program) reviewTreeToggleHelpKeys() string {
@@ -339,7 +339,7 @@ func (program *Program) reviewTreeToggleHelpKeys() string {
 }
 
 func (program *Program) bulkFoldHelpKeys() string {
-	return program.helpKeysOrFallback("zM", keybindingActionID{scope: keymapScopeDetail, action: "close_all_folds"}) + "/" + program.helpKeysOrFallback("zR", keybindingActionID{scope: keymapScopeDetail, action: "open_all_folds"})
+	return program.helpKeysOrFallback("zM", keybindingActionID{scope: keymapScopeFolds, action: "close_all_folds"}) + "/" + program.helpKeysOrFallback("zR", keybindingActionID{scope: keymapScopeFolds, action: "open_all_folds"})
 }
 
 func (program *Program) reviewTreeBulkFoldHelpKeys() string {

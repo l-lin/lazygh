@@ -10,17 +10,14 @@ const (
 	keymapScopeUser                 = "user"
 	keymapScopePullRequests         = "pull_requests"
 	keymapScopeNotifications        = "notifications"
-	keymapScopeDetail               = "detail"
 	keymapScopeSelection            = "selection"
 	keymapScopeCursor               = "cursor"
 	keymapScopeFolds                = "folds"
 	keymapScopeReview               = "review"
 	keymapScopeSearch               = "search"
 	keymapScopeActionsPopup         = "actions_popup"
-	keymapScopeActionsPopupSearch   = "actions_popup_search"
 	keymapScopeModalEditor          = "modal_editor"
 	keymapScopePullRequestBuildInfo = "pull_request_build_info"
-	keymapScopeHelp                 = "help"
 )
 
 var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName, viewDetailName}
@@ -65,8 +62,8 @@ var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"place_cursor_at_viewport_bottom":    sharedKeybindingDefinitionWithBindings(keymapScopeCursor, "zb"),
 	"copy_pull_request_url":              sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "y"),
 	"comment_on_pull_request":            sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "c"),
-	"previous_tab":                       sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "["),
-	"next_tab":                           sharedKeybindingDefinitionWithBindings(keymapScopePullRequests, "]"),
+	"previous_tab":                       sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "["),
+	"next_tab":                           sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "]"),
 	"toggle_fold":                        sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "za"),
 	"close_all_folds":                    sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "zM"),
 	"open_all_folds":                     sharedKeybindingDefinitionWithBindings(keymapScopeFolds, "zR"),
@@ -142,8 +139,8 @@ func aliasedKeybindingActionFor(scope string, action string, configScope string,
 	return keybindingActionWithConfigID(keybindingActionFor(scope, action, viewNames, handler, bindings...), configScope, configAction)
 }
 
-func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, configAction string, bindings ...string) keybindingAction {
-	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, bindings...), keymapScopeGlobal, configAction)
+func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, bindings ...string) keybindingAction {
+	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, bindings...), keymapScopeGlobal, "close")
 }
 
 func (program *Program) keybindingActions() []keybindingAction {
@@ -182,8 +179,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeUser, "copy_pull_request_url", []string{viewUserName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopeUser, "open_actions_popup", []string{viewUserName}, program.openActionsPopup),
 
-		sharedKeybindingActionFor(keymapScopePullRequests, "previous_tab", []string{viewPullRequestsName}, program.previousPullRequestTab),
-		sharedKeybindingActionFor(keymapScopePullRequests, "next_tab", []string{viewPullRequestsName}, program.nextPullRequestTab),
+		sharedKeybindingActionFor(keymapScopeGlobal, "previous_tab", []string{viewPullRequestsName}, program.previousPullRequestTab),
+		sharedKeybindingActionFor(keymapScopeGlobal, "next_tab", []string{viewPullRequestsName}, program.nextPullRequestTab),
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_detail", []string{viewPullRequestsName}, program.openDetail),
 		sharedKeybindingActionFor(keymapScopePullRequests, "copy_pull_request_url", []string{viewPullRequestsName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopePullRequests, "comment_on_pull_request", []string{viewPullRequestsName}, program.openPullRequestCommentComposer),
@@ -204,36 +201,36 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeReview, "previous_comment", reviewPaneViewNames, program.previousReviewComment, "[c"),
 		keybindingActionFor(keymapScopeReview, "next_comment", reviewPaneViewNames, program.nextReviewComment, "]c"),
 
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_left", []string{viewDetailName}, program.moveDetailCursorLeft),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_right", []string{viewDetailName}, program.moveDetailCursorRight),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_row_start", []string{viewDetailName}, program.moveDetailCursorToRowStart),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_row_end", []string{viewDetailName}, program.moveDetailCursorToRowEnd),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_top", []string{viewDetailName}, program.moveDetailCursorToTop),
-		sharedKeybindingActionFor(keymapScopeDetail, "open_link_under_cursor", []string{viewDetailName}, program.openLinkUnderCursor),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_bottom", []string{viewDetailName}, program.moveDetailCursorToBottom),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_next_word", []string{viewDetailName}, program.moveDetailCursorToNextWord),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_word_end", []string{viewDetailName}, program.moveDetailCursorToWordEnd),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_previous_word", []string{viewDetailName}, program.moveDetailCursorToPreviousWord),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_next_big_word", []string{viewDetailName}, program.moveDetailCursorToNextBigWord),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_big_word_end", []string{viewDetailName}, program.moveDetailCursorToBigWordEnd),
-		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_to_previous_big_word", []string{viewDetailName}, program.moveDetailCursorToPreviousBigWord),
-		sharedKeybindingActionFor(keymapScopeDetail, "next_search_match", []string{viewDetailName}, program.nextDetailSearchMatch),
-		sharedKeybindingActionFor(keymapScopeDetail, "previous_search_match", []string{viewDetailName}, program.previousDetailSearchMatch),
-		sharedKeybindingActionFor(keymapScopeDetail, "enter_visual_mode", []string{viewDetailName}, program.enterDetailVisualMode),
-		sharedKeybindingActionFor(keymapScopeDetail, "enter_line_visual_mode", []string{viewDetailName}, program.enterDetailLineVisualMode),
-		sharedKeybindingActionFor(keymapScopeDetail, "previous_tab", []string{viewDetailName}, program.previousDetailTab),
-		sharedKeybindingActionFor(keymapScopeDetail, "next_tab", []string{viewDetailName}, program.nextDetailTab),
-		sharedKeybindingActionFor(keymapScopeDetail, "copy_pull_request_url", []string{viewDetailName}, program.copyPullRequestURL),
-		sharedKeybindingActionFor(keymapScopeDetail, "comment_on_pull_request", []string{viewDetailName}, program.openPullRequestCommentComposer),
-		sharedKeybindingActionFor(keymapScopeDetail, "open_actions_popup", []string{viewDetailName}, program.openActionsPopup),
-		sharedKeybindingActionFor(keymapScopeDetail, "recenter_cursor", []string{viewDetailName}, program.recenterDetailView),
-		sharedKeybindingActionFor(keymapScopeDetail, "place_cursor_at_viewport_top", []string{viewDetailName}, program.moveDetailCursorToViewportTop),
-		sharedKeybindingActionFor(keymapScopeDetail, "place_cursor_at_viewport_bottom", []string{viewDetailName}, program.moveDetailCursorToViewportBottom),
-		fixedKeybindingActionFor(keymapScopeDetail, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, "enter"),
-		sharedKeybindingActionFor(keymapScopeDetail, "toggle_fold", []string{viewDetailName}, program.toggleInlineConversationVisibility),
-		sharedKeybindingActionFor(keymapScopeDetail, "close_all_folds", []string{viewDetailName}, program.closeAllDetailFolds),
-		sharedKeybindingActionFor(keymapScopeDetail, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds),
-		closeKeybindingActionFor(keymapScopeDetail, []string{viewDetailName}, program.closeDetail, "close", "esc", "q"),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_left", []string{viewDetailName}, program.moveDetailCursorLeft),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_right", []string{viewDetailName}, program.moveDetailCursorRight),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_row_start", []string{viewDetailName}, program.moveDetailCursorToRowStart),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_row_end", []string{viewDetailName}, program.moveDetailCursorToRowEnd),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_top", []string{viewDetailName}, program.moveDetailCursorToTop),
+		sharedKeybindingActionFor(keymapScopeCursor, "open_link_under_cursor", []string{viewDetailName}, program.openLinkUnderCursor),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_bottom", []string{viewDetailName}, program.moveDetailCursorToBottom),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_next_word", []string{viewDetailName}, program.moveDetailCursorToNextWord),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_word_end", []string{viewDetailName}, program.moveDetailCursorToWordEnd),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_previous_word", []string{viewDetailName}, program.moveDetailCursorToPreviousWord),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_next_big_word", []string{viewDetailName}, program.moveDetailCursorToNextBigWord),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_big_word_end", []string{viewDetailName}, program.moveDetailCursorToBigWordEnd),
+		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_previous_big_word", []string{viewDetailName}, program.moveDetailCursorToPreviousBigWord),
+		sharedKeybindingActionFor(keymapScopeSearch, "next_search_match", []string{viewDetailName}, program.nextDetailSearchMatch),
+		sharedKeybindingActionFor(keymapScopeSearch, "previous_search_match", []string{viewDetailName}, program.previousDetailSearchMatch),
+		sharedKeybindingActionFor(keymapScopeCursor, "enter_visual_mode", []string{viewDetailName}, program.enterDetailVisualMode),
+		sharedKeybindingActionFor(keymapScopeCursor, "enter_line_visual_mode", []string{viewDetailName}, program.enterDetailLineVisualMode),
+		sharedKeybindingActionFor(keymapScopeGlobal, "previous_tab", []string{viewDetailName}, program.previousDetailTab),
+		sharedKeybindingActionFor(keymapScopeGlobal, "next_tab", []string{viewDetailName}, program.nextDetailTab),
+		sharedKeybindingActionFor(keymapScopePullRequests, "copy_pull_request_url", []string{viewDetailName}, program.copyPullRequestURL),
+		sharedKeybindingActionFor(keymapScopePullRequests, "comment_on_pull_request", []string{viewDetailName}, program.openPullRequestCommentComposer),
+		sharedKeybindingActionFor(keymapScopeGlobal, "open_actions_popup", []string{viewDetailName}, program.openActionsPopup),
+		sharedKeybindingActionFor(keymapScopeCursor, "recenter_cursor", []string{viewDetailName}, program.recenterDetailView),
+		sharedKeybindingActionFor(keymapScopeCursor, "place_cursor_at_viewport_top", []string{viewDetailName}, program.moveDetailCursorToViewportTop),
+		sharedKeybindingActionFor(keymapScopeCursor, "place_cursor_at_viewport_bottom", []string{viewDetailName}, program.moveDetailCursorToViewportBottom),
+		fixedKeybindingActionFor(keymapScopeFolds, "toggle_inline_conversation", []string{viewDetailName}, program.toggleInlineConversationVisibility, "enter"),
+		sharedKeybindingActionFor(keymapScopeFolds, "toggle_fold", []string{viewDetailName}, program.toggleInlineConversationVisibility),
+		sharedKeybindingActionFor(keymapScopeFolds, "close_all_folds", []string{viewDetailName}, program.closeAllDetailFolds),
+		sharedKeybindingActionFor(keymapScopeFolds, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds),
+		closeKeybindingActionFor(keymapScopeGlobal, []string{viewDetailName}, program.closeDetail, "esc", "q"),
 
 		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, "enter", "ctrl+j", "ctrl+s"),
 		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, "esc"),
@@ -252,13 +249,13 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportBottom),
 		keybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction, "enter"),
 		keybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupName}, program.submitSelectedActionsPopupAction, "alt+enter"),
-		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup, "close", "esc", "q"),
+		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup, "esc", "q"),
 
-		aliasedKeybindingActionFor(keymapScopeActionsPopupSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, "enter", "ctrl+j", "ctrl+s"),
-		closeKeybindingActionFor(keymapScopeActionsPopupSearch, []string{viewActionsPopupSearchName}, program.closeActionsPopup, "cancel", "esc"),
+		aliasedKeybindingActionFor(keymapScopeSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, "enter", "ctrl+j", "ctrl+s"),
+		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewActionsPopupSearchName}, program.closeActionsPopup, "esc"),
 
 		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, "alt+enter", "ctrl+s"),
-		closeKeybindingActionFor(keymapScopeModalEditor, []string{viewModalEditorName}, program.closeModalEditor, "cancel", "esc"),
+		keybindingActionFor(keymapScopeModalEditor, "cancel", []string{viewModalEditorName}, program.closeModalEditor, "esc"),
 
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_left", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorLeft),
 		aliasedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_down", keymapScopeGlobal, "move_selection_down", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorDown, "j", "down"),
@@ -286,10 +283,10 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "page_up", []string{viewPullRequestBuildInfoName}, program.pagePullRequestBuildRunPopupUp),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "full_page_down", []string{viewPullRequestBuildInfoName}, program.fullPagePullRequestBuildRunPopupDown),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "full_page_up", []string{viewPullRequestBuildInfoName}, program.fullPagePullRequestBuildRunPopupUp),
-		closeKeybindingActionFor(keymapScopePullRequestBuildInfo, []string{viewPullRequestBuildInfoName}, program.closePullRequestBuildRunPopup, "close", "esc", "q"),
+		closeKeybindingActionFor(keymapScopePullRequestBuildInfo, []string{viewPullRequestBuildInfoName}, program.closePullRequestBuildRunPopup, "esc", "q"),
 
-		sharedKeybindingActionFor(keymapScopeHelp, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown),
-		sharedKeybindingActionFor(keymapScopeHelp, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
-		closeKeybindingActionFor(keymapScopeHelp, []string{viewHelpName}, program.closeHelp, "close", "esc", "q"),
+		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown),
+		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
+		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp, "esc", "q"),
 	}
 }

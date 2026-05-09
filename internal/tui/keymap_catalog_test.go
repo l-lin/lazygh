@@ -28,8 +28,8 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 		{name: "open all folds", action: "open_all_folds", expectedScope: keymapScopeFolds, expectedBindings: []string{"zR"}, expectedAllowSequences: true},
 		{name: "next search match", action: "next_search_match", expectedScope: keymapScopeSearch, expectedBindings: []string{"n"}, expectedAllowSequences: true},
 		{name: "previous search match", action: "previous_search_match", expectedScope: keymapScopeSearch, expectedBindings: []string{"N"}, expectedAllowSequences: true},
-		{name: "previous tab", action: "previous_tab", expectedScope: keymapScopePullRequests, expectedBindings: []string{"["}, expectedAllowSequences: true},
-		{name: "next tab", action: "next_tab", expectedScope: keymapScopePullRequests, expectedBindings: []string{"]"}, expectedAllowSequences: true},
+		{name: "previous tab", action: "previous_tab", expectedScope: keymapScopeGlobal, expectedBindings: []string{"["}, expectedAllowSequences: true},
+		{name: "next tab", action: "next_tab", expectedScope: keymapScopeGlobal, expectedBindings: []string{"]"}, expectedAllowSequences: true},
 		{name: "copy pull request url", action: "copy_pull_request_url", expectedScope: keymapScopePullRequests, expectedBindings: []string{"y"}, expectedAllowSequences: true},
 		{name: "comment on pull request", action: "comment_on_pull_request", expectedScope: keymapScopePullRequests, expectedBindings: []string{"c"}, expectedAllowSequences: true},
 		{name: "move selection to top", action: "move_selection_to_top", expectedScope: keymapScopeSelection, expectedBindings: []string{"gg"}, expectedAllowSequences: true},
@@ -78,6 +78,27 @@ func TestKeybindingActions_GivenProgram_WhenListingActions_ThenViewFocusShortcut
 		}
 		if action.configurable != expectedConfigurable {
 			t.Fatalf("expected action %v configurable=%t, actual %t", action.id, expectedConfigurable, action.configurable)
+		}
+	}
+}
+
+func TestKeybindingActions_GivenProgram_WhenListingActions_ThenLegacyViewScopesStayRemoved(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	legacyScopes := map[string]struct{}{
+		"actions_popup_search": {},
+		"detail":               {},
+		"help":                 {},
+	}
+	for _, action := range subject.keybindingActions() {
+		if _, ok := legacyScopes[action.id.scope]; ok {
+			t.Fatalf("expected action id scope %q to stay removed for %+v", action.id.scope, action.id)
+		}
+		if action.configID == (keybindingActionID{}) {
+			continue
+		}
+		if _, ok := legacyScopes[action.configID.scope]; ok {
+			t.Fatalf("expected config scope %q to stay removed for %+v", action.configID.scope, action.id)
 		}
 	}
 }

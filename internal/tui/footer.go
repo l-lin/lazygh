@@ -121,7 +121,7 @@ func (program *Program) modalEditorKeyHintsText() string {
 
 	return program.statusLineKeyHints(
 		statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "submit"}}},
-		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "close"}}},
+		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "cancel"}}},
 	)
 }
 
@@ -141,8 +141,8 @@ func (program *Program) actionsPopupSearchKeyHintsText() string {
 	}
 
 	return program.statusLineKeyHints(
-		statusLineHintSpec{label: "list", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "submit"}}},
-		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopupSearch, action: "close"}}},
+		statusLineHintSpec{label: "list", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "submit"}}},
+		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "cancel"}}},
 	)
 }
 
@@ -303,7 +303,7 @@ func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {
 	case FocusNotificationsView:
 		return keybindingActionID{scope: keymapScopeNotifications, action: "open_actions_popup"}, true
 	case FocusDetailView:
-		return keybindingActionID{scope: keymapScopeDetail, action: "open_actions_popup"}, true
+		return keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}, true
 	default:
 		return keybindingActionID{}, false
 	}

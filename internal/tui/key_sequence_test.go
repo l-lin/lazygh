@@ -4,7 +4,7 @@ import "testing"
 
 func TestKeySequenceState_GivenATarget_WhenArmingAndMatching_ThenTheSecondStepConsumesIt(t *testing.T) {
 	subject := keySequenceState{}
-	target := keySequenceTarget{viewName: viewDetailName, actionID: keybindingActionID{scope: keymapScopeDetail, action: "move_cursor_to_top"}}
+	target := keySequenceTarget{viewName: viewDetailName, actionID: keybindingActionID{scope: keymapScopeCursor, action: "move_cursor_to_top"}}
 
 	if subject.armOrConsume(target) {
 		t.Fatal("expected the first step to arm the key sequence")
@@ -19,7 +19,7 @@ func TestKeySequenceState_GivenATarget_WhenArmingAndMatching_ThenTheSecondStepCo
 
 func TestKeySequenceState_GivenAPendingTarget_WhenArmingAnotherTarget_ThenItReplacesThePendingSequence(t *testing.T) {
 	subject := keySequenceState{}
-	originalTarget := keySequenceTarget{viewName: viewDetailName, actionID: keybindingActionID{scope: keymapScopeDetail, action: "move_cursor_to_top"}}
+	originalTarget := keySequenceTarget{viewName: viewDetailName, actionID: keybindingActionID{scope: keymapScopeCursor, action: "move_cursor_to_top"}}
 	replacementTarget := keySequenceTarget{viewName: viewActionsPopupName, actionID: keybindingActionID{scope: keymapScopeActionsPopup, action: "move_selection_to_top"}}
 
 	subject.arm(originalTarget)

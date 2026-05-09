@@ -120,9 +120,9 @@ func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppl
 	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, 'X')
 }
 
-func TestKeybindingSpecs_GivenGlobalCancelOverride_WhenListingBindings_ThenItAppliesToTextInputsOnly(t *testing.T) {
+func TestKeybindingSpecs_GivenModalEditorCancelOverride_WhenListingBindings_ThenItAppliesToTheModalOnly(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"global": {
+		"modal_editor": {
 			"cancel": {"X"},
 		},
 	})
@@ -130,9 +130,9 @@ func TestKeybindingSpecs_GivenGlobalCancelOverride_WhenListingBindings_ThenItApp
 	actual := subject.keybindingSpecs()
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: 'X', handler: subject.closeModalEditor})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: 'X', handler: subject.closeActionsPopup})
 	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyEsc)
-	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyEsc)
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, 'X')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'q', handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: 'q', handler: subject.closeHelp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'q', handler: subject.closePullRequestBuildRunPopup})
@@ -141,6 +141,23 @@ func TestKeybindingSpecs_GivenGlobalCancelOverride_WhenListingBindings_ThenItApp
 	then_bindingDoesNotExist(t, actual, viewHelpName, 'X')
 	then_bindingDoesNotExist(t, actual, viewPullRequestBuildInfoName, 'X')
 	then_bindingDoesNotExist(t, actual, viewDetailName, 'X')
+}
+
+func TestKeybindingSpecs_GivenSearchCancelOverride_WhenListingBindings_ThenItAppliesToBothSearchPrompts(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"search": {
+			"cancel": {"X"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: 'X', handler: subject.cancelSearch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: 'X', handler: subject.closeActionsPopup})
+	then_bindingDoesNotExist(t, actual, viewSearchName, gocui.KeyEsc)
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyEsc)
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: subject.closeModalEditor})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, 'X')
 }
 
 func TestKeybindingSpecs_GivenGlobalFullPageOverride_WhenListingBindings_ThenItAppliesAcrossScopes(t *testing.T) {
@@ -243,15 +260,15 @@ func TestKeybindingSpecs_GivenFoldToggleOverride_WhenListingBindings_ThenItAppli
 
 func TestResolvedKeyLabels_GivenTwoStepTabOverrides_WhenResolving_ThenItKeepsTheConfiguredSequences(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"pull_requests": {
+		"global": {
 			"previous_tab": {"g["},
 			"next_tab":     {"g]"},
 		},
 	})
 
 	actual, ok, hasOverride := subject.resolvedKeyLabels(
-		keybindingActionID{scope: keymapScopePullRequests, action: "previous_tab"},
-		keybindingActionID{scope: keymapScopePullRequests, action: "next_tab"},
+		keybindingActionID{scope: keymapScopeGlobal, action: "previous_tab"},
+		keybindingActionID{scope: keymapScopeGlobal, action: "next_tab"},
 	)
 	if !ok {
 		t.Fatal("expected the tab labels to resolve")
