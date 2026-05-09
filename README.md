@@ -57,9 +57,19 @@ mise run lazygh
 mise run test
 mise run fmt
 mise run tidy
+mise run release-check
+mise run release-snapshot
 ```
 
 Open a pull request directly in browser mode with `lazygh view <pr-url>`. Start review mode immediately with `lazygh review <pr-url>`.
+
+### Releases
+
+Tagged pushes that match `v*` publish release archives and `checksums.txt`.
+GitHub runs `.github/workflows/release.yml`, Codeberg runs `.forgejo/workflows/release.yml`, and both use `ghcr.io/goreleaser/goreleaser-cross:v1.25.9` to build `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, and `windows/amd64`.
+
+Use `mise run release-check` to validate `.goreleaser.yaml`.
+Use `mise run release-snapshot` to build the release artifacts locally without publishing them.
 
 ## Config
 
@@ -234,6 +244,37 @@ Press `a` to open the actions popup for the focused view.
 
 Use scoped tables under `[keymaps]`.
 
-A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
+A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives. The config uses shared behavior-first scopes. `keymaps.global` covers actions that work across multiple panes. `keymaps.global.previous_tab` and `keymaps.global.next_tab` cover tab switches. `keymaps.global.next_side_view` and `keymaps.global.previous_side_view` share both the global and side-pane aliases, so the first binding stays global and later bindings stay side-pane-only. `keymaps.modal_editor.cancel` covers the modal editor. help, detail, and actions popup search reuse shared scopes. `0`, `1`, `2`, and `3` stay fixed.
+
+`full_page_down` and `full_page_up` default to `ctrl-d`/`ctrl-u` in list and detail views. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement, so their fallback page motions stay on `ctrl-f`/`ctrl-b`.
+
+`zt`, `zz`, and `zb` place the selected row in list views. In detail views, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. Use `za` for inline conversations, and `zM` and `zR` close or open every fold in the current detail context.
+
+`w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions.
+
+```toml
+[keymaps.selection]
+close = ["esc", "q"]
+full_page_down = "ctrl-d"
+full_page_up = "ctrl-u"
+next_side_view = ["tab", "l"]
+previous_side_view = ["shift+tab", "h"]
+
+[keymaps.cursor]
+move_cursor_left = ["h", "left"]
+move_cursor_right = ["l", "right"]
+move_cursor_to_next_big_word = "W"
+move_cursor_to_big_word_end = "E"
+move_cursor_to_previous_big_word = "B"
+
+[keymaps.global]
+previous_tab = "["
+next_tab = "]"
+next_side_view = ["tab", "l"]
+previous_side_view = ["shift+tab", "h"]
+
+[keymaps.modal_editor]
+cancel = ["esc", "q"]
+```
 
 You can find the default keymaps in [default_keymaps.toml](internal/config/default_keymaps.toml)
