@@ -195,7 +195,57 @@ func TestBrowserMode_GivenCommentsTabInlineConversations_WhenPressingZMAndZR_The
 	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:60")
 }
 
-func TestBrowserMode_GivenChangesTabThreads_WhenPressingZMAndZR_ThenItClosesAndOpensEveryThreadWhileKeepingTheCursorOnTheSameThread(t *testing.T) {
+func TestBrowserMode_GivenChangesTabFiles_WhenPressingZMAndZR_ThenItClosesAndOpensEveryFileWhileKeepingTheCursorOnTheSameFileHeader(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/model.go")
+
+	prefixHandler, closeAllHandler, openAllHandler := given_detailBulkFoldHandlers(t, subject)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = closeAllHandler(gui, detailView)
+	then_noError(t, actualErr)
+	for _, expected := range []string{" " + reviewDiffHeaderPathIcon + " internal/tui/render.go", " " + reviewDiffHeaderPathIcon + " internal/tui/model.go"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected zM to collapse every changes file and keep %q visible, actual %q", expected, detailView.Buffer())
+		}
+	}
+	for _, hidden := range []string{"+another line", "+new model"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected zM to hide %q from collapsed files, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go")
+
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = openAllHandler(gui, detailView)
+	then_noError(t, actualErr)
+	for _, expected := range []string{" " + reviewDiffHeaderPathIcon + " internal/tui/render.go", " " + reviewDiffHeaderPathIcon + " internal/tui/model.go", "+another line", "+new model"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected zR to reopen every changes file and show %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go")
+}
+
+func TestBrowserMode_GivenChangesTabThreads_WhenPressingZMAndZR_ThenItClosesAndOpensEveryFoldWhileKeepingTheCursorOnTheContainingFileHeader(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{
 		{ID: "thread-1", Path: "internal/tui/render.go", Line: 3, DiffSide: "RIGHT", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Thread body one", CreatedAt: "2026-04-20T10:00:00Z"}}},
@@ -228,18 +278,18 @@ func TestBrowserMode_GivenChangesTabThreads_WhenPressingZMAndZR_ThenItClosesAndO
 	actualErr = closeAllHandler(gui, detailView)
 	then_noError(t, actualErr)
 	if strings.Contains(detailView.Buffer(), "Rendered thread body one") || strings.Contains(detailView.Buffer(), "Rendered thread body two") {
-		t.Fatalf("expected zM to collapse every changes thread, actual %q", detailView.Buffer())
+		t.Fatalf("expected zM to collapse every changes fold, actual %q", detailView.Buffer())
 	}
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go")
 
 	actualErr = prefixHandler(gui, detailView)
 	then_noError(t, actualErr)
 	actualErr = openAllHandler(gui, detailView)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body one") || !strings.Contains(detailView.Buffer(), "Rendered thread body two") {
-		t.Fatalf("expected zR to expand every changes thread, actual %q", detailView.Buffer())
+		t.Fatalf("expected zR to expand every changes fold, actual %q", detailView.Buffer())
 	}
-	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go")
 }
 
 func TestReviewMode_GivenMultipleInlineConversations_WhenPressingZMAndZR_ThenItClosesAndOpensEveryConversationWhileKeepingTheCursorOnTheSameThread(t *testing.T) {

@@ -174,14 +174,15 @@ func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary 
 	}
 
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
-	if !program.setBrowserDetailSectionsCollapsed(browserChangesThreadSectionIDs(summary, result.data.Files), collapsed) {
+	filePathAtCursor, cursorOnFile := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailViewState)
+	sectionIDs := append(browserChangesFileSectionIDs(summary, result.data.Files), browserChangesThreadSectionIDs(summary, result.data.Files)...)
+	if !program.setBrowserDetailSectionsCollapsed(sectionIDs, collapsed) {
 		return nil
 	}
 
 	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
-	if cursorOnThread {
-		headerLineIndex := reviewDiffThreadHeaderLineIndex(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width), threadAtCursor.ID)
+	if cursorOnFile {
+		headerLineIndex := reviewDiffFileHeaderLineIndex(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width), filePathAtCursor)
 		if headerLineIndex >= 0 {
 			program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
 			program.detailViewState.preferredColumn = 0
@@ -196,6 +197,16 @@ func browserDetailSectionIDs(sections []browserDetailSection) []string {
 	for _, section := range sections {
 		if trimmedSectionID := strings.TrimSpace(section.id); trimmedSectionID != "" {
 			sectionIDs = append(sectionIDs, trimmedSectionID)
+		}
+	}
+	return sectionIDs
+}
+
+func browserChangesFileSectionIDs(summary githubcli.PullRequest, files []reviewDiffFile) []string {
+	sectionIDs := make([]string, 0, len(files))
+	for _, file := range files {
+		if trimmedFilePath := strings.TrimSpace(file.Path); trimmedFilePath != "" {
+			sectionIDs = append(sectionIDs, browserChangesFileSectionID(summary, trimmedFilePath))
 		}
 	}
 	return sectionIDs

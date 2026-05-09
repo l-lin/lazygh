@@ -325,6 +325,72 @@ func TestLayout_GivenPullRequestChanges_WhenRendering_ThenTheBrowserChangesTabLo
 	}
 }
 
+func TestBrowserMode_GivenAChangesTabFileHeader_WhenPressingEnterAndZA_ThenItTogglesTheFileVisibility(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") {
+		t.Fatalf("expected the file header to start expanded in changes, actual %q", detailView.Buffer())
+	}
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
+	actualErr = toggleHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") {
+		t.Fatalf("expected enter to collapse the file header, actual %q", detailView.Buffer())
+	}
+	for _, hidden := range []string{"@@ -1,2 +1,3 @@", "+another line"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected enter to hide %q from the collapsed file, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	if !strings.Contains(detailView.Buffer(), "internal/tui/model.go") || !strings.Contains(detailView.Buffer(), "+new model") {
+		t.Fatalf("expected collapsing one file to keep the other file visible, actual %q", detailView.Buffer())
+	}
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
+	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
+	actualErr = prefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = collapseHandler(gui, detailView)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "+another line") {
+		t.Fatalf("expected za to expand the file again, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
+		t.Fatalf("expected za to restore the collapsed file hunk, actual %q", detailView.Buffer())
+	}
+}
+
 func TestBrowserMode_GivenAResolvedChangesTabThread_WhenPressingEnterAndZA_ThenItTogglesTheThreadVisibility(t *testing.T) {
 	diff := githubcli.PullRequestDiff{
 		UnifiedDiff: strings.Join([]string{

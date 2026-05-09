@@ -135,7 +135,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 	program.syncDetailViewState(detailDocument, viewportHeight)
 
 	if program.activeDetailTab == ChangesDetailTab {
-		return program.toggleBrowserChangesThreadVisibility(gui, summary, detailDocument)
+		return program.toggleBrowserChangesVisibility(gui, summary, detailDocument)
 	}
 
 	if program.activeDetailTab == CommentsDetailTab {

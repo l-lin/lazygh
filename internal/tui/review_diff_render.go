@@ -22,11 +22,12 @@ const (
 )
 
 type reviewDiffRenderedRow struct {
-	Kind    reviewDiffRenderedRowKind
-	Text    string
-	Anchor  *reviewDiffRenderedRowAnchor
-	Thread  *reviewDiffThread
-	Comment *githubcli.PullRequestComment
+	Kind     reviewDiffRenderedRowKind
+	Text     string
+	FilePath string
+	Anchor   *reviewDiffRenderedRowAnchor
+	Thread   *reviewDiffThread
+	Comment  *githubcli.PullRequestComment
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
@@ -63,12 +64,13 @@ func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, render
 }
 
 func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
-	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderReviewDiffFileHeader(file)}}
-	contentRows := buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin)
+	filePath := strings.TrimSpace(file.Path)
+	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderReviewDiffFileHeader(file), FilePath: filePath}}
+	contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin), filePath)
 	if len(contentRows) == 0 {
 		return rows
 	}
-	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""})
+	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
 	rows = append(rows, contentRows...)
 	return rows
 }
@@ -142,6 +144,21 @@ func reviewDiffRowsFromText(text string, kind reviewDiffRenderedRowKind) []revie
 		rows = append(rows, reviewDiffRenderedRow{Kind: kind, Text: line})
 	}
 	return rows
+}
+
+func reviewDiffRowsWithFilePath(rows []reviewDiffRenderedRow, filePath string) []reviewDiffRenderedRow {
+	trimmedFilePath := strings.TrimSpace(filePath)
+	if trimmedFilePath == "" || len(rows) == 0 {
+		return rows
+	}
+
+	updatedRows := make([]reviewDiffRenderedRow, 0, len(rows))
+	for _, row := range rows {
+		updatedRow := row
+		updatedRow.FilePath = trimmedFilePath
+		updatedRows = append(updatedRows, updatedRow)
+	}
+	return updatedRows
 }
 
 func reviewDiffUnmatchedThreads(threads []reviewDiffThread, matchedThreadIndexes []bool) []reviewDiffThread {
@@ -266,17 +283,38 @@ func reviewDiffThreadDisplayLine(thread reviewDiffThread) int {
 }
 
 func renderReviewDiffFileHeader(file reviewDiffFile) string {
-	parts := []string{
+	return strings.Join(reviewDiffFileHeaderSegments(file), "  ")
+}
+
+func renderFoldableReviewDiffFileHeader(file reviewDiffFile, collapsed bool) string {
+	chevron := browserDetailExpandedChevron
+	if collapsed {
+		chevron = browserDetailCollapsedChevron
+	}
+
+	headerSegments := reviewDiffFileHeaderSegments(file)
+	if len(headerSegments) == 0 {
+		return styleText(chevron, foregroundColorEscape(theme.DiffLineNumberHex))
+	}
+	header := styleText(chevron, foregroundColorEscape(theme.DiffLineNumberHex)) + " " + headerSegments[0]
+	if len(headerSegments) == 1 {
+		return header
+	}
+	return strings.Join(append([]string{header}, headerSegments[1:]...), "  ")
+}
+
+func reviewDiffFileHeaderSegments(file reviewDiffFile) []string {
+	segments := []string{
 		styleText(reviewDiffHeaderPathIcon, foregroundColorEscape(theme.DiffLineNumberHex)) + " " + valueOrDash(strings.TrimSpace(file.Path)),
 	}
 	if file.ChangeType == reviewDiffChangeTypeRenamed && strings.TrimSpace(file.PreviousPath) != "" {
-		parts = append(parts, fmt.Sprintf("renamed from %s", strings.TrimSpace(file.PreviousPath)))
+		segments = append(segments, fmt.Sprintf("renamed from %s", strings.TrimSpace(file.PreviousPath)))
 	}
-	parts = append(parts,
+	segments = append(segments,
 		styleText(fmt.Sprintf("+%d", file.Additions), foregroundColorEscape(theme.DiffAdditionHex)),
 		styleText(fmt.Sprintf("-%d", file.Deletions), foregroundColorEscape(theme.DiffDeletionHex)),
 	)
-	return strings.Join(parts, "  ")
+	return segments
 }
 
 func renderReviewDiffHunkHeader(header string) string {
