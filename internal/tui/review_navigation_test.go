@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"github.com/jesseduffield/gocui"
 )
@@ -201,6 +202,102 @@ func TestReviewMode_GivenTheDiffPane_WhenPressingCommentMotions_ThenItMovesToThe
 	actualErr = commentHandler(gui, detailView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+}
+
+func TestReviewMode_GivenReviewMotionOverrides_WhenPressingConfiguredFileMotions_ThenItMovesBetweenFiles(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"review": {
+			"previous_file": {"g["},
+			"next_file":     {"g]"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'g')
+	nextFileHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ']')
+	previousFileHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, '[')
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = nextFileHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewFileIs(t, subject, "internal/tui/model.go")
+
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = previousFileHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+}
+
+func TestReviewMode_GivenReviewMotionOverrides_WhenPressingConfiguredCommentMotions_ThenItMovesBetweenCommentsWithoutOpeningTheComposer(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithComments(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"review": {
+			"previous_comment": {"gh"},
+			"next_comment":     {"gl"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'g')
+	nextCommentHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'l')
+	previousCommentHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'h')
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = nextCommentHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = nextCommentHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewFileIs(t, subject, "internal/tui/model.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	actualErr = prefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = previousCommentHandler(gui, filesView)
+	then_noError(t, actualErr)
 	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
 	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
 	then_viewDoesNotExist(t, gui, viewModalEditorName)

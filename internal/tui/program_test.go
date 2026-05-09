@@ -40,14 +40,14 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailBindings_ThenDetailViewUs
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: '[', handler: subject.previousDetailTab})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: ']', handler: subject.nextDetailTab})
+	then_bindingKeyExists(t, actual, viewDetailName, '[')
+	then_bindingKeyExists(t, actual, viewDetailName, ']')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEnter, handler: subject.toggleInlineConversationVisibility})
 	then_bindingKeyExists(t, actual, viewDetailName, 'z')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyEsc, handler: subject.closeDetail})
 	then_bindingDoesNotExist(t, actual, viewDetailName, gocui.KeyCtrlLsqBracket)
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'q', handler: subject.closeDetail})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: '[', handler: subject.previousPullRequestTab})
+	then_bindingKeyExists(t, actual, viewPullRequestsName, '[')
 }
 
 func TestNewProgram_GivenDefaultSeedData_WhenCreatingTheAppProgram_ThenItStartsOnPullRequestsView(t *testing.T) {

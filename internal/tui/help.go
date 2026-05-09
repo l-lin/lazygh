@@ -77,8 +77,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},
 				{Key: "0/$", Description: "Line start/end"},
 				{Key: "gg/G", Description: "First/last line"},
-				{Key: program.reviewFileMotionHelpKeys(keymapScopeDetail), Description: "Previous/next file"},
-				{Key: program.reviewCommentMotionHelpKeys(keymapScopeDetail), Description: "Previous/next comment"},
+				{Key: program.reviewFileMotionHelpKeys(), Description: "Previous/next file"},
+				{Key: program.reviewCommentMotionHelpKeys(), Description: "Previous/next comment"},
 				{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeDetail, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeDetail, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeDetail, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
 				{Key: program.wordMotionHelpKeys(keymapScopeDetail), Description: "Next/end/previous word/WORD"},
 				{Key: "n/N", Description: "Next/previous match"},
@@ -100,8 +100,8 @@ func (program *Program) localHelpEntries() []helpEntry {
 			return []helpEntry{
 				{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 				{Key: "gg/G", Description: "First/last file"},
-				{Key: program.reviewFileMotionHelpKeys(keymapScopePullRequests), Description: "Previous/next file"},
-				{Key: program.reviewCommentMotionHelpKeys(keymapScopePullRequests), Description: "Previous/next comment"},
+				{Key: program.reviewFileMotionHelpKeys(), Description: "Previous/next file"},
+				{Key: program.reviewCommentMotionHelpKeys(), Description: "Previous/next comment"},
 				{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeSide, action: "place_selection_at_viewport_top"}, keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopeSide, action: "place_selection_at_viewport_bottom"}), Description: "Selection to top/center/bottom"},
 				{Key: program.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
@@ -310,12 +310,12 @@ func (program *Program) helpKeyChordOrFallback(prefixFallback string, suffixFall
 	return program.helpKeysOrFallback(prefixFallback, prefixActionID) + program.helpKeysOrFallback(suffixFallback, suffixActionID)
 }
 
-func (program *Program) reviewFileMotionHelpKeys(scope string) string {
-	return program.helpKeyChordOrFallback("[", "[", keybindingActionID{scope: scope, action: "previous_tab"}, keybindingActionID{scope: scope, action: "previous_tab"}) + "/" + program.helpKeyChordOrFallback("]", "]", keybindingActionID{scope: scope, action: "next_tab"}, keybindingActionID{scope: scope, action: "next_tab"})
+func (program *Program) reviewFileMotionHelpKeys() string {
+	return program.helpKeysOrFallback("[[", keybindingActionID{scope: keymapScopeReview, action: "previous_file"}) + "/" + program.helpKeysOrFallback("]]", keybindingActionID{scope: keymapScopeReview, action: "next_file"})
 }
 
-func (program *Program) reviewCommentMotionHelpKeys(scope string) string {
-	return program.helpKeyChordOrFallback("[", "c", keybindingActionID{scope: scope, action: "previous_tab"}, keybindingActionID{scope: scope, action: "comment_on_pull_request"}) + "/" + program.helpKeyChordOrFallback("]", "c", keybindingActionID{scope: scope, action: "next_tab"}, keybindingActionID{scope: scope, action: "comment_on_pull_request"})
+func (program *Program) reviewCommentMotionHelpKeys() string {
+	return program.helpKeysOrFallback("[c", keybindingActionID{scope: keymapScopeReview, action: "previous_comment"}) + "/" + program.helpKeysOrFallback("]c", keybindingActionID{scope: keymapScopeReview, action: "next_comment"})
 }
 
 func (program *Program) wordMotionHelpKeys(scope string) string {

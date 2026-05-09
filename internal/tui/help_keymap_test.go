@@ -204,6 +204,40 @@ func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAn
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
 }
 
+func TestHelpPopup_GivenReviewFocusAndConfiguredReviewMotionOverrides_WhenTogglingHelp_ThenItShowsTheConfiguredSequences(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithComments(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"review": {
+			"previous_file":    {"g["},
+			"next_file":        {"g]"},
+			"previous_comment": {"gh"},
+			"next_comment":     {"gl"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "g[/g]")
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "gh/gl")
+}
+
 func then_helpEntryUsesKey(t *testing.T, buffer string, description string, expectedKey string) {
 	t.Helper()
 

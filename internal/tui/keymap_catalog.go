@@ -14,6 +14,7 @@ const (
 	keymapScopeSelection            = "selection"
 	keymapScopeCursor               = "cursor"
 	keymapScopeFolds                = "folds"
+	keymapScopeReview               = "review"
 	keymapScopeSearch               = "search"
 	keymapScopeActionsPopup         = "actions_popup"
 	keymapScopeActionsPopupSearch   = "actions_popup_search"
@@ -24,6 +25,7 @@ const (
 
 var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName, viewDetailName}
 var sidePaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName}
+var reviewPaneViewNames = []string{viewPullRequestsName, viewDetailName}
 
 var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"toggle_help":                        sharedKeybindingDefinitionWithBindings(keymapScopeGlobal, "?"),
@@ -200,6 +202,11 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead, "r"),
 		keybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone, "d"),
 		sharedKeybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup),
+
+		keybindingActionFor(keymapScopeReview, "previous_file", reviewPaneViewNames, program.previousReviewFile, "[["),
+		keybindingActionFor(keymapScopeReview, "next_file", reviewPaneViewNames, program.nextReviewFile, "]]"),
+		keybindingActionFor(keymapScopeReview, "previous_comment", reviewPaneViewNames, program.previousReviewComment, "[c"),
+		keybindingActionFor(keymapScopeReview, "next_comment", reviewPaneViewNames, program.nextReviewComment, "]c"),
 
 		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_left", []string{viewDetailName}, program.moveDetailCursorLeft),
 		sharedKeybindingActionFor(keymapScopeDetail, "move_cursor_right", []string{viewDetailName}, program.moveDetailCursorRight),

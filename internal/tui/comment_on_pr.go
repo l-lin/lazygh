@@ -17,10 +17,6 @@ type pullRequestCommentTarget struct {
 }
 
 func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, view *gocui.View) error {
-	if direction, ok := program.consumeReviewCommentMotion(view); ok {
-		return program.moveReviewSessionComment(gui, direction)
-	}
-
 	program.clearPendingSelectionPrefix()
 	program.detailViewState.clearPendingPrefix()
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {

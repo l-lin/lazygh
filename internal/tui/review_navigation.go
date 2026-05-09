@@ -4,8 +4,6 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-const keymapScopeReviewNavigation = "review_navigation"
-
 type reviewNavigationDirection int
 
 const (
@@ -13,41 +11,20 @@ const (
 	reviewNavigationForward  reviewNavigationDirection = 1
 )
 
-func (program *Program) handleReviewFileMotionPrefix(gui *gocui.Gui, view *gocui.View, direction reviewNavigationDirection) error {
-	if !program.reviewSession.active {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	program.detailViewState.clearPendingPrefix()
-	viewName := program.reviewNavigationViewName(view)
-	target := program.reviewNavigationPrefixTarget(viewName, direction)
-	return program.armOrHandleSelectionKeySequence(target, func() error {
-		return program.moveReviewSessionFile(gui, int(direction))
-	})
+func (program *Program) previousReviewFile(gui *gocui.Gui, _ *gocui.View) error {
+	return program.moveReviewSessionFile(gui, int(reviewNavigationBackward))
 }
 
-func (program *Program) reviewNavigationViewName(view *gocui.View) string {
-	if view != nil {
-		return view.Name()
-	}
-
-	switch program.model.Focus() {
-	case FocusDetailView:
-		return viewDetailName
-	case FocusPullRequestsView:
-		return viewPullRequestsName
-	default:
-		return ""
-	}
+func (program *Program) nextReviewFile(gui *gocui.Gui, _ *gocui.View) error {
+	return program.moveReviewSessionFile(gui, int(reviewNavigationForward))
 }
 
-func (program *Program) reviewNavigationPrefixTarget(viewName string, direction reviewNavigationDirection) keySequenceTarget {
-	action := "previous_prefix"
-	if direction > 0 {
-		action = "next_prefix"
-	}
-	return keySequenceTargetFor(viewName, keymapScopeReviewNavigation, action)
+func (program *Program) previousReviewComment(gui *gocui.Gui, _ *gocui.View) error {
+	return program.moveReviewSessionComment(gui, reviewNavigationBackward)
+}
+
+func (program *Program) nextReviewComment(gui *gocui.Gui, _ *gocui.View) error {
+	return program.moveReviewSessionComment(gui, reviewNavigationForward)
 }
 
 func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error {
@@ -72,21 +49,6 @@ func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error 
 type reviewCommentLocation struct {
 	fileTreeRow  int
 	renderedLine int
-}
-
-func (program *Program) consumeReviewCommentMotion(view *gocui.View) (reviewNavigationDirection, bool) {
-	if !program.reviewSession.active {
-		return 0, false
-	}
-
-	viewName := program.reviewNavigationViewName(view)
-	if program.pendingSelectionKeySequence.consume(program.reviewNavigationPrefixTarget(viewName, reviewNavigationForward)) {
-		return reviewNavigationForward, true
-	}
-	if program.pendingSelectionKeySequence.consume(program.reviewNavigationPrefixTarget(viewName, reviewNavigationBackward)) {
-		return reviewNavigationBackward, true
-	}
-	return 0, false
 }
 
 func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction reviewNavigationDirection) error {

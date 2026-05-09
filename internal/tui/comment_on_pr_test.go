@@ -16,8 +16,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPullRequestCommentBindings_Then
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'c', handler: subject.openPullRequestCommentComposer})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'c', handler: subject.openPullRequestCommentComposer})
+	then_bindingKeyExists(t, actual, viewPullRequestsName, 'c')
+	then_bindingKeyExists(t, actual, viewDetailName, 'c')
 	then_bindingDoesNotExist(t, actual, viewUserName, 'c')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyAltEnter, handler: subject.submitModalEditor})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlS, handler: subject.submitModalEditor})

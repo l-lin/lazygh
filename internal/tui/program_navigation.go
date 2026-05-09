@@ -282,7 +282,7 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
 	if program.reviewSession.active {
-		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationForward)
+		return nil
 	}
 
 	program.clearPendingSelectionPrefix()
@@ -297,7 +297,7 @@ func (program *Program) nextPullRequestTab(gui *gocui.Gui, view *gocui.View) err
 
 func (program *Program) previousPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
 	if program.reviewSession.active {
-		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationBackward)
+		return nil
 	}
 
 	program.clearPendingSelectionPrefix()

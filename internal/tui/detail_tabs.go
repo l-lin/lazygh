@@ -10,7 +10,7 @@ import (
 
 func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
 	if program.reviewSession.active {
-		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationForward)
+		return nil
 	}
 	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
 		return nil
@@ -24,7 +24,7 @@ func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
 
 func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) error {
 	if program.reviewSession.active {
-		return program.handleReviewFileMotionPrefix(gui, view, reviewNavigationBackward)
+		return nil
 	}
 
 	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {

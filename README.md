@@ -231,7 +231,7 @@ A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`.
 
 `0`, `1`, `2`, and `3` stay fixed. They are not configurable. There is no `[keymaps.help]` table, help uses the other keymaps and is not configurable on its own.
 
-Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.folds` covers shared fold toggles, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
+Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.folds` covers shared fold toggles, `keymaps.review` covers review-mode file and comment motions, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
 
 Actions popups reuse `keymaps.global.open_search`, and the popup search prompt reuses `keymaps.search.submit`.
 
@@ -300,8 +300,13 @@ toggle_fold = "za"
 close_all_folds = "zM"
 open_all_folds = "zR"
 
+[keymaps.review]
+previous_file = "[["
+next_file = "]]"
+previous_comment = "[c"
+next_comment = "]c"
+
 [keymaps.pull_requests]
-# In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
 previous_tab = "["
 next_tab = "]"
 copy_pull_request_url = "y"
