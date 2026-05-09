@@ -11,8 +11,10 @@
 
 ## Prerequisites
 
-- [`gh`](https://cli.github.com/) to connect to Github
-- [NerdFont](https://www.nerdfonts.com/) to get the icons
+- [`gh`](https://cli.github.com/) to connect to GitHub. Private image loading uses your `gh` auth session.
+- A terminal with kitty graphics protocol support, such as Kitty or Ghostty, if you want inline images.
+- If you run `lazygh` inside `tmux`, enable passthrough with `set -g allow-passthrough on`.
+- [NerdFont](https://www.nerdfonts.com/) to get the icons.
 
 ## Getting started
 ### Installation with [`mise`](https://mise.jdx.dev/cli/)
@@ -54,7 +56,6 @@ mise run lazygh review https://github.com/acme/widgets/pull/42
 ### Releases
 
 Tagged pushes that match `v*` publish release archives and `checksums.txt`.
-GitHub runs `.github/workflows/release.yml`, Codeberg runs `.forgejo/workflows/release.yml`, and both use `ghcr.io/goreleaser/goreleaser-cross:v1.25.9` to build `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, and `windows/amd64`.
 
 Use `mise run release-check` to validate `.goreleaser.yaml`.
 Use `mise run release-snapshot` to build the release artifacts locally without publishing them.
@@ -69,6 +70,16 @@ lazygh view https://github.com/acme/awesome/pull/123
 # Directly start reviewing a PR.
 lazygh review https://github.com/acme/awesome/pull/123
 ```
+
+### Images
+
+`lazygh` renders markdown images and supported HTML `<img>` tags in detail views.
+
+It keeps small images at their natural size. It scales larger images down to fit the detail pane.
+
+If inline graphics are unavailable, or an image download fails, `lazygh` still shows a visible `[Image: …]` caption and the resolved URL.
+
+For private repositories, `lazygh` asks GitHub to render the markdown with repository context, then downloads the resolved image URL with your authenticated `gh` session when needed.
 
 ## Config
 
