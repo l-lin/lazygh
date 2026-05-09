@@ -27,11 +27,9 @@ func TestStatusLineKeyHints_GivenActivePullRequestsView_WhenRendering_ThenItShow
 
 func TestStatusLineKeyHints_GivenConfiguredKeyOverrides_WhenRendering_ThenItUsesTheResolvedKeysInKeyColonDescriptionFormat(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_pullRequestCommentModel(), appconfig.KeymapOverrides{
-		"main": {
-			"toggle_help": {"!"},
-			"open_search": {"s", "ctrl+s"},
-		},
-		"pull_requests": {
+		"global": {
+			"toggle_help":        {"!"},
+			"open_search":        {"s", "ctrl+s"},
 			"open_actions_popup": {"p"},
 		},
 	})
@@ -144,7 +142,7 @@ func TestPaneFooter_GivenFocusedViewOneWithASearchSummary_WhenRendering_ThenItSh
 	then_statusLineIs(t, gui, "")
 }
 
-func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingBrowserModePullRequestsAndDetail_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
+func TestStatusLineKeyHints_GivenGlobalActionOverride_WhenRenderingBrowserModePullRequestsAndDetail_ThenEachPaneUsesTheSameSharedActionKey(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
@@ -160,11 +158,8 @@ func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingBrowserModeP
 	model := given_pullRequestCommentModel()
 	subject := NewProgramWithModelAndLoader(model, loader)
 	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
-		"pull_requests": {
+		"global": {
 			"open_actions_popup": {"p"},
-		},
-		"detail": {
-			"open_actions_popup": {"d"},
 		},
 	})
 	subject.connectedUserLoadStarted = true
@@ -184,10 +179,10 @@ func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingBrowserModeP
 	then_noError(t, actualErr)
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
-	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, d: action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, p: action")
 }
 
-func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingReviewModeFilesAndDiff_ThenEachPaneUsesItsOwnActionScope(t *testing.T) {
+func TestStatusLineKeyHints_GivenGlobalActionOverride_WhenRenderingReviewModeFilesAndDiff_ThenEachPaneUsesTheSameSharedActionKey(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		details: map[string]githubcli.PullRequestDetail{
@@ -206,11 +201,8 @@ func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingReviewModeFi
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
-		"pull_requests": {
+		"global": {
 			"open_actions_popup": {"p"},
-		},
-		"detail": {
-			"open_actions_popup": {"d"},
 		},
 	})
 	gui := given_headlessGui(t)
@@ -228,7 +220,7 @@ func TestStatusLineKeyHints_GivenScopedActionOverrides_WhenRenderingReviewModeFi
 
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, d: action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, p: action")
 }
 
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {

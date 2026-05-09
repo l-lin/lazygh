@@ -13,9 +13,7 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	model.FocusPullRequestsView()
 	subject := given_programWithKeymapOverrides(model, appconfig.KeymapOverrides{
 		"global": {
-			"quit": {"ctrl+x"},
-		},
-		"main": {
+			"quit":        {"ctrl+x"},
 			"open_search": {"s"},
 		},
 	})

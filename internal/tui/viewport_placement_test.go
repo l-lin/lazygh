@@ -117,7 +117,7 @@ func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZB_ThenItPlace
 
 func TestViewportPlacement_GivenRemappedSideViewportPlacementBindings_WhenPressingXTXXAndXB_ThenItUsesTheConfiguredTopCenterAndBottomPlacementKeys(t *testing.T) {
 	subject := given_programWithKeymapOverrides(NewModel(SeedData{Users: given_manyItems("user", 40)}), appconfig.KeymapOverrides{
-		"side": {
+		"selection": {
 			"place_selection_at_viewport_top":    {"xt"},
 			"recenter_selection":                 {"xx"},
 			"place_selection_at_viewport_bottom": {"xb"},
@@ -144,7 +144,7 @@ func TestViewportPlacement_GivenRemappedSideViewportPlacementBindings_WhenPressi
 
 func TestViewportPlacement_GivenRemappedDetailViewportPlacementBindings_WhenPressingMTMMAndMB_ThenItUsesTheConfiguredTopCenterAndBottomPlacementKeys(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_detailPlacementModel(), appconfig.KeymapOverrides{
-		"detail": {
+		"cursor": {
 			"place_cursor_at_viewport_top":    {"mt"},
 			"recenter_cursor":                 {"mm"},
 			"place_cursor_at_viewport_bottom": {"mb"},

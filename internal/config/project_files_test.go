@@ -221,15 +221,18 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 	}
 }
 
-func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsSharedGlobalFallbacksAndTwoKeySequences(t *testing.T) {
+func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsBehaviorFirstSharedScopesTwoKeySequencesAndFixedViewShortcuts(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)
 
 	actual := string(contents)
 	for _, expected := range []string{
 		"single key like `\"q\"` or a two-key sequence like `\"za\"`",
-		"action name also exists under `[keymaps.global]`",
-		"global value becomes the shared fallback",
+		"shared behavior-first scopes",
+		"`keymaps.global` covers actions that work across multiple panes",
+		"`0`, `1`, `2`, and `3` stay fixed",
+		"`[keymaps.help]`",
+		"not configurable on its own",
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
@@ -237,12 +240,14 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 	}
 }
 
-func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsLeftAndRightArrowsForHorizontalCursorMotion(t *testing.T) {
+func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocumentsBehaviorFirstScopesAndLeftRightArrowsForCursorMotion(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)
 
 	actual := string(contents)
 	for _, expected := range []string{
+		"[keymaps.selection]",
+		"[keymaps.cursor]",
 		"move_cursor_left = [\"h\", \"left\"]",
 		"move_cursor_right = [\"l\", \"right\"]",
 	} {

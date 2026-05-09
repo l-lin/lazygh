@@ -7,16 +7,16 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func TestKeybindingSpecs_GivenMainPaneSearchOverride_WhenListingBindings_ThenItAppliesToEveryMainPane(t *testing.T) {
+func TestKeybindingSpecs_GivenGlobalOpenSearchOverride_WhenListingBindings_ThenItAppliesToMainPanesAndTheBuildPopup(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"main": {
+		"global": {
 			"open_search": {"s"},
 		},
 	})
 
 	actual := subject.keybindingSpecs()
 
-	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName} {
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewDetailName, viewPullRequestBuildInfoName} {
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 's', handler: subject.openSearch})
 		then_bindingDoesNotExist(t, actual, viewName, '/')
 	}
@@ -54,7 +54,7 @@ func TestKeybindingSpecs_GivenConflictingPullRequestsOverride_WhenListingBinding
 
 func TestKeybindingSpecs_GivenFullPageOverride_WhenListingBindings_ThenItKeepsHalfPageBindingsSeparate(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"main": {
+		"global": {
 			"full_page_down": {"pagedown"},
 			"full_page_up":   {"pageup"},
 		},
@@ -72,22 +72,19 @@ func TestKeybindingSpecs_GivenFullPageOverride_WhenListingBindings_ThenItKeepsHa
 	}
 }
 
-func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppliesToEveryClosableViewUnlessScopedOverridesWin(t *testing.T) {
+func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppliesToEveryClosableView(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {
-			"close": {"x"},
-		},
-		"detail": {
-			"close": {"d"},
+			"close": {"X"},
 		},
 	})
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'x', handler: subject.closeActionsPopup})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: 'x', handler: subject.closeHelp})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: 'x', handler: subject.closeModalEditor})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'd', handler: subject.closeDetail})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'X', handler: subject.closeActionsPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: 'X', handler: subject.closeHelp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: 'X', handler: subject.closeModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'X', handler: subject.closeDetail})
 	then_bindingDoesNotExist(t, actual, viewActionsPopupName, 'q')
 	then_bindingDoesNotExist(t, actual, viewHelpName, 'q')
 	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyEsc)
@@ -95,26 +92,87 @@ func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppl
 	then_bindingDoesNotExist(t, actual, viewDetailName, gocui.KeyEsc)
 }
 
-func TestKeybindingSpecs_GivenGlobalFullPageOverride_WhenListingBindings_ThenItAppliesAcrossScopesUnlessScopedOverridesWin(t *testing.T) {
+func TestKeybindingSpecs_GivenGlobalFullPageOverride_WhenListingBindings_ThenItAppliesAcrossScopes(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {
 			"full_page_down": {")"},
 			"full_page_up":   {"("},
 		},
-		"main": {
-			"full_page_down": {"pagedown"},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: ')', handler: subject.fullPageDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: '(', handler: subject.fullPageUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: ')', handler: subject.fullPageActionsPopupDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: '(', handler: subject.fullPageActionsPopupUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: ')', handler: subject.fullPageHelpDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: '(', handler: subject.fullPageHelpUp})
+}
+
+func TestKeybindingSpecs_GivenSelectionOverride_WhenListingBindings_ThenItAppliesToSideViewsAndTheActionsPopup(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"selection": {
+			"place_selection_at_viewport_top":    {"xt"},
+			"recenter_selection":                 {"xx"},
+			"place_selection_at_viewport_bottom": {"xb"},
 		},
 	})
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: gocui.KeyPgdn, handler: subject.fullPageDown})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: '(', handler: subject.fullPageUp})
-	then_bindingDoesNotExist(t, actual, viewUserName, ')')
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: ')', handler: subject.fullPageActionsPopupDown})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: '(', handler: subject.fullPageActionsPopupUp})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: ')', handler: subject.fullPageHelpDown})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: '(', handler: subject.fullPageHelpUp})
+	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewNotificationsName, viewActionsPopupName} {
+		then_bindingKeyExists(t, actual, viewName, 'x')
+	}
+	for _, viewName := range []string{viewUserName, viewNotificationsName, viewActionsPopupName} {
+		then_bindingDoesNotExist(t, actual, viewName, 'z')
+	}
+}
+
+func TestKeybindingSpecs_GivenPullRequestsCopyOverride_WhenListingBindings_ThenItAppliesToTheUserListAndDetailWithoutSeparateScopes(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"pull_requests": {
+			"copy_pull_request_url": {"u"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'u', handler: subject.copyPullRequestURL})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'u', handler: subject.copyPullRequestURL})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'u', handler: subject.copyPullRequestURL})
+	then_bindingDoesNotExist(t, actual, viewUserName, 'y')
+	then_bindingDoesNotExist(t, actual, viewDetailName, 'y')
+}
+
+func TestKeybindingSpecs_GivenFocusViewOverrides_WhenListingBindings_ThenTheNumericShortcutsStayFixed(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"global": {
+			"focus_user_view":          {"u"},
+			"focus_pull_requests_view": {"p"},
+			"focus_notifications_view": {"n"},
+			"focus_detail_view":        {"d"},
+		},
+		"main": {
+			"focus_user_view":          {"u"},
+			"focus_pull_requests_view": {"p"},
+			"focus_notifications_view": {"n"},
+		},
+		"side": {
+			"focus_detail_view": {"d"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: '1', handler: subject.focusUserView})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: '2', handler: subject.focusPullRequestsView})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewNotificationsName, key: '3', handler: subject.focusNotificationsView})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: '0', handler: subject.focusDetailView})
+	then_bindingDoesNotExist(t, actual, viewUserName, 'u')
+	then_bindingDoesNotExist(t, actual, viewPullRequestsName, 'p')
+	then_bindingDoesNotExist(t, actual, viewNotificationsName, 'n')
+	then_bindingDoesNotExist(t, actual, viewUserName, 'd')
 }
 
 func TestKeybindingSpecs_GivenPullRequestsToggleFoldOverride_WhenListingBindings_ThenItSupportsSingleCharacterCustomization(t *testing.T) {
@@ -133,7 +191,7 @@ func TestKeybindingSpecs_GivenPullRequestsToggleFoldOverride_WhenListingBindings
 
 func TestResolvedKeyLabels_GivenTwoStepTabOverrides_WhenResolving_ThenItKeepsTheConfiguredSequences(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
-		"global": {
+		"pull_requests": {
 			"previous_tab": {"g["},
 			"next_tab":     {"g]"},
 		},

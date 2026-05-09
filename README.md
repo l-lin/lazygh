@@ -229,9 +229,11 @@ Use scoped tables under `[keymaps]`.
 
 A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
 
-Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
+`0`, `1`, `2`, and `3` stay fixed. They are not configurable. There is no `[keymaps.help]` table, help uses the other keymaps and is not configurable on its own.
 
-When an action name also exists under `[keymaps.global]`, the global value becomes the shared fallback and a scoped table can still override it for one view. That works well for repeated actions such as `open_actions_popup`, `page_down`, `page_up`, `copy_pull_request_url`, `comment_on_pull_request`, `next_search_match`, `previous_search_match`, `previous_tab`, `next_tab`, and the shared fold or viewport-placement actions.
+Use the shared behavior-first scopes first. `keymaps.global` covers actions that work across multiple panes, `keymaps.selection` covers list-style navigation, `keymaps.cursor` covers text-style cursor movement, `keymaps.pull_requests` covers PR-specific actions shared by PR-backed panes, and `keymaps.search` covers search submission plus next and previous matches.
+
+Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
 
 `w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
 
@@ -242,60 +244,28 @@ In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center,
 quit = "ctrl+c"
 next_side_view = "tab"
 previous_side_view = "shift+tab"
-close = ["esc", "ctrl+[", "q"]
-full_page_down = ["ctrl+f", "pagedown"]
-full_page_up = ["ctrl+b", "pageup"]
-
-[keymaps.main]
 toggle_help = "?"
-focus_user_view = "1"
-focus_pull_requests_view = "2"
-focus_notifications_view = "3"
 open_search = "/"
 move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
 page_down = "ctrl+d"
 page_up = "ctrl+u"
+full_page_down = ["ctrl+f", "pagedown"]
+full_page_up = ["ctrl+b", "pageup"]
 grow_focused_pane = "+"
 shrink_focused_pane = "-"
+open_actions_popup = "a"
+# `close` is shared. Text inputs default to `esc` and `ctrl+[` only. Read-only panes also add `q`.
+close = ["esc", "ctrl+["]
 
-[keymaps.side]
-next_side_view = "l"
-previous_side_view = "h"
-focus_detail_view = "0"
+[keymaps.selection]
 move_selection_to_top = "gg"
 move_selection_to_bottom = "G"
 place_selection_at_viewport_top = "zt"
 recenter_selection = "zz"
 place_selection_at_viewport_bottom = "zb"
-exit_review_mode = ["esc", "ctrl+[", "q"]
 
-[keymaps.user]
-open_detail = "enter"
-copy_pull_request_url = "y"
-open_actions_popup = "a"
-
-[keymaps.pull_requests]
-# In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
-previous_tab = "["
-next_tab = "]"
-open_detail = "enter"
-copy_pull_request_url = "y"
-comment_on_pull_request = "c"
-open_actions_popup = "a"
-toggle_fold = "za"
-close_all_folds = "zM"
-open_all_folds = "zR"
-next_search_match = "n"
-previous_search_match = "N"
-
-[keymaps.notifications]
-open_detail = "enter"
-mark_notification_read = "r"
-mark_notification_done = "d"
-open_actions_popup = "a"
-
-[keymaps.detail]
+[keymaps.cursor]
 move_cursor_left = ["h", "left"]
 move_cursor_right = ["l", "right"]
 move_cursor_to_row_start = "0"
@@ -309,40 +279,49 @@ move_cursor_to_previous_word = "b"
 move_cursor_to_next_big_word = "W"
 move_cursor_to_big_word_end = "E"
 move_cursor_to_previous_big_word = "B"
-next_search_match = "n"
-previous_search_match = "N"
 enter_visual_mode = "v"
 enter_line_visual_mode = "V"
-# In browser mode, `[` and `]` cycle `Description`, `Comments`, `Commits`, and `Changes`.
-# In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
-# On diff lines in review mode view `0`, `c` and the actions popup both add inline comments.
-previous_tab = "["
-next_tab = "]"
-copy_pull_request_url = "y"
-comment_on_pull_request = "c"
-open_actions_popup = "a"
 recenter_cursor = "zz"
 place_cursor_at_viewport_top = "zt"
 place_cursor_at_viewport_bottom = "zb"
-toggle_inline_conversation = ["enter", "za"]
+
+[keymaps.main]
+move_detail_view_down = "J"
+move_detail_view_up = "K"
+
+[keymaps.side]
+exit_review_mode = ["esc", "ctrl+[", "q"]
+
+[keymaps.user]
+open_detail = "enter"
+
+[keymaps.pull_requests]
+# In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
+previous_tab = "["
+next_tab = "]"
+open_detail = "enter"
+copy_pull_request_url = "y"
+comment_on_pull_request = "c"
+toggle_fold = "za"
 close_all_folds = "zM"
 open_all_folds = "zR"
+
+[keymaps.notifications]
+open_detail = "enter"
+mark_notification_read = "r"
+mark_notification_done = "d"
+
+[keymaps.detail]
+toggle_inline_conversation = ["enter", "za"]
 
 [keymaps.search]
 submit = ["enter", "ctrl+j"]
 cancel = ["esc", "ctrl+["]
+next_search_match = "n"
+previous_search_match = "N"
 
 [keymaps.actions_popup]
 focus_search = "/"
-move_selection_down = ["j", "down"]
-move_selection_up = ["k", "up"]
-page_down = "ctrl+d"
-page_up = "ctrl+u"
-move_selection_to_top = "gg"
-move_selection_to_bottom = "G"
-place_selection_at_viewport_top = "zt"
-recenter_selection = "zz"
-place_selection_at_viewport_bottom = "zb"
 execute_selected_action = "enter"
 submit_selected_picker = "alt+enter"
 
@@ -352,7 +331,7 @@ focus_list = ["enter", "tab", "ctrl+s"]
 [keymaps.modal_editor]
 submit = ["alt+enter", "ctrl+s"]
 
-[keymaps.help]
-# `close`, `full_page_down`, and `full_page_up` inherit from `[keymaps.global]` by default.
+[keymaps.pull_request_build_info]
+copy_content = "y"
 ```
 

@@ -5,31 +5,38 @@ import (
 	"testing"
 )
 
-func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_ThenItReturnsTheirSharedDefaults(t *testing.T) {
+func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_ThenItReturnsTheirBehaviorFirstScopesAndDefaults(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		action                 string
+		expectedScope          string
 		expectedBindings       []string
 		expectedAllowSequences bool
 	}{
-		{name: "open actions popup", action: "open_actions_popup", expectedBindings: []string{"a"}, expectedAllowSequences: true},
-		{name: "close all folds", action: "close_all_folds", expectedBindings: []string{"zM"}, expectedAllowSequences: true},
-		{name: "open all folds", action: "open_all_folds", expectedBindings: []string{"zR"}, expectedAllowSequences: true},
-		{name: "next search match", action: "next_search_match", expectedBindings: []string{"n"}, expectedAllowSequences: true},
-		{name: "previous search match", action: "previous_search_match", expectedBindings: []string{"N"}, expectedAllowSequences: true},
-		{name: "previous tab", action: "previous_tab", expectedBindings: []string{"["}, expectedAllowSequences: true},
-		{name: "next tab", action: "next_tab", expectedBindings: []string{"]"}, expectedAllowSequences: true},
-		{name: "copy pull request url", action: "copy_pull_request_url", expectedBindings: []string{"y"}, expectedAllowSequences: true},
-		{name: "comment on pull request", action: "comment_on_pull_request", expectedBindings: []string{"c"}, expectedAllowSequences: true},
-		{name: "page down", action: "page_down", expectedBindings: []string{"ctrl+d"}, expectedAllowSequences: true},
-		{name: "page up", action: "page_up", expectedBindings: []string{"ctrl+u"}, expectedAllowSequences: true},
-		{name: "move selection to top", action: "move_selection_to_top", expectedBindings: []string{"gg"}, expectedAllowSequences: true},
-		{name: "move selection to bottom", action: "move_selection_to_bottom", expectedBindings: []string{"G"}, expectedAllowSequences: true},
-		{name: "place selection at viewport top", action: "place_selection_at_viewport_top", expectedBindings: []string{"zt"}, expectedAllowSequences: true},
-		{name: "recenter selection", action: "recenter_selection", expectedBindings: []string{"zz"}, expectedAllowSequences: true},
-		{name: "place selection at viewport bottom", action: "place_selection_at_viewport_bottom", expectedBindings: []string{"zb"}, expectedAllowSequences: true},
-		{name: "move cursor left", action: "move_cursor_left", expectedBindings: []string{"h", "left"}, expectedAllowSequences: true},
-		{name: "move cursor right", action: "move_cursor_right", expectedBindings: []string{"l", "right"}, expectedAllowSequences: true},
+		{name: "toggle help", action: "toggle_help", expectedScope: keymapScopeGlobal, expectedBindings: []string{"?"}, expectedAllowSequences: true},
+		{name: "open search", action: "open_search", expectedScope: keymapScopeGlobal, expectedBindings: []string{"/"}, expectedAllowSequences: true},
+		{name: "move selection down", action: "move_selection_down", expectedScope: keymapScopeGlobal, expectedBindings: []string{"j", "down"}, expectedAllowSequences: true},
+		{name: "move selection up", action: "move_selection_up", expectedScope: keymapScopeGlobal, expectedBindings: []string{"k", "up"}, expectedAllowSequences: true},
+		{name: "page down", action: "page_down", expectedScope: keymapScopeGlobal, expectedBindings: []string{"ctrl+d"}, expectedAllowSequences: true},
+		{name: "page up", action: "page_up", expectedScope: keymapScopeGlobal, expectedBindings: []string{"ctrl+u"}, expectedAllowSequences: true},
+		{name: "grow focused pane", action: "grow_focused_pane", expectedScope: keymapScopeGlobal, expectedBindings: []string{"+"}, expectedAllowSequences: true},
+		{name: "shrink focused pane", action: "shrink_focused_pane", expectedScope: keymapScopeGlobal, expectedBindings: []string{"-"}, expectedAllowSequences: true},
+		{name: "open actions popup", action: "open_actions_popup", expectedScope: keymapScopeGlobal, expectedBindings: []string{"a"}, expectedAllowSequences: true},
+		{name: "close all folds", action: "close_all_folds", expectedScope: keymapScopePullRequests, expectedBindings: []string{"zM"}, expectedAllowSequences: true},
+		{name: "open all folds", action: "open_all_folds", expectedScope: keymapScopePullRequests, expectedBindings: []string{"zR"}, expectedAllowSequences: true},
+		{name: "next search match", action: "next_search_match", expectedScope: keymapScopeSearch, expectedBindings: []string{"n"}, expectedAllowSequences: true},
+		{name: "previous search match", action: "previous_search_match", expectedScope: keymapScopeSearch, expectedBindings: []string{"N"}, expectedAllowSequences: true},
+		{name: "previous tab", action: "previous_tab", expectedScope: keymapScopePullRequests, expectedBindings: []string{"["}, expectedAllowSequences: true},
+		{name: "next tab", action: "next_tab", expectedScope: keymapScopePullRequests, expectedBindings: []string{"]"}, expectedAllowSequences: true},
+		{name: "copy pull request url", action: "copy_pull_request_url", expectedScope: keymapScopePullRequests, expectedBindings: []string{"y"}, expectedAllowSequences: true},
+		{name: "comment on pull request", action: "comment_on_pull_request", expectedScope: keymapScopePullRequests, expectedBindings: []string{"c"}, expectedAllowSequences: true},
+		{name: "move selection to top", action: "move_selection_to_top", expectedScope: keymapScopeSelection, expectedBindings: []string{"gg"}, expectedAllowSequences: true},
+		{name: "move selection to bottom", action: "move_selection_to_bottom", expectedScope: keymapScopeSelection, expectedBindings: []string{"G"}, expectedAllowSequences: true},
+		{name: "place selection at viewport top", action: "place_selection_at_viewport_top", expectedScope: keymapScopeSelection, expectedBindings: []string{"zt"}, expectedAllowSequences: true},
+		{name: "recenter selection", action: "recenter_selection", expectedScope: keymapScopeSelection, expectedBindings: []string{"zz"}, expectedAllowSequences: true},
+		{name: "place selection at viewport bottom", action: "place_selection_at_viewport_bottom", expectedScope: keymapScopeSelection, expectedBindings: []string{"zb"}, expectedAllowSequences: true},
+		{name: "move cursor left", action: "move_cursor_left", expectedScope: keymapScopeCursor, expectedBindings: []string{"h", "left"}, expectedAllowSequences: true},
+		{name: "move cursor right", action: "move_cursor_right", expectedScope: keymapScopeCursor, expectedBindings: []string{"l", "right"}, expectedAllowSequences: true},
 	}
 
 	for _, testCase := range testCases {
@@ -38,6 +45,9 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 			if !ok {
 				t.Fatalf("expected shared definition for %q", testCase.action)
 			}
+			if actual.scope != testCase.expectedScope {
+				t.Fatalf("expected scope %q, actual %q", testCase.expectedScope, actual.scope)
+			}
 			if !reflect.DeepEqual(actual.bindings, testCase.expectedBindings) {
 				t.Fatalf("expected bindings %v, actual %v", testCase.expectedBindings, actual.bindings)
 			}
@@ -45,5 +55,27 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 				t.Fatalf("expected allow sequences %t, actual %t", testCase.expectedAllowSequences, actual.allowSequences)
 			}
 		})
+	}
+}
+
+func TestKeybindingActions_GivenProgram_WhenListingActions_ThenViewFocusShortcutsStayFixedAndNonConfigurable(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actions := subject.keybindingActions()
+	expected := map[keybindingActionID]bool{
+		{scope: keymapScopeMain, action: "focus_user_view"}:          false,
+		{scope: keymapScopeMain, action: "focus_pull_requests_view"}: false,
+		{scope: keymapScopeMain, action: "focus_notifications_view"}: false,
+		{scope: keymapScopeSide, action: "focus_detail_view"}:        false,
+	}
+
+	for _, action := range actions {
+		expectedConfigurable, ok := expected[action.id]
+		if !ok {
+			continue
+		}
+		if action.configurable != expectedConfigurable {
+			t.Fatalf("expected action %v configurable=%t, actual %t", action.id, expectedConfigurable, action.configurable)
+		}
 	}
 }

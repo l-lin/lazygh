@@ -37,6 +37,8 @@ type keybindingActionID struct {
 
 type keybindingAction struct {
 	id              keybindingActionID
+	configID        keybindingActionID
+	configurable    bool
 	viewNames       []string
 	defaultBindings []configuredKeySequence
 	handler         func(*gocui.Gui, *gocui.View) error
@@ -311,18 +313,11 @@ type keybindingTarget struct {
 }
 
 func (program *Program) overrideBindings(action keybindingAction) ([]configuredKeySequence, bool) {
-	if len(program.keymapOverrides) == 0 {
+	if len(program.keymapOverrides) == 0 || !action.configurable {
 		return nil, false
 	}
 
-	bindings, ok := program.parseOverrideBindings(action.id.scope, action.id.action, action.allowSequences)
-	if ok {
-		return bindings, true
-	}
-	if action.id.scope == keymapScopeGlobal {
-		return nil, false
-	}
-	return program.parseOverrideBindings(keymapScopeGlobal, action.id.action, action.allowSequences)
+	return program.parseOverrideBindings(action.configID.scope, action.configID.action, action.allowSequences)
 }
 
 func (program *Program) parseOverrideBindings(scope string, action string, allowSequences bool) ([]configuredKeySequence, bool) {
