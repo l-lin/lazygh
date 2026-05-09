@@ -69,6 +69,7 @@ Use `[cache]` to control the persistent SQLite cache.
 - If `XDG_DATA_HOME` is unset, it falls back to `~/.local/share/lazygh/cache.sqlite3`.
 - `lazygh` shows cached pull-request lists immediately, then refreshes the active list in the background.
 - Cached PR detail and review diff entries refresh only when the live list reports a newer `updatedAt`, or when `lazygh` mutates that PR and invalidates the cached entry.
+- Cached merged and closed PRs that are no longer referenced by cached lists or notifications are pruned over time. `lazygh` drops diffs first, then details, then the stale summary row.
 
 This example overrides the cache path:
 

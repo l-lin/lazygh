@@ -115,7 +115,11 @@ func (store *Store) Clear() error {
 		return actualErr
 	}
 
-	return transaction.Commit()
+	if actualErr = transaction.Commit(); actualErr != nil {
+		return actualErr
+	}
+	store.runIncrementalVacuumBestEffort()
+	return nil
 }
 
 func (store *Store) PullRequests(search appconfig.PullRequestSearch) ([]githubcli.PullRequest, bool, error) {
@@ -170,7 +174,11 @@ func (store *Store) SavePullRequests(search appconfig.PullRequestSearch, pullReq
 		}
 	}
 
-	return transaction.Commit()
+	if actualErr = transaction.Commit(); actualErr != nil {
+		return actualErr
+	}
+	_ = store.pruneStaleMergedPullRequests()
+	return nil
 }
 
 func (store *Store) Notifications() ([]githubcli.Notification, bool, error) {
@@ -208,7 +216,11 @@ func (store *Store) SaveNotifications(notifications []githubcli.Notification) er
 			payload_json = excluded.payload_json,
 			updated_at = CURRENT_TIMESTAMP
 	`, notificationListCacheKey, payloadJSON)
-	return actualErr
+	if actualErr != nil {
+		return actualErr
+	}
+	_ = store.pruneStaleMergedPullRequests()
+	return nil
 }
 
 func (store *Store) PullRequestDetail(repository string, number int) (CachedPullRequestDetail, bool, error) {
@@ -355,6 +367,18 @@ func (store *Store) initialize() error {
 	statements := []string{
 		`PRAGMA journal_mode = WAL`,
 		`PRAGMA busy_timeout = 5000`,
+	}
+
+	for _, statement := range statements {
+		if _, actualErr := store.db.Exec(statement); actualErr != nil {
+			return actualErr
+		}
+	}
+	if actualErr := store.ensureIncrementalAutoVacuum(); actualErr != nil {
+		return actualErr
+	}
+
+	statements = []string{
 		`CREATE TABLE IF NOT EXISTS pull_request_lists (
 			search_key TEXT PRIMARY KEY,
 			search_label TEXT NOT NULL,
