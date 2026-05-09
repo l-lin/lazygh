@@ -153,6 +153,11 @@ func TestReviewStoryMode_GivenGeneratedChapters_WhenExecutingTheAction_ThenItSho
 	if !strings.Contains(detailView.Buffer(), "This chapter explains the rendering shift") {
 		t.Fatalf("expected chapter narrative in detail view, actual %q", detailView.Buffer())
 	}
+	for _, unexpected := range []string{"## Files", "internal/tui/render.go", "internal/tui/model.go"} {
+		if strings.Contains(detailView.Buffer(), unexpected) {
+			t.Fatalf("expected chapter detail to hide impacted files in view 0, unexpected %q in %q", unexpected, detailView.Buffer())
+		}
+	}
 	if strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
 		t.Fatalf("expected chapter view to hide raw diff text, actual %q", detailView.Buffer())
 	}

@@ -65,12 +65,6 @@ func (program *Program) reviewSessionStoryChapterContent() string {
 	if strings.TrimSpace(chapter.Narrative) != "" {
 		sections = append(sections, strings.TrimSpace(chapter.Narrative))
 	}
-	if len(chapter.Files) > 0 {
-		sections = append(sections, "## Files")
-		for _, file := range chapter.Files {
-			sections = append(sections, "- "+strings.TrimSpace(file))
-		}
-	}
 	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), program.markdownRenderer, program.detailWrapWidth, "No chapter narrative is available.")
 }
 
