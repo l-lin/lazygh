@@ -125,7 +125,7 @@ func renderInlineThreadCommentBlockForViewer(comment githubcli.PullRequestCommen
 func renderInlineThreadCommentBoxForViewer(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
 	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
 	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
-	body := renderInlineCommentBody(comment.Body, renderer, commentBodyWidth)
+	body := renderInlineCommentBodyWithHTML(comment.Body, comment.BodyHTML, renderer, commentBodyWidth)
 	return renderCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
 }
 

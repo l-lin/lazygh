@@ -6,7 +6,12 @@ import (
 )
 
 func renderInlineCommentBody(markdown string, renderer MarkdownRenderer, width int) string {
-	return renderMarkdownWithFallback(prepareInlineCommentMarkdown(markdown), renderer, width, "No comment body.")
+	return renderInlineCommentBodyWithHTML(markdown, "", renderer, width)
+}
+
+func renderInlineCommentBodyWithHTML(markdown string, renderedHTML string, renderer MarkdownRenderer, width int) string {
+	preparedMarkdown := prepareMarkdownForImageRendering(prepareInlineCommentMarkdown(markdown), renderedHTML)
+	return renderMarkdownWithFallback(preparedMarkdown, renderer, width, "No comment body.")
 }
 
 func prepareInlineCommentMarkdown(markdown string) string {

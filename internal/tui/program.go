@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"net/http"
+	"sync"
+
 	"github.com/jesseduffield/gocui"
 
 	clip "codeberg.org/l-lin/lazygh/internal/clipboard"
@@ -61,6 +64,8 @@ type GitHubLoader interface {
 	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)
 	GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error)
 	GetPullRequestBuildRunJobLogForCheck(repository string, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildRunJob, string, error)
+	RenderMarkdownHTML(repository string, markdown string) (string, error)
+	GetAuthToken() (string, error)
 }
 
 type Program struct {
@@ -121,6 +126,14 @@ type Program struct {
 	linkOpener                              linkOpener
 	detailImageStore                        detailImageStore
 	detailImageManager                      detailImageManager
+	detailImageHTMLLoadInFlight             map[string]bool
+	detailImageHTMLLoadFailed               map[string]bool
+	detailImageLoadInFlight                 map[string]bool
+	detailImageLoadFailed                   map[string]bool
+	githubAuthToken                         string
+	githubAuthTokenLoaded                   bool
+	detailImageAuthTokenMu                  sync.Mutex
+	imageHTTPClient                         *http.Client
 	markdownRenderer                        MarkdownRenderer
 	storyGenerator                          reviewStoryGenerator
 	asyncRunner                             asyncRunner
@@ -182,6 +195,11 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		linkOpener:                        newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand),
 		detailImageStore:                  imageStore,
 		detailImageManager:                &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}},
+		detailImageHTMLLoadInFlight:       map[string]bool{},
+		detailImageHTMLLoadFailed:         map[string]bool{},
+		detailImageLoadInFlight:           map[string]bool{},
+		detailImageLoadFailed:             map[string]bool{},
+		imageHTTPClient:                   http.DefaultClient,
 		markdownRenderer:                  glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
 		storyGenerator:                    commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
 		themePresetStore:                  &defaultThemePresetStore{save: appconfig.SaveThemePresetDefault},

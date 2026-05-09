@@ -1486,6 +1486,12 @@ type fakePullRequestDetailLoader struct {
 	buildRunErr                       error
 	buildRunJobsErr                   error
 	buildLogErr                       error
+	renderedMarkdownHTML              map[string]string
+	renderMarkdownHTMLCalls           []string
+	renderMarkdownHTMLErr             error
+	authToken                         string
+	authTokenCalls                    int
+	authTokenErr                      error
 }
 
 func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
@@ -2002,6 +2008,28 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLogForCheck(
 		return jobs[0], actualLog, actualErr
 	}
 	return githubcli.PullRequestBuildRunJob{}, "", githubcli.ErrPullRequestBuildRunJobNotFound
+}
+
+func (loader *fakePullRequestDetailLoader) RenderMarkdownHTML(repository string, markdown string) (string, error) {
+	key := strings.TrimSpace(repository) + "|" + strings.TrimSpace(markdown)
+	loader.renderMarkdownHTMLCalls = append(loader.renderMarkdownHTMLCalls, key)
+	if loader.renderMarkdownHTMLErr != nil {
+		return "", loader.renderMarkdownHTMLErr
+	}
+	if loader.renderedMarkdownHTML != nil {
+		if actual, ok := loader.renderedMarkdownHTML[key]; ok {
+			return actual, nil
+		}
+	}
+	return "", nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetAuthToken() (string, error) {
+	loader.authTokenCalls++
+	if loader.authTokenErr != nil {
+		return "", loader.authTokenErr
+	}
+	return strings.TrimSpace(loader.authToken), nil
 }
 
 func (loader *fakePullRequestDetailLoader) updatePullRequestSummary(repository string, number int, update func(*githubcli.PullRequest)) {

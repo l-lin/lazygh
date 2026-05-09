@@ -14,6 +14,10 @@ func detailBody(detail githubcli.PullRequestDetail, summary githubcli.PullReques
 	return firstNonEmpty(detail.Body, summary.Body)
 }
 
+func detailBodyHTML(detail githubcli.PullRequestDetail) string {
+	return strings.TrimSpace(detail.BodyHTML)
+}
+
 func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequest) string {
 	return effectivePullRequestStatus(firstNonEmpty(detail.State, summary.State), detail.IsDraft || summary.IsDraft)
 }

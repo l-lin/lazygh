@@ -49,7 +49,7 @@ func renderPullRequestHeader(summary githubcli.PullRequest, detail githubcli.Pul
 }
 
 func renderPullRequestDescription(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int) string {
-	return renderMarkdownWithFallback(detailBody(detail, summary), renderer, width, "No description available.")
+	return renderMarkdownWithFallback(prepareMarkdownForImageRendering(detailBody(detail, summary), detailBodyHTML(detail)), renderer, width, "No description available.")
 }
 
 func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlineThreads []githubcli.PullRequestReviewThread, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
@@ -98,7 +98,7 @@ func renderPullRequestCommitSection(commit githubcli.PullRequestCommit, renderer
 	if len(metadataLines) > 0 {
 		sectionParts = append(sectionParts, strings.Join(metadataLines, "\n"))
 	}
-	if body := strings.TrimSpace(renderMarkdownWithFallback(commit.MessageBody, renderer, commentBoxInnerWidth(width), "")); body != "" {
+	if body := strings.TrimSpace(renderMarkdownWithFallback(prepareMarkdownForImageRendering(commit.MessageBody, commit.MessageBodyHTML), renderer, commentBoxInnerWidth(width), "")); body != "" {
 		sectionParts = append(sectionParts, body)
 	}
 	return renderRoundedCommentBox(strings.Join(sectionParts, "\n\n"), width)
@@ -282,7 +282,7 @@ func buildPullRequestCommentsRenderedSections(comments []githubcli.PullRequestCo
 	sections := make([]pullRequestCommentsRenderedSection, 0, len(comments)+maxInt(len(inlineThreads), len(inlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
 	for _, comment := range comments {
-		body := renderMarkdownWithFallback(comment.Body, renderer, commentBodyWidth, "No comment body.")
+		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), renderer, commentBodyWidth, "No comment body.")
 		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestCommentSection(comment, body, width)})
 	}
 	if len(inlineThreads) > 0 {
@@ -293,7 +293,7 @@ func buildPullRequestCommentsRenderedSections(comments []githubcli.PullRequestCo
 		return sections
 	}
 	for _, inlineComment := range inlineComments {
-		body := renderInlineCommentBody(inlineComment.Body, renderer, commentBodyWidth)
+		body := renderInlineCommentBodyWithHTML(inlineComment.Body, inlineComment.BodyHTML, renderer, commentBodyWidth)
 		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentSection(inlineComment, body, width)})
 	}
 	return sections

@@ -20,6 +20,7 @@ type PullRequestDetail struct {
 	Number               int                        `json:"number"`
 	URL                  string                     `json:"url"`
 	Body                 string                     `json:"body"`
+	BodyHTML             string                     `json:"bodyHTML,omitempty"`
 	Author               *PullRequestAuthor         `json:"author"`
 	State                string                     `json:"state"`
 	IsDraft              bool                       `json:"isDraft"`
@@ -91,6 +92,7 @@ type PullRequestComment struct {
 	ID              string                    `json:"id"`
 	Author          *PullRequestCommentAuthor `json:"author"`
 	Body            string                    `json:"body"`
+	BodyHTML        string                    `json:"bodyHTML,omitempty"`
 	CreatedAt       string                    `json:"createdAt"`
 	URL             string                    `json:"url"`
 	DiffHunk        string                    `json:"diffHunk"`
@@ -103,6 +105,7 @@ type PullRequestCommit struct {
 	OID             string                    `json:"oid"`
 	MessageHeadline string                    `json:"messageHeadline"`
 	MessageBody     string                    `json:"messageBody"`
+	MessageBodyHTML string                    `json:"messageBodyHTML,omitempty"`
 	AuthoredDate    string                    `json:"authoredDate"`
 	CommittedDate   string                    `json:"committedDate"`
 	Authors         []PullRequestCommitAuthor `json:"authors"`
@@ -118,6 +121,7 @@ type PullRequestInlineComment struct {
 	ID                string                    `json:"node_id"`
 	Author            *PullRequestCommentAuthor `json:"user"`
 	Body              string                    `json:"body"`
+	BodyHTML          string                    `json:"bodyHTML,omitempty"`
 	CreatedAt         string                    `json:"created_at"`
 	URL               string                    `json:"html_url"`
 	Path              string                    `json:"path"`
@@ -259,6 +263,7 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 	detail.Title = strings.TrimSpace(detail.Title)
 	detail.URL = strings.TrimSpace(detail.URL)
 	detail.Body = strings.TrimSpace(detail.Body)
+	detail.BodyHTML = strings.TrimSpace(detail.BodyHTML)
 	detail.State = strings.TrimSpace(detail.State)
 	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
 	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
@@ -373,6 +378,7 @@ func (organization PullRequestReviewRequestOrganization) normalized() PullReques
 func (comment PullRequestComment) normalized() PullRequestComment {
 	comment.ID = strings.TrimSpace(comment.ID)
 	comment.Body = strings.TrimSpace(comment.Body)
+	comment.BodyHTML = strings.TrimSpace(comment.BodyHTML)
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)
 	comment.DiffHunk = strings.TrimSpace(comment.DiffHunk)
@@ -389,6 +395,7 @@ func (commit PullRequestCommit) normalized() PullRequestCommit {
 	commit.OID = strings.TrimSpace(commit.OID)
 	commit.MessageHeadline = strings.TrimSpace(commit.MessageHeadline)
 	commit.MessageBody = strings.TrimSpace(commit.MessageBody)
+	commit.MessageBodyHTML = strings.TrimSpace(commit.MessageBodyHTML)
 	commit.AuthoredDate = strings.TrimSpace(commit.AuthoredDate)
 	commit.CommittedDate = strings.TrimSpace(commit.CommittedDate)
 	if len(commit.Authors) > 0 {
@@ -411,6 +418,7 @@ func (author PullRequestCommitAuthor) normalized() PullRequestCommitAuthor {
 func (comment PullRequestInlineComment) normalized() PullRequestInlineComment {
 	comment.ID = strings.TrimSpace(comment.ID)
 	comment.Body = strings.TrimSpace(comment.Body)
+	comment.BodyHTML = strings.TrimSpace(comment.BodyHTML)
 	comment.CreatedAt = strings.TrimSpace(comment.CreatedAt)
 	comment.URL = strings.TrimSpace(comment.URL)
 	comment.Path = strings.TrimSpace(comment.Path)

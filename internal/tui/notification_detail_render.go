@@ -15,7 +15,7 @@ func renderIssueDetail(repository string, detail githubcli.IssueDetail, renderer
 		renderPullRequestAssigneesLine(detail.Assignees),
 		renderPullRequestLabelsLine(detail.Labels),
 	}), "\n")
-	body := renderMarkdownWithFallback(detail.Body, renderer, width, "No description available.")
+	body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(detail.Body, detail.BodyHTML), renderer, width, "No description available.")
 	return renderPullRequestDetailContent(header, body)
 }
 
@@ -25,7 +25,7 @@ func renderReleaseDetail(repository string, detail githubcli.ReleaseDetail, rend
 		stylePullRequestReferenceText(strings.TrimSpace(repository)),
 		renderReleaseMetaLine(detail),
 	}), "\n")
-	body := renderMarkdownWithFallback(detail.Body, renderer, width, "No release notes available.")
+	body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(detail.Body, detail.BodyHTML), renderer, width, "No release notes available.")
 	return renderPullRequestDetailContent(header, body)
 }
 

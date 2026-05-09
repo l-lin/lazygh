@@ -29,6 +29,8 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	}
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
+	program.maybeLoadCurrentDetailImageHTML(gui)
+	program.maybeLoadCurrentDetailImages(gui)
 
 	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.model.currentSideFocus(), program.sidebarTopPaneHeight(), !program.reviewSession.active)
 

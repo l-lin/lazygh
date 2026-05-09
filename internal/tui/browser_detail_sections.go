@@ -186,7 +186,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 
 	for index, rawComment := range detail.Comments {
 		comment := rawComment
-		body := renderMarkdownWithFallback(comment.Body, program.markdownRenderer, commentBodyWidth, "No comment body.")
+		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), program.markdownRenderer, commentBodyWidth, "No comment body.")
 		sectionID := browserDetailSectionID(pullRequestKey, "comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{
@@ -217,7 +217,7 @@ func (program *Program) currentPullRequestConversationSections(summary githubcli
 
 	for index, rawComment := range detail.InlineComments {
 		comment := rawComment
-		body := renderInlineCommentBody(comment.Body, program.markdownRenderer, commentBodyWidth)
+		body := renderInlineCommentBodyWithHTML(comment.Body, comment.BodyHTML, program.markdownRenderer, commentBodyWidth)
 		sectionID := browserDetailSectionID(pullRequestKey, "inline-comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{

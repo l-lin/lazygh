@@ -48,6 +48,7 @@ type IssueDetail struct {
 	Number    int                 `json:"number"`
 	URL       string              `json:"html_url"`
 	Body      string              `json:"body"`
+	BodyHTML  string              `json:"bodyHTML,omitempty"`
 	Author    *PullRequestAuthor  `json:"user"`
 	State     string              `json:"state"`
 	CreatedAt string              `json:"created_at"`
@@ -62,6 +63,7 @@ type ReleaseDetail struct {
 	TagName     string             `json:"tag_name"`
 	URL         string             `json:"html_url"`
 	Body        string             `json:"body"`
+	BodyHTML    string             `json:"bodyHTML,omitempty"`
 	Draft       bool               `json:"draft"`
 	PreRelease  bool               `json:"prerelease"`
 	CreatedAt   string             `json:"created_at"`
@@ -247,6 +249,7 @@ func (detail IssueDetail) normalized() IssueDetail {
 	detail.Title = strings.TrimSpace(detail.Title)
 	detail.URL = strings.TrimSpace(detail.URL)
 	detail.Body = strings.TrimSpace(detail.Body)
+	detail.BodyHTML = strings.TrimSpace(detail.BodyHTML)
 	detail.State = strings.TrimSpace(detail.State)
 	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
 	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
@@ -276,6 +279,7 @@ func (detail ReleaseDetail) normalized() ReleaseDetail {
 	detail.TagName = strings.TrimSpace(detail.TagName)
 	detail.URL = strings.TrimSpace(detail.URL)
 	detail.Body = strings.TrimSpace(detail.Body)
+	detail.BodyHTML = strings.TrimSpace(detail.BodyHTML)
 	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
 	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
 	detail.PublishedAt = strings.TrimSpace(detail.PublishedAt)

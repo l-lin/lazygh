@@ -478,7 +478,22 @@ func loadDetailImageBytes(source string, client *http.Client, githubToken string
 }
 
 func shouldAuthorizeGitHubImageRequest(parsedURL *urlpkg.URL, githubToken string) bool {
-	if parsedURL == nil || strings.TrimSpace(githubToken) == "" {
+	if strings.TrimSpace(githubToken) == "" {
+		return false
+	}
+	return isGitHubImageRequest(parsedURL)
+}
+
+func isGitHubImageSource(source string) bool {
+	parsedURL, err := urlpkg.Parse(strings.TrimSpace(source))
+	if err != nil {
+		return false
+	}
+	return isGitHubImageRequest(parsedURL)
+}
+
+func isGitHubImageRequest(parsedURL *urlpkg.URL) bool {
+	if parsedURL == nil {
 		return false
 	}
 	host := strings.ToLower(strings.TrimSpace(parsedURL.Hostname()))
