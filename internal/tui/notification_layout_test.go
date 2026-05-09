@@ -32,6 +32,24 @@ func TestLayout_GivenBrowserMode_WhenRendering_ThenViewThreeShowsNotificationsAn
 	}
 }
 
+func TestLayout_GivenLoadedNotifications_WhenRendering_ThenViewThreeTitleShowsTheNotificationCount(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow(), given_issueNotificationRow()})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+
+	then_noError(t, actualErr)
+	notificationsView, actualErr := gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
+	if notificationsView.Title != "Notifications (2)" {
+		t.Fatalf("expected notifications title %q, actual %q", "Notifications (2)", notificationsView.Title)
+	}
+}
+
 func TestFocusNotificationsView_GivenBrowserMode_WhenJumpingToViewThree_ThenTheNotificationsPaneExpandsAndTakesFocus(t *testing.T) {
 	model := given_model()
 	model.FocusNotificationsView()

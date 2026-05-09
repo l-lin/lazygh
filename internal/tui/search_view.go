@@ -136,7 +136,36 @@ func (program *Program) detailViewTitle() string {
 }
 
 func (program *Program) notificationsViewTitle() string {
-	return "Notifications"
+	count, ok := program.notificationsCount()
+	if !ok {
+		return "Notifications"
+	}
+	return fmt.Sprintf("Notifications (%d)", count)
+}
+
+func (program *Program) notificationsCount() (int, bool) {
+	rows := program.model.NotificationRows()
+	if len(rows) == 0 {
+		return 0, false
+	}
+	if len(rows) == 1 && rows[0].Notification == nil {
+		item := rows[0].Item
+		if program.isNotificationLoadingItem(item) || program.isNotificationErrorItem(item) {
+			return 0, false
+		}
+		if item.Title == notificationsEmptyTitle && item.Detail == notificationsEmptyDetail {
+			return 0, true
+		}
+	}
+
+	count := 0
+	for _, row := range rows {
+		if row.Notification == nil {
+			return 0, false
+		}
+		count++
+	}
+	return count, true
 }
 
 func (program *Program) pullRequestsViewTitle() string {
