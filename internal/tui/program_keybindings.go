@@ -481,6 +481,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_next_word", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToNextWord, runeBinding('w')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_word_end", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToWordEnd, runeBinding('e')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_previous_word", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToPreviousWord, runeBinding('b')),
+		keybindingActionFor(keymapScopePullRequestBuildInfo, "next_search_match", []string{viewPullRequestBuildInfoName}, program.nextPullRequestBuildRunPopupSearchMatch, runeBinding('n')),
+		keybindingActionFor(keymapScopePullRequestBuildInfo, "previous_search_match", []string{viewPullRequestBuildInfoName}, program.previousPullRequestBuildRunPopupSearchMatch, runeBinding('N')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "enter_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupVisualMode, runeBinding('v')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "enter_line_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupLineVisualMode, runeBinding('V')),
 		keybindingActionFor(keymapScopePullRequestBuildInfo, "open_search", []string{viewPullRequestBuildInfoName}, program.openSearch, runeBinding('/')),

@@ -32,6 +32,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingBuildRunPopupBindings_ThenItUse
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'v', handler: subject.enterPullRequestBuildRunPopupVisualMode})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'V', handler: subject.enterPullRequestBuildRunPopupLineVisualMode})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: '/', handler: subject.openSearch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'n', handler: subject.nextPullRequestBuildRunPopupSearchMatch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'N', handler: subject.previousPullRequestBuildRunPopupSearchMatch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'y', handler: subject.copyPullRequestBuildRunPopupContent})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: gocui.KeyCtrlD, handler: subject.pagePullRequestBuildRunPopupDown})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: gocui.KeyCtrlU, handler: subject.pagePullRequestBuildRunPopupUp})
@@ -248,6 +250,63 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenSearching_ThenItUsesTheStatus
 		t.Fatalf("expected popup cursor line %d after search, actual %d", expectedLineIndex, actual)
 	}
 	then_statusLineKeyHintsAre(t, gui, "/: search, y: copy, Escape: back")
+}
+
+func TestPullRequestBuildRunPopup_GivenSubmittedSearch_WhenPressingNAndN_ThenItMovesToTheNextAndPreviousMatch(t *testing.T) {
+	model := given_pullRequestCommentModel()
+	model.OpenDetail()
+	subject := given_pullRequestCommentProgram(model, &fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
+		checkTitle: "CI / test",
+		runURL:     "https://github.com/acme/widgets/actions/runs/42",
+		body:       strings.Join([]string{"Target first", "middle", "Target second"}, "\n"),
+	})
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+	document := subject.currentPullRequestBuildRunPopupDocument(popupView)
+	firstMatchLineIndex, _ := given_detailDocumentLineContaining(t, document, "Target first")
+	secondMatchLineIndex, _ := given_detailDocumentLineContaining(t, document, "Target second")
+
+	openSearchHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, '/')
+	actualErr = openSearchHandler(gui, popupView)
+	then_noError(t, actualErr)
+	searchView, actualErr := gui.View(viewSearchName)
+	then_noError(t, actualErr)
+	for _, character := range "Target" {
+		actualHandled := subject.editSearch(searchView, 0, character, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(character))
+		}
+	}
+	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewSearchName, gocui.KeyEnter)
+	actualErr = submitHandler(gui, searchView)
+	then_noError(t, actualErr)
+
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != firstMatchLineIndex {
+		t.Fatalf("expected popup cursor line %d after submitted search, actual %d", firstMatchLineIndex, actual)
+	}
+
+	nextHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, 'n')
+	actualErr = nextHandler(gui, popupView)
+	then_noError(t, actualErr)
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != secondMatchLineIndex {
+		t.Fatalf("expected popup cursor line %d after next match, actual %d", secondMatchLineIndex, actual)
+	}
+
+	previousHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, 'N')
+	actualErr = previousHandler(gui, popupView)
+	then_noError(t, actualErr)
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != firstMatchLineIndex {
+		t.Fatalf("expected popup cursor line %d after previous match, actual %d", firstMatchLineIndex, actual)
+	}
 }
 
 func TestPullRequestBuildRunPopup_GivenVisible_WhenYankingAVisualSelection_ThenItCopiesTheSelectedTextAndReturnsToNormalMode(t *testing.T) {
