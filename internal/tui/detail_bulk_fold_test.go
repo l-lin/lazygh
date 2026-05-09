@@ -14,8 +14,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingInlineConversationBindings_Then
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'M', handler: subject.closeAllDetailFolds})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'R', handler: subject.openAllDetailFolds})
+	then_bindingKeyExists(t, actual, viewDetailName, 'M')
+	then_bindingKeyExists(t, actual, viewDetailName, 'R')
 }
 
 func TestBrowserMode_GivenDescriptionOverviewSections_WhenPressingZMAndZR_ThenItClosesAndOpensEverySectionWhileKeepingTheCursorOnTheSameSection(t *testing.T) {

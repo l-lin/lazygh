@@ -7,7 +7,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingOpenLinkBindings_ThenXIsAvailab
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'x', handler: subject.openLinkUnderCursor})
+	then_bindingKeyExists(t, actual, viewDetailName, 'x')
 	then_bindingDoesNotExist(t, actual, viewPullRequestsName, 'x')
 	then_bindingDoesNotExist(t, actual, viewUserName, 'x')
 }

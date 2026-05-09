@@ -227,17 +227,24 @@ Press `a` to open the actions popup for the focused view.
 
 Use scoped tables under `[keymaps]`.
 
+A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
+
 Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
+
+When an action name also exists under `[keymaps.global]`, the global value becomes the shared fallback and a scoped table can still override it for one view.
 
 `w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
 
-In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys and add `/` to search the popup body.
+In browser mode, `zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the side pane. Use `za` for inline conversations. In view 0, `zt`/`zz`/`zb` place the cursor at the top/center/bottom. `zM` and `zR` close or open every fold in the current detail context. Build run and job logs popups reuse the detail-style cursor keys, so `gg`, `gx`, `w`, `e`, `b`, `W`, `E`, and `B` behave there too, and `/` searches the popup body.
 
 ```toml
 [keymaps.global]
 quit = "ctrl+c"
 next_side_view = "tab"
 previous_side_view = "shift+tab"
+close = ["esc", "ctrl+[", "q"]
+full_page_down = ["ctrl+f", "pagedown"]
+full_page_up = ["ctrl+b", "pageup"]
 
 [keymaps.main]
 toggle_help = "?"
@@ -249,8 +256,6 @@ move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
 page_down = "ctrl+d"
 page_up = "ctrl+u"
-full_page_down = ["ctrl+f", "pagedown"]
-full_page_up = ["ctrl+b", "pageup"]
 grow_focused_pane = "+"
 shrink_focused_pane = "-"
 
@@ -258,15 +263,17 @@ shrink_focused_pane = "-"
 next_side_view = "l"
 previous_side_view = "h"
 focus_detail_view = "0"
-move_selection_to_top = "g"
+move_selection_to_top = "gg"
 move_selection_to_bottom = "G"
-# `zt`/`zz`/`zb` place the selection at the top/center/bottom in side panes.
-recenter_selection = "z"
+place_selection_at_viewport_top = "zt"
+recenter_selection = "zz"
+place_selection_at_viewport_bottom = "zb"
 exit_review_mode = ["esc", "ctrl+[", "q"]
 
 [keymaps.user]
 open_detail = "enter"
 copy_pull_request_url = "y"
+open_actions_popup = "a"
 
 [keymaps.pull_requests]
 # In review mode, `[[`/`]]` move between files and `[c`/`]c` move between comments.
@@ -276,6 +283,11 @@ open_detail = "enter"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
+toggle_fold = "za"
+close_all_folds = "zM"
+open_all_folds = "zR"
+next_search_match = "n"
+previous_search_match = "N"
 
 [keymaps.notifications]
 open_detail = "enter"
@@ -288,8 +300,8 @@ move_cursor_left = "h"
 move_cursor_right = "l"
 move_cursor_to_row_start = "0"
 move_cursor_to_row_end = "$"
-move_cursor_to_top = "g"
-open_link_under_cursor = "x"
+move_cursor_to_top = "gg"
+open_link_under_cursor = "gx"
 move_cursor_to_bottom = "G"
 move_cursor_to_next_word = "w"
 move_cursor_to_word_end = "e"
@@ -309,11 +321,12 @@ next_tab = "]"
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
 open_actions_popup = "a"
-# `gx` opens the link under the cursor, `za` toggles inline conversations in review mode, `zM` and `zR` close or open every fold in the current detail context, and `zt`/`zz`/`zb` place the cursor at the top/center/bottom.
-toggle_inline_conversation_prefix = "z"
-close_all_folds = "M"
-open_all_folds = "R"
-close = ["esc", "ctrl+[", "q"]
+recenter_cursor = "zz"
+place_cursor_at_viewport_top = "zt"
+place_cursor_at_viewport_bottom = "zb"
+toggle_inline_conversation = ["enter", "za"]
+close_all_folds = "zM"
+open_all_folds = "zR"
 
 [keymaps.search]
 submit = ["enter", "ctrl+j"]
@@ -325,26 +338,21 @@ move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
 page_down = "ctrl+d"
 page_up = "ctrl+u"
-full_page_down = ["ctrl+f", "pagedown"]
-full_page_up = ["ctrl+b", "pageup"]
-move_selection_to_top = "g"
+move_selection_to_top = "gg"
 move_selection_to_bottom = "G"
-# `zt`/`zz`/`zb` place the selection at the top/center/bottom in the popup.
-recenter_selection = "z"
+place_selection_at_viewport_top = "zt"
+recenter_selection = "zz"
+place_selection_at_viewport_bottom = "zb"
 execute_selected_action = "enter"
-close = ["esc", "ctrl+[", "q"]
+submit_selected_picker = "alt+enter"
 
 [keymaps.actions_popup_search]
-focus_list = ["enter", "tab"]
-close = ["esc", "ctrl+["]
+focus_list = ["enter", "tab", "ctrl+s"]
 
 [keymaps.modal_editor]
-submit = "alt+enter"
-close = ["esc", "ctrl+["]
+submit = ["alt+enter", "ctrl+s"]
 
 [keymaps.help]
-full_page_down = ["ctrl+f", "pagedown"]
-full_page_up = ["ctrl+b", "pageup"]
-close = ["esc", "ctrl+[", "q"]
+# `close`, `full_page_down`, and `full_page_up` inherit from `[keymaps.global]` by default.
 ```
 

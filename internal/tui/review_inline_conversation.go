@@ -39,17 +39,6 @@ func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int
 	return document
 }
 
-func (program *Program) armInlineConversationTogglePrefix(gui *gocui.Gui, view *gocui.View) error {
-	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
-		program.detailViewState.clearPendingPrefix()
-		return nil
-	}
-
-	return program.armOrHandleDetailKeySequence(detailViewportPlacementTarget(), func() error {
-		return program.recenterDetailView(gui, view)
-	})
-}
-
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
 	program.detailViewState.clearPendingPrefix()
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {

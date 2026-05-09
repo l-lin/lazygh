@@ -119,10 +119,7 @@ func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) 
 	}
 
 	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	target := sideViewportPlacementTarget(viewName)
-	return program.armOrHandleSelectionKeySequence(target, func() error {
-		return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
-	})
+	return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
 }
 
 func (program *Program) moveSideSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
@@ -132,11 +129,6 @@ func (program *Program) moveSideSelectionToViewportTop(gui *gocui.Gui, view *goc
 	}
 
 	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	if !program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
 	return program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, viewportPlacementTop)
 }
 
@@ -147,11 +139,6 @@ func (program *Program) moveSideSelectionToViewportBottom(gui *gocui.Gui, view *
 	}
 
 	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	if !program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
 	return program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, viewportPlacementBottom)
 }
 
@@ -162,11 +149,6 @@ func (program *Program) recenterDetailView(gui *gocui.Gui, view *gocui.View) err
 }
 
 func (program *Program) moveDetailCursorToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	if !program.detailViewState.pendingKeySequence.consume(detailViewportPlacementTarget()) {
-		program.detailViewState.clearPendingPrefix()
-		return nil
-	}
-
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.placeCursorAtViewportTop(document, viewportHeight)
 	})
@@ -179,23 +161,20 @@ func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *g
 }
 
 func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() {
 		return nil
 	}
-
-	target := keySequenceTargetFor(program.currentSideViewName(), keymapScopeSide, "move_selection_to_top")
-	return program.armOrHandleSelectionKeySequence(target, func() error {
-		if program.reviewSession.active {
-			if program.model.Focus() != FocusPullRequestsView {
-				return nil
-			}
-			program.moveReviewSessionSelectionToTop()
-			return program.refreshViewsIfGUI(gui)
+	if program.reviewSession.active {
+		if program.model.Focus() != FocusPullRequestsView {
+			return nil
 		}
+		program.moveReviewSessionSelectionToTop()
+		return program.refreshViewsIfGUI(gui)
+	}
 
-		program.model.MoveSelectionToTop()
-		return nil
-	})
+	program.model.MoveSelectionToTop()
+	return nil
 }
 
 func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
@@ -241,7 +220,7 @@ func (program *Program) moveDetailCursorToRowEnd(gui *gocui.Gui, view *gocui.Vie
 
 func (program *Program) moveDetailCursorToTop(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.handleGoToTopPrefix(document, viewportHeight)
+		program.detailViewState.moveToTop(document, viewportHeight)
 	})
 }
 
@@ -276,10 +255,6 @@ func (program *Program) moveDetailCursorToBigWordEnd(gui *gocui.Gui, view *gocui
 }
 
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
-	if program.detailViewState.pendingKeySequence.consume(detailViewportPlacementTarget()) {
-		return program.moveDetailCursorToViewportBottom(gui, view)
-	}
-
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.moveToPreviousWord(document, viewportHeight)
 	})

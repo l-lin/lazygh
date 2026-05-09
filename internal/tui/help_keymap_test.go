@@ -95,6 +95,39 @@ func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsZMAnd
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Close/open all folds", "zM/zR")
 }
 
+func TestHelpPopup_GivenReviewFilesFocusAndCustomizedFoldBindings_WhenTogglingHelp_ThenItShowsTheConfiguredSingleAndTwoStepFoldKeys(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithComments(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"pull_requests": {
+			"toggle_fold":     {"o"},
+			"close_all_folds": {"zX"},
+			"open_all_folds":  {"zO"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Expand/collapse fold", "o")
+	then_helpEntryUsesKey(t, actualBuffer, "Close/open all folds", "zX/zO")
+}
+
 func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGui(t)

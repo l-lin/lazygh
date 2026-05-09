@@ -10,21 +10,7 @@ func (program *Program) actionsPopupSelectionLineState() (int, int) {
 	return program.currentActionsPopupSelectedRenderedLine(), program.currentActionsPopupRenderedLineCount()
 }
 
-func (program *Program) openActionsPopup(gui *gocui.Gui, view *gocui.View) error {
-	if program.model.Focus() == FocusDetailView && program.detailViewState.consumeInlineConversationTogglePrefix() {
-		return program.toggleInlineConversationVisibility(gui, nil)
-	}
-	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
-		viewName := viewPullRequestsName
-		if view != nil && strings.TrimSpace(view.Name()) != "" {
-			viewName = view.Name()
-		}
-		if program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
-			_, actualErr := program.toggleSelectedReviewTreeRowVisibility(gui)
-			return actualErr
-		}
-	}
-
+func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
 	program.detailViewState.clearPendingPrefix()
 	program.clearActionsPopupPendingConfirmation()
@@ -196,19 +182,12 @@ func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocu
 		return nil
 	}
 
-	target := actionsPopupViewportPlacementTarget()
-	return program.armOrHandleSelectionKeySequence(target, func() error {
-		selectedLine, lineCount := program.actionsPopupSelectionLineState()
-		return program.recenterListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount)
-	})
+	selectedLine, lineCount := program.actionsPopupSelectionLineState()
+	return program.recenterListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount)
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-	if !program.pendingSelectionKeySequence.consume(actionsPopupViewportPlacementTarget()) {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}
@@ -222,32 +201,25 @@ func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui
 		program.clearPendingSelectionPrefix()
 		return nil
 	}
-	if !program.pendingSelectionKeySequence.consume(actionsPopupViewportPlacementTarget()) {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
 
 	selectedLine, lineCount := program.actionsPopupSelectionLineState()
 	return program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, viewportPlacementBottom)
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
-		program.clearPendingSelectionPrefix()
 		return nil
 	}
 
-	target := keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "move_selection_to_top")
-	return program.armOrHandleSelectionKeySequence(target, func() error {
-		program.clearActionsPopupPendingConfirmation()
-		program.model.MoveActionsPopupSelectionToTop()
-		program.actionsPopupErrorMessage = ""
-		if gui == nil {
-			return nil
-		}
+	program.clearActionsPopupPendingConfirmation()
+	program.model.MoveActionsPopupSelectionToTop()
+	program.actionsPopupErrorMessage = ""
+	if gui == nil {
+		return nil
+	}
 
-		return program.refreshViews(gui)
-	})
+	return program.refreshViews(gui)
 }
 
 func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {

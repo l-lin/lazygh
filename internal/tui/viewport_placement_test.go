@@ -115,10 +115,12 @@ func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZB_ThenItPlace
 	then_listViewPlacesSelectionAtTheBottomOfTheViewport(t, actualView, targetIndex, subject.currentActionsPopupRenderedLineCount())
 }
 
-func TestViewportPlacement_GivenARemappedSidePrefix_WhenPressingXTXXAndXB_ThenItUsesTheRemappedPrefixForTopCenterAndBottomPlacement(t *testing.T) {
+func TestViewportPlacement_GivenRemappedSideViewportPlacementBindings_WhenPressingXTXXAndXB_ThenItUsesTheConfiguredTopCenterAndBottomPlacementKeys(t *testing.T) {
 	subject := given_programWithKeymapOverrides(NewModel(SeedData{Users: given_manyItems("user", 40)}), appconfig.KeymapOverrides{
 		"side": {
-			"recenter_selection": {"x"},
+			"place_selection_at_viewport_top":    {"xt"},
+			"recenter_selection":                 {"xx"},
+			"place_selection_at_viewport_bottom": {"xb"},
 		},
 	})
 	gui, userView, targetIndex := given_userViewPlacementScenario(t, subject)
@@ -140,10 +142,12 @@ func TestViewportPlacement_GivenARemappedSidePrefix_WhenPressingXTXXAndXB_ThenIt
 	then_listViewPlacesSelectionAtTheBottomOfTheViewport(t, actualUserView, targetIndex, len(subject.model.VisibleUsers()))
 }
 
-func TestViewportPlacement_GivenARemappedDetailPrefix_WhenPressingMTMMAndMB_ThenItUsesTheRemappedPrefixForTopCenterAndBottomPlacement(t *testing.T) {
+func TestViewportPlacement_GivenRemappedDetailViewportPlacementBindings_WhenPressingMTMMAndMB_ThenItUsesTheConfiguredTopCenterAndBottomPlacementKeys(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_detailPlacementModel(), appconfig.KeymapOverrides{
 		"detail": {
-			"toggle_inline_conversation_prefix": {"m"},
+			"place_cursor_at_viewport_top":    {"mt"},
+			"recenter_cursor":                 {"mm"},
+			"place_cursor_at_viewport_bottom": {"mb"},
 		},
 	})
 	gui, detailView, targetLine := given_detailViewPlacementScenario(t, subject)

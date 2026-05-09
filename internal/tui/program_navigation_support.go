@@ -59,43 +59,6 @@ func (program *Program) armOrHandleSelectionKeySequence(target keySequenceTarget
 	return handle()
 }
 
-func (program *Program) armOrHandleDetailKeySequence(target keySequenceTarget, handle func() error) error {
-	if target.viewName == "" {
-		program.detailViewState.clearPendingPrefix()
-		return nil
-	}
-	if !program.detailViewState.pendingKeySequence.armOrConsume(target) {
-		return nil
-	}
-
-	return handle()
-}
-
-func sideViewportPlacementTarget(viewName string) keySequenceTarget {
-	return keySequenceTargetFor(viewName, keymapScopeSide, "recenter_selection")
-}
-
-func actionsPopupViewportPlacementTarget() keySequenceTarget {
-	return keySequenceTargetFor(viewActionsPopupName, keymapScopeActionsPopup, "recenter_selection")
-}
-
-func detailViewportPlacementTarget() keySequenceTarget {
-	return keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup")
-}
-
-func (program *Program) currentSideViewName() string {
-	switch program.model.Focus() {
-	case FocusUserView:
-		return viewUserName
-	case FocusPullRequestsView:
-		return viewPullRequestsName
-	case FocusNotificationsView:
-		return viewNotificationsName
-	default:
-		return ""
-	}
-}
-
 func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 	if gui == nil {
 		return nil

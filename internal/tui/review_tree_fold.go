@@ -32,6 +32,11 @@ func (program *Program) toggleSelectedReviewTreeRowVisibility(gui *gocui.Gui) (b
 	return true, program.refreshViewsIfGUI(gui)
 }
 
+func (program *Program) togglePullRequestFold(gui *gocui.Gui, _ *gocui.View) error {
+	_, actualErr := program.toggleSelectedReviewTreeRowVisibility(gui)
+	return actualErr
+}
+
 func (program *Program) closeAllReviewTreeFolds(gui *gocui.Gui, view *gocui.View) error {
 	return program.setAllReviewTreeFolds(gui, view, true)
 }
@@ -40,17 +45,8 @@ func (program *Program) openAllReviewTreeFolds(gui *gocui.Gui, view *gocui.View)
 	return program.setAllReviewTreeFolds(gui, view, false)
 }
 
-func (program *Program) setAllReviewTreeFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
+func (program *Program) setAllReviewTreeFolds(gui *gocui.Gui, _ *gocui.View, collapsed bool) error {
 	if !program.reviewSession.active || program.model.Focus() != FocusPullRequestsView || program.reviewTreeFoldBlocked() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	viewName := viewPullRequestsName
-	if view != nil && strings.TrimSpace(view.Name()) != "" {
-		viewName = view.Name()
-	}
-	if !program.pendingSelectionKeySequence.consume(sideViewportPlacementTarget(viewName)) {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}

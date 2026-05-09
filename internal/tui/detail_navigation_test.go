@@ -67,10 +67,7 @@ func TestDetailViewState_GivenRenderedDetailText_WhenUsingVimMotions_ThenItNavig
 	subject.moveToRowStart(document, 3)
 	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 4})
 
-	subject.handleGoToTopPrefix(document, 3)
-	then_detailCursorIs(t, subject, detailPosition{line: 1, column: 4})
-
-	subject.handleGoToTopPrefix(document, 3)
+	subject.moveToTop(document, 3)
 	then_detailCursorIs(t, subject, detailPosition{line: 0, column: 0})
 
 	subject.moveToBottom(document, 3)

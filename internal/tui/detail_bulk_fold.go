@@ -21,10 +21,6 @@ func (program *Program) setAllDetailFolds(gui *gocui.Gui, view *gocui.View, coll
 		program.detailViewState.clearPendingPrefix()
 		return nil
 	}
-	if !program.detailViewState.consumeInlineConversationTogglePrefix() {
-		program.detailViewState.clearPendingPrefix()
-		return nil
-	}
 
 	if program.reviewSession.active {
 		if program.reviewSessionShowsDescription() {

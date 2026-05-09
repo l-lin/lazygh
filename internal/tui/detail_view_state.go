@@ -174,27 +174,6 @@ func (state *detailViewState) moveToRowEnd(document detailDocument, viewportHeig
 	state.sync(document, viewportHeight)
 }
 
-func (state *detailViewState) handleGoToTopPrefix(document detailDocument, viewportHeight int) {
-	target := keySequenceTargetFor(viewDetailName, keymapScopeDetail, "move_cursor_to_top")
-	if !state.pendingKeySequence.armOrConsume(target) {
-		return
-	}
-
-	state.moveToTop(document, viewportHeight)
-}
-
-func (state *detailViewState) consumeGoToTopPrefix() bool {
-	return state.pendingKeySequence.consume(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "move_cursor_to_top"))
-}
-
-func (state *detailViewState) armInlineConversationTogglePrefix() {
-	state.pendingKeySequence.arm(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup"))
-}
-
-func (state *detailViewState) consumeInlineConversationTogglePrefix() bool {
-	return state.pendingKeySequence.consume(keySequenceTargetFor(viewDetailName, keymapScopeDetail, "open_actions_popup"))
-}
-
 func (state *detailViewState) moveToTop(document detailDocument, viewportHeight int) {
 	state.clearPendingPrefix()
 	state.cursor = document.moveToTop()

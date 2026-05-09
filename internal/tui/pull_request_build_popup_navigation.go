@@ -67,7 +67,7 @@ func (program *Program) movePullRequestBuildRunPopupCursorToRowEnd(gui *gocui.Gu
 
 func (program *Program) movePullRequestBuildRunPopupCursorToTop(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
-		state.handleGoToTopPrefix(document, viewportHeight)
+		state.moveToTop(document, viewportHeight)
 	})
 }
 
@@ -205,10 +205,6 @@ func (program *Program) copyPullRequestBuildRunPopupContent(gui *gocui.Gui, view
 func (program *Program) openPullRequestBuildRunPopupLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {
 	popup := program.pullRequestBuildRunPopup
 	if popup == nil {
-		return nil
-	}
-	if !popup.viewState.consumeGoToTopPrefix() {
-		popup.viewState.clearPendingPrefix()
 		return nil
 	}
 	if program.linkOpener == nil {

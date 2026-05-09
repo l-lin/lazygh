@@ -17,9 +17,9 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'a', handler: subject.openActionsPopup})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'a', handler: subject.openActionsPopup})
+	then_bindingKeyExists(t, actual, viewUserName, 'a')
+	then_bindingKeyExists(t, actual, viewPullRequestsName, 'a')
+	then_bindingKeyExists(t, actual, viewDetailName, 'a')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: '/', handler: subject.focusActionsPopupSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'j', handler: subject.moveActionsPopupSelectionDown})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyArrowDown, handler: subject.moveActionsPopupSelectionDown})

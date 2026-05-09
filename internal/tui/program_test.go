@@ -138,10 +138,10 @@ func TestKeybindingSpecs_GivenProgram_WhenListingEdgeNavigationBindings_ThenSide
 	actual := subject.keybindingSpecs()
 
 	for _, viewName := range []string{viewUserName, viewPullRequestsName} {
-		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'g', handler: subject.moveSideSelectionToTop})
+		then_bindingKeyExists(t, actual, viewName, 'g')
 		then_bindingExists(t, actual, keybindingSpec{viewName: viewName, key: 'G', handler: subject.moveSideSelectionToBottom})
 	}
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'g', handler: subject.moveActionsPopupSelectionToTop})
+	then_bindingKeyExists(t, actual, viewActionsPopupName, 'g')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'G', handler: subject.moveActionsPopupSelectionToBottom})
 }
 
@@ -203,7 +203,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDe
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'w', handler: subject.moveDetailCursorToNextWord})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'e', handler: subject.moveDetailCursorToWordEnd})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'b', handler: subject.moveDetailCursorToPreviousWord})
+	then_bindingKeyExists(t, actual, viewDetailName, 'b')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'W', handler: subject.moveDetailCursorToNextBigWord})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'E', handler: subject.moveDetailCursorToBigWordEnd})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'B', handler: subject.moveDetailCursorToPreviousBigWord})
@@ -215,7 +215,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingInlineConversationBindings_Then
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'z', handler: subject.armInlineConversationTogglePrefix})
+	then_bindingKeyExists(t, actual, viewDetailName, 'z')
 }
 
 func TestKeybindingSpecs_GivenProgram_WhenListingHelpBindings_ThenQuestionMarkTogglesThePopupFromAnyMainPaneAndEscapeVariantsCloseIt(t *testing.T) {
@@ -255,6 +255,18 @@ func then_bindingExists(t *testing.T, specs []keybindingSpec, expected keybindin
 	}
 
 	t.Fatalf("expected binding %+v, actual %+v", expected, specs)
+}
+
+func then_bindingKeyExists(t *testing.T, specs []keybindingSpec, expectedView string, expectedKey any) {
+	t.Helper()
+
+	for _, actual := range specs {
+		if actual.viewName == expectedView && reflect.DeepEqual(actual.key, expectedKey) {
+			return
+		}
+	}
+
+	t.Fatalf("expected a binding for view %q and key %v, actual %+v", expectedView, expectedKey, specs)
 }
 
 func sameHandler(actual func(*gocui.Gui, *gocui.View) error, expected func(*gocui.Gui, *gocui.View) error) bool {

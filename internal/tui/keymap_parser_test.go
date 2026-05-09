@@ -46,8 +46,30 @@ func TestParseConfiguredKey_GivenSupportedKeyStrings_WhenParsing_ThenItReturnsBi
 	}
 }
 
-func TestParseConfiguredKey_GivenUnsupportedKeyString_WhenParsing_ThenItRejectsTheValue(t *testing.T) {
-	_, ok := parseConfiguredKey("banana")
+func TestParseConfiguredBindings_GivenATwoCharacterSequence_WhenParsing_ThenItReturnsATwoStepBindingWithACombinedHelpLabel(t *testing.T) {
+	actual, ok := parseConfiguredBindings([]string{"za"})
+	if !ok {
+		t.Fatal("expected the configured sequence to parse")
+	}
+	if len(actual) != 1 {
+		t.Fatalf("expected one binding, actual %d", len(actual))
+	}
+	if actual[0].label != "za" {
+		t.Fatalf("expected label %q, actual %q", "za", actual[0].label)
+	}
+	if len(actual[0].keys) != 2 {
+		t.Fatalf("expected two keys, actual %d", len(actual[0].keys))
+	}
+	if !reflect.DeepEqual(actual[0].keys[0].value, 'z') {
+		t.Fatalf("expected first key %q, actual %v", 'z', actual[0].keys[0].value)
+	}
+	if !reflect.DeepEqual(actual[0].keys[1].value, 'a') {
+		t.Fatalf("expected second key %q, actual %v", 'a', actual[0].keys[1].value)
+	}
+}
+
+func TestParseConfiguredBindings_GivenUnsupportedKeyString_WhenParsing_ThenItRejectsTheValue(t *testing.T) {
+	_, ok := parseConfiguredBindings([]string{"banana"})
 	if ok {
 		t.Fatal("expected the configured key to be rejected")
 	}

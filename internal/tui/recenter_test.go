@@ -13,10 +13,10 @@ func TestKeybindingSpecs_GivenProgram_WhenListingRecenterBindings_ThenUserPullRe
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'z', handler: subject.recenterSideSelection})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'z', handler: subject.recenterSideSelection})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'z', handler: subject.armInlineConversationTogglePrefix})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'z', handler: subject.recenterActionsPopupSelection})
+	then_bindingKeyExists(t, actual, viewUserName, 'z')
+	then_bindingKeyExists(t, actual, viewPullRequestsName, 'z')
+	then_bindingKeyExists(t, actual, viewDetailName, 'z')
+	then_bindingKeyExists(t, actual, viewActionsPopupName, 'z')
 }
 
 func TestRecenter_GivenUserViewSelection_WhenPressingZZ_ThenTheSelectionMovesToTheMiddleOfTheViewport(t *testing.T) {
