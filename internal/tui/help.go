@@ -74,7 +74,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		switch program.model.Focus() {
 		case FocusDetailView:
 			return []helpEntry{
-				{Key: "h/j/k/l/<up>/<down>", Description: "Move cursor"},
+				{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},
 				{Key: "0/$", Description: "Line start/end"},
 				{Key: "gg/G", Description: "First/last line"},
 				{Key: program.reviewFileMotionHelpKeys(keymapScopeDetail), Description: "Previous/next file"},
@@ -134,7 +134,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 	switch program.model.Focus() {
 	case FocusDetailView:
 		entries := []helpEntry{
-			{Key: "h/j/k/l/<up>/<down>", Description: "Move cursor"},
+			{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},
 			{Key: "0/$", Description: "Line start/end"},
 			{Key: "gg/G", Description: "First/last line"},
 			{Key: program.helpKeysOrFallback("gx", keybindingActionID{scope: keymapScopeDetail, action: "open_link_under_cursor"}), Description: "Open link under cursor"},

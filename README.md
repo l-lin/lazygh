@@ -231,7 +231,7 @@ A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`.
 
 Across views, `ctrl-d`/`ctrl-u` move by half a page and `ctrl-f`/`ctrl-b` move by a full page. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
 
-When an action name also exists under `[keymaps.global]`, the global value becomes the shared fallback and a scoped table can still override it for one view.
+When an action name also exists under `[keymaps.global]`, the global value becomes the shared fallback and a scoped table can still override it for one view. That works well for repeated actions such as `open_actions_popup`, `page_down`, `page_up`, `copy_pull_request_url`, `comment_on_pull_request`, `next_search_match`, `previous_search_match`, `previous_tab`, `next_tab`, and the shared fold or viewport-placement actions.
 
 `w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions in view 0 and in build run or job log popups.
 
@@ -296,8 +296,8 @@ mark_notification_done = "d"
 open_actions_popup = "a"
 
 [keymaps.detail]
-move_cursor_left = "h"
-move_cursor_right = "l"
+move_cursor_left = ["h", "left"]
+move_cursor_right = ["l", "right"]
 move_cursor_to_row_start = "0"
 move_cursor_to_row_end = "$"
 move_cursor_to_top = "gg"

@@ -131,6 +131,35 @@ func TestKeybindingSpecs_GivenPullRequestsToggleFoldOverride_WhenListingBindings
 	then_bindingExists(t, subject.keybindingSpecs(), keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
 }
 
+func TestResolvedKeyLabels_GivenTwoStepTabOverrides_WhenResolving_ThenItKeepsTheConfiguredSequences(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"global": {
+			"previous_tab": {"g["},
+			"next_tab":     {"g]"},
+		},
+	})
+
+	actual, ok, hasOverride := subject.resolvedKeyLabels(
+		keybindingActionID{scope: keymapScopePullRequests, action: "previous_tab"},
+		keybindingActionID{scope: keymapScopePullRequests, action: "next_tab"},
+	)
+	if !ok {
+		t.Fatal("expected the tab labels to resolve")
+	}
+	if !hasOverride {
+		t.Fatal("expected the tab labels to report overrides")
+	}
+	expected := []string{"g[", "g]"}
+	if len(actual) != len(expected) {
+		t.Fatalf("expected labels %v, actual %v", expected, actual)
+	}
+	for index := range expected {
+		if actual[index] != expected[index] {
+			t.Fatalf("expected labels %v, actual %v", expected, actual)
+		}
+	}
+}
+
 func given_programWithKeymapOverrides(model *Model, overrides appconfig.KeymapOverrides) *Program {
 	subject := NewProgramWithModel(model)
 	subject.ApplyKeymapOverrides(overrides)
