@@ -175,10 +175,7 @@ func actionsPopupActionMatchesQuery(action actionsPopupAction, query string) boo
 	if query == "" {
 		return true
 	}
-	if strings.Contains(strings.ToLower(action.title), query) {
-		return true
-	}
-	return strings.Contains(strings.ToLower(strings.TrimSpace(action.group)), query)
+	return strings.Contains(strings.ToLower(action.title), query)
 }
 
 func (program *Program) yankPullRequestURLActionsPopupAction() actionsPopupAction {

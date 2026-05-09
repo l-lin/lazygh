@@ -299,6 +299,53 @@ func TestActionsPopup_GivenDescriptionCursorOnOtherUsersReactionPill_WhenListing
 	}
 }
 
+func TestActionsPopup_GivenReviewSearchOnTheCommentsTab_WhenMatchingOccurrences_ThenItSkipsTheAddReactionAction(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:     "PR_kwDOA",
+				Title:  "First PR",
+				Number: 42,
+				Body:   "Body 42",
+				State:  "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					ID:             "IC_kwDOA",
+					Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:           "General feedback",
+					CreatedAt:      "2026-04-18T10:00:00Z",
+					ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentEyes, TotalCount: 2}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"General feedback": "Rendered general feedback"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered general feedback")
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	actions := subject.currentActionsPopupActions()
+	actualIndexes := matchingActionsPopupIndexes(actions, "review")
+	for _, actualIndex := range actualIndexes {
+		if actualIndex < 0 || actualIndex >= len(actions) {
+			continue
+		}
+		if actions[actualIndex].title == reactionPickerTitle {
+			t.Fatalf("expected %q to stay out of the review search matches, actual indexes %v", reactionPickerTitle, actualIndexes)
+		}
+	}
+}
+
 func TestActionsPopup_GivenPullRequestAddReactionAction_WhenExecuting_ThenItShowsTheFullReactionPicker(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
