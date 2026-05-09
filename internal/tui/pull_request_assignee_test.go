@@ -148,7 +148,7 @@ func TestActionsPopup_GivenCachedAssignableUsers_WhenOpeningTheAssigneePickerAga
 	})
 }
 
-func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsMatchingAssigneesOnly(t *testing.T) {
+func TestAssigneePicker_GivenSearchQuery_WhenHighlighting_ThenItShowsTheMatchingAssigneeWithoutHidingTheOthers(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -170,7 +170,26 @@ func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsMatchingAssign
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{"[ ] @charlie (Charlie)"})
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[x] @alice (Alice)",
+		"[ ] @bob (Bob)",
+		"[ ] @charlie (Charlie)",
+	})
+	matchLineIndex := -1
+	for lineIndex := 0; ; lineIndex++ {
+		line, ok := popupView.Line(lineIndex)
+		if !ok {
+			break
+		}
+		if strings.Contains(line, "@charlie") {
+			matchLineIndex = lineIndex
+			break
+		}
+	}
+	if matchLineIndex < 0 {
+		t.Fatalf("expected a visible assignee line containing %q, actual %q", "@charlie", strings.Join(popupView.BufferLines(), "\n"))
+	}
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, matchLineIndex, "char")
 }
 
 func TestAssignPullRequest_GivenChangedSelection_WhenTogglingWithEnterAndSubmittingWithAltEnter_ThenItAppliesTheAssigneeDiffAndRefreshesTheVisibleDetail(t *testing.T) {

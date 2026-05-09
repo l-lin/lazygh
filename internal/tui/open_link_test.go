@@ -147,8 +147,8 @@ func TestActionsPopup_GivenSearchForOpenLinkUnderCursor_WhenDetailCursorMovesToP
 	if strings.Contains(popupView.Buffer(), "Open link under cursor") {
 		t.Fatalf("expected popup buffer to hide %q after moving the cursor, actual %q", "Open link under cursor", popupView.Buffer())
 	}
-	if !strings.Contains(popupView.Buffer(), "No matching actions.") {
-		t.Fatalf("expected popup buffer to contain %q after moving the cursor, actual %q", "No matching actions.", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "Open PR in browser") {
+		t.Fatalf("expected the popup to keep non-matching actions visible after moving the cursor, actual %q", popupView.Buffer())
 	}
 }
 

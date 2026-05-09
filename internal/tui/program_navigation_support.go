@@ -113,7 +113,7 @@ func (program *Program) currentSideListState() (string, int, int) {
 
 	switch program.model.Focus() {
 	case FocusPullRequestsView:
-		return viewPullRequestsName, program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()), len(program.model.VisiblePullRequests())
+		return viewPullRequestsName, program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()), len(program.model.CurrentPullRequests())
 	case FocusNotificationsView:
 		return viewNotificationsName, program.model.SelectedVisibleNotificationIndex(), len(program.model.VisibleNotifications())
 	case FocusUserView:

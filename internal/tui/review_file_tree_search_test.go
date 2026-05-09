@@ -14,8 +14,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingReviewFileTreeSearchFollowBindi
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'n', handler: subject.nextReviewFileTreeSearchMatch})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'N', handler: subject.previousReviewFileTreeSearchMatch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'n', handler: subject.nextPullRequestsSearchMatch})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'N', handler: subject.previousPullRequestsSearchMatch})
 }
 
 func TestReviewMode_GivenSubmittedFileTreeSearch_WhenRendering_ThenItKeepsTheTreeVisibleHighlightsMatchesAndMovesToTheFirstMatchingFile(t *testing.T) {

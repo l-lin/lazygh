@@ -36,7 +36,7 @@ func TestActionsPopup_GivenUserView_WhenOpening_ThenItShowsTheGlobalGroupedActio
 	}
 }
 
-func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenFiltering_ThenItShowsTheMatchingGroupHeaderAndActions(t *testing.T) {
+func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenHighlighting_ThenItKeepsThePopupVisibleAndHighlightsTheMatchingHeader(t *testing.T) {
 	subject := given_pullRequestDetailProgramWithRenderedBody("Docs https://example.com/docs")
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -64,10 +64,13 @@ func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenFiltering_ThenItSh
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"Navigation",
-		actionsPopupLabel(actionsPopupOpenLinkIcon, "Open link under cursor"),
-	})
+	for _, expected := range []string{"Navigation", "Open link under cursor", "Open PR in browser"} {
+		if !strings.Contains(popupView.Buffer(), expected) {
+			t.Fatalf("expected popup buffer to keep %q visible, actual %q", expected, popupView.Buffer())
+		}
+	}
+	matchLineIndex := given_viewLineIndexContaining(t, popupView, "Navigation")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, matchLineIndex, "Navigation")
 }
 
 func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAndUsesMarkdownHeadingBackgroundWithItsOwnForegroundColor(t *testing.T) {

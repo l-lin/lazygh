@@ -101,14 +101,14 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	}
 
 	query := program.model.ActionsPopupSearchQuery()
-	if len(program.model.ActionsPopupFilteredActionIndexes()) == 0 {
+	visibleLines := program.currentActionsPopupVisibleLines()
+	if len(visibleLines) == 0 {
 		fmt.Fprintln(view, program.emptyActionsPopupMessage())
 		view.SetOrigin(0, 0)
 		view.SetCursor(0, 0)
 		return
 	}
 
-	visibleLines := program.currentActionsPopupVisibleLines()
 	selectedRenderedLine := program.currentActionsPopupSelectedRenderedLine()
 	showSelectedLine := program.usesManualSelectedLineRendering(query)
 	for visibleIndex, line := range visibleLines {

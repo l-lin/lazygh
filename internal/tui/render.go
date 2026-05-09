@@ -217,8 +217,8 @@ func (program *Program) renderPullRequestsView(view *gocui.View) {
 	program.renderSelectableListView(view, selectableListViewState{
 		focus:               FocusPullRequestsView,
 		query:               program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()),
-		items:               program.model.VisiblePullRequests(),
-		selectedVisibleLine: program.model.SelectedVisiblePullRequestIndex(program.model.ActivePullRequestTab()),
+		items:               program.model.CurrentPullRequests(),
+		selectedVisibleLine: program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()),
 		renderSelectedLine:  true,
 	})
 }

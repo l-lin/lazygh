@@ -424,6 +424,8 @@ func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	target := program.model.SearchTarget()
+	targetPullRequestTab := program.model.SearchTargetPullRequestTab()
+	targetPullRequestIndex := program.model.SelectedPullRequestIndex(targetPullRequestTab)
 	program.model.SubmitSearch()
 	program.searchEditor = nil
 
@@ -431,6 +433,9 @@ func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
 		if actualErr := program.followSubmittedDetailSearch(gui); actualErr != nil {
 			return actualErr
 		}
+	}
+	if target == FocusPullRequestsView {
+		program.followSubmittedPullRequestSearch(targetPullRequestTab, targetPullRequestIndex)
 	}
 
 	return program.refreshViewsIfGUI(gui)

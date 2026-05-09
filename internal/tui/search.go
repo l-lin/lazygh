@@ -43,6 +43,7 @@ func (model *Model) SubmitSearch() {
 
 	target := model.searchTarget
 	tab := model.searchTargetPullRequestTab
+	selectedPullRequestIndex := model.selectedPullRequestIndexes[tab]
 
 	switch target {
 	case FocusPullRequestsView:
@@ -57,6 +58,10 @@ func (model *Model) SubmitSearch() {
 
 	model.searchActive = false
 	model.searchDraft = ""
+	if target == FocusPullRequestsView {
+		model.followSubmittedPullRequestSearch(tab, selectedPullRequestIndex)
+		return
+	}
 	model.clampSearchSelectionForTarget(target, tab, model.appliedSearchQuery(target, tab))
 }
 
@@ -145,13 +150,7 @@ func (model *Model) clampSearchSelectionForTarget(target Focus, tab PullRequestT
 
 	switch target {
 	case FocusPullRequestsView:
-		visibleIndexes := matchingItemIndexes(model.PullRequests(tab), query)
-		if len(visibleIndexes) == 0 {
-			return
-		}
-		if indexOfInt(visibleIndexes, model.selectedPullRequestIndexes[tab]) < 0 {
-			model.selectedPullRequestIndexes[tab] = visibleIndexes[0]
-		}
+		return
 	case FocusDetailView:
 		return
 	case FocusNotificationsView:
@@ -171,6 +170,16 @@ func (model *Model) clampSearchSelectionForTarget(target Focus, tab PullRequestT
 			model.selectedUserIndex = visibleIndexes[0]
 		}
 	}
+}
+
+func (model *Model) followSubmittedPullRequestSearch(tab PullRequestTab, startIndex int) {
+	matchIndexes := model.visiblePullRequestIndexes(tab)
+	matchIndex := searchMatchIndexAtOrAfter(matchIndexes, startIndex)
+	if matchIndex < 0 || matchIndex >= len(matchIndexes) {
+		return
+	}
+
+	model.selectedPullRequestIndexes[tab] = matchIndexes[matchIndex]
 }
 
 func (model *Model) selectedVisibleIndex(selectedIndex int, visibleIndexes []int) int {

@@ -175,8 +175,8 @@ func TestActionsPopup_GivenSearchForAddInlineComment_WhenReviewCursorMovesToAnIn
 	if strings.Contains(popupView.Buffer(), "Add inline comment") {
 		t.Fatalf("expected the popup to hide %q after moving the cursor, actual %q", "Add inline comment", popupView.Buffer())
 	}
-	if !strings.Contains(popupView.Buffer(), "No matching actions.") {
-		t.Fatalf("expected the popup to contain %q after moving the cursor, actual %q", "No matching actions.", popupView.Buffer())
+	if !strings.Contains(popupView.Buffer(), "Open PR in browser") {
+		t.Fatalf("expected the popup to keep non-matching actions visible after moving the cursor, actual %q", popupView.Buffer())
 	}
 }
 

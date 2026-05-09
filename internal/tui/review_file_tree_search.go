@@ -6,8 +6,6 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-type reviewDiffTreeSearchRowChooser func([]int, int) int
-
 func (program *Program) startReviewFileTreeSearch() {
 	program.model.searchActive = true
 	program.model.searchTarget = FocusPullRequestsView
@@ -51,14 +49,14 @@ func (program *Program) cancelReviewFileTreeSearch() {
 }
 
 func (program *Program) nextReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.repeatReviewFileTreeSearch(gui, reviewDiffTreeSearchMatchIndexAfterRow)
+	return program.repeatReviewFileTreeSearch(gui, searchMatchIndexAfter)
 }
 
 func (program *Program) previousReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.repeatReviewFileTreeSearch(gui, reviewDiffTreeSearchMatchIndexBeforeRow)
+	return program.repeatReviewFileTreeSearch(gui, searchMatchIndexBefore)
 }
 
-func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose reviewDiffTreeSearchRowChooser) error {
+func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose searchMatchIndexChooser) error {
 	if !program.reviewSession.active || program.model.Focus() != FocusPullRequestsView {
 		return nil
 	}
@@ -75,10 +73,10 @@ func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose review
 }
 
 func (program *Program) followSubmittedReviewFileTreeSearch(query string) bool {
-	return program.followReviewFileTreeSearch(query, reviewDiffTreeSearchMatchIndexAtOrAfterRow)
+	return program.followReviewFileTreeSearch(query, searchMatchIndexAtOrAfter)
 }
 
-func (program *Program) followReviewFileTreeSearch(query string, choose reviewDiffTreeSearchRowChooser) bool {
+func (program *Program) followReviewFileTreeSearch(query string, choose searchMatchIndexChooser) bool {
 	matchRows := program.reviewFileTreeSearchMatchRows(query)
 	matchIndex := choose(matchRows, program.reviewSessionSelectedVisibleLine())
 	if matchIndex < 0 || matchIndex >= len(matchRows) {
@@ -119,46 +117,4 @@ func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, query string) []int {
 		}
 	}
 	return matchRows
-}
-
-func reviewDiffTreeSearchMatchIndexAtOrAfterRow(matchRows []int, currentRow int) int {
-	if len(matchRows) == 0 {
-		return -1
-	}
-
-	for matchIndex, matchRow := range matchRows {
-		if matchRow >= currentRow {
-			return matchIndex
-		}
-	}
-
-	return 0
-}
-
-func reviewDiffTreeSearchMatchIndexAfterRow(matchRows []int, currentRow int) int {
-	if len(matchRows) == 0 {
-		return -1
-	}
-
-	for matchIndex, matchRow := range matchRows {
-		if matchRow > currentRow {
-			return matchIndex
-		}
-	}
-
-	return 0
-}
-
-func reviewDiffTreeSearchMatchIndexBeforeRow(matchRows []int, currentRow int) int {
-	if len(matchRows) == 0 {
-		return -1
-	}
-
-	for matchIndex := len(matchRows) - 1; matchIndex >= 0; matchIndex-- {
-		if matchRows[matchIndex] < currentRow {
-			return matchIndex
-		}
-	}
-
-	return len(matchRows) - 1
 }
