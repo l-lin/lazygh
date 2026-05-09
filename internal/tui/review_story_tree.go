@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"unicode"
 
 	"codeberg.org/l-lin/lazygh/internal/story"
 )
@@ -61,11 +62,11 @@ func buildReviewStoryData(review story.Review, files []reviewDiffFile) reviewSto
 }
 
 func reviewStoryChapterLabel(index int, title string, fileCount int) string {
-	trimmedTitle := strings.TrimSpace(title)
-	if trimmedTitle == "" {
-		trimmedTitle = fmt.Sprintf("Chapter %d", index+1)
-	} else if !strings.HasPrefix(strings.ToLower(trimmedTitle), "chapter ") {
-		trimmedTitle = fmt.Sprintf("Chapter %d - %s", index+1, trimmedTitle)
+	chapterNumber := index + 1
+	trimmedTitle := reviewStoryChapterDisplayTitle(title)
+	label := fmt.Sprintf("%d", chapterNumber)
+	if trimmedTitle != "" {
+		label = fmt.Sprintf("%d - %s", chapterNumber, trimmedTitle)
 	}
 
 	suffix := ""
@@ -76,5 +77,17 @@ func reviewStoryChapterLabel(index int, title string, fileCount int) string {
 	default:
 		suffix = fmt.Sprintf(" (%d files)", fileCount)
 	}
-	return trimmedTitle + suffix
+	return label + suffix
+}
+
+func reviewStoryChapterDisplayTitle(title string) string {
+	trimmedTitle := strings.TrimSpace(title)
+	if !strings.HasPrefix(strings.ToLower(trimmedTitle), "chapter ") {
+		return trimmedTitle
+	}
+
+	remainder := strings.TrimSpace(trimmedTitle[len("chapter "):])
+	remainder = strings.TrimLeftFunc(remainder, unicode.IsDigit)
+	remainder = strings.TrimLeft(remainder, " .:-–—")
+	return strings.TrimSpace(remainder)
 }

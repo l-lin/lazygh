@@ -199,7 +199,7 @@ func TestReviewStoryMode_GivenAChapterRow_WhenPressingEnterAndZA_ThenItTogglesTh
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" 1 - The Renderer Wakes (1 file)") {
 		t.Fatalf("expected the chapter to start expanded with a fold chevron, actual %q", filesView.Buffer())
 	}
 
@@ -207,7 +207,7 @@ func TestReviewStoryMode_GivenAChapterRow_WhenPressingEnterAndZA_ThenItTogglesTh
 	actualErr = toggleHandler(gui, filesView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" 1 - The Renderer Wakes (1 file)") {
 		t.Fatalf("expected enter to collapse the chapter, actual %q", filesView.Buffer())
 	}
 	if strings.Contains(filesView.Buffer(), "render.go") {
@@ -220,7 +220,7 @@ func TestReviewStoryMode_GivenAChapterRow_WhenPressingEnterAndZA_ThenItTogglesTh
 	then_noError(t, actualErr)
 	actualErr = collapseHandler(gui, filesView)
 	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" 1 - The Renderer Wakes (1 file)") {
 		t.Fatalf("expected za to expand the chapter, actual %q", filesView.Buffer())
 	}
 	if !strings.Contains(filesView.Buffer(), "render.go") {
@@ -264,7 +264,7 @@ func TestReviewStoryMode_GivenTheSelectedFileIsInsideAChapter_WhenPressingEnterA
 	actualErr = toggleHandler(gui, filesView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" 1 - The Renderer Wakes (1 file)") {
 		t.Fatalf("expected enter on a chapter file to collapse the containing chapter, actual %q", filesView.Buffer())
 	}
 	if strings.Contains(filesView.Buffer(), "render.go") {
@@ -289,7 +289,7 @@ func TestReviewStoryMode_GivenTheSelectedFileIsInsideAChapter_WhenPressingEnterA
 	then_noError(t, actualErr)
 	actualErr = collapseHandler(gui, filesView)
 	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" Chapter 1 - The Renderer Wakes (1 file)") {
+	if !strings.Contains(filesView.Buffer(), " "+reviewModeChapterIcon+" 1 - The Renderer Wakes (1 file)") {
 		t.Fatalf("expected za on a chapter file to collapse the containing chapter, actual %q", filesView.Buffer())
 	}
 	if strings.Contains(filesView.Buffer(), "render.go") {
@@ -333,7 +333,7 @@ func TestReviewStoryMode_GivenTheChapterTree_WhenPressingZMAndZR_ThenItClosesAnd
 	then_noError(t, actualErr)
 	actualErr = closeAllHandler(gui, filesView)
 	then_noError(t, actualErr)
-	for _, expected := range []string{" " + reviewModeChapterIcon + " Chapter 1 - The Renderer Wakes (1 file)", " " + reviewModeChapterIcon + " Chapter 2 - The Model Answers (1 file)"} {
+	for _, expected := range []string{" " + reviewModeChapterIcon + " 1 - The Renderer Wakes (1 file)", " " + reviewModeChapterIcon + " 2 - The Model Answers (1 file)"} {
 		if !strings.Contains(filesView.Buffer(), expected) {
 			t.Fatalf("expected zM to collapse the chapter tree and keep %q visible, actual %q", expected, filesView.Buffer())
 		}
@@ -350,7 +350,7 @@ func TestReviewStoryMode_GivenTheChapterTree_WhenPressingZMAndZR_ThenItClosesAnd
 	then_noError(t, actualErr)
 	actualErr = openAllHandler(gui, filesView)
 	then_noError(t, actualErr)
-	for _, expected := range []string{" " + reviewModeChapterIcon + " Chapter 1 - The Renderer Wakes (1 file)", " " + reviewModeChapterIcon + " Chapter 2 - The Model Answers (1 file)", "render.go", "model.go"} {
+	for _, expected := range []string{" " + reviewModeChapterIcon + " 1 - The Renderer Wakes (1 file)", " " + reviewModeChapterIcon + " 2 - The Model Answers (1 file)", "render.go", "model.go"} {
 		if !strings.Contains(filesView.Buffer(), expected) {
 			t.Fatalf("expected zR to reopen the chapter tree and show %q, actual %q", expected, filesView.Buffer())
 		}
