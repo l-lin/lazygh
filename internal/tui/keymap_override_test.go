@@ -93,7 +93,7 @@ func TestKeybindingSpecs_GivenSearchSubmitOverride_WhenListingBindings_ThenItApp
 	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyTab)
 }
 
-func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppliesToEveryClosableView(t *testing.T) {
+func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppliesToReadOnlyPanelsAndKeepsTextInputsOnEscape(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {
 			"close": {"X"},
@@ -104,13 +104,43 @@ func TestKeybindingSpecs_GivenGlobalCloseOverride_WhenListingBindings_ThenItAppl
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'X', handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: 'X', handler: subject.closeHelp})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: 'X', handler: subject.closeModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'X', handler: subject.closePullRequestBuildRunPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'X', handler: subject.closeDetail})
 	then_bindingDoesNotExist(t, actual, viewActionsPopupName, 'q')
 	then_bindingDoesNotExist(t, actual, viewHelpName, 'q')
-	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyEsc)
+	then_bindingDoesNotExist(t, actual, viewPullRequestBuildInfoName, 'q')
 	then_bindingDoesNotExist(t, actual, viewDetailName, 'q')
+	then_bindingDoesNotExist(t, actual, viewActionsPopupName, gocui.KeyEsc)
+	then_bindingDoesNotExist(t, actual, viewHelpName, gocui.KeyEsc)
+	then_bindingDoesNotExist(t, actual, viewPullRequestBuildInfoName, gocui.KeyEsc)
 	then_bindingDoesNotExist(t, actual, viewDetailName, gocui.KeyEsc)
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: subject.closeModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, 'X')
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, 'X')
+}
+
+func TestKeybindingSpecs_GivenGlobalCancelOverride_WhenListingBindings_ThenItAppliesToTextInputsOnly(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"global": {
+			"cancel": {"X"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: 'X', handler: subject.closeModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: 'X', handler: subject.closeActionsPopup})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyEsc)
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyEsc)
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'q', handler: subject.closeActionsPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewHelpName, key: 'q', handler: subject.closeHelp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'q', handler: subject.closePullRequestBuildRunPopup})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'q', handler: subject.closeDetail})
+	then_bindingDoesNotExist(t, actual, viewActionsPopupName, 'X')
+	then_bindingDoesNotExist(t, actual, viewHelpName, 'X')
+	then_bindingDoesNotExist(t, actual, viewPullRequestBuildInfoName, 'X')
+	then_bindingDoesNotExist(t, actual, viewDetailName, 'X')
 }
 
 func TestKeybindingSpecs_GivenGlobalFullPageOverride_WhenListingBindings_ThenItAppliesAcrossScopes(t *testing.T) {

@@ -142,12 +142,8 @@ func aliasedKeybindingActionFor(scope string, action string, configScope string,
 	return keybindingActionWithConfigID(keybindingActionFor(scope, action, viewNames, handler, bindings...), configScope, configAction)
 }
 
-func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, includeQuitKey bool) keybindingAction {
-	bindings := []string{"esc"}
-	if includeQuitKey {
-		bindings = append(bindings, "q")
-	}
-	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, bindings...), keymapScopeGlobal, "close")
+func closeKeybindingActionFor(scope string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, configAction string, bindings ...string) keybindingAction {
+	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, bindings...), keymapScopeGlobal, configAction)
 }
 
 func (program *Program) keybindingActions() []keybindingAction {
@@ -237,7 +233,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeDetail, "toggle_fold", []string{viewDetailName}, program.toggleInlineConversationVisibility),
 		sharedKeybindingActionFor(keymapScopeDetail, "close_all_folds", []string{viewDetailName}, program.closeAllDetailFolds),
 		sharedKeybindingActionFor(keymapScopeDetail, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds),
-		closeKeybindingActionFor(keymapScopeDetail, []string{viewDetailName}, program.closeDetail, true),
+		closeKeybindingActionFor(keymapScopeDetail, []string{viewDetailName}, program.closeDetail, "close", "esc", "q"),
 
 		keybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch, "enter", "ctrl+j", "ctrl+s"),
 		keybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch, "esc"),
@@ -256,13 +252,13 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "place_selection_at_viewport_bottom", []string{viewActionsPopupName}, program.moveActionsPopupSelectionToViewportBottom),
 		keybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupName}, program.executeSelectedActionsPopupAction, "enter"),
 		keybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupName}, program.submitSelectedActionsPopupAction, "alt+enter"),
-		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup, true),
+		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup, "close", "esc", "q"),
 
 		aliasedKeybindingActionFor(keymapScopeActionsPopupSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList, "enter", "ctrl+j", "ctrl+s"),
-		closeKeybindingActionFor(keymapScopeActionsPopupSearch, []string{viewActionsPopupSearchName}, program.closeActionsPopup, false),
+		closeKeybindingActionFor(keymapScopeActionsPopupSearch, []string{viewActionsPopupSearchName}, program.closeActionsPopup, "cancel", "esc"),
 
 		keybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor, "alt+enter", "ctrl+s"),
-		closeKeybindingActionFor(keymapScopeModalEditor, []string{viewModalEditorName}, program.closeModalEditor, false),
+		closeKeybindingActionFor(keymapScopeModalEditor, []string{viewModalEditorName}, program.closeModalEditor, "cancel", "esc"),
 
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_left", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorLeft),
 		aliasedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_down", keymapScopeGlobal, "move_selection_down", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorDown, "j", "down"),
@@ -290,10 +286,10 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "page_up", []string{viewPullRequestBuildInfoName}, program.pagePullRequestBuildRunPopupUp),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "full_page_down", []string{viewPullRequestBuildInfoName}, program.fullPagePullRequestBuildRunPopupDown),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "full_page_up", []string{viewPullRequestBuildInfoName}, program.fullPagePullRequestBuildRunPopupUp),
-		closeKeybindingActionFor(keymapScopePullRequestBuildInfo, []string{viewPullRequestBuildInfoName}, program.closePullRequestBuildRunPopup, true),
+		closeKeybindingActionFor(keymapScopePullRequestBuildInfo, []string{viewPullRequestBuildInfoName}, program.closePullRequestBuildRunPopup, "close", "esc", "q"),
 
 		sharedKeybindingActionFor(keymapScopeHelp, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown),
 		sharedKeybindingActionFor(keymapScopeHelp, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
-		closeKeybindingActionFor(keymapScopeHelp, []string{viewHelpName}, program.closeHelp, true),
+		closeKeybindingActionFor(keymapScopeHelp, []string{viewHelpName}, program.closeHelp, "close", "esc", "q"),
 	}
 }

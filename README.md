@@ -229,6 +229,14 @@ Use scoped tables under `[keymaps]`.
 
 A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
 
+The keymaps use shared behavior-first scopes. `keymaps.global` covers actions that work across multiple panes. `keymaps.global.close` covers read-only panels and the actions popup list. `keymaps.global.cancel` covers text-entry views. `[keymaps.help]` is a real view, but it is not configurable on its own. `0`, `1`, `2`, and `3` stay fixed.
+
+`ctrl-d`/`ctrl-u` do half-page movement. `ctrl-f`/`ctrl-b` do full-page movement. Text inputs keep `ctrl-b` and `ctrl-f` for cursor movement.
+
+`zt`, `zz`, and `zb` place the selected row at the top, center, or bottom of the viewport. `zt`/`zz`/`zb` place the cursor at the top/center/bottom in cursor-driven panes. Use `za` for inline conversations. `zM` and `zR` close or open every fold in the current detail context.
+
+`w`, `e`, and `b` follow vim word motions. `W`, `E`, and `B` use whitespace-delimited `WORD` motions.
+
 Here are the default keymaps:
 
 ```toml
@@ -247,8 +255,8 @@ full_page_up = ["ctrl+b", "pageup"]
 grow_focused_pane = "+"
 shrink_focused_pane = "-"
 open_actions_popup = "a"
-# `close` is shared. Text inputs default to `esc` only. Read-only panes also add `q`.
-close = ["esc"]
+close = ["esc", "q"]
+cancel = "esc"
 
 [keymaps.selection]
 move_selection_to_top = "gg"

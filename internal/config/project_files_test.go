@@ -245,6 +245,7 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 		"single key like `\"q\"` or a two-key sequence like `\"za\"`",
 		"shared behavior-first scopes",
 		"`keymaps.global` covers actions that work across multiple panes",
+		"`keymaps.global.cancel` covers text-entry views",
 		"`0`, `1`, `2`, and `3` stay fixed",
 		"`[keymaps.help]`",
 		"not configurable on its own",
@@ -265,6 +266,8 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheKeymapSection_ThenItDocuments
 		"[keymaps.cursor]",
 		"move_cursor_left = [\"h\", \"left\"]",
 		"move_cursor_right = [\"l\", \"right\"]",
+		"close = [\"esc\", \"q\"]",
+		"cancel = \"esc\"",
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
