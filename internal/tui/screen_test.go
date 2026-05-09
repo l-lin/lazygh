@@ -9,7 +9,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func then_viewLineSegmentHasSearchHighlightBackground(t *testing.T, gui *gocui.Gui, viewName string, lineIndex int, segment string) {

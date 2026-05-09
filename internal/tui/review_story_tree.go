@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"codeberg.org/l-lin/lazygh/internal/story"
+	"github.com/l-lin/lazygh/internal/story"
 )
 
 type reviewStoryChapter struct {

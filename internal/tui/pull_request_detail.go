@@ -6,7 +6,7 @@ import (
 	"charm.land/glamour/v2"
 	glamouransi "charm.land/glamour/v2/ansi"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 const (

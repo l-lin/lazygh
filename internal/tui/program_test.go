@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestBindingsForViews_GivenMultipleViewsAndDefinitions_WhenExpanding_ThenItCreatesOneBindingPerCombinationInOrder(t *testing.T) {

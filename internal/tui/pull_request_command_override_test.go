@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func TestApplyPullRequestSearches_GivenCustomReviewRequestedSearch_WhenReadingTheConfiguredLoadingItem_ThenItUsesReviewRequestMessagingInsteadOfTheLabel(t *testing.T) {

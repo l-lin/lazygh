@@ -6,8 +6,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestRenderPullRequestDetailHeader_GivenRichMetadata_WhenFormatting_ThenItShowsTheOverviewReferenceLifecycleAndStatusLines(t *testing.T) {

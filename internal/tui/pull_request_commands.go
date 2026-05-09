@@ -1,6 +1,6 @@
 package tui
 
-import appconfig "codeberg.org/l-lin/lazygh/internal/config"
+import appconfig "github.com/l-lin/lazygh/internal/config"
 
 type pullRequestCountState struct {
 	count int

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 var (

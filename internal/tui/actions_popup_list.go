@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const (

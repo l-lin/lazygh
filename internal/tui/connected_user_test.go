@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestDefaultSeedData_GivenAFreshModel_WhenReadingTheConnectedUser_ThenItStartsInALoadingState(t *testing.T) {

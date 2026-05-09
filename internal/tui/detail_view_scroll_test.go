@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestViewZeroScroll_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenItScrollsTheDetailViewportWithoutChangingSelection(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"github.com/jesseduffield/gocui"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 type keybindingSpec struct {

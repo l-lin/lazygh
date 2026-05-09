@@ -8,8 +8,8 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpensItFromEveryMainViewAndThePopupSupportsSearchNavigationAndClose(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"github.com/jesseduffield/gocui"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_WhenChangingSelection_ThenDetailPaneTracksTheNotificationType(t *testing.T) {

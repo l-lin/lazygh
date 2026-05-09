@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func TestNextPullRequestTab_GivenThreeConfiguredTabs_WhenSwitching_ThenItCyclesAcrossAllTabs(t *testing.T) {

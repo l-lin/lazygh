@@ -1,8 +1,8 @@
 package tui
 
 import (
-	persistcache "codeberg.org/l-lin/lazygh/internal/cache"
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
+	persistcache "github.com/l-lin/lazygh/internal/cache"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func (program *Program) ApplyCacheConfig(config appconfig.CacheConfig) error {

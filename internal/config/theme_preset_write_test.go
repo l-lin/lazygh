@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestSaveThemePreset_GivenMissingConfigFile_WhenSaving_ThenItCreatesTheThemeSection(t *testing.T) {

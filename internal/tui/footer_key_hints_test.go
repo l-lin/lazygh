@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestStatusLineKeyHints_GivenActivePullRequestsView_WhenRendering_ThenItShowsDarkGreyCommaSeparatedLowercaseHintsRightAlignedOnTheBottomRow(t *testing.T) {

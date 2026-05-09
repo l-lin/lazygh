@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func renderIssueDetail(repository string, detail githubcli.IssueDetail, renderer MarkdownRenderer, width int) string {

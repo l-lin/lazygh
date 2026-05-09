@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestConfig_ResolvedTheme_GivenBundledPresetNames_WhenResolving_ThenEachPresetProducesItsBundledPalette(t *testing.T) {

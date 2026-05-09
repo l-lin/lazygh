@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	persistcache "codeberg.org/l-lin/lazygh/internal/cache"
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	persistcache "github.com/l-lin/lazygh/internal/cache"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestActionsPopup_GivenClearCacheActionSelected_WhenExecutingOnce_ThenItAsksForConfirmationBeforeClearing(t *testing.T) {

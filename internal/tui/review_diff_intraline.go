@@ -1,6 +1,6 @@
 package tui
 
-import "codeberg.org/l-lin/lazygh/internal/theme"
+import "github.com/l-lin/lazygh/internal/theme"
 
 func reviewDiffChangedStyleRanges(lines []reviewDiffLine) [][]styledRuneRange {
 	rangesByLine := make([][]styledRuneRange, len(lines))

@@ -3,8 +3,8 @@ package tui
 import (
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const commentBoxHorizontalPadding = 1

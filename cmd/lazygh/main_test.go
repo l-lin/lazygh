@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/story"
-	apptheme "codeberg.org/l-lin/lazygh/internal/theme"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/story"
+	apptheme "github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestRun_GivenLoadedKeymapOverrides_WhenStartingTheProgram_ThenItAppliesThemBeforeRunning(t *testing.T) {

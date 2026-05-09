@@ -8,7 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 type selectableListViewState struct {

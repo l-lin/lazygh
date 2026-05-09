@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestUseDarkMarkdownStyle_GivenLightActiveText_WhenDeciding_ThenItPrefersTheDarkBase(t *testing.T) {

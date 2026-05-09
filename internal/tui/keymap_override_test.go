@@ -3,8 +3,8 @@ package tui
 import (
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"github.com/jesseduffield/gocui"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func TestKeybindingSpecs_GivenGlobalOpenSearchOverride_WhenListingBindings_ThenItAppliesToMainPanesTheActionsPopupAndTheBuildPopup(t *testing.T) {

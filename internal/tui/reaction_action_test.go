@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestSelectedPullRequestReactionActionTarget_GivenDescriptionTab_WhenResolving_ThenItUsesThePullRequestReactionTargetID(t *testing.T) {

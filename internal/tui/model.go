@@ -1,6 +1,6 @@
 package tui
 
-import "codeberg.org/l-lin/lazygh/internal/githubcli"
+import "github.com/l-lin/lazygh/internal/githubcli"
 
 type Focus int
 

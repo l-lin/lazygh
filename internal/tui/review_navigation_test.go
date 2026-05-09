@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
 	"github.com/jesseduffield/gocui"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestReviewMode_GivenTheFilesPane_WhenPressingDoubleBracketMotions_ThenItMovesToThePreviousOrNextFile(t *testing.T) {

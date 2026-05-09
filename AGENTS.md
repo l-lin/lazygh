@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-- Module path: `codeberg.org/l-lin/lazygh`
+- Module path: `github.com/l-lin/lazygh`
 - Language: Go
 - Go version: `1.25.x`
 - Task runner: `mise`

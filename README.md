@@ -22,15 +22,15 @@
 Install `lazygh` globally with `mise`'s Go backend:
 
 ```sh
-mise use -g go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest
+mise use -g go:github.com/l-lin/lazygh/cmd/lazygh@latest
 lazygh
 ```
 
 Run it once without a global install:
 
 ```sh
-mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh view https://github.com/acme/widgets/pull/42
-mise exec go:codeberg.org/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
+mise exec go:github.com/l-lin/lazygh/cmd/lazygh@latest -- lazygh view https://github.com/acme/widgets/pull/42
+mise exec go:github.com/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
 ```
 
 ### Directly from release page
@@ -40,7 +40,7 @@ You can download the binary directly from the [release page](https://github.com/
 ### Run from source
 
 ```sh
-git clone https://codeberg.org/l-lin/lazygh/cmd/lazygh
+git clone https://github.com/l-lin/lazygh/cmd/lazygh
 mise run run
 ```
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestReviewMode_GivenASelectedFileWithALongDiffLine_WhenBuildingViewZeroDocument_ThenItDoesNotWrapTheFileDiff(t *testing.T) {

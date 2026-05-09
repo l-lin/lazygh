@@ -1,4 +1,4 @@
-module codeberg.org/l-lin/lazygh
+module github.com/l-lin/lazygh
 
 go 1.25.8
 

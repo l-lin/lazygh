@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestOpen_GivenANestedCachePath_WhenOpening_ThenItCreatesTheParentDirectory(t *testing.T) {

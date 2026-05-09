@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	persistcache "codeberg.org/l-lin/lazygh/internal/cache"
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	persistcache "github.com/l-lin/lazygh/internal/cache"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestPullRequestDetailMissingBrowserTabData_GivenCompletedBuildWithoutLink_WhenChecking_ThenItRequiresARefresh(t *testing.T) {

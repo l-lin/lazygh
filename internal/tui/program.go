@@ -6,11 +6,11 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	clip "codeberg.org/l-lin/lazygh/internal/clipboard"
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/story"
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	clip "github.com/l-lin/lazygh/internal/clipboard"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/story"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const (

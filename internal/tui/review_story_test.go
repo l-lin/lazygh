@@ -6,8 +6,8 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/story"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/story"
 )
 
 func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting_ThenItShowsTheConfigurationErrorOnTheStatusLine(t *testing.T) {

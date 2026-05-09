@@ -3,7 +3,7 @@ package tui
 import (
 	"errors"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 const reviewThreadTargetUnavailableMessage = "Inline comments require a diff line or valid diff-line selection"

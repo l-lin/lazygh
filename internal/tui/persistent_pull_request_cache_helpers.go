@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.PullRequest) bool {

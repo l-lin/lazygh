@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestLayout_GivenCachedNotifications_WhenRendering_ThenItShowsThemBeforeTheBackgroundRefreshFinishes(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestNotificationDoneStore_GivenReopenedStore_WhenFilteringPreviouslyHiddenThread_ThenItKeepsTheDoneNotificationHidden(t *testing.T) {

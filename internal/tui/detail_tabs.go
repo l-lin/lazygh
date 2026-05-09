@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {

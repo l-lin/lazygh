@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestRenderReviewDiffFile_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {

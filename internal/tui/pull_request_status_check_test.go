@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestClassifyPullRequestStatusCheck_GivenCompletedCancelledCheck_WhenClassifying_ThenItUsesCancelledLabelMutedOverviewAndFailingSummary(t *testing.T) {

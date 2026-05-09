@@ -7,7 +7,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestActionsPopup_GivenBrowserConversationsCursorOnInlineComment_WhenOpening_ThenItShowsReplyToInlineComment(t *testing.T) {

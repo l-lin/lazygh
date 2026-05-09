@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestOpenPullRequestByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_ThenItStartsDirectlyInBrowserModeOnFullscreenDescription(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestRenderStyledTextLineWithWidth_GivenCodeBlockBackground_WhenRendering_ThenItKeepsTheBackgroundAcrossTheRequestedWidth(t *testing.T) {

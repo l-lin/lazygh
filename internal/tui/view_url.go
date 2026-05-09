@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func (program *Program) OpenPullRequestByURL(rawURL string) error {

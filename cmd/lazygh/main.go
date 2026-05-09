@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"codeberg.org/l-lin/lazygh/internal/app"
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/story"
-	"codeberg.org/l-lin/lazygh/internal/theme"
-	"codeberg.org/l-lin/lazygh/internal/tui"
+	"github.com/l-lin/lazygh/internal/app"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/story"
+	"github.com/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/tui"
 )
 
 type configurableRunner interface {

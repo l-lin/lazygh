@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestActionsPopup_GivenChangeThemeAction_WhenExecuting_ThenItShowsTheThemePickerPresets(t *testing.T) {

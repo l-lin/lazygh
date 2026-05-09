@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const (

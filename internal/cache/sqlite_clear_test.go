@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestStore_Clear_GivenStoredListsDetailsAndDiffs_WhenClearing_ThenItWipesThePersistentCache(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	persistcache "codeberg.org/l-lin/lazygh/internal/cache"
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	persistcache "github.com/l-lin/lazygh/internal/cache"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestActionsPopup_GivenADraftPullRequestSelection_WhenOpening_ThenItShowsMarkReadyForReviewAndHidesConvertToDraftAndSquashMerge(t *testing.T) {

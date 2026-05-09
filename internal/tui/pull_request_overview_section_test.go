@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestPullRequestOverviewStatusIcon_GivenSuccessAndFailureStatuses_WhenFormatting_ThenItUsesTheUpdatedGlyphs(t *testing.T) {

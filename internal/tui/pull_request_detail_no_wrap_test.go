@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestGlamourMarkdownRenderer_GivenALongParagraphAndDisabledWordWrap_WhenRendering_ThenItDoesNotInsertSoftWrapNewlines(t *testing.T) {

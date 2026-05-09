@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/story"
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/story"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestDefaultPath_GivenXDGConfigHome_WhenBuildingTheDefaultConfigPath_ThenItUsesTheXDGConfigDirectory(t *testing.T) {

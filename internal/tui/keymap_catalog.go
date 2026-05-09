@@ -1,8 +1,8 @@
 package tui
 
 import (
-	appconfig "codeberg.org/l-lin/lazygh/internal/config"
 	"github.com/jesseduffield/gocui"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 const (

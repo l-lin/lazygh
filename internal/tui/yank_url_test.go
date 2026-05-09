@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestCopyPullRequestURL_GivenPullRequestsView_WhenHandlingTheAction_ThenItCopiesTheSelectedPullRequestURLAndShowsFeedback(t *testing.T) {

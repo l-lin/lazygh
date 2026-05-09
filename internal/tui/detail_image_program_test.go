@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestLayout_GivenMarkdownWithoutImages_WhenRendering_ThenItQueuesNoImageWork(t *testing.T) {

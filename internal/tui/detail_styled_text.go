@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 type styledTextLine struct {

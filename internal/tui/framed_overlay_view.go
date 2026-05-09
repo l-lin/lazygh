@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func configureFramedOverlayView(view *gocui.View, title string, footer string) {

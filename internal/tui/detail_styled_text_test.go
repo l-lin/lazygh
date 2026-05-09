@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestUpdatedANSIStylePrefix_GivenTrueColorBlackSequence_WhenTrackingStyles_ThenItKeepsZeroRGBComponents(t *testing.T) {

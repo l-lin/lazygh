@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	"codeberg.org/l-lin/lazygh/internal/story"
-	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/BurntSushi/toml"
+	"github.com/l-lin/lazygh/internal/story"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const (

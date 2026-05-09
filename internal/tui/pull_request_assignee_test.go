@@ -7,7 +7,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestAssigneePicker_GivenSelectedAssigneesAndCurrentUser_WhenOpening_ThenItPlacesAtMeFirstAndKeepsSelectedAssigneesAtTheTop(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
 	"github.com/jesseduffield/gocui"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestActionsPopup_GivenUserView_WhenOpening_ThenItShowsTheGlobalGroupedActionsAndTakesFocus(t *testing.T) {

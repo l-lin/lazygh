@@ -8,7 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"codeberg.org/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestActionsPopup_GivenEditTitleActionSelected_WhenExecuting_ThenItOpensTheSingleLineTitleEditor(t *testing.T) {

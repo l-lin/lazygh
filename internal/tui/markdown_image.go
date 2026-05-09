@@ -8,7 +8,7 @@ import (
 
 	glamouransi "charm.land/glamour/v2/ansi"
 
-	"codeberg.org/l-lin/lazygh/internal/theme"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const (
