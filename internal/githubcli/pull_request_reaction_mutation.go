@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
-const addReactionMutation = `mutation($subjectId:ID!,$content:ReactionContent!){addReaction(input:{subjectId:$subjectId,content:$content}){reaction{content}subject{id}}}`
+const (
+	addReactionMutation    = `mutation($subjectId:ID!,$content:ReactionContent!){addReaction(input:{subjectId:$subjectId,content:$content}){reaction{content}subject{id}}}`
+	removeReactionMutation = `mutation($subjectId:ID!,$content:ReactionContent!){removeReaction(input:{subjectId:$subjectId,content:$content}){reaction{content}subject{id}}}`
+)
 
 var (
 	ErrInvalidReactionTarget   = errors.New("invalid reaction target")
@@ -16,6 +19,14 @@ var (
 )
 
 func (client *Client) AddReaction(subjectID string, content ReactionContent) error {
+	return client.mutateReaction(addReactionMutation, subjectID, content, parseAddedReaction)
+}
+
+func (client *Client) RemoveReaction(subjectID string, content ReactionContent) error {
+	return client.mutateReaction(removeReactionMutation, subjectID, content, parseRemovedReaction)
+}
+
+func (client *Client) mutateReaction(mutation string, subjectID string, content ReactionContent, parse func([]byte) error) error {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
 	if trimmedSubjectID == "" {
 		return ErrInvalidReactionTarget
@@ -31,7 +42,7 @@ func (client *Client) AddReaction(subjectID string, content ReactionContent) err
 		"api",
 		"graphql",
 		"-f",
-		"query="+addReactionMutation,
+		"query="+mutation,
 		"-f",
 		"subjectId="+trimmedSubjectID,
 		"-f",
@@ -41,7 +52,7 @@ func (client *Client) AddReaction(subjectID string, content ReactionContent) err
 		return err
 	}
 
-	return parseAddedReaction(result.Stdout)
+	return parse(result.Stdout)
 }
 
 func reactionContentGraphQLEnum(content ReactionContent) (string, error) {
@@ -67,16 +78,19 @@ func reactionContentGraphQLEnum(content ReactionContent) (string, error) {
 	}
 }
 
-type addReactionResponse struct {
+type reactionMutationPayload struct {
+	Reaction *struct {
+		Content string `json:"content"`
+	} `json:"reaction"`
+	Subject *struct {
+		ID string `json:"id"`
+	} `json:"subject"`
+}
+
+type reactionMutationResponse struct {
 	Data struct {
-		AddReaction *struct {
-			Reaction *struct {
-				Content string `json:"content"`
-			} `json:"reaction"`
-			Subject *struct {
-				ID string `json:"id"`
-			} `json:"subject"`
-		} `json:"addReaction"`
+		AddReaction    *reactionMutationPayload `json:"addReaction"`
+		RemoveReaction *reactionMutationPayload `json:"removeReaction"`
 	} `json:"data"`
 	Errors []struct {
 		Message string `json:"message"`
@@ -84,7 +98,19 @@ type addReactionResponse struct {
 }
 
 func parseAddedReaction(stdout []byte) error {
-	var response addReactionResponse
+	return parseReactionMutation(stdout, func(response reactionMutationResponse) *reactionMutationPayload {
+		return response.Data.AddReaction
+	})
+}
+
+func parseRemovedReaction(stdout []byte) error {
+	return parseReactionMutation(stdout, func(response reactionMutationResponse) *reactionMutationPayload {
+		return response.Data.RemoveReaction
+	})
+}
+
+func parseReactionMutation(stdout []byte, selectPayload func(reactionMutationResponse) *reactionMutationPayload) error {
+	var response reactionMutationResponse
 	if err := json.Unmarshal(stdout, &response); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidReactionResponse, err)
 	}
@@ -94,13 +120,15 @@ func parseAddedReaction(stdout []byte) error {
 			return errors.New(message)
 		}
 	}
-	if response.Data.AddReaction == nil || response.Data.AddReaction.Subject == nil || response.Data.AddReaction.Reaction == nil {
+
+	payload := selectPayload(response)
+	if payload == nil || payload.Subject == nil || payload.Reaction == nil {
 		return ErrInvalidReactionResponse
 	}
-	if strings.TrimSpace(response.Data.AddReaction.Subject.ID) == "" {
+	if strings.TrimSpace(payload.Subject.ID) == "" {
 		return ErrInvalidReactionResponse
 	}
-	if _, err := reactionContentGraphQLEnum(ReactionContent(response.Data.AddReaction.Reaction.Content)); err != nil {
+	if _, err := reactionContentGraphQLEnum(ReactionContent(payload.Reaction.Content)); err != nil {
 		return ErrInvalidReactionResponse
 	}
 	return nil

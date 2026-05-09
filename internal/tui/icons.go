@@ -130,6 +130,7 @@ const (
 	actionsPopupBuildRunIcon                 = iconBuild
 	actionsPopupBuildRunLogsIcon             = iconBuild
 	actionsPopupAddReactionIcon              = iconAddReaction
+	actionsPopupRemoveReactionIcon           = iconDelete
 	actionsPopupReviewPullRequestURLIcon     = iconReviewURL
 	actionsPopupChangeThemeIcon              = iconTheme
 	actionsPopupReviewStoryIcon              = iconReview

@@ -62,3 +62,60 @@ func TestAddReaction_GivenCommandFailure_WhenAdding_ThenItReturnsTheGhApiGraphQL
 		t.Fatalf("expected error to mention %q, actual %v", "gh api graphql", actualErr)
 	}
 }
+
+func TestRemoveReaction_GivenSubjectIDAndContent_WhenRemoving_ThenItRunsGhApiGraphQLWithTheRemoveReactionMutation(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte(`{"data":{"removeReaction":{"reaction":{"content":"THUMBS_UP"},"subject":{"id":"PR_kwDOA"}}}}`)}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContentThumbsUp)
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{
+		"api",
+		"graphql",
+		"-f",
+		"query=" + removeReactionMutation,
+		"-f",
+		"subjectId=PR_kwDOA",
+		"-f",
+		"content=THUMBS_UP",
+	})
+}
+
+func TestRemoveReaction_GivenInvalidContent_WhenRemoving_ThenItReturnsAValidationError(t *testing.T) {
+	subject := NewClientWithRunner(&fakeRunner{})
+
+	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContent("wat"))
+
+	if !errors.Is(actualErr, ErrInvalidReactionContent) {
+		t.Fatalf("expected error %v, actual %v", ErrInvalidReactionContent, actualErr)
+	}
+}
+
+func TestRemoveReaction_GivenGraphQLErrorPayload_WhenRemoving_ThenItReturnsTheGitHubMessage(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Reaction not found"}],"data":{"removeReaction":null}}`)}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContentThumbsUp)
+
+	if actualErr == nil {
+		t.Fatal("expected an error")
+	}
+	if actualErr.Error() != "Reaction not found" {
+		t.Fatalf("expected GitHub error %q, actual %v", "Reaction not found", actualErr)
+	}
+}
+
+func TestRemoveReaction_GivenCommandFailure_WhenRemoving_ThenItReturnsTheGhApiGraphQLError(t *testing.T) {
+	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContentThumbsUp)
+
+	if actualErr == nil {
+		t.Fatal("expected an error")
+	}
+	if !strings.Contains(actualErr.Error(), "gh api graphql") {
+		t.Fatalf("expected error to mention %q, actual %v", "gh api graphql", actualErr)
+	}
+}

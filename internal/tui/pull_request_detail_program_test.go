@@ -1447,6 +1447,9 @@ type fakePullRequestDetailLoader struct {
 	addReactionSubjectIDs             []string
 	addReactionContents               []githubcli.ReactionContent
 	addReactionErr                    error
+	removeReactionSubjectIDs          []string
+	removeReactionContents            []githubcli.ReactionContent
+	removeReactionErr                 error
 	reviewKeyByPendingID              map[string]string
 	openBrowserCalls                  []string
 	openBrowserErr                    error
@@ -1754,6 +1757,17 @@ func (loader *fakePullRequestDetailLoader) AddReaction(subjectID string, content
 	return nil
 }
 
+func (loader *fakePullRequestDetailLoader) RemoveReaction(subjectID string, content githubcli.ReactionContent) error {
+	trimmedSubjectID := strings.TrimSpace(subjectID)
+	loader.removeReactionSubjectIDs = append(loader.removeReactionSubjectIDs, trimmedSubjectID)
+	loader.removeReactionContents = append(loader.removeReactionContents, content)
+	if loader.removeReactionErr != nil {
+		return loader.removeReactionErr
+	}
+	loader.removeReaction(trimmedSubjectID, content)
+	return nil
+}
+
 func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository string, number int) error {
 	loader.openBrowserCalls = append(loader.openBrowserCalls, repository+"#"+strconv.Itoa(number))
 	return loader.openBrowserErr
@@ -2049,29 +2063,41 @@ func (loader *fakePullRequestDetailLoader) removeNotification(threadID string) {
 }
 
 func (loader *fakePullRequestDetailLoader) addReaction(subjectID string, content githubcli.ReactionContent) {
+	loader.updateReactionGroups(subjectID, func(groups []githubcli.ReactionGroup) []githubcli.ReactionGroup {
+		return given_reactionGroupsWithAddedReaction(groups, content)
+	})
+}
+
+func (loader *fakePullRequestDetailLoader) removeReaction(subjectID string, content githubcli.ReactionContent) {
+	loader.updateReactionGroups(subjectID, func(groups []githubcli.ReactionGroup) []githubcli.ReactionGroup {
+		return given_reactionGroupsWithRemovedReaction(groups, content)
+	})
+}
+
+func (loader *fakePullRequestDetailLoader) updateReactionGroups(subjectID string, update func([]githubcli.ReactionGroup) []githubcli.ReactionGroup) {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
-	if trimmedSubjectID == "" {
+	if trimmedSubjectID == "" || update == nil {
 		return
 	}
 
 	for key, detail := range loader.details {
 		updated := false
 		if strings.TrimSpace(detail.ID) == trimmedSubjectID {
-			detail.ReactionGroups = given_reactionGroupsWithAddedReaction(detail.ReactionGroups, content)
+			detail.ReactionGroups = update(detail.ReactionGroups)
 			updated = true
 		}
 		for index := range detail.Comments {
 			if strings.TrimSpace(detail.Comments[index].ID) != trimmedSubjectID {
 				continue
 			}
-			detail.Comments[index].ReactionGroups = given_reactionGroupsWithAddedReaction(detail.Comments[index].ReactionGroups, content)
+			detail.Comments[index].ReactionGroups = update(detail.Comments[index].ReactionGroups)
 			updated = true
 		}
 		for index := range detail.InlineComments {
 			if strings.TrimSpace(detail.InlineComments[index].ID) != trimmedSubjectID {
 				continue
 			}
-			detail.InlineComments[index].ReactionGroups = given_reactionGroupsWithAddedReaction(detail.InlineComments[index].ReactionGroups, content)
+			detail.InlineComments[index].ReactionGroups = update(detail.InlineComments[index].ReactionGroups)
 			updated = true
 		}
 		for threadIndex := range detail.InlineCommentThreads {
@@ -2079,7 +2105,7 @@ func (loader *fakePullRequestDetailLoader) addReaction(subjectID string, content
 				if strings.TrimSpace(detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ID) != trimmedSubjectID {
 					continue
 				}
-				detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ReactionGroups = given_reactionGroupsWithAddedReaction(detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ReactionGroups, content)
+				detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ReactionGroups = update(detail.InlineCommentThreads[threadIndex].Comments[commentIndex].ReactionGroups)
 				updated = true
 			}
 		}
@@ -2094,7 +2120,7 @@ func (loader *fakePullRequestDetailLoader) addReaction(subjectID string, content
 				if strings.TrimSpace(diff.Threads[threadIndex].Comments[commentIndex].ID) != trimmedSubjectID {
 					continue
 				}
-				diff.Threads[threadIndex].Comments[commentIndex].ReactionGroups = given_reactionGroupsWithAddedReaction(diff.Threads[threadIndex].Comments[commentIndex].ReactionGroups, content)
+				diff.Threads[threadIndex].Comments[commentIndex].ReactionGroups = update(diff.Threads[threadIndex].Comments[commentIndex].ReactionGroups)
 				updated = true
 			}
 		}
@@ -2115,6 +2141,24 @@ func given_reactionGroupsWithAddedReaction(groups []githubcli.ReactionGroup, con
 		return updatedGroups
 	}
 	return append(updatedGroups, githubcli.ReactionGroup{Content: content, TotalCount: 1, ViewerHasReacted: true})
+}
+
+func given_reactionGroupsWithRemovedReaction(groups []githubcli.ReactionGroup, content githubcli.ReactionContent) []githubcli.ReactionGroup {
+	updatedGroups := append([]githubcli.ReactionGroup(nil), groups...)
+	filteredGroups := updatedGroups[:0]
+	for _, group := range updatedGroups {
+		if strings.TrimSpace(string(group.Content)) != strings.TrimSpace(string(content)) {
+			filteredGroups = append(filteredGroups, group)
+			continue
+		}
+		if group.TotalCount <= 1 {
+			continue
+		}
+		group.TotalCount--
+		group.ViewerHasReacted = false
+		filteredGroups = append(filteredGroups, group)
+	}
+	return append([]githubcli.ReactionGroup(nil), filteredGroups...)
 }
 
 func (loader *fakePullRequestDetailLoader) addReviewThreadReply(reviewID string, threadID string, body string) {

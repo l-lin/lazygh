@@ -130,6 +130,175 @@ func TestSelectedPullRequestReactionActionTarget_GivenReviewModeCursorOnInlineCo
 	}
 }
 
+func TestSelectedPullRequestReactionRemovalTarget_GivenDescriptionTabCursorOnViewerReactionPill_WhenResolving_ThenItUsesThePullRequestReactionAndContent(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:             "PR_kwDOA",
+				Title:          "First PR",
+				Number:         42,
+				Body:           "Body 42",
+				State:          "OPEN",
+				ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 1, ViewerHasReacted: true}, {Content: githubcli.ReactionContentEyes, TotalCount: 2}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentThumbsUp, TotalCount: 1, ViewerHasReacted: true}))
+
+	actual, ok := subject.selectedPullRequestReactionRemovalTarget()
+	if !ok {
+		t.Fatal("expected a pull request reaction removal target")
+	}
+	if actual.subjectID != "PR_kwDOA" {
+		t.Fatalf("expected subject id %q, actual %q", "PR_kwDOA", actual.subjectID)
+	}
+	if actual.content != githubcli.ReactionContentThumbsUp {
+		t.Fatalf("expected reaction content %q, actual %q", githubcli.ReactionContentThumbsUp, actual.content)
+	}
+}
+
+func TestSelectedPullRequestReactionRemovalTarget_GivenCommentsTabCursorOnViewerReactionPill_WhenResolving_ThenItUsesTheCommentReactionAndContent(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:     "PR_kwDOA",
+				Title:  "First PR",
+				Number: 42,
+				Body:   "Body 42",
+				State:  "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					ID:             "IC_kwDOA",
+					Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:           "General feedback",
+					CreatedAt:      "2026-04-18T10:00:00Z",
+					ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentEyes, TotalCount: 2, ViewerHasReacted: true}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"General feedback": "Rendered general feedback"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentEyes, TotalCount: 2, ViewerHasReacted: true}))
+
+	actual, ok := subject.selectedPullRequestReactionRemovalTarget()
+	if !ok {
+		t.Fatal("expected a comment reaction removal target")
+	}
+	if actual.subjectID != "IC_kwDOA" {
+		t.Fatalf("expected subject id %q, actual %q", "IC_kwDOA", actual.subjectID)
+	}
+	if actual.content != githubcli.ReactionContentEyes {
+		t.Fatalf("expected reaction content %q, actual %q", githubcli.ReactionContentEyes, actual.content)
+	}
+}
+
+func TestSelectedPullRequestReactionRemovalTarget_GivenReviewModeCursorOnViewerReactionPill_WhenResolving_ThenItUsesTheInlineCommentReactionAndContent(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:             "PRRC_1",
+			Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			Body:           "Thread body",
+			CreatedAt:      "2026-04-20T10:00:00Z",
+			ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}},
+			DiffHunk:       "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}))
+
+	actual, ok := subject.selectedPullRequestReactionRemovalTarget()
+	if !ok {
+		t.Fatal("expected an inline comment reaction removal target")
+	}
+	if actual.subjectID != "PRRC_1" {
+		t.Fatalf("expected subject id %q, actual %q", "PRRC_1", actual.subjectID)
+	}
+	if actual.content != githubcli.ReactionContentHeart {
+		t.Fatalf("expected reaction content %q, actual %q", githubcli.ReactionContentHeart, actual.content)
+	}
+	if !actual.invalidateDiff {
+		t.Fatal("expected inline comment reaction removal to invalidate the diff cache")
+	}
+}
+
+func TestActionsPopup_GivenDescriptionCursorOnOtherUsersReactionPill_WhenListingActions_ThenItDoesNotShowRemoveReaction(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:             "PR_kwDOA",
+				Title:          "First PR",
+				Number:         42,
+				Body:           "Body 42",
+				State:          "OPEN",
+				ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 1, ViewerHasReacted: true}, {Content: githubcli.ReactionContentEyes, TotalCount: 2}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentEyes, TotalCount: 2}))
+
+	if given_hasActionTitle(subject.currentActionsPopupActions(), "Remove reaction") {
+		t.Fatalf("expected remove reaction to stay hidden when the cursor is on someone else's reaction, actual %v", given_actionTitles(subject.currentActionsPopupActions()))
+	}
+}
+
 func TestActionsPopup_GivenPullRequestAddReactionAction_WhenExecuting_ThenItShowsTheFullReactionPicker(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
@@ -340,6 +509,116 @@ func TestAddReaction_GivenViewerAlreadyAddedTheReaction_WhenSubmitting_ThenItSho
 	then_statusLineContains(t, gui, pullRequestReactionAlreadyAddedMessage)
 }
 
+func TestRemoveReaction_GivenPullRequestReactionUnderCursor_WhenSubmitting_ThenItRemovesTheReactionRefreshesDetailAndShowsFeedback(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:             "PR_kwDOA",
+				Title:          "First PR",
+				Number:         42,
+				Body:           "Body 42",
+				State:          "OPEN",
+				ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 1, ViewerHasReacted: true}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentThumbsUp, TotalCount: 1, ViewerHasReacted: true}))
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("remove reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "remove reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.removeReactionSubjectIDs, []string{"PR_kwDOA"}) {
+		t.Fatalf("expected reaction subject ids %v, actual %v", []string{"PR_kwDOA"}, loader.removeReactionSubjectIDs)
+	}
+	if !reflect.DeepEqual(loader.removeReactionContents, []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}) {
+		t.Fatalf("expected reaction contents %v, actual %v", []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}, loader.removeReactionContents)
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
+		t.Fatalf("expected detail calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
+	}
+	if strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to remove the reaction pill, actual %q", detailView.Buffer())
+	}
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_statusLineContains(t, gui, pullRequestReactionRemovedSuccessMessage)
+}
+
+func TestRemoveReaction_GivenReviewModeInlineCommentReactionUnderCursor_WhenSubmitting_ThenItRemovesTheReactionRefreshesTheDiffAndShowsFeedback(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:             "PRRC_1",
+			Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			Body:           "Thread body",
+			CreatedAt:      "2026-04-20T10:00:00Z",
+			ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}},
+			DiffHunk:       "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}))
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("remove reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "remove reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.removeReactionSubjectIDs, []string{"PRRC_1"}) {
+		t.Fatalf("expected reaction subject ids %v, actual %v", []string{"PRRC_1"}, loader.removeReactionSubjectIDs)
+	}
+	if !reflect.DeepEqual(loader.removeReactionContents, []githubcli.ReactionContent{githubcli.ReactionContentHeart}) {
+		t.Fatalf("expected reaction contents %v, actual %v", []githubcli.ReactionContent{githubcli.ReactionContentHeart}, loader.removeReactionContents)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
+		t.Fatalf("expected diff calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.diffCalls)
+	}
+	if strings.Contains(detailView.Buffer(), "❤️ 1") {
+		t.Fatalf("expected detail buffer to remove the inline reaction pill, actual %q", detailView.Buffer())
+	}
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_statusLineContains(t, gui, pullRequestReactionRemovedSuccessMessage)
+}
+
 func expectedReactionPickerLabels() []string {
 	return []string{
 		"👍 Thumbs up (+1)",
@@ -351,4 +630,29 @@ func expectedReactionPickerLabels() []string {
 		"🚀 Rocket",
 		"👀 Eyes",
 	}
+}
+
+func given_visibleReactionPillText(group githubcli.ReactionGroup) string {
+	document := newDetailDocumentWithWrap(renderReactionGroup(group), 120, false)
+	if len(document.lines) == 0 {
+		return ""
+	}
+	return string(document.lines[0])
+}
+
+func given_hasActionTitle(actions []actionsPopupAction, expected string) bool {
+	for _, actual := range given_actionTitles(actions) {
+		if strings.HasPrefix(actual, expected) {
+			return true
+		}
+	}
+	return false
+}
+
+func given_actionTitles(actions []actionsPopupAction) []string {
+	actual := make([]string, 0, len(actions))
+	for _, action := range actions {
+		actual = append(actual, action.title)
+	}
+	return actual
 }

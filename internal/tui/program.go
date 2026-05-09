@@ -47,6 +47,7 @@ type GitHubLoader interface {
 	ResolvePullRequestReviewThread(threadID string) error
 	UnresolvePullRequestReviewThread(threadID string) error
 	AddReaction(subjectID string, content githubcli.ReactionContent) error
+	RemoveReaction(subjectID string, content githubcli.ReactionContent) error
 	OpenPullRequestInBrowser(repository string, number int) error
 	ListAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, error)
 	UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error

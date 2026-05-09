@@ -111,6 +111,9 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 	if reactionAction, ok := program.currentReactionAction(); ok {
 		actions = append(actions, reactionAction.withGroup(actionsPopupGroupReview))
 	}
+	if reactionRemovalAction, ok := program.currentReactionRemovalAction(); ok {
+		actions = append(actions, reactionRemovalAction.withGroup(actionsPopupGroupReview))
+	}
 	if replyAction, ok := program.currentInlineCommentReplyAction(); ok {
 		actions = append(actions, replyAction.withGroup(actionsPopupGroupReview))
 	}
