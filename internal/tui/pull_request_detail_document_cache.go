@@ -35,6 +35,15 @@ func (program *Program) pullRequestDetailDocumentForKey(key pullRequestDetailDoc
 	return document, ok
 }
 
+func (program *Program) pullRequestConversationDocumentForKey(key pullRequestDetailDocumentCacheKey) (browserConversationDocument, bool) {
+	if len(program.pullRequestConversationDocumentCache) == 0 {
+		return browserConversationDocument{}, false
+	}
+
+	document, ok := program.pullRequestConversationDocumentCache[key]
+	return document, ok
+}
+
 func (program *Program) cachePullRequestDetailDocument(key pullRequestDetailDocumentCacheKey, document detailDocument) {
 	if program.pullRequestDetailDocumentCache == nil {
 		program.pullRequestDetailDocumentCache = map[pullRequestDetailDocumentCacheKey]detailDocument{}
@@ -43,10 +52,19 @@ func (program *Program) cachePullRequestDetailDocument(key pullRequestDetailDocu
 	program.pullRequestDetailDocumentCache[key] = document
 }
 
+func (program *Program) cachePullRequestConversationDocument(key pullRequestDetailDocumentCacheKey, document browserConversationDocument) {
+	if program.pullRequestConversationDocumentCache == nil {
+		program.pullRequestConversationDocumentCache = map[pullRequestDetailDocumentCacheKey]browserConversationDocument{}
+	}
+
+	program.pullRequestConversationDocumentCache[key] = document
+}
+
 func (program *Program) invalidatePullRequestDetailDocumentCache() {
-	if len(program.pullRequestDetailDocumentCache) == 0 {
+	if len(program.pullRequestDetailDocumentCache) == 0 && len(program.pullRequestConversationDocumentCache) == 0 {
 		return
 	}
 
 	program.pullRequestDetailDocumentCache = map[pullRequestDetailDocumentCacheKey]detailDocument{}
+	program.pullRequestConversationDocumentCache = map[pullRequestDetailDocumentCacheKey]browserConversationDocument{}
 }

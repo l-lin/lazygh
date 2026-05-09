@@ -114,7 +114,7 @@ func (program *Program) selectedBrowserConversationsInlineCommentReplyTarget() (
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 	thread := *sectionAtCursor.section.inlineThread
-	if _, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, program.markdownRenderer, program.detailWrapWidth, sectionAtCursor.bodyLine); !ok {
+	if _, ok := browserConversationInlineThreadCommentAtCursor(sectionAtCursor); !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 

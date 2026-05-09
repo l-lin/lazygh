@@ -141,7 +141,11 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	target, ok := pullRequestInlineThreadCommentActionTargetAtBodyCursor(*sectionAtCursor.section.inlineThread, program.markdownRenderer, program.detailWrapWidth, sectionAtCursor.bodyLine)
+	threadComment, ok := browserConversationInlineThreadCommentAtCursor(sectionAtCursor)
+	if !ok {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+	target, ok := pullRequestInlineThreadCommentActionTarget(threadComment)
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
@@ -187,6 +191,10 @@ func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.Pul
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
+	return pullRequestInlineThreadCommentActionTarget(threadComment)
+}
+
+func pullRequestInlineThreadCommentActionTarget(threadComment githubcli.PullRequestComment) (pullRequestReviewCommentActionTarget, bool) {
 	if strings.TrimSpace(threadComment.ID) == "" || !threadComment.ViewerDidAuthor {
 		return pullRequestReviewCommentActionTarget{}, false
 	}

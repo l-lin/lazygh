@@ -81,6 +81,31 @@ func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequ
 	return strings.Join(lines, "\n")
 }
 
+func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) []int {
+	commentIndexes := make([]int, 0)
+	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
+		for range renderedTextLineCount(diffPreview) {
+			commentIndexes = append(commentIndexes, -1)
+		}
+	}
+	if len(thread.Comments) == 0 {
+		for range renderedTextLineCount(renderRoundedCommentBox("No comments in thread.", normalizedInlineThreadCommentBoxWidth(width))) {
+			commentIndexes = append(commentIndexes, -1)
+		}
+		commentIndexes = append(commentIndexes, -1)
+		return commentIndexes
+	}
+
+	for commentIndex, threadComment := range thread.Comments {
+		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(threadComment, renderer, width, commentIndex, len(thread.Comments), connectedUserLogin)
+		for range renderedTextLineCount(renderedCommentBlock) {
+			commentIndexes = append(commentIndexes, commentIndex)
+		}
+	}
+	commentIndexes = append(commentIndexes, -1)
+	return commentIndexes
+}
+
 func renderPullRequestInlineCommentThreadDiffPreview(comment githubcli.PullRequestInlineComment) string {
 	previewLines := parseDiffPreviewLines(comment.DiffHunk)
 	if len(previewLines) == 0 {

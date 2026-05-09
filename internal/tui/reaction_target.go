@@ -132,11 +132,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 		}, true
 	}
 
-	if sectionAtCursor.section.inlineThread == nil || !sectionAtCursor.inBody {
-		return pullRequestReactionActionTarget{}, false
-	}
-
-	comment, ok := pullRequestInlineThreadCommentAtBodyCursor(*sectionAtCursor.section.inlineThread, program.markdownRenderer, program.detailWrapWidth, sectionAtCursor.bodyLine)
+	comment, ok := browserConversationInlineThreadCommentAtCursor(sectionAtCursor)
 	if !ok || strings.TrimSpace(comment.ID) == "" {
 		return pullRequestReactionActionTarget{}, false
 	}
