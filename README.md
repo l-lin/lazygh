@@ -86,9 +86,11 @@ By default, it will use the `system` preset if not set:
 preset = "system"
 ```
 
-List of presets can be found in [`preset.go`](internal/theme/preset.go).
+List of presets can be found in [`preset.go`](internal/theme/preset.go). Available presets include `system`, `light`, and `dark`.
 
-You can find the list of palette variables in [palette.go](internal/theme/palette.go).
+Use the `Change theme` action from the actions popup to switch presets at runtime. It updates `~/.config/lazygh/config.toml` immediately.
+
+You can find the list of palette variables in [palette.go](internal/theme/palette.go). `background` fills the full TUI background.
 
 This example starts from `kanagawa-dark` and overrides a few colors.
 
@@ -121,6 +123,12 @@ diff_addition_highlight_background = "#35513B"
 diff_deletion_highlight_background = "#5A2E35"
 ```
 
+`pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
+`pull_request_title` colors the pull-request title text in pull-request lists.
+`pull_request_status_*_background` also colors the `` status icon in pull-request lists.
+`markdown_heading_background` controls the full-line heading fill in rendered markdown.
+`success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
+
 ### Links
 
 You can open a link either from the actions popup (default keymap `a`), or by pressing `gx`.
@@ -134,6 +142,12 @@ You can open a link either from the actions popup (default keymap `a`), or by pr
 # Can be a string or an array of strings. `lazygh` appends the resolved URL as the last argument.
 open_command = ["open", "-a", "Firefox"]
 ```
+
+### Actions popup
+
+Press `a` to open the actions popup in the current context.
+
+`Assign PR` opens a searchable assignee picker. Press `enter` to toggle an assignee, then press `alt+enter` to save. GitHub only allows up to 10 assignees per pull request, and the authenticated user still needs permission to assign users in that repository.
 
 ### Story review
 
