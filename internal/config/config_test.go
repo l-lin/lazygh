@@ -10,10 +10,22 @@ import (
 	"codeberg.org/l-lin/lazygh/internal/theme"
 )
 
-func TestDefaultPath_GivenHomeDirectory_WhenBuildingTheDefaultConfigPath_ThenItUsesTheLazyghConfigLocation(t *testing.T) {
+func TestDefaultPath_GivenXDGConfigHome_WhenBuildingTheDefaultConfigPath_ThenItUsesTheXDGConfigDirectory(t *testing.T) {
+	homeDirectory := filepath.Join(string(filepath.Separator), "tmp", "alice")
+	xdgConfigHome := filepath.Join(string(filepath.Separator), "var", "config-root")
+
+	actual := DefaultPath(homeDirectory, xdgConfigHome)
+
+	expected := filepath.Join(xdgConfigHome, "lazygh", "config.toml")
+	if actual != expected {
+		t.Fatalf("expected default path %q, actual %q", expected, actual)
+	}
+}
+
+func TestDefaultPath_GivenNoXDGConfigHome_WhenBuildingTheDefaultConfigPath_ThenItFallsBackToTheHomeConfigDirectory(t *testing.T) {
 	homeDirectory := filepath.Join(string(filepath.Separator), "tmp", "alice")
 
-	actual := DefaultPath(homeDirectory)
+	actual := DefaultPath(homeDirectory, "")
 
 	expected := filepath.Join(homeDirectory, ".config", "lazygh", "config.toml")
 	if actual != expected {
@@ -405,6 +417,26 @@ func TestConfig_ResolvedCache_GivenAConfiguredPath_WhenResolving_ThenItKeepsTheC
 	expected := CacheConfig{Path: "/tmp/lazygh/custom.sqlite3"}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected cache config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoadDefault_GivenXDGConfigHome_WhenLoading_ThenItUsesTheXDGConfigLocation(t *testing.T) {
+	homeDirectory := t.TempDir()
+	xdgConfigHome := filepath.Join(t.TempDir(), "config-root")
+	configPath := filepath.Join(xdgConfigHome, "lazygh", "config.toml")
+	actualErr := os.MkdirAll(filepath.Dir(configPath), 0o755)
+	then_noError(t, actualErr)
+	actualErr = os.WriteFile(configPath, []byte("[theme]\npreset = \"dark\"\n"), 0o644)
+	then_noError(t, actualErr)
+	t.Setenv("HOME", homeDirectory)
+	t.Setenv("XDG_CONFIG_HOME", xdgConfigHome)
+
+	actual, actualErr := LoadDefault()
+
+	then_noError(t, actualErr)
+	expected := Config{ThemePreset: theme.DarkPresetName}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
 	}
 }
 

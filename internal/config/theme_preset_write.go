@@ -15,7 +15,7 @@ func SaveThemePresetDefault(preset string) error {
 		return actualErr
 	}
 
-	return SaveThemePreset(DefaultPath(homeDirectory), preset)
+	return SaveThemePreset(DefaultPath(homeDirectory, os.Getenv("XDG_CONFIG_HOME")), preset)
 }
 
 func SaveThemePreset(configPath string, preset string) error {

@@ -79,8 +79,14 @@ type rawLinksConfig struct {
 	OpenCommand any `toml:"open_command"`
 }
 
-func DefaultPath(homeDirectory string) string {
-	return filepath.Join(homeDirectory, ".config", configDirectoryName, configFileName)
+func DefaultPath(homeDirectory string, xdgConfigHome string) string {
+	trimmedHomeDirectory := strings.TrimSpace(homeDirectory)
+	trimmedXDGConfigHome := strings.TrimSpace(xdgConfigHome)
+	if trimmedXDGConfigHome != "" {
+		return filepath.Join(trimmedXDGConfigHome, configDirectoryName, configFileName)
+	}
+
+	return filepath.Join(trimmedHomeDirectory, ".config", configDirectoryName, configFileName)
 }
 
 func LoadDefault() (Config, error) {
@@ -89,7 +95,7 @@ func LoadDefault() (Config, error) {
 		return Config{}, actualErr
 	}
 
-	return Load(DefaultPath(homeDirectory))
+	return Load(DefaultPath(homeDirectory, os.Getenv("XDG_CONFIG_HOME")))
 }
 
 func Load(configPath string) (Config, error) {

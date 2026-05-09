@@ -56,7 +56,7 @@ Open a pull request directly in browser mode with `lazygh view <pr-url>`. Start 
 
 ## Config
 
-`lazygh` looks for `~/.config/lazygh/config.toml`.
+`lazygh` looks for `$XDG_CONFIG_HOME/lazygh/config.toml`. If `XDG_CONFIG_HOME` is unset, it falls back to `~/.config/lazygh/config.toml`.
 
 If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid story-review settings, invalid cache settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
 
@@ -88,7 +88,7 @@ preset = "system"
 
 Available presets include `system`, `light`, and `dark`, plus the additional presets listed in [`preset.go`](internal/theme/preset.go).
 
-You can switch presets from inside the app too. `Change theme` in the actions popup updates `~/.config/lazygh/config.toml` immediately.
+You can switch presets from inside the app too. `Change theme` in the actions popup updates the resolved config file immediately.
 
 You can find the list of palette variables in [palette.go](internal/theme/palette.go).
 

@@ -78,6 +78,21 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 	}
 }
 
+func TestProjectFiles_GivenTheReadme_WhenReadingTheConfigSection_ThenItDocumentsXDGConfigHomeBeforeTheHomeFallback(t *testing.T) {
+	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	then_noError(t, actualErr)
+
+	actual := string(contents)
+	for _, expected := range []string{
+		"`$XDG_CONFIG_HOME/lazygh/config.toml`",
+		"falls back to `~/.config/lazygh/config.toml`",
+	} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsTheActionsPopupThemePicker(t *testing.T) {
 	contents, actualErr := os.ReadFile(filepath.Join("..", "..", "README.md"))
 	then_noError(t, actualErr)
@@ -85,7 +100,7 @@ func TestProjectFiles_GivenTheReadme_WhenReadingTheThemeSection_ThenItDocumentsT
 	actual := string(contents)
 	for _, expected := range []string{
 		"Change theme",
-		"updates `~/.config/lazygh/config.toml` immediately",
+		"updates the resolved config file immediately",
 	} {
 		if !strings.Contains(actual, expected) {
 			t.Fatalf("expected README.md to contain %q, actual %q", expected, actual)
