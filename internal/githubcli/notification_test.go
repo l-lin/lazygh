@@ -80,6 +80,22 @@ func TestListNotifications_GivenPagedNotificationFixtures_WhenListing_ThenItFlat
 	}
 }
 
+func TestListNotifications_GivenDoneThreadsInFixture_WhenListing_ThenItOmitsDoneNotifications(t *testing.T) {
+	runner := &fakeRunner{stdout: given_notificationFixtureBytes(t, "threads_with_done.json")}
+	subject := NewClientWithRunner(runner)
+
+	actual, actualErr := subject.ListNotifications()
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"api", "/notifications?all=true&per_page=100", "--paginate", "--slurp"})
+	if len(actual) != 1 {
+		t.Fatalf("expected 1 notification after filtering done threads, actual %d", len(actual))
+	}
+	if actual[0].ID != "1001" {
+		t.Fatalf("expected the remaining notification id %q, actual %q", "1001", actual[0].ID)
+	}
+}
+
 func TestGetIssueDetail_GivenARealFixture_WhenFetching_ThenItReturnsTheNormalizedIssueDetail(t *testing.T) {
 	runner := &fakeRunner{stdout: given_notificationFixtureBytes(t, "issue_detail.json")}
 	subject := NewClientWithRunner(runner)

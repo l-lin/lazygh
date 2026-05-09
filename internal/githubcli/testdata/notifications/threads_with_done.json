@@ -1,0 +1,63 @@
+[
+  [
+    {
+      "id": "1001",
+      "last_read_at": null,
+      "reason": "review_requested",
+      "repository": {
+        "id": 1,
+        "name": "widgets",
+        "full_name": "acme/widgets",
+        "html_url": "https://github.com/acme/widgets",
+        "private": true,
+        "url": "https://api.github.com/repos/acme/widgets",
+        "owner": {
+          "login": "acme",
+          "type": "Organization",
+          "html_url": "https://github.com/acme",
+          "url": "https://api.github.com/users/acme"
+        }
+      },
+      "subject": {
+        "latest_comment_url": "https://api.github.com/repos/acme/widgets/pulls/42",
+        "title": " feat: ship notifications ",
+        "type": " PullRequest ",
+        "url": "https://api.github.com/repos/acme/widgets/pulls/42"
+      },
+      "subscription_url": "https://api.github.com/notifications/threads/1001/subscription",
+      "unread": true,
+      "updated_at": "2026-05-08T16:53:11Z",
+      "url": "https://api.github.com/notifications/threads/1001"
+    },
+    {
+      "id": "1004",
+      "done": true,
+      "last_read_at": "2026-05-08T16:53:11Z",
+      "reason": "manual",
+      "repository": {
+        "id": 4,
+        "name": "opencode",
+        "full_name": "acme/opencode",
+        "html_url": "https://github.com/acme/opencode",
+        "private": false,
+        "url": "https://api.github.com/repos/acme/opencode",
+        "owner": {
+          "login": "acme",
+          "type": "Organization",
+          "html_url": "https://github.com/acme",
+          "url": "https://api.github.com/users/acme"
+        }
+      },
+      "subject": {
+        "latest_comment_url": "https://api.github.com/repos/acme/opencode/issues/comments/999",
+        "title": " Ignore done threads ",
+        "type": " Issue ",
+        "url": "https://api.github.com/repos/acme/opencode/issues/3235"
+      },
+      "subscription_url": "https://api.github.com/notifications/threads/1004/subscription",
+      "unread": false,
+      "updated_at": "2026-05-08T16:53:11Z",
+      "url": "https://api.github.com/notifications/threads/1004"
+    }
+  ]
+]

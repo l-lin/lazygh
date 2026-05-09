@@ -25,6 +25,7 @@ var (
 
 type Notification struct {
 	ID              string              `json:"id"`
+	Done            bool                `json:"done"`
 	Unread          bool                `json:"unread"`
 	Reason          string              `json:"reason"`
 	UpdatedAt       string              `json:"updated_at"`
@@ -130,7 +131,11 @@ func (client *Client) GetReleaseDetail(repository string, id int) (ReleaseDetail
 func normalizedNotifications(notifications []Notification) []Notification {
 	normalized := make([]Notification, 0, len(notifications))
 	for _, notification := range notifications {
-		normalized = append(normalized, notification.normalized())
+		normalizedNotification := notification.normalized()
+		if normalizedNotification.Done {
+			continue
+		}
+		normalized = append(normalized, normalizedNotification)
 	}
 	return normalized
 }
