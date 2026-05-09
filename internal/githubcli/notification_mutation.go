@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
-const notificationsBulkReadAPIPath = "/notifications"
+const (
+	notificationsBulkReadAPIPath     = "/notifications"
+	notificationsBulkDoneConcurrency = 4
+)
 
 var (
 	ErrMissingNotificationThreadID     = errors.New("missing notification thread id")
@@ -52,18 +57,67 @@ func (client *Client) MarkAllNotificationsRead() (NotificationBulkReadResult, er
 }
 
 func (client *Client) MarkAllNotificationsDone(notifications []Notification) (int, error) {
-	markedCount := 0
+	threadIDs := notificationThreadIDs(notifications)
+	if len(threadIDs) == 0 {
+		return 0, nil
+	}
+
+	workerCount := minInt(notificationsBulkDoneConcurrency, len(threadIDs))
+	var nextIndex atomic.Int32
+	var markedCount atomic.Int32
+	var shouldStop atomic.Bool
+	var firstErr error
+	var setFirstErr sync.Once
+	var waitGroup sync.WaitGroup
+	for workerIndex := 0; workerIndex < workerCount; workerIndex++ {
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			for {
+				if shouldStop.Load() {
+					return
+				}
+
+				threadIndex := int(nextIndex.Add(1)) - 1
+				if threadIndex >= len(threadIDs) {
+					return
+				}
+				if shouldStop.Load() {
+					return
+				}
+
+				if err := client.MarkNotificationDone(threadIDs[threadIndex]); err != nil {
+					setFirstErr.Do(func() {
+						firstErr = err
+						shouldStop.Store(true)
+					})
+					return
+				}
+				markedCount.Add(1)
+			}
+		}()
+	}
+	waitGroup.Wait()
+	return int(markedCount.Load()), firstErr
+}
+
+func notificationThreadIDs(notifications []Notification) []string {
+	threadIDs := make([]string, 0, len(notifications))
 	for _, notification := range notifications {
 		trimmedThreadID := strings.TrimSpace(notification.ID)
 		if trimmedThreadID == "" {
 			continue
 		}
-		if err := client.MarkNotificationDone(trimmedThreadID); err != nil {
-			return markedCount, err
-		}
-		markedCount++
+		threadIDs = append(threadIDs, trimmedThreadID)
 	}
-	return markedCount, nil
+	return threadIDs
+}
+
+func minInt(left int, right int) int {
+	if left < right {
+		return left
+	}
+	return right
 }
 
 func notificationThreadAPIPath(threadID string) (string, error) {

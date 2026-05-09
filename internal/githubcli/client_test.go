@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os/exec"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -110,6 +111,7 @@ func TestGetConnectedUser_GivenEmptyUserPayload_WhenFetching_ThenReturnsAnEmptyR
 }
 
 type fakeRunner struct {
+	mu        sync.Mutex
 	stdout    []byte
 	stderr    []byte
 	err       error
@@ -133,12 +135,18 @@ type fakeCommandCall struct {
 }
 
 func (runner *fakeRunner) Run(name string, args ...string) (CommandResult, error) {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+
 	runner.recordCall(name, args, nil)
 	response := runner.nextResponse()
 	return CommandResult{Stdout: response.stdout, Stderr: response.stderr}, response.err
 }
 
 func (runner *fakeRunner) RunWithInput(name string, input []byte, args ...string) (CommandResult, error) {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+
 	runner.recordCall(name, args, input)
 	response := runner.nextResponse()
 	return CommandResult{Stdout: response.stdout, Stderr: response.stderr}, response.err

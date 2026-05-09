@@ -4,8 +4,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestListNotifications_GivenPagedNotificationFixtures_WhenListing_ThenItFlattensAndNormalizesTheThreads(t *testing.T) {
@@ -188,11 +191,52 @@ func TestMarkAllNotificationsDone_GivenLoadedNotifications_WhenMarking_ThenItDel
 	if actualCount != 3 {
 		t.Fatalf("expected marked count %d, actual %d", 3, actualCount)
 	}
-	then_commandsAre(t, runner, []fakeCommandCall{
+	then_commandsMatchIgnoringOrder(t, runner.calls, []fakeCommandCall{
 		{name: "gh", args: []string{"api", "/notifications/threads/1001", "--method", "DELETE"}, stdin: nil},
 		{name: "gh", args: []string{"api", "/notifications/threads/1002", "--method", "DELETE"}, stdin: nil},
 		{name: "gh", args: []string{"api", "/notifications/threads/1003", "--method", "DELETE"}, stdin: nil},
 	})
+}
+
+func TestMarkAllNotificationsDone_GivenMoreNotificationsThanTheWorkerLimit_WhenMarking_ThenItCapsConcurrency(t *testing.T) {
+	runner := newBlockingNotificationDoneRunner()
+	subject := NewClientWithRunner(runner)
+	notifications := []Notification{{ID: "1001"}, {ID: "1002"}, {ID: "1003"}, {ID: "1004"}, {ID: "1005"}}
+	results := make(chan struct {
+		count int
+		err   error
+	}, 1)
+
+	go func() {
+		count, err := subject.MarkAllNotificationsDone(notifications)
+		results <- struct {
+			count int
+			err   error
+		}{count: count, err: err}
+	}()
+
+	for index := 0; index < notificationsBulkDoneConcurrency; index++ {
+		select {
+		case <-runner.started:
+		case <-time.After(time.Second):
+			t.Fatalf("expected worker %d to start within the concurrency limit", index+1)
+		}
+	}
+	select {
+	case <-runner.started:
+		t.Fatalf("expected at most %d concurrent notification-done requests", notificationsBulkDoneConcurrency)
+	default:
+	}
+
+	runner.releaseAll()
+	result := <-results
+	then_noError(t, result.err)
+	if result.count != 5 {
+		t.Fatalf("expected marked count %d, actual %d", 5, result.count)
+	}
+	if runner.maxActive() != notificationsBulkDoneConcurrency {
+		t.Fatalf("expected max concurrency %d, actual %d", notificationsBulkDoneConcurrency, runner.maxActive())
+	}
 }
 
 func TestMarkNotificationRead_GivenUnsupportedCredentialError_WhenMarking_ThenItReturnsActionableGuidance(t *testing.T) {
@@ -258,4 +302,74 @@ func given_notificationFixtureBytes(t *testing.T, name string) []byte {
 	actual, actualErr := os.ReadFile(filepath.Join("testdata", "notifications", name))
 	then_noError(t, actualErr)
 	return actual
+}
+
+func then_commandsMatchIgnoringOrder(t *testing.T, actual []fakeCommandCall, expected []fakeCommandCall) {
+	t.Helper()
+
+	actualKeys := fakeCommandCallKeys(actual)
+	expectedKeys := fakeCommandCallKeys(expected)
+	if len(actualKeys) != len(expectedKeys) {
+		t.Fatalf("expected command calls %v, actual %v", expected, actual)
+	}
+	for index := range actualKeys {
+		if actualKeys[index] != expectedKeys[index] {
+			t.Fatalf("expected command calls %v, actual %v", expected, actual)
+		}
+	}
+}
+
+func fakeCommandCallKeys(calls []fakeCommandCall) []string {
+	keys := make([]string, 0, len(calls))
+	for _, call := range calls {
+		keys = append(keys, call.name+"\x00"+strings.Join(call.args, "\x00")+"\x00"+string(call.stdin))
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+type blockingNotificationDoneRunner struct {
+	mu         sync.Mutex
+	active     int
+	maxRunning int
+	started    chan struct{}
+	release    chan struct{}
+}
+
+func newBlockingNotificationDoneRunner() *blockingNotificationDoneRunner {
+	return &blockingNotificationDoneRunner{
+		started: make(chan struct{}, 32),
+		release: make(chan struct{}),
+	}
+}
+
+func (runner *blockingNotificationDoneRunner) Run(name string, args ...string) (CommandResult, error) {
+	runner.mu.Lock()
+	runner.active++
+	if runner.active > runner.maxRunning {
+		runner.maxRunning = runner.active
+	}
+	runner.mu.Unlock()
+
+	runner.started <- struct{}{}
+	<-runner.release
+
+	runner.mu.Lock()
+	runner.active--
+	runner.mu.Unlock()
+	return CommandResult{}, nil
+}
+
+func (runner *blockingNotificationDoneRunner) RunWithInput(name string, input []byte, args ...string) (CommandResult, error) {
+	return CommandResult{}, errors.New("unexpected RunWithInput call")
+}
+
+func (runner *blockingNotificationDoneRunner) releaseAll() {
+	close(runner.release)
+}
+
+func (runner *blockingNotificationDoneRunner) maxActive() int {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return runner.maxRunning
 }
