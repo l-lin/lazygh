@@ -293,7 +293,7 @@ func buildPullRequestCommentsRenderedSections(comments []githubcli.PullRequestCo
 		return sections
 	}
 	for _, inlineComment := range inlineComments {
-		body := renderInlineCommentBodyWithHTML(inlineComment.Body, inlineComment.BodyHTML, renderer, commentBodyWidth)
+		body := renderInlineCommentBodyForInlineComment(inlineComment, renderer, commentBodyWidth)
 		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentSection(inlineComment, body, width)})
 	}
 	return sections

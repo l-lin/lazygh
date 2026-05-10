@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 	"strings"
+
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func renderInlineCommentBody(markdown string, renderer MarkdownRenderer, width int) string {
@@ -10,11 +12,27 @@ func renderInlineCommentBody(markdown string, renderer MarkdownRenderer, width i
 }
 
 func renderInlineCommentBodyWithHTML(markdown string, renderedHTML string, renderer MarkdownRenderer, width int) string {
-	preparedMarkdown := prepareMarkdownForImageRendering(prepareInlineCommentMarkdown(markdown), renderedHTML)
+	return renderInlineCommentBodyWithSuggestionContext(markdown, renderedHTML, githubcli.PullRequestInlineComment{}, renderer, width)
+}
+
+func renderInlineCommentBodyForInlineComment(comment githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
+	return renderInlineCommentBodyWithSuggestionContext(comment.Body, comment.BodyHTML, comment, renderer, width)
+}
+
+func renderInlineCommentBodyForThreadComment(comment githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
+	return renderInlineCommentBodyWithSuggestionContext(comment.Body, comment.BodyHTML, suggestionContext, renderer, width)
+}
+
+func renderInlineCommentBodyWithSuggestionContext(markdown string, renderedHTML string, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
+	preparedMarkdown := prepareMarkdownForImageRendering(prepareInlineCommentMarkdownWithSuggestionContext(markdown, suggestionContext), renderedHTML)
 	return renderMarkdownWithFallback(preparedMarkdown, renderer, width, "No comment body.")
 }
 
 func prepareInlineCommentMarkdown(markdown string) string {
+	return prepareInlineCommentMarkdownWithSuggestionContext(markdown, githubcli.PullRequestInlineComment{})
+}
+
+func prepareInlineCommentMarkdownWithSuggestionContext(markdown string, suggestionContext githubcli.PullRequestInlineComment) string {
 	normalized := strings.ReplaceAll(markdown, "\r", "")
 	if !strings.Contains(normalized, "```") {
 		return markdown
@@ -38,7 +56,7 @@ func prepareInlineCommentMarkdown(markdown string) string {
 			continue
 		}
 		if strings.HasPrefix(trimmedLine, "```") {
-			preparedLines = append(preparedLines, prepareInlineCommentCodeFence(fenceInfo, fenceLines)...)
+			preparedLines = append(preparedLines, prepareInlineCommentCodeFence(fenceInfo, fenceLines, suggestionContext)...)
 			inFence = false
 			fenceInfo = ""
 			fenceLines = fenceLines[:0]
@@ -54,7 +72,7 @@ func prepareInlineCommentMarkdown(markdown string) string {
 	return strings.TrimSpace(strings.Join(preparedLines, "\n"))
 }
 
-func prepareInlineCommentCodeFence(info string, lines []string) []string {
+func prepareInlineCommentCodeFence(info string, lines []string, suggestionContext githubcli.PullRequestInlineComment) []string {
 	label := inlineCommentCodeBlockLabel(info)
 	preparedLines := make([]string, 0, len(lines)+4)
 	if label != "" {
@@ -62,7 +80,7 @@ func prepareInlineCommentCodeFence(info string, lines []string) []string {
 	}
 	if inlineCommentSuggestionFence(info) {
 		preparedLines = append(preparedLines, "```diff")
-		preparedLines = append(preparedLines, prefixInlineCommentSuggestionLines(lines)...)
+		preparedLines = append(preparedLines, inlineCommentSuggestionDiffLines(lines, suggestionContext)...)
 		preparedLines = append(preparedLines, "```")
 		return preparedLines
 	}
@@ -93,13 +111,64 @@ func inlineCommentCodeBlockLanguage(info string) string {
 }
 
 func inlineCommentSuggestionFence(info string) bool {
-	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(info)), "suggestion")
+	for _, field := range strings.Fields(strings.ToLower(strings.TrimSpace(info))) {
+		if strings.HasPrefix(field, "suggestion") {
+			return true
+		}
+	}
+	return false
 }
 
-func prefixInlineCommentSuggestionLines(lines []string) []string {
+func inlineCommentSuggestionDiffLines(lines []string, suggestionContext githubcli.PullRequestInlineComment) []string {
+	originalLines := inlineCommentSuggestionOriginalLines(suggestionContext)
+	if len(originalLines) == 0 {
+		return prefixInlineCommentDiffLines(lines, "+")
+	}
+
+	diffLines := make([]string, 0, len(originalLines)+len(lines))
+	diffLines = append(diffLines, prefixInlineCommentDiffLines(originalLines, "-")...)
+	diffLines = append(diffLines, prefixInlineCommentDiffLines(lines, "+")...)
+	return diffLines
+}
+
+func inlineCommentSuggestionOriginalLines(suggestionContext githubcli.PullRequestInlineComment) []string {
+	previewLines := parseDiffPreviewLines(suggestionContext.DiffHunk)
+	if len(previewLines) == 0 {
+		return nil
+	}
+
+	startLine, endLine, side := pullRequestInlineCommentTargetRange(suggestionContext)
+	if startLine <= 0 && endLine <= 0 {
+		return nil
+	}
+	if endLine == 0 {
+		endLine = startLine
+	}
+	if startLine == 0 {
+		startLine = endLine
+	}
+	if startLine > endLine {
+		startLine, endLine = endLine, startLine
+	}
+
+	originalLines := make([]string, 0, endLine-startLine+1)
+	for _, previewLine := range previewLines {
+		if previewLine.kind == diffPreviewHunkHeaderLine || previewLine.kind == diffPreviewNoteLine {
+			continue
+		}
+		lineNumber := conversationPreviewLineNumber(previewLine, side)
+		if lineNumber < startLine || lineNumber > endLine {
+			continue
+		}
+		originalLines = append(originalLines, previewLine.text)
+	}
+	return originalLines
+}
+
+func prefixInlineCommentDiffLines(lines []string, prefix string) []string {
 	prefixed := make([]string, 0, len(lines))
 	for _, line := range lines {
-		prefixed = append(prefixed, "+"+line)
+		prefixed = append(prefixed, prefix+line)
 	}
 	return prefixed
 }

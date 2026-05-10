@@ -220,7 +220,7 @@ func (program *Program) buildPullRequestConversationSections(summary githubcli.P
 
 	for index, rawComment := range detail.InlineComments {
 		comment := rawComment
-		body := renderInlineCommentBodyWithHTML(comment.Body, comment.BodyHTML, program.markdownRenderer, commentBodyWidth)
+		body := renderInlineCommentBodyForInlineComment(comment, program.markdownRenderer, commentBodyWidth)
 		sectionID := browserDetailSectionID(pullRequestKey, "inline-comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{

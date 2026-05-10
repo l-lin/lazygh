@@ -949,7 +949,7 @@ func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlig
 	}
 }
 
-func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsTabFillsTheCommentBoxInteriorWithTheCodeBlockBackground(t *testing.T) {
+func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsTabShowsTheCurrentLineBeforeTheSuggestedReplacementAndFillsTheCommentBoxInterior(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
@@ -957,7 +957,7 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 	})
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#115": {Title: "Styled PR", Number: 115, Body: "Body 115", BaseRefName: "main", HeadRefName: "feature-115", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\nfmt.Println(\"hello\")\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -43,1 +43,1 @@\n-fmt.Println(\"goodbye\")\n+fmt.Println(\"hello\")"}}},
+			"acme/widgets#115": {Title: "Styled PR", Number: 115, Body: "Body 115", BaseRefName: "main", HeadRefName: "feature-115", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\nfmt.Println(\"bonjour\")\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -43,1 +43,1 @@\n-fmt.Println(\"goodbye\")\n+fmt.Println(\"hello\")"}}},
 		},
 	}
 	subject := NewProgramWithModelAndLoader(model, loader)
@@ -979,17 +979,28 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	codeLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `fmt.Println("hello")`)
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[codeLineIndex-1])); actualInnerText != "" {
+	removedLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `fmt.Println("hello")`)
+	addedLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `fmt.Println("bonjour")`)
+	if removedLineIndex >= addedLineIndex {
+		t.Fatalf("expected the removed suggestion line to render before the added line, actual %q", detailView.Buffer())
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedLineIndex-1])); actualInnerText != "" {
 		t.Fatalf("expected the suggestion code block top padding line to stay blank inside the comment box, actual %q", actualInnerText)
 	}
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[codeLineIndex+1])); actualInnerText != "" {
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedLineIndex+1])); actualInnerText != "" {
 		t.Fatalf("expected the suggestion code block bottom padding line to stay blank inside the comment box, actual %q", actualInnerText)
 	}
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block top padding background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block bottom padding background")
-	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block border background")
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedLineIndex])); !strings.Contains(actualInnerText, `-fmt.Println("hello")`) {
+		t.Fatalf("expected the suggestion block to show the current line %q, actual %q", `-fmt.Println("hello")`, actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedLineIndex])); !strings.Contains(actualInnerText, `+fmt.Println("bonjour")`) {
+		t.Fatalf("expected the suggestion block to show the suggested line %q, actual %q", `+fmt.Println("bonjour")`, actualInnerText)
+	}
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion removed line background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion added line background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block top padding background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block bottom padding background")
+	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, addedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block border background")
 }
 
 func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailPaneShowsAStyledHeadingGreyCommentBorderAndHighlightedCommentAuthorBadge(t *testing.T) {

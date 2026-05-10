@@ -67,8 +67,9 @@ func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReview
 
 func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
+	suggestionContext := pullRequestInlineCommentFromThread(thread)
 	lines := make([]string, 0, len(thread.Comments)+2)
-	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
+	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(suggestionContext); diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
 	if len(thread.Comments) == 0 {
@@ -76,14 +77,15 @@ func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequ
 		return strings.Join(lines, "\n")
 	}
 
-	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, renderer, width, connectedUserLogin)...)
+	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, suggestionContext, renderer, width, connectedUserLogin)...)
 	lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
 	return strings.Join(lines, "\n")
 }
 
 func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) []int {
 	commentIndexes := make([]int, 0)
-	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
+	suggestionContext := pullRequestInlineCommentFromThread(thread)
+	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(suggestionContext); diffPreview != "" {
 		for range renderedTextLineCount(diffPreview) {
 			commentIndexes = append(commentIndexes, -1)
 		}
@@ -97,7 +99,7 @@ func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewT
 	}
 
 	for commentIndex, threadComment := range thread.Comments {
-		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(threadComment, renderer, width, commentIndex, len(thread.Comments), connectedUserLogin)
+		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(thread.Comments), connectedUserLogin)
 		for range renderedTextLineCount(renderedCommentBlock) {
 			commentIndexes = append(commentIndexes, commentIndex)
 		}
@@ -124,33 +126,33 @@ func renderPullRequestInlineCommentThreadDiffPreview(comment githubcli.PullReque
 }
 
 func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) []string {
-	return renderInlineThreadCommentBoxesForViewer(comments, renderer, width, "")
+	return renderInlineThreadCommentBoxesForViewer(comments, githubcli.PullRequestInlineComment{}, renderer, width, "")
 }
 
-func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
+func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
 	renderedComments := make([]string, 0, len(comments))
 	for commentIndex, threadComment := range comments {
-		renderedComments = append(renderedComments, renderInlineThreadCommentBlockForViewer(threadComment, renderer, width, commentIndex, len(comments), connectedUserLogin))
+		renderedComments = append(renderedComments, renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(comments), connectedUserLogin))
 	}
 	return renderedComments
 }
 
 func renderInlineThreadCommentBlock(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int) string {
-	return renderInlineThreadCommentBlockForViewer(comment, renderer, width, commentIndex, commentCount, "")
+	return renderInlineThreadCommentBlockForViewer(comment, githubcli.PullRequestInlineComment{}, renderer, width, commentIndex, commentCount, "")
 }
 
-func renderInlineThreadCommentBlockForViewer(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int, connectedUserLogin string) string {
-	renderedCommentBox := renderInlineThreadCommentBoxForViewer(comment, renderer, width, connectedUserLogin, commentIndex > 0)
+func renderInlineThreadCommentBlockForViewer(comment githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int, connectedUserLogin string) string {
+	renderedCommentBox := renderInlineThreadCommentBoxForViewer(comment, suggestionContext, renderer, width, connectedUserLogin, commentIndex > 0)
 	if commentIndex == 0 {
 		return renderedCommentBox
 	}
 	return renderInlineThreadReplyBlock(renderedCommentBox, commentIndex < commentCount-1)
 }
 
-func renderInlineThreadCommentBoxForViewer(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
+func renderInlineThreadCommentBoxForViewer(comment githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
 	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
 	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
-	body := renderInlineCommentBodyWithHTML(comment.Body, comment.BodyHTML, renderer, commentBodyWidth)
+	body := renderInlineCommentBodyForThreadComment(comment, suggestionContext, renderer, commentBodyWidth)
 	return renderCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
 }
 

@@ -479,6 +479,66 @@ func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxC
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "42", given_themeColorHex(t, theme.SyntaxNumberHex), "review inline comment code number")
 }
 
+func TestReviewMode_GivenSuggestionFenceInlineThreadComment_WhenRendering_ThenItShowsTheCurrentLinesBeforeTheSuggestedReplacementInsideTheCommentBox(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:        "thread-1",
+		Path:      "internal/tui/render.go",
+		StartLine: 2,
+		Line:      3,
+		DiffSide:  "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "```suggestion\nbetter line\nbetter another line\n```",
+			CreatedAt: "2026-04-20T10:00:00Z",
+			DiffHunk:  "@@ -1,2 +1,3 @@\n context\n-old line\n+new line\n+another line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	removedFirstLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "new line")
+	removedSecondLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "another line")
+	addedFirstLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "better line")
+	addedSecondLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "better another line")
+	if removedFirstLineIndex >= removedSecondLineIndex || removedSecondLineIndex >= addedFirstLineIndex || addedFirstLineIndex >= addedSecondLineIndex {
+		t.Fatalf("expected the suggestion thread to render removed lines before added lines, actual %q", detailView.Buffer())
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedFirstLineIndex-1])); actualInnerText != "" {
+		t.Fatalf("expected the review suggestion code block top padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedSecondLineIndex+1])); actualInnerText != "" {
+		t.Fatalf("expected the review suggestion code block bottom padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedFirstLineIndex])); !strings.Contains(actualInnerText, "-new line") {
+		t.Fatalf("expected the review suggestion block to show the current line %q, actual %q", "-new line", actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedSecondLineIndex])); !strings.Contains(actualInnerText, "-another line") {
+		t.Fatalf("expected the review suggestion block to show the current line %q, actual %q", "-another line", actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedFirstLineIndex])); !strings.Contains(actualInnerText, "+better line") {
+		t.Fatalf("expected the review suggestion block to show the suggested line %q, actual %q", "+better line", actualInnerText)
+	}
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedSecondLineIndex])); !strings.Contains(actualInnerText, "+better another line") {
+		t.Fatalf("expected the review suggestion block to show the suggested line %q, actual %q", "+better another line", actualInnerText)
+	}
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion removed line background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion added line background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block top padding background")
+	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block bottom padding background")
+	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, addedFirstLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block border background")
+}
+
 func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsTheThreadChevronAndTheLocationWithoutASideAnchor(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{

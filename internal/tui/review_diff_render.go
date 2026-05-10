@@ -212,6 +212,7 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*8)
 	threadWidth := effectiveMarkdownWidth(width)
 	threadCopy := thread
+	suggestionContext := pullRequestInlineCommentFromReviewDiffThread(thread)
 
 	rows = append(rows,
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
@@ -228,7 +229,7 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 
 	for commentIndex, comment := range thread.Comments {
 		commentCopy := comment
-		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(comment, renderer, threadWidth, commentIndex, len(thread.Comments), connectedUserLogin)
+		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(comment, suggestionContext, renderer, threadWidth, commentIndex, len(thread.Comments), connectedUserLogin)
 		for _, boxLine := range strings.Split(renderedCommentBlock, "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
