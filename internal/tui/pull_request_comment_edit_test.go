@@ -41,6 +41,37 @@ func TestActionsPopup_GivenBrowserCommentsTabCursorOnAnOwnedPullRequestComment_W
 	}
 }
 
+func TestActionsPopup_GivenBrowserCommentsTabCursorOnANonOwnedPullRequestComment_WhenOpening_ThenItShowsUpdateAndDeletePullRequestCommentActions(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithNonOwnedCommentForEditTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Original PR comment": "Rendered original PR comment"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original PR comment")
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), pullRequestCommentUpdateEditorTitle) {
+		t.Fatalf("expected the popup to contain the PR comment update action, actual %q", popupView.Buffer())
+	}
+	if !strings.Contains(popupView.Buffer(), pullRequestCommentDeleteActionTitle) {
+		t.Fatalf("expected the popup to contain the PR comment delete action, actual %q", popupView.Buffer())
+	}
+}
+
 func TestEditPullRequestComment_GivenBrowserCommentsTabSubmit_WhenSubmittingOptimistically_ThenItKeepsTheRenderedCommentsVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithOwnedCommentForEditTests()},
@@ -153,6 +184,14 @@ func TestDeletePullRequestComment_GivenBrowserCommentsTabAction_WhenSubmittingOp
 }
 
 func given_pullRequestDetailWithOwnedCommentForEditTests() githubcli.PullRequestDetail {
+	return given_pullRequestDetailWithCommentForEditTests(true)
+}
+
+func given_pullRequestDetailWithNonOwnedCommentForEditTests() githubcli.PullRequestDetail {
+	return given_pullRequestDetailWithCommentForEditTests(false)
+}
+
+func given_pullRequestDetailWithCommentForEditTests(viewerDidAuthor bool) githubcli.PullRequestDetail {
 	return githubcli.PullRequestDetail{
 		Title:       "First PR",
 		Number:      42,
@@ -162,7 +201,7 @@ func given_pullRequestDetailWithOwnedCommentForEditTests() githubcli.PullRequest
 		State:       "OPEN",
 		Comments: []githubcli.PullRequestComment{{
 			ID:              "IC_kwDOA",
-			ViewerDidAuthor: true,
+			ViewerDidAuthor: viewerDidAuthor,
 			Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
 			Body:            "Original PR comment",
 			CreatedAt:       "2026-04-18T10:00:00Z",

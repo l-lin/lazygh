@@ -184,7 +184,7 @@ func (program *Program) selectedBrowserChangesInlineCommentActionTarget() (pullR
 	}
 
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) || !comment.ViewerDidAuthor {
+	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	return pullRequestReviewCommentActionTarget{
@@ -212,7 +212,7 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) || !comment.ViewerDidAuthor {
+	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
@@ -233,7 +233,7 @@ func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.Pul
 }
 
 func pullRequestInlineThreadCommentActionTarget(threadComment githubcli.PullRequestComment) (pullRequestReviewCommentActionTarget, bool) {
-	if !hasUsablePullRequestMutationID(threadComment.ID) || !threadComment.ViewerDidAuthor {
+	if !hasUsablePullRequestMutationID(threadComment.ID) {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	return pullRequestReviewCommentActionTarget{commentID: strings.TrimSpace(threadComment.ID), body: threadComment.Body}, true

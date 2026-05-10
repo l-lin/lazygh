@@ -130,7 +130,7 @@ func (program *Program) selectedPullRequestCommentEditActionTarget() (pullReques
 		return pullRequestCommentEditActionTarget{}, false
 	}
 	comment := *sectionAtCursor.section.comment
-	if !hasUsablePullRequestMutationID(comment.ID) || !comment.ViewerDidAuthor {
+	if !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestCommentEditActionTarget{}, false
 	}
 
