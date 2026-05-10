@@ -33,7 +33,7 @@ func (program *Program) layoutModalEditorView(gui *gocui.Gui) error {
 
 func (program *Program) configureModalEditorView(view *gocui.View) {
 	configureFramedOverlayView(view, program.modalEditorTitle(), "")
-	view.Wrap = false
+	view.Wrap = program.modalEditor != nil && program.modalEditor.lineEditor == nil
 	view.Highlight = false
 	view.Editable = true
 	view.Editor = gocui.EditorFunc(program.editModalEditor)
@@ -47,6 +47,10 @@ func (program *Program) renderModalEditorView(view *gocui.View) {
 	view.Clear()
 	text := program.modalEditor.Text()
 	fmt.Fprint(view, text)
+	if view.Wrap {
+		program.setWrappedMultilineInputCursor(view, text, program.modalEditor.Cursor())
+		return
+	}
 	column, row := program.modalEditor.CursorXY()
 	program.setMultilineInputCursor(view, column, row)
 }

@@ -72,6 +72,19 @@ func (state *modalEditorState) Text() string {
 	return ""
 }
 
+func (state *modalEditorState) Cursor() int {
+	if state == nil {
+		return 0
+	}
+	if state.lineEditor != nil {
+		return state.lineEditor.Cursor()
+	}
+	if state.editor != nil {
+		return state.editor.Cursor()
+	}
+	return 0
+}
+
 func (state *modalEditorState) CursorXY() (int, int) {
 	if state == nil {
 		return 0, 0
