@@ -44,7 +44,7 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) action
 	wasVisible := program.modalEditorVisible()
 	err := program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
 		return program.submitInlineCommentReply(target, body)
-	}, reviewInlineCommentModalHeight, handleMultilineModalEditorExternalEditKey)
+	}, reviewInlineCommentModalHeight)
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}

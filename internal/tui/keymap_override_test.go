@@ -143,6 +143,21 @@ func TestKeybindingSpecs_GivenModalEditorCancelOverride_WhenListingBindings_Then
 	then_bindingDoesNotExist(t, actual, viewDetailName, 'X')
 }
 
+func TestKeybindingSpecs_GivenModalEditorExternalEditorOverride_WhenListingBindings_ThenItAppliesToTheModalOnly(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"open_external_editor": {"ctrl+o"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlO, handler: subject.openModalEditorInExternalEditor})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlG)
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyCtrlO)
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+}
+
 func TestKeybindingSpecs_GivenSearchCancelOverride_WhenListingBindings_ThenItAppliesToBothSearchPrompts(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"search": {

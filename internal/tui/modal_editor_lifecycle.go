@@ -11,15 +11,16 @@ func (program *Program) modalEditorVisible() bool {
 }
 
 func (program *Program) openModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error) error {
-	return program.openMultilineModalEditor(gui, title, initialText, submit, modalEditorTotalHeight, nil)
+	program.modalEditor = newModalEditorState(title, initialText, submit)
+	if gui == nil {
+		return nil
+	}
+
+	return program.layout(gui)
 }
 
-func (program *Program) openModalEditorWithKeyHandler(gui *gocui.Gui, title string, initialText string, submit func(string) error, handleKey modalEditorKeyHandler) error {
-	return program.openMultilineModalEditor(gui, title, initialText, submit, modalEditorTotalHeight, handleKey)
-}
-
-func (program *Program) openMultilineModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error, totalHeight int, handleKey modalEditorKeyHandler) error {
-	program.modalEditor = newModalEditorStateWithOptions(title, initialText, submit, totalHeight, false, handleKey)
+func (program *Program) openMultilineModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error, totalHeight int) error {
+	program.modalEditor = newMultilineModalEditorState(title, initialText, submit, totalHeight)
 	if gui == nil {
 		return nil
 	}

@@ -62,9 +62,9 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 	}
 
 	wasVisible := program.modalEditorVisible()
-	err := program.openModalEditorWithKeyHandler(gui, title, "", func(body string) error {
+	err := program.openModalEditor(gui, title, "", func(body string) error {
 		return program.submitPendingPullRequestReview(target, event, body)
-	}, handleMultilineModalEditorExternalEditKey)
+	})
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}

@@ -34,7 +34,7 @@ func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, view *go
 
 	return program.openMultilineModalEditor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) error {
 		return program.submitInlineReviewComment(selection.target, body)
-	}, reviewInlineCommentModalHeight, handleMultilineModalEditorExternalEditKey)
+	}, reviewInlineCommentModalHeight)
 }
 
 func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, bool) {

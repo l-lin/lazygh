@@ -11,7 +11,7 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestKeybindingSpecs_GivenProgram_WhenListingPullRequestCommentBindings_ThenTheShortcutExistsOnlyInPullRequestContextsAndTheComposerSupportsSubmit(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingPullRequestCommentBindings_ThenTheShortcutExistsOnlyInPullRequestContextsAndTheComposerSupportsSubmitAndExternalEditor(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
@@ -21,6 +21,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPullRequestCommentBindings_Then
 	then_bindingDoesNotExist(t, actual, viewUserName, 'c')
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyAltEnter, handler: subject.submitModalEditor})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlS, handler: subject.submitModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlG, handler: subject.openModalEditorInExternalEditor})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: subject.closeModalEditor})
 }
 
@@ -47,7 +48,7 @@ func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShow
 	if composerView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", composerView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Escape: cancel")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
 
 	x0, y0, x1, y1, actualErr := gui.ViewPosition(viewModalEditorName)
 	then_noError(t, actualErr)

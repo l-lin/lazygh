@@ -121,6 +121,7 @@ func (program *Program) modalEditorKeyHintsText() string {
 
 	return program.statusLineKeyHints(
 		statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "submit"}}},
+		statusLineHintSpec{label: "editor", fallback: "Ctrl+G", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "open_external_editor"}}},
 		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "cancel"}}},
 	)
 }

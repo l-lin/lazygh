@@ -57,10 +57,9 @@ func TestReviewMode_GivenTheDetailCursorOnADiffLine_WhenOpeningTheInlineCommentC
 	}
 
 	subject.modalEditor.editor.SetText("Draft inline comment")
-	actualHandled := subject.editModalEditor(composerView, gocui.KeyCtrlG, 0, gocui.ModNone)
-	if !actualHandled {
-		t.Fatal("expected ctrl-g to be handled")
-	}
+	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlG)
+	actualErr = actualHandler(gui, composerView)
+	then_noError(t, actualErr)
 	if subject.externalEditor.(*fakeExternalEditor).receivedText != "Draft inline comment" {
 		t.Fatalf("expected external editor input %q, actual %q", "Draft inline comment", subject.externalEditor.(*fakeExternalEditor).receivedText)
 	}

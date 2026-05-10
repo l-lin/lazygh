@@ -167,6 +167,37 @@ func TestEditPullRequestTitle_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDr
 	}
 }
 
+func TestEditPullRequestTitle_GivenControlG_WhenOpeningTheExternalEditor_ThenItReplacesTheDraftWithTheSavedSingleLineText(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.externalEditor = &fakeExternalEditor{editedText: "Edited\nin $EDITOR\n"}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestTitleEditorTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestTitleEditorTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	subject.modalEditor.lineEditor.SetText("Draft title")
+
+	titleView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlG)
+	actualErr = actualHandler(gui, titleView)
+	then_noError(t, actualErr)
+	if subject.externalEditor.(*fakeExternalEditor).receivedText != "Draft title" {
+		t.Fatalf("expected external editor input %q, actual %q", "Draft title", subject.externalEditor.(*fakeExternalEditor).receivedText)
+	}
+	if actual := strings.TrimSpace(titleView.Buffer()); actual != "Edited in $EDITOR" {
+		t.Fatalf("expected title editor buffer %q, actual %q", "Edited in $EDITOR", actual)
+	}
+}
+
 func TestActionsPopup_GivenEditDescriptionActionSelected_WhenExecuting_ThenItOpensTheDescriptionEditorSeededWithTheCurrentBody(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Rich body", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
@@ -220,10 +251,9 @@ func TestEditPullRequestDescription_GivenControlG_WhenOpeningTheExternalEditor_T
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	actualHandled := subject.editModalEditor(descriptionView, gocui.KeyCtrlG, 0, gocui.ModNone)
-	if !actualHandled {
-		t.Fatal("expected ctrl-g to be handled")
-	}
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlG)
+	actualErr = actualHandler(gui, descriptionView)
+	then_noError(t, actualErr)
 	if subject.externalEditor.(*fakeExternalEditor).receivedText != "Draft body" {
 		t.Fatalf("expected external editor input %q, actual %q", "Draft body", subject.externalEditor.(*fakeExternalEditor).receivedText)
 	}
@@ -252,10 +282,9 @@ func TestEditPullRequestDescription_GivenMissingExternalEditor_WhenOpeningIt_The
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	actualHandled := subject.editModalEditor(descriptionView, gocui.KeyCtrlG, 0, gocui.ModNone)
-	if !actualHandled {
-		t.Fatal("expected ctrl-g to be handled")
-	}
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlG)
+	actualErr = actualHandler(gui, descriptionView)
+	then_noError(t, actualErr)
 	if !strings.Contains(descriptionView.Buffer(), "Draft body") {
 		t.Fatalf("expected description editor buffer to contain %q, actual %q", "Draft body", descriptionView.Buffer())
 	}
@@ -284,10 +313,9 @@ func TestEditPullRequestDescription_GivenExternalEditorFailure_WhenOpeningIt_The
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	actualHandled := subject.editModalEditor(descriptionView, gocui.KeyCtrlG, 0, gocui.ModNone)
-	if !actualHandled {
-		t.Fatal("expected ctrl-g to be handled")
-	}
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlG)
+	actualErr = actualHandler(gui, descriptionView)
+	then_noError(t, actualErr)
 	if !strings.Contains(descriptionView.Buffer(), "Draft body") {
 		t.Fatalf("expected description editor buffer to contain %q, actual %q", "Draft body", descriptionView.Buffer())
 	}

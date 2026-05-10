@@ -14,8 +14,6 @@ const (
 	modalEditorMinWidth        = 40
 )
 
-type modalEditorKeyHandler func(*Program, *gocui.View, gocui.Key, rune, gocui.Modifier) bool
-
 type modalEditorState struct {
 	title        string
 	editor       *multilineEditor
@@ -24,39 +22,36 @@ type modalEditorState struct {
 	submit       func(string) error
 	afterSubmit  func(*gocui.Gui)
 	totalHeight  int
-	handleKey    modalEditorKeyHandler
 }
 
 func newModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
-	return newModalEditorStateWithOptions(title, initialText, submit, modalEditorTotalHeight, false, nil)
-}
-
-func newModalEditorStateWithKeyHandler(title string, initialText string, submit func(string) error, handleKey modalEditorKeyHandler) *modalEditorState {
-	return newModalEditorStateWithOptions(title, initialText, submit, modalEditorTotalHeight, false, handleKey)
+	return newMultilineModalEditorState(title, initialText, submit, modalEditorTotalHeight)
 }
 
 func newLineModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
-	return newModalEditorStateWithOptions(title, initialText, submit, lineModalEditorTotalHeight, true, nil)
-}
-
-func newModalEditorStateWithOptions(title string, initialText string, submit func(string) error, totalHeight int, singleLine bool, handleKey modalEditorKeyHandler) *modalEditorState {
 	if submit == nil {
 		submit = func(string) error { return nil }
 	}
 
-	state := &modalEditorState{
+	return &modalEditorState{
 		title:       strings.TrimSpace(title),
+		lineEditor:  newLineEditor(initialText),
 		submit:      submit,
-		totalHeight: totalHeight,
-		handleKey:   handleKey,
+		totalHeight: lineModalEditorTotalHeight,
 	}
-	if singleLine {
-		state.lineEditor = newLineEditor(initialText)
-		return state
+}
+
+func newMultilineModalEditorState(title string, initialText string, submit func(string) error, totalHeight int) *modalEditorState {
+	if submit == nil {
+		submit = func(string) error { return nil }
 	}
 
-	state.editor = newMultilineEditor(initialText)
-	return state
+	return &modalEditorState{
+		title:       strings.TrimSpace(title),
+		editor:      newMultilineEditor(initialText),
+		submit:      submit,
+		totalHeight: totalHeight,
+	}
 }
 
 func (state *modalEditorState) Text() string {

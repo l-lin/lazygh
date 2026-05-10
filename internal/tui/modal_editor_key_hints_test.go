@@ -4,11 +4,12 @@ import (
 	"strings"
 	"testing"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func TestStatusLineKeyHints_GivenPullRequestTitleEditor_WhenRendering_ThenItShowsTheStandardGreySubmitAndCancelHintsAndNoModalFooter(t *testing.T) {
+func TestStatusLineKeyHints_GivenPullRequestTitleEditor_WhenRendering_ThenItShowsTheStandardGreySubmitEditorAndCancelHintsAndNoModalFooter(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -29,12 +30,32 @@ func TestStatusLineKeyHints_GivenPullRequestTitleEditor_WhenRendering_ThenItShow
 	if modalView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Escape: cancel")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "title editor key hints")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "title editor key hints")
 }
 
-func TestStatusLineKeyHints_GivenPullRequestDescriptionEditor_WhenRendering_ThenItShowsTheStandardGreySubmitAndCancelHintsAndNoModalFooter(t *testing.T) {
+func TestStatusLineKeyHints_GivenConfiguredModalEditorExternalEditorOverride_WhenRendering_ThenItUsesTheResolvedEditorKeyHint(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_pullRequestCommentModel(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"open_external_editor": {"ctrl+o"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestCommentComposer(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, <c-o>: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, <c-o>: editor, Escape: cancel")
+
+}
+
+func TestStatusLineKeyHints_GivenPullRequestDescriptionEditor_WhenRendering_ThenItShowsTheStandardGreySubmitEditorAndCancelHintsAndNoModalFooter(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Rich body", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -56,12 +77,12 @@ func TestStatusLineKeyHints_GivenPullRequestDescriptionEditor_WhenRendering_Then
 	if modalView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Escape: cancel")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "description editor key hints")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "description editor key hints")
 }
 
-func TestStatusLineKeyHints_GivenInlineCommentReplyEditor_WhenRendering_ThenItShowsTheStandardGreySubmitAndCancelHintsAndNoModalFooter(t *testing.T) {
+func TestStatusLineKeyHints_GivenInlineCommentReplyEditor_WhenRendering_ThenItShowsTheStandardGreySubmitEditorAndCancelHintsAndNoModalFooter(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests()},
 	}
@@ -98,7 +119,7 @@ func TestStatusLineKeyHints_GivenInlineCommentReplyEditor_WhenRendering_ThenItSh
 	if modalView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Escape: cancel")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "inline comment reply key hints")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "inline comment reply key hints")
 }

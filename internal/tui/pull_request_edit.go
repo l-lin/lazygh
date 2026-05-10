@@ -66,7 +66,7 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 	wasVisible := program.modalEditorVisible()
 	err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
 		return program.submitPullRequestDescriptionEdit(target, body)
-	}, pullRequestDescriptionEditorHeight, handlePullRequestDescriptionEditorKey)
+	}, pullRequestDescriptionEditorHeight)
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}
@@ -111,8 +111,4 @@ func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActio
 	program.invalidatePullRequestDetail(target.repository, target.number)
 	program.setFeedback(program.model.Focus(), pullRequestDescriptionEditSuccessMessage)
 	return nil
-}
-
-func handlePullRequestDescriptionEditorKey(program *Program, view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	return handleMultilineModalEditorExternalEditKey(program, view, key, ch, mod)
 }

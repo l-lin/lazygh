@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheSharedSideViewAliasesAndModalCancel(t *testing.T) {
+func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheSharedSideViewAliasesAndModalEditorBindings(t *testing.T) {
 	actual := DefaultKeymaps()
 
 	expected := KeymapOverrides{
@@ -14,7 +14,8 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"previous_side_view": {"shift+tab", "h"},
 		},
 		"modal_editor": {
-			"cancel": {"esc"},
+			"cancel":               {"esc"},
+			"open_external_editor": {"ctrl+g"},
 		},
 	}
 	for scope, expectedActions := range expected {

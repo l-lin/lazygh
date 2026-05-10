@@ -55,7 +55,7 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) ac
 	wasVisible := program.modalEditorVisible()
 	err := program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
 		return program.submitPullRequestCommentUpdate(target, body)
-	}, reviewInlineCommentModalHeight, handleMultilineModalEditorExternalEditKey)
+	}, reviewInlineCommentModalHeight)
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}

@@ -290,6 +290,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		configuredKeybindingActionFor(keymapScopeSearch, "cancel", []string{viewActionsPopupSearchName}, program.closeActionsPopup),
 
 		configuredKeybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor),
+		configuredKeybindingActionFor(keymapScopeModalEditor, "open_external_editor", []string{viewModalEditorName}, program.openModalEditorInExternalEditor),
 		configuredKeybindingActionFor(keymapScopeModalEditor, "cancel", []string{viewModalEditorName}, program.closeModalEditor),
 
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_left", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorLeft),

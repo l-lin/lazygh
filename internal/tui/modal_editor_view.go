@@ -62,9 +62,6 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 	if program.modalEditor == nil {
 		return false
 	}
-	if program.modalEditor.handleKey != nil && program.modalEditor.handleKey(program, view, key, ch, mod) {
-		return true
-	}
 	if !program.modalEditor.HandleKey(key, ch, mod) {
 		return false
 	}
