@@ -117,7 +117,7 @@ func prepareInlineCommentMarkdownRenderPlan(markdown string, suggestionContext g
 		if strings.HasPrefix(trimmedLine, "```") {
 			if inlineCommentSuggestionFence(fenceInfo) {
 				if label := inlineCommentCodeBlockLabel(fenceInfo); label != "" {
-					preparedLines = append(preparedLines, label, "")
+					preparedLines = append(preparedLines, inlineCommentSuggestionLabelMarkdownLine(label))
 				}
 				marker := inlineCommentSuggestionMarker(len(suggestionBlocks))
 				preparedLines = append(preparedLines, marker)
@@ -209,6 +209,10 @@ func renderInlineCommentSuggestionPaddingLine() string {
 func renderInlineCommentSuggestionLine(path string, sign rune, text string, foregroundHex string, changedRanges []styledRuneRange) string {
 	basePrefix := foregroundColorEscape(foregroundHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
 	return styleText(string(sign), basePrefix) + renderSyntaxHighlightedCode(path, text, basePrefix, changedRanges)
+}
+
+func inlineCommentSuggestionLabelMarkdownLine(label string) string {
+	return strings.TrimSpace(label) + "  "
 }
 
 func inlineCommentSuggestionMarker(index int) string {

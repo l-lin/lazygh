@@ -91,8 +91,7 @@ func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesAS
 		t.Fatalf("expected rendered inline comment %q, actual %q", "Rendered inline comment", actual)
 	}
 	expectedMarkdown := strings.Join([]string{
-		"**Suggestion**",
-		"",
+		"**Suggestion**  ",
 		inlineCommentSuggestionMarker(0),
 	}, "\n")
 	if renderer.lastMarkdown != expectedMarkdown {
@@ -126,7 +125,7 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.SelectedLineBackgroundHex), "suggestion addition base background")
 }
 
-func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItAddsOnlyOneExplicitPaddingLineBeforeTheDiff(t *testing.T) {
+func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItKeepsOnlyOneVisibleBlankLineBeforeTheDiff(t *testing.T) {
 	comment := githubcli.PullRequestInlineComment{
 		Body:         "```suggestion\nfmt.Println(\"bonjour\")\n```",
 		Path:         "internal/tui/render.go",
@@ -146,7 +145,7 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 			actualBlankLineCount++
 		}
 	}
-	if actualBlankLineCount != 2 {
-		t.Fatalf("expected exactly 2 blank lines between the suggestion label and the first diff line, actual %d in %q", actualBlankLineCount, actualDocument.text)
+	if actualBlankLineCount != 1 {
+		t.Fatalf("expected exactly 1 blank line between the suggestion label and the first diff line, actual %d in %q", actualBlankLineCount, actualDocument.text)
 	}
 }
