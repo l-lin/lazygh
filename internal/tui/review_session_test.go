@@ -548,9 +548,9 @@ func TestReviewMode_GivenALongSuggestionFenceInlineThreadComment_WhenRendering_T
 		DiffSide: "RIGHT",
 		Comments: []githubcli.PullRequestComment{{
 			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
-			Body:      "```suggestion\n- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide\n```",
+			Body:      "```suggestion\n- [ ] 21.10 Rename `observability` packages → `foo.bar.observability.*`; rename `s3-assets` → `foo.bar.s3assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide\n```",
 			CreatedAt: "2026-04-20T10:00:00Z",
-			DiffHunk:  "@@ -0,0 +2,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3_assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide",
+			DiffHunk:  "@@ -0,0 +2,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `foo.bar.observability.*`; rename `s3-assets` → `foo.bar.s3_assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide",
 		}},
 	}}
 	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
@@ -977,13 +977,13 @@ func TestReviewMode_GivenADeepSingleFilePath_WhenRenderingTheFilesPane_ThenTheFi
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(filesView.Buffer(), " content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/") {
+	if !strings.Contains(filesView.Buffer(), " foobar/src/main/java/org/acme/foobar/") {
 		t.Fatalf("expected files view to contain the collapsed directory row, actual %q", filesView.Buffer())
 	}
-	if !strings.Contains(filesView.Buffer(), " RecommendationStoreAdapter.java") {
+	if !strings.Contains(filesView.Buffer(), " Foobar.java") {
 		t.Fatalf("expected files view to contain the file basename row, actual %q", filesView.Buffer())
 	}
-	if strings.Contains(filesView.Buffer(), " content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java") {
+	if strings.Contains(filesView.Buffer(), " foobar/src/main/java/org/acme/Foobar.java") {
 		t.Fatalf("expected files view to keep full paths out of file rows, actual %q", filesView.Buffer())
 	}
 }
@@ -1520,16 +1520,16 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 func given_reviewSessionSingleDeepFilePullRequestDiff() githubcli.PullRequestDiff {
 	return githubcli.PullRequestDiff{
 		UnifiedDiff: strings.Join([]string{
-			"diff --git a/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java b/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java",
+			"diff --git a/foobar/src/main/java/org/acme/foobar/Foobar.java b/foobar/src/main/java/org/acme/foobar/Foobar.java",
 			"index 1111111..2222222 100644",
-			"--- a/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java",
-			"+++ b/content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java",
+			"--- a/foobar/src/main/java/org/acme/foobar/Foobar.java",
+			"+++ b/foobar/src/main/java/org/acme/foobar/Foobar.java",
 			"@@ -1,1 +1,1 @@",
 			"-old recommendation",
 			"+new recommendation",
 		}, "\n"),
 		Files: []githubcli.PullRequestDiffFile{
-			{Path: "content/adapter/src/main/java/com/doctolib/healthcontent/adapters/recommendations/RecommendationStoreAdapter.java", ChangeType: "modified", Additions: 1, Deletions: 1},
+			{Path: "foobar/src/main/java/org/acme/foobar/Foobar.java", ChangeType: "modified", Additions: 1, Deletions: 1},
 		},
 	}
 }

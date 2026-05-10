@@ -82,7 +82,7 @@ func renderMarkdownWithGlamourStyle(markdown string, width int, style glamourans
 		return "", err
 	}
 
-	return strings.TrimSpace(rendered), nil
+	return trimStyledBlankLines(rendered), nil
 }
 
 func markdownWordWrap(width int) int {

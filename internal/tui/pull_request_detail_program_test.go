@@ -737,6 +737,51 @@ func TestBrowserMode_GivenTheCursorOnAConversation_WhenPressingZA_ThenItTogglesT
 	}
 }
 
+func TestBrowserMode_GivenALongPullRequestCommentCodeBlockLineWithErrorTokens_WhenRenderingComments_ThenItDoesNotInsertBlankLinesBetweenWrappedCodeSegments(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/conversations",
+				State:       "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:      "(Fix with Cursor)\n\n```\nApplicationContext failure threshold (1) exceeded: skipping repeated attempt to load context for [WebMergedContextConfiguration@31946dd4 testClass = foo.bar.ApplicationIntegrationTest, locations = [], classes = [foo.bar.Application, foo.bar.ApplicationIntegrationTest.CustomRestTemplateBuilderConfig], contextInitializerClasses = [], activeProfiles = [\"test\"], propertySourceDescriptors = [], propertySourceProperties = [\"org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true\", \"server.port=0\"], contextCustomizers = [org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@565983f3]]\n```",
+					CreatedAt: "2026-04-18T10:00:00Z",
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 80, 40)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	firstCodeLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "ApplicationContext failure threshold")
+	lastCodeLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "ExcludeFilterContextCustomizer@565983f3]]")
+	actualBlankLineCountInsideCodeBlock := 0
+	for lineIndex := firstCodeLineIndex + 1; lineIndex < lastCodeLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[lineIndex])); actualInnerText == "" {
+			actualBlankLineCountInsideCodeBlock++
+		}
+	}
+	if actualBlankLineCountInsideCodeBlock != 0 {
+		t.Fatalf("expected the comments tab code block to wrap without interior blank lines, actual %d in %q", actualBlankLineCountInsideCodeBlock, detailView.Buffer())
+	}
+}
+
 func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapsesResolvedThreadsKeepsSectionsTightAndShowsTheDiffPreview(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
@@ -1009,7 +1054,7 @@ func TestLayout_GivenALongSuggestionFenceInlineComment_WhenRendering_ThenTheComm
 	})
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
-			"acme/widgets#116": {Title: "Styled PR", Number: 116, Body: "Body 116", BaseRefName: "main", HeadRefName: "feature-116", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\n- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "openspec/changes/refactor-shared-modules/tasks.md", Line: 218, OriginalLine: 218, Side: "RIGHT", DiffHunk: "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3_assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide"}}},
+			"acme/widgets#116": {Title: "Styled PR", Number: 116, Body: "Body 116", BaseRefName: "main", HeadRefName: "feature-116", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\n- [ ] 21.10 Rename `observability` packages → `foo.bar.observability.*`; rename `s3-assets` → `foo.bar.s3assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "openspec/changes/refactor-shared-modules/tasks.md", Line: 218, OriginalLine: 218, Side: "RIGHT", DiffHunk: "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `observability` packages → `foo.bar.observability.*`; rename `infrastructure/s3-assets` → `foo.bar.s3_assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide"}}},
 		},
 	}
 	subject := NewProgramWithModelAndLoader(model, loader)

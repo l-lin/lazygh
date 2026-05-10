@@ -29,8 +29,8 @@ func TestSetPullRequests_GivenMyPullRequests_WhenSelectingThePullRequestsView_Th
 	subject.SetPullRequests(MyPullRequestsTab, []Item{myPullRequestItem(githubcli.PullRequest{
 		Title:      "fix(P3C-6986): exclude dependencies bump PRs + bump GHA",
 		Number:     422,
-		Repository: githubcli.Repository{NameWithOwner: "doctolib/patient-account"},
-		URL:        "https://github.com/doctolib/patient-account/pull/422",
+		Repository: githubcli.Repository{NameWithOwner: "acme/foobar"},
+		URL:        "https://github.com/acme/foobar/pull/422",
 		Body:       "No need to trigger Claude review for PRs that only bump dependencies.",
 		State:      "open",
 		IsDraft:    false,
@@ -42,18 +42,18 @@ func TestSetPullRequests_GivenMyPullRequests_WhenSelectingThePullRequestsView_Th
 	if len(actualPullRequests) != 1 {
 		t.Fatalf("expected 1 pull request row, actual %d", len(actualPullRequests))
 	}
-	if actualPullRequests[0].Title != " doctolib/patient-account#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA" {
-		t.Fatalf("expected title %q, actual %q", " doctolib/patient-account#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA", actualPullRequests[0].Title)
+	if actualPullRequests[0].Title != " acme/foobar#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA" {
+		t.Fatalf("expected title %q, actual %q", " acme/foobar#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA", actualPullRequests[0].Title)
 	}
 
 	actualDetail := subject.DetailContent()
 	expectedFragments := []string{
-		"Repository: doctolib/patient-account",
+		"Repository: acme/foobar",
 		"Number: #422",
 		"State: open",
 		"Draft: no",
 		"Updated: 2026-04-17T10:39:35Z",
-		"URL: https://github.com/doctolib/patient-account/pull/422",
+		"URL: https://github.com/acme/foobar/pull/422",
 		"No need to trigger Claude review for PRs that only bump dependencies.",
 	}
 	for _, expected := range expectedFragments {
@@ -365,10 +365,10 @@ func TestDefaultSeedData_GivenAFreshModel_WhenReadingRequestedPullRequests_ThenI
 func TestSetPullRequests_GivenRequestedPullRequests_WhenSelectingTheRequestedTab_ThenDetailContentShowsMetadataAndBody(t *testing.T) {
 	subject := NewModel(DefaultSeedData())
 	subject.SetPullRequests(RequestedPullRequestsTab, []Item{requestedPullRequestItem(githubcli.PullRequest{
-		Title:      "feat(doctolib-postmortems): integrate post-mortem writing guide",
+		Title:      "feat(postmortems): integrate post-mortem writing guide",
 		Number:     845,
-		Repository: githubcli.Repository{NameWithOwner: "doctolib/prompts"},
-		URL:        "https://github.com/doctolib/prompts/pull/845",
+		Repository: githubcli.Repository{NameWithOwner: "acme/foobar"},
+		URL:        "https://github.com/acme/foobar/pull/845",
 		Body:       "## Summary\n\n- Adds new skill",
 		State:      "open",
 		IsDraft:    false,
@@ -379,12 +379,12 @@ func TestSetPullRequests_GivenRequestedPullRequests_WhenSelectingTheRequestedTab
 
 	actualDetail := subject.DetailContent()
 	expectedFragments := []string{
-		"Repository: doctolib/prompts",
+		"Repository: acme/foobar",
 		"Number: #845",
 		"State: open",
 		"Draft: no",
 		"Updated: 2026-04-17T20:35:05Z",
-		"URL: https://github.com/doctolib/prompts/pull/845",
+		"URL: https://github.com/acme/foobar/pull/845",
 		"## Summary",
 	}
 	for _, expected := range expectedFragments {

@@ -149,12 +149,12 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 
 func TestRenderInlineCommentBodyForInlineComment_GivenARealWorldLongSuggestionFence_WhenRendering_ThenItWrapsTheSuggestionLinesWithoutExtraPadding(t *testing.T) {
 	comment := githubcli.PullRequestInlineComment{
-		Body:         "```suggestion\n- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide\n```",
+		Body:         "```suggestion\n- [ ] 21.10 Rename `observability` packages → `foo.bar.infrastructure.observability.*`; rename `s3-assets` → `foo.bar.s3assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide\n```",
 		Path:         "openspec/changes/refactor-shared-modules/tasks.md",
 		Line:         218,
 		OriginalLine: 218,
 		Side:         "RIGHT",
-		DiffHunk:     "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3_assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide",
+		DiffHunk:     "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `observability` packages → `foo.bar.*`; rename `s3-assets` → `foo.bar.s3_assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide",
 	}
 
 	actualDocument := newDetailDocumentWithWrap(renderRoundedCommentBox(renderInlineCommentBodyForInlineComment(comment, glamourMarkdownRenderer{}, 60), 60), 60, false)

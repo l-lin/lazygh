@@ -56,6 +56,46 @@ func TestRenderRoundedCommentBox_GivenALongCodeBlockLine_WhenFormatting_ThenItWr
 	then_detailDocumentCommentBoxBorderDoesNotHaveBackgroundHex(t, actualDocument, firstLineIndex, theme.SelectedLineBackgroundHex, "wrapped long code line border background")
 }
 
+func TestRenderCommentBoxWithMetadata_GivenALongMarkdownCodeBlockLineWithErrorTokens_WhenFormatting_ThenItDoesNotInsertBlankLinesBetweenWrappedCodeSegments(t *testing.T) {
+	markdown := strings.Join([]string{
+		"(Fix with Cursor)",
+		"",
+		"```",
+		"ApplicationContext failure threshold (1) exceeded: skipping repeated attempt to load context for [WebMergedContextConfiguration@31946dd4 testClass = foo.bar.ApplicationIntegrationTest, locations = [], classes = [foo.bar.Application, foo.bar.ApplicationIntegrationTest.CustomRestTemplateBuilderConfig], contextInitializerClasses = [], activeProfiles = [\"test\"], propertySourceDescriptors = [], propertySourceProperties = [\"org.springframework.boot.test.context.SpringBootTestContextBootstrapper=true\", \"server.port=0\"], contextCustomizers = [org.springframework.boot.test.context.filter.ExcludeFilterContextCustomizer@565983f3]]",
+		"```",
+	}, "\n")
+	body := renderMarkdownWithFallback(markdown, glamourMarkdownRenderer{}, commentBoxInnerWidth(80), "")
+
+	actualDocument := newDetailDocumentWithWrap(renderCommentBoxWithMetadata(nil, "", nil, body, 80), 80, false)
+	introLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "(Fix with Cursor)")
+	firstCodeLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "ApplicationContext failure threshold")
+	lastCodeLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "ExcludeFilterContextCustomizer@565983f3]]")
+
+	actualBlankLineCountBeforeCode := 0
+	for lineIndex := introLineIndex + 1; lineIndex < firstCodeLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lineIndex]))); actualInnerText == "" {
+			actualBlankLineCountBeforeCode++
+		}
+	}
+	if actualBlankLineCountBeforeCode != 1 {
+		t.Fatalf("expected exactly 1 blank line before the wrapped code block, actual %d in %q", actualBlankLineCountBeforeCode, actualDocument.text)
+	}
+
+	actualBlankLineCountInsideCodeBlock := 0
+	for lineIndex := firstCodeLineIndex + 1; lineIndex < lastCodeLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lineIndex]))); actualInnerText == "" {
+			actualBlankLineCountInsideCodeBlock++
+		}
+	}
+	if actualBlankLineCountInsideCodeBlock != 0 {
+		t.Fatalf("expected wrapped code block lines to stay adjacent, actual %d blank lines in %q", actualBlankLineCountInsideCodeBlock, actualDocument.text)
+	}
+
+	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lastCodeLineIndex+1]))); actualInnerText != "" {
+		t.Fatalf("expected exactly 1 blank line after the wrapped code block, actual %q", actualInnerText)
+	}
+}
+
 func then_styledTextLineRuneRangeHasBackgroundHex(t *testing.T, line styledTextLine, startColumn int, endColumn int, expectedHex string, label string) {
 	t.Helper()
 
