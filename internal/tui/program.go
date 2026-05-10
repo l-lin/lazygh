@@ -95,6 +95,7 @@ type Program struct {
 	pullRequestDetailLoadInFlight           map[string]bool
 	pullRequestDetailDocumentCache          map[pullRequestDetailDocumentCacheKey]detailDocument
 	pullRequestConversationDocumentCache    map[pullRequestDetailDocumentCacheKey]browserConversationDocument
+	pullRequestChangesRenderedRowsCache     map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow
 	pullRequestDiffCache                    map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight             map[string]bool
 	issueDetailCache                        map[string]issueDetailResult
@@ -183,6 +184,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		pullRequestDetailLoadInFlight:        map[string]bool{},
 		pullRequestDetailDocumentCache:       map[pullRequestDetailDocumentCacheKey]detailDocument{},
 		pullRequestConversationDocumentCache: map[pullRequestDetailDocumentCacheKey]browserConversationDocument{},
+		pullRequestChangesRenderedRowsCache:  map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{},
 		pullRequestDiffCache:                 map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:          map[string]bool{},
 		issueDetailCache:                     map[string]issueDetailResult{},

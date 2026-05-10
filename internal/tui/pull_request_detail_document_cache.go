@@ -61,10 +61,11 @@ func (program *Program) cachePullRequestConversationDocument(key pullRequestDeta
 }
 
 func (program *Program) invalidatePullRequestDetailDocumentCache() {
-	if len(program.pullRequestDetailDocumentCache) == 0 && len(program.pullRequestConversationDocumentCache) == 0 {
+	if len(program.pullRequestDetailDocumentCache) == 0 && len(program.pullRequestConversationDocumentCache) == 0 && len(program.pullRequestChangesRenderedRowsCache) == 0 {
 		return
 	}
 
 	program.pullRequestDetailDocumentCache = map[pullRequestDetailDocumentCacheKey]detailDocument{}
 	program.pullRequestConversationDocumentCache = map[pullRequestDetailDocumentCacheKey]browserConversationDocument{}
+	program.pullRequestChangesRenderedRowsCache = map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{}
 }

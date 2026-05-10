@@ -165,3 +165,70 @@ func TestCurrentActionsPopupActions_GivenCommentsTabDocumentAlreadyBuilt_WhenRes
 		t.Fatalf("expected repeated actions popup lookups to avoid markdown rendering, actual %d", renderer.callCount)
 	}
 }
+
+func TestCurrentActionsPopupActions_GivenChangesTabDiffAlreadyRendered_WhenResolvingTwice_ThenItReusesCachedRenderedRowsWithoutRenderingMarkdownAgain(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Original inline body": "Rendered original inline body",
+	}}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithOwnedInlineThreadForChangesEditTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithOwnedInlineThreadForChangesEditTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = renderer
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openDetail(gui, nil))
+	subject.activeDetailTab = ChangesDetailTab
+	then_noError(t, subject.refreshViews(gui))
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
+	renderer.callCount = 0
+
+	firstActions := subject.currentActionsPopupActions()
+	secondActions := subject.currentActionsPopupActions()
+
+	for _, expectedTitle := range []string{pullRequestInlineCommentReplyEditorTitle, inlineCommentUpdateEditorTitle, inlineCommentDeleteActionTitle} {
+		if !given_hasActionTitle(firstActions, expectedTitle) {
+			t.Fatalf("expected actions to contain %q, actual %v", expectedTitle, given_actionTitles(firstActions))
+		}
+		if !given_hasActionTitle(secondActions, expectedTitle) {
+			t.Fatalf("expected repeated actions to contain %q, actual %v", expectedTitle, given_actionTitles(secondActions))
+		}
+	}
+	if renderer.callCount != 0 {
+		t.Fatalf("expected repeated changes-tab actions popup lookups to avoid markdown rendering, actual %d", renderer.callCount)
+	}
+}
+
+func TestMoveActionsPopupSelection_GivenChangesTabPopupAlreadyOpen_WhenNavigating_ThenItReusesCachedRenderedRowsWithoutRenderingMarkdownAgain(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Original inline body": "Rendered original inline body",
+	}}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithOwnedInlineThreadForChangesEditTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithOwnedInlineThreadForChangesEditTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = renderer
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openDetail(gui, nil))
+	subject.activeDetailTab = ChangesDetailTab
+	then_noError(t, subject.refreshViews(gui))
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
+	then_noError(t, subject.openActionsPopup(gui, nil))
+	renderer.callCount = 0
+
+	then_noError(t, subject.moveActionsPopupSelectionDown(gui, nil))
+	then_noError(t, subject.moveActionsPopupSelectionUp(gui, nil))
+
+	if renderer.callCount != 0 {
+		t.Fatalf("expected changes-tab popup navigation to avoid markdown rendering, actual %d", renderer.callCount)
+	}
+}

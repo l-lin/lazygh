@@ -87,6 +87,16 @@ func (program *Program) browserCollapsedChangesThreadIDs(summary githubcli.PullR
 }
 
 func (program *Program) currentPullRequestChangesRenderedRows(summary githubcli.PullRequest, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
+	if cacheKey, ok := pullRequestChangesRenderedRowsCacheKey(summary, width); ok {
+		if rows, ok := program.pullRequestChangesRenderedRowsForKey(cacheKey); ok {
+			return rows
+		}
+
+		rows := buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
+		program.cachePullRequestChangesRenderedRows(cacheKey, rows)
+		return rows
+	}
+
 	return buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
 }
 
