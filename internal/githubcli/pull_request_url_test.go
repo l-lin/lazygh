@@ -35,6 +35,21 @@ func TestParsePullRequestURL_GivenGitHubFilesTabURL_WhenParsing_ThenItKeepsThePu
 	}
 }
 
+func TestParsePullRequestURL_GivenGitHubPullRequestsPath_WhenParsing_ThenItNormalizesToTheCanonicalPullURL(t *testing.T) {
+	actual, actualErr := ParsePullRequestURL("https://github.com/acme/widgets/pulls/77")
+
+	then_noError(t, actualErr)
+	if actual.Repository.NameWithOwner != "acme/widgets" {
+		t.Fatalf("expected repository %q, actual %q", "acme/widgets", actual.Repository.NameWithOwner)
+	}
+	if actual.Number != 77 {
+		t.Fatalf("expected pull request number %d, actual %d", 77, actual.Number)
+	}
+	if actual.URL != "https://github.com/acme/widgets/pull/77" {
+		t.Fatalf("expected canonical url %q, actual %q", "https://github.com/acme/widgets/pull/77", actual.URL)
+	}
+}
+
 func TestParsePullRequestURL_GivenInvalidGitHubURL_WhenParsing_ThenItReturnsAValidationError(t *testing.T) {
 	_, actualErr := ParsePullRequestURL("https://github.com/acme/widgets/issues/42")
 

@@ -235,6 +235,29 @@ func TestRun_GivenViewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequestedU
 	}
 }
 
+func TestRun_GivenStoryReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequestedURLBeforeRunning(t *testing.T) {
+	expectedURL := "https://github.com/acme/widgets/pulls/123"
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		[]string{"story-review", expectedURL},
+		func() (appconfig.Config, error) {
+			return appconfig.Config{}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if runner.storyReviewURL != expectedURL {
+		t.Fatalf("expected story review url %q, actual %q", expectedURL, runner.storyReviewURL)
+	}
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "story_review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "story_review", "run"}, runner.calls)
+	}
+}
+
 func TestRun_GivenReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturnsAnArgumentError(t *testing.T) {
 	runner := &fakeConfigurableRunner{}
 
@@ -289,6 +312,33 @@ func TestRun_GivenViewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturnsA
 	}
 }
 
+func TestRun_GivenStoryReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItReturnsAnArgumentError(t *testing.T) {
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		[]string{"story-review"},
+		func() (appconfig.Config, error) {
+			return appconfig.Config{}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	if actualErr == nil {
+		t.Fatal("expected an error")
+	}
+	if actualErr.Error() != "story-review expects exactly one pull request URL" {
+		t.Fatalf("expected argument error %q, actual %q", "story-review expects exactly one pull request URL", actualErr.Error())
+	}
+	if runner.runCalled {
+		t.Fatal("expected the runner not to be called")
+	}
+	if runner.storyReviewCalled {
+		t.Fatal("expected the story-review subcommand not to reach the runner")
+	}
+}
+
 type fakeConfigurableRunner struct {
 	appliedOverrides           appconfig.KeymapOverrides
 	appliedPullRequestSearches []appconfig.PullRequestSearch
@@ -297,12 +347,15 @@ type fakeConfigurableRunner struct {
 	appliedCacheConfig         appconfig.CacheConfig
 	reviewURL                  string
 	viewURL                    string
+	storyReviewURL             string
 	runCalled                  bool
 	reviewCalled               bool
 	viewCalled                 bool
+	storyReviewCalled          bool
 	runErr                     error
 	reviewErr                  error
 	viewErr                    error
+	storyReviewErr             error
 	applyCacheErr              error
 	calls                      []string
 }
@@ -345,6 +398,13 @@ func (runner *fakeConfigurableRunner) OpenPullRequestByURL(url string) error {
 	runner.viewURL = url
 	runner.calls = append(runner.calls, "view")
 	return runner.viewErr
+}
+
+func (runner *fakeConfigurableRunner) OpenStoryReviewByURL(url string) error {
+	runner.storyReviewCalled = true
+	runner.storyReviewURL = url
+	runner.calls = append(runner.calls, "story_review")
+	return runner.storyReviewErr
 }
 
 func (runner *fakeConfigurableRunner) Run() error {

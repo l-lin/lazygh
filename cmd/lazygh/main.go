@@ -20,6 +20,7 @@ type configurableRunner interface {
 	ApplyCacheConfig(appconfig.CacheConfig) error
 	OpenReviewByURL(string) error
 	OpenPullRequestByURL(string) error
+	OpenStoryReviewByURL(string) error
 	Run() error
 }
 
@@ -68,12 +69,18 @@ func run(args []string, loadConfig func() (appconfig.Config, error), newRunner f
 			return actualErr
 		}
 	}
+	if startupOptions.storyReviewURL != "" {
+		if actualErr := runner.OpenStoryReviewByURL(startupOptions.storyReviewURL); actualErr != nil {
+			return actualErr
+		}
+	}
 	return app.New(runner).Run()
 }
 
 type startupOptions struct {
-	reviewURL string
-	viewURL   string
+	reviewURL      string
+	viewURL        string
+	storyReviewURL string
 }
 
 func parseStartupOptions(args []string) (startupOptions, error) {
@@ -92,6 +99,11 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 			return startupOptions{}, fmt.Errorf("view expects exactly one pull request URL")
 		}
 		return startupOptions{viewURL: args[1]}, nil
+	case "story-review":
+		if len(args) != 2 {
+			return startupOptions{}, fmt.Errorf("story-review expects exactly one pull request URL")
+		}
+		return startupOptions{storyReviewURL: args[1]}, nil
 	default:
 		return startupOptions{}, fmt.Errorf("unknown subcommand %q", args[0])
 	}

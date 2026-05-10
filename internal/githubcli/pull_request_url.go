@@ -35,7 +35,7 @@ func ParsePullRequestURL(raw string) (PullRequest, error) {
 	}
 
 	pathSegments := pullRequestURLPathSegments(parsedURL.Path)
-	if len(pathSegments) < 4 || pathSegments[2] != "pull" {
+	if len(pathSegments) < 4 || (pathSegments[2] != "pull" && pathSegments[2] != "pulls") {
 		return PullRequest{}, ErrInvalidPullRequestURL
 	}
 
