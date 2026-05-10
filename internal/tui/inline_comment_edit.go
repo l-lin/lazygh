@@ -89,8 +89,7 @@ func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommen
 		return err
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.optimisticallyUpdateReviewComment(target, body)
 	program.setFeedback(FocusDetailView, inlineCommentUpdatedSuccessMessage)
 	return nil
 }
@@ -106,8 +105,7 @@ func (program *Program) deleteInlineComment(target pullRequestReviewCommentActio
 		return err
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.optimisticallyDeleteReviewComment(target)
 	program.setFeedback(FocusDetailView, inlineCommentDeletedSuccessMessage)
 	return nil
 }
@@ -151,7 +149,7 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 	}
 	target.repository = strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	target.number = summary.Number
-	if target.repository == "" || target.number <= 0 || strings.TrimSpace(target.commentID) == "" {
+	if target.repository == "" || target.number <= 0 || !hasUsablePullRequestMutationID(target.commentID) {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	return target, true
@@ -174,7 +172,7 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || strings.TrimSpace(comment.ID) == "" || !comment.ViewerDidAuthor {
+	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) || !comment.ViewerDidAuthor {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
@@ -195,7 +193,7 @@ func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.Pul
 }
 
 func pullRequestInlineThreadCommentActionTarget(threadComment githubcli.PullRequestComment) (pullRequestReviewCommentActionTarget, bool) {
-	if strings.TrimSpace(threadComment.ID) == "" || !threadComment.ViewerDidAuthor {
+	if !hasUsablePullRequestMutationID(threadComment.ID) || !threadComment.ViewerDidAuthor {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	return pullRequestReviewCommentActionTarget{commentID: strings.TrimSpace(threadComment.ID), body: threadComment.Body}, true

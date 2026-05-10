@@ -108,6 +108,7 @@ type Program struct {
 	detailViewState                         detailViewState
 	clipboardWriter                         clip.Writer
 	feedbackMessage                         string
+	optimisticMutationSequence              int
 	helpVisible                             bool
 	searchEditor                            *lineEditor
 	actionsPopupSearchEditor                *lineEditor

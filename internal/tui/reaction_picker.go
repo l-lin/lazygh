@@ -110,10 +110,7 @@ func (program *Program) executeReactionPickerAction(content githubcli.ReactionCo
 		return actionsPopupActionResult{err: err}
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	if target.invalidateDiff {
-		program.invalidatePullRequestDiff(target.repository, target.number)
-	}
+	program.optimisticallyAddReaction(target, content)
 	program.setFeedback(program.model.Focus(), pullRequestReactionAddedSuccessMessage)
 	return actionsPopupActionResult{closePopup: true}
 }

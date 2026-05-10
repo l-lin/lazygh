@@ -77,8 +77,7 @@ func (program *Program) executeInlineCommentResolutionAction(resolved bool) acti
 		return actionsPopupActionResult{err: err}
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.optimisticallySetReviewThreadResolved(target, resolved)
 	program.setFeedback(program.model.Focus(), feedbackMessage)
 	return actionsPopupActionResult{closePopup: true}
 }
@@ -113,7 +112,7 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 	}
 	thread := *sectionAtCursor.section.inlineThread
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
@@ -142,7 +141,7 @@ func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullReques
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 

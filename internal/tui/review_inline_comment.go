@@ -126,7 +126,7 @@ func (program *Program) submitInlineReviewComment(target reviewInlineCommentTarg
 		return err
 	}
 
-	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.optimisticallyAppendReviewInlineComment(target, body)
 	program.setFeedback(FocusDetailView, pullRequestReviewInlineCommentSuccessMessage)
 	return nil
 }

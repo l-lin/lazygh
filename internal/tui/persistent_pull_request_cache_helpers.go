@@ -24,10 +24,11 @@ func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.Pull
 		return false
 	}
 
+	clonedDetail := clonePullRequestDetail(cached.Detail)
 	program.pullRequestDetailCache[key] = pullRequestDetailResult{
-		detail:          cached.Detail,
+		detail:          clonedDetail,
 		sourceUpdatedAt: strings.TrimSpace(cached.SourceUpdatedAt),
-		needsRefresh:    cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt) || pullRequestDetailMissingBrowserTabData(cached.Detail),
+		needsRefresh:    cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt) || pullRequestDetailMissingBrowserTabData(clonedDetail),
 	}
 	program.invalidatePullRequestDetailDocumentCache()
 	return true

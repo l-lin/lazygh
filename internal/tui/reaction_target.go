@@ -107,7 +107,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 
 	if sectionAtCursor.section.comment != nil {
 		comment := *sectionAtCursor.section.comment
-		if strings.TrimSpace(comment.ID) == "" {
+		if !hasUsablePullRequestMutationID(comment.ID) {
 			return pullRequestReactionActionTarget{}, false
 		}
 		return pullRequestReactionActionTarget{
@@ -120,7 +120,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 
 	if sectionAtCursor.section.inlineComment != nil {
 		comment := *sectionAtCursor.section.inlineComment
-		if strings.TrimSpace(comment.ID) == "" {
+		if !hasUsablePullRequestMutationID(comment.ID) {
 			return pullRequestReactionActionTarget{}, false
 		}
 		return pullRequestReactionActionTarget{
@@ -133,7 +133,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 	}
 
 	comment, ok := browserConversationInlineThreadCommentAtCursor(sectionAtCursor)
-	if !ok || strings.TrimSpace(comment.ID) == "" {
+	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
 	return pullRequestReactionActionTarget{
@@ -158,7 +158,7 @@ func (program *Program) selectedReviewDiffReactionActionTarget() (pullRequestRea
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
 	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
 	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailViewState)
-	if !ok || strings.TrimSpace(comment.ID) == "" {
+	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
 

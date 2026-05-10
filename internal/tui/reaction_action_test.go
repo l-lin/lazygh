@@ -556,6 +556,143 @@ func TestAddReaction_GivenViewerAlreadyAddedTheReaction_WhenSubmitting_ThenItSho
 	then_statusLineContains(t, gui, pullRequestReactionAlreadyAddedMessage)
 }
 
+func TestAddReaction_GivenCommentsTabCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedCommentVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:     "PR_kwDOA",
+				Title:  "First PR",
+				Number: 42,
+				Body:   "Body 42",
+				State:  "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					ID:        "IC_kwDOA",
+					Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:      "General feedback",
+					CreatedAt: "2026-04-18T10:00:00Z",
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"General feedback": "Rendered general feedback"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered general feedback")
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("add reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager detail refresh before the queued run, actual %v", loader.detailCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered general feedback") {
+		t.Fatalf("expected detail buffer to keep the rendered comment, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to contain the optimistic reaction pill, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
+	}
+}
+
+func TestAddReaction_GivenReviewModeInlineCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:        "PRRC_1",
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			Body:      "Thread body",
+			CreatedAt: "2026-04-20T10:00:00Z",
+			DiffHunk:  "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered thread body")
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("add reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager diff refresh before the queued run, actual %v", loader.diffCalls)
+	}
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if strings.Contains(filesView.Buffer(), "Loading file tree...") {
+		t.Fatalf("expected files buffer to avoid the loading state, actual %q", filesView.Buffer())
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected detail buffer to keep the rendered thread body, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to contain the optimistic reaction pill, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
+		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
+	}
+}
+
 func TestRemoveReaction_GivenPullRequestReactionUnderCursor_WhenSubmitting_ThenItRemovesTheReactionRefreshesDetailAndShowsFeedback(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
@@ -664,6 +801,145 @@ func TestRemoveReaction_GivenReviewModeInlineCommentReactionUnderCursor_WhenSubm
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_statusLineContains(t, gui, pullRequestReactionRemovedSuccessMessage)
+}
+
+func TestRemoveReaction_GivenCommentsTabCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedCommentVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:     "PR_kwDOA",
+				Title:  "First PR",
+				Number: 42,
+				Body:   "Body 42",
+				State:  "OPEN",
+				Comments: []githubcli.PullRequestComment{{
+					ID:             "IC_kwDOA",
+					Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:           "General feedback",
+					CreatedAt:      "2026-04-18T10:00:00Z",
+					ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentEyes, TotalCount: 2, ViewerHasReacted: true}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"General feedback": "Rendered general feedback"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentEyes, TotalCount: 2, ViewerHasReacted: true}))
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("remove reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "remove reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager detail refresh before the queued run, actual %v", loader.detailCalls)
+	}
+
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered general feedback") {
+		t.Fatalf("expected detail buffer to keep the rendered comment, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "👀 2") {
+		t.Fatalf("expected detail buffer to remove the optimistic reaction pill, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
+	}
+}
+
+func TestRemoveReaction_GivenReviewModeInlineCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     3,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			ID:             "PRRC_1",
+			Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+			Body:           "Thread body",
+			CreatedAt:      "2026-04-20T10:00:00Z",
+			ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}},
+			DiffHunk:       "@@ -1,2 +1,3 @@\n context\n-old line\n+new line",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": diff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Thread body": "Rendered thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	given_cursorOnDetailText(t, subject, detailView, given_visibleReactionPillText(githubcli.ReactionGroup{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}))
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("remove reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "remove reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager diff refresh before the queued run, actual %v", loader.diffCalls)
+	}
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if strings.Contains(filesView.Buffer(), "Loading file tree...") {
+		t.Fatalf("expected files buffer to avoid the loading state, actual %q", filesView.Buffer())
+	}
+
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected detail buffer to keep the rendered thread body, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "❤️ 1") {
+		t.Fatalf("expected detail buffer to remove the optimistic reaction pill, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
+		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
+	}
 }
 
 func expectedReactionPickerLabels() []string {

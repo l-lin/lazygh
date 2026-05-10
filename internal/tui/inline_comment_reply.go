@@ -68,8 +68,7 @@ func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadR
 		return err
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.optimisticallyAppendInlineCommentReply(target, body)
 	program.setFeedback(FocusDetailView, pullRequestInlineCommentReplySuccessMessage)
 	return nil
 }
@@ -119,7 +118,7 @@ func (program *Program) selectedBrowserConversationsInlineCommentReplyTarget() (
 	}
 
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 	return pullRequestReviewThreadReplyTarget{
@@ -147,7 +146,7 @@ func (program *Program) selectedBrowserChangesInlineCommentReplyTarget() (pullRe
 	}
 
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 	return pullRequestReviewThreadReplyTarget{
@@ -175,7 +174,7 @@ func (program *Program) selectedReviewInlineCommentReplyTarget() (pullRequestRev
 	}
 
 	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || strings.TrimSpace(thread.ID) == "" {
+	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 	return pullRequestReviewThreadReplyTarget{

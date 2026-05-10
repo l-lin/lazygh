@@ -48,7 +48,7 @@ func (program *Program) submitPullRequestComment(target pullRequestCommentTarget
 		return err
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.optimisticallyAppendPullRequestComment(target, body)
 	program.setFeedback(program.model.Focus(), pullRequestCommentSuccessMessage)
 	return nil
 }

@@ -42,9 +42,10 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDetailResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
-		result.detail = detail
+		clonedDetail := clonePullRequestDetail(detail)
+		result.detail = clonedDetail
 		result.needsRefresh = false
-		program.cachePullRequestDetail(summary, detail)
+		program.cachePullRequestDetail(summary, clonedDetail)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {

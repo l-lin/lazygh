@@ -163,6 +163,70 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
+func TestReviewMode_GivenInlineCommentSubmit_WhenPostingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Optimistic inline comment": "Rendered optimistic inline comment",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "new line")
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+	subject.modalEditor.editor.SetText("Optimistic inline comment")
+
+	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager diff refresh call before the queued run, actual %v", loader.diffCalls)
+	}
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if strings.Contains(filesView.Buffer(), "Loading file tree...") {
+		t.Fatalf("expected files buffer to avoid the loading state, actual %q", filesView.Buffer())
+	}
+	if !strings.Contains(filesView.Buffer(), "render.go  1") {
+		t.Fatalf("expected files buffer to show the optimistic comment count, actual %q", filesView.Buffer())
+	}
+
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered optimistic inline comment") {
+		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered optimistic inline comment", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
+		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenTheDetailCursorOnAnInvalidRow_WhenOpeningTheInlineCommentComposer_ThenItShowsAnErrorAndKeepsFocusOnViewZero(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",

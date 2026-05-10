@@ -1640,7 +1640,11 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestDiff(repository string,
 func (loader *fakePullRequestDetailLoader) CommentOnPullRequest(repository string, number int, body string) error {
 	loader.commentCalls = append(loader.commentCalls, repository+"#"+strconv.Itoa(number))
 	loader.commentBodies = append(loader.commentBodies, body)
-	return loader.commentErr
+	if loader.commentErr != nil {
+		return loader.commentErr
+	}
+	loader.addPullRequestComment(repository, number, body)
+	return nil
 }
 
 func (loader *fakePullRequestDetailLoader) ApprovePullRequest(repository string, number int) error {
@@ -2235,6 +2239,23 @@ func (loader *fakePullRequestDetailLoader) addReviewThreadReply(reviewID string,
 			loader.diffs[key] = diff
 		}
 	}
+}
+
+func (loader *fakePullRequestDetailLoader) addPullRequestComment(repository string, number int, body string) {
+	key := strings.TrimSpace(repository) + "#" + strconv.Itoa(number)
+	detail, ok := loader.details[key]
+	if !ok {
+		return
+	}
+	commentID := "PRC_" + strconv.Itoa(len(loader.commentBodies))
+	detail.Comments = append(detail.Comments, githubcli.PullRequestComment{
+		ID:              commentID,
+		ViewerDidAuthor: true,
+		Author:          &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+		Body:            body,
+		CreatedAt:       "2026-04-20T12:15:00Z",
+	})
+	loader.details[key] = detail
 }
 
 func (loader *fakePullRequestDetailLoader) updateReviewComment(commentID string, body string) {

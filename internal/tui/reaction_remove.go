@@ -53,10 +53,7 @@ func (program *Program) executeRemoveReactionAction(target pullRequestReactionRe
 		return actionsPopupActionResult{err: err}
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	if target.invalidateDiff {
-		program.invalidatePullRequestDiff(target.repository, target.number)
-	}
+	program.optimisticallyRemoveReaction(target)
 	program.setFeedback(program.model.Focus(), pullRequestReactionRemovedSuccessMessage)
 	return actionsPopupActionResult{closePopup: true}
 }
