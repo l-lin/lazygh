@@ -99,6 +99,10 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 	paddedLines := make([]styledTextLine, 0, len(lines)+2)
 	for index, line := range lines {
 		isCodeBlockLine := styledLineHasUniformBackground(line, backgroundSequence)
+		if isCodeBlockLine && styledLineIsInlineCommentSuggestionPaddingLine(line) {
+			paddedLines = append(paddedLines, line)
+			continue
+		}
 		if isCodeBlockLine && (index == 0 || !styledLineHasUniformBackground(lines[index-1], backgroundSequence)) {
 			paddedLines = append(paddedLines, styledPaddingLine(line))
 		}
@@ -111,6 +115,10 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 	}
 
 	return paddedLines
+}
+
+func styledLineIsInlineCommentSuggestionPaddingLine(line styledTextLine) bool {
+	return len(line.runes) == 1 && line.runes[0] == inlineCommentSuggestionPaddingRune
 }
 
 func styledLineHasUniformBackground(line styledTextLine, backgroundSequence string) bool {

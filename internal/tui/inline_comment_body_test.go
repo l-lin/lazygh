@@ -125,3 +125,28 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "suggestion addition unchanged background")
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.SelectedLineBackgroundHex), "suggestion addition base background")
 }
+
+func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItAddsOnlyOneExplicitPaddingLineBeforeTheDiff(t *testing.T) {
+	comment := githubcli.PullRequestInlineComment{
+		Body:         "```suggestion\nfmt.Println(\"bonjour\")\n```",
+		Path:         "internal/tui/render.go",
+		Line:         43,
+		OriginalLine: 43,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -43,1 +43,1 @@\n-fmt.Println(\"goodbye\")\n+fmt.Println(\"hello\")",
+	}
+
+	actualDocument := newDetailDocument(renderRoundedCommentBox(renderInlineCommentBodyForInlineComment(comment, glamourMarkdownRenderer{}, 72), 72), 72)
+	labelLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "Suggestion")
+	deletionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("hello")`)
+
+	actualBlankLineCount := 0
+	for lineIndex := labelLineIndex + 1; lineIndex < deletionLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lineIndex]))); actualInnerText == "" {
+			actualBlankLineCount++
+		}
+	}
+	if actualBlankLineCount != 2 {
+		t.Fatalf("expected exactly 2 blank lines between the suggestion label and the first diff line, actual %d in %q", actualBlankLineCount, actualDocument.text)
+	}
+}
