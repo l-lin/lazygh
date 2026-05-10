@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	inlineCommentUpdateEditorTitle     = "Update inline comment"
+	inlineCommentUpdateEditorTitle     = "Edit inline comment"
 	inlineCommentDeleteActionTitle     = "Delete inline comment"
 	inlineCommentUpdatedSuccessMessage = "Inline comment updated"
 	inlineCommentDeletedSuccessMessage = "Inline comment deleted"

@@ -70,7 +70,7 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 	subject.asyncRunner = asyncRunner
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	subject.model.UpdateActionsPopupSearch("edit inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "edit inline comment"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

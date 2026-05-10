@@ -1474,7 +1474,7 @@ func TestActionsPopup_GivenReviewModeOwnedInlineCommentUpdateAction_WhenExecutin
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	subject.model.UpdateActionsPopupSearch("edit inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "edit inline comment"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -1539,7 +1539,7 @@ func TestEditInlineComment_GivenBrowserCommentsTabSubmit_WhenSubmittingOptimisti
 	subject.asyncRunner = asyncRunner
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	subject.model.UpdateActionsPopupSearch("edit inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "edit inline comment"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -1608,7 +1608,7 @@ func TestEditInlineComment_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefreshesT
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	subject.model.UpdateActionsPopupSearch("edit inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "edit inline comment"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -1810,7 +1810,7 @@ func TestEditInlineComment_GivenReviewModeSubmit_WhenSubmittingOptimistically_Th
 	subject.asyncRunner = asyncRunner
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("update inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "update inline comment"))
+	subject.model.UpdateActionsPopupSearch("edit inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "edit inline comment"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
