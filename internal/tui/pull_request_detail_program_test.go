@@ -979,16 +979,14 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
+	labelLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "Suggestion")
 	removedLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `fmt.Println("hello")`)
 	addedLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `fmt.Println("bonjour")`)
 	if removedLineIndex >= addedLineIndex {
 		t.Fatalf("expected the removed suggestion line to render before the added line, actual %q", detailView.Buffer())
 	}
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedLineIndex-1])); actualInnerText != "" {
-		t.Fatalf("expected the suggestion code block top padding line to stay blank inside the comment box, actual %q", actualInnerText)
-	}
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedLineIndex+1])); actualInnerText != "" {
-		t.Fatalf("expected the suggestion code block bottom padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	if labelLineIndex+1 != removedLineIndex {
+		t.Fatalf("expected the suggestion diff to start immediately after the label, actual %q", detailView.Buffer())
 	}
 	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedLineIndex])); !strings.Contains(actualInnerText, `-fmt.Println("hello")`) {
 		t.Fatalf("expected the suggestion block to show the current line %q, actual %q", `-fmt.Println("hello")`, actualInnerText)
@@ -1000,9 +998,50 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, removedLineIndex, `fmt.Println("`, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion deletion base background")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedLineIndex, "bonjour", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "inline suggestion addition changed background")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedLineIndex, `fmt.Println("`, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion addition base background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block top padding background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block bottom padding background")
 	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, addedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block border background")
+}
+
+func TestLayout_GivenALongSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsTabWrapsTheSuggestionInsideTheCommentBoxWithoutAGapAfterTheLabel(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 116, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#116": {Title: "Styled PR", Number: 116, Body: "Body 116", BaseRefName: "main", HeadRefName: "feature-116", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\n- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "openspec/changes/refactor-shared-modules/tasks.md", Line: 218, OriginalLine: 218, Side: "RIGHT", DiffHunk: "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3_assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide"}}},
+		},
+	}
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGuiWithSize(t, 80, 40)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	labelLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "Suggestion")
+	firstDeletionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "-- [ ] 21.10 Rename")
+	continuedDeletionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "s3_assets.*")
+	firstAdditionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "+- [ ] 21.10 Rename")
+	continuedAdditionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "s3assets.*")
+	if labelLineIndex+1 != firstDeletionLineIndex {
+		t.Fatalf("expected the wrapped suggestion diff to start immediately after the label, actual %q", detailView.Buffer())
+	}
+	if firstDeletionLineIndex >= continuedDeletionLineIndex || continuedDeletionLineIndex >= firstAdditionLineIndex || firstAdditionLineIndex >= continuedAdditionLineIndex {
+		t.Fatalf("expected the long suggestion to wrap across multiple visible lines in order, actual %q", detailView.Buffer())
+	}
 }
 
 func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailPaneShowsAStyledHeadingGreyCommentBorderAndHighlightedCommentAuthorBadge(t *testing.T) {

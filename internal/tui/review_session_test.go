@@ -507,6 +507,7 @@ func TestReviewMode_GivenSuggestionFenceInlineThreadComment_WhenRendering_ThenIt
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
+	labelLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "Suggestion")
 	removedFirstLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "new line")
 	removedSecondLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "another line")
 	addedFirstLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "better line")
@@ -514,11 +515,8 @@ func TestReviewMode_GivenSuggestionFenceInlineThreadComment_WhenRendering_ThenIt
 	if removedFirstLineIndex >= removedSecondLineIndex || removedSecondLineIndex >= addedFirstLineIndex || addedFirstLineIndex >= addedSecondLineIndex {
 		t.Fatalf("expected the suggestion thread to render removed lines before added lines, actual %q", detailView.Buffer())
 	}
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedFirstLineIndex-1])); actualInnerText != "" {
-		t.Fatalf("expected the review suggestion code block top padding line to stay blank inside the comment box, actual %q", actualInnerText)
-	}
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedSecondLineIndex+1])); actualInnerText != "" {
-		t.Fatalf("expected the review suggestion code block bottom padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	if labelLineIndex+1 != removedFirstLineIndex {
+		t.Fatalf("expected the review suggestion diff to start immediately after the label, actual %q", detailView.Buffer())
 	}
 	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[removedFirstLineIndex])); !strings.Contains(actualInnerText, "-new line") {
 		t.Fatalf("expected the review suggestion block to show the current line %q, actual %q", "-new line", actualInnerText)
@@ -538,9 +536,47 @@ func TestReviewMode_GivenSuggestionFenceInlineThreadComment_WhenRendering_ThenIt
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedFirstLineIndex, " line", given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion addition base background")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex, "better ", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "review suggestion multi-line insertion background")
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex, "another line", given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion multi-line unchanged suffix background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block top padding background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block bottom padding background")
 	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, addedFirstLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block border background")
+}
+
+func TestReviewMode_GivenALongSuggestionFenceInlineThreadComment_WhenRendering_ThenItWrapsTheSuggestionInsideTheCommentBoxWithoutAGapAfterTheLabel(t *testing.T) {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     2,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:      "```suggestion\n- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide\n```",
+			CreatedAt: "2026-04-20T10:00:00Z",
+			DiffHunk:  "@@ -0,0 +2,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3_assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide",
+		}},
+	}}
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 80, 40)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	labelLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "Suggestion")
+	firstDeletionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "-- [ ] 21.10 Rename")
+	continuedDeletionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "s3_assets.*")
+	firstAdditionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "+- [ ] 21.10 Rename")
+	continuedAdditionLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "s3assets.*")
+	if labelLineIndex+1 != firstDeletionLineIndex {
+		t.Fatalf("expected the wrapped review suggestion diff to start immediately after the label, actual %q", detailView.Buffer())
+	}
+	if firstDeletionLineIndex >= continuedDeletionLineIndex || continuedDeletionLineIndex >= firstAdditionLineIndex || firstAdditionLineIndex >= continuedAdditionLineIndex {
+		t.Fatalf("expected the long review suggestion to wrap across multiple visible lines in order, actual %q", detailView.Buffer())
+	}
 }
 
 func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsTheThreadChevronAndTheLocationWithoutASideAnchor(t *testing.T) {

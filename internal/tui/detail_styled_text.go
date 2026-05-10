@@ -97,12 +97,13 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 	}
 
 	paddedLines := make([]styledTextLine, 0, len(lines)+2)
-	for index, line := range lines {
-		isCodeBlockLine := styledLineHasUniformBackground(line, backgroundSequence)
-		if isCodeBlockLine && styledLineIsInlineCommentSuggestionPaddingLine(line) {
-			paddedLines = append(paddedLines, line)
+	for index, rawLine := range lines {
+		if styledLineHasInlineCommentSuggestionSentinel(rawLine) {
+			paddedLines = append(paddedLines, stripInlineCommentSuggestionSentinel(rawLine))
 			continue
 		}
+		line := rawLine
+		isCodeBlockLine := styledLineHasUniformBackground(line, backgroundSequence)
 		if isCodeBlockLine && (index == 0 || !styledLineHasUniformBackground(lines[index-1], backgroundSequence)) {
 			paddedLines = append(paddedLines, styledPaddingLine(line))
 		}
@@ -117,8 +118,28 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 	return paddedLines
 }
 
-func styledLineIsInlineCommentSuggestionPaddingLine(line styledTextLine) bool {
-	return len(line.runes) == 1 && line.runes[0] == inlineCommentSuggestionPaddingRune
+func styledLineHasInlineCommentSuggestionSentinel(line styledTextLine) bool {
+	return len(line.runes) > 0 && line.runes[0] == inlineCommentSuggestionLineSentinelRune
+}
+
+func stripInlineCommentSuggestionSentinel(line styledTextLine) styledTextLine {
+	if !styledLineHasInlineCommentSuggestionSentinel(line) {
+		return line
+	}
+
+	strippedLine := styledTextLine{
+		runes:            append([]rune(nil), line.runes[1:]...),
+		stylePrefixes:    append([]string(nil), line.stylePrefixes[1:]...),
+		hyperlinkTargets: append([]string(nil), line.hyperlinkTargets[1:]...),
+		controls:         make([]styledTextControl, 0, len(line.controls)),
+	}
+	for _, control := range line.controls {
+		if control.column == 0 {
+			continue
+		}
+		strippedLine.controls = append(strippedLine.controls, styledTextControl{column: control.column - 1, image: control.image})
+	}
+	return strippedLine
 }
 
 func styledLineHasUniformBackground(line styledTextLine, backgroundSequence string) bool {
@@ -157,7 +178,13 @@ func renderStyledTextLineWithWidth(line styledTextLine, width int) string {
 }
 
 func styledTextLinePaddingPrefix(line styledTextLine, width int) string {
-	return markdownFullWidthLinePaddingPrefix(width, line.stylePrefixes, 0, len(line.runes)-1)
+	if paddingPrefix := markdownFullWidthLinePaddingPrefix(width, line.stylePrefixes, 0, len(line.runes)-1); paddingPrefix != "" {
+		return paddingPrefix
+	}
+	if styledLineUsesCommentBoxCodeBlockBackground(line) {
+		return backgroundColorEscape(theme.SelectedLineBackgroundHex)
+	}
+	return ""
 }
 
 func renderStyledPadding(prefix string, width int) string {
@@ -241,6 +268,34 @@ func fullWidthLinePaddingPrefixForBackground(prefixes []string, startColumn int,
 	}
 
 	return paddingPrefix
+}
+
+func styledLineUsesCommentBoxCodeBlockBackground(line styledTextLine) bool {
+	if len(line.runes) == 0 {
+		return false
+	}
+
+	hasCodeBlockBackground := false
+	for index := range line.runes {
+		if index >= len(line.stylePrefixes) {
+			return false
+		}
+		if stylePrefixHasBackgroundHex(line.stylePrefixes[index], theme.SelectedLineBackgroundHex) || stylePrefixHasBackgroundHex(line.stylePrefixes[index], theme.DiffAdditionHighlightBackgroundHex) || stylePrefixHasBackgroundHex(line.stylePrefixes[index], theme.DiffDeletionHighlightBackgroundHex) {
+			hasCodeBlockBackground = true
+			continue
+		}
+		return false
+	}
+
+	return hasCodeBlockBackground
+}
+
+func stylePrefixHasBackgroundHex(prefix string, backgroundHex string) bool {
+	backgroundSequence := trueColorANSIParameterSequence(48, backgroundHex)
+	if backgroundSequence == "" {
+		return false
+	}
+	return strings.Contains(prefix, backgroundSequence)
 }
 
 func consumeCSISequence(text string, startIndex int) (string, int, bool) {

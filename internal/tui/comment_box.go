@@ -37,8 +37,6 @@ func renderCommentBoxWithMetadataBadges(author *githubcli.PullRequestCommentAuth
 
 func renderCommentBoxWithMetadataBadgesForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, body string, width int, connectedUserLogin string) string {
 	metadataLine := renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, connectedUserLogin)
-	innerWidth := maxInt(commentBoxInnerWidth(width), maxStyledTextLineWidth(metadataLine))
-	innerWidth = maxInt(innerWidth, maxStyledTextLineWidth(body))
 
 	contentLines := make([]string, 0, 2)
 	if metadataLine != "" {
@@ -50,12 +48,11 @@ func renderCommentBoxWithMetadataBadgesForViewer(author *githubcli.PullRequestCo
 	if len(contentLines) == 0 {
 		contentLines = append(contentLines, "")
 	}
-	return renderRoundedCommentBoxWithInnerWidth(strings.Join(contentLines, "\n"), innerWidth)
+	return renderRoundedCommentBoxWithInnerWidth(strings.Join(contentLines, "\n"), commentBoxInnerWidth(width))
 }
 
 func renderRoundedCommentBox(text string, width int) string {
-	innerWidth := maxInt(commentBoxInnerWidth(width), maxStyledTextLineWidth(text))
-	return renderRoundedCommentBoxWithInnerWidth(text, innerWidth)
+	return renderRoundedCommentBoxWithInnerWidth(text, commentBoxInnerWidth(width))
 }
 
 func renderRoundedCommentBoxWithInnerWidth(text string, innerWidth int) string {
@@ -63,7 +60,8 @@ func renderRoundedCommentBoxWithInnerWidth(text string, innerWidth int) string {
 		innerWidth = 1
 	}
 
-	styledLines := splitStyledTextLines(text)
+	styledLines := wrapCommentBoxStyledLines(splitStyledTextLines(text), innerWidth)
+	innerWidth = maxInt(innerWidth, maxStyledTextLineWidthFromLines(styledLines))
 	boxLines := make([]string, 0, len(styledLines)+2)
 	boxLines = append(boxLines, styleCommentBorder("╭"+strings.Repeat("─", innerWidth+(commentBoxHorizontalPadding*2))+"╮"))
 	for _, line := range styledLines {
@@ -74,9 +72,64 @@ func renderRoundedCommentBoxWithInnerWidth(text string, innerWidth int) string {
 	return strings.Join(boxLines, "\n")
 }
 
+func wrapCommentBoxStyledLines(lines []styledTextLine, innerWidth int) []styledTextLine {
+	if innerWidth < 1 {
+		innerWidth = 1
+	}
+
+	wrappedLines := make([]styledTextLine, 0, len(lines))
+	for _, line := range lines {
+		if !styledLineUsesCommentBoxCodeBlockBackground(line) || len(line.runes) <= innerWidth {
+			wrappedLines = append(wrappedLines, line)
+			continue
+		}
+		wrappedLines = append(wrappedLines, wrapStyledTextLineAtWordBoundaries(line, innerWidth)...)
+	}
+	return wrappedLines
+}
+
+func wrapStyledTextLineAtWordBoundaries(line styledTextLine, innerWidth int) []styledTextLine {
+	segments := wrappedInputSegmentsForLine(line.runes, innerWidth)
+	wrappedLines := make([]styledTextLine, 0, len(segments))
+	for _, segment := range segments {
+		wrappedLines = append(wrappedLines, sliceStyledTextLine(line, segment.start, segment.end))
+	}
+	return wrappedLines
+}
+
+func sliceStyledTextLine(line styledTextLine, start int, end int) styledTextLine {
+	if start < 0 {
+		start = 0
+	}
+	if end < start {
+		end = start
+	}
+	if end > len(line.runes) {
+		end = len(line.runes)
+	}
+
+	slicedLine := styledTextLine{
+		runes:            append([]rune(nil), line.runes[start:end]...),
+		stylePrefixes:    append([]string(nil), line.stylePrefixes[start:end]...),
+		hyperlinkTargets: append([]string(nil), line.hyperlinkTargets[start:end]...),
+		controls:         make([]styledTextControl, 0, len(line.controls)),
+	}
+	for _, control := range line.controls {
+		if control.column < start || control.column > end {
+			continue
+		}
+		slicedLine.controls = append(slicedLine.controls, styledTextControl{column: control.column - start, image: control.image})
+	}
+	return slicedLine
+}
+
 func maxStyledTextLineWidth(text string) int {
+	return maxStyledTextLineWidthFromLines(splitStyledTextLines(text))
+}
+
+func maxStyledTextLineWidthFromLines(lines []styledTextLine) int {
 	maximumWidth := 0
-	for _, line := range splitStyledTextLines(text) {
+	for _, line := range lines {
 		maximumWidth = maxInt(maximumWidth, len(line.runes))
 	}
 	return maximumWidth

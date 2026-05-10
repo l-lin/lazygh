@@ -90,10 +90,7 @@ func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesAS
 	if actual != "Rendered inline comment" {
 		t.Fatalf("expected rendered inline comment %q, actual %q", "Rendered inline comment", actual)
 	}
-	expectedMarkdown := strings.Join([]string{
-		"**Suggestion**  ",
-		inlineCommentSuggestionMarker(0),
-	}, "\n")
+	expectedMarkdown := inlineCommentSuggestionMarker(0)
 	if renderer.lastMarkdown != expectedMarkdown {
 		t.Fatalf("expected markdown renderer input %q, actual %q", expectedMarkdown, renderer.lastMarkdown)
 	}
@@ -125,7 +122,7 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.SelectedLineBackgroundHex), "suggestion addition base background")
 }
 
-func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItKeepsOnlyOneVisibleBlankLineBeforeTheDiff(t *testing.T) {
+func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItKeepsNoVisibleBlankLineBeforeTheDiff(t *testing.T) {
 	comment := githubcli.PullRequestInlineComment{
 		Body:         "```suggestion\nfmt.Println(\"bonjour\")\n```",
 		Path:         "internal/tui/render.go",
@@ -145,7 +142,32 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 			actualBlankLineCount++
 		}
 	}
-	if actualBlankLineCount != 1 {
-		t.Fatalf("expected exactly 1 blank line between the suggestion label and the first diff line, actual %d in %q", actualBlankLineCount, actualDocument.text)
+	if actualBlankLineCount != 0 {
+		t.Fatalf("expected no blank line between the suggestion label and the first diff line, actual %d in %q", actualBlankLineCount, actualDocument.text)
+	}
+}
+
+func TestRenderInlineCommentBodyForInlineComment_GivenARealWorldLongSuggestionFence_WhenRendering_ThenItWrapsTheSuggestionLinesWithoutExtraPadding(t *testing.T) {
+	comment := githubcli.PullRequestInlineComment{
+		Body:         "```suggestion\n- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide\n```",
+		Path:         "openspec/changes/refactor-shared-modules/tasks.md",
+		Line:         218,
+		OriginalLine: 218,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `infrastructure/observability` packages → `com.doctolib.health_content.infrastructure.observability.*`; rename `infrastructure/s3-assets` → `com.doctolib.health_content.infrastructure.s3_assets.*`; rename `infrastructure/scheduled-jobs` → `com.doctolib.health_content.infrastructure.scheduled_jobs.*`; rename `infrastructure/http-clients` → `com.doctolib.health_content.infrastructure.http_clients.*`; update all imports repo-wide",
+	}
+
+	actualDocument := newDetailDocumentWithWrap(renderRoundedCommentBox(renderInlineCommentBodyForInlineComment(comment, glamourMarkdownRenderer{}, 60), 60), 60, false)
+	labelLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "Suggestion")
+	firstDeletionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "-- [ ] 21.10 Rename")
+	continuedDeletionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "s3_assets.*")
+	firstAdditionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "+- [ ] 21.10 Rename")
+	continuedAdditionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "s3assets.*")
+
+	if labelLineIndex+1 != firstDeletionLineIndex {
+		t.Fatalf("expected the first suggestion diff line to follow the label immediately, actual %q", actualDocument.text)
+	}
+	if firstDeletionLineIndex >= continuedDeletionLineIndex || continuedDeletionLineIndex >= firstAdditionLineIndex || firstAdditionLineIndex >= continuedAdditionLineIndex {
+		t.Fatalf("expected the long suggestion lines to wrap across multiple visible lines, actual %q", actualDocument.text)
 	}
 }

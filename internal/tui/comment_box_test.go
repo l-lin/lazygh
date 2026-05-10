@@ -38,6 +38,24 @@ func TestRenderRoundedCommentBox_GivenWrappedCodeBlockLines_WhenFormatting_ThenI
 	then_detailDocumentCommentBoxBorderDoesNotHaveBackgroundHex(t, actualDocument, firstLineIndex, theme.SelectedLineBackgroundHex, "wrapped code line border background")
 }
 
+func TestRenderRoundedCommentBox_GivenALongCodeBlockLine_WhenFormatting_ThenItWrapsInsideTheRequestedWidthAndKeepsTheBackground(t *testing.T) {
+	codePrefix := backgroundColorEscape(theme.SelectedLineBackgroundHex)
+	styledBody := codePrefix + "wrap this code block line around the comment box width" + ansiReset
+
+	actualDocument := newDetailDocumentWithWrap(renderRoundedCommentBox(styledBody, 30), 30, false)
+	firstLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "wrap this code block line")
+	secondLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "around the comment box")
+	thirdLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "width")
+
+	if firstLineIndex >= secondLineIndex || secondLineIndex >= thirdLineIndex {
+		t.Fatalf("expected the long code block line to wrap across multiple visible lines, actual %q", actualDocument.text)
+	}
+	for _, actualLineIndex := range []int{firstLineIndex, secondLineIndex, thirdLineIndex} {
+		then_detailDocumentCommentBoxInteriorHasBackgroundHex(t, actualDocument, actualLineIndex, theme.SelectedLineBackgroundHex, "wrapped long code line background")
+	}
+	then_detailDocumentCommentBoxBorderDoesNotHaveBackgroundHex(t, actualDocument, firstLineIndex, theme.SelectedLineBackgroundHex, "wrapped long code line border background")
+}
+
 func then_styledTextLineRuneRangeHasBackgroundHex(t *testing.T, line styledTextLine, startColumn int, endColumn int, expectedHex string, label string) {
 	t.Helper()
 

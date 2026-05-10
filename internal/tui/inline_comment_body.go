@@ -8,7 +8,7 @@ import (
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-const inlineCommentSuggestionPaddingRune = '\u00a0'
+const inlineCommentSuggestionLineSentinelRune = '\u200b'
 
 type inlineCommentMarkdownRenderPlan struct {
 	markdown         string
@@ -116,9 +116,6 @@ func prepareInlineCommentMarkdownRenderPlan(markdown string, suggestionContext g
 		}
 		if strings.HasPrefix(trimmedLine, "```") {
 			if inlineCommentSuggestionFence(fenceInfo) {
-				if label := inlineCommentCodeBlockLabel(fenceInfo); label != "" {
-					preparedLines = append(preparedLines, inlineCommentSuggestionLabelMarkdownLine(label))
-				}
 				marker := inlineCommentSuggestionMarker(len(suggestionBlocks))
 				preparedLines = append(preparedLines, marker)
 				suggestionBlocks = append(suggestionBlocks, inlineCommentSuggestionBlock{
@@ -178,15 +175,14 @@ func inlineCommentRenderedLineText(line string) string {
 
 func renderInlineCommentSuggestionBlock(suggestionBlock inlineCommentSuggestionBlock) string {
 	deletionRanges, additionRanges := inlineCommentSuggestionChangedStyleRanges(suggestionBlock.originalLines, suggestionBlock.suggestionLines)
-	renderedLines := make([]string, 0, len(suggestionBlock.originalLines)+len(suggestionBlock.suggestionLines)+2)
-	renderedLines = append(renderedLines, renderInlineCommentSuggestionPaddingLine())
+	renderedLines := make([]string, 0, len(suggestionBlock.originalLines)+len(suggestionBlock.suggestionLines)+1)
+	renderedLines = append(renderedLines, renderInlineCommentSuggestionLabelLine())
 	for lineIndex, originalLine := range suggestionBlock.originalLines {
 		renderedLines = append(renderedLines, renderInlineCommentSuggestionLine(suggestionBlock.path, '-', originalLine, theme.DiffDeletionHex, deletionRanges[lineIndex]))
 	}
 	for lineIndex, suggestionLine := range suggestionBlock.suggestionLines {
 		renderedLines = append(renderedLines, renderInlineCommentSuggestionLine(suggestionBlock.path, '+', suggestionLine, theme.DiffAdditionHex, additionRanges[lineIndex]))
 	}
-	renderedLines = append(renderedLines, renderInlineCommentSuggestionPaddingLine())
 	return strings.Join(renderedLines, "\n")
 }
 
@@ -201,18 +197,13 @@ func inlineCommentSuggestionChangedStyleRanges(originalLines []string, suggestio
 	return deletionRanges, additionRanges
 }
 
-func renderInlineCommentSuggestionPaddingLine() string {
-	prefix := backgroundColorEscape(theme.SelectedLineBackgroundHex)
-	return prefix + string(inlineCommentSuggestionPaddingRune) + ansiReset
-}
-
 func renderInlineCommentSuggestionLine(path string, sign rune, text string, foregroundHex string, changedRanges []styledRuneRange) string {
 	basePrefix := foregroundColorEscape(foregroundHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-	return styleText(string(sign), basePrefix) + renderSyntaxHighlightedCode(path, text, basePrefix, changedRanges)
+	return string(inlineCommentSuggestionLineSentinelRune) + styleText(string(sign), basePrefix) + renderSyntaxHighlightedCode(path, text, basePrefix, changedRanges)
 }
 
-func inlineCommentSuggestionLabelMarkdownLine(label string) string {
-	return strings.TrimSpace(label) + "  "
+func renderInlineCommentSuggestionLabelLine() string {
+	return styleText("Suggestion", ansiBold)
 }
 
 func inlineCommentSuggestionMarker(index int) string {
