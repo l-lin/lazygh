@@ -67,16 +67,18 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
 		}
 	} else {
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupPullRequest,
-				program.startReviewAction(),
-				program.reviewStoryAction(),
-				program.yankPullRequestURLActionsPopupAction(),
-				program.openPullRequestInBrowserActionsPopupAction(),
-				program.refreshPullRequestAction(),
-				program.commendOnPrAction(),
-			)...,
+		pullRequestActions := []actionsPopupAction{program.startReviewAction()}
+		if cancelPendingReviewAction, ok := program.currentCancelPendingPullRequestReviewAction(); ok {
+			pullRequestActions = append(pullRequestActions, cancelPendingReviewAction)
+		}
+		pullRequestActions = append(pullRequestActions,
+			program.reviewStoryAction(),
+			program.yankPullRequestURLActionsPopupAction(),
+			program.openPullRequestInBrowserActionsPopupAction(),
+			program.refreshPullRequestAction(),
+			program.commendOnPrAction(),
 		)
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupPullRequest, pullRequestActions...)...)
 		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
 			actions = append(actions, assignAction.withGroup(actionsPopupGroupPullRequest))
 		}

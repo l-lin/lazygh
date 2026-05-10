@@ -255,6 +255,7 @@ func (program *Program) invalidatePullRequestMutationCaches(summary githubcli.Pu
 
 	delete(program.pullRequestDiffCache, key)
 	delete(program.pullRequestDiffLoadInFlight, key)
+	program.forgetPendingPullRequestReviewState(pullRequestRepositoryName(summary.Repository), summary.Number)
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidatePersistentPullRequest(pullRequestRepositoryName(summary.Repository), summary.Number)

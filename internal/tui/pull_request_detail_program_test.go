@@ -1456,6 +1456,10 @@ type fakePullRequestDetailLoader struct {
 	removeReactionContents            []githubcli.ReactionContent
 	removeReactionErr                 error
 	reviewKeyByPendingID              map[string]string
+	getPendingReviewCalls             []string
+	getPendingReviewErr               error
+	deletePullRequestReviewIDs        []string
+	deletePullRequestReviewErr        error
 	openBrowserCalls                  []string
 	openBrowserErr                    error
 	assignableUsers                   map[string][]githubcli.PullRequestAuthor
@@ -1691,10 +1695,15 @@ func (loader *fakePullRequestDetailLoader) RequestChangesOnPullRequest(repositor
 }
 
 func (loader *fakePullRequestDetailLoader) SubmitPullRequestReview(pullRequestReviewID string, event githubcli.PullRequestReviewEvent, body string) error {
-	loader.submitReviewIDs = append(loader.submitReviewIDs, strings.TrimSpace(pullRequestReviewID))
+	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
+	loader.submitReviewIDs = append(loader.submitReviewIDs, trimmedReviewID)
 	loader.submitReviewEvents = append(loader.submitReviewEvents, event)
 	loader.submitReviewBodies = append(loader.submitReviewBodies, body)
-	return loader.submitReviewErr
+	if loader.submitReviewErr != nil {
+		return loader.submitReviewErr
+	}
+	loader.clearPendingPullRequestReview(trimmedReviewID)
+	return nil
 }
 
 func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error {
@@ -1977,6 +1986,47 @@ func (loader *fakePullRequestDetailLoader) StartPendingPullRequestReview(reposit
 	}
 	loader.reviewKeyByPendingID[reviewID] = repository + "#" + strconv.Itoa(number)
 	return reviewID, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetPendingPullRequestReviewID(repository string, number int) (string, bool, error) {
+	key := strings.TrimSpace(repository) + "#" + strconv.Itoa(number)
+	loader.getPendingReviewCalls = append(loader.getPendingReviewCalls, key)
+	if loader.getPendingReviewErr != nil {
+		return "", false, loader.getPendingReviewErr
+	}
+	return loader.pendingPullRequestReviewID(key)
+}
+
+func (loader *fakePullRequestDetailLoader) DeletePullRequestReview(pullRequestReviewID string) error {
+	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
+	loader.deletePullRequestReviewIDs = append(loader.deletePullRequestReviewIDs, trimmedReviewID)
+	if loader.deletePullRequestReviewErr != nil {
+		return loader.deletePullRequestReviewErr
+	}
+	loader.clearPendingPullRequestReview(trimmedReviewID)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) pendingPullRequestReviewID(key string) (string, bool, error) {
+	trimmedKey := strings.TrimSpace(key)
+	for reviewID, reviewKey := range loader.reviewKeyByPendingID {
+		if strings.TrimSpace(reviewKey) != trimmedKey {
+			continue
+		}
+		trimmedReviewID := strings.TrimSpace(reviewID)
+		if trimmedReviewID != "" {
+			return trimmedReviewID, true, nil
+		}
+	}
+	return "", false, nil
+}
+
+func (loader *fakePullRequestDetailLoader) clearPendingPullRequestReview(pullRequestReviewID string) {
+	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
+	if trimmedReviewID == "" || loader.reviewKeyByPendingID == nil {
+		return
+	}
+	delete(loader.reviewKeyByPendingID, trimmedReviewID)
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error) {

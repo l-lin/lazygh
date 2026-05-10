@@ -39,6 +39,14 @@ func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.PullRequest) {
 	repository := pullRequestRepositoryName(summary.Repository)
 	detail, err := program.githubLoader.GetPullRequestDetail(repository, summary.Number)
+	pendingReviewState := pendingPullRequestReviewState{}
+	pendingReviewStateKnown := false
+	if pendingReviewID, found, pendingReviewErr := program.githubLoader.GetPendingPullRequestReviewID(repository, summary.Number); pendingReviewErr == nil {
+		pendingReviewStateKnown = true
+		if found {
+			pendingReviewState.id = strings.TrimSpace(pendingReviewID)
+		}
+	}
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDetailResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
@@ -50,6 +58,9 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDetailLoadInFlight, key)
+		if pendingReviewStateKnown {
+			program.pendingPullRequestReviewCache[key] = pendingReviewState
+		}
 		if err == nil || !program.canKeepPullRequestDetailOnRefreshError(key) {
 			program.pullRequestDetailCache[key] = result
 			program.invalidatePullRequestDetailDocumentCache()
@@ -132,6 +143,7 @@ func (program *Program) currentDetailIdentity() string {
 
 func (program *Program) invalidatePullRequestDetail(repository string, number int) {
 	delete(program.pullRequestDetailCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	program.forgetPendingPullRequestReviewState(repository, number)
 	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidatePullRequestDetailDocumentCache()
 }

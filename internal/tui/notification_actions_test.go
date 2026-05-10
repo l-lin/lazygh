@@ -269,6 +269,40 @@ func TestActionsPopup_GivenPullRequestNotificationDetailFocus_WhenOpening_ThenIt
 	}
 }
 
+func TestActionsPopup_GivenPullRequestNotificationDetailFocusAndPendingReview_WhenOpening_ThenItAlsoShowsCancelPendingReview(t *testing.T) {
+	notifications := []githubcli.Notification{given_notificationValue(t, given_pullRequestNotificationRow())}
+	loader := &fakePullRequestDetailLoader{
+		notifications:        append([]githubcli.Notification(nil), notifications...),
+		reviewKeyByPendingID: map[string]string{"PRR_pending": "acme/widgets#42"},
+	}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	for _, expected := range []string{
+		"Start review",
+		"Cancel pending review",
+		"Review PR as story",
+		"Yank URL to clipboard",
+		"Open PR in browser",
+		"Refresh current PR information",
+	} {
+		if !strings.Contains(popupView.Buffer(), expected) {
+			t.Fatalf("expected popup buffer to contain %q, actual %q", expected, popupView.Buffer())
+		}
+	}
+}
+
 func TestActionsPopup_GivenPullRequestNotificationDetailFocus_WhenExecutingStartReview_ThenItStartsReviewMode(t *testing.T) {
 	notifications := []githubcli.Notification{given_notificationValue(t, given_pullRequestNotificationRow())}
 	loader := &fakePullRequestDetailLoader{

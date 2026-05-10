@@ -298,6 +298,121 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 	}
 }
 
+func TestActionsPopup_GivenSelectedPullRequestWithoutPendingReview_WhenOpening_ThenItHidesCancelPendingReview(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Buffer(), "Cancel pending review") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "Cancel pending review", popupView.Buffer())
+	}
+	if !strings.Contains(popupView.Buffer(), "Start review") {
+		t.Fatalf("expected popup buffer to keep %q visible, actual %q", "Start review", popupView.Buffer())
+	}
+	if !reflect.DeepEqual(loader.getPendingReviewCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected pending review lookup calls %v, actual %v", []string{"acme/widgets#42"}, loader.getPendingReviewCalls)
+	}
+}
+
+func TestActionsPopup_GivenSelectedPullRequestWithPendingReviewLoadingInBackground_WhenLookupSucceeds_ThenItRefreshesToShowCancelPendingReview(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{reviewKeyByPendingID: map[string]string{"PRR_pending": "acme/widgets#42"}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	initialQueuedRuns := len(asyncRunner.runs)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != initialQueuedRuns {
+		t.Fatalf("expected the popup to reuse the already queued background work, actual queued runs %d from %d", len(asyncRunner.runs), initialQueuedRuns)
+	}
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Buffer(), "Cancel pending review") {
+		t.Fatalf("expected popup buffer to hide %q before the lookup completes, actual %q", "Cancel pending review", popupView.Buffer())
+	}
+
+	queuedRuns := append([]func(){}, asyncRunner.runs...)
+	for _, run := range queuedRuns {
+		run()
+	}
+
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	startLineIndex := given_viewLineIndexContaining(t, popupView, "Start review")
+	cancelLineIndex := given_viewLineIndexContaining(t, popupView, "Cancel pending review")
+	if cancelLineIndex != startLineIndex+1 {
+		t.Fatalf("expected cancel pending review to render right after start review, actual %q", popupView.Buffer())
+	}
+	if !reflect.DeepEqual(loader.getPendingReviewCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected pending review lookup calls %v, actual %v", []string{"acme/widgets#42"}, loader.getPendingReviewCalls)
+	}
+}
+
+func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenItDeletesThePendingReviewInvalidatesTheCachesAndClosesThePopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pendingPullRequestReviewCache["acme/widgets#42"] = pendingPullRequestReviewState{id: "PRR_pending"}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"}}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("cancel pending review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "cancel pending review"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if subject.model.ActionsPopupVisible() {
+		t.Fatal("expected the actions popup to close after canceling the pending review")
+	}
+	if !reflect.DeepEqual(loader.deletePullRequestReviewIDs, []string{"PRR_pending"}) {
+		t.Fatalf("expected deleted pending review ids %v, actual %v", []string{"PRR_pending"}, loader.deletePullRequestReviewIDs)
+	}
+	if _, ok := subject.pullRequestDetailCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the cached pull request detail to be invalidated after canceling the pending review")
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the cached pull request diff to be invalidated after canceling the pending review")
+	}
+	summary, ok := subject.currentPullRequestSummary()
+	if !ok {
+		t.Fatal("expected the selected pull request summary to stay available")
+	}
+	pendingState, known := subject.pendingPullRequestReviewStateForSummary(summary)
+	if !known {
+		t.Fatal("expected the pending review state to stay known after canceling the review")
+	}
+	if strings.TrimSpace(pendingState.id) != "" {
+		t.Fatalf("expected the pending review state to be cleared, actual %+v", pendingState)
+	}
+	then_statusLineContains(t, gui, "Pending review canceled")
+}
+
 func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)

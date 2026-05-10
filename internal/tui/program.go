@@ -62,6 +62,8 @@ type GitHubLoader interface {
 	ConvertPullRequestToDraft(repository string, number int) error
 	SquashMergePullRequest(repository string, number int) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
+	GetPendingPullRequestReviewID(repository string, number int) (string, bool, error)
+	DeletePullRequestReview(pullRequestReviewID string) error
 	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
 	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)
 	GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error)
@@ -117,6 +119,7 @@ type Program struct {
 	actionsPopupSearchEditor                *lineEditor
 	actionsPopupErrorMessage                string
 	actionsPopupPendingConfirmationActionID string
+	pendingPullRequestReviewCache           map[string]pendingPullRequestReviewState
 	reactionPicker                          *reactionPickerState
 	themePicker                             *themePickerState
 	assigneePicker                          *assigneePickerState
@@ -192,6 +195,7 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		releaseDetailCache:                   map[string]releaseDetailResult{},
 		releaseDetailLoadInFlight:            map[string]bool{},
 		reviewDiffRenderCache:                map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
+		pendingPullRequestReviewCache:        map[string]pendingPullRequestReviewState{},
 		assignableUsersCache:                 map[string][]githubcli.PullRequestAuthor{},
 		browserCollapsedSectionStates:        map[string]bool{},
 		additionalPullRequestsLoadStarted:    map[PullRequestTab]bool{},

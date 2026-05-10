@@ -72,6 +72,7 @@ func (program *Program) startStoryReviewSession(summary githubcli.PullRequest, p
 
 func (program *Program) startReviewSessionWithMode(summary githubcli.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
 	program.detailViewState.clearPendingPrefix()
+	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
 	program.reviewSession = reviewSessionState{
 		active:                       true,
 		mode:                         mode,
@@ -81,11 +82,14 @@ func (program *Program) startReviewSessionWithMode(summary githubcli.PullRequest
 		sourceFullscreenPane:         program.model.fullscreenPane,
 		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
 		summary:                      summary,
-		pendingReviewID:              strings.TrimSpace(pendingReviewID),
+		pendingReviewID:              trimmedPendingReviewID,
 		selectedFileTreeRow:          -1,
 		collapsedTreeRowIDs:          map[string]bool{},
 		collapsedThreadIDs:           map[string]bool{},
 		story:                        story,
+	}
+	if trimmedPendingReviewID != "" {
+		program.setPendingPullRequestReviewState(summary, trimmedPendingReviewID)
 	}
 	program.invalidateReviewDiffRenderCache()
 	program.model.paneLayoutSize = program.reviewModePaneLayoutSize()

@@ -52,6 +52,7 @@ func (program *Program) clearCachedData() error {
 	program.pullRequestDetailLoadInFlight = map[string]bool{}
 	program.pullRequestDiffCache = map[string]pullRequestDiffResult{}
 	program.pullRequestDiffLoadInFlight = map[string]bool{}
+	program.pendingPullRequestReviewCache = map[string]pendingPullRequestReviewState{}
 	program.issueDetailCache = map[string]issueDetailResult{}
 	program.issueDetailLoadInFlight = map[string]bool{}
 	program.releaseDetailCache = map[string]releaseDetailResult{}

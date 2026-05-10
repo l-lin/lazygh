@@ -110,6 +110,7 @@ const (
 	pullRequestOverviewMutedIcon   = iconStatusMuted
 
 	actionsPopupStartReviewIcon              = iconReview
+	actionsPopupCancelPendingReviewIcon      = iconDelete
 	actionsPopupYankPullRequestURLIcon       = iconCopy
 	actionsPopupOpenPullRequestBrowserIcon   = iconOpenBrowser
 	actionsPopupOpenLinkIcon                 = iconLink

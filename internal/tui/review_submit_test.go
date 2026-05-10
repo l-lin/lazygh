@@ -107,6 +107,9 @@ func TestActionsPopup_GivenReviewModeSubmitCommentActionSelected_WhenSubmitting_
 	if !strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected browser actions to return after review submit, actual %q", popupView.Buffer())
 	}
+	if strings.Contains(popupView.Buffer(), "Cancel pending review") {
+		t.Fatalf("expected browser actions to hide %q after review submit, actual %q", "Cancel pending review", popupView.Buffer())
+	}
 }
 
 func TestActionsPopup_GivenReviewModeSubmitApprovalActionSelected_WhenSubmittingWithAnEmptySummary_ThenItSubmitsThePendingReviewAsApprove(t *testing.T) {
