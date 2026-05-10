@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestPrepareInlineCommentMarkdown_GivenSuggestionFence_WhenFormatting_ThenItConvertsItToALabeledDiffFence(t *testing.T) {
@@ -81,7 +82,7 @@ func TestPrepareInlineCommentMarkdown_GivenRegularCodeFence_WhenFormatting_ThenI
 	}
 }
 
-func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesThePreparedMarkdown(t *testing.T) {
+func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesASuggestionPlaceholderMarkdown(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 
 	actual := renderInlineCommentBody("```suggestion\nfmt.Println(\"hello\")\n```", renderer, 72)
@@ -92,9 +93,7 @@ func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesTh
 	expectedMarkdown := strings.Join([]string{
 		"**Suggestion**",
 		"",
-		"```diff",
-		"+fmt.Println(\"hello\")",
-		"```",
+		inlineCommentSuggestionMarker(0),
 	}, "\n")
 	if renderer.lastMarkdown != expectedMarkdown {
 		t.Fatalf("expected markdown renderer input %q, actual %q", expectedMarkdown, renderer.lastMarkdown)
@@ -102,4 +101,27 @@ func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesTh
 	if renderer.lastWidth != 72 {
 		t.Fatalf("expected markdown renderer width %d, actual %d", 72, renderer.lastWidth)
 	}
+}
+
+func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItHighlightsOnlyTheChangedSegments(t *testing.T) {
+	comment := githubcli.PullRequestInlineComment{
+		Body:         "```suggestion\nfmt.Println(\"bonjour\")\n```",
+		Path:         "internal/tui/render.go",
+		Line:         43,
+		OriginalLine: 43,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -43,1 +43,1 @@\n-fmt.Println(\"goodbye\")\n+fmt.Println(\"hello\")",
+	}
+
+	actualDocument := newDetailDocument(renderRoundedCommentBox(renderInlineCommentBodyForInlineComment(comment, glamourMarkdownRenderer{}, 72), 72), 72)
+	deletionLineIndex, deletionLine := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("hello")`)
+	additionLineIndex, additionLine := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("bonjour")`)
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, "hello", backgroundColorEscape(theme.DiffDeletionHighlightBackgroundHex), "suggestion deletion changed background")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, `fmt.Println("`, backgroundColorEscape(theme.DiffDeletionHighlightBackgroundHex), "suggestion deletion unchanged background")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, `fmt.Println("`, backgroundColorEscape(theme.SelectedLineBackgroundHex), "suggestion deletion base background")
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, "bonjour", backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "suggestion addition changed background")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "suggestion addition unchanged background")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.SelectedLineBackgroundHex), "suggestion addition base background")
 }

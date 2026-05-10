@@ -996,8 +996,10 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedLineIndex])); !strings.Contains(actualInnerText, `+fmt.Println("bonjour")`) {
 		t.Fatalf("expected the suggestion block to show the suggested line %q, actual %q", `+fmt.Println("bonjour")`, actualInnerText)
 	}
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion removed line background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion added line background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, removedLineIndex, "hello", given_themeColorHex(t, theme.DiffDeletionHighlightBackgroundHex), "inline suggestion deletion changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, removedLineIndex, `fmt.Println("`, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion deletion base background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedLineIndex, "bonjour", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "inline suggestion addition changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedLineIndex, `fmt.Println("`, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion addition base background")
 	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block top padding background")
 	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block bottom padding background")
 	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, addedLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "inline suggestion code block border background")

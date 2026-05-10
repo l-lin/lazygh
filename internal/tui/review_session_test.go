@@ -532,8 +532,12 @@ func TestReviewMode_GivenSuggestionFenceInlineThreadComment_WhenRendering_ThenIt
 	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[addedSecondLineIndex])); !strings.Contains(actualInnerText, "+better another line") {
 		t.Fatalf("expected the review suggestion block to show the suggested line %q, actual %q", "+better another line", actualInnerText)
 	}
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion removed line background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion added line background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex, "new", given_themeColorHex(t, theme.DiffDeletionHighlightBackgroundHex), "review suggestion deletion changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex, " line", given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion deletion base background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedFirstLineIndex, "better", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "review suggestion addition changed background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedFirstLineIndex, " line", given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion addition base background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex, "better ", given_themeColorHex(t, theme.DiffAdditionHighlightBackgroundHex), "review suggestion multi-line insertion background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex, "another line", given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion multi-line unchanged suffix background")
 	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, removedFirstLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block top padding background")
 	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, addedSecondLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block bottom padding background")
 	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, addedFirstLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review suggestion code block border background")
