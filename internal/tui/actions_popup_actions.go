@@ -110,6 +110,9 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 	if program.detailCursorActionsAvailable() && program.detailCursorHasLink() {
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
 	}
+	if reRequestReviewAction, ok := program.currentReRequestPullRequestReviewAction(); ok {
+		actions = append(actions, reRequestReviewAction.withGroup(actionsPopupGroupReview))
+	}
 	if reactionAction, ok := program.currentReactionAction(); ok {
 		actions = append(actions, reactionAction.withGroup(actionsPopupGroupReview))
 	}

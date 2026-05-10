@@ -32,11 +32,13 @@ type pullRequestOverviewBlock struct {
 }
 
 type pullRequestOverviewEntry struct {
-	Label    string
-	Detail   string
-	Status   pullRequestOverviewStatus
-	ShowIcon bool
-	Link     string
+	Label              string
+	Detail             string
+	Status             pullRequestOverviewStatus
+	ShowIcon           bool
+	Link               string
+	ReviewerLogin      string
+	CanReRequestReview bool
 }
 
 type pullRequestReviewerOverview struct {
@@ -131,11 +133,17 @@ func renderPullRequestOverviewEntryLabel(entry pullRequestOverviewEntry) string 
 		text = pullRequestOverviewStatusIcon(entry.Status) + " " + text
 	}
 	prefixes := []string{foregroundColorEscape(pullRequestOverviewStatusHex(entry.Status))}
+	rendered := ""
 	if strings.TrimSpace(entry.Link) != "" {
 		prefixes = append(prefixes, underlineEscape)
-		return hyperlinkText(entry.Link, text, prefixes...)
+		rendered = hyperlinkText(entry.Link, text, prefixes...)
+	} else {
+		rendered = styleText(text, prefixes...)
 	}
-	return styleText(text, prefixes...)
+	if !entry.CanReRequestReview {
+		return rendered
+	}
+	return rendered + styleText(" "+pullRequestOverviewReRequestReviewIcon, foregroundColorEscape(theme.InactiveTitleHex))
 }
 
 func renderPullRequestOverviewEntryDetail(detail string) string {
@@ -190,16 +198,24 @@ func pullRequestReviewerSummary(reviewers pullRequestReviewerOverview) string {
 
 func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRequestReviewerOverview {
 	latestReviews := latestPullRequestReviewsByLogin(detail.Reviews)
+	requestedUserLogins := requestedPullRequestReviewerLogins(detail.ReviewRequests)
 	entriesByLabel := map[string]pullRequestOverviewEntry{}
 	reviewers := pullRequestReviewerOverview{}
 	for login, state := range latestReviews {
-		label := formatLogin(login)
+		trimmedLogin := strings.TrimSpace(login)
+		label := formatLogin(trimmedLogin)
 		if label == "-" {
 			continue
 		}
 
 		status := pullRequestOverviewStatusForReviewState(state)
-		entriesByLabel[label] = pullRequestOverviewEntry{Label: label, Status: status, ShowIcon: true}
+		entriesByLabel[label] = pullRequestOverviewEntry{
+			Label:              label,
+			Status:             status,
+			ShowIcon:           true,
+			ReviewerLogin:      trimmedLogin,
+			CanReRequestReview: trimmedLogin != "" && !requestedUserLogins[trimmedLogin],
+		}
 		reviewers.TotalCount++
 		switch status {
 		case pullRequestOverviewStatusSuccess:
@@ -228,7 +244,9 @@ func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRe
 		if label == "-" {
 			continue
 		}
-		if _, ok := entriesByLabel[label]; ok {
+		if existing, ok := entriesByLabel[label]; ok {
+			existing.CanReRequestReview = false
+			entriesByLabel[label] = existing
 			continue
 		}
 		entriesByLabel[label] = pullRequestOverviewEntry{Label: label, Status: pullRequestOverviewStatusPending, ShowIcon: true}
@@ -265,6 +283,22 @@ func pullRequestReviewRequestTeamName(reviewer githubcli.PullRequestRequestedRev
 		return slug
 	}
 	return ""
+}
+
+func requestedPullRequestReviewerLogins(reviewRequests []githubcli.PullRequestReviewRequest) map[string]bool {
+	logins := map[string]bool{}
+	for _, reviewRequest := range reviewRequests {
+		reviewer := reviewRequest.RequestedReviewer
+		if strings.EqualFold(strings.TrimSpace(reviewer.TypeName), "Team") {
+			continue
+		}
+		trimmedLogin := strings.TrimSpace(reviewer.Login)
+		if trimmedLogin == "" {
+			continue
+		}
+		logins[trimmedLogin] = true
+	}
+	return logins
 }
 
 func latestPullRequestReviewsByLogin(reviews []githubcli.PullRequestReview) map[string]string {

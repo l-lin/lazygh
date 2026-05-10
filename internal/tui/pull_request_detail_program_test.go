@@ -1470,6 +1470,9 @@ type fakePullRequestDetailLoader struct {
 	updateAssigneeAdditions           [][]string
 	updateAssigneeRemovals            [][]string
 	updateAssigneeErr                 error
+	requestReviewerCalls              []string
+	requestReviewerLogins             []string
+	requestReviewerErr                error
 	editTitleCalls                    []string
 	editTitleValues                   []string
 	editTitleErr                      error
@@ -1880,6 +1883,33 @@ func (loader *fakePullRequestDetailLoader) UpdatePullRequestAssignees(repository
 			updatedAssignees = append(updatedAssignees, assignee)
 		}
 		detail.Assignees = updatedAssignees
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) RequestPullRequestReviewer(repository string, number int, reviewerLogin string) error {
+	trimmedLogin := strings.TrimSpace(reviewerLogin)
+	loader.requestReviewerCalls = append(loader.requestReviewerCalls, repository+"#"+strconv.Itoa(number))
+	loader.requestReviewerLogins = append(loader.requestReviewerLogins, trimmedLogin)
+	if loader.requestReviewerErr != nil {
+		return loader.requestReviewerErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		for _, existing := range pullRequest.ReviewRequests {
+			if strings.TrimSpace(existing.RequestedReviewer.Login) == trimmedLogin {
+				return
+			}
+		}
+		pullRequest.ReviewRequests = append(pullRequest.ReviewRequests, githubcli.PullRequestReviewRequest{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: trimmedLogin}})
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		for _, existing := range detail.ReviewRequests {
+			if strings.TrimSpace(existing.RequestedReviewer.Login) == trimmedLogin {
+				return
+			}
+		}
+		detail.ReviewRequests = append(detail.ReviewRequests, githubcli.PullRequestReviewRequest{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: trimmedLogin}})
 	})
 	return nil
 }

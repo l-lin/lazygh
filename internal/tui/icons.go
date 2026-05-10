@@ -104,10 +104,11 @@ const (
 	browserDetailExpandedChevron  = iconChevronExpanded
 	browserDetailCollapsedChevron = iconChevronCollapsed
 
-	pullRequestOverviewSuccessIcon = iconStatusSuccess
-	pullRequestOverviewFailureIcon = iconStatusFailure
-	pullRequestOverviewPendingIcon = iconStatusPending
-	pullRequestOverviewMutedIcon   = iconStatusMuted
+	pullRequestOverviewSuccessIcon         = iconStatusSuccess
+	pullRequestOverviewFailureIcon         = iconStatusFailure
+	pullRequestOverviewPendingIcon         = iconStatusPending
+	pullRequestOverviewMutedIcon           = iconStatusMuted
+	pullRequestOverviewReRequestReviewIcon = iconReviewRequest
 
 	actionsPopupStartReviewIcon              = iconReview
 	actionsPopupCancelPendingReviewIcon      = iconDelete
@@ -118,6 +119,7 @@ const (
 	actionsPopupReviewApproveIcon            = iconReviewApprove
 	actionsPopupReviewCommentIcon            = iconReviewComment
 	actionsPopupReviewRequestChangesIcon     = iconRequestChanges
+	actionsPopupReRequestReviewIcon          = iconReviewRequest
 	actionsPopupCommentOnPullRequestIcon     = iconPullRequestComment
 	actionsPopupEditPullRequestIcon          = iconEdit
 	actionsPopupDeleteInlineCommentIcon      = iconDelete
