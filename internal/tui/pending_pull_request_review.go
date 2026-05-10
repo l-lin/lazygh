@@ -119,7 +119,7 @@ func (program *Program) selectedPendingPullRequestReviewActionTarget() (pendingP
 	}, true
 }
 
-func (program *Program) executeCancelPendingPullRequestReviewAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeCancelPendingPullRequestReviewAction(gui *gocui.Gui) actionsPopupActionResult {
 	target, ok := program.selectedPendingPullRequestReviewActionTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
@@ -134,6 +134,7 @@ func (program *Program) executeCancelPendingPullRequestReviewAction(_ *gocui.Gui
 	program.invalidatePullRequestDetail(target.repository, target.number)
 	program.invalidatePullRequestDiff(target.repository, target.number)
 	program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, "")
+	program.reloadActivePullRequestsTab(gui)
 	program.setFeedback(target.sourceFocus, pendingPullRequestReviewCanceledMessage)
 	return actionsPopupActionResult{closePopup: true}
 }

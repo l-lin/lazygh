@@ -8,6 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -411,6 +412,52 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenI
 		t.Fatalf("expected the pending review state to be cleared, actual %+v", pendingState)
 	}
 	then_statusLineContains(t, gui, "Pending review canceled")
+}
+
+func TestActionsPopup_GivenCancelPendingReviewActionSelectedFromRequestedPullRequestList_WhenExecuting_ThenItReloadsTheActivePullRequestList(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{reviewKeyByPendingID: map[string]string{"PRR_pending": "acme/widgets#42"}}
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := given_pullRequestCommentProgram(model, loader)
+	subject.ApplyPullRequestSearches([]appconfig.PullRequestSearch{
+		{Label: "My PRs", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}},
+		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open"}},
+	})
+	requestedSummary := githubcli.PullRequest{Title: "Requested PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42"}
+	subject.model.SetPullRequestRows(RequestedPullRequestsTab, []PullRequestRow{requestedPullRequestRow(requestedSummary)})
+	subject.model.activePullRequestTab = RequestedPullRequestsTab
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.pendingPullRequestReviewCache["acme/widgets#42"] = pendingPullRequestReviewState{id: "PRR_pending"}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("cancel pending review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "cancel pending review"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.deletePullRequestReviewIDs, []string{"PRR_pending"}) {
+		t.Fatalf("expected deleted pending review ids %v, actual %v", []string{"PRR_pending"}, loader.deletePullRequestReviewIDs)
+	}
+	if !reflect.DeepEqual(loader.listPullRequestCommands, [][]string{{"search", "prs", "--review-requested", "@me", "--state", "open"}}) {
+		t.Fatalf("expected pull request reload commands %v, actual %v", [][]string{{"search", "prs", "--review-requested", "@me", "--state", "open"}}, loader.listPullRequestCommands)
+	}
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if strings.Contains(pullRequestsView.Buffer(), "Requested PR") {
+		t.Fatalf("expected the requested pull request list to stop showing %q after canceling the review, actual %q", "Requested PR", pullRequestsView.Buffer())
+	}
+	if !strings.Contains(pullRequestsView.Buffer(), reviewRequestedPullRequestsEmptyTitle) {
+		t.Fatalf("expected the requested pull request list to refresh to %q, actual %q", reviewRequestedPullRequestsEmptyTitle, pullRequestsView.Buffer())
+	}
 }
 
 func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
