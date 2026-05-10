@@ -121,10 +121,21 @@ func (program *Program) selectedPullRequestReviewCommentActionTarget() (pullRequ
 }
 
 func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
+	switch program.activeDetailTab {
+	case CommentsDetailTab:
+		return program.selectedBrowserCommentsInlineCommentActionTarget()
+	case ChangesDetailTab:
+		return program.selectedBrowserChangesInlineCommentActionTarget()
+	default:
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+}
+
+func (program *Program) selectedBrowserCommentsInlineCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
@@ -153,6 +164,35 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	return target, true
+}
+
+func (program *Program) selectedBrowserChangesInlineCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {
+	summary, ok := program.selectedPullRequestSummaryForDetail()
+	if !ok {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+	result, ok := program.pullRequestDiffForSummary(summary)
+	if !ok || result.err != nil {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+
+	detailDocument := program.currentDetailDocument(nil)
+	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
+	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailViewState)
+	if !ok {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) || !comment.ViewerDidAuthor {
+		return pullRequestReviewCommentActionTarget{}, false
+	}
+	return pullRequestReviewCommentActionTarget{
+		repository: repository,
+		number:     summary.Number,
+		commentID:  strings.TrimSpace(comment.ID),
+		body:       comment.Body,
+	}, true
 }
 
 func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {

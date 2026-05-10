@@ -66,6 +66,18 @@ func (program *Program) optimisticallyAppendPullRequestComment(target pullReques
 	})
 }
 
+func (program *Program) optimisticallyUpdatePullRequestComment(target pullRequestCommentEditActionTarget, body string) {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+		return updatePullRequestCommentInPullRequestDetail(detail, target.commentID, body)
+	})
+}
+
+func (program *Program) optimisticallyDeletePullRequestComment(target pullRequestCommentEditActionTarget) {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+		return deletePullRequestCommentFromPullRequestDetail(detail, target.commentID)
+	})
+}
+
 func (program *Program) optimisticallyAppendInlineCommentReply(target pullRequestReviewThreadReplyTarget, body string) {
 	reply := program.newOptimisticPullRequestComment(body, strings.TrimSpace(target.pendingReview) != "")
 	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
@@ -390,6 +402,24 @@ func updateReviewThreadResolutionInPullRequestDiff(data *reviewDiffData, threadI
 	return updated
 }
 
+func updatePullRequestCommentInPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string, body string) bool {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
+		return false
+	}
+
+	updated := false
+	for commentIndex := range detail.Comments {
+		if strings.TrimSpace(detail.Comments[commentIndex].ID) != trimmedCommentID {
+			continue
+		}
+		detail.Comments[commentIndex].Body = body
+		detail.Comments[commentIndex].BodyHTML = ""
+		updated = true
+	}
+	return updated
+}
+
 func updateReviewCommentInPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string, body string) bool {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
@@ -437,6 +467,25 @@ func updateReviewCommentInPullRequestDiff(data *reviewDiffData, commentID string
 			}
 		}
 	}
+	return updated
+}
+
+func deletePullRequestCommentFromPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string) bool {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
+		return false
+	}
+
+	updated := false
+	filteredComments := detail.Comments[:0]
+	for _, comment := range detail.Comments {
+		if strings.TrimSpace(comment.ID) == trimmedCommentID {
+			updated = true
+			continue
+		}
+		filteredComments = append(filteredComments, comment)
+	}
+	detail.Comments = filteredComments
 	return updated
 }
 

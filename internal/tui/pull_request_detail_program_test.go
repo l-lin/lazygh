@@ -1395,6 +1395,11 @@ type fakePullRequestDetailLoader struct {
 	commentCalls                      []string
 	commentBodies                     []string
 	commentErr                        error
+	updatePullRequestCommentIDs       []string
+	updatePullRequestCommentBodies    []string
+	updatePullRequestCommentErr       error
+	deletePullRequestCommentIDs       []string
+	deletePullRequestCommentErr       error
 	myPullRequests                    []githubcli.PullRequest
 	requestedPullRequests             []githubcli.PullRequest
 	notifications                     []githubcli.Notification
@@ -1644,6 +1649,27 @@ func (loader *fakePullRequestDetailLoader) CommentOnPullRequest(repository strin
 		return loader.commentErr
 	}
 	loader.addPullRequestComment(repository, number, body)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) UpdatePullRequestComment(commentID string, body string) error {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	loader.updatePullRequestCommentIDs = append(loader.updatePullRequestCommentIDs, trimmedCommentID)
+	loader.updatePullRequestCommentBodies = append(loader.updatePullRequestCommentBodies, body)
+	if loader.updatePullRequestCommentErr != nil {
+		return loader.updatePullRequestCommentErr
+	}
+	loader.updatePullRequestComment(trimmedCommentID, body)
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) DeletePullRequestComment(commentID string) error {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	loader.deletePullRequestCommentIDs = append(loader.deletePullRequestCommentIDs, trimmedCommentID)
+	if loader.deletePullRequestCommentErr != nil {
+		return loader.deletePullRequestCommentErr
+	}
+	loader.deletePullRequestComment(trimmedCommentID)
 	return nil
 }
 
@@ -2256,6 +2282,48 @@ func (loader *fakePullRequestDetailLoader) addPullRequestComment(repository stri
 		CreatedAt:       "2026-04-20T12:15:00Z",
 	})
 	loader.details[key] = detail
+}
+
+func (loader *fakePullRequestDetailLoader) updatePullRequestComment(commentID string, body string) {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if trimmedCommentID == "" {
+		return
+	}
+	for key, detail := range loader.details {
+		updated := false
+		for commentIndex := range detail.Comments {
+			if strings.TrimSpace(detail.Comments[commentIndex].ID) != trimmedCommentID {
+				continue
+			}
+			detail.Comments[commentIndex].Body = body
+			updated = true
+		}
+		if updated {
+			loader.details[key] = detail
+		}
+	}
+}
+
+func (loader *fakePullRequestDetailLoader) deletePullRequestComment(commentID string) {
+	trimmedCommentID := strings.TrimSpace(commentID)
+	if trimmedCommentID == "" {
+		return
+	}
+	for key, detail := range loader.details {
+		updated := false
+		comments := detail.Comments[:0]
+		for _, comment := range detail.Comments {
+			if strings.TrimSpace(comment.ID) == trimmedCommentID {
+				updated = true
+				continue
+			}
+			comments = append(comments, comment)
+		}
+		detail.Comments = comments
+		if updated {
+			loader.details[key] = detail
+		}
+	}
 }
 
 func (loader *fakePullRequestDetailLoader) updateReviewComment(commentID string, body string) {

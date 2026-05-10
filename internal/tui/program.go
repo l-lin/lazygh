@@ -39,6 +39,8 @@ type GitHubLoader interface {
 	GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error)
 	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
 	CommentOnPullRequest(repository string, number int, body string) error
+	UpdatePullRequestComment(commentID string, body string) error
+	DeletePullRequestComment(commentID string) error
 	ApprovePullRequest(repository string, number int) error
 	ReviewPullRequestWithComment(repository string, number int, body string) error
 	RequestChangesOnPullRequest(repository string, number int, body string) error
