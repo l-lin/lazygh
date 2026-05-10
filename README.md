@@ -69,6 +69,9 @@ lazygh
 lazygh view https://github.com/acme/awesome/pull/123
 # Directly start reviewing a PR.
 lazygh review https://github.com/acme/awesome/pull/123
+# Directly start a story review a PR.
+# (Must configure `story_review.agent_command` beforehand)
+lazygh story-review https://github.com/acme/awesome/pull/123
 ```
 
 ### Images
