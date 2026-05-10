@@ -13,7 +13,7 @@ const (
 	iconCommit             = ""
 	iconChanges            = ""
 	iconUser               = ""
-	iconReviewRequest      = "󰀆"
+	iconReviewRequest      = ""
 	iconLabel              = "󰓼"
 	iconChecks             = "󰄬"
 	iconApproval           = ""
