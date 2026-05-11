@@ -121,11 +121,11 @@ func reviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile) stri
 }
 
 func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return row.Label + reviewDiffTreeRowMetadataSuffix(row, files)
+	return reviewDiffTreeRowSearchText(row, files) + reviewDiffTreeRowCommentSuffix(row, files)
 }
 
-func reviewDiffTreeRowMetadataSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowTeamOwnersSuffix(row, files) + reviewDiffTreeRowCommentSuffix(row, files)
+func reviewDiffTreeRowSearchText(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	return row.Label + reviewDiffTreeRowTeamOwnersSuffix(row, files)
 }
 
 func reviewDiffTreeRowTeamOwnersSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -227,16 +227,17 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 }
 
 func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, query string, selected bool) string {
-	metadataSuffix := reviewDiffTreeRowMetadataSuffix(row, files)
+	searchText := reviewDiffTreeRowSearchText(row, files)
+	commentSuffix := reviewDiffTreeRowCommentSuffix(row, files)
 	if !selected {
-		highlightedLabel, _ := highlightSearchMatches(row.Label, query)
-		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel + metadataSuffix
+		highlightedText, _ := highlightSearchMatches(searchText, query)
+		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedText + commentSuffix
 	}
 
 	selectedPrefix := ansiBold + foregroundColorEscape(theme.ActiveTextHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-	highlightedLabel, _ := highlightSearchMatchesWithPrefixes(row.Label, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
+	highlightedText, _ := highlightSearchMatchesWithPrefixes(searchText, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
 	prefix := renderSelectedReviewDiffTreeRowPrefix(row, files, selectedPrefix)
-	return prefix + highlightedLabel + applyPrefix(metadataSuffix, selectedPrefix)
+	return prefix + highlightedText + applyPrefix(commentSuffix, selectedPrefix)
 }
 
 func renderSelectedReviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile, selectedPrefix string) string {

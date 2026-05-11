@@ -92,15 +92,15 @@ func (program *Program) reviewFileTreeSearchMatchCount(query string) int {
 }
 
 func (program *Program) reviewFileTreeSearchMatchRows(query string) []int {
-	tree, _, ok := program.reviewSessionCurrentTree()
+	tree, files, ok := program.reviewSessionCurrentTree()
 	if !ok {
 		return nil
 	}
 
-	return reviewDiffTreeSearchMatchRows(tree, query)
+	return reviewDiffTreeSearchMatchRows(tree, files, query)
 }
 
-func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, query string) []int {
+func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, files []reviewDiffFile, query string) []int {
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" {
 		return nil
@@ -112,7 +112,7 @@ func reviewDiffTreeSearchMatchRows(tree reviewDiffTree, query string) []int {
 		if !row.Foldable && row.FileIndex < 0 {
 			continue
 		}
-		if strings.Contains(strings.ToLower(row.Label), loweredQuery) {
+		if strings.Contains(strings.ToLower(reviewDiffTreeRowSearchText(row, files)), loweredQuery) {
 			matchRows = append(matchRows, row.VisibleRowIndex)
 		}
 	}

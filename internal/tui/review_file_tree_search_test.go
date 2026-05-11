@@ -81,6 +81,70 @@ func TestReviewMode_GivenSubmittedFileTreeSearch_WhenRendering_ThenItKeepsTheTre
 	}
 }
 
+func TestReviewMode_GivenSubmittedFileTreeSearchByTeamName_WhenRendering_ThenItHighlightsTheTeamMatchAndMovesToTheMatchingFile(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:        "First PR",
+				Number:       42,
+				Body:         "Body 42",
+				BaseRefName:  "main",
+				HeadRefName:  "feature/review",
+				State:        "OPEN",
+				ChangedFiles: 2,
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+		fileTeamOwners: map[string]map[string][]string{
+			"acme/widgets#42": {
+				"internal/tui/render.go": {"P3C"},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	actualErr = subject.openSearch(gui, nil)
+	then_noError(t, actualErr)
+	searchView, actualErr := gui.View(viewSearchName)
+	then_noError(t, actualErr)
+	when_typingSearchQuery(t, subject, searchView, "p3c")
+
+	actualErr = subject.submitSearch(gui, searchView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	matchLineIndex := given_viewLineIndexContaining(t, filesView, "render.go")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewPullRequestsName, matchLineIndex, "P3C")
+	if subject.reviewSession.selectedFileTreeRow != matchLineIndex {
+		t.Fatalf("expected selected review tree row %d, actual %d", matchLineIndex, subject.reviewSession.selectedFileTreeRow)
+	}
+
+	footerView, actualErr := gui.View(viewPullRequestsFooterName)
+	then_noError(t, actualErr)
+	if actual := strings.TrimSpace(footerView.Buffer()); actual != "/p3c (1 match)" {
+		t.Fatalf("expected review tree footer %q, actual %q", "/p3c (1 match)", actual)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "+new line") {
+		t.Fatalf("expected detail view to switch to the team-owned file diff, actual %q", detailView.Buffer())
+	}
+}
+
 func TestReviewMode_GivenSubmittedFileTreeSearch_WhenRepeatingWithNAndN_ThenItMovesBetweenMatchingFilesWithWraparound(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
