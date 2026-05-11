@@ -2131,11 +2131,9 @@ func (loader *fakePullRequestDetailLoader) ClosePullRequest(repository string, n
 
 	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
 		pullRequest.State = "CLOSED"
-		pullRequest.IsDraft = false
 	})
 	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
 		detail.State = "CLOSED"
-		detail.IsDraft = false
 	})
 	return nil
 }
@@ -2148,11 +2146,9 @@ func (loader *fakePullRequestDetailLoader) ReopenPullRequest(repository string, 
 
 	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
 		pullRequest.State = "OPEN"
-		pullRequest.IsDraft = false
 	})
 	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
 		detail.State = "OPEN"
-		detail.IsDraft = false
 	})
 	return nil
 }

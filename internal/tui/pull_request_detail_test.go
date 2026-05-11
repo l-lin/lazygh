@@ -736,14 +736,25 @@ func TestRenderPullRequestDescription_GivenMarkdownRendererFailure_WhenFormattin
 	}
 }
 
-func TestDetailStatus_GivenDraftMetadata_WhenFormatting_ThenItPrefersDRAFT(t *testing.T) {
+func TestDetailStatus_GivenOpenDraftMetadata_WhenFormatting_ThenItPrefersDRAFT(t *testing.T) {
 	summary := githubcli.PullRequest{State: "OPEN"}
-	detail := githubcli.PullRequestDetail{State: "MERGED", IsDraft: true}
+	detail := githubcli.PullRequestDetail{State: "OPEN", IsDraft: true}
 
 	actual := detailStatus(detail, summary)
 
 	if actual != "DRAFT" {
 		t.Fatalf("expected status %q, actual %q", "DRAFT", actual)
+	}
+}
+
+func TestDetailStatus_GivenClosedDraftMetadata_WhenFormatting_ThenItPrefersCLOSED(t *testing.T) {
+	summary := githubcli.PullRequest{State: "CLOSED", IsDraft: true}
+	detail := githubcli.PullRequestDetail{State: "CLOSED", IsDraft: true}
+
+	actual := detailStatus(detail, summary)
+
+	if actual != "CLOSED" {
+		t.Fatalf("expected status %q, actual %q", "CLOSED", actual)
 	}
 }
 
@@ -766,6 +777,7 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_T
 		{name: "open", summary: githubcli.PullRequest{State: "OPEN"}, detail: githubcli.PullRequestDetail{State: "OPEN"}, expectedStatus: "OPEN", expectedBackgroundHex: theme.PullRequestStatusOpenBackgroundHex},
 		{name: "draft", summary: githubcli.PullRequest{State: "OPEN"}, detail: githubcli.PullRequestDetail{State: "OPEN", IsDraft: true}, expectedStatus: "DRAFT", expectedBackgroundHex: theme.PullRequestStatusDraftBackgroundHex},
 		{name: "closed", summary: githubcli.PullRequest{State: "CLOSED"}, detail: githubcli.PullRequestDetail{State: "CLOSED"}, expectedStatus: "CLOSED", expectedBackgroundHex: theme.PullRequestStatusClosedBackgroundHex},
+		{name: "closed draft", summary: githubcli.PullRequest{State: "CLOSED", IsDraft: true}, detail: githubcli.PullRequestDetail{State: "CLOSED", IsDraft: true}, expectedStatus: "CLOSED", expectedBackgroundHex: theme.PullRequestStatusClosedBackgroundHex},
 		{name: "merged", summary: githubcli.PullRequest{State: "MERGED"}, detail: githubcli.PullRequestDetail{State: "MERGED"}, expectedStatus: "MERGED", expectedBackgroundHex: theme.PullRequestStatusMergedBackgroundHex},
 	}
 

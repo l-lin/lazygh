@@ -25,9 +25,12 @@ func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequ
 func effectivePullRequestStatus(state string, isDraft bool) string {
 	normalizedState := strings.ToUpper(strings.TrimSpace(state))
 	if normalizedState == "" {
-		normalizedState = "-"
+		if isDraft {
+			return "DRAFT"
+		}
+		return "-"
 	}
-	if isDraft {
+	if normalizedState == "OPEN" && isDraft {
 		return "DRAFT"
 	}
 	return normalizedState

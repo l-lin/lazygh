@@ -147,7 +147,7 @@ func (program *Program) executeClosePullRequestAction(_ *gocui.Gui) actionsPopup
 			return program.githubLoader.ClosePullRequest(repository, number)
 		},
 		"CLOSED",
-		false,
+		program.currentPullRequestDraftState(),
 		pullRequestClosedSuccessMessage,
 	)
 }
@@ -159,7 +159,7 @@ func (program *Program) executeReopenPullRequestAction(_ *gocui.Gui) actionsPopu
 			return program.githubLoader.ReopenPullRequest(repository, number)
 		},
 		"OPEN",
-		false,
+		program.currentPullRequestDraftState(),
 		pullRequestReopenedSuccessMessage,
 	)
 }
@@ -181,6 +181,17 @@ func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) action
 		false,
 		pullRequestSquashMergedSuccessMessage,
 	)
+}
+
+func (program *Program) currentPullRequestDraftState() bool {
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return false
+	}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+		return result.detail.IsDraft || summary.IsDraft
+	}
+	return summary.IsDraft
 }
 
 func (program *Program) executePullRequestLifecycleMutation(commandName string, mutate func(string, int) error, state string, isDraft bool, successMessage string) actionsPopupActionResult {

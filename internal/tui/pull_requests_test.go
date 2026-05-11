@@ -139,6 +139,21 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
 		{
+			name: "closed draft",
+			pullRequest: githubcli.PullRequest{
+				Title:      "Closed draft PR",
+				Number:     46,
+				Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+				State:      "CLOSED",
+				IsDraft:    true,
+			},
+			expectedIconText:        " ",
+			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusClosedHex),
+			expectedVisibleTitle:    " acme/widgets#46 Closed draft PR",
+			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
+			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
+		},
+		{
 			name: "merged",
 			pullRequest: githubcli.PullRequest{
 				Title:      "Merged PR",
