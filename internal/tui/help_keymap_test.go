@@ -30,7 +30,7 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Search pull requests", "s")
-	then_helpEntryUsesKey(t, actualBuffer, "Quit", "<c-x>")
+	then_helpEntryUsesKey(t, actualBuffer, "Quit", "Ctrl+X")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
@@ -50,10 +50,10 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacemen
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Cursor to top/center/bottom", "zt/zz/zb")
-	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
-	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
-	then_helpEntryUsesKey(t, actualBuffer, "Full-page down", "<c-f>/pagedown")
-	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "<c-b>/pageup")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "Ctrl+D")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "Ctrl+U")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page down", "Ctrl+F/PageDown")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "Ctrl+B/PageUp")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheLinkUnderCursor(t *testing.T) {
@@ -90,7 +90,7 @@ func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSh
 
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
-	then_helpEntryUsesKey(t, helpView.Buffer(), "Expand/collapse section", "<enter>/za")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Expand/collapse section", "Enter/za")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Close/open all folds", "zM/zR")
 }
 
@@ -221,10 +221,10 @@ func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsViewportPlacementM
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Selection to top/center/bottom", "zt/zz/zb")
-	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "<c-d>")
-	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "<c-u>")
-	then_helpEntryUsesKey(t, actualBuffer, "Full-page down", "<c-f>/pagedown")
-	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "<c-b>/pageup")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page down + recenter", "Ctrl+D")
+	then_helpEntryUsesKey(t, actualBuffer, "Half-page up + recenter", "Ctrl+U")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page down", "Ctrl+F/PageDown")
+	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "Ctrl+B/PageUp")
 }
 
 func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {

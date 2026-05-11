@@ -40,7 +40,7 @@ func TestStatusLineKeyHints_GivenConfiguredKeyOverrides_WhenRendering_ThenItUses
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "!: help, s/<c-s>: search, p: action")
+	then_statusLineKeyHintsAre(t, gui, "!: help, s/Ctrl+S: search, p: action")
 }
 
 func TestStatusLineKeyHints_GivenActionsPopupVisible_WhenRendering_ThenItShowsLowercasePopupHintsIncludingCancelRightAlignedOnTheBottomRow(t *testing.T) {

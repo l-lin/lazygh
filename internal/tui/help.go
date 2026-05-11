@@ -258,15 +258,15 @@ func (program *Program) helpKeyWidth(sections []helpSection) int {
 
 func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybindingActionID) string {
 	if len(actionIDs) == 0 {
-		return fallback
+		return formatKeyTextForDisplay(fallback)
 	}
 
 	actualLabels, ok, hasOverride := program.resolvedKeyLabels(actionIDs...)
 	if !ok || !hasOverride || len(actualLabels) == 0 {
-		return fallback
+		return formatKeyTextForDisplay(fallback)
 	}
 
-	return strings.Join(actualLabels, "/")
+	return strings.Join(formattedKeySequenceLabelsForDisplay(actualLabels), "/")
 }
 
 func (program *Program) resolvedKeyLabelsText(actionIDs ...keybindingActionID) string {
@@ -274,7 +274,7 @@ func (program *Program) resolvedKeyLabelsText(actionIDs ...keybindingActionID) s
 	if !ok || len(actualLabels) == 0 {
 		return ""
 	}
-	return strings.Join(actualLabels, "/")
+	return strings.Join(formattedKeySequenceLabelsForDisplay(actualLabels), "/")
 }
 
 func (program *Program) resolvedKeyLabels(actionIDs ...keybindingActionID) ([]string, bool, bool) {
@@ -303,6 +303,113 @@ func (program *Program) resolvedKeyLabels(actionIDs ...keybindingActionID) ([]st
 	}
 
 	return actualLabels, true, hasOverride
+}
+
+func formattedKeySequenceLabelsForDisplay(labels []string) []string {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	formatted := make([]string, 0, len(labels))
+	for _, label := range labels {
+		formatted = append(formatted, formatKeySequenceLabelForDisplay(label))
+	}
+	return formatted
+}
+
+func formatKeyTextForDisplay(text string) string {
+	trimmedText := strings.TrimSpace(text)
+	if trimmedText == "" || trimmedText == "/" || strings.Contains(trimmedText, "<c-/>") {
+		return formatKeySequenceLabelForDisplay(trimmedText)
+	}
+
+	segments := strings.Split(trimmedText, "/")
+	if len(segments) <= 1 {
+		return formatKeySequenceLabelForDisplay(trimmedText)
+	}
+	for index, segment := range segments {
+		if segment == "" {
+			return formatKeySequenceLabelForDisplay(trimmedText)
+		}
+		segments[index] = formatKeySequenceLabelForDisplay(segment)
+	}
+	return strings.Join(segments, "/")
+}
+
+func formatKeySequenceLabelForDisplay(label string) string {
+	trimmedLabel := strings.TrimSpace(label)
+	if trimmedLabel == "" {
+		return ""
+	}
+
+	normalizedLabel := strings.ToLower(trimmedLabel)
+	normalizedLabel = strings.TrimPrefix(normalizedLabel, "<")
+	normalizedLabel = strings.TrimSuffix(normalizedLabel, ">")
+	if strings.HasPrefix(normalizedLabel, "control+") {
+		normalizedLabel = "ctrl+" + strings.TrimPrefix(normalizedLabel, "control+")
+	}
+	if strings.HasPrefix(normalizedLabel, "ctrl-") {
+		normalizedLabel = "ctrl+" + strings.TrimPrefix(normalizedLabel, "ctrl-")
+	}
+	if strings.HasPrefix(normalizedLabel, "c-") {
+		normalizedLabel = "ctrl+" + strings.TrimPrefix(normalizedLabel, "c-")
+	}
+	if strings.HasPrefix(normalizedLabel, "alt-") {
+		normalizedLabel = "alt+" + strings.TrimPrefix(normalizedLabel, "alt-")
+	}
+	if strings.HasPrefix(normalizedLabel, "shift-") {
+		normalizedLabel = "shift+" + strings.TrimPrefix(normalizedLabel, "shift-")
+	}
+
+	switch normalizedLabel {
+	case "enter":
+		return "Enter"
+	case "esc", "escape":
+		return "Escape"
+	case "tab":
+		return "Tab"
+	case "shift+tab", "backtab":
+		return "Shift+Tab"
+	case "up", "arrowup", "arrow-up":
+		return "Up"
+	case "down", "arrowdown", "arrow-down":
+		return "Down"
+	case "left", "arrowleft", "arrow-left":
+		return "Left"
+	case "right", "arrowright", "arrow-right":
+		return "Right"
+	case "pageup", "page-up", "pgup":
+		return "PageUp"
+	case "pagedown", "page-down", "pgdown", "pgdn":
+		return "PageDown"
+	case "space":
+		return "Space"
+	case "alt+enter":
+		return "Alt+Enter"
+	}
+
+	if strings.HasPrefix(normalizedLabel, "ctrl+") {
+		suffix := strings.TrimPrefix(normalizedLabel, "ctrl+")
+		switch suffix {
+		case "space":
+			return "Ctrl+Space"
+		case "lsqbracket":
+			suffix = "["
+		case "rsqbracket":
+			suffix = "]"
+		case "backslash":
+			suffix = "\\"
+		case "slash":
+			suffix = "/"
+		case "underscore":
+			suffix = "_"
+		default:
+			suffix = strings.ToUpper(suffix)
+		}
+		return "Ctrl+" + suffix
+	}
+
+	return trimmedLabel
 }
 
 func (program *Program) helpViewportPlacementKeysOrFallback(topFallback string, centerFallback string, bottomFallback string, topActionID keybindingActionID, centerActionID keybindingActionID, bottomActionID keybindingActionID) string {

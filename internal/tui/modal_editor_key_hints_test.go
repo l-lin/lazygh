@@ -50,8 +50,8 @@ func TestStatusLineKeyHints_GivenConfiguredModalEditorExternalEditorOverride_Whe
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, <c-o>: editor, Escape: cancel")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, <c-o>: editor, Escape: cancel")
+	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Ctrl+O: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+O: editor, Escape: cancel")
 
 }
 
