@@ -121,7 +121,26 @@ func reviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile) stri
 }
 
 func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return row.Label + reviewDiffTreeRowCommentSuffix(row, files)
+	return row.Label + reviewDiffTreeRowMetadataSuffix(row, files)
+}
+
+func reviewDiffTreeRowMetadataSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	return reviewDiffTreeRowTeamOwnersSuffix(row, files) + reviewDiffTreeRowCommentSuffix(row, files)
+}
+
+func reviewDiffTreeRowTeamOwnersSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
+	teamOwners := reviewDiffTreeRowTeamOwners(row, files)
+	if len(teamOwners) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("  %s %s", reviewDiffTeamOwnershipIcon, strings.Join(teamOwners, ", "))
+}
+
+func reviewDiffTreeRowTeamOwners(row reviewDiffTreeRow, files []reviewDiffFile) []string {
+	if row.FileIndex < 0 || row.FileIndex >= len(files) {
+		return nil
+	}
+	return normalizeReviewDiffTeamOwners(files[row.FileIndex].TeamOwners)
 }
 
 func reviewDiffTreeRowCommentSuffix(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -208,16 +227,16 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 }
 
 func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, query string, selected bool) string {
-	commentSuffix := reviewDiffTreeRowCommentSuffix(row, files)
+	metadataSuffix := reviewDiffTreeRowMetadataSuffix(row, files)
 	if !selected {
 		highlightedLabel, _ := highlightSearchMatches(row.Label, query)
-		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel + commentSuffix
+		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel + metadataSuffix
 	}
 
 	selectedPrefix := ansiBold + foregroundColorEscape(theme.ActiveTextHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
 	highlightedLabel, _ := highlightSearchMatchesWithPrefixes(row.Label, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
 	prefix := renderSelectedReviewDiffTreeRowPrefix(row, files, selectedPrefix)
-	return prefix + highlightedLabel + applyPrefix(commentSuffix, selectedPrefix)
+	return prefix + highlightedLabel + applyPrefix(metadataSuffix, selectedPrefix)
 }
 
 func renderSelectedReviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile, selectedPrefix string) string {

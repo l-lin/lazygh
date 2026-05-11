@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -169,6 +170,49 @@ func TestReviewStoryMode_GivenGeneratedChapters_WhenExecutingTheAction_ThenItSho
 	}
 	if !strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
 		t.Fatalf("expected file diff in detail view after selecting a file, actual %q", detailView.Buffer())
+	}
+}
+
+func TestReviewStoryMode_GivenTeamOwnedFiles_WhenRenderingTheChapterTree_ThenItShowsTeamOwnersBesideFileNames(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_story",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+		fileTeamOwners: map[string]map[string][]string{
+			"acme/widgets#42": {
+				"internal/tui/render.go": {"P3C"},
+				"internal/tui/model.go":  {"FYP"},
+			},
+		},
+	}
+	storyGenerator := &fakeStoryGenerator{review: story.Review{
+		Chapters: []story.Chapter{
+			{ID: "chapter-1", Title: "The Renderer Wakes", Files: []string{"internal/tui/render.go"}},
+			{ID: "chapter-2", Title: "The Model Answers", Files: []string{"internal/tui/model.go"}},
+		},
+	}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	subject.storyGenerator = storyGenerator
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingStoryReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	for _, expected := range []string{"internal/tui/render.go  " + reviewDiffTeamOwnershipIcon + " P3C", "internal/tui/model.go  " + reviewDiffTeamOwnershipIcon + " FYP"} {
+		if !strings.Contains(filesView.Buffer(), expected) {
+			t.Fatalf("expected chapter tree to contain %q, actual %q", expected, filesView.Buffer())
+		}
+	}
+	if !reflect.DeepEqual(loader.fileTeamOwnerCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected team ownership calls %v, actual %v", []string{"acme/widgets#42"}, loader.fileTeamOwnerCalls)
 	}
 }
 

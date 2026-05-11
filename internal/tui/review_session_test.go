@@ -92,6 +92,39 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	}
 }
 
+func TestReviewMode_GivenTeamOwnedFiles_WhenRenderingViewTwo_ThenItShowsTeamOwnersBesideFileNames(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs:         map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+		fileTeamOwners: map[string]map[string][]string{
+			"acme/widgets#42": {
+				"internal/tui/render.go": {"P3C"},
+				"internal/tui/model.go":  {"FYP"},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	for _, expected := range []string{"render.go  " + reviewDiffTeamOwnershipIcon + " P3C", "model.go  " + reviewDiffTeamOwnershipIcon + " FYP"} {
+		if !strings.Contains(filesView.Buffer(), expected) {
+			t.Fatalf("expected files view to contain %q, actual %q", expected, filesView.Buffer())
+		}
+	}
+	if !reflect.DeepEqual(loader.fileTeamOwnerCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected team ownership calls %v, actual %v", []string{"acme/widgets#42"}, loader.fileTeamOwnerCalls)
+	}
+}
+
 func TestReviewMode_GivenFilesWithInlineComments_WhenRenderingViewTwo_ThenItShowsCommentCountsBesideFileNames(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{

@@ -224,6 +224,24 @@ func TestReviewDiffTreeItems_GivenKnownFileTypes_WhenFormatting_ThenItUsesSpecif
 	}
 }
 
+func TestReviewDiffTreeItems_GivenTeamOwnedFiles_WhenFormatting_ThenItAppendsTeamOwnersBeforeCommentCounts(t *testing.T) {
+	tree := reviewDiffTree{Rows: []reviewDiffTreeRow{{VisibleRowIndex: 0, Depth: 0, Label: "render.go", FileIndex: 0}}}
+	files := []reviewDiffFile{{
+		Path:       "internal/tui/render.go",
+		TeamOwners: []string{"P3C"},
+		Threads: []reviewDiffThread{{
+			Comments: []githubcli.PullRequestComment{{Body: "One"}, {Body: "Two"}},
+		}},
+	}}
+
+	actual := reviewDiffTreeItems(tree, files)
+
+	expected := []Item{{Title: " render.go  " + reviewDiffTeamOwnershipIcon + " P3C " + reviewDiffTreeCommentCountIcon + " 2"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected items %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestRenderReviewDiffFile_GivenChangedFile_WhenRendering_ThenItPrefixesTheHeaderWithTheFileIcon(t *testing.T) {
 	file := reviewDiffFile{
 		Path:        "engines/preventive_continuous_care/app/jobs/preventive_continuous_care/complete_health_reminders_job.rb:43",
