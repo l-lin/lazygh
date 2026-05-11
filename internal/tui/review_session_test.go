@@ -120,6 +120,8 @@ func TestReviewMode_GivenTeamOwnedFiles_WhenRenderingViewTwo_ThenItShowsTeamOwne
 			t.Fatalf("expected files view to contain %q, actual %q", expected, filesView.Buffer())
 		}
 	}
+	renderLineIndex := given_viewLineIndexContaining(t, filesView, "render.go")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, renderLineIndex, "P3C", given_themeColorHex(t, theme.TeamOwnershipHex), "review tree team ownership")
 	if !reflect.DeepEqual(loader.fileTeamOwnerCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected team ownership calls %v, actual %v", []string{"acme/widgets#42"}, loader.fileTeamOwnerCalls)
 	}

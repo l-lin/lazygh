@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestBuildReviewDiffData_GivenRawFileTeamOwners_WhenParsing_ThenItKeepsThemOnTheReviewFile(t *testing.T) {
@@ -105,5 +106,12 @@ func TestBuildPullRequestChangesRenderedRows_GivenTeamOwnedFile_WhenRendering_Th
 	}
 	if !strings.Contains(actual[1].Text, reviewDiffTeamOwnershipIcon+" P3C") {
 		t.Fatalf("expected changes ownership row to mention the team owner, actual %q", actual[1].Text)
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestChangesRows(actual), 96)
+	teamOwnershipLineIndex, teamOwnershipLine := given_detailDocumentLineContaining(t, actualDocument, reviewDiffTeamOwnershipIcon+" P3C")
+	teamOwnershipIndex := given_runeIndexInString(t, teamOwnershipLine, "P3C")
+	if actualStylePrefix := actualDocument.lineStylePrefixes[teamOwnershipLineIndex][teamOwnershipIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.TeamOwnershipHex)) {
+		t.Fatalf("expected team ownership prefix to contain %q, actual %q", foregroundColorEscape(theme.TeamOwnershipHex), actualStylePrefix)
 	}
 }

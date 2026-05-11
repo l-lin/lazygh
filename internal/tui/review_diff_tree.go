@@ -121,7 +121,7 @@ func reviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile) stri
 }
 
 func reviewDiffTreeRowDisplayLabel(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowSearchText(row, files) + reviewDiffTreeRowCommentSuffix(row, files)
+	return row.Label + reviewDiffTreeRowTeamOwnersSuffix(row, files) + reviewDiffTreeRowCommentSuffix(row, files)
 }
 
 func reviewDiffTreeRowSearchText(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -227,17 +227,35 @@ func reviewDiffTreeRowForegroundHex(row reviewDiffTreeRow, files []reviewDiffFil
 }
 
 func renderReviewDiffTreeRow(row reviewDiffTreeRow, files []reviewDiffFile, query string, selected bool) string {
-	searchText := reviewDiffTreeRowSearchText(row, files)
+	label := row.Label
+	teamOwnersSuffix := reviewDiffTreeRowTeamOwnersSuffix(row, files)
 	commentSuffix := reviewDiffTreeRowCommentSuffix(row, files)
 	if !selected {
-		highlightedText, _ := highlightSearchMatches(searchText, query)
-		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedText + commentSuffix
+		highlightedLabel, _ := highlightSearchMatches(label, query)
+		return reviewDiffTreeRowStyledPrefix(row, files) + highlightedLabel + renderReviewDiffTreeRowTeamOwnersSuffix(teamOwnersSuffix, query, false, "") + commentSuffix
 	}
 
 	selectedPrefix := ansiBold + foregroundColorEscape(theme.ActiveTextHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-	highlightedText, _ := highlightSearchMatchesWithPrefixes(searchText, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
+	highlightedLabel, _ := highlightSearchMatchesWithPrefixes(label, query, selectedPrefix, ansiBold+backgroundColorEscape(theme.SearchHighlightHex))
 	prefix := renderSelectedReviewDiffTreeRowPrefix(row, files, selectedPrefix)
-	return prefix + highlightedText + applyPrefix(commentSuffix, selectedPrefix)
+	return prefix + highlightedLabel + renderReviewDiffTreeRowTeamOwnersSuffix(teamOwnersSuffix, query, true, selectedPrefix) + applyPrefix(commentSuffix, selectedPrefix)
+}
+
+func renderReviewDiffTreeRowTeamOwnersSuffix(teamOwnersSuffix string, query string, selected bool, selectedPrefix string) string {
+	trimmedSuffix := strings.TrimSpace(teamOwnersSuffix)
+	if trimmedSuffix == "" {
+		return ""
+	}
+
+	teamOwnershipPrefix := foregroundColorEscape(theme.TeamOwnershipHex)
+	teamOwnershipMatchPrefix := foregroundColorEscape(theme.TeamOwnershipHex) + backgroundColorEscape(theme.SearchHighlightHex)
+	if selected {
+		teamOwnershipPrefix = selectedPrefix + foregroundColorEscape(theme.TeamOwnershipHex)
+		teamOwnershipMatchPrefix = ansiBold + foregroundColorEscape(theme.TeamOwnershipHex) + backgroundColorEscape(theme.SearchHighlightHex)
+	}
+
+	renderedSuffix, _ := highlightSearchMatchesWithPrefixes(teamOwnersSuffix, query, teamOwnershipPrefix, teamOwnershipMatchPrefix)
+	return renderedSuffix
 }
 
 func renderSelectedReviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile, selectedPrefix string) string {

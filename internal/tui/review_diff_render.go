@@ -196,7 +196,7 @@ func renderReviewDiffTeamOwners(teamOwners []string) string {
 	if len(normalizedTeamOwners) == 0 {
 		return ""
 	}
-	return styleText("  "+reviewDiffTeamOwnershipIcon+" "+strings.Join(normalizedTeamOwners, ", "), foregroundColorEscape(theme.DiffLineNumberHex))
+	return styleText("  "+reviewDiffTeamOwnershipIcon+" "+strings.Join(normalizedTeamOwners, ", "), foregroundColorEscape(theme.TeamOwnershipHex))
 }
 
 func reviewDiffUnmatchedThreads(threads []reviewDiffThread, matchedThreadIndexes []bool) []reviewDiffThread {

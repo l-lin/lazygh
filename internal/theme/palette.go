@@ -50,6 +50,7 @@ type Palette struct {
 	DiffDeletionHighlightBackgroundHex   string `toml:"diff_deletion_highlight_background"`
 	DiffLineNumberHex                    string `toml:"diff_line_number"`
 	DiffHunkHeaderHex                    string `toml:"diff_hunk_header"`
+	TeamOwnershipHex                     string `toml:"team_ownership"`
 }
 
 var defaultLightPalette = newDefaultLightPalette()
@@ -116,6 +117,7 @@ func newDefaultLightPalette() Palette {
 		DiffDeletionHighlightBackgroundHex:   "#FFC1C8",
 		DiffLineNumberHex:                    pendingHex,
 		DiffHunkHeaderHex:                    pendingHex,
+		TeamOwnershipHex:                     pendingHex,
 	}
 }
 
@@ -182,6 +184,7 @@ func newDefaultDarkPalette() Palette {
 		DiffDeletionHighlightBackgroundHex:   "#8E1519",
 		DiffLineNumberHex:                    pendingHex,
 		DiffHunkHeaderHex:                    pendingHex,
+		TeamOwnershipHex:                     pendingHex,
 	}
 }
 
@@ -237,6 +240,7 @@ var (
 	DiffDeletionHighlightBackgroundHex   = initialDefaultPalette.DiffDeletionHighlightBackgroundHex
 	DiffLineNumberHex                    = initialDefaultPalette.DiffLineNumberHex
 	DiffHunkHeaderHex                    = initialDefaultPalette.DiffHunkHeaderHex
+	TeamOwnershipHex                     = initialDefaultPalette.TeamOwnershipHex
 )
 
 func DefaultPalette() Palette {
@@ -344,6 +348,7 @@ func applyResolvedPalette(palette Palette) {
 	DiffDeletionHighlightBackgroundHex = palette.DiffDeletionHighlightBackgroundHex
 	DiffLineNumberHex = palette.DiffLineNumberHex
 	DiffHunkHeaderHex = palette.DiffHunkHeaderHex
+	TeamOwnershipHex = palette.TeamOwnershipHex
 }
 
 func normalizePalette(overrides Palette) Palette {
@@ -417,6 +422,7 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.DiffDeletionHighlightBackgroundHex,
 		&palette.DiffLineNumberHex,
 		&palette.DiffHunkHeaderHex,
+		&palette.TeamOwnershipHex,
 	}
 }
 

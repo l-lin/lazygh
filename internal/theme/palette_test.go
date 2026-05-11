@@ -21,11 +21,13 @@ const (
 	darkDefaultPendingBackgroundHex            = "#30363D"
 	darkDefaultMutedHex                        = "#8B949E"
 	darkDefaultActionsPopupGroupForegroundHex  = darkDefaultMarkdownHeadingHex
+	darkDefaultTeamOwnershipHex                = "#8B949E"
 	darkDefaultDiffAdditionBackgroundHex       = "#033A16"
 	lightDefaultBackgroundHex                  = ""
 	lightDefaultActiveTextHex                  = "#000000"
 	lightDefaultSelectedLineBackgroundHex      = "#E6E6E6"
 	lightDefaultActionsPopupGroupForegroundHex = "#000000"
+	lightDefaultTeamOwnershipHex               = "#656D76"
 	lightDefaultPullRequestReferenceHex        = "#656D76"
 	lightDefaultPullRequestTitleHex            = "#000000"
 	lightDefaultSuccessHex                     = "#1A7F37"
@@ -115,6 +117,9 @@ func TestResolvePaletteWithPreset_GivenBundledThemePreset_WhenResolving_ThenItUs
 	}
 	if actual.ActiveTextHex != "#DCD7BA" {
 		t.Fatalf("expected active text color %q, actual %q", "#DCD7BA", actual.ActiveTextHex)
+	}
+	if actual.TeamOwnershipHex != "#727169" {
+		t.Fatalf("expected team ownership color %q, actual %q", "#727169", actual.TeamOwnershipHex)
 	}
 }
 
@@ -277,6 +282,19 @@ func TestApplyPalette_GivenActionsPopupGroupForegroundOverride_WhenApplying_Then
 	}
 }
 
+func TestApplyPalette_GivenTeamOwnershipOverride_WhenApplying_ThenItUpdatesThePackageColor(t *testing.T) {
+	t.Cleanup(ResetPalette)
+
+	ApplyPalette(Palette{TeamOwnershipHex: "#54546D"})
+
+	if TeamOwnershipHex != "#54546D" {
+		t.Fatalf("expected team ownership color %q, actual %q", "#54546D", TeamOwnershipHex)
+	}
+	if ActiveTextHex != DefaultPalette().ActiveTextHex {
+		t.Fatalf("expected untouched active text color %q, actual %q", DefaultPalette().ActiveTextHex, ActiveTextHex)
+	}
+}
+
 func TestApplyPalette_GivenGenericStatusBackgroundOverrides_WhenApplying_ThenItUpdatesTheDerivedPackageColors(t *testing.T) {
 	t.Cleanup(ResetPalette)
 
@@ -364,6 +382,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.ActionsPopupGroupForegroundHex != darkDefaultActionsPopupGroupForegroundHex {
 		t.Fatalf("expected actions popup group foreground %q, actual %q", darkDefaultActionsPopupGroupForegroundHex, actual.ActionsPopupGroupForegroundHex)
 	}
+	if actual.TeamOwnershipHex != darkDefaultTeamOwnershipHex {
+		t.Fatalf("expected team ownership color %q, actual %q", darkDefaultTeamOwnershipHex, actual.TeamOwnershipHex)
+	}
 	if actual.MarkdownHeadingHex != darkDefaultMarkdownHeadingHex {
 		t.Fatalf("expected markdown heading color %q, actual %q", darkDefaultMarkdownHeadingHex, actual.MarkdownHeadingHex)
 	}
@@ -401,6 +422,9 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.ActionsPopupGroupForegroundHex != lightDefaultActionsPopupGroupForegroundHex {
 		t.Fatalf("expected actions popup group foreground %q, actual %q", lightDefaultActionsPopupGroupForegroundHex, actual.ActionsPopupGroupForegroundHex)
+	}
+	if actual.TeamOwnershipHex != lightDefaultTeamOwnershipHex {
+		t.Fatalf("expected team ownership color %q, actual %q", lightDefaultTeamOwnershipHex, actual.TeamOwnershipHex)
 	}
 	if actual.PullRequestReferenceHex != lightDefaultPullRequestReferenceHex {
 		t.Fatalf("expected pull request reference color %q, actual %q", lightDefaultPullRequestReferenceHex, actual.PullRequestReferenceHex)
