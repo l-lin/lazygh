@@ -13,11 +13,13 @@ const (
 	markPullRequestReadyForReviewActionTitle        = "Mark ready for review"
 	convertPullRequestToDraftActionTitle            = "Convert to draft"
 	closePullRequestActionTitle                     = "Close PR"
+	reopenPullRequestActionTitle                    = "Reopen PR"
 	squashMergePullRequestActionTitle               = "Squash and merge PR"
 	squashMergePullRequestConfirmationPromptMessage = "Press Enter again to squash-merge PR"
 	pullRequestMarkedReadyForReviewSuccessMessage   = "PR marked ready for review"
 	pullRequestConvertedToDraftSuccessMessage       = "PR converted to draft"
 	pullRequestClosedSuccessMessage                 = "PR closed"
+	pullRequestReopenedSuccessMessage               = "PR reopened"
 	pullRequestSquashMergedSuccessMessage           = "PR squash-merged"
 )
 
@@ -36,6 +38,8 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 		return []actionsPopupAction{program.markPullRequestReadyForReviewAction(), program.closePullRequestAction()}
 	case "OPEN":
 		return []actionsPopupAction{program.convertPullRequestToDraftAction(), program.squashMergePullRequestAction(), program.closePullRequestAction()}
+	case "CLOSED":
+		return []actionsPopupAction{program.reopenPullRequestAction()}
 	default:
 		return nil
 	}
@@ -94,6 +98,15 @@ func (program *Program) closePullRequestAction() actionsPopupAction {
 	}
 }
 
+func (program *Program) reopenPullRequestAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:      "reopen-pull-request",
+		title:   reopenPullRequestActionTitle,
+		icon:    actionsPopupReopenPullRequestIcon,
+		execute: program.executeReopenPullRequestAction,
+	}
+}
+
 func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
 		id:      "squash-merge-pull-request",
@@ -136,6 +149,18 @@ func (program *Program) executeClosePullRequestAction(_ *gocui.Gui) actionsPopup
 		"CLOSED",
 		false,
 		pullRequestClosedSuccessMessage,
+	)
+}
+
+func (program *Program) executeReopenPullRequestAction(_ *gocui.Gui) actionsPopupActionResult {
+	return program.executePullRequestLifecycleMutation(
+		"gh pr reopen",
+		func(repository string, number int) error {
+			return program.githubLoader.ReopenPullRequest(repository, number)
+		},
+		"OPEN",
+		false,
+		pullRequestReopenedSuccessMessage,
 	)
 }
 

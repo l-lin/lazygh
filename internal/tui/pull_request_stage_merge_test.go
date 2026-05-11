@@ -84,6 +84,31 @@ func TestActionsPopup_GivenAnOpenPullRequestCommentsTab_WhenOpening_ThenItHidesT
 	}
 }
 
+func TestActionsPopup_GivenAClosedPullRequestDescriptionDetail_WhenOpening_ThenItShowsReopenPRAndHidesOtherLifecycleActions(t *testing.T) {
+	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("CLOSED", false))
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), reopenPullRequestActionTitle) {
+		t.Fatalf("expected the popup to contain %q, actual %q", reopenPullRequestActionTitle, popupView.Buffer())
+	}
+	for _, unexpected := range []string{markPullRequestReadyForReviewActionTitle, convertPullRequestToDraftActionTitle, squashMergePullRequestActionTitle, closePullRequestActionTitle} {
+		if strings.Contains(popupView.Buffer(), unexpected) {
+			t.Fatalf("expected the popup to hide %q for a closed pull request, actual %q", unexpected, popupView.Buffer())
+		}
+	}
+}
+
 func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenStateFeedbackAndCacheInvalidationAreVisible(t *testing.T) {
 	summary := given_pullRequestLifecycleSummary("OPEN", true)
 	model := given_pullRequestLifecycleModel(summary)
@@ -248,6 +273,109 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	}
 	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; !ok {
 		t.Fatal("expected the cached pull-request diff to stay intact after the failed close")
+	}
+}
+
+func TestLayout_GivenAReopenPullRequestMutation_WhenRendering_ThenTheUpdatedOpenStateFeedbackAndCacheInvalidationAreVisible(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("CLOSED", false)
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": given_pullRequestLifecycleDetail("CLOSED", false),
+		},
+	}
+	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("CLOSED", false)}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
+	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(reopenPullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), reopenPullRequestActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.reopenPullRequestCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
+	}
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_statusLineContains(t, gui, pullRequestReopenedSuccessMessage)
+	rows := subject.model.PullRequestRows(MyPullRequestsTab)
+	if len(rows) != 1 || rows[0].Summary == nil || rows[0].Summary.State != "OPEN" || rows[0].Summary.IsDraft {
+		t.Fatalf("expected the visible pull request summary to be reopened, actual %+v", rows)
+	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "OPEN") {
+		t.Fatalf("expected the detail buffer to contain %q, actual %q", "OPEN", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "CLOSED") {
+		t.Fatalf("expected the detail buffer to drop %q, actual %q", "CLOSED", detailView.Buffer())
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the cached pull-request diff to be invalidated after reopening the pull request")
+	}
+	if len(subject.reviewDiffRenderCache) != 0 {
+		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	}
+}
+
+func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsTheUIStableAndShowsTheGitHubError(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{reopenPullRequestErr: errors.New("GitHub rejected the reopen")}
+	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("CLOSED", false))
+	model.OpenDetail()
+	subject := given_pullRequestCommentProgram(model, loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("CLOSED", false)}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(reopenPullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), reopenPullRequestActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	if !reflect.DeepEqual(loader.reopenPullRequestCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
+	}
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Title, "GitHub rejected the reopen") {
+		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the reopen", popupView.Title)
+	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "CLOSED") {
+		t.Fatalf("expected the detail buffer to keep %q after the failure, actual %q", "CLOSED", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "OPEN") {
+		t.Fatalf("expected the detail buffer to stay closed after the failure, actual %q", detailView.Buffer())
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; !ok {
+		t.Fatal("expected the cached pull-request diff to stay intact after the failed reopen")
 	}
 }
 

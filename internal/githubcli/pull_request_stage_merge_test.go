@@ -36,6 +36,16 @@ func TestClosePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPr
 	then_commandIs(t, runner, "gh", []string{"pr", "close", "42", "-R", "acme/widgets"})
 }
 
+func TestReopenPullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrReopen(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.ReopenPullRequest("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"pr", "reopen", "42", "-R", "acme/widgets"})
+}
+
 func TestSquashMergePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrMergeSquash(t *testing.T) {
 	runner := &fakeRunner{}
 	subject := NewClientWithRunner(runner)
@@ -65,6 +75,17 @@ func TestClosePullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhP
 
 	if !strings.Contains(actualErr.Error(), "gh pr close") {
 		t.Fatalf("expected error to mention %q, actual %v", "gh pr close", actualErr)
+	}
+}
+
+func TestReopenPullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrReopenError(t *testing.T) {
+	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
+	subject := NewClientWithRunner(runner)
+
+	actualErr := subject.ReopenPullRequest("acme/widgets", 42)
+
+	if !strings.Contains(actualErr.Error(), "gh pr reopen") {
+		t.Fatalf("expected error to mention %q, actual %v", "gh pr reopen", actualErr)
 	}
 }
 

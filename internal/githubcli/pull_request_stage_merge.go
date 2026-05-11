@@ -23,6 +23,19 @@ func (client *Client) ClosePullRequest(repository string, number int) error {
 	return nil
 }
 
+func (client *Client) ReopenPullRequest(repository string, number int) error {
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.runGH("gh pr reopen", "pr", "reopen", strconv.Itoa(number), "-R", trimmedRepository); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *Client) runPullRequestReady(repository string, number int, undo bool) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
