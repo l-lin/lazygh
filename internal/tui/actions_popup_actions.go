@@ -98,6 +98,9 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 				program.reviewRequestChangesAction(),
 			)...,
 		)
+		if inlineCommentAction, ok := program.currentBrowserChangesInlineCommentAction(); ok {
+			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
+		}
 	}
 	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
 		actions = append(actions,

@@ -10,6 +10,7 @@ import (
 const (
 	pullRequestInlineCommentReplyEditorTitle    = "Reply to inline comment"
 	pullRequestInlineCommentReplySuccessMessage = "Inline reply posted"
+	inlineCommentReplyUnavailableMessage        = "Reply to inline comment unavailable here"
 )
 
 type pullRequestReviewThreadReplyTarget struct {
@@ -183,4 +184,28 @@ func (program *Program) selectedReviewInlineCommentReplyTarget() (pullRequestRev
 		pendingReview: strings.TrimSpace(program.reviewSession.pendingReviewID),
 		threadID:      strings.TrimSpace(thread.ID),
 	}, true
+}
+
+func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
+	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+		return nil
+	}
+	if !program.browserChangesInlineCommentShortcutActive() {
+		return nil
+	}
+
+	target, ok := program.selectedBrowserChangesInlineCommentReplyTarget()
+	if !ok {
+		program.setFeedback(FocusDetailView, inlineCommentReplyUnavailableMessage)
+		if gui == nil {
+			return nil
+		}
+		return program.refreshViews(gui)
+	}
+
+	return program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
+		return program.submitInlineCommentReply(target, body)
+	}, reviewInlineCommentModalHeight)
 }

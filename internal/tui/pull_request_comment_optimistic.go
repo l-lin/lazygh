@@ -88,10 +88,17 @@ func (program *Program) optimisticallyAppendInlineCommentReply(target pullReques
 	})
 }
 
-func (program *Program) optimisticallyAppendReviewInlineComment(target reviewInlineCommentTarget, body string) {
-	thread := newOptimisticReviewDiffThread(target.threadTarget, program.newOptimisticPullRequestComment(body, true), program.nextOptimisticPullRequestMutationID("thread"))
+func (program *Program) optimisticallyAppendInlineComment(target pullRequestInlineCommentTarget, body string) {
+	comment := program.newOptimisticPullRequestComment(body, true)
+	threadID := program.nextOptimisticPullRequestMutationID("thread")
+	thread := newOptimisticPullRequestReviewThread(target.threadTarget, comment, threadID)
+	if target.updateDetail {
+		_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+			return appendThreadToPullRequestDetail(detail, thread)
+		})
+	}
 	_ = program.mutatePullRequestDiffOptimistically(target.repository, target.number, func(data *reviewDiffData) bool {
-		return appendThreadToPullRequestDiff(data, thread)
+		return appendThreadToPullRequestDiff(data, buildReviewDiffThread(thread))
 	})
 }
 
@@ -150,19 +157,21 @@ func (program *Program) optimisticallyDeleteReviewComment(target pullRequestRevi
 	})
 }
 
-func newOptimisticReviewDiffThread(target githubcli.PullRequestReviewThreadTarget, comment githubcli.PullRequestComment, threadID string) reviewDiffThread {
-	thread := reviewDiffThread{
-		ID:        strings.TrimSpace(threadID),
-		Path:      strings.TrimSpace(target.Path),
-		Line:      target.Line,
-		StartLine: target.StartLine,
-		Side:      reviewDiffLineSideFromGitHub(target.Side),
-		StartSide: reviewDiffLineSideFromGitHub(target.StartSide),
-		Comments:  []githubcli.PullRequestComment{comment},
+func newOptimisticPullRequestReviewThread(target githubcli.PullRequestReviewThreadTarget, comment githubcli.PullRequestComment, threadID string) githubcli.PullRequestReviewThread {
+	thread := githubcli.PullRequestReviewThread{
+		ID:            strings.TrimSpace(threadID),
+		Path:          strings.TrimSpace(target.Path),
+		Line:          target.Line,
+		StartLine:     target.StartLine,
+		DiffSide:      strings.TrimSpace(target.Side),
+		StartDiffSide: strings.TrimSpace(target.StartSide),
+		Comments:      []githubcli.PullRequestComment{comment},
 	}
-	if thread.Side == reviewDiffLineSideLeft {
-		thread.OriginalLine = target.Line
-		thread.OriginalStartLine = target.StartLine
+	if strings.EqualFold(thread.DiffSide, string(reviewDiffLineSideLeft)) {
+		thread.OriginalLine = thread.Line
+	}
+	if thread.StartLine > 0 && strings.EqualFold(thread.StartDiffSide, string(reviewDiffLineSideLeft)) {
+		thread.OriginalStartLine = thread.StartLine
 	}
 	return thread
 }
@@ -254,6 +263,15 @@ func appendReplyToPullRequestDiff(data *reviewDiffData, threadID string, reply g
 		}
 	}
 	return false
+}
+
+func appendThreadToPullRequestDetail(detail *githubcli.PullRequestDetail, thread githubcli.PullRequestReviewThread) bool {
+	if detail == nil || strings.TrimSpace(thread.Path) == "" {
+		return false
+	}
+
+	detail.InlineCommentThreads = append(detail.InlineCommentThreads, thread)
+	return true
 }
 
 func appendThreadToPullRequestDiff(data *reviewDiffData, thread reviewDiffThread) bool {

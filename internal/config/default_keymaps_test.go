@@ -17,6 +17,9 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"cancel":               {"esc"},
 			"open_external_editor": {"ctrl+g"},
 		},
+		"pull_requests": {
+			"reply_to_inline_comment": {"r"},
+		},
 	}
 	for scope, expectedActions := range expected {
 		actualActions, ok := actual[scope]

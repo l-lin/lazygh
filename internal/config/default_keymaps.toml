@@ -66,6 +66,7 @@ next_comment = "]c"
 [keymaps.pull_requests]
 copy_pull_request_url = "y"
 comment_on_pull_request = "c"
+reply_to_inline_comment = "r"
 
 [keymaps.notifications]
 mark_notification_read = "r"

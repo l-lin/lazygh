@@ -94,6 +94,29 @@ func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSh
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Close/open all folds", "zM/zR")
 }
 
+func TestHelpPopup_GivenPullRequestChangesDetailFocus_WhenTogglingHelp_ThenItShowsInlineCommentShortcuts(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailForChangesInlineCommentTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline thread body": "Rendered inline thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+	actualErr := subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Add inline comment", "c")
+	then_helpEntryUsesKey(t, actualBuffer, "Reply to inline comment", "r")
+}
+
 func TestHelpPopup_GivenReviewFilesFocusAndCustomizedFoldBindings_WhenTogglingHelp_ThenItShowsTheConfiguredSingleAndTwoStepFoldKeys(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",

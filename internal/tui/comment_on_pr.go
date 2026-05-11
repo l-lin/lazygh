@@ -16,14 +16,9 @@ type pullRequestCommentTarget struct {
 	number     int
 }
 
-func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, view *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
+	if program.pullRequestCommentComposerBlocked() {
 		return nil
-	}
-	if program.reviewSession.active && program.model.Focus() == FocusDetailView {
-		return program.openInlineReviewCommentComposer(gui, view)
 	}
 
 	target, ok := program.selectedPullRequestCommentTarget()
@@ -34,6 +29,25 @@ func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, view *goc
 	return program.openModalEditor(gui, pullRequestCommentComposerTitle, "", func(body string) error {
 		return program.submitPullRequestComment(target, body)
 	})
+}
+
+func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, view *gocui.View) error {
+	program.clearPendingSelectionPrefix()
+	program.detailViewState.clearPendingPrefix()
+	if program.pullRequestCommentComposerBlocked() {
+		return nil
+	}
+	if program.reviewSession.active {
+		return program.openInlineReviewCommentComposer(gui, view)
+	}
+	if program.browserChangesInlineCommentShortcutActive() {
+		return program.openBrowserChangesInlineCommentComposer(gui, view)
+	}
+	return program.openPullRequestCommentComposer(gui, nil)
+}
+
+func (program *Program) pullRequestCommentComposerBlocked() bool {
+	return program.helpVisible || program.model.SearchActive() || program.modalEditorVisible()
 }
 
 func (program *Program) submitPullRequestComment(target pullRequestCommentTarget, body string) error {

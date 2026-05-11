@@ -153,8 +153,11 @@ func (program *Program) localHelpEntries() []helpEntry {
 		}
 		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"})
 		if program.shouldShowPullRequestDetailTabs() {
+			entries = append(entries, program.detailPullRequestCommentHelpEntry())
+			if program.browserChangesInlineCommentShortcutActive() {
+				entries = append(entries, program.inlineCommentReplyHelpEntry())
+			}
 			entries = append(entries,
-				program.pullRequestCommentHelpEntry(keymapScopePullRequests),
 				helpEntry{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse section"},
 				helpEntry{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
 				helpEntry{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeGlobal, action: "previous_tab"}), Description: "Previous detail tab"},
