@@ -62,6 +62,7 @@ type GitHubLoader interface {
 	EditPullRequestDescription(repository string, number int, body string) error
 	MarkPullRequestReadyForReview(repository string, number int) error
 	ConvertPullRequestToDraft(repository string, number int) error
+	ClosePullRequest(repository string, number int) error
 	SquashMergePullRequest(repository string, number int) error
 	StartPendingPullRequestReview(repository string, number int) (string, error)
 	GetPendingPullRequestReviewID(repository string, number int) (string, bool, error)

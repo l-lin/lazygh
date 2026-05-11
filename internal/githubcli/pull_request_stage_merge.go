@@ -10,6 +10,19 @@ func (client *Client) ConvertPullRequestToDraft(repository string, number int) e
 	return client.runPullRequestReady(repository, number, true)
 }
 
+func (client *Client) ClosePullRequest(repository string, number int) error {
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.runGH("gh pr close", "pr", "close", strconv.Itoa(number), "-R", trimmedRepository); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *Client) runPullRequestReady(repository string, number int, undo bool) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {

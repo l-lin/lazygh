@@ -1598,6 +1598,8 @@ type fakePullRequestDetailLoader struct {
 	markReadyForReviewErr             error
 	convertToDraftCalls               []string
 	convertToDraftErr                 error
+	closePullRequestCalls             []string
+	closePullRequestErr               error
 	squashMergeCalls                  []string
 	squashMergeErr                    error
 	startReviewCalls                  []string
@@ -2115,6 +2117,23 @@ func (loader *fakePullRequestDetailLoader) ConvertPullRequestToDraft(repository 
 	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
 		detail.State = "OPEN"
 		detail.IsDraft = true
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) ClosePullRequest(repository string, number int) error {
+	loader.closePullRequestCalls = append(loader.closePullRequestCalls, repository+"#"+strconv.Itoa(number))
+	if loader.closePullRequestErr != nil {
+		return loader.closePullRequestErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.State = "CLOSED"
+		pullRequest.IsDraft = false
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.State = "CLOSED"
+		detail.IsDraft = false
 	})
 	return nil
 }

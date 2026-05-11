@@ -12,10 +12,12 @@ import (
 const (
 	markPullRequestReadyForReviewActionTitle        = "Mark ready for review"
 	convertPullRequestToDraftActionTitle            = "Convert to draft"
+	closePullRequestActionTitle                     = "Close PR"
 	squashMergePullRequestActionTitle               = "Squash and merge PR"
 	squashMergePullRequestConfirmationPromptMessage = "Press Enter again to squash-merge PR"
 	pullRequestMarkedReadyForReviewSuccessMessage   = "PR marked ready for review"
 	pullRequestConvertedToDraftSuccessMessage       = "PR converted to draft"
+	pullRequestClosedSuccessMessage                 = "PR closed"
 	pullRequestSquashMergedSuccessMessage           = "PR squash-merged"
 )
 
@@ -31,9 +33,9 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 
 	switch status {
 	case "DRAFT":
-		return []actionsPopupAction{program.markPullRequestReadyForReviewAction()}
+		return []actionsPopupAction{program.markPullRequestReadyForReviewAction(), program.closePullRequestAction()}
 	case "OPEN":
-		return []actionsPopupAction{program.convertPullRequestToDraftAction(), program.squashMergePullRequestAction()}
+		return []actionsPopupAction{program.convertPullRequestToDraftAction(), program.squashMergePullRequestAction(), program.closePullRequestAction()}
 	default:
 		return nil
 	}
@@ -83,6 +85,15 @@ func (program *Program) convertPullRequestToDraftAction() actionsPopupAction {
 	}
 }
 
+func (program *Program) closePullRequestAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:      "close-pull-request",
+		title:   closePullRequestActionTitle,
+		icon:    actionsPopupClosePullRequestIcon,
+		execute: program.executeClosePullRequestAction,
+	}
+}
+
 func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
 		id:      "squash-merge-pull-request",
@@ -113,6 +124,18 @@ func (program *Program) executeConvertPullRequestToDraftAction(_ *gocui.Gui) act
 		"OPEN",
 		true,
 		pullRequestConvertedToDraftSuccessMessage,
+	)
+}
+
+func (program *Program) executeClosePullRequestAction(_ *gocui.Gui) actionsPopupActionResult {
+	return program.executePullRequestLifecycleMutation(
+		"gh pr close",
+		func(repository string, number int) error {
+			return program.githubLoader.ClosePullRequest(repository, number)
+		},
+		"CLOSED",
+		false,
+		pullRequestClosedSuccessMessage,
 	)
 }
 

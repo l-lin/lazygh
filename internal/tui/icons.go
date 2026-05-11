@@ -124,6 +124,7 @@ const (
 	actionsPopupReRequestReviewIcon          = iconReviewRequest
 	actionsPopupCommentOnPullRequestIcon     = iconPullRequestComment
 	actionsPopupEditPullRequestIcon          = iconEdit
+	actionsPopupClosePullRequestIcon         = iconDelete
 	actionsPopupDeleteInlineCommentIcon      = iconDelete
 	actionsPopupMarkNotificationReadIcon     = iconStatusSuccess
 	actionsPopupMarkNotificationDoneIcon     = iconDelete
