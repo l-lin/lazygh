@@ -73,7 +73,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 	if program.reviewSession.active {
 		switch program.model.Focus() {
 		case FocusDetailView:
-			return []helpEntry{
+			entries := []helpEntry{
 				{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},
 				{Key: "0/$", Description: "Line start/end"},
 				{Key: "gg/G", Description: "First/last line"},
@@ -96,6 +96,10 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search diff"},
 				{Key: "<esc>/q", Description: "Exit visual / return"},
 			}
+			if program.inlineCommentReplyShortcutAvailable() {
+				entries = append(entries, program.inlineCommentReplyHelpEntry())
+			}
+			return entries
 		case FocusPullRequestsView:
 			return []helpEntry{
 				{Key: "j/k/<up>/<down>", Description: "Move down/up"},
@@ -154,7 +158,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"})
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries, program.detailPullRequestCommentHelpEntry())
-			if program.browserChangesInlineCommentShortcutActive() {
+			if program.inlineCommentReplyShortcutAvailable() {
 				entries = append(entries, program.inlineCommentReplyHelpEntry())
 			}
 			entries = append(entries,

@@ -43,9 +43,7 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) action
 	}
 
 	wasVisible := program.modalEditorVisible()
-	err := program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
-		return program.submitInlineCommentReply(target, body)
-	}, reviewInlineCommentModalHeight)
+	err := program.openInlineCommentReplyComposer(gui, target)
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}
@@ -53,6 +51,12 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{closePopup: true}
 	}
 	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
+func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {
+	return program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
+		return program.submitInlineCommentReply(target, body)
+	}, reviewInlineCommentModalHeight)
 }
 
 func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadReplyTarget, body string) error {
@@ -192,11 +196,11 @@ func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.Vi
 	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}
-	if !program.browserChangesInlineCommentShortcutActive() {
+	if !program.inlineCommentReplyShortcutContextActive() {
 		return nil
 	}
 
-	target, ok := program.selectedBrowserChangesInlineCommentReplyTarget()
+	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if !ok {
 		program.setFeedback(FocusDetailView, inlineCommentReplyUnavailableMessage)
 		if gui == nil {
@@ -205,7 +209,31 @@ func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.Vi
 		return program.refreshViews(gui)
 	}
 
-	return program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
-		return program.submitInlineCommentReply(target, body)
-	}, reviewInlineCommentModalHeight)
+	return program.openInlineCommentReplyComposer(gui, target)
+}
+
+func (program *Program) inlineCommentReplyShortcutContextActive() bool {
+	if program.model.Focus() != FocusDetailView {
+		return false
+	}
+	if program.reviewSession.active {
+		return true
+	}
+	if !program.shouldShowPullRequestDetailTabs() {
+		return false
+	}
+	switch program.activeDetailTab {
+	case CommentsDetailTab, ChangesDetailTab:
+		return true
+	default:
+		return false
+	}
+}
+
+func (program *Program) inlineCommentReplyShortcutAvailable() bool {
+	if !program.inlineCommentReplyShortcutContextActive() {
+		return false
+	}
+	_, ok := program.selectedPullRequestReviewThreadReplyTarget()
+	return ok
 }

@@ -301,6 +301,122 @@ func TestReplyToInlineCommentShortcut_GivenBrowserChangesCursorOutsideInlineComm
 	then_statusLineContains(t, gui, inlineCommentReplyUnavailableMessage)
 }
 
+func TestReplyToInlineCommentShortcut_GivenBrowserCommentsCursorOnInlineComment_WhenPressingR_ThenItOpensTheReplyComposer(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"General feedback":   "Rendered general feedback",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'r')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	composerView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	if !strings.Contains(composerView.Title, pullRequestInlineCommentReplyEditorTitle) {
+		t.Fatalf("expected composer title to contain %q, actual %q", pullRequestInlineCommentReplyEditorTitle, composerView.Title)
+	}
+}
+
+func TestReplyToInlineCommentShortcut_GivenBrowserCommentsCursorOutsideInlineComment_WhenPressingR_ThenItShowsAStatusMessageAndDoesNothing(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"General feedback":   "Rendered general feedback",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered general feedback")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'r')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+	then_statusLineContains(t, gui, inlineCommentReplyUnavailableMessage)
+}
+
+func TestReplyToInlineCommentShortcut_GivenReviewModeCursorOnInlineComment_WhenPressingR_ThenItOpensTheReplyComposer(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs:         map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline thread body": "Rendered inline thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	given_reviewModeDetailFocusForActions(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'r')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	composerView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	if !strings.Contains(composerView.Title, pullRequestInlineCommentReplyEditorTitle) {
+		t.Fatalf("expected composer title to contain %q, actual %q", pullRequestInlineCommentReplyEditorTitle, composerView.Title)
+	}
+}
+
+func TestReplyToInlineCommentShortcut_GivenReviewModeCursorOutsideInlineComment_WhenPressingR_ThenItShowsAStatusMessageAndDoesNothing(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs:         map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline thread body": "Rendered inline thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	given_reviewModeDetailFocusForActions(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "new line")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'r')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+	then_statusLineContains(t, gui, inlineCommentReplyUnavailableMessage)
+}
+
 func TestReplyToInlineComment_GivenReviewModeAction_WhenSubmitting_ThenItAddsTheReplyToThePendingReviewThread(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
