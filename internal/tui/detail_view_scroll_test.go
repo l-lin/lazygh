@@ -52,7 +52,7 @@ func TestViewZeroScroll_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenI
 
 func TestViewZeroScroll_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItScrollsTheDiffViewportWithoutChangingTheSelectedFile(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
-	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_largeReviewSessionPullRequestDiff())}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_largeReviewSessionPullRequestDiff()), fileTeamOwnersAttempted: true}
 	subject.startReviewSession(githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}, "PRR_scroll")
 	subject.clampReviewSessionSelection()
 	expectedSelectedFileTreeRow := subject.reviewSession.selectedFileTreeRow

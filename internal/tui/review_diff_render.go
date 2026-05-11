@@ -14,6 +14,7 @@ type reviewDiffRenderedRowKind int
 const (
 	reviewDiffRenderedRowKindSpacer reviewDiffRenderedRowKind = iota
 	reviewDiffRenderedRowKindFileHeader
+	reviewDiffRenderedRowKindTeamOwners
 	reviewDiffRenderedRowKindHunkHeader
 	reviewDiffRenderedRowKindDiffLine
 	reviewDiffRenderedRowKindInlineCommentDecoration
@@ -66,7 +67,11 @@ func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, render
 func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	filePath := strings.TrimSpace(file.Path)
 	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderReviewDiffFileHeader(file), FilePath: filePath}}
+	if teamOwnersRow, ok := reviewDiffTeamOwnersRenderedRow(filePath, file.TeamOwners); ok {
+		rows = append(rows, teamOwnersRow)
+	}
 	contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin), filePath)
+	contentRows = reviewDiffRowsWithTeamOwners(contentRows, filePath, file.TeamOwners)
 	if len(contentRows) == 0 {
 		return rows
 	}
@@ -159,6 +164,43 @@ func reviewDiffRowsWithFilePath(rows []reviewDiffRenderedRow, filePath string) [
 		updatedRows = append(updatedRows, updatedRow)
 	}
 	return updatedRows
+}
+
+func reviewDiffRowsWithTeamOwners(rows []reviewDiffRenderedRow, filePath string, teamOwners []string) []reviewDiffRenderedRow {
+	teamOwnersRow, ok := reviewDiffTeamOwnersRenderedRow(filePath, teamOwners)
+	if !ok || len(rows) == 0 {
+		return rows
+	}
+
+	updatedRows := make([]reviewDiffRenderedRow, 0, len(rows)+2)
+	for _, row := range rows {
+		updatedRows = append(updatedRows, row)
+		if row.Kind == reviewDiffRenderedRowKindInlineCommentHeader {
+			updatedRows = append(updatedRows, teamOwnersRow)
+		}
+	}
+	return updatedRows
+}
+
+func reviewDiffTeamOwnersRenderedRow(filePath string, teamOwners []string) (reviewDiffRenderedRow, bool) {
+	normalizedTeamOwners := normalizeReviewDiffTeamOwners(teamOwners)
+	if len(normalizedTeamOwners) == 0 {
+		return reviewDiffRenderedRow{}, false
+	}
+
+	return reviewDiffRenderedRow{
+		Kind:     reviewDiffRenderedRowKindTeamOwners,
+		Text:     renderReviewDiffTeamOwners(normalizedTeamOwners),
+		FilePath: strings.TrimSpace(filePath),
+	}, true
+}
+
+func renderReviewDiffTeamOwners(teamOwners []string) string {
+	normalizedTeamOwners := normalizeReviewDiffTeamOwners(teamOwners)
+	if len(normalizedTeamOwners) == 0 {
+		return ""
+	}
+	return styleText("  "+reviewDiffTeamOwnershipIcon+" "+strings.Join(normalizedTeamOwners, ", "), foregroundColorEscape(theme.DiffLineNumberHex))
 }
 
 func reviewDiffUnmatchedThreads(threads []reviewDiffThread, matchedThreadIndexes []bool) []reviewDiffThread {

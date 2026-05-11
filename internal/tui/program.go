@@ -38,6 +38,7 @@ type GitHubLoader interface {
 	GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error)
 	GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error)
 	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
+	GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error)
 	CommentOnPullRequest(repository string, number int, body string) error
 	UpdatePullRequestComment(commentID string, body string) error
 	DeletePullRequestComment(commentID string) error

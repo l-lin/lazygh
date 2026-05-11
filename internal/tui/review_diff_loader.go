@@ -10,10 +10,11 @@ import (
 )
 
 type pullRequestDiffResult struct {
-	data            reviewDiffData
-	err             error
-	sourceUpdatedAt string
-	needsRefresh    bool
+	data                    reviewDiffData
+	err                     error
+	sourceUpdatedAt         string
+	needsRefresh            bool
+	fileTeamOwnersAttempted bool
 }
 
 func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
@@ -49,8 +50,10 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
+		rawDiff = program.withPullRequestDiffFileTeamOwners(repository, summary.Number, rawDiff)
 		result.data = buildReviewDiffData(rawDiff)
 		result.needsRefresh = false
+		result.fileTeamOwnersAttempted = rawDiff.FileTeamOwnersAttempted
 		program.cachePullRequestDiff(summary, rawDiff)
 	}
 
@@ -67,6 +70,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 		cachedResult := program.pullRequestDiffCache[key]
 		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
 		cachedResult.needsRefresh = false
+		cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.reviewSession.active
 		program.pullRequestDiffCache[key] = cachedResult
 		program.invalidatePullRequestDetailDocumentCache()
 		return program.refreshViews(gui)

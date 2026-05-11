@@ -20,6 +20,7 @@ const (
 	iconFile               = ""
 	iconDirectory          = ""
 	iconCommentCount       = ""
+	iconTeamOwnership      = "󱄭"
 	iconReview             = ""
 	iconCopy               = "󰆏"
 	iconOpenBrowser        = ""
@@ -94,9 +95,10 @@ const (
 	detailApprovalIcon              = iconApproval
 	detailInlineCommentLocationIcon = iconFileLocation
 
-	reviewDiffHeaderPathIcon  = iconFileLocation
-	reviewDiffDirectoryIcon   = iconDirectory
-	reviewDiffDefaultFileIcon = iconFile
+	reviewDiffHeaderPathIcon    = iconFileLocation
+	reviewDiffDirectoryIcon     = iconDirectory
+	reviewDiffDefaultFileIcon   = iconFile
+	reviewDiffTeamOwnershipIcon = iconTeamOwnership
 
 	reviewModeMetadataIcon = iconMetadata
 	reviewModeChapterIcon  = iconChapter

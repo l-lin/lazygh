@@ -1504,6 +1504,10 @@ type fakePullRequestDetailLoader struct {
 	diffs                             map[string]githubcli.PullRequestDiff
 	diffErrors                        map[string]error
 	diffCalls                         []string
+	fileTeamOwners                    map[string]map[string][]string
+	fileTeamOwnerErrors               map[string]error
+	fileTeamOwnerCalls                []string
+	fileTeamOwnerPaths                [][]string
 	commentCalls                      []string
 	commentBodies                     []string
 	commentErr                        error
@@ -1760,6 +1764,30 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestDiff(repository string,
 		}
 	}
 	return githubcli.PullRequestDiff{}, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error) {
+	key := repository + "#" + strconv.Itoa(number)
+	loader.fileTeamOwnerCalls = append(loader.fileTeamOwnerCalls, key)
+	loader.fileTeamOwnerPaths = append(loader.fileTeamOwnerPaths, append([]string(nil), filePaths...))
+	if loader.fileTeamOwnerErrors != nil {
+		if err, ok := loader.fileTeamOwnerErrors[key]; ok {
+			return nil, err
+		}
+	}
+	if loader.fileTeamOwners == nil {
+		return nil, nil
+	}
+	teamOwnersByPath, ok := loader.fileTeamOwners[key]
+	if !ok {
+		return nil, nil
+	}
+
+	actual := make(map[string][]string, len(teamOwnersByPath))
+	for path, teamOwners := range teamOwnersByPath {
+		actual[path] = append([]string(nil), teamOwners...)
+	}
+	return actual, nil
 }
 
 func (loader *fakePullRequestDetailLoader) CommentOnPullRequest(repository string, number int, body string) error {

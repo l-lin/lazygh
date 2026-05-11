@@ -310,7 +310,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure
 
 func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVersion_WhenCheckingTheReviewSession_ThenItUsesTheCachedDiffWithoutTriggeringAGhRefresh(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
-	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}
+	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": {UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh"}}}}
 	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: summary.UpdatedAt}}}
 	asyncRunner := &capturingAsyncRunner{}
@@ -351,7 +351,8 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 			"-old line",
 			"+cached line",
 		}, "\n"),
-		Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+		Files:                   []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+		FileTeamOwnersAttempted: true,
 	}
 	freshDiff := githubcli.PullRequestDiff{
 		UnifiedDiff: strings.Join([]string{
@@ -363,7 +364,8 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 			"-old line",
 			"+fresh line",
 		}, "\n"),
-		Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+		Files:                   []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}},
+		FileTeamOwnersAttempted: true,
 	}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": freshDiff}}}
 	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: "2026-05-05T10:00:00Z"}}}
@@ -414,7 +416,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 
 func TestLoadPullRequestDiff_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
-	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}
+	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": expected}}}
 	cache := &fakePersistentPullRequestCache{}
 	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)

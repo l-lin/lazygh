@@ -79,9 +79,10 @@ func (program *Program) hydratePullRequestDiffFromCache(summary githubcli.PullRe
 	}
 
 	program.pullRequestDiffCache[key] = pullRequestDiffResult{
-		data:            buildReviewDiffData(cached.Diff),
-		sourceUpdatedAt: strings.TrimSpace(cached.SourceUpdatedAt),
-		needsRefresh:    cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt),
+		data:                    buildReviewDiffData(cached.Diff),
+		sourceUpdatedAt:         strings.TrimSpace(cached.SourceUpdatedAt),
+		needsRefresh:            cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt),
+		fileTeamOwnersAttempted: cached.Diff.FileTeamOwnersAttempted,
 	}
 	program.invalidateReviewDiffRenderCache()
 	program.clampReviewSessionSelection()
@@ -90,6 +91,10 @@ func (program *Program) hydratePullRequestDiffFromCache(summary githubcli.PullRe
 
 func (program *Program) pullRequestDiffNeedsRefresh(summary githubcli.PullRequest, result pullRequestDiffResult, ok bool) bool {
 	if !ok || result.err != nil {
+		return true
+	}
+
+	if program.reviewSession.active && !result.fileTeamOwnersAttempted {
 		return true
 	}
 

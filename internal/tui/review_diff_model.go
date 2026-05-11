@@ -65,6 +65,7 @@ type reviewDiffFile struct {
 	ChangeType   reviewDiffChangeType
 	Additions    int
 	Deletions    int
+	TeamOwners   []string
 	Hunks        []reviewDiffHunk
 	Threads      []reviewDiffThread
 	Placeholder  string
@@ -125,6 +126,7 @@ func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
 			ChangeType:   reviewDiffChangeType(strings.ToLower(strings.TrimSpace(rawFile.ChangeType))),
 			Additions:    rawFile.Additions,
 			Deletions:    rawFile.Deletions,
+			TeamOwners:   normalizeReviewDiffTeamOwners(rawFile.TeamOwners),
 		}
 		if parsedFile, ok := parsedFilesByPath[file.Path]; ok {
 			file.Hunks = parsedFile.Hunks
@@ -176,4 +178,25 @@ func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
 		Files:    files,
 		FileTree: buildReviewDiffFileTree(files),
 	}
+}
+
+func normalizeReviewDiffTeamOwners(teamOwners []string) []string {
+	if len(teamOwners) == 0 {
+		return nil
+	}
+
+	normalizedOwners := make([]string, 0, len(teamOwners))
+	seenOwners := map[string]bool{}
+	for _, teamOwner := range teamOwners {
+		trimmedTeamOwner := strings.TrimSpace(teamOwner)
+		if trimmedTeamOwner == "" || seenOwners[trimmedTeamOwner] {
+			continue
+		}
+		seenOwners[trimmedTeamOwner] = true
+		normalizedOwners = append(normalizedOwners, trimmedTeamOwner)
+	}
+	if len(normalizedOwners) == 0 {
+		return nil
+	}
+	return normalizedOwners
 }
