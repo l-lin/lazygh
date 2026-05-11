@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) withPullRequestDiffFileTeamOwners(repository string, number int, rawDiff githubcli.PullRequestDiff) githubcli.PullRequestDiff {
-	if rawDiff.FileTeamOwnersAttempted || program.githubLoader == nil {
+	if rawDiff.FileTeamOwnersAttempted || program.githubLoader == nil || !program.shouldLoadPullRequestDiffTeamOwners() {
 		return rawDiff
 	}
 
@@ -62,4 +62,11 @@ func pullRequestDiffFilesWithTeamOwners(files []githubcli.PullRequestDiffFile, t
 		updatedFiles = append(updatedFiles, updatedFile)
 	}
 	return updatedFiles
+}
+
+func (program *Program) shouldLoadPullRequestDiffTeamOwners() bool {
+	if program.reviewSession.active {
+		return true
+	}
+	return program.shouldShowPullRequestDetailTabs() && program.activeDetailTab == ChangesDetailTab
 }

@@ -94,7 +94,7 @@ func (program *Program) pullRequestDiffNeedsRefresh(summary githubcli.PullReques
 		return true
 	}
 
-	if program.reviewSession.active && !result.fileTeamOwnersAttempted {
+	if program.shouldLoadPullRequestDiffTeamOwners() && !result.fileTeamOwnersAttempted {
 		return true
 	}
 

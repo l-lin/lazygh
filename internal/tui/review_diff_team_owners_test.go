@@ -25,7 +25,7 @@ func TestBuildReviewDiffData_GivenRawFileTeamOwners_WhenParsing_ThenItKeepsThemO
 	}
 }
 
-func TestBuildReviewDiffRenderedRows_GivenTeamOwnedFileAndInlineThread_WhenRendering_ThenItPlacesOwnershipBelowTheFileAndThreadPaths(t *testing.T) {
+func TestBuildReviewDiffRenderedRows_GivenTeamOwnedFileAndInlineThread_WhenRendering_ThenItPlacesOwnershipOnlyBelowTheFilePath(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "internal/tui/render.go",
 		Additions:  1,
@@ -61,20 +61,49 @@ func TestBuildReviewDiffRenderedRows_GivenTeamOwnedFileAndInlineThread_WhenRende
 		t.Fatalf("expected file ownership row to mention the team owner, actual %q", actual[1].Text)
 	}
 
+	actualTeamOwnersRowCount := 0
 	threadHeaderIndex := -1
 	for index, row := range actual {
+		if row.Kind == reviewDiffRenderedRowKindTeamOwners {
+			actualTeamOwnersRowCount++
+		}
 		if row.Kind == reviewDiffRenderedRowKindInlineCommentHeader {
 			threadHeaderIndex = index
-			break
 		}
+	}
+	if actualTeamOwnersRowCount != 1 {
+		t.Fatalf("expected exactly one team ownership row, actual %+v", actual)
 	}
 	if threadHeaderIndex < 0 {
 		t.Fatalf("expected an inline comment header row, actual %+v", actual)
 	}
-	if threadHeaderIndex+1 >= len(actual) || actual[threadHeaderIndex+1].Kind != reviewDiffRenderedRowKindTeamOwners {
-		t.Fatalf("expected team ownership row immediately after the inline comment header, actual %+v", actual)
+	if threadHeaderIndex+1 >= len(actual) || actual[threadHeaderIndex+1].Kind == reviewDiffRenderedRowKindTeamOwners {
+		t.Fatalf("expected the inline comment header to be followed by comment content instead of ownership metadata, actual %+v", actual)
 	}
-	if !strings.Contains(actual[threadHeaderIndex+1].Text, reviewDiffTeamOwnershipIcon+" P3C") {
-		t.Fatalf("expected inline thread ownership row to mention the team owner, actual %q", actual[threadHeaderIndex+1].Text)
+}
+
+func TestBuildPullRequestChangesRenderedRows_GivenTeamOwnedFile_WhenRendering_ThenItPlacesOwnershipBelowTheFilePath(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		TeamOwners: []string{"P3C"},
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,2 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight}},
+		}},
+	}
+
+	actual := buildPullRequestChangesRenderedRows([]reviewDiffFile{file}, nil, 96)
+
+	if len(actual) < 2 || actual[0].Kind != reviewDiffRenderedRowKindFileHeader {
+		t.Fatalf("expected a file header followed by ownership metadata, actual %+v", actual)
+	}
+	if actual[1].Kind != reviewDiffRenderedRowKindTeamOwners {
+		t.Fatalf("expected changes row 1 to be team ownership metadata, actual %+v", actual[1])
+	}
+	if !strings.Contains(actual[1].Text, reviewDiffTeamOwnershipIcon+" P3C") {
+		t.Fatalf("expected changes ownership row to mention the team owner, actual %q", actual[1].Text)
 	}
 }

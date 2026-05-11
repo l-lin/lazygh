@@ -44,12 +44,7 @@ func renderReviewDiffFileWithCollapsedThreads(file reviewDiffFile, renderer Mark
 }
 
 func renderReviewDiffFileWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) string {
-	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin)
-	lines := make([]string, 0, len(rows))
-	for _, row := range rows {
-		lines = append(lines, row.Text)
-	}
-	return strings.Join(lines, "\n")
+	return reviewDiffRenderedRowsText(buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin))
 }
 
 func buildReviewDiffRenderedRows(file reviewDiffFile, renderer MarkdownRenderer, width int) []reviewDiffRenderedRow {
@@ -66,12 +61,8 @@ func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, render
 
 func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	filePath := strings.TrimSpace(file.Path)
-	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderReviewDiffFileHeader(file), FilePath: filePath}}
-	if teamOwnersRow, ok := reviewDiffTeamOwnersRenderedRow(filePath, file.TeamOwners); ok {
-		rows = append(rows, teamOwnersRow)
-	}
+	rows := reviewDiffFileHeaderRows(file, renderReviewDiffFileHeader(file))
 	contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin), filePath)
-	contentRows = reviewDiffRowsWithTeamOwners(contentRows, filePath, file.TeamOwners)
 	if len(contentRows) == 0 {
 		return rows
 	}
@@ -166,24 +157,29 @@ func reviewDiffRowsWithFilePath(rows []reviewDiffRenderedRow, filePath string) [
 	return updatedRows
 }
 
-func reviewDiffRowsWithTeamOwners(rows []reviewDiffRenderedRow, filePath string, teamOwners []string) []reviewDiffRenderedRow {
-	teamOwnersRow, ok := reviewDiffTeamOwnersRenderedRow(filePath, teamOwners)
-	if !ok || len(rows) == 0 {
-		return rows
+func reviewDiffRenderedRowsText(rows []reviewDiffRenderedRow) string {
+	if len(rows) == 0 {
+		return ""
 	}
 
-	updatedRows := make([]reviewDiffRenderedRow, 0, len(rows)+2)
+	lines := make([]string, 0, len(rows))
 	for _, row := range rows {
-		updatedRows = append(updatedRows, row)
-		if row.Kind == reviewDiffRenderedRowKindInlineCommentHeader {
-			updatedRows = append(updatedRows, teamOwnersRow)
-		}
+		lines = append(lines, row.Text)
 	}
-	return updatedRows
+	return strings.Join(lines, "\n")
 }
 
-func reviewDiffTeamOwnersRenderedRow(filePath string, teamOwners []string) (reviewDiffRenderedRow, bool) {
-	normalizedTeamOwners := normalizeReviewDiffTeamOwners(teamOwners)
+func reviewDiffFileHeaderRows(file reviewDiffFile, headerText string) []reviewDiffRenderedRow {
+	filePath := strings.TrimSpace(file.Path)
+	rows := []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindFileHeader, Text: headerText, FilePath: filePath}}
+	if teamOwnersRow, ok := reviewDiffTeamOwnersRenderedRow(file); ok {
+		rows = append(rows, teamOwnersRow)
+	}
+	return rows
+}
+
+func reviewDiffTeamOwnersRenderedRow(file reviewDiffFile) (reviewDiffRenderedRow, bool) {
+	normalizedTeamOwners := normalizeReviewDiffTeamOwners(file.TeamOwners)
 	if len(normalizedTeamOwners) == 0 {
 		return reviewDiffRenderedRow{}, false
 	}
@@ -191,7 +187,7 @@ func reviewDiffTeamOwnersRenderedRow(filePath string, teamOwners []string) (revi
 	return reviewDiffRenderedRow{
 		Kind:     reviewDiffRenderedRowKindTeamOwners,
 		Text:     renderReviewDiffTeamOwners(normalizedTeamOwners),
-		FilePath: strings.TrimSpace(filePath),
+		FilePath: strings.TrimSpace(file.Path),
 	}, true
 }
 

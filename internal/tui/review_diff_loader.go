@@ -70,7 +70,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 		cachedResult := program.pullRequestDiffCache[key]
 		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
 		cachedResult.needsRefresh = false
-		cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.reviewSession.active
+		cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.shouldLoadPullRequestDiffTeamOwners()
 		program.pullRequestDiffCache[key] = cachedResult
 		program.invalidatePullRequestDetailDocumentCache()
 		return program.refreshViews(gui)

@@ -339,6 +339,67 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 	}
 }
 
+func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWithoutAttemptedTeamOwnershipLookup_WhenCheckingTheSelection_ThenItRefreshesInBackground(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
+	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}
+	freshDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}
+	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{
+		diffs:          map[string]githubcli.PullRequestDiff{"acme/widgets#42": freshDiff},
+		fileTeamOwners: map[string]map[string][]string{"acme/widgets#42": {"main.go": {"P3C"}}},
+	}}
+	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: summary.UpdatedAt}}}
+	asyncRunner := &capturingAsyncRunner{}
+	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
+	subject := NewProgramWithModelAndLoader(model, loader)
+	subject.pullRequestCache = cache
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.activeDetailTab = ChangesDetailTab
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	subject.maybeLoadSelectedPullRequestDiff(gui)
+
+	actualBeforeRefresh, ok := subject.pullRequestDiffForSummary(summary)
+	if !ok {
+		t.Fatal("expected the cached diff to be available immediately")
+	}
+	if len(actualBeforeRefresh.data.Files) != 1 || actualBeforeRefresh.data.Files[0].Path != "main.go" {
+		t.Fatalf("expected cached diff files %+v, actual %+v", []string{"main.go"}, actualBeforeRefresh.data.Files)
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued diff refresh for team ownership, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	actualAfterRefresh, ok := subject.pullRequestDiffForSummary(summary)
+	if !ok {
+		t.Fatal("expected a refreshed pull request diff")
+	}
+	expectedTeamOwners := []string{"P3C"}
+	if !reflect.DeepEqual(actualAfterRefresh.data.Files[0].TeamOwners, expectedTeamOwners) {
+		t.Fatalf("expected refreshed team owners %+v, actual %+v", expectedTeamOwners, actualAfterRefresh.data.Files[0].TeamOwners)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected diff refresh calls %v, actual %v", []string{"acme/widgets#42"}, loader.diffCalls)
+	}
+	if !reflect.DeepEqual(loader.fileTeamOwnerCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected team ownership calls %v, actual %v", []string{"acme/widgets#42"}, loader.fileTeamOwnerCalls)
+	}
+
+	expectedSavedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, TeamOwners: []string{"P3C"}}}, FileTeamOwnersAttempted: true}
+	if actual := cache.savedDiffs["acme/widgets#42"]; !reflect.DeepEqual(actual.Diff, expectedSavedDiff) || actual.SourceUpdatedAt != summary.UpdatedAt {
+		t.Fatalf("expected saved cached diff %+v with version %q, actual %+v", expectedSavedDiff, summary.UpdatedAt, actual)
+	}
+}
+
 func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedDiff_WhenCheckingTheSelection_ThenItShowsTheCachedDiffAndRefreshesItInBackground(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
 	cachedDiff := githubcli.PullRequestDiff{

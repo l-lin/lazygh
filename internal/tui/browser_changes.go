@@ -12,12 +12,7 @@ func renderPullRequestChangesRows(rows []reviewDiffRenderedRow) string {
 	if len(rows) == 0 {
 		return "No changes yet."
 	}
-
-	lines := make([]string, 0, len(rows))
-	for _, row := range rows {
-		lines = append(lines, row.Text)
-	}
-	return strings.Join(lines, "\n")
+	return reviewDiffRenderedRowsText(rows)
 }
 
 func buildPullRequestChangesRenderedRows(files []reviewDiffFile, renderer MarkdownRenderer, width int) []reviewDiffRenderedRow {
@@ -32,7 +27,7 @@ func buildPullRequestChangesRenderedRowsForViewer(files []reviewDiffFile, render
 		if index > 0 {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""})
 		}
-		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindFileHeader, Text: renderFoldableReviewDiffFileHeader(file, collapsed), FilePath: filePath})
+		rows = append(rows, reviewDiffFileHeaderRows(file, renderFoldableReviewDiffFileHeader(file, collapsed))...)
 		if collapsed {
 			continue
 		}
