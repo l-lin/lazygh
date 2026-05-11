@@ -356,9 +356,6 @@ func (store *Store) InvalidatePullRequest(repository string, number int) error {
 	`, trimmedRepository, normalizedNumber); actualErr != nil {
 		return actualErr
 	}
-	if _, actualErr = transaction.Exec(`DELETE FROM pull_request_lists`); actualErr != nil {
-		return actualErr
-	}
 
 	return transaction.Commit()
 }

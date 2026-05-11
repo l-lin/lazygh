@@ -80,6 +80,40 @@ func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering
 	}
 }
 
+func TestLayout_GivenPersistentPullRequestInvalidationAndANewSession_WhenRendering_ThenItStillShowsTheCachedRowsBeforeRefreshing(t *testing.T) {
+	cachedPullRequests := []githubcli.PullRequest{{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
+	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): cachedPullRequests}}
+	invalidatingSubject := NewProgram()
+	invalidatingSubject.pullRequestCache = cache
+
+	invalidatingSubject.invalidatePullRequestDetail("acme/widgets", 42)
+
+	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject.pullRequestCache = cache
+	subject.connectedUserLoadStarted = true
+	subject.notificationsLoadStarted = true
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.model.FocusUserView()
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+
+	then_noError(t, actualErr)
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.Buffer(), "Cached PR") {
+		t.Fatalf("expected pull requests buffer to contain %q after reopening, actual %q", "Cached PR", pullRequestsView.Buffer())
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued pull request refresh, actual %d", len(asyncRunner.runs))
+	}
+}
+
 func TestLayout_GivenCachedPullRequestsAndLiveResultsInSearchOrder_WhenRendering_ThenItKeepsTheLiveRowOrder(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{
 		{Title: "Cached older", Number: 41, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/41", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T09:00:00Z"},
@@ -589,7 +623,6 @@ func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubc
 func (cache *fakePersistentPullRequestCache) InvalidatePullRequest(repository string, number int) error {
 	key := strings.TrimSpace(repository) + "#" + itoa(number)
 	cache.invalidatedPullRequests = append(cache.invalidatedPullRequests, key)
-	cache.pullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
 	delete(cache.details, key)
 	delete(cache.diffs, key)
 	return nil
