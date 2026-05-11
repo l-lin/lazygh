@@ -623,11 +623,11 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 	if strings.Contains(detailView.Buffer(), "Conversation") {
 		t.Fatalf("expected the old conversation label to disappear, actual %q", detailView.Buffer())
 	}
-	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex-2]) != "" {
-		t.Fatalf("expected a blank separator line above the conversation, actual %q", detailView.BufferLines()[headerLineIndex-2])
+	if headerLineIndex == 0 {
+		t.Fatalf("expected a blank separator line above the conversation, actual %q", detailView.Buffer())
 	}
-	if !strings.HasPrefix(detailView.BufferLines()[headerLineIndex-1], "────") || strings.Contains(detailView.BufferLines()[headerLineIndex-1], "│") {
-		t.Fatalf("expected a full-width top border above the conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
+	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex-1]) != "" {
+		t.Fatalf("expected a blank separator line above the conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
 	}
 	blankLineIndex := headerLineIndex + 1
 	for blankLineIndex < len(detailView.BufferLines()) && strings.TrimSpace(detailView.BufferLines()[blankLineIndex]) != "" {
@@ -636,8 +636,8 @@ func TestReviewMode_GivenAnExpandedInlineConversation_WhenRendering_ThenItShowsT
 	if blankLineIndex >= len(detailView.BufferLines()) {
 		t.Fatalf("expected a blank separator line below the conversation, actual %q", strings.Join(detailView.BufferLines(), "\n"))
 	}
-	if !strings.HasPrefix(detailView.BufferLines()[blankLineIndex-1], "────") || strings.Contains(detailView.BufferLines()[blankLineIndex-1], "│") {
-		t.Fatalf("expected a full-width bottom border below the conversation, actual %q", detailView.BufferLines()[blankLineIndex-1])
+	if strings.HasPrefix(detailView.BufferLines()[blankLineIndex-1], "────") {
+		t.Fatalf("expected the conversation to end without a trailing horizontal separator, actual %q", detailView.BufferLines()[blankLineIndex-1])
 	}
 }
 
@@ -679,17 +679,17 @@ func TestReviewMode_GivenAResolvedInlineConversation_WhenRendering_ThenItStartsC
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to stay hidden while collapsed, actual %q", detailView.Buffer())
 	}
-	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex-2]) != "" {
-		t.Fatalf("expected a blank separator line above the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex-2])
+	if headerLineIndex == 0 {
+		t.Fatalf("expected a blank separator line above the collapsed conversation, actual %q", detailView.Buffer())
 	}
-	if !strings.HasPrefix(detailView.BufferLines()[headerLineIndex-1], "────") || strings.Contains(detailView.BufferLines()[headerLineIndex-1], "│") {
-		t.Fatalf("expected a full-width top border above the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
+	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex-1]) != "" {
+		t.Fatalf("expected a blank separator line above the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex-1])
 	}
-	if !strings.HasPrefix(detailView.BufferLines()[headerLineIndex+1], "────") || strings.Contains(detailView.BufferLines()[headerLineIndex+1], "│") {
-		t.Fatalf("expected a full-width bottom border below the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex+1])
+	if headerLineIndex+1 >= len(detailView.BufferLines()) {
+		t.Fatalf("expected a blank separator line below the collapsed conversation, actual %q", detailView.Buffer())
 	}
-	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex+2]) != "" {
-		t.Fatalf("expected a blank separator line below the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex+2])
+	if strings.TrimSpace(detailView.BufferLines()[headerLineIndex+1]) != "" {
+		t.Fatalf("expected a blank separator line below the collapsed conversation, actual %q", detailView.BufferLines()[headerLineIndex+1])
 	}
 }
 

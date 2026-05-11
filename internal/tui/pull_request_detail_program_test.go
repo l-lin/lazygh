@@ -522,11 +522,18 @@ func TestBrowserMode_GivenAResolvedChangesTabThread_WhenPressingEnterAndZA_ThenI
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:43") {
+	headerLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:43")
+	if headerLineIndex < 0 {
 		t.Fatalf("expected the resolved thread to start folded in changes, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
 		t.Fatalf("expected the folded changes thread to hide its body, actual %q", detailView.Buffer())
+	}
+	if headerLineIndex > 0 && strings.HasPrefix(detailView.BufferLines()[headerLineIndex-1], "────") {
+		t.Fatalf("expected the folded changes thread to drop the leading horizontal separator, actual %q", detailView.Buffer())
+	}
+	if headerLineIndex+1 < len(detailView.BufferLines()) && strings.HasPrefix(detailView.BufferLines()[headerLineIndex+1], "────") {
+		t.Fatalf("expected the folded changes thread to drop the trailing horizontal separator, actual %q", detailView.Buffer())
 	}
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:43")
 
@@ -535,6 +542,13 @@ func TestBrowserMode_GivenAResolvedChangesTabThread_WhenPressingEnterAndZA_ThenI
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), " internal/tui/render.go:43") || !strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
 		t.Fatalf("expected enter to expand the changes thread, actual %q", detailView.Buffer())
+	}
+	headerLineIndex = given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:43")
+	if headerLineIndex > 0 && strings.HasPrefix(detailView.BufferLines()[headerLineIndex-1], "────") {
+		t.Fatalf("expected the expanded changes thread to drop the leading horizontal separator, actual %q", detailView.Buffer())
+	}
+	if headerLineIndex+1 < len(detailView.BufferLines()) && strings.HasPrefix(detailView.BufferLines()[headerLineIndex+1], "────") {
+		t.Fatalf("expected the expanded changes thread to drop the trailing horizontal separator, actual %q", detailView.Buffer())
 	}
 
 	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
@@ -842,8 +856,8 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 	then_noError(t, actualErr)
 	resolvedHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/render.go:43")
 	activeHeaderLineIndex := given_viewLineIndexContaining(t, detailView, " internal/tui/model.go:60")
-	if activeHeaderLineIndex != resolvedHeaderLineIndex+3 {
-		t.Fatalf("expected the collapsed thread to render as a bordered block before the next header block, actual %q", detailView.Buffer())
+	if activeHeaderLineIndex != resolvedHeaderLineIndex+1 {
+		t.Fatalf("expected the collapsed thread header to sit immediately before the next thread header without an outer border block, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered resolved thread body") {
 		t.Fatalf("expected resolved threads to stay folded by default, actual %q", detailView.Buffer())
@@ -859,8 +873,8 @@ func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapse
 	if strings.Contains(detailView.Buffer(), "61 : 61 │ tail") {
 		t.Fatalf("expected the browser conversations tab to crop the diff preview after five lines plus the selected line, actual %q", detailView.Buffer())
 	}
-	if activeHeaderLineIndex == 0 || !strings.HasPrefix(detailView.BufferLines()[activeHeaderLineIndex-1], "────") {
-		t.Fatalf("expected the browser conversations tab to render the same top border as review mode, actual %q", detailView.Buffer())
+	if activeHeaderLineIndex == 0 || strings.HasPrefix(detailView.BufferLines()[activeHeaderLineIndex-1], "────") {
+		t.Fatalf("expected the browser conversations tab to drop the outer thread separator, actual %q", detailView.Buffer())
 	}
 	metadataLineIndex := given_viewLineIndexContaining(t, detailView, "@reviewer-active")
 	if strings.Contains(detailView.BufferLines()[metadataLineIndex], "Unresolved") {

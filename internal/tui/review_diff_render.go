@@ -216,14 +216,10 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 
 	rows = append(rows,
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
 		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentHeader, Text: renderReviewDiffThreadStatus(thread, collapsed), Thread: &threadCopy},
 	)
 	if collapsed {
-		rows = append(rows,
-			reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
-			reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
-		)
+		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""})
 		return rows
 	}
 
@@ -237,10 +233,7 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 	if len(thread.Comments) == 0 {
 		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: "No comments in thread.", Thread: &threadCopy})
 	}
-	rows = append(rows,
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: renderReviewDiffThreadHorizontalBorder(width), Thread: &threadCopy},
-		reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""},
-	)
+	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""})
 	return rows
 }
 
@@ -251,14 +244,6 @@ func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) strin
 		collapsed,
 		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
 	)
-}
-
-func renderReviewDiffThreadHorizontalBorder(width int) string {
-	borderWidth := effectiveMarkdownWidth(width)
-	if borderWidth < 1 {
-		borderWidth = 1
-	}
-	return styleCommentBorder(strings.Repeat("─", borderWidth))
 }
 
 func reviewDiffThreadSideLabel(thread reviewDiffThread) string {

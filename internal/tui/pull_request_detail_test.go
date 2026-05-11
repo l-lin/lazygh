@@ -515,6 +515,9 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 	if actualStylePrefix := actualDocument.lineStylePrefixes[headerLineIndex][resolvedIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.DiffAdditionHex)) || !strings.Contains(actualStylePrefix, backgroundColorEscape(theme.DiffAdditionBackgroundHex)) {
 		t.Fatalf("expected the resolved pill prefix to contain %q and %q, actual %q", foregroundColorEscape(theme.DiffAdditionHex), backgroundColorEscape(theme.DiffAdditionBackgroundHex), actualStylePrefix)
 	}
+	if headerLineIndex != 0 {
+		t.Fatalf("expected the inline thread header to render without a leading horizontal separator, actual %q", actual)
+	}
 	for _, expected := range []string{"@@ -42,2 +42,2 @@", "42 : 42 │ \"deny\": []", "43 :    │ \"model\": \"opusplan\",", "   : 43 │ \"model\": \"opus\","} {
 		if _, actualLine := given_detailDocumentLineContaining(t, actualDocument, expected); actualLine != expected {
 			t.Fatalf("expected inline thread rendering to keep the visible diff preview line %q, actual %q", expected, actualLine)
@@ -522,6 +525,9 @@ func TestRenderPullRequestCommentsTab_GivenResolvedInlineCommentThreads_WhenForm
 	}
 	if _, replyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered reply"); !strings.Contains(replyLine, "Rendered reply") {
 		t.Fatalf("expected the reply to render in the same inline thread section, actual %q", replyLine)
+	}
+	if lastLine := string(actualDocument.lines[len(actualDocument.lines)-1]); strings.Trim(lastLine, "─") == "" {
+		t.Fatalf("expected the inline thread to end without a trailing horizontal separator, actual %q", lastLine)
 	}
 }
 

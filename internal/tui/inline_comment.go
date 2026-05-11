@@ -46,19 +46,12 @@ func renderPullRequestInlineCommentThreadSectionForViewer(thread githubcli.PullR
 	return header + "\n" + body
 }
 
-func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestReviewThread, collapsed bool, width int) string {
-	lines := []string{
-		renderReviewDiffThreadHorizontalBorder(width),
-		renderInlineThreadHeaderLine(
-			pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(thread)),
-			collapsed,
-			inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
-		),
-	}
-	if collapsed {
-		lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
-	}
-	return strings.Join(lines, "\n")
+func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestReviewThread, collapsed bool, _ int) string {
+	return renderInlineThreadHeaderLine(
+		pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(thread)),
+		collapsed,
+		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
+	)
 }
 
 func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
@@ -68,17 +61,16 @@ func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReview
 func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
 	suggestionContext := pullRequestInlineCommentFromThread(thread)
-	lines := make([]string, 0, len(thread.Comments)+2)
+	lines := make([]string, 0, len(thread.Comments)+1)
 	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(suggestionContext); diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
 	if len(thread.Comments) == 0 {
-		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth), renderReviewDiffThreadHorizontalBorder(width))
+		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth))
 		return strings.Join(lines, "\n")
 	}
 
 	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, suggestionContext, renderer, width, connectedUserLogin)...)
-	lines = append(lines, renderReviewDiffThreadHorizontalBorder(width))
 	return strings.Join(lines, "\n")
 }
 
@@ -94,7 +86,6 @@ func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewT
 		for range renderedTextLineCount(renderRoundedCommentBox("No comments in thread.", normalizedInlineThreadCommentBoxWidth(width))) {
 			commentIndexes = append(commentIndexes, -1)
 		}
-		commentIndexes = append(commentIndexes, -1)
 		return commentIndexes
 	}
 
@@ -104,7 +95,6 @@ func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewT
 			commentIndexes = append(commentIndexes, commentIndex)
 		}
 	}
-	commentIndexes = append(commentIndexes, -1)
 	return commentIndexes
 }
 
