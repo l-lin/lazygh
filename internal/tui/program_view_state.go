@@ -123,7 +123,7 @@ func (program *Program) shouldShowCursor() bool {
 	case program.pullRequestBuildRunPopupVisible():
 		return true
 	default:
-		return program.model.Focus() == FocusDetailView
+		return program.screenState().AllowsMainCursor()
 	}
 }
 
@@ -153,19 +153,9 @@ func (program *Program) currentViewName() string {
 		return viewPullRequestBuildInfoName
 	}
 
-	focus := program.model.Focus()
+	focus := program.screenState().ActiveView().Focus
 	if !program.model.PaneVisible(focus) {
 		return paneViewName(program.model.FullscreenPane())
 	}
-
-	switch focus {
-	case FocusPullRequestsView:
-		return viewPullRequestsName
-	case FocusNotificationsView:
-		return viewNotificationsName
-	case FocusDetailView:
-		return viewDetailName
-	default:
-		return viewUserName
-	}
+	return paneViewName(focus)
 }

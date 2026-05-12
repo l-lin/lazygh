@@ -1,7 +1,8 @@
 package tui
 
 func (model *Model) detailItem() (Item, bool) {
-	switch model.currentSideFocus() {
+	resolver := model.ScreenState().MainViewResolver()
+	switch resolver.SourceView.Focus {
 	case FocusPullRequestsView:
 		row, ok := model.SelectedPullRequestRow()
 		if !ok {
@@ -20,18 +21,7 @@ func (model *Model) detailItem() (Item, bool) {
 }
 
 func (model *Model) currentSideFocus() Focus {
-	if model.focus == FocusDetailView {
-		return model.lastSideFocus
-	}
-
-	switch model.focus {
-	case FocusPullRequestsView:
-		return FocusPullRequestsView
-	case FocusNotificationsView:
-		return FocusNotificationsView
-	default:
-		return FocusUserView
-	}
+	return model.ScreenState().ActiveSideView().Focus
 }
 
 func (model *Model) setSideFocus(focus Focus) {
@@ -42,8 +32,7 @@ func (model *Model) setSideFocus(focus Focus) {
 		return
 	}
 
-	model.focus = focus
-	model.lastSideFocus = focus
+	model.applyBrowserScreenState(model.ScreenState().FocusViewNumber(browserSideViewNumber(focus)))
 }
 
 func (model *Model) adjustSelectionBy(change int) {
@@ -58,7 +47,7 @@ func (model *Model) adjustSelectionBy(change int) {
 }
 
 func (model *Model) adjustPullRequestSelection(change int) {
-	tab := model.activePullRequestTab
+	tab := model.ActivePullRequestTab()
 	selectedIndex := model.selectedPullRequestIndexes[tab]
 	visibleIndexes := model.visiblePullRequestIndexes(tab)
 	model.selectedPullRequestIndexes[tab] = adjustVisibleSelection(selectedIndex, visibleIndexes, change)

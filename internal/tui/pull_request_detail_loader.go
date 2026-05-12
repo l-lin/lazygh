@@ -83,7 +83,9 @@ func (program *Program) selectedPullRequestSummaryForDetail() (githubcli.PullReq
 		}
 		return summary, true
 	}
-	switch program.model.currentSideFocus() {
+
+	resolver := program.baseScreenState().MainViewResolver()
+	switch resolver.SourceView.Focus {
 	case FocusPullRequestsView:
 		summary, ok := program.model.SelectedPullRequestSummary()
 		if !ok {
@@ -118,7 +120,8 @@ func (program *Program) currentDetailIdentity() string {
 		return program.reviewSessionDetailIdentity()
 	}
 
-	switch program.model.currentSideFocus() {
+	resolver := program.baseScreenState().MainViewResolver()
+	switch resolver.SourceView.Focus {
 	case FocusPullRequestsView:
 		if summary, ok := program.model.SelectedPullRequestSummary(); ok {
 			if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {

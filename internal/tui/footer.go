@@ -80,28 +80,26 @@ func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 }
 
 func (program *Program) statusLineKeyHintsText() string {
-	if modalEditorHints := strings.TrimSpace(program.modalEditorKeyHintsText()); modalEditorHints != "" {
-		return modalEditorHints
-	}
-	if actionsPopupSearchHints := strings.TrimSpace(program.actionsPopupSearchKeyHintsText()); actionsPopupSearchHints != "" {
-		return actionsPopupSearchHints
-	}
-	if actionsPopupHints := strings.TrimSpace(program.actionsPopupKeyHintsText()); actionsPopupHints != "" {
-		return actionsPopupHints
-	}
-	if searchHints := strings.TrimSpace(program.searchKeyHintsText()); searchHints != "" {
-		return searchHints
-	}
-	if buildPopupHints := strings.TrimSpace(program.pullRequestBuildRunPopupKeyHintsText()); buildPopupHints != "" {
-		return buildPopupHints
-	}
-
-	focus := program.model.Focus()
-	if !program.shouldShowStatusLineKeyHints(focus) {
+	switch program.screenState().KeyHintContext() {
+	case KeyHintContextModalEditor:
+		return strings.TrimSpace(program.modalEditorKeyHintsText())
+	case KeyHintContextActionsPopupSearch:
+		return strings.TrimSpace(program.actionsPopupSearchKeyHintsText())
+	case KeyHintContextActionsPopup:
+		return strings.TrimSpace(program.actionsPopupKeyHintsText())
+	case KeyHintContextSearch:
+		return strings.TrimSpace(program.searchKeyHintsText())
+	case KeyHintContextBuildInfo:
+		return strings.TrimSpace(program.pullRequestBuildRunPopupKeyHintsText())
+	case KeyHintContextMainPanel, KeyHintContextSidePanel:
+		focus := program.screenState().ActiveView().Focus
+		if !program.shouldShowStatusLineKeyHints(focus) {
+			return ""
+		}
+		return program.paneFooterKeyHintsText(focus)
+	default:
 		return ""
 	}
-
-	return program.paneFooterKeyHintsText(focus)
 }
 
 func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {

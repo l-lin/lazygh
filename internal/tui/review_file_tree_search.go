@@ -9,7 +9,7 @@ import (
 func (program *Program) startReviewFileTreeSearch() {
 	program.model.searchActive = true
 	program.model.searchTarget = FocusPullRequestsView
-	program.model.searchTargetPullRequestTab = program.model.activePullRequestTab
+	program.model.searchTargetPullRequestTab = program.model.ActivePullRequestTab()
 	program.model.clearAppliedSearchQueriesForOtherViews(FocusPullRequestsView)
 	program.model.searchDraft = ""
 }

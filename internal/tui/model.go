@@ -182,11 +182,15 @@ func normalizePullRequestTabSeeds(seeds []PullRequestTabSeed) []PullRequestTabSe
 }
 
 func (model *Model) Focus() Focus {
-	return model.focus
+	return model.ScreenState().ActiveView().Focus
 }
 
 func (model *Model) ActivePullRequestTab() PullRequestTab {
-	return model.activePullRequestTab
+	pullRequestView, ok := model.ScreenState().ViewByNumber(sidePanelPullRequestsViewNumber)
+	if !ok {
+		return model.activePullRequestTab
+	}
+	return PullRequestTab(clampScreenTabIndex(pullRequestView.ActiveTab, len(pullRequestView.Tabs)))
 }
 
 func (model *Model) PullRequestTabs() []PullRequestTab {
@@ -269,12 +273,13 @@ func (model *Model) SetNotificationRows(rows []NotificationRow) {
 }
 
 func (model *Model) CurrentPullRequests() []Item {
-	return model.PullRequests(model.activePullRequestTab)
+	return model.PullRequests(model.ActivePullRequestTab())
 }
 
 func (model *Model) SelectedPullRequestRow() (PullRequestRow, bool) {
-	rows := model.pullRequestRows(model.activePullRequestTab)
-	selectedIndex := model.selectedPullRequestIndexes[model.activePullRequestTab]
+	tab := model.ActivePullRequestTab()
+	rows := model.pullRequestRows(tab)
+	selectedIndex := model.selectedPullRequestIndexes[tab]
 	return pullRequestRowAt(rows, selectedIndex)
 }
 
@@ -309,33 +314,19 @@ func (model *Model) DetailContent() string {
 }
 
 func (model *Model) NextSideView() {
-	if model.focus == FocusDetailView || model.paneLayoutSize == PaneLayoutFullscreen {
+	if model.Focus() == FocusDetailView || model.paneLayoutSize == PaneLayoutFullscreen {
 		return
 	}
 
-	switch model.currentSideFocus() {
-	case FocusUserView:
-		model.setSideFocus(FocusPullRequestsView)
-	case FocusPullRequestsView:
-		model.setSideFocus(FocusNotificationsView)
-	default:
-		model.setSideFocus(FocusUserView)
-	}
+	model.applyBrowserScreenState(model.ScreenState().NextSideView())
 }
 
 func (model *Model) PreviousSideView() {
-	if model.focus == FocusDetailView || model.paneLayoutSize == PaneLayoutFullscreen {
+	if model.Focus() == FocusDetailView || model.paneLayoutSize == PaneLayoutFullscreen {
 		return
 	}
 
-	switch model.currentSideFocus() {
-	case FocusUserView:
-		model.setSideFocus(FocusNotificationsView)
-	case FocusPullRequestsView:
-		model.setSideFocus(FocusUserView)
-	default:
-		model.setSideFocus(FocusPullRequestsView)
-	}
+	model.applyBrowserScreenState(model.ScreenState().PreviousSideView())
 }
 
 func (model *Model) OpenDetail() {
@@ -347,8 +338,7 @@ func (model *Model) FocusDetailView() {
 		return
 	}
 
-	model.lastSideFocus = model.currentSideFocus()
-	model.focus = FocusDetailView
+	model.applyBrowserScreenState(model.ScreenState().FocusViewNumber(mainPanelViewNumber))
 }
 
 func (model *Model) FocusUserView() {
@@ -364,14 +354,14 @@ func (model *Model) FocusNotificationsView() {
 }
 
 func (model *Model) CloseDetail() {
-	if model.focus != FocusDetailView {
+	if model.Focus() != FocusDetailView {
 		return
 	}
 	if model.paneLayoutSize == PaneLayoutFullscreen && model.fullscreenPane == FocusDetailView {
 		model.paneLayoutSize = model.detailFullscreenReturnSize
 	}
 
-	model.focus = model.currentSideFocus()
+	model.applyBrowserScreenState(model.ScreenState().FocusViewNumber(model.ScreenState().ActiveSideView().Number))
 }
 
 func (model *Model) MoveSelectionDown() {
@@ -427,21 +417,17 @@ func (model *Model) PageUp(pageSize int) {
 }
 
 func (model *Model) NextPullRequestTab() {
-	if model.focus != FocusPullRequestsView || len(model.pullRequestTabs) <= 1 {
+	if model.Focus() != FocusPullRequestsView || len(model.pullRequestTabs) <= 1 {
 		return
 	}
 
-	model.activePullRequestTab = PullRequestTab((int(model.activePullRequestTab) + 1) % len(model.pullRequestTabs))
+	model.applyBrowserScreenState(model.ScreenState().NextTab())
 }
 
 func (model *Model) PreviousPullRequestTab() {
-	if model.focus != FocusPullRequestsView || len(model.pullRequestTabs) <= 1 {
+	if model.Focus() != FocusPullRequestsView || len(model.pullRequestTabs) <= 1 {
 		return
 	}
 
-	activeIndex := int(model.activePullRequestTab) - 1
-	if activeIndex < 0 {
-		activeIndex = len(model.pullRequestTabs) - 1
-	}
-	model.activePullRequestTab = PullRequestTab(activeIndex)
+	model.applyBrowserScreenState(model.ScreenState().PreviousTab())
 }

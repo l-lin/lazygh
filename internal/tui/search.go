@@ -20,8 +20,8 @@ func (model *Model) SearchDraft() string {
 
 func (model *Model) StartSearch() {
 	model.searchActive = true
-	model.searchTarget = model.focus
-	model.searchTargetPullRequestTab = model.activePullRequestTab
+	model.searchTarget = model.Focus()
+	model.searchTargetPullRequestTab = model.ActivePullRequestTab()
 	model.clearAppliedSearchQueriesForOtherViews(model.searchTarget)
 	model.searchDraft = ""
 	model.clampSearchSelectionForTarget(model.searchTarget, model.searchTargetPullRequestTab, model.searchDraft)
@@ -84,7 +84,8 @@ func (model *Model) VisibleUsers() []Item {
 }
 
 func (model *Model) VisiblePullRequests() []Item {
-	return filterItemsByIndexes(model.CurrentPullRequests(), model.visiblePullRequestIndexes(model.activePullRequestTab))
+	tab := model.ActivePullRequestTab()
+	return filterItemsByIndexes(model.CurrentPullRequests(), model.visiblePullRequestIndexes(tab))
 }
 
 func (model *Model) VisibleNotifications() []Item {

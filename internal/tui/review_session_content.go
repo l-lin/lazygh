@@ -85,7 +85,7 @@ func (program *Program) reviewSessionShowsDescription() bool {
 	if !program.reviewSession.active {
 		return false
 	}
-	return program.model.currentSideFocus() == FocusUserView
+	return program.baseScreenState().MainViewResolver().SourceView.Focus == FocusUserView
 }
 
 func (program *Program) reviewSessionShowsStoryChapter() bool {
