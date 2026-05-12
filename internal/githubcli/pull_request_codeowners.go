@@ -2,7 +2,6 @@ package githubcli
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -78,25 +77,13 @@ func (client *Client) GetPullRequestFileTeamOwners(repository string, number int
 }
 
 func (client *Client) pullRequestBaseRefName(owner string, name string, number int) (string, error) {
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+pullRequestBaseRefNameQuery,
-		"-F",
-		"owner="+strings.TrimSpace(owner),
-		"-F",
-		"name="+strings.TrimSpace(name),
-		"-F",
-		fmt.Sprintf("number=%d", number),
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestBaseRefNameQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}})
 	if err != nil {
 		return "", err
 	}
 
 	var response pullRequestBaseRefNameResponse
-	if err := json.Unmarshal(result.Stdout, &response); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &response); err != nil {
 		return "", fmt.Errorf("%w: %v", ErrInvalidPullRequestBaseRefNameResponse, err)
 	}
 	if response.Data == nil || response.Data.Repository == nil || response.Data.Repository.PullRequest == nil {
@@ -113,29 +100,13 @@ func (client *Client) pullRequestCodeownersBlob(owner string, name string, baseR
 	}
 
 	refPrefix := "refs/heads/" + trimmedBaseRefName + ":"
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+pullRequestCodeownersBlobQuery,
-		"-F",
-		"owner="+strings.TrimSpace(owner),
-		"-F",
-		"name="+strings.TrimSpace(name),
-		"-F",
-		"dotgithubExpression="+refPrefix+".github/CODEOWNERS",
-		"-F",
-		"rootExpression="+refPrefix+"CODEOWNERS",
-		"-F",
-		"docsExpression="+refPrefix+"docs/CODEOWNERS",
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestCodeownersBlobQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("dotgithubExpression", refPrefix+".github/CODEOWNERS"), typedGraphQLVariable("rootExpression", refPrefix+"CODEOWNERS"), typedGraphQLVariable("docsExpression", refPrefix+"docs/CODEOWNERS")}})
 	if err != nil {
 		return "", false, err
 	}
 
 	var response pullRequestCodeownersBlobResponse
-	if err := json.Unmarshal(result.Stdout, &response); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &response); err != nil {
 		return "", false, fmt.Errorf("%w: %v", ErrInvalidPullRequestCodeownersResponse, err)
 	}
 	if response.Data == nil || response.Data.Repository == nil {

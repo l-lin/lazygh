@@ -2,7 +2,6 @@ package githubcli
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -29,7 +28,7 @@ type Runner interface {
 }
 
 type Client struct {
-	runner Runner
+	transport sharedTransport
 }
 
 type ConnectedUser struct {
@@ -54,17 +53,17 @@ func NewClientWithRunner(runner Runner) *Client {
 		runner = execRunner{}
 	}
 
-	return &Client{runner: runner}
+	return &Client{transport: newSharedTransport(runner)}
 }
 
 func (client *Client) GetConnectedUser() (ConnectedUser, error) {
-	result, err := client.runGH("gh api user", "api", "user")
+	result, err := client.doREST(RESTRequest{Path: "user"})
 	if err != nil {
 		return ConnectedUser{}, err
 	}
 
 	var user ConnectedUser
-	if err := json.Unmarshal(result.Stdout, &user); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &user); err != nil {
 		return ConnectedUser{}, fmt.Errorf("%w: %v", ErrInvalidConnectedUserResponse, err)
 	}
 

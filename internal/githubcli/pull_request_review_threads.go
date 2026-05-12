@@ -140,23 +140,12 @@ func (client *Client) listPullRequestReviewThreads(repository string, number int
 }
 
 func (client *Client) pullRequestReviewThreadsPage(owner string, name string, number int, cursor string) (pullRequestReviewThreadsPage, error) {
-	args := []string{
-		"api",
-		"graphql",
-		"-f",
-		"query=" + pullRequestReviewThreadsQuery,
-		"-F",
-		"owner=" + strings.TrimSpace(owner),
-		"-F",
-		"name=" + strings.TrimSpace(name),
-		"-F",
-		fmt.Sprintf("number=%d", number),
-	}
+	request := GraphQLRequest{Query: pullRequestReviewThreadsQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}}
 	if strings.TrimSpace(cursor) != "" {
-		args = append(args, "-F", "cursor="+strings.TrimSpace(cursor))
+		request.Variables = append(request.Variables, typedGraphQLVariable("cursor", strings.TrimSpace(cursor)))
 	}
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return pullRequestReviewThreadsPage{}, err
 	}
@@ -191,17 +180,7 @@ func (client *Client) pullRequestReviewThreadCommentsPage(threadID string, curso
 		return pullRequestReviewThreadCommentsPage{}, ErrInvalidPullRequestReviewThreadsResponse
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+pullRequestReviewThreadCommentsQuery,
-		"-F",
-		"threadID="+trimmedThreadID,
-		"-F",
-		"cursor="+trimmedCursor,
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestReviewThreadCommentsQuery, Variables: []GraphQLVariable{typedGraphQLVariable("threadID", trimmedThreadID), typedGraphQLVariable("cursor", trimmedCursor)}})
 	if err != nil {
 		return pullRequestReviewThreadCommentsPage{}, err
 	}

@@ -33,15 +33,7 @@ func (client *Client) updatePullRequestReviewThreadResolution(threadID string, r
 		responseField = "unresolveReviewThread"
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+mutation,
-		"-f",
-		"threadId="+trimmedThreadID,
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: mutation, Variables: []GraphQLVariable{literalGraphQLVariable("threadId", trimmedThreadID)}})
 	if err != nil {
 		return err
 	}

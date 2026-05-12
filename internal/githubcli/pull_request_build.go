@@ -1,7 +1,6 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -46,13 +45,13 @@ func (client *Client) listPullRequestBuildInfos(repository string, number int) (
 		return nil, err
 	}
 
-	result, err := client.runGH("gh pr checks", "pr", "checks", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestBuildJSONFields)
+	result, err := client.execute(rawCommand("pr", "checks", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestBuildJSONFields))
 	if err != nil {
 		return nil, err
 	}
 
 	var buildInfos []PullRequestBuildInfo
-	if err := json.Unmarshal(result.Stdout, &buildInfos); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &buildInfos); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestBuildResponse, err)
 	}
 

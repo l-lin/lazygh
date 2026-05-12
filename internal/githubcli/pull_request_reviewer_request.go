@@ -19,8 +19,7 @@ func (client *Client) RequestPullRequestReviewer(repository string, number int, 
 		return ErrMissingPullRequestReviewer
 	}
 
-	if _, err := client.runGH(
-		"gh pr edit",
+	if _, err := client.execute(rawCommand(
 		"pr",
 		"edit",
 		strconv.Itoa(number),
@@ -28,7 +27,7 @@ func (client *Client) RequestPullRequestReviewer(repository string, number int, 
 		trimmedRepository,
 		"--add-reviewer",
 		trimmedReviewerLogin,
-	); err != nil {
+	)); err != nil {
 		return err
 	}
 

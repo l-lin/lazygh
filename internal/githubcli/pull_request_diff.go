@@ -1,7 +1,6 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -51,13 +50,7 @@ func (client *Client) GetPullRequestDiff(repository string, number int) (PullReq
 }
 
 func (client *Client) getPullRequestUnifiedDiff(repository string, number int) (string, error) {
-	result, err := client.runGH(
-		"gh api pull request diff",
-		"api",
-		fmt.Sprintf("repos/%s/pulls/%d", repository, number),
-		"-H",
-		"Accept: application/vnd.github.v3.diff",
-	)
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/pulls/%d", repository, number), Headers: []RESTHeader{{Name: "Accept", Value: "application/vnd.github.v3.diff"}}})
 	if err != nil {
 		return "", err
 	}
@@ -66,30 +59,13 @@ func (client *Client) getPullRequestUnifiedDiff(repository string, number int) (
 }
 
 func (client *Client) listPullRequestDiffFiles(repository string, number int) ([]PullRequestDiffFile, error) {
-	result, err := client.runGH(
-		"gh api pull request diff files",
-		"api",
-		fmt.Sprintf("repos/%s/pulls/%d/files?per_page=100", repository, number),
-		"--paginate",
-		"--slurp",
-	)
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/pulls/%d/files?per_page=100", repository, number), Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, err
 	}
 
-	var pagedFiles [][]PullRequestDiffFile
-	if err := json.Unmarshal(result.Stdout, &pagedFiles); err == nil {
-		files := make([]PullRequestDiffFile, 0)
-		for _, page := range pagedFiles {
-			for _, file := range page {
-				files = append(files, file.normalized())
-			}
-		}
-		return files, nil
-	}
-
 	var files []PullRequestDiffFile
-	if err := json.Unmarshal(result.Stdout, &files); err != nil {
+	if err := client.decodePaginatedOrFlatJSON(result.Stdout, &files); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestDiffFilesResponse, err)
 	}
 	for index := range files {

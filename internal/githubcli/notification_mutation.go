@@ -29,7 +29,7 @@ func (client *Client) MarkNotificationRead(threadID string) error {
 		return err
 	}
 
-	if _, err := client.runGH("gh api notification thread read", "api", threadAPIPath, "--method", "PATCH"); err != nil {
+	if _, err := client.doREST(RESTRequest{Path: threadAPIPath, Method: "PATCH"}); err != nil {
 		return normalizeNotificationEndpointError(err)
 	}
 	return nil
@@ -41,14 +41,14 @@ func (client *Client) MarkNotificationDone(threadID string) error {
 		return err
 	}
 
-	if _, err := client.runGH("gh api notification thread done", "api", threadAPIPath, "--method", "DELETE"); err != nil {
+	if _, err := client.doREST(RESTRequest{Path: threadAPIPath, Method: "DELETE"}); err != nil {
 		return normalizeNotificationEndpointError(err)
 	}
 	return nil
 }
 
 func (client *Client) MarkAllNotificationsRead() (NotificationBulkReadResult, error) {
-	result, err := client.runGH("gh api notifications read", "api", notificationsBulkReadAPIPath, "--method", "PUT", "--include")
+	result, err := client.doREST(RESTRequest{Path: notificationsBulkReadAPIPath, Method: "PUT", Include: true})
 	if err != nil {
 		return NotificationBulkReadResult{}, normalizeNotificationEndpointError(err)
 	}

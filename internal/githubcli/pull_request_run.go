@@ -1,15 +1,12 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-
-	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 var (
@@ -41,7 +38,7 @@ func (client *Client) GetPullRequestBuildRun(repository string, check PullReques
 		return "", err
 	}
 
-	result, err := client.runGH("gh run view", args...)
+	result, err := client.execute(rawCommand(args...))
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +52,7 @@ func (client *Client) GetPullRequestBuildRunJobs(repository string, check PullRe
 		return nil, err
 	}
 
-	result, err := client.runGH("gh run view", args...)
+	result, err := client.execute(rawCommand(args...))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +60,7 @@ func (client *Client) GetPullRequestBuildRunJobs(repository string, check PullRe
 	var response struct {
 		Jobs []PullRequestBuildRunJob `json:"jobs"`
 	}
-	if err := json.Unmarshal(result.Stdout, &response); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &response); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestBuildResponse, err)
 	}
 
@@ -80,7 +77,7 @@ func (client *Client) GetPullRequestBuildRunJobLog(repository string, jobDatabas
 		return "", err
 	}
 
-	result, err := client.runGH("gh run view", args...)
+	result, err := client.execute(rawCommand(args...))
 	if err != nil {
 		return "", err
 	}
@@ -109,25 +106,25 @@ func (client *Client) GetPullRequestBuildRunJobLogForCheck(repository string, ch
 func FormatPullRequestBuildRunCommand(repository string, check PullRequestStatusCheck) string {
 	args, err := pullRequestBuildRunCommandArguments(repository, check)
 	if err != nil {
-		return appconfig.FormatGHCommand([]string{"run", "view"})
+		return formatCommand("run", "view")
 	}
-	return appconfig.FormatGHCommand(args)
+	return formatCommandArguments(args)
 }
 
 func FormatPullRequestBuildRunJobsCommand(repository string, check PullRequestStatusCheck) string {
 	args, err := pullRequestBuildRunJobsCommandArguments(repository, check)
 	if err != nil {
-		return appconfig.FormatGHCommand([]string{"run", "view"})
+		return formatCommand("run", "view")
 	}
-	return appconfig.FormatGHCommand(args)
+	return formatCommandArguments(args)
 }
 
 func FormatPullRequestBuildRunJobLogCommand(repository string, jobDatabaseID int) string {
 	args, err := pullRequestBuildRunJobLogCommandArguments(repository, jobDatabaseID)
 	if err != nil {
-		return appconfig.FormatGHCommand([]string{"run", "view"})
+		return formatCommand("run", "view")
 	}
-	return appconfig.FormatGHCommand(args)
+	return formatCommandArguments(args)
 }
 
 func pullRequestBuildRunCommandArguments(repository string, check PullRequestStatusCheck) ([]string, error) {

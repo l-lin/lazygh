@@ -31,24 +31,12 @@ func (client *Client) SubmitPullRequestReview(pullRequestReviewID string, event 
 		return err
 	}
 
-	args := []string{
-		"api",
-		"graphql",
-		"-f",
-		"query=" + submitPullRequestReviewMutation,
-		"-f",
-		"pullRequestReviewId=" + trimmedReviewID,
-		"-f",
-		"event=" + string(normalizedEvent),
-	}
+	request := GraphQLRequest{Query: submitPullRequestReviewMutation, Variables: []GraphQLVariable{literalGraphQLVariable("pullRequestReviewId", trimmedReviewID), literalGraphQLVariable("event", string(normalizedEvent))}}
 	if strings.TrimSpace(body) != "" {
-		args = append(args,
-			"-f",
-			"body="+body,
-		)
+		request.Variables = append(request.Variables, literalGraphQLVariable("body", body))
 	}
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return err
 	}

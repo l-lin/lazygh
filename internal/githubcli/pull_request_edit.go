@@ -17,7 +17,7 @@ func (client *Client) EditPullRequestTitle(repository string, number int, title 
 		return err
 	}
 
-	if _, err := client.runGH("gh pr edit", "pr", "edit", strconv.Itoa(number), "-R", trimmedRepository, "--title", trimmedTitle); err != nil {
+	if _, err := client.execute(rawCommand("pr", "edit", strconv.Itoa(number), "-R", trimmedRepository, "--title", trimmedTitle)); err != nil {
 		return err
 	}
 
@@ -30,7 +30,7 @@ func (client *Client) EditPullRequestDescription(repository string, number int, 
 		return err
 	}
 
-	if _, err := client.runGHWithInput("gh pr edit", []byte(body), "pr", "edit", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-"); err != nil {
+	if _, err := client.execute(rawCommandWithInput([]byte(body), "pr", "edit", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-")); err != nil {
 		return err
 	}
 

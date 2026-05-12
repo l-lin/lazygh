@@ -157,13 +157,13 @@ type PullRequestStatusCheck struct {
 
 func (client *Client) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
 	trimmedRepository := strings.TrimSpace(repository)
-	result, err := client.runGH("gh pr view", "pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestDetailJSONFields)
+	result, err := client.execute(rawCommand("pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestDetailJSONFields))
 	if err != nil {
 		return PullRequestDetail{}, err
 	}
 
 	var detail PullRequestDetail
-	if err := json.Unmarshal(result.Stdout, &detail); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &detail); err != nil {
 		return PullRequestDetail{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestDetailResponse, err)
 	}
 	if len(detail.StatusCheckRollup) > 0 {
@@ -214,25 +214,16 @@ func (client *Client) GetPullRequestDetail(repository string, number int) (PullR
 }
 
 func (client *Client) listPullRequestInlineComments(repository string, number int) ([]PullRequestInlineComment, error) {
-	result, err := client.runGH("gh api pull request inline comments", "api", fmt.Sprintf("repos/%s/pulls/%d/comments?per_page=100", strings.TrimSpace(repository), number), "--paginate", "--slurp")
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/pulls/%d/comments?per_page=100", strings.TrimSpace(repository), number), Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, err
 	}
 
-	var pagedComments [][]PullRequestInlineComment
-	if err := json.Unmarshal(result.Stdout, &pagedComments); err != nil {
-		var comments []PullRequestInlineComment
-		if err := json.Unmarshal(result.Stdout, &comments); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestInlineCommentResponse, err)
-		}
-		return comments, nil
+	var comments []PullRequestInlineComment
+	if err := client.decodePaginatedOrFlatJSON(result.Stdout, &comments); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestInlineCommentResponse, err)
 	}
-
-	flattenedComments := make([]PullRequestInlineComment, 0)
-	for _, page := range pagedComments {
-		flattenedComments = append(flattenedComments, page...)
-	}
-	return flattenedComments, nil
+	return comments, nil
 }
 
 func pullRequestInlineCommentReactionTargetIDs(comments []PullRequestInlineComment) []string {

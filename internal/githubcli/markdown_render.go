@@ -21,7 +21,7 @@ func (client *Client) RenderMarkdownHTML(repository string, markdown string) (st
 		return "", err
 	}
 
-	result, err := client.runGHWithInput("gh api markdown", requestBody, "api", "markdown", "--method", "POST", "--input", "-")
+	result, err := client.doREST(RESTRequest{Path: "markdown", Method: "POST", Input: requestBody, DisplayArgs: []string{"api", "markdown", "--method", "POST", "--input", "-"}})
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +29,7 @@ func (client *Client) RenderMarkdownHTML(repository string, markdown string) (st
 }
 
 func (client *Client) GetAuthToken() (string, error) {
-	result, err := client.runGH("gh auth token", "auth", "token")
+	result, err := client.execute(rawCommand("auth", "token"))
 	if err != nil {
 		return "", err
 	}

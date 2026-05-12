@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -36,36 +35,22 @@ func (client *Client) AddPullRequestReviewThread(pullRequestReviewID string, bod
 		return err
 	}
 
-	args := []string{
-		"api",
-		"graphql",
-		"-f",
-		"query=" + addPullRequestReviewThreadMutation,
-		"-f",
-		"pullRequestReviewId=" + trimmedReviewID,
-		"-f",
-		"path=" + normalizedTarget.Path,
-		"-F",
-		"line=" + strconv.Itoa(normalizedTarget.Line),
-		"-f",
-		"side=" + normalizedTarget.Side,
-		"-f",
-		"body=" + body,
-	}
+	request := GraphQLRequest{Query: addPullRequestReviewThreadMutation, Variables: []GraphQLVariable{
+		literalGraphQLVariable("pullRequestReviewId", trimmedReviewID),
+		literalGraphQLVariable("path", normalizedTarget.Path),
+		typedGraphQLVariable("line", normalizedTarget.Line),
+		literalGraphQLVariable("side", normalizedTarget.Side),
+		literalGraphQLVariable("body", body),
+	}}
 	if normalizedTarget.StartLine > 0 {
-		args = append(args,
-			"-F",
-			"startLine="+strconv.Itoa(normalizedTarget.StartLine),
-			"-f",
-			"startSide="+normalizedTarget.StartSide,
+		request.Variables = append(request.Variables,
+			typedGraphQLVariable("startLine", normalizedTarget.StartLine),
+			literalGraphQLVariable("startSide", normalizedTarget.StartSide),
 		)
 	}
-	args = append(args,
-		"-f",
-		"subjectType="+normalizedTarget.SubjectType,
-	)
+	request.Variables = append(request.Variables, literalGraphQLVariable("subjectType", normalizedTarget.SubjectType))
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return err
 	}

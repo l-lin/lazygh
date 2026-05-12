@@ -37,17 +37,7 @@ func (client *Client) UpdatePullRequestComment(commentID string, body string) er
 		return err
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+updatePullRequestCommentMutation,
-		"-f",
-		"id="+trimmedCommentID,
-		"-f",
-		"body="+body,
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: updatePullRequestCommentMutation, Variables: []GraphQLVariable{literalGraphQLVariable("id", trimmedCommentID), literalGraphQLVariable("body", body)}})
 	if err != nil {
 		return err
 	}
@@ -61,15 +51,7 @@ func (client *Client) DeletePullRequestComment(commentID string) error {
 		return ErrInvalidPullRequestCommentMutation
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+deletePullRequestCommentMutation,
-		"-f",
-		"id="+trimmedCommentID,
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: deletePullRequestCommentMutation, Variables: []GraphQLVariable{literalGraphQLVariable("id", trimmedCommentID)}})
 	if err != nil {
 		return err
 	}

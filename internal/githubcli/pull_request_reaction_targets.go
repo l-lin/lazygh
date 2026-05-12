@@ -95,23 +95,12 @@ func (client *Client) listPullRequestReactionTargets(repository string, number i
 }
 
 func (client *Client) loadPullRequestReactionTargetsPage(owner string, name string, number int, cursor string) (pullRequestReactionTargetsPage, error) {
-	args := []string{
-		"api",
-		"graphql",
-		"-f",
-		"query=" + pullRequestReactionTargetsQuery,
-		"-F",
-		"owner=" + strings.TrimSpace(owner),
-		"-F",
-		"name=" + strings.TrimSpace(name),
-		"-F",
-		fmt.Sprintf("number=%d", number),
-	}
+	request := GraphQLRequest{Query: pullRequestReactionTargetsQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}}
 	if strings.TrimSpace(cursor) != "" {
-		args = append(args, "-F", "cursor="+strings.TrimSpace(cursor))
+		request.Variables = append(request.Variables, typedGraphQLVariable("cursor", strings.TrimSpace(cursor)))
 	}
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return pullRequestReactionTargetsPage{}, err
 	}
@@ -173,12 +162,12 @@ func (client *Client) pullRequestReviewCommentReactionGroupsBatch(ids []string) 
 		return nil, nil
 	}
 
-	args := []string{"api", "graphql", "-f", "query=" + pullRequestReviewCommentReactionGroupsQuery}
+	request := GraphQLRequest{Query: pullRequestReviewCommentReactionGroupsQuery}
 	for _, id := range trimmedIDs {
-		args = append(args, "-F", "ids[]="+id)
+		request.Variables = append(request.Variables, typedGraphQLVariable("ids[]", id))
 	}
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return nil, err
 	}

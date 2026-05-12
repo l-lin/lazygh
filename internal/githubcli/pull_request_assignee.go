@@ -1,13 +1,10 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
-
-	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 var ErrInvalidAssignableUsersResponse = fmt.Errorf("invalid assignable users response")
@@ -20,13 +17,7 @@ func (client *Client) ListAssignableUsers(repository string) ([]PullRequestAutho
 		return nil, ErrMissingPullRequestIdentity
 	}
 
-	result, err := client.runGH(
-		"gh api repos/{owner}/{repo}/assignees",
-		"api",
-		fmt.Sprintf("repos/%s/assignees?per_page=%d", trimmedRepository, assignableUsersPerPage),
-		"--paginate",
-		"--slurp",
-	)
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/assignees?per_page=%d", trimmedRepository, assignableUsersPerPage), Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +45,7 @@ func (client *Client) UpdatePullRequestAssignees(repository string, number int, 
 		args = append(args, "--remove-assignee", strings.Join(normalizedRemoveLogins, ","))
 	}
 
-	if _, err := client.runGH("gh pr edit", args...); err != nil {
+	if _, err := client.execute(rawCommand(args...)); err != nil {
 		return err
 	}
 
@@ -62,17 +53,11 @@ func (client *Client) UpdatePullRequestAssignees(repository string, number int, 
 }
 
 func parseAssignableUsers(stdout []byte) ([]PullRequestAuthor, error) {
-	var pagedUsers [][]PullRequestAuthor
-	if err := json.Unmarshal(stdout, &pagedUsers); err == nil {
-		flattenedUsers := make([]PullRequestAuthor, 0)
-		for _, page := range pagedUsers {
-			flattenedUsers = append(flattenedUsers, page...)
-		}
-		return normalizeAssignableUsers(flattenedUsers), nil
-	}
-
 	var flatUsers []PullRequestAuthor
-	if err := json.Unmarshal(stdout, &flatUsers); err != nil {
+	if err := (paginator{}).DecodeSlurpedJSON(stdout, &flatUsers); err == nil {
+		return normalizeAssignableUsers(flatUsers), nil
+	}
+	if err := (responseDecoder{}).DecodeJSON(stdout, &flatUsers); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidAssignableUsersResponse, err)
 	}
 
@@ -99,9 +84,9 @@ func normalizeAssignableUsers(users []PullRequestAuthor) []PullRequestAuthor {
 func FormatAssignableUsersCommand(repository string) string {
 	trimmedRepository := strings.TrimSpace(repository)
 	if trimmedRepository == "" || trimmedRepository == "-" {
-		return appconfig.FormatGHCommand([]string{"api"})
+		return formatCommand("api")
 	}
-	return appconfig.FormatGHCommand([]string{"api", fmt.Sprintf("repos/%s/assignees?per_page=%d", trimmedRepository, assignableUsersPerPage), "--paginate", "--slurp"})
+	return formatCommand("api", fmt.Sprintf("repos/%s/assignees?per_page=%d", trimmedRepository, assignableUsersPerPage), "--paginate", "--slurp")
 }
 
 func normalizePullRequestAssigneeLogins(logins []string) []string {

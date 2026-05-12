@@ -37,17 +37,7 @@ func (client *Client) mutateReaction(mutation string, subjectID string, content 
 		return err
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+mutation,
-		"-f",
-		"subjectId="+trimmedSubjectID,
-		"-f",
-		"content="+reactionEnum,
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: mutation, Variables: []GraphQLVariable{literalGraphQLVariable("subjectId", trimmedSubjectID), literalGraphQLVariable("content", reactionEnum)}})
 	if err != nil {
 		return err
 	}

@@ -33,24 +33,15 @@ func (client *Client) AddPullRequestReviewThreadReply(pullRequestReviewID string
 		return err
 	}
 
-	args := []string{
-		"api",
-		"graphql",
-		"-f",
-		"query=" + addPullRequestReviewThreadReplyMutation,
-		"-f",
-		"pullRequestReviewThreadId=" + trimmedThreadID,
-		"-f",
-		"body=" + body,
-	}
+	request := GraphQLRequest{Query: addPullRequestReviewThreadReplyMutation, Variables: []GraphQLVariable{
+		literalGraphQLVariable("pullRequestReviewThreadId", trimmedThreadID),
+		literalGraphQLVariable("body", body),
+	}}
 	if trimmedReviewID := strings.TrimSpace(pullRequestReviewID); trimmedReviewID != "" {
-		args = append(args,
-			"-f",
-			"pullRequestReviewId="+trimmedReviewID,
-		)
+		request.Variables = append(request.Variables, literalGraphQLVariable("pullRequestReviewId", trimmedReviewID))
 	}
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,7 @@ func (client *Client) OpenPullRequestInBrowser(repository string, number int) er
 		return err
 	}
 
-	if _, err := client.runGH("gh pr view", "pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--web"); err != nil {
+	if _, err := client.execute(rawCommand("pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--web")); err != nil {
 		return err
 	}
 

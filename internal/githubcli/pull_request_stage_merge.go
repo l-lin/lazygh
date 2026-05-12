@@ -16,7 +16,7 @@ func (client *Client) ClosePullRequest(repository string, number int) error {
 		return err
 	}
 
-	if _, err := client.runGH("gh pr close", "pr", "close", strconv.Itoa(number), "-R", trimmedRepository); err != nil {
+	if _, err := client.execute(rawCommand("pr", "close", strconv.Itoa(number), "-R", trimmedRepository)); err != nil {
 		return err
 	}
 
@@ -29,7 +29,7 @@ func (client *Client) ReopenPullRequest(repository string, number int) error {
 		return err
 	}
 
-	if _, err := client.runGH("gh pr reopen", "pr", "reopen", strconv.Itoa(number), "-R", trimmedRepository); err != nil {
+	if _, err := client.execute(rawCommand("pr", "reopen", strconv.Itoa(number), "-R", trimmedRepository)); err != nil {
 		return err
 	}
 
@@ -46,7 +46,7 @@ func (client *Client) runPullRequestReady(repository string, number int, undo bo
 	if undo {
 		arguments = append(arguments, "--undo")
 	}
-	if _, err := client.runGH("gh pr ready", arguments...); err != nil {
+	if _, err := client.execute(rawCommand(arguments...)); err != nil {
 		return err
 	}
 
@@ -59,7 +59,7 @@ func (client *Client) SquashMergePullRequest(repository string, number int) erro
 		return err
 	}
 
-	if _, err := client.runGH("gh pr merge", "pr", "merge", strconv.Itoa(number), "-R", trimmedRepository, "--squash"); err != nil {
+	if _, err := client.execute(rawCommand("pr", "merge", strconv.Itoa(number), "-R", trimmedRepository, "--squash")); err != nil {
 		return err
 	}
 

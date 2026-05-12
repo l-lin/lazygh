@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 var (
@@ -134,13 +132,13 @@ type pullRequestListReviewMetadataResponse struct {
 
 func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
 	resolvedCommandArguments := pullRequestSearchCommandArguments(commandArguments)
-	result, err := client.runGH(FormatPullRequestSearchCommand(commandArguments), resolvedCommandArguments...)
+	result, err := client.execute(rawCommand(resolvedCommandArguments...))
 	if err != nil {
 		return nil, err
 	}
 
 	var pullRequests []PullRequest
-	if err := json.Unmarshal(result.Stdout, &pullRequests); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &pullRequests); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestResponse, err)
 	}
 
@@ -200,12 +198,12 @@ func (client *Client) listPullRequestReviewMetadataBatch(ids []string) (map[stri
 		return nil, nil
 	}
 
-	args := []string{"api", "graphql", "-f", "query=" + pullRequestListReviewMetadataQuery}
+	request := GraphQLRequest{Query: pullRequestListReviewMetadataQuery}
 	for _, id := range ids {
-		args = append(args, "-F", "ids[]="+id)
+		request.Variables = append(request.Variables, typedGraphQLVariable("ids[]", id))
 	}
 
-	result, err := client.runGH("gh api graphql", args...)
+	result, err := client.queryGraphQL(request)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +294,7 @@ func pullRequestListStatusCheckRollupState(nodes []struct {
 }
 
 func FormatPullRequestSearchCommand(commandArguments []string) string {
-	return appconfig.FormatGHCommand(pullRequestSearchCommandArguments(commandArguments))
+	return formatCommandArguments(pullRequestSearchCommandArguments(commandArguments))
 }
 
 func pullRequestSearchCommandArguments(commandArguments []string) []string {

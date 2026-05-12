@@ -1,7 +1,6 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -73,22 +72,13 @@ type ReleaseDetail struct {
 }
 
 func (client *Client) ListNotifications() ([]Notification, error) {
-	result, err := client.runGH("gh api notifications", "api", notificationsListAPIPath, "--paginate", "--slurp")
+	result, err := client.doREST(RESTRequest{Path: notificationsListAPIPath, Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, normalizeNotificationEndpointError(err)
 	}
 
-	var pagedNotifications [][]Notification
-	if err := json.Unmarshal(result.Stdout, &pagedNotifications); err == nil {
-		flattenedNotifications := make([]Notification, 0)
-		for _, page := range pagedNotifications {
-			flattenedNotifications = append(flattenedNotifications, page...)
-		}
-		return normalizedNotifications(flattenedNotifications), nil
-	}
-
 	var notifications []Notification
-	if err := json.Unmarshal(result.Stdout, &notifications); err != nil {
+	if err := client.decodePaginatedOrFlatJSON(result.Stdout, &notifications); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidNotificationResponse, err)
 	}
 	return normalizedNotifications(notifications), nil
@@ -100,13 +90,13 @@ func (client *Client) GetIssueDetail(repository string, number int) (IssueDetail
 		return IssueDetail{}, err
 	}
 
-	result, err := client.runGH("gh api issue detail", "api", fmt.Sprintf("repos/%s/issues/%d", trimmedRepository, number))
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/issues/%d", trimmedRepository, number)})
 	if err != nil {
 		return IssueDetail{}, err
 	}
 
 	var detail IssueDetail
-	if err := json.Unmarshal(result.Stdout, &detail); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &detail); err != nil {
 		return IssueDetail{}, fmt.Errorf("%w: %v", ErrInvalidIssueDetailResponse, err)
 	}
 	return detail.normalized(), nil
@@ -118,13 +108,13 @@ func (client *Client) GetReleaseDetail(repository string, id int) (ReleaseDetail
 		return ReleaseDetail{}, err
 	}
 
-	result, err := client.runGH("gh api release detail", "api", fmt.Sprintf("repos/%s/releases/%d", trimmedRepository, id))
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/releases/%d", trimmedRepository, id)})
 	if err != nil {
 		return ReleaseDetail{}, err
 	}
 
 	var detail ReleaseDetail
-	if err := json.Unmarshal(result.Stdout, &detail); err != nil {
+	if err := client.transport.decoder.DecodeJSON(result.Stdout, &detail); err != nil {
 		return ReleaseDetail{}, fmt.Errorf("%w: %v", ErrInvalidReleaseDetailResponse, err)
 	}
 	return detail.normalized(), nil

@@ -30,15 +30,7 @@ func (client *Client) DeletePullRequestReview(pullRequestReviewID string) error 
 		return ErrInvalidPullRequestReviewDeletion
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+deletePullRequestReviewMutation,
-		"-f",
-		"pullRequestReviewId="+trimmedReviewID,
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: deletePullRequestReviewMutation, Variables: []GraphQLVariable{literalGraphQLVariable("pullRequestReviewId", trimmedReviewID)}})
 	if err != nil {
 		return err
 	}

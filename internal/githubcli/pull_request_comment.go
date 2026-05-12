@@ -19,7 +19,7 @@ func (client *Client) CommentOnPullRequest(repository string, number int, body s
 		return err
 	}
 
-	if _, err := client.runGHWithInput("gh pr comment", []byte(body), "pr", "comment", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-"); err != nil {
+	if _, err := client.execute(rawCommandWithInput([]byte(body), "pr", "comment", strconv.Itoa(number), "-R", trimmedRepository, "--body-file", "-")); err != nil {
 		return err
 	}
 

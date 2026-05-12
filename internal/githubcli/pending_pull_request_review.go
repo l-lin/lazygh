@@ -33,7 +33,7 @@ func (client *Client) StartPendingPullRequestReview(repository string, number in
 		return lookup.pendingReviewID, nil
 	}
 
-	result, err := client.runGH("gh api graphql", "api", "graphql", "-f", "query="+addPendingPullRequestReviewMutation, "-F", "pullRequestId="+lookup.pullRequestID)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: addPendingPullRequestReviewMutation, Variables: []GraphQLVariable{typedGraphQLVariable("pullRequestId", lookup.pullRequestID)}})
 	if err != nil {
 		return "", err
 	}
@@ -57,19 +57,7 @@ func (client *Client) pendingPullRequestReviewLookup(repository string, number i
 		return pendingPullRequestReviewLookupResult{}, err
 	}
 
-	result, err := client.runGH(
-		"gh api graphql",
-		"api",
-		"graphql",
-		"-f",
-		"query="+pendingPullRequestReviewQuery,
-		"-F",
-		"owner="+owner,
-		"-F",
-		"name="+name,
-		"-F",
-		fmt.Sprintf("number=%d", number),
-	)
+	result, err := client.queryGraphQL(GraphQLRequest{Query: pendingPullRequestReviewQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", owner), typedGraphQLVariable("name", name), typedGraphQLVariable("number", number)}})
 	if err != nil {
 		return pendingPullRequestReviewLookupResult{}, err
 	}
