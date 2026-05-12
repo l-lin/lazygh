@@ -26,6 +26,6 @@ func (program *Program) ApplyCacheConfig(config appconfig.CacheConfig) error {
 	}
 
 	program.pullRequestCache = store
-	program.notificationDoneStore = doneStore
+	program.notificationDoneStore = notificationDoneStoreAdapter{store: doneStore}
 	return nil
 }

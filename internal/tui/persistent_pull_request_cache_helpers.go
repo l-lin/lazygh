@@ -24,7 +24,7 @@ func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.Pull
 		return false
 	}
 
-	clonedDetail := clonePullRequestDetail(cached.Detail)
+	clonedDetail := clonePullRequestDetail(githubcli.PullRequestDetailFromDomain(cached.Detail))
 	program.pullRequestDetailCache[key] = pullRequestDetailResult{
 		detail:          clonedDetail,
 		sourceUpdatedAt: strings.TrimSpace(cached.SourceUpdatedAt),
@@ -57,7 +57,7 @@ func (program *Program) cachePullRequestDetail(summary githubcli.PullRequest, de
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequestDetail(summary, detail)
+	_ = program.pullRequestCache.SavePullRequestDetail(githubcli.ToDomainPullRequestSummary(summary), githubcli.ToDomainPullRequestDetail(detail))
 }
 
 func (program *Program) hydratePullRequestDiffFromCache(summary githubcli.PullRequest) bool {
@@ -78,11 +78,12 @@ func (program *Program) hydratePullRequestDiffFromCache(summary githubcli.PullRe
 		return false
 	}
 
+	convertedDiff := githubcli.PullRequestDiffFromDomain(cached.Diff)
 	program.pullRequestDiffCache[key] = pullRequestDiffResult{
-		data:                    buildReviewDiffData(cached.Diff),
+		data:                    buildReviewDiffData(convertedDiff),
 		sourceUpdatedAt:         strings.TrimSpace(cached.SourceUpdatedAt),
 		needsRefresh:            cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt),
-		fileTeamOwnersAttempted: cached.Diff.FileTeamOwnersAttempted,
+		fileTeamOwnersAttempted: convertedDiff.FileTeamOwnersAttempted,
 	}
 	program.invalidateReviewDiffRenderCache()
 	program.clampReviewSessionSelection()
@@ -116,7 +117,7 @@ func (program *Program) cachePullRequestDiff(summary githubcli.PullRequest, diff
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequestDiff(summary, diff)
+	_ = program.pullRequestCache.SavePullRequestDiff(githubcli.ToDomainPullRequestSummary(summary), githubcli.ToDomainPullRequestDiff(diff))
 }
 
 func (program *Program) invalidatePersistentPullRequest(repository string, number int) {

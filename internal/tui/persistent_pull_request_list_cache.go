@@ -12,8 +12,9 @@ func (program *Program) hydratePullRequestsFromCache(tab PullRequestTab) bool {
 		return false
 	}
 
-	program.setPullRequestsCount(tab, len(pullRequests), true)
-	program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, pullRequests, nil))
+	convertedPullRequests := githubcli.PullRequestsFromDomain(pullRequests)
+	program.setPullRequestsCount(tab, len(convertedPullRequests), true)
+	program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, convertedPullRequests, nil))
 	return true
 }
 
@@ -31,7 +32,7 @@ func (program *Program) cachePullRequests(tab PullRequestTab, pullRequests []git
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequests(program.pullRequestSearch(tab), pullRequests)
+	_ = program.pullRequestCache.SavePullRequests(program.pullRequestSearch(tab), githubcli.ToDomainPullRequests(pullRequests))
 }
 
 func (program *Program) shouldPreservePullRequestRowsOnRefreshError(tab PullRequestTab) bool {

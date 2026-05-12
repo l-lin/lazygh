@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 )
 
 func TestStore_Clear_GivenStoredListsDetailsAndDiffs_WhenClearing_ThenItWipesThePersistentCache(t *testing.T) {

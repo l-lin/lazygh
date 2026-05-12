@@ -8,6 +8,7 @@ import (
 
 	persistcache "github.com/l-lin/lazygh/internal/cache"
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -174,7 +175,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSumma
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "cached123", MessageHeadline: "Cached commit"}}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "Fresh PR", Number: 42, Body: "Fresh body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "fresh123", MessageHeadline: "Fresh commit"}}}}}}
-	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": {Detail: cachedDetail, SourceUpdatedAt: summary.UpdatedAt}}}
+	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": given_cachedPersistentPullRequestDetail(cachedDetail, summary.UpdatedAt)}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
@@ -211,7 +212,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
 	freshDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Fresh body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "abc1234", MessageHeadline: "Fresh commit"}}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": freshDetail}}}
-	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": {Detail: cachedDetail, SourceUpdatedAt: summary.UpdatedAt}}}
+	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": given_cachedPersistentPullRequestDetail(cachedDetail, summary.UpdatedAt)}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
@@ -258,7 +259,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryV
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
 	freshDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Fresh body", State: "OPEN"}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": freshDetail}}}
-	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": {Detail: cachedDetail, SourceUpdatedAt: "2026-05-05T10:00:00Z"}}}
+	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": given_cachedPersistentPullRequestDetail(cachedDetail, "2026-05-05T10:00:00Z")}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
@@ -307,7 +308,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{detailErrors: map[string]error{"acme/widgets#42": errors.New("boom")}}}
-	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": {Detail: cachedDetail, SourceUpdatedAt: "2026-05-05T10:00:00Z"}}}
+	cache := &fakePersistentPullRequestCache{details: map[string]persistcache.CachedPullRequestDetail{"acme/widgets#42": given_cachedPersistentPullRequestDetail(cachedDetail, "2026-05-05T10:00:00Z")}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
@@ -346,7 +347,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": {UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh"}}}}
-	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: summary.UpdatedAt}}}
+	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": given_cachedPersistentPullRequestDiff(cachedDiff, summary.UpdatedAt)}}
 	asyncRunner := &capturingAsyncRunner{}
 	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
@@ -381,7 +382,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWi
 		diffs:          map[string]githubcli.PullRequestDiff{"acme/widgets#42": freshDiff},
 		fileTeamOwners: map[string]map[string][]string{"acme/widgets#42": {"main.go": {"P3C"}}},
 	}}
-	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: summary.UpdatedAt}}}
+	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": given_cachedPersistentPullRequestDiff(cachedDiff, summary.UpdatedAt)}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
@@ -463,7 +464,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 		FileTeamOwnersAttempted: true,
 	}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": freshDiff}}}
-	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": {Diff: cachedDiff, SourceUpdatedAt: "2026-05-05T10:00:00Z"}}}
+	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": given_cachedPersistentPullRequestDiff(cachedDiff, "2026-05-05T10:00:00Z")}}
 	asyncRunner := &capturingAsyncRunner{}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
@@ -553,6 +554,16 @@ func (loader *cacheAwarePullRequestLoader) ListPullRequests(commandArguments []s
 	return loader.fakePullRequestDetailLoader.ListPullRequests(commandArguments)
 }
 
+type fakeSavedPullRequestDetail struct {
+	Detail          githubcli.PullRequestDetail
+	SourceUpdatedAt string
+}
+
+type fakeSavedPullRequestDiff struct {
+	Diff            githubcli.PullRequestDiff
+	SourceUpdatedAt string
+}
+
 type fakePersistentPullRequestCache struct {
 	pullRequestsBySearchKey      map[string][]githubcli.PullRequest
 	notifications                []githubcli.Notification
@@ -560,37 +571,37 @@ type fakePersistentPullRequestCache struct {
 	diffs                        map[string]persistcache.CachedPullRequestDiff
 	savedPullRequestsBySearchKey map[string][]githubcli.PullRequest
 	savedNotifications           []githubcli.Notification
-	savedDetails                 map[string]persistcache.CachedPullRequestDetail
-	savedDiffs                   map[string]persistcache.CachedPullRequestDiff
+	savedDetails                 map[string]fakeSavedPullRequestDetail
+	savedDiffs                   map[string]fakeSavedPullRequestDiff
 	invalidatedPullRequests      []string
 	clearCalls                   int
 }
 
-func (cache *fakePersistentPullRequestCache) PullRequests(search appconfig.PullRequestSearch) ([]githubcli.PullRequest, bool, error) {
+func (cache *fakePersistentPullRequestCache) PullRequests(search appconfig.PullRequestSearch) ([]githubdomain.PullRequestSummary, bool, error) {
 	pullRequests, ok := cache.pullRequestsBySearchKey[fakePersistentPullRequestSearchKey(search)]
 	if !ok {
 		return nil, false, nil
 	}
-	return append([]githubcli.PullRequest(nil), pullRequests...), true, nil
+	return githubcli.ToDomainPullRequests(pullRequests), true, nil
 }
 
-func (cache *fakePersistentPullRequestCache) SavePullRequests(search appconfig.PullRequestSearch, pullRequests []githubcli.PullRequest) error {
+func (cache *fakePersistentPullRequestCache) SavePullRequests(search appconfig.PullRequestSearch, pullRequests []githubdomain.PullRequestSummary) error {
 	if cache.savedPullRequestsBySearchKey == nil {
 		cache.savedPullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
 	}
-	cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(search)] = append([]githubcli.PullRequest(nil), pullRequests...)
+	cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(search)] = githubcli.PullRequestsFromDomain(pullRequests)
 	return nil
 }
 
-func (cache *fakePersistentPullRequestCache) Notifications() ([]githubcli.Notification, bool, error) {
+func (cache *fakePersistentPullRequestCache) Notifications() ([]githubdomain.Notification, bool, error) {
 	if cache.notifications == nil {
 		return nil, false, nil
 	}
-	return append([]githubcli.Notification(nil), cache.notifications...), true, nil
+	return githubcli.ToDomainNotifications(cache.notifications), true, nil
 }
 
-func (cache *fakePersistentPullRequestCache) SaveNotifications(notifications []githubcli.Notification) error {
-	cache.savedNotifications = append([]githubcli.Notification(nil), notifications...)
+func (cache *fakePersistentPullRequestCache) SaveNotifications(notifications []githubdomain.Notification) error {
+	cache.savedNotifications = githubcli.NotificationsFromDomain(notifications)
 	return nil
 }
 
@@ -599,11 +610,11 @@ func (cache *fakePersistentPullRequestCache) PullRequestDetail(repository string
 	return detail, ok, nil
 }
 
-func (cache *fakePersistentPullRequestCache) SavePullRequestDetail(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) error {
+func (cache *fakePersistentPullRequestCache) SavePullRequestDetail(summary githubdomain.PullRequestSummary, detail githubdomain.PullRequestDetail) error {
 	if cache.savedDetails == nil {
-		cache.savedDetails = map[string]persistcache.CachedPullRequestDetail{}
+		cache.savedDetails = map[string]fakeSavedPullRequestDetail{}
 	}
-	cache.savedDetails[pullRequestDetailKey(summary.Repository, summary.Number)] = persistcache.CachedPullRequestDetail{Detail: detail, SourceUpdatedAt: summary.UpdatedAt}
+	cache.savedDetails[pullRequestDetailKey(githubcli.RepositoryFromDomain(summary.Repository), summary.Number)] = fakeSavedPullRequestDetail{Detail: githubcli.PullRequestDetailFromDomain(detail), SourceUpdatedAt: summary.UpdatedAt}
 	return nil
 }
 
@@ -612,11 +623,11 @@ func (cache *fakePersistentPullRequestCache) PullRequestDiff(repository string, 
 	return diff, ok, nil
 }
 
-func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubcli.PullRequest, diff githubcli.PullRequestDiff) error {
+func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubdomain.PullRequestSummary, diff githubdomain.PullRequestDiff) error {
 	if cache.savedDiffs == nil {
-		cache.savedDiffs = map[string]persistcache.CachedPullRequestDiff{}
+		cache.savedDiffs = map[string]fakeSavedPullRequestDiff{}
 	}
-	cache.savedDiffs[pullRequestDetailKey(summary.Repository, summary.Number)] = persistcache.CachedPullRequestDiff{Diff: diff, SourceUpdatedAt: summary.UpdatedAt}
+	cache.savedDiffs[pullRequestDetailKey(githubcli.RepositoryFromDomain(summary.Repository), summary.Number)] = fakeSavedPullRequestDiff{Diff: githubcli.PullRequestDiffFromDomain(diff), SourceUpdatedAt: summary.UpdatedAt}
 	return nil
 }
 
@@ -643,4 +654,12 @@ func (cache *fakePersistentPullRequestCache) Close() error {
 
 func fakePersistentPullRequestSearchKey(search appconfig.PullRequestSearch) string {
 	return strings.TrimSpace(search.Label) + "|" + strings.Join(search.Command, "\x00")
+}
+
+func given_cachedPersistentPullRequestDetail(detail githubcli.PullRequestDetail, sourceUpdatedAt string) persistcache.CachedPullRequestDetail {
+	return persistcache.CachedPullRequestDetail{Detail: githubcli.ToDomainPullRequestDetail(detail), SourceUpdatedAt: sourceUpdatedAt}
+}
+
+func given_cachedPersistentPullRequestDiff(diff githubcli.PullRequestDiff, sourceUpdatedAt string) persistcache.CachedPullRequestDiff {
+	return persistcache.CachedPullRequestDiff{Diff: githubcli.ToDomainPullRequestDiff(diff), SourceUpdatedAt: sourceUpdatedAt}
 }

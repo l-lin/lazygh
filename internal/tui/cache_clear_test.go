@@ -66,10 +66,10 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 			fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): {given_actionsPopupPullRequest()},
 		},
 		details: map[string]persistcache.CachedPullRequestDetail{
-			"acme/widgets#42": {Detail: githubcli.PullRequestDetail{Title: "Cached PR", Number: 42, Body: "Cached body"}},
+			"acme/widgets#42": {Detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Cached PR", Number: 42, Body: "Cached body"})},
 		},
 		diffs: map[string]persistcache.CachedPullRequestDiff{
-			"acme/widgets#42": {Diff: githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}},
+			"acme/widgets#42": {Diff: githubcli.ToDomainPullRequestDiff(githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}})},
 		},
 		notifications: []githubcli.Notification{given_cachedNotification("n-cached", "Cached notification")},
 	}

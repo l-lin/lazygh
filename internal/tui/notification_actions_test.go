@@ -177,7 +177,7 @@ func TestNotificationsView_GivenNotificationMarkedDone_WhenClearingCacheAndReloa
 	subject.pullRequestCache = cache
 	doneStore, actualErr := persistcache.OpenNotificationDoneStore(filepath.Join(t.TempDir(), "notification-done.json"))
 	then_noError(t, actualErr)
-	subject.notificationDoneStore = doneStore
+	subject.notificationDoneStore = notificationDoneStoreAdapter{store: doneStore}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

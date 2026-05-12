@@ -1,0 +1,245 @@
+package github
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+)
+
+const (
+	NotificationSubjectTypePullRequest = "PullRequest"
+	NotificationSubjectTypeIssue       = "Issue"
+	NotificationSubjectTypeRelease     = "Release"
+)
+
+var ErrMissingNotificationSubjectTarget = errors.New("missing notification subject target")
+
+type Notification struct {
+	ID              string              `json:"id"`
+	Done            bool                `json:"done"`
+	Unread          bool                `json:"unread"`
+	Reason          string              `json:"reason"`
+	UpdatedAt       string              `json:"updated_at"`
+	LastReadAt      string              `json:"last_read_at"`
+	URL             string              `json:"url"`
+	SubscriptionURL string              `json:"subscription_url"`
+	Repository      RepositoryRef       `json:"repository"`
+	Subject         NotificationSubject `json:"subject"`
+}
+
+type NotificationSubject struct {
+	Title            string `json:"title"`
+	Type             string `json:"type"`
+	URL              string `json:"url"`
+	LatestCommentURL string `json:"latest_comment_url"`
+}
+
+type IssueDetail struct {
+	Title     string              `json:"title"`
+	Number    int                 `json:"number"`
+	URL       string              `json:"html_url"`
+	Body      string              `json:"body"`
+	BodyHTML  string              `json:"bodyHTML,omitempty"`
+	Author    *PullRequestAuthor  `json:"user"`
+	State     string              `json:"state"`
+	CreatedAt string              `json:"created_at"`
+	UpdatedAt string              `json:"updated_at"`
+	Labels    []PullRequestLabel  `json:"labels"`
+	Assignees []PullRequestAuthor `json:"assignees"`
+	Comments  int                 `json:"comments"`
+}
+
+type ReleaseDetail struct {
+	Name        string             `json:"name"`
+	TagName     string             `json:"tag_name"`
+	URL         string             `json:"html_url"`
+	Body        string             `json:"body"`
+	BodyHTML    string             `json:"bodyHTML,omitempty"`
+	Draft       bool               `json:"draft"`
+	PreRelease  bool               `json:"prerelease"`
+	CreatedAt   string             `json:"created_at"`
+	UpdatedAt   string             `json:"updated_at"`
+	PublishedAt string             `json:"published_at"`
+	Author      *PullRequestAuthor `json:"author"`
+}
+
+func normalizedNotifications(notifications []Notification) []Notification {
+	normalized := make([]Notification, 0, len(notifications))
+	for _, notification := range notifications {
+		normalizedNotification := notification.normalized()
+		if normalizedNotification.Done {
+			continue
+		}
+		normalized = append(normalized, normalizedNotification)
+	}
+	return normalized
+}
+
+func (notification Notification) normalized() Notification {
+	notification.ID = strings.TrimSpace(notification.ID)
+	notification.Reason = strings.TrimSpace(notification.Reason)
+	notification.UpdatedAt = strings.TrimSpace(notification.UpdatedAt)
+	notification.LastReadAt = strings.TrimSpace(notification.LastReadAt)
+	notification.URL = strings.TrimSpace(notification.URL)
+	notification.SubscriptionURL = strings.TrimSpace(notification.SubscriptionURL)
+	notification.Repository = notification.Repository.normalized()
+	notification.Subject = notification.Subject.normalized()
+	return notification
+}
+
+func (subject NotificationSubject) normalized() NotificationSubject {
+	subject.Title = strings.TrimSpace(subject.Title)
+	subject.Type = strings.TrimSpace(subject.Type)
+	subject.URL = strings.TrimSpace(subject.URL)
+	subject.LatestCommentURL = strings.TrimSpace(subject.LatestCommentURL)
+	return subject
+}
+
+func (notification Notification) PullRequestSummary() (PullRequestSummary, bool) {
+	if notification.Subject.Type != NotificationSubjectTypePullRequest {
+		return PullRequestSummary{}, false
+	}
+
+	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
+	number, ok := subjectTrailingID(notification.Subject.URL, "/pulls/")
+	if repository == "" || !ok {
+		return PullRequestSummary{}, false
+	}
+
+	return PullRequestSummary{
+		Title:      notification.Subject.Title,
+		Number:     number,
+		Repository: notification.Repository,
+		URL:        PullRequestHTMLURL(repository, number),
+	}, true
+}
+
+func (notification Notification) IssueIdentity() (string, int, bool) {
+	if notification.Subject.Type != NotificationSubjectTypeIssue {
+		return "", 0, false
+	}
+
+	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
+	number, ok := subjectTrailingID(notification.Subject.URL, "/issues/")
+	if repository == "" || !ok {
+		return "", 0, false
+	}
+	return repository, number, true
+}
+
+func (notification Notification) ReleaseIdentity() (string, int, bool) {
+	if notification.Subject.Type != NotificationSubjectTypeRelease {
+		return "", 0, false
+	}
+
+	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
+	id, ok := subjectTrailingID(notification.Subject.URL, "/releases/")
+	if repository == "" || !ok {
+		return "", 0, false
+	}
+	return repository, id, true
+}
+
+func NormalizeNotificationSubjectTarget(repository string, id int) (string, error) {
+	trimmedRepository := strings.TrimSpace(repository)
+	if trimmedRepository == "" || trimmedRepository == "-" || id <= 0 {
+		return "", ErrMissingNotificationSubjectTarget
+	}
+	return trimmedRepository, nil
+}
+
+func PullRequestHTMLURL(repository string, number int) string {
+	trimmedRepository := strings.TrimSpace(repository)
+	if trimmedRepository == "" || number <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("https://github.com/%s/pull/%d", trimmedRepository, number)
+}
+
+func subjectTrailingID(rawURL string, expectedPathFragment string) (int, bool) {
+	trimmedURL := strings.TrimSpace(rawURL)
+	if trimmedURL == "" || !strings.Contains(trimmedURL, expectedPathFragment) {
+		return 0, false
+	}
+
+	parsedURL, err := url.Parse(trimmedURL)
+	if err != nil {
+		return 0, false
+	}
+	pathSegments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
+	if len(pathSegments) == 0 {
+		return 0, false
+	}
+
+	actual, err := strconv.Atoi(strings.TrimSpace(pathSegments[len(pathSegments)-1]))
+	if err != nil || actual <= 0 {
+		return 0, false
+	}
+	return actual, true
+}
+
+func (detail IssueDetail) normalized() IssueDetail {
+	detail.Title = strings.TrimSpace(detail.Title)
+	detail.URL = strings.TrimSpace(detail.URL)
+	detail.Body = strings.TrimSpace(detail.Body)
+	detail.BodyHTML = strings.TrimSpace(detail.BodyHTML)
+	detail.State = strings.TrimSpace(detail.State)
+	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
+	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
+	if detail.Author != nil {
+		normalizedAuthor := detail.Author.normalized()
+		detail.Author = &normalizedAuthor
+	}
+	if len(detail.Labels) > 0 {
+		normalizedLabels := make([]PullRequestLabel, 0, len(detail.Labels))
+		for _, label := range detail.Labels {
+			normalizedLabels = append(normalizedLabels, label.normalized())
+		}
+		detail.Labels = normalizedLabels
+	}
+	if len(detail.Assignees) > 0 {
+		normalizedAssignees := make([]PullRequestAuthor, 0, len(detail.Assignees))
+		for _, assignee := range detail.Assignees {
+			normalizedAssignees = append(normalizedAssignees, assignee.normalized())
+		}
+		detail.Assignees = normalizedAssignees
+	}
+	return detail
+}
+
+func (detail ReleaseDetail) normalized() ReleaseDetail {
+	detail.Name = strings.TrimSpace(detail.Name)
+	detail.TagName = strings.TrimSpace(detail.TagName)
+	detail.URL = strings.TrimSpace(detail.URL)
+	detail.Body = strings.TrimSpace(detail.Body)
+	detail.BodyHTML = strings.TrimSpace(detail.BodyHTML)
+	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
+	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
+	detail.PublishedAt = strings.TrimSpace(detail.PublishedAt)
+	if detail.Author != nil {
+		normalizedAuthor := detail.Author.normalized()
+		detail.Author = &normalizedAuthor
+	}
+	return detail
+}
+
+// Keep a tiny JSON helper here because notification payloads sometimes arrive wrapped.
+func decodeNotifications(payload []byte) ([]Notification, error) {
+	var paged [][]Notification
+	if err := json.Unmarshal(payload, &paged); err == nil {
+		flattened := make([]Notification, 0)
+		for _, page := range paged {
+			flattened = append(flattened, page...)
+		}
+		return normalizedNotifications(flattened), nil
+	}
+
+	var notifications []Notification
+	if err := json.Unmarshal(payload, &notifications); err != nil {
+		return nil, err
+	}
+	return normalizedNotifications(notifications), nil
+}

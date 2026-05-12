@@ -6,7 +6,7 @@ import (
 	"time"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 )
 
 func TestOpen_GivenAFreshCachePath_WhenOpening_ThenItEnablesIncrementalAutoVacuum(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 )
 
 func TestOpen_GivenANestedCachePath_WhenOpening_ThenItCreatesTheParentDirectory(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 )
 
 const notificationDoneStoreFileName = "notification-done.json"

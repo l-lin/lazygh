@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 	_ "modernc.org/sqlite"
 )
 
@@ -548,10 +548,5 @@ func joinedCommandArguments(arguments []string) string {
 }
 
 func normalizePullRequestIdentity(repository string, number int) (string, int, error) {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || number <= 0 {
-		return "", 0, errors.New("missing pull request identity")
-	}
-
-	return trimmedRepository, number, nil
+	return githubcli.NormalizePullRequestIdentity(repository, number)
 }
