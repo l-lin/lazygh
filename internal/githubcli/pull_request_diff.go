@@ -25,7 +25,7 @@ type PullRequestDiffFile struct {
 	TeamOwners   []string `json:"teamOwners,omitempty"`
 }
 
-func (client *Client) GetPullRequestDiff(repository string, number int) (PullRequestDiff, error) {
+func (client *PullRequestDetailService) GetPullRequestDiff(repository string, number int) (PullRequestDiff, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return PullRequestDiff{}, err
@@ -49,7 +49,7 @@ func (client *Client) GetPullRequestDiff(repository string, number int) (PullReq
 	return PullRequestDiff{UnifiedDiff: unifiedDiff, Files: files, Threads: threads}, nil
 }
 
-func (client *Client) getPullRequestUnifiedDiff(repository string, number int) (string, error) {
+func (client *PullRequestDetailService) getPullRequestUnifiedDiff(repository string, number int) (string, error) {
 	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/pulls/%d", repository, number), Headers: []RESTHeader{{Name: "Accept", Value: "application/vnd.github.v3.diff"}}})
 	if err != nil {
 		return "", err
@@ -58,7 +58,7 @@ func (client *Client) getPullRequestUnifiedDiff(repository string, number int) (
 	return normalizePullRequestDiffText(string(result.Stdout)), nil
 }
 
-func (client *Client) listPullRequestDiffFiles(repository string, number int) ([]PullRequestDiffFile, error) {
+func (client *PullRequestDetailService) listPullRequestDiffFiles(repository string, number int) ([]PullRequestDiffFile, error) {
 	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/pulls/%d/files?per_page=100", repository, number), Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, err

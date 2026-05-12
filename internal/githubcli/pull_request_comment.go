@@ -10,7 +10,7 @@ var (
 	ErrEmptyPullRequestComment    = errors.New("empty pull request comment")
 )
 
-func (client *Client) CommentOnPullRequest(repository string, number int, body string) error {
+func (client *PullRequestMutationService) CommentOnPullRequest(repository string, number int, body string) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err

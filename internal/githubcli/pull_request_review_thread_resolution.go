@@ -12,15 +12,15 @@ const unresolveReviewThreadMutation = `mutation($threadId:ID!){unresolveReviewTh
 
 var ErrInvalidPullRequestReviewThreadMutation = errors.New("invalid pull request review thread mutation")
 
-func (client *Client) ResolvePullRequestReviewThread(threadID string) error {
+func (client *ReviewService) ResolvePullRequestReviewThread(threadID string) error {
 	return client.updatePullRequestReviewThreadResolution(threadID, true)
 }
 
-func (client *Client) UnresolvePullRequestReviewThread(threadID string) error {
+func (client *ReviewService) UnresolvePullRequestReviewThread(threadID string) error {
 	return client.updatePullRequestReviewThreadResolution(threadID, false)
 }
 
-func (client *Client) updatePullRequestReviewThreadResolution(threadID string, resolved bool) error {
+func (client *ReviewService) updatePullRequestReviewThreadResolution(threadID string, resolved bool) error {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	if trimmedThreadID == "" {
 		return ErrInvalidPullRequestReviewThreadMutation

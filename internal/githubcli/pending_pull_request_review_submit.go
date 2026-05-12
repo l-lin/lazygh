@@ -20,7 +20,7 @@ const (
 	PullRequestReviewEventRequestChanges PullRequestReviewEvent = "REQUEST_CHANGES"
 )
 
-func (client *Client) SubmitPullRequestReview(pullRequestReviewID string, event PullRequestReviewEvent, body string) error {
+func (client *ReviewService) SubmitPullRequestReview(pullRequestReviewID string, event PullRequestReviewEvent, body string) error {
 	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
 	if trimmedReviewID == "" {
 		return ErrInvalidPullRequestReviewSubmission

@@ -24,7 +24,7 @@ type addPullRequestReviewThreadReplyResponse struct {
 	} `json:"errors"`
 }
 
-func (client *Client) AddPullRequestReviewThreadReply(pullRequestReviewID string, pullRequestReviewThreadID string, body string) error {
+func (client *ReviewService) AddPullRequestReviewThreadReply(pullRequestReviewID string, pullRequestReviewThreadID string, body string) error {
 	trimmedThreadID := strings.TrimSpace(pullRequestReviewThreadID)
 	if trimmedThreadID == "" {
 		return ErrInvalidPullRequestReviewThreadReply

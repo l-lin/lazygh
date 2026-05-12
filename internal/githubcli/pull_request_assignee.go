@@ -11,7 +11,7 @@ var ErrInvalidAssignableUsersResponse = fmt.Errorf("invalid assignable users res
 
 const assignableUsersPerPage = 100
 
-func (client *Client) ListAssignableUsers(repository string) ([]PullRequestAuthor, error) {
+func (client *PullRequestMutationService) ListAssignableUsers(repository string) ([]PullRequestAuthor, error) {
 	trimmedRepository := strings.TrimSpace(repository)
 	if trimmedRepository == "" || trimmedRepository == "-" {
 		return nil, ErrMissingPullRequestIdentity
@@ -25,7 +25,7 @@ func (client *Client) ListAssignableUsers(repository string) ([]PullRequestAutho
 	return parseAssignableUsers(result.Stdout)
 }
 
-func (client *Client) UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error {
+func (client *PullRequestMutationService) UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err

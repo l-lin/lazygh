@@ -26,7 +26,7 @@ type PullRequestBuildInfo struct {
 	Workflow    string `json:"workflow"`
 }
 
-func (client *Client) GetPullRequestBuildInfo(repository string, number int, check PullRequestStatusCheck) (PullRequestBuildInfo, error) {
+func (client *BuildService) GetPullRequestBuildInfo(repository string, number int, check PullRequestStatusCheck) (PullRequestBuildInfo, error) {
 	buildInfos, err := client.listPullRequestBuildInfos(repository, number)
 	if err != nil {
 		return PullRequestBuildInfo{}, err
@@ -39,7 +39,7 @@ func (client *Client) GetPullRequestBuildInfo(repository string, number int, che
 	return actual, nil
 }
 
-func (client *Client) listPullRequestBuildInfos(repository string, number int) ([]PullRequestBuildInfo, error) {
+func (client serviceBase) listPullRequestBuildInfos(repository string, number int) ([]PullRequestBuildInfo, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return nil, err

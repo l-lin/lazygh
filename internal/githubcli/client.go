@@ -28,7 +28,8 @@ type Runner interface {
 }
 
 type Client struct {
-	transport sharedTransport
+	serviceBase
+	*ProviderFacade
 }
 
 type ConnectedUser struct {
@@ -53,17 +54,18 @@ func NewClientWithRunner(runner Runner) *Client {
 		runner = execRunner{}
 	}
 
-	return &Client{transport: newSharedTransport(runner)}
+	transport := newSharedTransport(runner)
+	return &Client{serviceBase: newServiceBase(transport), ProviderFacade: newProviderFacade(transport)}
 }
 
-func (client *Client) GetConnectedUser() (ConnectedUser, error) {
-	result, err := client.doREST(RESTRequest{Path: "user"})
+func (service *SessionService) GetConnectedUser() (ConnectedUser, error) {
+	result, err := service.doREST(RESTRequest{Path: "user"})
 	if err != nil {
 		return ConnectedUser{}, err
 	}
 
 	var user ConnectedUser
-	if err := client.transport.decoder.DecodeJSON(result.Stdout, &user); err != nil {
+	if err := service.transport.decoder.DecodeJSON(result.Stdout, &user); err != nil {
 		return ConnectedUser{}, fmt.Errorf("%w: %v", ErrInvalidConnectedUserResponse, err)
 	}
 

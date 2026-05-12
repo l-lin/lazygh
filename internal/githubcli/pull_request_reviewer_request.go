@@ -8,7 +8,7 @@ import (
 
 var ErrMissingPullRequestReviewer = errors.New("missing pull request reviewer")
 
-func (client *Client) RequestPullRequestReviewer(repository string, number int, reviewerLogin string) error {
+func (client *PullRequestMutationService) RequestPullRequestReviewer(repository string, number int, reviewerLogin string) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err

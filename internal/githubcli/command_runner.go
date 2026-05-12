@@ -1,5 +1,13 @@
 package githubcli
 
+type serviceBase struct {
+	transport sharedTransport
+}
+
+func newServiceBase(transport sharedTransport) serviceBase {
+	return serviceBase{transport: transport}
+}
+
 func rawCommand(args ...string) Command {
 	return Command{Args: append([]string(nil), args...), DisplayArgs: append([]string(nil), args...)}
 }
@@ -20,23 +28,23 @@ func formatCommandArguments(args []string) string {
 	return commandFormatter{}.Format(Command{Args: append([]string(nil), args...), DisplayArgs: append([]string(nil), args...)})
 }
 
-func (client *Client) execute(command Command) (CommandResult, error) {
-	return client.transport.executor.Execute(command)
+func (service serviceBase) execute(command Command) (CommandResult, error) {
+	return service.transport.executor.Execute(command)
 }
 
-func (client *Client) queryGraphQL(request GraphQLRequest) (CommandResult, error) {
-	return client.transport.graphql.Query(request)
+func (service serviceBase) queryGraphQL(request GraphQLRequest) (CommandResult, error) {
+	return service.transport.graphql.Query(request)
 }
 
-func (client *Client) doREST(request RESTRequest) (CommandResult, error) {
-	return client.transport.rest.Do(request)
+func (service serviceBase) doREST(request RESTRequest) (CommandResult, error) {
+	return service.transport.rest.Do(request)
 }
 
-func (client *Client) decodePaginatedOrFlatJSON(data []byte, target any) error {
-	if err := client.transport.paginator.DecodeSlurpedJSON(data, target); err == nil {
+func (service serviceBase) decodePaginatedOrFlatJSON(data []byte, target any) error {
+	if err := service.transport.paginator.DecodeSlurpedJSON(data, target); err == nil {
 		return nil
 	}
-	return client.transport.decoder.DecodeJSON(data, target)
+	return service.transport.decoder.DecodeJSON(data, target)
 }
 
 func (client *Client) runGH(_ string, args ...string) (CommandResult, error) {

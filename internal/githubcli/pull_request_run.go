@@ -32,7 +32,7 @@ type PullRequestBuildRunJob struct {
 	URL        string `json:"url"`
 }
 
-func (client *Client) GetPullRequestBuildRun(repository string, check PullRequestStatusCheck) (string, error) {
+func (client *BuildService) GetPullRequestBuildRun(repository string, check PullRequestStatusCheck) (string, error) {
 	args, err := pullRequestBuildRunCommandArguments(repository, check)
 	if err != nil {
 		return "", err
@@ -46,7 +46,7 @@ func (client *Client) GetPullRequestBuildRun(repository string, check PullReques
 	return strings.TrimSpace(string(result.Stdout)), nil
 }
 
-func (client *Client) GetPullRequestBuildRunJobs(repository string, check PullRequestStatusCheck) ([]PullRequestBuildRunJob, error) {
+func (client *BuildService) GetPullRequestBuildRunJobs(repository string, check PullRequestStatusCheck) ([]PullRequestBuildRunJob, error) {
 	args, err := pullRequestBuildRunJobsCommandArguments(repository, check)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (client *Client) GetPullRequestBuildRunJobs(repository string, check PullRe
 	return jobs, nil
 }
 
-func (client *Client) GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error) {
+func (client *BuildService) GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error) {
 	args, err := pullRequestBuildRunJobLogCommandArguments(repository, jobDatabaseID)
 	if err != nil {
 		return "", err
@@ -85,7 +85,7 @@ func (client *Client) GetPullRequestBuildRunJobLog(repository string, jobDatabas
 	return strings.TrimSpace(string(result.Stdout)), nil
 }
 
-func (client *Client) GetPullRequestBuildRunJobLogForCheck(repository string, check PullRequestStatusCheck) (PullRequestBuildRunJob, string, error) {
+func (client *BuildService) GetPullRequestBuildRunJobLogForCheck(repository string, check PullRequestStatusCheck) (PullRequestBuildRunJob, string, error) {
 	jobs, err := client.GetPullRequestBuildRunJobs(repository, check)
 	if err != nil {
 		return PullRequestBuildRunJob{}, "", err

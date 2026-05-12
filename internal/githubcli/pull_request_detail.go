@@ -155,7 +155,7 @@ type PullRequestStatusCheck struct {
 	Link         string `json:"link,omitempty"`
 }
 
-func (client *Client) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
+func (client *PullRequestDetailService) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
 	trimmedRepository := strings.TrimSpace(repository)
 	result, err := client.execute(rawCommand("pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestDetailJSONFields))
 	if err != nil {
@@ -213,7 +213,7 @@ func (client *Client) GetPullRequestDetail(repository string, number int) (PullR
 	return detail.normalized(), nil
 }
 
-func (client *Client) listPullRequestInlineComments(repository string, number int) ([]PullRequestInlineComment, error) {
+func (client *PullRequestDetailService) listPullRequestInlineComments(repository string, number int) ([]PullRequestInlineComment, error) {
 	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/pulls/%d/comments?per_page=100", strings.TrimSpace(repository), number), Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, err

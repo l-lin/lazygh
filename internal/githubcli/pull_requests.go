@@ -130,7 +130,7 @@ type pullRequestListReviewMetadataResponse struct {
 	} `json:"errors"`
 }
 
-func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
+func (client *PullRequestListService) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
 	resolvedCommandArguments := pullRequestSearchCommandArguments(commandArguments)
 	result, err := client.execute(rawCommand(resolvedCommandArguments...))
 	if err != nil {
@@ -165,7 +165,7 @@ func (client *Client) ListPullRequests(commandArguments []string) ([]PullRequest
 	return pullRequests, nil
 }
 
-func (client *Client) listPullRequestReviewMetadata(pullRequests []PullRequest) (map[string]pullRequestListReviewMetadata, error) {
+func (client *PullRequestListService) listPullRequestReviewMetadata(pullRequests []PullRequest) (map[string]pullRequestListReviewMetadata, error) {
 	ids := uniquePullRequestIDs(pullRequests)
 	if len(ids) == 0 {
 		return nil, nil
@@ -193,7 +193,7 @@ func (client *Client) listPullRequestReviewMetadata(pullRequests []PullRequest) 
 	return metadataByID, nil
 }
 
-func (client *Client) listPullRequestReviewMetadataBatch(ids []string) (map[string]pullRequestListReviewMetadata, error) {
+func (client *PullRequestListService) listPullRequestReviewMetadataBatch(ids []string) (map[string]pullRequestListReviewMetadata, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}

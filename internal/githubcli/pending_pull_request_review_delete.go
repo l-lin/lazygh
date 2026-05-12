@@ -24,7 +24,7 @@ type deletePullRequestReviewResponse struct {
 	} `json:"errors"`
 }
 
-func (client *Client) DeletePullRequestReview(pullRequestReviewID string) error {
+func (client *ReviewService) DeletePullRequestReview(pullRequestReviewID string) error {
 	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
 	if trimmedReviewID == "" {
 		return ErrInvalidPullRequestReviewDeletion

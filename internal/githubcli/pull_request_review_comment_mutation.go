@@ -30,7 +30,7 @@ type updatePullRequestReviewCommentResponse struct {
 	} `json:"errors"`
 }
 
-func (client *Client) UpdatePullRequestReviewComment(commentID string, body string) error {
+func (client *ReviewService) UpdatePullRequestReviewComment(commentID string, body string) error {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if trimmedCommentID == "" {
 		return ErrInvalidPullRequestReviewCommentMutation
@@ -47,7 +47,7 @@ func (client *Client) UpdatePullRequestReviewComment(commentID string, body stri
 	return parseUpdatedPullRequestReviewComment(result.Stdout, true)
 }
 
-func (client *Client) DeletePullRequestReviewComment(commentID string) error {
+func (client *ReviewService) DeletePullRequestReviewComment(commentID string) error {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if trimmedCommentID == "" {
 		return ErrInvalidPullRequestReviewCommentMutation

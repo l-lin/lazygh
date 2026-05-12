@@ -61,7 +61,7 @@ type pullRequestReviewCommentReactionGroupsResponse struct {
 	} `json:"errors"`
 }
 
-func (client *Client) listPullRequestReactionTargets(repository string, number int) (pullRequestReactionTargets, error) {
+func (client *PullRequestDetailService) listPullRequestReactionTargets(repository string, number int) (pullRequestReactionTargets, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return pullRequestReactionTargets{}, err
@@ -94,7 +94,7 @@ func (client *Client) listPullRequestReactionTargets(repository string, number i
 	}
 }
 
-func (client *Client) loadPullRequestReactionTargetsPage(owner string, name string, number int, cursor string) (pullRequestReactionTargetsPage, error) {
+func (client *PullRequestDetailService) loadPullRequestReactionTargetsPage(owner string, name string, number int, cursor string) (pullRequestReactionTargetsPage, error) {
 	request := GraphQLRequest{Query: pullRequestReactionTargetsQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}}
 	if strings.TrimSpace(cursor) != "" {
 		request.Variables = append(request.Variables, typedGraphQLVariable("cursor", strings.TrimSpace(cursor)))
@@ -133,7 +133,7 @@ func parsePullRequestReactionTargetsPage(stdout []byte) (pullRequestReactionTarg
 	return page, nil
 }
 
-func (client *Client) listPullRequestReviewCommentReactionGroups(ids []string) (map[string][]ReactionGroup, error) {
+func (client *PullRequestDetailService) listPullRequestReviewCommentReactionGroups(ids []string) (map[string][]ReactionGroup, error) {
 	trimmedIDs := uniqueReactionTargetIDs(ids)
 	if len(trimmedIDs) == 0 {
 		return nil, nil
@@ -156,7 +156,7 @@ func (client *Client) listPullRequestReviewCommentReactionGroups(ids []string) (
 	return groupsByID, nil
 }
 
-func (client *Client) pullRequestReviewCommentReactionGroupsBatch(ids []string) (map[string][]ReactionGroup, error) {
+func (client *PullRequestDetailService) pullRequestReviewCommentReactionGroupsBatch(ids []string) (map[string][]ReactionGroup, error) {
 	trimmedIDs := uniqueReactionTargetIDs(ids)
 	if len(trimmedIDs) == 0 {
 		return nil, nil

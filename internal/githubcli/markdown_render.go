@@ -11,7 +11,7 @@ type renderMarkdownHTMLRequest struct {
 	Context string `json:"context,omitempty"`
 }
 
-func (client *Client) RenderMarkdownHTML(repository string, markdown string) (string, error) {
+func (client *MarkdownService) RenderMarkdownHTML(repository string, markdown string) (string, error) {
 	requestBody, err := json.Marshal(renderMarkdownHTMLRequest{
 		Text:    strings.TrimSpace(markdown),
 		Mode:    "gfm",
@@ -28,7 +28,7 @@ func (client *Client) RenderMarkdownHTML(repository string, markdown string) (st
 	return strings.TrimSpace(string(result.Stdout)), nil
 }
 
-func (client *Client) GetAuthToken() (string, error) {
+func (client *AuthService) GetAuthToken() (string, error) {
 	result, err := client.execute(rawCommand("auth", "token"))
 	if err != nil {
 		return "", err

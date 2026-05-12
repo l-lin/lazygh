@@ -44,7 +44,7 @@ type pullRequestCodeownersBlobResponse struct {
 	} `json:"data"`
 }
 
-func (client *Client) GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error) {
+func (client *PullRequestDetailService) GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (client *Client) GetPullRequestFileTeamOwners(repository string, number int
 	return matchPullRequestCodeownersTeamOwners(codeownersText, normalizedPaths), nil
 }
 
-func (client *Client) pullRequestBaseRefName(owner string, name string, number int) (string, error) {
+func (client *PullRequestDetailService) pullRequestBaseRefName(owner string, name string, number int) (string, error) {
 	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestBaseRefNameQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}})
 	if err != nil {
 		return "", err
@@ -93,7 +93,7 @@ func (client *Client) pullRequestBaseRefName(owner string, name string, number i
 	return validateNonEmptyPullRequestField(response.Data.Repository.PullRequest.BaseRefName, ErrMissingPullRequestBaseRefName)
 }
 
-func (client *Client) pullRequestCodeownersBlob(owner string, name string, baseRefName string) (string, bool, error) {
+func (client *PullRequestDetailService) pullRequestCodeownersBlob(owner string, name string, baseRefName string) (string, bool, error) {
 	trimmedBaseRefName := strings.TrimSpace(baseRefName)
 	if trimmedBaseRefName == "" {
 		return "", false, ErrMissingPullRequestBaseRefName

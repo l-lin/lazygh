@@ -28,7 +28,7 @@ type pullRequestCommentMutationResponse struct {
 	} `json:"errors"`
 }
 
-func (client *Client) UpdatePullRequestComment(commentID string, body string) error {
+func (client *PullRequestMutationService) UpdatePullRequestComment(commentID string, body string) error {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if trimmedCommentID == "" {
 		return ErrInvalidPullRequestCommentMutation
@@ -45,7 +45,7 @@ func (client *Client) UpdatePullRequestComment(commentID string, body string) er
 	return parsePullRequestCommentMutation(result.Stdout, true)
 }
 
-func (client *Client) DeletePullRequestComment(commentID string) error {
+func (client *PullRequestMutationService) DeletePullRequestComment(commentID string) error {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if trimmedCommentID == "" {
 		return ErrInvalidPullRequestCommentMutation

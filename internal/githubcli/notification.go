@@ -71,7 +71,7 @@ type ReleaseDetail struct {
 	Author      *PullRequestAuthor `json:"author"`
 }
 
-func (client *Client) ListNotifications() ([]Notification, error) {
+func (client *NotificationService) ListNotifications() ([]Notification, error) {
 	result, err := client.doREST(RESTRequest{Path: notificationsListAPIPath, Paginate: true, Slurp: true})
 	if err != nil {
 		return nil, normalizeNotificationEndpointError(err)
@@ -84,7 +84,7 @@ func (client *Client) ListNotifications() ([]Notification, error) {
 	return normalizedNotifications(notifications), nil
 }
 
-func (client *Client) GetIssueDetail(repository string, number int) (IssueDetail, error) {
+func (client *NotificationService) GetIssueDetail(repository string, number int) (IssueDetail, error) {
 	trimmedRepository, err := normalizeNotificationSubjectTarget(repository, number)
 	if err != nil {
 		return IssueDetail{}, err
@@ -102,7 +102,7 @@ func (client *Client) GetIssueDetail(repository string, number int) (IssueDetail
 	return detail.normalized(), nil
 }
 
-func (client *Client) GetReleaseDetail(repository string, id int) (ReleaseDetail, error) {
+func (client *NotificationService) GetReleaseDetail(repository string, id int) (ReleaseDetail, error) {
 	trimmedRepository, err := normalizeNotificationSubjectTarget(repository, id)
 	if err != nil {
 		return ReleaseDetail{}, err

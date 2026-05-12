@@ -21,7 +21,7 @@ type PullRequestReviewThreadTarget struct {
 	SubjectType string
 }
 
-func (client *Client) AddPullRequestReviewThread(pullRequestReviewID string, body string, target PullRequestReviewThreadTarget) error {
+func (client *ReviewService) AddPullRequestReviewThread(pullRequestReviewID string, body string, target PullRequestReviewThreadTarget) error {
 	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
 	if trimmedReviewID == "" {
 		return ErrInvalidPullRequestReviewThreadTarget

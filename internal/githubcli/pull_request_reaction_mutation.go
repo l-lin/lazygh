@@ -18,15 +18,15 @@ var (
 	ErrInvalidReactionResponse = errors.New("invalid reaction response")
 )
 
-func (client *Client) AddReaction(subjectID string, content ReactionContent) error {
+func (client *ReactionService) AddReaction(subjectID string, content ReactionContent) error {
 	return client.mutateReaction(addReactionMutation, subjectID, content, parseAddedReaction)
 }
 
-func (client *Client) RemoveReaction(subjectID string, content ReactionContent) error {
+func (client *ReactionService) RemoveReaction(subjectID string, content ReactionContent) error {
 	return client.mutateReaction(removeReactionMutation, subjectID, content, parseRemovedReaction)
 }
 
-func (client *Client) mutateReaction(mutation string, subjectID string, content ReactionContent, parse func([]byte) error) error {
+func (client *ReactionService) mutateReaction(mutation string, subjectID string, content ReactionContent, parse func([]byte) error) error {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
 	if trimmedSubjectID == "" {
 		return ErrInvalidReactionTarget

@@ -12,7 +12,7 @@ const addPendingPullRequestReviewMutation = `mutation($pullRequestId:ID!){addPul
 
 var ErrInvalidPendingPullRequestReviewResponse = errors.New("invalid pending pull request review response")
 
-func (client *Client) GetPendingPullRequestReviewID(repository string, number int) (string, bool, error) {
+func (client *ReviewService) GetPendingPullRequestReviewID(repository string, number int) (string, bool, error) {
 	lookup, err := client.pendingPullRequestReviewLookup(repository, number)
 	if err != nil {
 		return "", false, err
@@ -24,7 +24,7 @@ func (client *Client) GetPendingPullRequestReviewID(repository string, number in
 	return lookup.pendingReviewID, true, nil
 }
 
-func (client *Client) StartPendingPullRequestReview(repository string, number int) (string, error) {
+func (client *ReviewService) StartPendingPullRequestReview(repository string, number int) (string, error) {
 	lookup, err := client.pendingPullRequestReviewLookup(repository, number)
 	if err != nil {
 		return "", err
@@ -46,7 +46,7 @@ func (client *Client) StartPendingPullRequestReview(repository string, number in
 	return reviewID, nil
 }
 
-func (client *Client) pendingPullRequestReviewLookup(repository string, number int) (pendingPullRequestReviewLookupResult, error) {
+func (client *ReviewService) pendingPullRequestReviewLookup(repository string, number int) (pendingPullRequestReviewLookupResult, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return pendingPullRequestReviewLookupResult{}, err

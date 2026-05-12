@@ -23,7 +23,7 @@ type NotificationBulkReadResult struct {
 	Accepted bool
 }
 
-func (client *Client) MarkNotificationRead(threadID string) error {
+func (client *NotificationService) MarkNotificationRead(threadID string) error {
 	threadAPIPath, err := notificationThreadAPIPath(threadID)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (client *Client) MarkNotificationRead(threadID string) error {
 	return nil
 }
 
-func (client *Client) MarkNotificationDone(threadID string) error {
+func (client *NotificationService) MarkNotificationDone(threadID string) error {
 	threadAPIPath, err := notificationThreadAPIPath(threadID)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (client *Client) MarkNotificationDone(threadID string) error {
 	return nil
 }
 
-func (client *Client) MarkAllNotificationsRead() (NotificationBulkReadResult, error) {
+func (client *NotificationService) MarkAllNotificationsRead() (NotificationBulkReadResult, error) {
 	result, err := client.doREST(RESTRequest{Path: notificationsBulkReadAPIPath, Method: "PUT", Include: true})
 	if err != nil {
 		return NotificationBulkReadResult{}, normalizeNotificationEndpointError(err)
@@ -56,7 +56,7 @@ func (client *Client) MarkAllNotificationsRead() (NotificationBulkReadResult, er
 	return NotificationBulkReadResult{Accepted: notificationIncludedHTTPStatus(result.Stdout) == 202}, nil
 }
 
-func (client *Client) MarkAllNotificationsDone(notifications []Notification) (int, error) {
+func (client *NotificationService) MarkAllNotificationsDone(notifications []Notification) (int, error) {
 	threadIDs := notificationThreadIDs(notifications)
 	if len(threadIDs) == 0 {
 		return 0, nil

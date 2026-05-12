@@ -7,7 +7,7 @@ import (
 
 var ErrEmptyPullRequestTitle = errors.New("empty pull request title")
 
-func (client *Client) EditPullRequestTitle(repository string, number int, title string) error {
+func (client *PullRequestMutationService) EditPullRequestTitle(repository string, number int, title string) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func (client *Client) EditPullRequestTitle(repository string, number int, title 
 	return nil
 }
 
-func (client *Client) EditPullRequestDescription(repository string, number int, body string) error {
+func (client *PullRequestMutationService) EditPullRequestDescription(repository string, number int, body string) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err

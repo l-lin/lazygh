@@ -2,7 +2,7 @@ package githubcli
 
 import "strconv"
 
-func (client *Client) OpenPullRequestInBrowser(repository string, number int) error {
+func (client *PullRequestMutationService) OpenPullRequestInBrowser(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err

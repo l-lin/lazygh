@@ -7,7 +7,7 @@ import (
 
 var ErrEmptyPullRequestReviewBody = errors.New("empty pull request review body")
 
-func (client *Client) ApprovePullRequest(repository string, number int) error {
+func (client *ReviewService) ApprovePullRequest(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err
@@ -20,15 +20,15 @@ func (client *Client) ApprovePullRequest(repository string, number int) error {
 	return nil
 }
 
-func (client *Client) ReviewPullRequestWithComment(repository string, number int, body string) error {
+func (client *ReviewService) ReviewPullRequestWithComment(repository string, number int, body string) error {
 	return client.submitPullRequestReviewWithBody(repository, number, body, "--comment")
 }
 
-func (client *Client) RequestChangesOnPullRequest(repository string, number int, body string) error {
+func (client *ReviewService) RequestChangesOnPullRequest(repository string, number int, body string) error {
 	return client.submitPullRequestReviewWithBody(repository, number, body, "--request-changes")
 }
 
-func (client *Client) submitPullRequestReviewWithBody(repository string, number int, body string, reviewArgument string) error {
+func (client *ReviewService) submitPullRequestReviewWithBody(repository string, number int, body string, reviewArgument string) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err

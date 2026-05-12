@@ -95,7 +95,7 @@ type pullRequestReviewThreadCommentsResponse struct {
 	} `json:"data"`
 }
 
-func (client *Client) listPullRequestReviewThreads(repository string, number int) ([]PullRequestReviewThread, error) {
+func (client *PullRequestDetailService) listPullRequestReviewThreads(repository string, number int) ([]PullRequestReviewThread, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (client *Client) listPullRequestReviewThreads(repository string, number int
 	}
 }
 
-func (client *Client) pullRequestReviewThreadsPage(owner string, name string, number int, cursor string) (pullRequestReviewThreadsPage, error) {
+func (client *PullRequestDetailService) pullRequestReviewThreadsPage(owner string, name string, number int, cursor string) (pullRequestReviewThreadsPage, error) {
 	request := GraphQLRequest{Query: pullRequestReviewThreadsQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}}
 	if strings.TrimSpace(cursor) != "" {
 		request.Variables = append(request.Variables, typedGraphQLVariable("cursor", strings.TrimSpace(cursor)))
@@ -153,7 +153,7 @@ func (client *Client) pullRequestReviewThreadsPage(owner string, name string, nu
 	return parsePullRequestReviewThreadsPage(result.Stdout)
 }
 
-func (client *Client) pullRequestReviewThreadCommentsAfter(threadID string, cursor string) ([]PullRequestComment, error) {
+func (client *PullRequestDetailService) pullRequestReviewThreadCommentsAfter(threadID string, cursor string) ([]PullRequestComment, error) {
 	comments := make([]PullRequestComment, 0)
 	nextCursor := strings.TrimSpace(cursor)
 	for nextCursor != "" {
@@ -173,7 +173,7 @@ func (client *Client) pullRequestReviewThreadCommentsAfter(threadID string, curs
 	return comments, nil
 }
 
-func (client *Client) pullRequestReviewThreadCommentsPage(threadID string, cursor string) (pullRequestReviewThreadCommentsPage, error) {
+func (client *PullRequestDetailService) pullRequestReviewThreadCommentsPage(threadID string, cursor string) (pullRequestReviewThreadCommentsPage, error) {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	trimmedCursor := strings.TrimSpace(cursor)
 	if trimmedThreadID == "" || trimmedCursor == "" {

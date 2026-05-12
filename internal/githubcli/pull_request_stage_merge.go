@@ -2,15 +2,15 @@ package githubcli
 
 import "strconv"
 
-func (client *Client) MarkPullRequestReadyForReview(repository string, number int) error {
+func (client *PullRequestMutationService) MarkPullRequestReadyForReview(repository string, number int) error {
 	return client.runPullRequestReady(repository, number, false)
 }
 
-func (client *Client) ConvertPullRequestToDraft(repository string, number int) error {
+func (client *PullRequestMutationService) ConvertPullRequestToDraft(repository string, number int) error {
 	return client.runPullRequestReady(repository, number, true)
 }
 
-func (client *Client) ClosePullRequest(repository string, number int) error {
+func (client *PullRequestMutationService) ClosePullRequest(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err
@@ -23,7 +23,7 @@ func (client *Client) ClosePullRequest(repository string, number int) error {
 	return nil
 }
 
-func (client *Client) ReopenPullRequest(repository string, number int) error {
+func (client *PullRequestMutationService) ReopenPullRequest(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (client *Client) ReopenPullRequest(repository string, number int) error {
 	return nil
 }
 
-func (client *Client) runPullRequestReady(repository string, number int, undo bool) error {
+func (client *PullRequestMutationService) runPullRequestReady(repository string, number int, undo bool) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (client *Client) runPullRequestReady(repository string, number int, undo bo
 	return nil
 }
 
-func (client *Client) SquashMergePullRequest(repository string, number int) error {
+func (client *PullRequestMutationService) SquashMergePullRequest(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return err
