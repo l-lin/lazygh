@@ -80,10 +80,10 @@ func (program *Program) submitPullRequestCommentUpdate(target pullRequestComment
 	if strings.TrimSpace(target.commentID) == "" {
 		return errors.New("missing pull request comment identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.UpdatePullRequestComment(target.commentID, body); err != nil {
+	if err := program.pullRequestMutations.UpdatePullRequestComment(target.commentID, body); err != nil {
 		return err
 	}
 
@@ -96,10 +96,10 @@ func (program *Program) deletePullRequestComment(target pullRequestCommentEditAc
 	if strings.TrimSpace(target.commentID) == "" {
 		return errors.New("missing pull request comment identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.DeletePullRequestComment(target.commentID); err != nil {
+	if err := program.pullRequestMutations.DeletePullRequestComment(target.commentID); err != nil {
 		return err
 	}
 

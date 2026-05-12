@@ -102,11 +102,11 @@ func (program *Program) submitPendingPullRequestReview(target pendingPullRequest
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.pendingReviewID) == "" {
 		return errors.New("missing pull request review context")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
 
-	return program.githubLoader.SubmitPullRequestReview(target.pendingReviewID, event, body)
+	return program.reviewMutations.SubmitPullRequestReview(target.pendingReviewID, event, body)
 }
 
 func (program *Program) finishSubmittedPendingPullRequestReview(gui *gocui.Gui, target pendingPullRequestReviewTarget) {

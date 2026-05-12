@@ -28,10 +28,10 @@ func (program *Program) executeApprovePullRequestAction(_ *gocui.Gui) actionsPop
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.githubLoader.ApprovePullRequest(target.repository, target.number); err != nil {
+	if err := program.reviewMutations.ApprovePullRequest(target.repository, target.number); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 
@@ -101,10 +101,10 @@ func (program *Program) submitPullRequestReviewComment(target pullRequestActionT
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.ReviewPullRequestWithComment(target.repository, target.number, body); err != nil {
+	if err := program.reviewMutations.ReviewPullRequestWithComment(target.repository, target.number, body); err != nil {
 		return err
 	}
 
@@ -118,10 +118,10 @@ func (program *Program) submitPullRequestRequestChanges(target pullRequestAction
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.RequestChangesOnPullRequest(target.repository, target.number, body); err != nil {
+	if err := program.reviewMutations.RequestChangesOnPullRequest(target.repository, target.number, body); err != nil {
 		return err
 	}
 

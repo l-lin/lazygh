@@ -13,10 +13,10 @@ func (program *Program) executeOpenPullRequestInBrowserAction(_ *gocui.Gui) acti
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.githubLoader.OpenPullRequestInBrowser(target.repository, target.number); err != nil {
+	if err := program.pullRequestMutations.OpenPullRequestInBrowser(target.repository, target.number); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 

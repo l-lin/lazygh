@@ -14,7 +14,8 @@ import (
 )
 
 func TestLayout_GivenMarkdownWithoutImages_WhenRendering_ThenItQueuesNoImageWork(t *testing.T) {
-	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "No diagrams today.", State: "OPEN"}}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
@@ -25,7 +26,6 @@ func TestLayout_GivenMarkdownWithoutImages_WhenRendering_ThenItQueuesNoImageWork
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	loader := subject.githubLoader.(*fakePullRequestDetailLoader)
 	if len(loader.renderMarkdownHTMLCalls) != 0 {
 		t.Fatalf("expected markdown without images to skip GitHub markdown rendering, actual %v", loader.renderMarkdownHTMLCalls)
 	}
@@ -63,7 +63,8 @@ func TestLayout_GivenAnHTMLImageTag_WhenRendering_ThenItShowsTheInlineFallbackAn
 }
 
 func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsTheInlineFallbackAndSkipsGitHubMarkdownRendering(t *testing.T) {
-	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
@@ -85,7 +86,6 @@ func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsTheInlineFall
 	document := subject.currentDetailDocument(detailView)
 	lineIndex, _ := given_detailDocumentLineContaining(t, document, "https://example.com/diagram.png")
 	then_viewLineSegmentIsUnderlined(t, gui, viewDetailName, lineIndex, "https://example.com/diagram.png")
-	loader := subject.githubLoader.(*fakePullRequestDetailLoader)
 	if len(loader.renderMarkdownHTMLCalls) != 0 {
 		t.Fatalf("expected public images to skip GitHub markdown rendering, actual %v", loader.renderMarkdownHTMLCalls)
 	}

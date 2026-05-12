@@ -66,7 +66,7 @@ func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) actionsP
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 	if candidates, ok := program.cachedAssignableUsers(target.repository); ok {
@@ -79,7 +79,7 @@ func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) actionsP
 }
 
 func (program *Program) startAssigneePickerLoad(gui *gocui.Gui, target pullRequestAssigneePickerTarget) error {
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return errors.New("github loader is unavailable")
 	}
 	if program.assigneePickerLoading() {
@@ -103,7 +103,7 @@ func (program *Program) startAssigneePickerLoad(gui *gocui.Gui, target pullReque
 }
 
 func (program *Program) loadAssigneePicker(gui *gocui.Gui, target pullRequestAssigneePickerTarget) {
-	candidates, err := program.githubLoader.ListAssignableUsers(target.repository)
+	candidates, err := program.pullRequestMutations.ListAssignableUsers(target.repository)
 	if err == nil {
 		program.storeAssignableUsers(target.repository, candidates)
 	}
@@ -345,7 +345,7 @@ func (program *Program) executeSubmitAssigneePickerAction(_ *gocui.Gui) actionsP
 	if !program.assigneePickerVisible() {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 
@@ -353,7 +353,7 @@ func (program *Program) executeSubmitAssigneePickerAction(_ *gocui.Gui) actionsP
 	if len(addLogins) == 0 && len(removeLogins) == 0 {
 		return actionsPopupActionResult{closePopup: true}
 	}
-	if err := program.githubLoader.UpdatePullRequestAssignees(program.assigneePicker.target.repository, program.assigneePicker.target.number, addLogins, removeLogins); err != nil {
+	if err := program.pullRequestMutations.UpdatePullRequestAssignees(program.assigneePicker.target.repository, program.assigneePicker.target.number, addLogins, removeLogins); err != nil {
 		return actionsPopupActionResult{err: normalizedAssigneePickerError(err)}
 	}
 

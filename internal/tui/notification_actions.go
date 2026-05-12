@@ -259,7 +259,7 @@ func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {
 		notificationMarkedReadMessage,
 		notificationRows(optimisticNotifications),
 		func() error {
-			return normalizedNotificationMutationError(program.githubLoader.MarkNotificationRead(target.threadID))
+			return normalizedNotificationMutationError(program.notificationMutations.MarkNotificationRead(target.threadID))
 		},
 	)
 }
@@ -281,7 +281,7 @@ func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
 		notificationMarkedDoneMessage,
 		notificationRows(optimisticNotifications),
 		func() error {
-			if err := normalizedNotificationMutationError(program.githubLoader.MarkNotificationDone(target.threadID)); err != nil {
+			if err := normalizedNotificationMutationError(program.notificationMutations.MarkNotificationDone(target.threadID)); err != nil {
 				return err
 			}
 			program.hideDoneNotificationsBestEffort([]githubcli.Notification{target.notification})
@@ -305,7 +305,7 @@ func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
 		notificationMarkedAllReadMessage,
 		notificationRows(optimisticNotifications),
 		func() error {
-			_, err := program.githubLoader.MarkAllNotificationsRead()
+			_, err := program.notificationMutations.MarkAllNotificationsRead()
 			return normalizedNotificationMutationError(err)
 		},
 	)
@@ -325,7 +325,7 @@ func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 		notificationMarkedAllDoneMessage,
 		notificationRows(nil),
 		func() error {
-			_, err := program.githubLoader.MarkAllNotificationsDone(loadedNotifications)
+			_, err := program.notificationMutations.MarkAllNotificationsDone(loadedNotifications)
 			if err = normalizedNotificationMutationError(err); err != nil {
 				return err
 			}
@@ -406,7 +406,7 @@ func (program *Program) handleNotificationKeyAction(gui *gocui.Gui, action func(
 }
 
 func (program *Program) startNotificationMutation(gui *gocui.Gui, loadingMessage string, successFeedbackMessage string, optimisticRows []NotificationRow, work func() error) error {
-	if program.githubLoader == nil {
+	if !program.hasNotificationMutations() {
 		return errors.New("github loader is unavailable")
 	}
 

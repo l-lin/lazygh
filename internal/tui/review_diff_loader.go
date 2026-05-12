@@ -34,7 +34,7 @@ func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
 
 	program.hydratePullRequestDiffFromCache(summary)
 	cachedResult, cached := program.pullRequestDiffForSummary(summary)
-	if !program.pullRequestDiffNeedsRefresh(summary, cachedResult, cached) || program.githubLoader == nil {
+	if !program.pullRequestDiffNeedsRefresh(summary, cachedResult, cached) || !program.hasDetailQueries() {
 		return
 	}
 
@@ -46,7 +46,7 @@ func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
 
 func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.PullRequest) {
 	repository := pullRequestRepositoryName(summary.Repository)
-	rawDiff, err := program.githubLoader.GetPullRequestDiff(repository, summary.Number)
+	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {

@@ -46,10 +46,10 @@ func (program *Program) executeRemoveReactionAction(target pullRequestReactionRe
 		program.setFeedback(program.model.Focus(), pullRequestReactionAlreadyRemovedMessage)
 		return actionsPopupActionResult{closePopup: true}
 	}
-	if program.githubLoader == nil {
+	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.githubLoader.RemoveReaction(target.subjectID, target.content); err != nil {
+	if err := program.reactionMutations.RemoveReaction(target.subjectID, target.content); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 

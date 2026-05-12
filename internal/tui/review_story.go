@@ -87,7 +87,7 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRe
 }
 
 func (program *Program) validateStoryReviewAvailability() error {
-	if program.githubLoader == nil || program.storyGenerator == nil {
+	if !program.hasDetailQueries() || !program.hasReviewMutations() || program.storyGenerator == nil {
 		return errors.New(storyReviewUnavailableMessage)
 	}
 	if !program.storyReviewConfig.Configured() {
@@ -103,7 +103,7 @@ func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (prepa
 	}
 
 	detail, detailOK := program.storyReviewDetail(summary)
-	rawDiff, actualErr := program.githubLoader.GetPullRequestDiff(repository, summary.Number)
+	rawDiff, actualErr := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
 	if actualErr != nil {
 		return preparedStoryReview{}, actualErr
 	}
@@ -117,7 +117,7 @@ func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (prepa
 		return preparedStoryReview{}, actualErr
 	}
 
-	pendingReviewID, actualErr := program.githubLoader.StartPendingPullRequestReview(repository, summary.Number)
+	pendingReviewID, actualErr := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
 	if actualErr != nil {
 		return preparedStoryReview{}, actualErr
 	}
@@ -147,14 +147,14 @@ func (program *Program) storyReviewDetail(summary githubcli.PullRequest) (github
 	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
 		return result.detail, true
 	}
-	if program.githubLoader == nil {
+	if !program.hasDetailQueries() {
 		return githubcli.PullRequestDetail{}, false
 	}
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
 		return githubcli.PullRequestDetail{}, false
 	}
-	detail, actualErr := program.githubLoader.GetPullRequestDetail(repository, summary.Number)
+	detail, actualErr := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
 	if actualErr != nil {
 		return githubcli.PullRequestDetail{}, false
 	}

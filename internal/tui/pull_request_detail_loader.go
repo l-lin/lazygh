@@ -26,7 +26,7 @@ func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 
 	program.hydratePullRequestDetailFromCache(summary)
 	cachedResult, cached := program.pullRequestDetailForSummary(summary)
-	if !program.pullRequestDetailNeedsRefresh(summary, cachedResult, cached) || program.githubLoader == nil {
+	if !program.pullRequestDetailNeedsRefresh(summary, cachedResult, cached) || !program.hasDetailQueries() {
 		return
 	}
 
@@ -38,13 +38,15 @@ func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 
 func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.PullRequest) {
 	repository := pullRequestRepositoryName(summary.Repository)
-	detail, err := program.githubLoader.GetPullRequestDetail(repository, summary.Number)
+	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
 	pendingReviewState := pendingPullRequestReviewState{}
 	pendingReviewStateKnown := false
-	if pendingReviewID, found, pendingReviewErr := program.githubLoader.GetPendingPullRequestReviewID(repository, summary.Number); pendingReviewErr == nil {
-		pendingReviewStateKnown = true
-		if found {
-			pendingReviewState.id = strings.TrimSpace(pendingReviewID)
+	if program.hasReviewMutations() {
+		if pendingReviewID, found, pendingReviewErr := program.reviewMutations.GetPendingPullRequestReviewID(repository, summary.Number); pendingReviewErr == nil {
+			pendingReviewStateKnown = true
+			if found {
+				pendingReviewState.id = strings.TrimSpace(pendingReviewID)
+			}
 		}
 	}
 	key := pullRequestDetailKey(summary.Repository, summary.Number)

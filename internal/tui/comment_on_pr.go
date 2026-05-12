@@ -54,11 +54,11 @@ func (program *Program) submitPullRequestComment(target pullRequestCommentTarget
 	if target.repository == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return errors.New("github loader is unavailable")
 	}
 
-	if err := program.githubLoader.CommentOnPullRequest(target.repository, target.number, body); err != nil {
+	if err := program.pullRequestMutations.CommentOnPullRequest(target.repository, target.number, body); err != nil {
 		return err
 	}
 

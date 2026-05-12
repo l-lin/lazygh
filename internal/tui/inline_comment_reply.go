@@ -66,10 +66,10 @@ func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadR
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.AddPullRequestReviewThreadReply(target.pendingReview, target.threadID, body); err != nil {
+	if err := program.reviewMutations.AddPullRequestReviewThreadReply(target.pendingReview, target.threadID, body); err != nil {
 		return err
 	}
 

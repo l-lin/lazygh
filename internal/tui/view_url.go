@@ -8,7 +8,7 @@ import (
 )
 
 func (program *Program) OpenPullRequestByURL(rawURL string) error {
-	if program.githubLoader == nil {
+	if !program.hasDetailQueries() && !program.hasPullRequestListQueries() {
 		return errors.New("github loader is unavailable")
 	}
 

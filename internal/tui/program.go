@@ -26,59 +26,19 @@ const (
 	viewPullRequestBuildInfoName = "pull-request-build-info"
 )
 
-type GitHubLoader interface {
-	GetConnectedUser() (githubcli.ConnectedUser, error)
-	ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error)
-	ListNotifications() ([]githubcli.Notification, error)
-	MarkNotificationRead(threadID string) error
-	MarkNotificationDone(threadID string) error
-	MarkAllNotificationsRead() (githubcli.NotificationBulkReadResult, error)
-	MarkAllNotificationsDone(notifications []githubcli.Notification) (int, error)
-	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
-	GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error)
-	GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error)
-	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
-	GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error)
-	CommentOnPullRequest(repository string, number int, body string) error
-	UpdatePullRequestComment(commentID string, body string) error
-	DeletePullRequestComment(commentID string) error
-	ApprovePullRequest(repository string, number int) error
-	ReviewPullRequestWithComment(repository string, number int, body string) error
-	RequestChangesOnPullRequest(repository string, number int, body string) error
-	RequestPullRequestReviewer(repository string, number int, reviewerLogin string) error
-	SubmitPullRequestReview(pullRequestReviewID string, event githubcli.PullRequestReviewEvent, body string) error
-	AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error
-	AddPullRequestReviewThreadReply(pullRequestReviewID string, pullRequestReviewThreadID string, body string) error
-	UpdatePullRequestReviewComment(commentID string, body string) error
-	DeletePullRequestReviewComment(commentID string) error
-	ResolvePullRequestReviewThread(threadID string) error
-	UnresolvePullRequestReviewThread(threadID string) error
-	AddReaction(subjectID string, content githubcli.ReactionContent) error
-	RemoveReaction(subjectID string, content githubcli.ReactionContent) error
-	OpenPullRequestInBrowser(repository string, number int) error
-	ListAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, error)
-	UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error
-	EditPullRequestTitle(repository string, number int, title string) error
-	EditPullRequestDescription(repository string, number int, body string) error
-	MarkPullRequestReadyForReview(repository string, number int) error
-	ConvertPullRequestToDraft(repository string, number int) error
-	ClosePullRequest(repository string, number int) error
-	ReopenPullRequest(repository string, number int) error
-	SquashMergePullRequest(repository string, number int) error
-	StartPendingPullRequestReview(repository string, number int) (string, error)
-	GetPendingPullRequestReviewID(repository string, number int) (string, bool, error)
-	DeletePullRequestReview(pullRequestReviewID string) error
-	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
-	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)
-	GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error)
-	GetPullRequestBuildRunJobLogForCheck(repository string, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildRunJob, string, error)
-	RenderMarkdownHTML(repository string, markdown string) (string, error)
-	GetAuthToken() (string, error)
-}
-
 type Program struct {
 	model                                   *Model
-	githubLoader                            GitHubLoader
+	sessionQueries                          SessionQueries
+	pullRequestListQueries                  PullRequestListQueries
+	notificationQueries                     NotificationQueries
+	detailQueries                           DetailQueries
+	pullRequestMutations                    PullRequestMutations
+	reviewMutations                         ReviewMutations
+	notificationMutations                   NotificationMutations
+	reactionMutations                       ReactionMutations
+	buildQueries                            BuildQueries
+	markdownHTMLRenderer                    MarkdownHTMLRenderer
+	authTokenProvider                       AuthTokenProvider
 	connectedUserLoadStarted                bool
 	connectedUserLogin                      string
 	myPullRequestsLoadStarted               bool
@@ -115,7 +75,7 @@ type Program struct {
 	activeDetailTab                         DetailTab
 	lastDetailIdentity                      string
 	detailViewState                         detailViewState
-	clipboardWriter                         clip.Writer
+	clipboardWriter                         ClipboardWriter
 	feedbackMessage                         string
 	optimisticMutationSequence              int
 	helpVisible                             bool
@@ -134,8 +94,8 @@ type Program struct {
 	pullRequestBuildRunLoad                 *pullRequestBuildRunLoadState
 	pullRequestBuildRunPopup                *pullRequestBuildRunPopupState
 	modalEditor                             *modalEditorState
-	externalEditor                          externalEditor
-	linkOpener                              linkOpener
+	externalEditor                          ExternalEditor
+	linkOpener                              LinkOpener
 	detailImageStore                        detailImageStore
 	detailImageManager                      detailImageManager
 	detailImageHTMLLoadInFlight             map[string]bool
@@ -154,39 +114,54 @@ type Program struct {
 	keymapOverrides                         appconfig.KeymapOverrides
 	pullRequestSearches                     []appconfig.PullRequestSearch
 	storyReviewConfig                       story.Config
-	themePresetStore                        themePresetStore
+	themePresetStore                        ThemePresetStore
 	openedPullRequestSummary                *githubcli.PullRequest
 	openedPullRequestTab                    PullRequestTab
 	pendingSelectionKeySequence             keySequenceState
 	pendingListViewportPlacements           map[string]viewportPlacement
 }
 
-func NewProgram(githubLoaders ...GitHubLoader) *Program {
-	var githubLoader GitHubLoader
-	if len(githubLoaders) > 0 {
-		githubLoader = githubLoaders[0]
+func NewProgram(depsOrLoaders ...any) *Program {
+	var loader any
+	if len(depsOrLoaders) > 0 {
+		loader = depsOrLoaders[0]
 	}
 
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
-	return NewProgramWithModelAndLoader(model, githubLoader)
+	return NewProgramWithModelAndLoader(model, loader)
 }
 
 func NewProgramWithModel(model *Model) *Program {
-	return NewProgramWithModelAndLoader(model, nil)
+	return NewProgramWithModelAndDeps(model, AppDeps{})
 }
 
-func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Program {
+func NewProgramWithModelAndLoader(model *Model, githubLoader any) *Program {
+	return NewProgramWithModelAndDeps(model, appDepsFromCompatibilityLoader(githubLoader))
+}
+
+func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	if model == nil {
 		model = NewModel(DefaultSeedData())
 	}
 
+	resolvedDeps := resolveAppDeps(deps)
 	imageStore := newMemoryDetailImageStore()
 	imageProtocol := kittyImageProtocol{}
 
 	return &Program{
 		model:                                model,
-		githubLoader:                         githubLoader,
+		sessionQueries:                       resolvedDeps.SessionQueries,
+		pullRequestListQueries:               resolvedDeps.PullRequestList,
+		notificationQueries:                  resolvedDeps.NotificationQueries,
+		detailQueries:                        resolvedDeps.DetailQueries,
+		pullRequestMutations:                 resolvedDeps.PullRequestMutations,
+		reviewMutations:                      resolvedDeps.ReviewMutations,
+		notificationMutations:                resolvedDeps.NotificationMutations,
+		reactionMutations:                    resolvedDeps.ReactionMutations,
+		buildQueries:                         resolvedDeps.BuildQueries,
+		markdownHTMLRenderer:                 resolvedDeps.MarkdownHTMLRenderer,
+		authTokenProvider:                    resolvedDeps.AuthTokenProvider,
 		pullRequestDetailCache:               map[string]pullRequestDetailResult{},
 		pullRequestDetailLoadInFlight:        map[string]bool{},
 		pullRequestDetailDocumentCache:       map[pullRequestDetailDocumentCacheKey]detailDocument{},
@@ -206,8 +181,8 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		additionalPullRequestsLoading:        map[PullRequestTab]bool{},
 		additionalPullRequestsCounts:         map[PullRequestTab]pullRequestCountState{},
 		notificationDoneStore:                noopNotificationDoneStore{},
-		externalEditor:                       systemExternalEditor{},
-		linkOpener:                           newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand),
+		externalEditor:                       resolvedDeps.ExternalEditor,
+		linkOpener:                           resolvedDeps.LinkOpener,
 		detailImageStore:                     imageStore,
 		detailImageManager:                   &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}},
 		detailImageHTMLLoadInFlight:          map[string]bool{},
@@ -217,15 +192,31 @@ func NewProgramWithModelAndLoader(model *Model, githubLoader GitHubLoader) *Prog
 		imageHTTPClient:                      http.DefaultClient,
 		markdownRenderer:                     glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
 		storyGenerator:                       commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
-		themePresetStore:                     &defaultThemePresetStore{save: appconfig.SaveThemePresetDefault},
+		themePresetStore:                     resolvedDeps.ThemePresetStore,
 		asyncRunner:                          goroutineAsyncRunner{},
 		uiUpdater:                            queuedUIUpdater{},
-		clipboardWriter:                      clip.NewSystemWriter(),
+		clipboardWriter:                      resolvedDeps.ClipboardWriter,
 		detailViewState:                      newDetailViewState(),
 		detailWrapWidth:                      defaultDetailWrapWidth,
 		pullRequestSearches:                  appconfig.DefaultPullRequestSearches(),
 		pendingListViewportPlacements:        map[string]viewportPlacement{},
 	}
+}
+
+func resolveAppDeps(deps AppDeps) AppDeps {
+	if deps.ExternalEditor == nil {
+		deps.ExternalEditor = systemExternalEditor{}
+	}
+	if deps.LinkOpener == nil {
+		deps.LinkOpener = newSystemLinkOpener(appconfig.ResolveLinksConfig(appconfig.LinksConfig{}).OpenCommand)
+	}
+	if deps.ThemePresetStore == nil {
+		deps.ThemePresetStore = &defaultThemePresetStore{save: appconfig.SaveThemePresetDefault}
+	}
+	if deps.ClipboardWriter == nil {
+		deps.ClipboardWriter = clip.NewSystemWriter()
+	}
+	return deps
 }
 
 func (program *Program) Run() error {

@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) withPullRequestDiffFileTeamOwners(repository string, number int, rawDiff githubcli.PullRequestDiff) githubcli.PullRequestDiff {
-	if rawDiff.FileTeamOwnersAttempted || program.githubLoader == nil || !program.shouldLoadPullRequestDiffTeamOwners() {
+	if rawDiff.FileTeamOwnersAttempted || !program.hasDetailQueries() || !program.shouldLoadPullRequestDiffTeamOwners() {
 		return rawDiff
 	}
 
@@ -17,7 +17,7 @@ func (program *Program) withPullRequestDiffFileTeamOwners(repository string, num
 		return rawDiff
 	}
 
-	teamOwnersByPath, err := program.githubLoader.GetPullRequestFileTeamOwners(repository, number, filePaths)
+	teamOwnersByPath, err := program.detailQueries.GetPullRequestFileTeamOwners(repository, number, filePaths)
 	if err != nil {
 		return rawDiff
 	}

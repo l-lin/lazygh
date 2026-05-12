@@ -82,10 +82,10 @@ func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommen
 	if strings.TrimSpace(target.commentID) == "" {
 		return errors.New("missing inline comment identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.UpdatePullRequestReviewComment(target.commentID, body); err != nil {
+	if err := program.reviewMutations.UpdatePullRequestReviewComment(target.commentID, body); err != nil {
 		return err
 	}
 
@@ -98,10 +98,10 @@ func (program *Program) deleteInlineComment(target pullRequestReviewCommentActio
 	if strings.TrimSpace(target.commentID) == "" {
 		return errors.New("missing inline comment identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.DeletePullRequestReviewComment(target.commentID); err != nil {
+	if err := program.reviewMutations.DeletePullRequestReviewComment(target.commentID); err != nil {
 		return err
 	}
 

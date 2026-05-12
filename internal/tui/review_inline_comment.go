@@ -191,7 +191,7 @@ func (program *Program) submitPullRequestInlineComment(target pullRequestInlineC
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
 
@@ -199,7 +199,7 @@ func (program *Program) submitPullRequestInlineComment(target pullRequestInlineC
 	if err != nil {
 		return err
 	}
-	if err := program.githubLoader.AddPullRequestReviewThread(pendingReviewID, body, target.threadTarget); err != nil {
+	if err := program.reviewMutations.AddPullRequestReviewThread(pendingReviewID, body, target.threadTarget); err != nil {
 		return err
 	}
 
@@ -217,11 +217,11 @@ func (program *Program) pendingReviewIDForInlineComment(target pullRequestInline
 		program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, target.pendingReview)
 		return strings.TrimSpace(target.pendingReview), nil
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return "", errors.New("github loader is unavailable")
 	}
 
-	pendingReviewID, err := program.githubLoader.StartPendingPullRequestReview(target.repository, target.number)
+	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(target.repository, target.number)
 	if err != nil {
 		return "", err
 	}

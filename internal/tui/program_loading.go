@@ -9,7 +9,7 @@ import (
 )
 
 func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
-	if gui == nil || program.githubLoader == nil || program.connectedUserLoadStarted {
+	if gui == nil || !program.hasSessionQueries() || program.connectedUserLoadStarted {
 		return
 	}
 
@@ -29,7 +29,7 @@ func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab
 	}
 
 	program.hydratePullRequestsFromCache(tab)
-	if program.githubLoader == nil {
+	if !program.hasPullRequestListQueries() {
 		return
 	}
 
@@ -47,7 +47,7 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 
 	tab := program.model.ActivePullRequestTab()
 	program.hydratePullRequestsFromCache(tab)
-	if program.githubLoader == nil {
+	if !program.hasPullRequestListQueries() {
 		return
 	}
 
@@ -61,7 +61,7 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 }
 
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
-	user, err := program.githubLoader.GetConnectedUser()
+	user, err := program.sessionQueries.GetConnectedUser()
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		connectedUserLogin := ""
@@ -103,7 +103,7 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 }
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubcli.PullRequest, error) {
-	return program.githubLoader.ListPullRequests(program.pullRequestSearch(tab).Command)
+	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
 }
 
 func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {

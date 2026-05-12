@@ -61,16 +61,16 @@ func (program *Program) executeInlineCommentResolutionAction(resolved bool) acti
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 
 	var err error
 	feedbackMessage := inlineCommentResolvedSuccessMessage
 	if resolved {
-		err = program.githubLoader.ResolvePullRequestReviewThread(target.threadID)
+		err = program.reviewMutations.ResolvePullRequestReviewThread(target.threadID)
 	} else {
-		err = program.githubLoader.UnresolvePullRequestReviewThread(target.threadID)
+		err = program.reviewMutations.UnresolvePullRequestReviewThread(target.threadID)
 		feedbackMessage = inlineCommentUnresolvedSuccessMessage
 	}
 	if err != nil {

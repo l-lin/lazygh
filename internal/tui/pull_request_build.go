@@ -56,7 +56,7 @@ func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRe
 }
 
 func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary githubcli.PullRequest, check githubcli.PullRequestStatusCheck) error {
-	if program.githubLoader == nil || program.pullRequestBuildRunLoad != nil {
+	if !program.hasBuildQueries() || program.pullRequestBuildRunLoad != nil {
 		return nil
 	}
 
@@ -80,10 +80,10 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 }
 
 func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository string, target pullRequestBuildRunTarget) {
-	rawRunOutput, err := program.githubLoader.GetPullRequestBuildRun(repository, target.check)
+	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, target.check)
 	jobs := []githubcli.PullRequestBuildRunJob(nil)
 	if err == nil {
-		jobs, _ = program.githubLoader.GetPullRequestBuildRunJobs(repository, target.check)
+		jobs, _ = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
@@ -100,7 +100,7 @@ func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository strin
 }
 
 func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubcli.PullRequest, check githubcli.PullRequestStatusCheck) error {
-	if program.githubLoader == nil || program.pullRequestBuildRunLoad != nil {
+	if !program.hasBuildQueries() || program.pullRequestBuildRunLoad != nil {
 		return nil
 	}
 
@@ -118,7 +118,7 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 }
 
 func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubcli.PullRequestStatusCheck) {
-	job, rawLogOutput, err := program.githubLoader.GetPullRequestBuildRunJobLogForCheck(repository, check)
+	job, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, check)
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {

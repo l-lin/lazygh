@@ -85,10 +85,10 @@ func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarge
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.EditPullRequestTitle(target.repository, target.number, title); err != nil {
+	if err := program.pullRequestMutations.EditPullRequestTitle(target.repository, target.number, title); err != nil {
 		return err
 	}
 
@@ -101,10 +101,10 @@ func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActio
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
 		return errors.New("missing pull request identity")
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return errors.New("github loader is unavailable")
 	}
-	if err := program.githubLoader.EditPullRequestDescription(target.repository, target.number, body); err != nil {
+	if err := program.pullRequestMutations.EditPullRequestDescription(target.repository, target.number, body); err != nil {
 		return err
 	}
 

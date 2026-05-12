@@ -20,7 +20,7 @@ type detailImageHTMLSource struct {
 }
 
 func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
-	if gui == nil || program.githubLoader == nil {
+	if gui == nil || !program.hasMarkdownHTMLRenderer() {
 		return
 	}
 
@@ -41,7 +41,7 @@ func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
 }
 
 func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detailImageHTMLSource) {
-	renderedHTML, err := program.githubLoader.RenderMarkdownHTML(source.repository, source.markdown)
+	renderedHTML, err := program.markdownHTMLRenderer.RenderMarkdownHTML(source.repository, source.markdown)
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.detailImageHTMLLoadInFlight, source.key)
@@ -107,7 +107,7 @@ func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) 
 }
 
 func (program *Program) detailImageAuthToken() string {
-	if program.githubLoader == nil {
+	if !program.hasAuthTokenProvider() {
 		return ""
 	}
 
@@ -118,7 +118,7 @@ func (program *Program) detailImageAuthToken() string {
 		return program.githubAuthToken
 	}
 
-	actual, err := program.githubLoader.GetAuthToken()
+	actual, err := program.authTokenProvider.GetAuthToken()
 	program.githubAuthTokenLoaded = true
 	if err == nil {
 		program.githubAuthToken = strings.TrimSpace(actual)

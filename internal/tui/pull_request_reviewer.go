@@ -47,10 +47,10 @@ func (program *Program) executeReRequestPullRequestReviewAction(_ *gocui.Gui, ta
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.reviewerLogin) == "" {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.githubLoader.RequestPullRequestReviewer(target.repository, target.number, target.reviewerLogin); err != nil {
+	if err := program.pullRequestMutations.RequestPullRequestReviewer(target.repository, target.number, target.reviewerLogin); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 

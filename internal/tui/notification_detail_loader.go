@@ -34,7 +34,7 @@ func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
 
 	if repository, number, ok := notification.IssueIdentity(); ok {
 		key := notificationDetailKey(repository, number)
-		if key == "" || program.issueDetailLoadInFlight[key] || program.issueDetailLoaded(key) || program.githubLoader == nil {
+		if key == "" || program.issueDetailLoadInFlight[key] || program.issueDetailLoaded(key) || !program.hasNotificationQueries() {
 			return
 		}
 		program.issueDetailLoadInFlight[key] = true
@@ -46,7 +46,7 @@ func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
 
 	if repository, id, ok := notification.ReleaseIdentity(); ok {
 		key := notificationDetailKey(repository, id)
-		if key == "" || program.releaseDetailLoadInFlight[key] || program.releaseDetailLoaded(key) || program.githubLoader == nil {
+		if key == "" || program.releaseDetailLoadInFlight[key] || program.releaseDetailLoaded(key) || !program.hasNotificationQueries() {
 			return
 		}
 		program.releaseDetailLoadInFlight[key] = true
@@ -57,7 +57,7 @@ func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
 }
 
 func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, number int) {
-	detail, err := program.githubLoader.GetIssueDetail(repository, number)
+	detail, err := program.notificationQueries.GetIssueDetail(repository, number)
 	key := notificationDetailKey(repository, number)
 	result := issueDetailResult{err: err}
 	if err == nil {
@@ -72,7 +72,7 @@ func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, numbe
 }
 
 func (program *Program) loadReleaseDetail(gui *gocui.Gui, repository string, id int) {
-	detail, err := program.githubLoader.GetReleaseDetail(repository, id)
+	detail, err := program.notificationQueries.GetReleaseDetail(repository, id)
 	key := notificationDetailKey(repository, id)
 	result := releaseDetailResult{err: err}
 	if err == nil {

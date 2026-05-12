@@ -8,7 +8,7 @@ import (
 )
 
 func (program *Program) OpenReviewByURL(rawURL string) error {
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
 
@@ -20,7 +20,7 @@ func (program *Program) OpenReviewByURL(rawURL string) error {
 }
 
 func (program *Program) openPullRequestReview(summary githubcli.PullRequest) error {
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}
 
@@ -29,7 +29,7 @@ func (program *Program) openPullRequestReview(summary githubcli.PullRequest) err
 		return errors.New("missing pull request identity")
 	}
 
-	pendingReviewID, err := program.githubLoader.StartPendingPullRequestReview(repository, summary.Number)
+	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
 	if err != nil {
 		return err
 	}

@@ -120,7 +120,7 @@ func (program *Program) executeMarkPullRequestReadyForReviewAction(_ *gocui.Gui)
 	return program.executePullRequestLifecycleMutation(
 		"gh pr ready",
 		func(repository string, number int) error {
-			return program.githubLoader.MarkPullRequestReadyForReview(repository, number)
+			return program.pullRequestMutations.MarkPullRequestReadyForReview(repository, number)
 		},
 		"OPEN",
 		false,
@@ -132,7 +132,7 @@ func (program *Program) executeConvertPullRequestToDraftAction(_ *gocui.Gui) act
 	return program.executePullRequestLifecycleMutation(
 		"gh pr ready",
 		func(repository string, number int) error {
-			return program.githubLoader.ConvertPullRequestToDraft(repository, number)
+			return program.pullRequestMutations.ConvertPullRequestToDraft(repository, number)
 		},
 		"OPEN",
 		true,
@@ -144,7 +144,7 @@ func (program *Program) executeClosePullRequestAction(_ *gocui.Gui) actionsPopup
 	return program.executePullRequestLifecycleMutation(
 		"gh pr close",
 		func(repository string, number int) error {
-			return program.githubLoader.ClosePullRequest(repository, number)
+			return program.pullRequestMutations.ClosePullRequest(repository, number)
 		},
 		"CLOSED",
 		program.currentPullRequestDraftState(),
@@ -156,7 +156,7 @@ func (program *Program) executeReopenPullRequestAction(_ *gocui.Gui) actionsPopu
 	return program.executePullRequestLifecycleMutation(
 		"gh pr reopen",
 		func(repository string, number int) error {
-			return program.githubLoader.ReopenPullRequest(repository, number)
+			return program.pullRequestMutations.ReopenPullRequest(repository, number)
 		},
 		"OPEN",
 		program.currentPullRequestDraftState(),
@@ -175,7 +175,7 @@ func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) action
 	return program.executePullRequestLifecycleMutation(
 		"gh pr merge",
 		func(repository string, number int) error {
-			return program.githubLoader.SquashMergePullRequest(repository, number)
+			return program.pullRequestMutations.SquashMergePullRequest(repository, number)
 		},
 		"MERGED",
 		false,
@@ -203,7 +203,7 @@ func (program *Program) executePullRequestLifecycleMutation(commandName string, 
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 	if err := mutate(target.repository, target.number); err != nil {

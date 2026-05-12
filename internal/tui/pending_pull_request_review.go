@@ -124,10 +124,10 @@ func (program *Program) executeCancelPendingPullRequestReviewAction(gui *gocui.G
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.githubLoader == nil {
+	if !program.hasReviewMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.githubLoader.DeletePullRequestReview(target.pendingReviewID); err != nil {
+	if err := program.reviewMutations.DeletePullRequestReview(target.pendingReviewID); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 

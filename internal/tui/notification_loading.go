@@ -12,7 +12,7 @@ func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
 	}
 
 	program.hydrateNotificationsFromCache()
-	if program.githubLoader == nil {
+	if !program.hasNotificationQueries() {
 		return
 	}
 
@@ -33,7 +33,7 @@ func (program *Program) notificationsPendingLoad() bool {
 }
 
 func (program *Program) loadNotifications(gui *gocui.Gui) {
-	notifications, err := program.githubLoader.ListNotifications()
+	notifications, err := program.notificationQueries.ListNotifications()
 	if err == nil {
 		notifications = program.filterDoneNotifications(notifications)
 		program.cacheNotifications(notifications)

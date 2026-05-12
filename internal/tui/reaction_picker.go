@@ -103,10 +103,10 @@ func (program *Program) executeReactionPickerAction(content githubcli.ReactionCo
 		program.setFeedback(program.model.Focus(), pullRequestReactionAlreadyAddedMessage)
 		return actionsPopupActionResult{closePopup: true}
 	}
-	if program.githubLoader == nil {
+	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.githubLoader.AddReaction(target.subjectID, content); err != nil {
+	if err := program.reactionMutations.AddReaction(target.subjectID, content); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 
