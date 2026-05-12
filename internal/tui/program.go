@@ -1,9 +1,6 @@
 package tui
 
 import (
-	"net/http"
-	"sync"
-
 	"github.com/jesseduffield/gocui"
 
 	clip "github.com/l-lin/lazygh/internal/clipboard"
@@ -27,85 +24,47 @@ const (
 )
 
 type Program struct {
-	model                                   *Model
-	sessionQueries                          SessionQueries
-	pullRequestListQueries                  PullRequestListQueries
-	notificationQueries                     NotificationQueries
-	detailQueries                           DetailQueries
-	pullRequestMutations                    PullRequestMutations
-	reviewMutations                         ReviewMutations
-	notificationMutations                   NotificationMutations
-	reactionMutations                       ReactionMutations
-	buildQueries                            BuildQueries
-	markdownHTMLRenderer                    MarkdownHTMLRenderer
-	authTokenProvider                       AuthTokenProvider
-	connectedUserLoadStarted                bool
-	connectedUserLogin                      string
-	myPullRequestsLoadStarted               bool
-	requestedPullRequestsLoadStarted        bool
-	notificationsLoadStarted                bool
-	myPullRequestsLoading                   bool
-	requestedPullRequestsLoading            bool
-	notificationsLoading                    bool
-	notificationsLoadingDetailMessage       string
-	myPullRequestsCount                     int
-	myPullRequestsCountKnown                bool
-	requestedPullRequestsCount              int
-	requestedPullRequestsCountKnown         bool
-	additionalPullRequestsLoadStarted       map[PullRequestTab]bool
-	additionalPullRequestsLoading           map[PullRequestTab]bool
-	additionalPullRequestsCounts            map[PullRequestTab]pullRequestCountState
-	pullRequestCache                        persistentPullRequestCache
-	notificationDoneStore                   notificationDoneStore
-	pullRequestDetailCache                  map[string]pullRequestDetailResult
-	pullRequestDetailLoadInFlight           map[string]bool
-	pullRequestDetailDocumentCache          map[pullRequestDetailDocumentCacheKey]detailDocument
-	pullRequestConversationDocumentCache    map[pullRequestDetailDocumentCacheKey]browserConversationDocument
-	pullRequestChangesRenderedRowsCache     map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow
-	pullRequestDiffCache                    map[string]pullRequestDiffResult
-	pullRequestDiffLoadInFlight             map[string]bool
-	issueDetailCache                        map[string]issueDetailResult
-	issueDetailLoadInFlight                 map[string]bool
-	releaseDetailCache                      map[string]releaseDetailResult
-	releaseDetailLoadInFlight               map[string]bool
-	reviewDiffRenderCache                   map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
-	storyReviewLoading                      bool
+	model                  *Model
+	sessionQueries         SessionQueries
+	pullRequestListQueries PullRequestListQueries
+	notificationQueries    NotificationQueries
+	detailQueries          DetailQueries
+	pullRequestMutations   PullRequestMutations
+	reviewMutations        ReviewMutations
+	notificationMutations  NotificationMutations
+	reactionMutations      ReactionMutations
+	buildQueries           BuildQueries
+	markdownHTMLRenderer   MarkdownHTMLRenderer
+	authTokenProvider      AuthTokenProvider
+	*sessionStore
+	*persistentCacheStore
+	*pullRequestListStore
+	*notificationStore
+	*detailStore
+	*reviewStore
+	*buildStore
+	*statusStore
+	*optimisticMutationCoordinator
+	*imageLoadCoordinator
 	loadingSpinnerFrameIndex                int
 	detailWrapWidth                         int
 	activeDetailTab                         DetailTab
 	lastDetailIdentity                      string
 	detailViewState                         detailViewState
 	clipboardWriter                         ClipboardWriter
-	feedbackMessage                         string
-	optimisticMutationSequence              int
 	helpVisible                             bool
 	searchEditor                            *lineEditor
 	actionsPopupSearchEditor                *lineEditor
 	actionsPopupErrorMessage                string
 	actionsPopupPendingConfirmationActionID string
-	pendingPullRequestReviewCache           map[string]pendingPullRequestReviewState
 	reactionPicker                          *reactionPickerState
 	themePicker                             *themePickerState
 	assigneePicker                          *assigneePickerState
 	assigneePickerLoad                      *assigneePickerLoadState
-	assignableUsersCache                    map[string][]githubcli.PullRequestAuthor
 	reviewSession                           reviewSessionState
-	browserCollapsedSectionStates           map[string]bool
-	pullRequestBuildRunLoad                 *pullRequestBuildRunLoadState
-	pullRequestBuildRunPopup                *pullRequestBuildRunPopupState
 	modalEditor                             *modalEditorState
 	externalEditor                          ExternalEditor
 	linkOpener                              LinkOpener
-	detailImageStore                        detailImageStore
-	detailImageManager                      detailImageManager
-	detailImageHTMLLoadInFlight             map[string]bool
-	detailImageHTMLLoadFailed               map[string]bool
-	detailImageLoadInFlight                 map[string]bool
-	detailImageLoadFailed                   map[string]bool
-	githubAuthToken                         string
-	githubAuthTokenLoaded                   bool
-	detailImageAuthTokenMu                  sync.Mutex
-	imageHTTPClient                         *http.Client
 	markdownRenderer                        MarkdownRenderer
 	storyGenerator                          reviewStoryGenerator
 	asyncRunner                             asyncRunner
@@ -148,58 +107,47 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	resolvedDeps := resolveAppDeps(deps)
 	imageStore := newMemoryDetailImageStore()
 	imageProtocol := kittyImageProtocol{}
+	persistence := &persistentCacheStore{}
+	sessionState := newSessionStore()
+	detailState := newDetailStore(persistence)
+	reviewState := newReviewStore(persistence)
+	imageCoordinator := newImageLoadCoordinator(imageStore, &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}})
 
 	return &Program{
-		model:                                model,
-		sessionQueries:                       resolvedDeps.SessionQueries,
-		pullRequestListQueries:               resolvedDeps.PullRequestList,
-		notificationQueries:                  resolvedDeps.NotificationQueries,
-		detailQueries:                        resolvedDeps.DetailQueries,
-		pullRequestMutations:                 resolvedDeps.PullRequestMutations,
-		reviewMutations:                      resolvedDeps.ReviewMutations,
-		notificationMutations:                resolvedDeps.NotificationMutations,
-		reactionMutations:                    resolvedDeps.ReactionMutations,
-		buildQueries:                         resolvedDeps.BuildQueries,
-		markdownHTMLRenderer:                 resolvedDeps.MarkdownHTMLRenderer,
-		authTokenProvider:                    resolvedDeps.AuthTokenProvider,
-		pullRequestDetailCache:               map[string]pullRequestDetailResult{},
-		pullRequestDetailLoadInFlight:        map[string]bool{},
-		pullRequestDetailDocumentCache:       map[pullRequestDetailDocumentCacheKey]detailDocument{},
-		pullRequestConversationDocumentCache: map[pullRequestDetailDocumentCacheKey]browserConversationDocument{},
-		pullRequestChangesRenderedRowsCache:  map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{},
-		pullRequestDiffCache:                 map[string]pullRequestDiffResult{},
-		pullRequestDiffLoadInFlight:          map[string]bool{},
-		issueDetailCache:                     map[string]issueDetailResult{},
-		issueDetailLoadInFlight:              map[string]bool{},
-		releaseDetailCache:                   map[string]releaseDetailResult{},
-		releaseDetailLoadInFlight:            map[string]bool{},
-		reviewDiffRenderCache:                map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
-		pendingPullRequestReviewCache:        map[string]pendingPullRequestReviewState{},
-		assignableUsersCache:                 map[string][]githubcli.PullRequestAuthor{},
-		browserCollapsedSectionStates:        map[string]bool{},
-		additionalPullRequestsLoadStarted:    map[PullRequestTab]bool{},
-		additionalPullRequestsLoading:        map[PullRequestTab]bool{},
-		additionalPullRequestsCounts:         map[PullRequestTab]pullRequestCountState{},
-		notificationDoneStore:                noopNotificationDoneStore{},
-		externalEditor:                       resolvedDeps.ExternalEditor,
-		linkOpener:                           resolvedDeps.LinkOpener,
-		detailImageStore:                     imageStore,
-		detailImageManager:                   &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}},
-		detailImageHTMLLoadInFlight:          map[string]bool{},
-		detailImageHTMLLoadFailed:            map[string]bool{},
-		detailImageLoadInFlight:              map[string]bool{},
-		detailImageLoadFailed:                map[string]bool{},
-		imageHTTPClient:                      http.DefaultClient,
-		markdownRenderer:                     glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
-		storyGenerator:                       commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
-		themePresetStore:                     resolvedDeps.ThemePresetStore,
-		asyncRunner:                          goroutineAsyncRunner{},
-		uiUpdater:                            queuedUIUpdater{},
-		clipboardWriter:                      resolvedDeps.ClipboardWriter,
-		detailViewState:                      newDetailViewState(),
-		detailWrapWidth:                      defaultDetailWrapWidth,
-		pullRequestSearches:                  appconfig.DefaultPullRequestSearches(),
-		pendingListViewportPlacements:        map[string]viewportPlacement{},
+		model:                         model,
+		sessionQueries:                resolvedDeps.SessionQueries,
+		pullRequestListQueries:        resolvedDeps.PullRequestList,
+		notificationQueries:           resolvedDeps.NotificationQueries,
+		detailQueries:                 resolvedDeps.DetailQueries,
+		pullRequestMutations:          resolvedDeps.PullRequestMutations,
+		reviewMutations:               resolvedDeps.ReviewMutations,
+		notificationMutations:         resolvedDeps.NotificationMutations,
+		reactionMutations:             resolvedDeps.ReactionMutations,
+		buildQueries:                  resolvedDeps.BuildQueries,
+		markdownHTMLRenderer:          resolvedDeps.MarkdownHTMLRenderer,
+		authTokenProvider:             resolvedDeps.AuthTokenProvider,
+		sessionStore:                  sessionState,
+		persistentCacheStore:          persistence,
+		pullRequestListStore:          newPullRequestListStore(persistence),
+		notificationStore:             newNotificationStore(persistence),
+		detailStore:                   detailState,
+		reviewStore:                   reviewState,
+		buildStore:                    newBuildStore(),
+		statusStore:                   newStatusStore(),
+		optimisticMutationCoordinator: newOptimisticMutationCoordinator(),
+		imageLoadCoordinator:          imageCoordinator,
+		externalEditor:                resolvedDeps.ExternalEditor,
+		linkOpener:                    resolvedDeps.LinkOpener,
+		markdownRenderer:              glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
+		storyGenerator:                commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
+		themePresetStore:              resolvedDeps.ThemePresetStore,
+		asyncRunner:                   goroutineAsyncRunner{},
+		uiUpdater:                     queuedUIUpdater{},
+		clipboardWriter:               resolvedDeps.ClipboardWriter,
+		detailViewState:               newDetailViewState(),
+		detailWrapWidth:               defaultDetailWrapWidth,
+		pullRequestSearches:           appconfig.DefaultPullRequestSearches(),
+		pendingListViewportPlacements: map[string]viewportPlacement{},
 	}
 }
 

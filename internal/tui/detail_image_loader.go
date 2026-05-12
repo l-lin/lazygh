@@ -20,24 +20,7 @@ type detailImageHTMLSource struct {
 }
 
 func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
-	if gui == nil || !program.hasMarkdownHTMLRenderer() {
-		return
-	}
-
-	for _, source := range program.currentDetailImageHTMLSources() {
-		if !source.canLoadRenderedHTML() {
-			continue
-		}
-		if program.detailImageHTMLLoadInFlight[source.key] || program.detailImageHTMLLoadFailed[source.key] {
-			continue
-		}
-
-		sourceCopy := source
-		program.detailImageHTMLLoadInFlight[source.key] = true
-		program.asyncRunner.Go(func() {
-			program.loadCurrentDetailImageHTML(gui, sourceCopy)
-		})
-	}
+	program.executeWorkflowCommands(gui, program.imageLoadCoordinator.planCurrentDetailImageHTMLLoads(program, gui))
 }
 
 func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detailImageHTMLSource) {
@@ -58,31 +41,7 @@ func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detail
 }
 
 func (program *Program) maybeLoadCurrentDetailImages(gui *gocui.Gui) {
-	if gui == nil || program.detailImageStore == nil {
-		return
-	}
-
-	for _, source := range program.currentDetailImageHTMLSources() {
-		preparedMarkdown := prepareMarkdownForImageRendering(source.markdown, source.renderedHTML)
-		for _, occurrence := range collectMarkdownImageOccurrences(preparedMarkdown) {
-			imageURL := strings.TrimSpace(occurrence.imageURL)
-			if imageURL == "" {
-				continue
-			}
-			if _, ok := program.detailImageStore.ImageBySource(imageURL); ok {
-				continue
-			}
-			if program.detailImageLoadInFlight[imageURL] || program.detailImageLoadFailed[imageURL] {
-				continue
-			}
-
-			imageURLCopy := imageURL
-			program.detailImageLoadInFlight[imageURLCopy] = true
-			program.asyncRunner.Go(func() {
-				program.loadCurrentDetailImage(gui, imageURLCopy)
-			})
-		}
-	}
+	program.executeWorkflowCommands(gui, program.imageLoadCoordinator.planCurrentDetailImageLoads(program, gui))
 }
 
 func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) {

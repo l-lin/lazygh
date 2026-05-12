@@ -18,30 +18,7 @@ type pullRequestDiffResult struct {
 }
 
 func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
-	if gui == nil {
-		return
-	}
-
-	summary, ok := program.selectedPullRequestSummaryForDiff()
-	if !ok {
-		return
-	}
-
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	if key == "" || program.pullRequestDiffLoadInFlight[key] {
-		return
-	}
-
-	program.hydratePullRequestDiffFromCache(summary)
-	cachedResult, cached := program.pullRequestDiffForSummary(summary)
-	if !program.pullRequestDiffNeedsRefresh(summary, cachedResult, cached) || !program.hasDetailQueries() {
-		return
-	}
-
-	program.pullRequestDiffLoadInFlight[key] = true
-	program.asyncRunner.Go(func() {
-		program.loadPullRequestDiff(gui, summary)
-	})
+	program.executeWorkflowCommands(gui, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui))
 }
 
 func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.PullRequest) {

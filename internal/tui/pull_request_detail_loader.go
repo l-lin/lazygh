@@ -10,30 +10,7 @@ import (
 )
 
 func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
-	if gui == nil {
-		return
-	}
-
-	summary, ok := program.selectedPullRequestSummaryForDetail()
-	if !ok {
-		return
-	}
-
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	if key == "" || program.pullRequestDetailLoadInFlight[key] {
-		return
-	}
-
-	program.hydratePullRequestDetailFromCache(summary)
-	cachedResult, cached := program.pullRequestDetailForSummary(summary)
-	if !program.pullRequestDetailNeedsRefresh(summary, cachedResult, cached) || !program.hasDetailQueries() {
-		return
-	}
-
-	program.pullRequestDetailLoadInFlight[key] = true
-	program.asyncRunner.Go(func() {
-		program.loadPullRequestDetail(gui, summary)
-	})
+	program.executeWorkflowCommands(gui, program.detailStore.planSelectedPullRequestDetailLoad(program, gui))
 }
 
 func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.PullRequest) {

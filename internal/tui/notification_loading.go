@@ -7,21 +7,7 @@ import (
 )
 
 func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
-	if gui == nil || program.reviewSession.active || program.notificationsLoadStarted {
-		return
-	}
-
-	program.hydrateNotificationsFromCache()
-	if !program.hasNotificationQueries() {
-		return
-	}
-
-	program.notificationsLoadStarted = true
-	program.notificationsLoading = true
-	program.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	program.asyncRunner.Go(func() {
-		program.loadNotifications(gui)
-	})
+	program.executeWorkflowCommands(gui, program.notificationStore.planLoad(program, gui))
 }
 
 func (program *Program) notificationsPendingLoad() bool {

@@ -20,40 +20,7 @@ type releaseDetailResult struct {
 }
 
 func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
-	if gui == nil || program.reviewSession.active || program.model.currentSideFocus() != FocusNotificationsView {
-		return
-	}
-
-	notification, ok := program.model.SelectedNotification()
-	if !ok {
-		return
-	}
-	if _, ok := notification.PullRequestSummary(); ok {
-		return
-	}
-
-	if repository, number, ok := notification.IssueIdentity(); ok {
-		key := notificationDetailKey(repository, number)
-		if key == "" || program.issueDetailLoadInFlight[key] || program.issueDetailLoaded(key) || !program.hasNotificationQueries() {
-			return
-		}
-		program.issueDetailLoadInFlight[key] = true
-		program.asyncRunner.Go(func() {
-			program.loadIssueDetail(gui, repository, number)
-		})
-		return
-	}
-
-	if repository, id, ok := notification.ReleaseIdentity(); ok {
-		key := notificationDetailKey(repository, id)
-		if key == "" || program.releaseDetailLoadInFlight[key] || program.releaseDetailLoaded(key) || !program.hasNotificationQueries() {
-			return
-		}
-		program.releaseDetailLoadInFlight[key] = true
-		program.asyncRunner.Go(func() {
-			program.loadReleaseDetail(gui, repository, id)
-		})
-	}
+	program.executeWorkflowCommands(gui, program.detailStore.planSelectedNotificationDetailLoad(program, gui))
 }
 
 func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, number int) {

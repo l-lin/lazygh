@@ -92,7 +92,7 @@ func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarge
 		return err
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.optimisticallyUpdatePullRequestTitle(target.repository, target.number, title)
 	program.setFeedback(program.model.Focus(), pullRequestTitleEditSuccessMessage)
 	return nil
 }
@@ -108,7 +108,7 @@ func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActio
 		return err
 	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.optimisticallyUpdatePullRequestDescription(target.repository, target.number, body)
 	program.setFeedback(program.model.Focus(), pullRequestDescriptionEditSuccessMessage)
 	return nil
 }

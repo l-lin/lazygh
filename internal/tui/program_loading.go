@@ -9,14 +9,7 @@ import (
 )
 
 func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
-	if gui == nil || !program.hasSessionQueries() || program.connectedUserLoadStarted {
-		return
-	}
-
-	program.connectedUserLoadStarted = true
-	program.asyncRunner.Go(func() {
-		program.loadConnectedUser(gui)
-	})
+	program.executeWorkflowCommands(gui, program.sessionStore.planLoad(program, gui))
 }
 
 func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
@@ -24,20 +17,7 @@ func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
 }
 
 func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
-	if gui == nil || program.pullRequestsLoadStarted(tab) || program.model.ActivePullRequestTab() != tab {
-		return
-	}
-
-	program.hydratePullRequestsFromCache(tab)
-	if !program.hasPullRequestListQueries() {
-		return
-	}
-
-	program.setPullRequestsLoadStarted(tab, true)
-	program.setPullRequestsLoading(tab, true)
-	program.asyncRunner.Go(func() {
-		program.loadPullRequests(gui, tab)
-	})
+	program.executeWorkflowCommands(gui, program.pullRequestListStore.planLoad(program, gui, tab))
 }
 
 func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
@@ -46,17 +26,7 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 	}
 
 	tab := program.model.ActivePullRequestTab()
-	program.hydratePullRequestsFromCache(tab)
-	if !program.hasPullRequestListQueries() {
-		return
-	}
-
-	program.setPullRequestsLoadStarted(tab, true)
-	program.setPullRequestsLoading(tab, true)
-	program.asyncRunner.Go(func() {
-		program.loadPullRequests(gui, tab)
-	})
-
+	program.executeWorkflowCommands(gui, program.pullRequestListStore.planReload(program, gui, tab))
 	_ = program.refreshViews(gui)
 }
 
@@ -113,48 +83,48 @@ func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests [
 	return pullRequestStateRows(program.pullRequestListState(tab), pullRequests, err)
 }
 
-func (program *Program) pullRequestsLoadStarted(tab PullRequestTab) bool {
+func (store *pullRequestListStore) pullRequestsLoadStarted(tab PullRequestTab) bool {
 	switch tab {
 	case MyPullRequestsTab:
-		return program.myPullRequestsLoadStarted
+		return store.myPullRequestsLoadStarted
 	case RequestedPullRequestsTab:
-		return program.requestedPullRequestsLoadStarted
+		return store.requestedPullRequestsLoadStarted
 	default:
-		return program.additionalPullRequestsLoadStarted[tab]
+		return store.additionalPullRequestsLoadStarted[tab]
 	}
 }
 
-func (program *Program) setPullRequestsLoadStarted(tab PullRequestTab, value bool) {
+func (store *pullRequestListStore) setPullRequestsLoadStarted(tab PullRequestTab, value bool) {
 	switch tab {
 	case MyPullRequestsTab:
-		program.myPullRequestsLoadStarted = value
+		store.myPullRequestsLoadStarted = value
 	case RequestedPullRequestsTab:
-		program.requestedPullRequestsLoadStarted = value
+		store.requestedPullRequestsLoadStarted = value
 	default:
-		program.additionalPullRequestsLoadStarted[tab] = value
+		store.additionalPullRequestsLoadStarted[tab] = value
 	}
 }
 
-func (program *Program) setPullRequestsLoading(tab PullRequestTab, value bool) {
+func (store *pullRequestListStore) setPullRequestsLoading(tab PullRequestTab, value bool) {
 	switch tab {
 	case MyPullRequestsTab:
-		program.myPullRequestsLoading = value
+		store.myPullRequestsLoading = value
 	case RequestedPullRequestsTab:
-		program.requestedPullRequestsLoading = value
+		store.requestedPullRequestsLoading = value
 	default:
-		program.additionalPullRequestsLoading[tab] = value
+		store.additionalPullRequestsLoading[tab] = value
 	}
 }
 
-func (program *Program) setPullRequestsCount(tab PullRequestTab, count int, known bool) {
+func (store *pullRequestListStore) setPullRequestsCount(tab PullRequestTab, count int, known bool) {
 	switch tab {
 	case MyPullRequestsTab:
-		program.myPullRequestsCount = count
-		program.myPullRequestsCountKnown = known
+		store.myPullRequestsCount = count
+		store.myPullRequestsCountKnown = known
 	case RequestedPullRequestsTab:
-		program.requestedPullRequestsCount = count
-		program.requestedPullRequestsCountKnown = known
+		store.requestedPullRequestsCount = count
+		store.requestedPullRequestsCountKnown = known
 	default:
-		program.additionalPullRequestsCounts[tab] = pullRequestCountState{count: count, known: known}
+		store.additionalPullRequestsCounts[tab] = pullRequestCountState{count: count, known: known}
 	}
 }
