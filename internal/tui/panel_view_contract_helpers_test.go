@@ -21,6 +21,12 @@ func given_panelViewContractBrowserModel() *Model {
 	return given_pullRequestCommentModel()
 }
 
+func given_panelViewContractManualVisualModel() *Model {
+	model := given_panelViewContractBrowserModel()
+	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
+	return model
+}
+
 func panelViewName(number panelViewNumber) string {
 	switch number {
 	case mainPanelViewZero:
