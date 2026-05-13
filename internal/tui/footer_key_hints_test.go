@@ -156,7 +156,7 @@ func TestStatusLineKeyHints_GivenGlobalActionOverride_WhenRenderingBrowserModePu
 		},
 	}
 	model := given_pullRequestCommentModel()
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
 		"global": {
 			"open_actions_popup": {"p"},

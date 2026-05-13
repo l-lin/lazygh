@@ -14,7 +14,7 @@ func TestLayout_GivenCachedNotifications_WhenRendering_ThenItShowsThemBeforeTheB
 	loader := &fakePullRequestDetailLoader{notifications: []githubcli.Notification{given_cachedNotification("n-fresh", "Fresh notification")}}
 	cache := &fakePersistentPullRequestCache{notifications: []githubcli.Notification{cachedNotification}}
 	asyncRunner := &capturingAsyncRunner{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -42,7 +42,7 @@ func TestLayout_GivenCachedNotificationsAndBackgroundRefreshFailure_WhenRenderin
 	cachedNotification := given_cachedNotification("n-cached", "Cached notification")
 	loader := &fakePullRequestDetailLoader{notificationsErr: errors.New("boom")}
 	cache := &fakePersistentPullRequestCache{notifications: []githubcli.Notification{cachedNotification}}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -70,7 +70,7 @@ func TestLoadNotifications_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResu
 	expected := []githubcli.Notification{given_cachedNotification("n-fresh", "Fresh notification")}
 	loader := &fakePullRequestDetailLoader{notifications: expected}
 	cache := &fakePersistentPullRequestCache{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)

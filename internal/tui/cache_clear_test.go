@@ -54,7 +54,7 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{}}}
 	model := given_pullRequestCommentModel()
 	model.SetNotificationRows([]NotificationRow{notificationRow(given_cachedNotification("n-cached", "Cached notification"))})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

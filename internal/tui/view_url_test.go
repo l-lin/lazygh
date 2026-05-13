@@ -274,7 +274,7 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRefreshingF
 }
 
 func given_pullRequestByURLProgram(model *Model, loader *fakePullRequestDetailLoader) *Program {
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}

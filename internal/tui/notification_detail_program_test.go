@@ -41,7 +41,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 			},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -134,7 +134,7 @@ func TestNotificationDetailRouting_GivenAnIssueLoaderFailure_WhenRendering_ThenD
 	model.FocusNotificationsView()
 	model.SetNotificationRows([]NotificationRow{given_issueNotificationRow()})
 	loader := &fakePullRequestDetailLoader{issueDetailErrors: map[string]error{"acme/opencode#3235": githubcli.ErrUnavailable}}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

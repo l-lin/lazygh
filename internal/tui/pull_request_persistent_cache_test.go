@@ -28,7 +28,7 @@ func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBa
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}}
 	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): cachedPullRequests}}
 	asyncRunner := &capturingAsyncRunner{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.notificationsLoadStarted = true
@@ -57,7 +57,7 @@ func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering
 	cachedPullRequests := []githubcli.PullRequest{{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{}, listErr: errors.New("boom")}
 	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): cachedPullRequests}}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.notificationsLoadStarted = true
@@ -91,7 +91,7 @@ func TestLayout_GivenPersistentPullRequestInvalidationAndANewSession_WhenRenderi
 
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}}
 	asyncRunner := &capturingAsyncRunner{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.notificationsLoadStarted = true
@@ -125,7 +125,7 @@ func TestLayout_GivenCachedPullRequestsAndLiveResultsInSearchOrder_WhenRendering
 		{Title: "Newer live PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"},
 	}}}
 	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): cachedPullRequests}}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.asyncRunner = inlineAsyncRunner{}
@@ -155,7 +155,7 @@ func TestLoadPullRequests_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResul
 	expected := []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: expected}}
 	cache := &fakePersistentPullRequestCache{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.uiUpdater = immediateUIUpdater{}
@@ -180,7 +180,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSumma
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -217,7 +217,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -264,7 +264,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryV
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -313,7 +313,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -349,7 +349,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": {UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh"}}}}
 	cache := &fakePersistentPullRequestCache{diffs: map[string]persistcache.CachedPullRequestDiff{"acme/widgets#42": given_cachedPersistentPullRequestDiff(cachedDiff, summary.UpdatedAt)}}
 	asyncRunner := &capturingAsyncRunner{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.asyncRunner = asyncRunner
 	subject.startReviewSession(summary, "PRR_cache")
@@ -387,7 +387,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWi
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -469,7 +469,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -515,7 +515,7 @@ func TestLoadPullRequestDiff_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheRe
 	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": expected}}}
 	cache := &fakePersistentPullRequestCache{}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)

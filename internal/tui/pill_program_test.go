@@ -19,7 +19,7 @@ func TestLayout_GivenOpenPullRequestDetail_WhenRendering_ThenItShowsTheStatusAsA
 			"acme/widgets#110": {Title: "Styled PR", Number: 110, Body: "Body 110", BaseRefName: "main", HeadRefName: "feature-110", State: "OPEN"},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -67,7 +67,7 @@ func TestLayout_GivenPullRequestComment_WhenRendering_ThenItShowsTheAuthorAsARou
 			},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

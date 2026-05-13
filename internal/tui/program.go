@@ -80,23 +80,14 @@ type Program struct {
 	pendingListViewportPlacements           map[string]viewportPlacement
 }
 
-func NewProgram(depsOrLoaders ...any) *Program {
-	var loader any
-	if len(depsOrLoaders) > 0 {
-		loader = depsOrLoaders[0]
-	}
-
+func NewProgram() *Program {
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
-	return NewProgramWithModelAndLoader(model, loader)
+	return NewProgramWithModel(model)
 }
 
 func NewProgramWithModel(model *Model) *Program {
 	return NewProgramWithModelAndDeps(model, AppDeps{})
-}
-
-func NewProgramWithModelAndLoader(model *Model, githubLoader any) *Program {
-	return NewProgramWithModelAndDeps(model, appDepsFromCompatibilityLoader(githubLoader))
 }
 
 func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {

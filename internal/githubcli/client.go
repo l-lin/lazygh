@@ -27,14 +27,6 @@ type Runner interface {
 	RunWithInput(name string, input []byte, args ...string) (CommandResult, error)
 }
 
-// Client is a compatibility shim around the focused `githubcli` services.
-// Deprecated: new app code should compose capability adapters or services
-// directly instead of depending on this transport-typed surface.
-type Client struct {
-	serviceBase
-	*ProviderFacade
-}
-
 type ConnectedUser struct {
 	Login       string `json:"login"`
 	Name        string `json:"name"`
@@ -47,19 +39,6 @@ type ConnectedUser struct {
 }
 
 type execRunner struct{}
-
-func NewClient() *Client {
-	return NewClientWithRunner(execRunner{})
-}
-
-func NewClientWithRunner(runner Runner) *Client {
-	if runner == nil {
-		runner = execRunner{}
-	}
-
-	transport := newSharedTransport(runner)
-	return &Client{serviceBase: newServiceBase(transport), ProviderFacade: newProviderFacade(transport)}
-}
 
 func (service *SessionService) GetConnectedUser() (ConnectedUser, error) {
 	result, err := service.doREST(RESTRequest{Path: "user"})

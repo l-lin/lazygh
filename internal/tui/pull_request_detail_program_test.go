@@ -89,7 +89,7 @@ func TestLayout_GivenSelectedPullRequestSummary_WhenRendering_ThenItLoadsRichDet
 			"acme/widgets#102": secondDetail,
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -893,7 +893,7 @@ func TestLayout_GivenOverviewHeaderMetadata_WhenRendering_ThenTheOverviewTabShow
 			"acme/widgets#118": {Title: "Styled PR", Number: 118, Body: "Body 118", Author: &githubcli.PullRequestAuthor{Login: "octocat"}, BaseRefName: "main", HeadRefName: "feature-118", State: "OPEN", CreatedAt: "2026-04-18T10:00:00Z", UpdatedAt: "2026-04-18T12:30:00Z", Additions: 12, Deletions: 3, ChangedFiles: 5},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -930,7 +930,7 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeS
 			"acme/widgets#109": {Title: "Styled PR", Number: 109, Body: "Body 109", BaseRefName: "main", HeadRefName: "feature-109", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline diff body", CreatedAt: "2026-04-18T10:00:00Z", Path: "src/main/java/com/acme/VersionParser.java", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -43,1 +43,1 @@\n-return Versions.fromString(\"5.0.1\");\n+return Versions.fromString(\"5.1.0\");"}}},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -980,7 +980,7 @@ func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlig
 			"acme/widgets#110": {Title: "Styled PR", Number: 110, Body: "Body 110", BaseRefName: "main", HeadRefName: "feature-110", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline body", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -42,2 +42,2 @@\n \"deny\": []\n-\"model\": \"opusplan\",\n+\"model\": \"opus\","}}},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1019,7 +1019,7 @@ func TestLayout_GivenSuggestionFenceInlineComment_WhenRendering_ThenTheCommentsT
 			"acme/widgets#115": {Title: "Styled PR", Number: 115, Body: "Body 115", BaseRefName: "main", HeadRefName: "feature-115", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\nfmt.Println(\"bonjour\")\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "internal/tui/render.go", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -43,1 +43,1 @@\n-fmt.Println(\"goodbye\")\n+fmt.Println(\"hello\")"}}},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1071,7 +1071,7 @@ func TestLayout_GivenALongSuggestionFenceInlineComment_WhenRendering_ThenTheComm
 			"acme/widgets#116": {Title: "Styled PR", Number: 116, Body: "Body 116", BaseRefName: "main", HeadRefName: "feature-116", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "```suggestion\n- [ ] 21.10 Rename `observability` packages → `foo.bar.observability.*`; rename `s3-assets` → `foo.bar.s3assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide\n```", CreatedAt: "2026-04-18T10:00:00Z", Path: "openspec/changes/refactor-shared-modules/tasks.md", Line: 218, OriginalLine: 218, Side: "RIGHT", DiffHunk: "@@ -0,0 +218,1 @@\n+- [ ] 21.10 Rename `observability` packages → `foo.bar.observability.*`; rename `infrastructure/s3-assets` → `foo.bar.s3_assets.*`; rename `scheduled-jobs` → `foo.bar.scheduled_jobs.*`; rename `http-clients` → `foo.bar.http_clients.*`; update all imports repo-wide"}}},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1114,7 +1114,7 @@ func TestLayout_GivenMarkdownDescriptionAndComments_WhenRendering_ThenTheDetailP
 			"acme/widgets#110": {Title: "Styled PR", Number: 110, Body: "## Why\n\nParagraph body", BaseRefName: "main", HeadRefName: "feature-110", State: "OPEN", Comments: []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Ship it", CreatedAt: "2026-04-18T10:00:00Z"}}},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1169,7 +1169,7 @@ func TestLayout_GivenConnectedUserAndReviewerComments_WhenRenderingCommentsTab_T
 			},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.connectedUserLogin = "octocat"
 	subject.myPullRequestsLoadStarted = true
@@ -1209,7 +1209,7 @@ func TestLayout_GivenMarkdownHeading_WhenRendering_ThenItsBackgroundFillsTheWhol
 			"acme/widgets#112": {Title: "Styled PR", Number: 112, Body: "# Ship it", BaseRefName: "main", HeadRefName: "feature-112", State: "OPEN"},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1239,7 +1239,7 @@ func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItsBackgroundFillsTheWh
 			"acme/widgets#113": {Title: "Styled PR", Number: 113, Body: "```go\nfmt.Println(\"hi\")\n```", BaseRefName: "main", HeadRefName: "feature-113", State: "OPEN"},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1269,7 +1269,7 @@ func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItAddsBlankBackgroundLi
 			"acme/widgets#114": {Title: "Styled PR", Number: 114, Body: "```go\nfmt.Println(\"hi\")\n```", BaseRefName: "main", HeadRefName: "feature-114", State: "OPEN"},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1309,7 +1309,7 @@ func TestLayout_GivenRenderedMarkdownDescription_WhenRendering_ThenVisibleLinesD
 			"acme/widgets#111": {Title: "Styled PR", Number: 111, Body: "No need to deploy the docker image and publish the doc to S3.\n\nFor now, we are just testing deploying the runtime on GCP, not AWS.", BaseRefName: "main", HeadRefName: "feature-111", State: "OPEN"},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1345,7 +1345,7 @@ func TestLayout_GivenAnotherSelectedPullRequestAfterScrolling_WhenRendering_Then
 			"acme/widgets#202": {Title: "Second PR", Number: 202, Body: "Body 202", BaseRefName: "main", HeadRefName: "feature-202", State: "OPEN"},
 		},
 	}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1397,7 +1397,7 @@ func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_
 	})
 	loader := &fakePullRequestDetailLoader{}
 	asyncRunner := &capturingAsyncRunner{}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -1447,7 +1447,7 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 	model.SetPullRequests(MyPullRequestsTab, []Item{{Title: "my-pr-1", Detail: "body-1"}, {Title: "my-pr-2", Detail: "body-2"}})
 	loader := &fakePullRequestDetailLoader{}
 	asyncRunner := &capturingAsyncRunner{}
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

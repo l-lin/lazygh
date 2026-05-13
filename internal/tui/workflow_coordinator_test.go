@@ -77,7 +77,7 @@ func TestPullRequestListStore_GivenCachedRowsAndALiveReload_WhenPlanningTheLoad_
 	cachedSummary := githubcli.PullRequest{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
 	loader := &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}
 	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): {cachedSummary}}}
-	subject := NewProgramWithModelAndLoader(NewModel(DefaultSeedData()), loader)
+	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.notificationsLoadStarted = true
@@ -112,7 +112,7 @@ func TestExecuteWorkflowCommands_GivenASelectedPullRequestDetailLoadPlan_WhenRun
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -182,7 +182,7 @@ func TestReviewStore_GivenACachedDiffWithoutTeamOwners_WhenPlanningTheSelectedLo
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -340,7 +340,7 @@ func given_workflowProgram(summary githubcli.PullRequest, loader *fakePullReques
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

@@ -576,7 +576,7 @@ func given_notificationActionProgram(notifications []githubcli.Notification, loa
 	}
 	model.SetNotificationRows(rows)
 
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

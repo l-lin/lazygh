@@ -369,7 +369,7 @@ func given_pullRequestCommentModel() *Model {
 }
 
 func given_pullRequestCommentProgram(model *Model, loader *fakePullRequestDetailLoader) *Program {
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

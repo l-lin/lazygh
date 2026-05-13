@@ -46,11 +46,3 @@ func (service serviceBase) decodePaginatedOrFlatJSON(data []byte, target any) er
 	}
 	return service.transport.decoder.DecodeJSON(data, target)
 }
-
-func (client *Client) runGH(_ string, args ...string) (CommandResult, error) {
-	return client.execute(Command{Args: args, DisplayArgs: args})
-}
-
-func (client *Client) runGHWithInput(_ string, input []byte, args ...string) (CommandResult, error) {
-	return client.execute(Command{Args: args, Stdin: input, DisplayArgs: args})
-}
