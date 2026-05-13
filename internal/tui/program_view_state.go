@@ -13,45 +13,8 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
 
-	if err := program.refreshExistingView(gui, viewUserName, program.configureUserView, program.renderUserView); err != nil {
-		return err
-	}
-	if err := program.refreshExistingView(gui, viewPullRequestsName, program.configurePullRequestsView, program.renderPullRequestsView); err != nil {
-		return err
-	}
-	if err := program.refreshExistingView(gui, viewNotificationsName, program.configureNotificationsView, program.renderNotificationsView); err != nil {
-		return err
-	}
-	if err := program.refreshExistingView(gui, viewDetailName, program.configureDetailView, program.renderDetailView); err != nil {
-		return err
-	}
-
-	if err := program.layoutPaneFooterViews(gui); err != nil {
-		return err
-	}
-	if err := program.layoutStatusLineView(gui); err != nil {
-		return err
-	}
-	if err := program.refreshOverlayView(gui, program.helpVisible, viewHelpName, program.configureHelpView, program.renderHelpView); err != nil {
-		return err
-	}
-	if err := program.refreshOverlayView(gui, program.searchPromptVisible(), viewSearchName, program.configureSearchView, program.renderSearchView); err != nil {
-		return err
-	}
-	if err := program.refreshOverlayView(gui, program.modalEditorVisible(), viewModalEditorName, program.configureModalEditorView, program.renderModalEditorView); err != nil {
-		return err
-	}
-	if err := program.refreshOverlayView(gui, program.pullRequestBuildRunPopupVisible(), viewPullRequestBuildInfoName, program.configurePullRequestBuildRunPopupView, program.renderPullRequestBuildRunPopupView); err != nil {
-		return err
-	}
-	if err := program.refreshActionsPopupViews(gui); err != nil {
-		return err
-	}
-	if err := program.layoutStatusLineKeyHintsView(gui); err != nil {
-		return err
-	}
-
-	return program.syncCurrentView(gui)
+	maxX, maxY := gui.Size()
+	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
 }
 
 func (program *Program) refreshExistingView(gui *gocui.Gui, viewName string, configure viewConfigurator, render viewRenderer) error {

@@ -19,7 +19,6 @@ var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
 func (program *Program) layout(gui *gocui.Gui) error {
 	program.gui = gui
 	maxX, maxY := gui.Size()
-	contentMaxY := program.layoutContentHeight(maxY)
 
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadActivePullRequests(gui)
@@ -32,77 +31,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadCurrentDetailImageHTML(gui)
 	program.maybeLoadCurrentDetailImages(gui)
 
-	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), program.model.currentSideFocus(), program.sidebarTopPaneHeight(), !program.reviewSession.active)
-
-	if err := program.layoutMainPane(gui, viewUserName, mainPaneLayout.userVisible, mainPaneLayout.user, program.configureUserView, program.renderUserView); err != nil {
-		return err
-	}
-	if err := program.layoutMainPane(gui, viewPullRequestsName, mainPaneLayout.pullRequestsVisible, mainPaneLayout.pullRequests, program.configurePullRequestsView, program.renderPullRequestsView); err != nil {
-		return err
-	}
-	if err := program.layoutMainPane(gui, viewNotificationsName, mainPaneLayout.notificationsVisible, mainPaneLayout.notifications, program.configureNotificationsView, program.renderNotificationsView); err != nil {
-		return err
-	}
-	if err := program.layoutMainPane(gui, viewDetailName, mainPaneLayout.detailVisible, mainPaneLayout.detail, program.configureDetailView, program.renderDetailView); err != nil {
-		return err
-	}
-
-	if err := program.layoutPaneFooterViews(gui); err != nil {
-		return err
-	}
-	if err := program.layoutStatusLineView(gui); err != nil {
-		return err
-	}
-
-	if err := syncOverlayLayout(gui, program.helpVisible, program.layoutHelpView, viewHelpName); err != nil {
-		return err
-	}
-	if err := syncOverlayLayout(gui, program.searchPromptVisible(), program.layoutSearchView, viewSearchName); err != nil {
-		return err
-	}
-	if err := syncOverlayLayout(gui, program.modalEditorVisible(), program.layoutModalEditorView, viewModalEditorName); err != nil {
-		return err
-	}
-	if err := syncOverlayLayout(gui, program.pullRequestBuildRunPopupVisible(), program.layoutPullRequestBuildRunPopupView, viewPullRequestBuildInfoName); err != nil {
-		return err
-	}
-	if err := syncOverlayLayout(gui, program.model.ActionsPopupVisible(), program.layoutActionsPopupViews, viewActionsPopupSearchName, viewActionsPopupName); err != nil {
-		return err
-	}
-	if program.model.ActionsPopupVisible() {
-		if err := syncOverlayLayout(gui, program.model.ActionsPopupSearchActive(), program.layoutActionsPopupSearchView, viewActionsPopupSearchName); err != nil {
-			return err
-		}
-	}
-	if err := program.layoutStatusLineKeyHintsView(gui); err != nil {
-		return err
-	}
-
-	return program.syncCurrentView(gui)
-}
-
-func (program *Program) layoutMainPane(gui *gocui.Gui, viewName string, visible bool, frame paneFrame, configure viewConfigurator, render viewRenderer) error {
-	view, err := setPaneView(gui, viewName, visible, frame)
-	if err != nil {
-		return err
-	}
-	if view == nil {
-		return nil
-	}
-
-	configure(view)
-	render(view)
-	return nil
-}
-
-type guiLayouter func(*gocui.Gui) error
-
-func syncOverlayLayout(gui *gocui.Gui, visible bool, layout guiLayouter, viewNames ...string) error {
-	if visible {
-		return layout(gui)
-	}
-
-	return deleteViewsIfPresent(gui, viewNames...)
+	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
 }
 
 func (program *Program) sidebarTopPaneHeight() int {
