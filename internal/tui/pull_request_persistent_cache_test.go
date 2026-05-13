@@ -547,7 +547,7 @@ type cacheAwarePullRequestLoader struct {
 	listErr error
 }
 
-func (loader *cacheAwarePullRequestLoader) ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error) {
+func (loader *cacheAwarePullRequestLoader) ListPullRequests(commandArguments []string) ([]githubdomain.PullRequestSummary, error) {
 	if loader.listErr != nil {
 		return nil, loader.listErr
 	}

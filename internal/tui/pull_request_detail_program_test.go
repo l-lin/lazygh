@@ -8,6 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -1626,22 +1627,22 @@ type fakePullRequestDetailLoader struct {
 	authTokenErr                      error
 }
 
-func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubcli.ConnectedUser, error) {
-	return githubcli.ConnectedUser{}, nil
+func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubdomain.ConnectedUser, error) {
+	return githubdomain.ConnectedUser{}, nil
 }
 
-func (loader *fakePullRequestDetailLoader) ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error) {
+func (loader *fakePullRequestDetailLoader) ListPullRequests(commandArguments []string) ([]githubdomain.PullRequestSummary, error) {
 	loader.listPullRequestCommands = append(loader.listPullRequestCommands, append([]string(nil), commandArguments...))
 	for _, argument := range commandArguments {
 		if argument == "--review-requested" {
-			return append([]githubcli.PullRequest(nil), loader.requestedPullRequests...), nil
+			return githubcli.ToDomainPullRequests(append([]githubcli.PullRequest(nil), loader.requestedPullRequests...)), nil
 		}
 	}
 
-	return append([]githubcli.PullRequest(nil), loader.myPullRequests...), nil
+	return githubcli.ToDomainPullRequests(append([]githubcli.PullRequest(nil), loader.myPullRequests...)), nil
 }
 
-func (loader *fakePullRequestDetailLoader) ListNotifications() ([]githubcli.Notification, error) {
+func (loader *fakePullRequestDetailLoader) ListNotifications() ([]githubdomain.Notification, error) {
 	if loader.notificationsErr != nil {
 		return nil, loader.notificationsErr
 	}
@@ -1651,7 +1652,7 @@ func (loader *fakePullRequestDetailLoader) ListNotifications() ([]githubcli.Noti
 			loader.markLoadedNotificationsRead()
 		}
 	}
-	return append([]githubcli.Notification(nil), loader.notifications...), nil
+	return githubcli.ToDomainNotifications(append([]githubcli.Notification(nil), loader.notifications...)), nil
 }
 
 func (loader *fakePullRequestDetailLoader) MarkNotificationRead(threadID string) error {
@@ -1674,20 +1675,20 @@ func (loader *fakePullRequestDetailLoader) MarkNotificationDone(threadID string)
 	return nil
 }
 
-func (loader *fakePullRequestDetailLoader) MarkAllNotificationsRead() (githubcli.NotificationBulkReadResult, error) {
+func (loader *fakePullRequestDetailLoader) MarkAllNotificationsRead() (githubdomain.NotificationBulkReadResult, error) {
 	loader.markAllNotificationsReadCalls++
 	if loader.markAllNotificationsReadErr != nil {
-		return githubcli.NotificationBulkReadResult{}, loader.markAllNotificationsReadErr
+		return githubdomain.NotificationBulkReadResult{}, loader.markAllNotificationsReadErr
 	}
 	if loader.markAllNotificationsReadAccepted {
 		loader.markAllNotificationsReadPollLoads = maxInt(loader.markAllNotificationsReadPollLoads, 1)
-		return githubcli.NotificationBulkReadResult{Accepted: true}, nil
+		return githubdomain.NotificationBulkReadResult{Accepted: true}, nil
 	}
 	loader.markLoadedNotificationsRead()
-	return githubcli.NotificationBulkReadResult{}, nil
+	return githubdomain.NotificationBulkReadResult{}, nil
 }
 
-func (loader *fakePullRequestDetailLoader) MarkAllNotificationsDone(notifications []githubcli.Notification) (int, error) {
+func (loader *fakePullRequestDetailLoader) MarkAllNotificationsDone(notifications []githubdomain.Notification) (int, error) {
 	ids := make([]string, 0, len(notifications))
 	for _, notification := range notifications {
 		trimmedThreadID := strings.TrimSpace(notification.ID)
@@ -1706,68 +1707,68 @@ func (loader *fakePullRequestDetailLoader) MarkAllNotificationsDone(notification
 	return len(ids), nil
 }
 
-func (loader *fakePullRequestDetailLoader) GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error) {
+func (loader *fakePullRequestDetailLoader) GetIssueDetail(repository string, number int) (githubdomain.IssueDetail, error) {
 	key := repository + "#" + strconv.Itoa(number)
 	loader.issueDetailCalls = append(loader.issueDetailCalls, key)
 	if loader.issueDetailErrors != nil {
 		if err, ok := loader.issueDetailErrors[key]; ok {
-			return githubcli.IssueDetail{}, err
+			return githubdomain.IssueDetail{}, err
 		}
 	}
 	if loader.issueDetails != nil {
 		if detail, ok := loader.issueDetails[key]; ok {
-			return detail, nil
+			return githubcli.ToDomainIssueDetail(detail), nil
 		}
 	}
-	return githubcli.IssueDetail{}, nil
+	return githubdomain.IssueDetail{}, nil
 }
 
-func (loader *fakePullRequestDetailLoader) GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error) {
+func (loader *fakePullRequestDetailLoader) GetReleaseDetail(repository string, id int) (githubdomain.ReleaseDetail, error) {
 	key := repository + "#" + strconv.Itoa(id)
 	loader.releaseDetailCalls = append(loader.releaseDetailCalls, key)
 	if loader.releaseDetailErrors != nil {
 		if err, ok := loader.releaseDetailErrors[key]; ok {
-			return githubcli.ReleaseDetail{}, err
+			return githubdomain.ReleaseDetail{}, err
 		}
 	}
 	if loader.releaseDetails != nil {
 		if detail, ok := loader.releaseDetails[key]; ok {
-			return detail, nil
+			return githubcli.ToDomainReleaseDetail(detail), nil
 		}
 	}
-	return githubcli.ReleaseDetail{}, nil
+	return githubdomain.ReleaseDetail{}, nil
 }
 
-func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error) {
+func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubdomain.PullRequestDetail, error) {
 	key := repository + "#" + strconv.Itoa(number)
 	loader.detailCalls = append(loader.detailCalls, key)
 	if loader.detailErrors != nil {
 		if err, ok := loader.detailErrors[key]; ok {
-			return githubcli.PullRequestDetail{}, err
+			return githubdomain.PullRequestDetail{}, err
 		}
 	}
 	if loader.details != nil {
 		if detail, ok := loader.details[key]; ok {
-			return detail, nil
+			return githubcli.ToDomainPullRequestDetail(detail), nil
 		}
 	}
-	return githubcli.PullRequestDetail{}, nil
+	return githubdomain.PullRequestDetail{}, nil
 }
 
-func (loader *fakePullRequestDetailLoader) GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error) {
+func (loader *fakePullRequestDetailLoader) GetPullRequestDiff(repository string, number int) (githubdomain.PullRequestDiff, error) {
 	key := repository + "#" + strconv.Itoa(number)
 	loader.diffCalls = append(loader.diffCalls, key)
 	if loader.diffErrors != nil {
 		if err, ok := loader.diffErrors[key]; ok {
-			return githubcli.PullRequestDiff{}, err
+			return githubdomain.PullRequestDiff{}, err
 		}
 	}
 	if loader.diffs != nil {
 		if diff, ok := loader.diffs[key]; ok {
-			return diff, nil
+			return githubcli.ToDomainPullRequestDiff(diff), nil
 		}
 	}
-	return githubcli.PullRequestDiff{}, nil
+	return githubdomain.PullRequestDiff{}, nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error) {
@@ -1842,10 +1843,10 @@ func (loader *fakePullRequestDetailLoader) RequestChangesOnPullRequest(repositor
 	return loader.requestChangesErr
 }
 
-func (loader *fakePullRequestDetailLoader) SubmitPullRequestReview(pullRequestReviewID string, event githubcli.PullRequestReviewEvent, body string) error {
+func (loader *fakePullRequestDetailLoader) SubmitPullRequestReview(pullRequestReviewID string, event githubdomain.PullRequestReviewEvent, body string) error {
 	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
 	loader.submitReviewIDs = append(loader.submitReviewIDs, trimmedReviewID)
-	loader.submitReviewEvents = append(loader.submitReviewEvents, event)
+	loader.submitReviewEvents = append(loader.submitReviewEvents, githubcli.PullRequestReviewEventFromDomain(event))
 	loader.submitReviewBodies = append(loader.submitReviewBodies, body)
 	if loader.submitReviewErr != nil {
 		return loader.submitReviewErr
@@ -1854,11 +1855,12 @@ func (loader *fakePullRequestDetailLoader) SubmitPullRequestReview(pullRequestRe
 	return nil
 }
 
-func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error {
+func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubdomain.PullRequestReviewThreadTarget) error {
 	trimmedReviewID := strings.TrimSpace(pullRequestReviewID)
+	legacyTarget := githubcli.PullRequestReviewThreadTargetFromDomain(target)
 	loader.reviewThreadReviewIDs = append(loader.reviewThreadReviewIDs, trimmedReviewID)
 	loader.reviewThreadBodies = append(loader.reviewThreadBodies, body)
-	loader.reviewThreadTargets = append(loader.reviewThreadTargets, target)
+	loader.reviewThreadTargets = append(loader.reviewThreadTargets, legacyTarget)
 	if loader.reviewThreadErr != nil {
 		return loader.reviewThreadErr
 	}
@@ -1867,11 +1869,11 @@ func (loader *fakePullRequestDetailLoader) AddPullRequestReviewThread(pullReques
 			diff := loader.diffs[key]
 			diff.Threads = append(diff.Threads, githubcli.PullRequestReviewThread{
 				ID:            "thread-" + strconv.Itoa(len(loader.reviewThreadReviewIDs)),
-				Path:          target.Path,
-				Line:          target.Line,
-				StartLine:     target.StartLine,
-				DiffSide:      target.Side,
-				StartDiffSide: target.StartSide,
+				Path:          legacyTarget.Path,
+				Line:          legacyTarget.Line,
+				StartLine:     legacyTarget.StartLine,
+				DiffSide:      legacyTarget.Side,
+				StartDiffSide: legacyTarget.StartSide,
 				Comments: []githubcli.PullRequestComment{{
 					Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
 					Body:      body,
@@ -1939,25 +1941,27 @@ func (loader *fakePullRequestDetailLoader) UnresolvePullRequestReviewThread(thre
 	return nil
 }
 
-func (loader *fakePullRequestDetailLoader) AddReaction(subjectID string, content githubcli.ReactionContent) error {
+func (loader *fakePullRequestDetailLoader) AddReaction(subjectID string, content githubdomain.ReactionContent) error {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
+	legacyContent := githubcli.ReactionContentFromDomain(content)
 	loader.addReactionSubjectIDs = append(loader.addReactionSubjectIDs, trimmedSubjectID)
-	loader.addReactionContents = append(loader.addReactionContents, content)
+	loader.addReactionContents = append(loader.addReactionContents, legacyContent)
 	if loader.addReactionErr != nil {
 		return loader.addReactionErr
 	}
-	loader.addReaction(trimmedSubjectID, content)
+	loader.addReaction(trimmedSubjectID, legacyContent)
 	return nil
 }
 
-func (loader *fakePullRequestDetailLoader) RemoveReaction(subjectID string, content githubcli.ReactionContent) error {
+func (loader *fakePullRequestDetailLoader) RemoveReaction(subjectID string, content githubdomain.ReactionContent) error {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
+	legacyContent := githubcli.ReactionContentFromDomain(content)
 	loader.removeReactionSubjectIDs = append(loader.removeReactionSubjectIDs, trimmedSubjectID)
-	loader.removeReactionContents = append(loader.removeReactionContents, content)
+	loader.removeReactionContents = append(loader.removeReactionContents, legacyContent)
 	if loader.removeReactionErr != nil {
 		return loader.removeReactionErr
 	}
-	loader.removeReaction(trimmedSubjectID, content)
+	loader.removeReaction(trimmedSubjectID, legacyContent)
 	return nil
 }
 
@@ -1966,7 +1970,7 @@ func (loader *fakePullRequestDetailLoader) OpenPullRequestInBrowser(repository s
 	return loader.openBrowserErr
 }
 
-func (loader *fakePullRequestDetailLoader) ListAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, error) {
+func (loader *fakePullRequestDetailLoader) ListAssignableUsers(repository string) ([]githubdomain.PullRequestAuthor, error) {
 	trimmedRepository := strings.TrimSpace(repository)
 	loader.assignableUserCalls = append(loader.assignableUserCalls, trimmedRepository)
 	if loader.assignableUserErr != nil {
@@ -1974,7 +1978,7 @@ func (loader *fakePullRequestDetailLoader) ListAssignableUsers(repository string
 	}
 	if loader.assignableUsers != nil {
 		if actual, ok := loader.assignableUsers[trimmedRepository]; ok {
-			return append([]githubcli.PullRequestAuthor(nil), actual...), nil
+			return githubcli.ToDomainPullRequestAuthors(append([]githubcli.PullRequestAuthor(nil), actual...)), nil
 		}
 	}
 	return nil, nil
@@ -2234,29 +2238,31 @@ func (loader *fakePullRequestDetailLoader) clearPendingPullRequestReview(pullReq
 	delete(loader.reviewKeyByPendingID, trimmedReviewID)
 }
 
-func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error) {
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRun(repository string, check githubdomain.PullRequestStatusCheck) (string, error) {
+	legacyCheck := githubcli.PullRequestStatusCheckFromDomain(check)
 	loader.buildRunCalls = append(loader.buildRunCalls, strings.TrimSpace(repository))
-	loader.buildRunChecks = append(loader.buildRunChecks, check)
+	loader.buildRunChecks = append(loader.buildRunChecks, legacyCheck)
 	if loader.buildRunErr != nil {
 		return "", loader.buildRunErr
 	}
 	if loader.buildRuns != nil {
-		if actual, ok := loader.buildRuns[strings.TrimSpace(check.Link)]; ok {
+		if actual, ok := loader.buildRuns[strings.TrimSpace(legacyCheck.Link)]; ok {
 			return actual, nil
 		}
 	}
 	return "", githubcli.ErrMissingPullRequestBuildLink
 }
 
-func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error) {
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobs(repository string, check githubdomain.PullRequestStatusCheck) ([]githubdomain.PullRequestBuildRunJob, error) {
+	legacyCheck := githubcli.PullRequestStatusCheckFromDomain(check)
 	loader.buildRunJobCalls = append(loader.buildRunJobCalls, strings.TrimSpace(repository))
-	loader.buildRunJobChecks = append(loader.buildRunJobChecks, check)
+	loader.buildRunJobChecks = append(loader.buildRunJobChecks, legacyCheck)
 	if loader.buildRunJobsErr != nil {
 		return nil, loader.buildRunJobsErr
 	}
 	if loader.buildRunJobs != nil {
-		if actual, ok := loader.buildRunJobs[strings.TrimSpace(check.Link)]; ok {
-			return append([]githubcli.PullRequestBuildRunJob(nil), actual...), nil
+		if actual, ok := loader.buildRunJobs[strings.TrimSpace(legacyCheck.Link)]; ok {
+			return githubcli.ToDomainPullRequestBuildRunJobs(append([]githubcli.PullRequestBuildRunJob(nil), actual...)), nil
 		}
 	}
 	return nil, nil
@@ -2275,10 +2281,10 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLog(_ string
 	return "", githubcli.ErrMissingPullRequestBuildLink
 }
 
-func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLogForCheck(repository string, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildRunJob, string, error) {
+func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLogForCheck(repository string, check githubdomain.PullRequestStatusCheck) (githubdomain.PullRequestBuildRunJob, string, error) {
 	jobs, err := loader.GetPullRequestBuildRunJobs(repository, check)
 	if err != nil {
-		return githubcli.PullRequestBuildRunJob{}, "", err
+		return githubdomain.PullRequestBuildRunJob{}, "", err
 	}
 
 	trimmedCheckName := strings.TrimSpace(check.Name)
@@ -2292,7 +2298,7 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestBuildRunJobLogForCheck(
 		actualLog, actualErr := loader.GetPullRequestBuildRunJobLog(repository, jobs[0].DatabaseID)
 		return jobs[0], actualLog, actualErr
 	}
-	return githubcli.PullRequestBuildRunJob{}, "", githubcli.ErrPullRequestBuildRunJobNotFound
+	return githubdomain.PullRequestBuildRunJob{}, "", githubcli.ErrPullRequestBuildRunJobNotFound
 }
 
 func (loader *fakePullRequestDetailLoader) RenderMarkdownHTML(repository string, markdown string) (string, error) {
