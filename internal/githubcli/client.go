@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const ghBinaryName = "gh"
 
 var (
-	ErrUnavailable                  = errors.New("gh is unavailable")
-	ErrUnauthenticated              = errors.New("gh is not authenticated")
+	ErrUnavailable                  = githubdomain.ErrUnavailable
+	ErrUnauthenticated              = githubdomain.ErrUnauthenticated
 	ErrInvalidConnectedUserResponse = errors.New("invalid connected user response")
-	ErrEmptyConnectedUser           = errors.New("empty connected user response")
+	ErrEmptyConnectedUser           = githubdomain.ErrEmptyConnectedUser
 )
 
 type CommandResult struct {

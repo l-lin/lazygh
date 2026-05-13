@@ -12,7 +12,7 @@ import (
 
 func TestRefactorGuard_GivenTUIFiles_WhenScanning_ThenLegacyConstructorAndCompatLoaderAreGone(t *testing.T) {
 	for _, path := range []string{"deps_compat.go", "deps_compat_adapters.go"} {
-		_, actualErr := os.Stat(path)
+		_, actualErr := os.Stat(filepath.Join(given_guardPackageRoot(t), path))
 		if !errors.Is(actualErr, os.ErrNotExist) {
 			t.Fatalf("expected %q to be deleted, actual error %v", path, actualErr)
 		}
@@ -31,8 +31,10 @@ func TestRefactorGuard_GivenTUIFiles_WhenScanning_ThenLegacyConstructorAndCompat
 func given_forbiddenTextMatchesInGoFiles(t *testing.T, root string, forbidden []string) []string {
 	t.Helper()
 
+	packageRoot := given_guardPackageRoot(t)
+	scanRoot := given_guardScanRoot(t, root)
 	actualMatches := make([]string, 0)
-	actualErr := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+	actualErr := filepath.WalkDir(scanRoot, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -51,9 +53,13 @@ func given_forbiddenTextMatchesInGoFiles(t *testing.T, root string, forbidden []
 		if readErr != nil {
 			return readErr
 		}
+		relativePath, relErr := filepath.Rel(packageRoot, path)
+		if relErr != nil {
+			return relErr
+		}
 		for _, pattern := range forbidden {
 			if strings.Contains(string(contents), pattern) {
-				actualMatches = append(actualMatches, fmt.Sprintf("%s contains %q", path, pattern))
+				actualMatches = append(actualMatches, fmt.Sprintf("%s contains %q", filepath.ToSlash(relativePath), pattern))
 			}
 		}
 		return nil
