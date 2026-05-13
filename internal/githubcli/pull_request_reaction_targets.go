@@ -1,7 +1,6 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -26,39 +25,6 @@ type pullRequestReactionTargetsPage struct {
 	Comments       []PullRequestComment
 	HasNextPage    bool
 	EndCursor      string
-}
-
-type pullRequestReactionTargetsResponse struct {
-	Data struct {
-		Repository *struct {
-			PullRequest *struct {
-				ID             string          `json:"id"`
-				ReactionGroups []ReactionGroup `json:"reactionGroups"`
-				Comments       struct {
-					PageInfo struct {
-						HasNextPage bool   `json:"hasNextPage"`
-						EndCursor   string `json:"endCursor"`
-					} `json:"pageInfo"`
-					Nodes []PullRequestComment `json:"nodes"`
-				} `json:"comments"`
-			} `json:"pullRequest"`
-		} `json:"repository"`
-	} `json:"data"`
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-}
-
-type pullRequestReviewCommentReactionGroupsResponse struct {
-	Data *struct {
-		Nodes []*struct {
-			ID             string          `json:"id"`
-			ReactionGroups []ReactionGroup `json:"reactionGroups"`
-		} `json:"nodes"`
-	} `json:"data"`
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
 }
 
 func (client *PullRequestDetailService) listPullRequestReactionTargets(repository string, number int) (pullRequestReactionTargets, error) {
@@ -108,29 +74,48 @@ func (client *PullRequestDetailService) loadPullRequestReactionTargetsPage(owner
 }
 
 func parsePullRequestReactionTargetsPage(stdout []byte) (pullRequestReactionTargetsPage, error) {
-	var response pullRequestReactionTargetsResponse
-	if err := json.Unmarshal(stdout, &response); err != nil {
-		return pullRequestReactionTargetsPage{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestReactionTargetsResponse, err)
+	var response struct {
+		Repository *struct {
+			PullRequest *struct {
+				ID             string          `json:"id"`
+				ReactionGroups []ReactionGroup `json:"reactionGroups"`
+				Comments       struct {
+					PageInfo struct {
+						HasNextPage bool   `json:"hasNextPage"`
+						EndCursor   string `json:"endCursor"`
+					} `json:"pageInfo"`
+					Nodes []PullRequestComment `json:"nodes"`
+				} `json:"comments"`
+			} `json:"pullRequest"`
+		} `json:"repository"`
 	}
-	for _, graphqlErr := range response.Errors {
-		message := strings.TrimSpace(graphqlErr.Message)
-		if message != "" {
-			return pullRequestReactionTargetsPage{}, fmt.Errorf("%w: %s", ErrInvalidPullRequestReactionTargetsResponse, message)
-		}
+	if err := decodeEndpointGraphQLResponse(stdout, &response, ErrInvalidPullRequestReactionTargetsResponse); err != nil {
+		return pullRequestReactionTargetsPage{}, err
 	}
-	if response.Data.Repository == nil || response.Data.Repository.PullRequest == nil {
+	if response.Repository == nil || response.Repository.PullRequest == nil {
 		return pullRequestReactionTargetsPage{}, ErrInvalidPullRequestReactionTargetsResponse
 	}
+	return mapPullRequestReactionTargetsPageDTO(*response.Repository.PullRequest), nil
+}
 
-	pullRequest := response.Data.Repository.PullRequest
-	page := pullRequestReactionTargetsPage{
+func mapPullRequestReactionTargetsPageDTO(pullRequest struct {
+	ID             string          `json:"id"`
+	ReactionGroups []ReactionGroup `json:"reactionGroups"`
+	Comments       struct {
+		PageInfo struct {
+			HasNextPage bool   `json:"hasNextPage"`
+			EndCursor   string `json:"endCursor"`
+		} `json:"pageInfo"`
+		Nodes []PullRequestComment `json:"nodes"`
+	} `json:"comments"`
+}) pullRequestReactionTargetsPage {
+	return pullRequestReactionTargetsPage{
 		PullRequestID:  strings.TrimSpace(pullRequest.ID),
 		ReactionGroups: normalizeReactionGroups(pullRequest.ReactionGroups),
 		Comments:       normalizePullRequestComments(pullRequest.Comments.Nodes),
 		HasNextPage:    pullRequest.Comments.PageInfo.HasNextPage,
 		EndCursor:      strings.TrimSpace(pullRequest.Comments.PageInfo.EndCursor),
 	}
-	return page, nil
 }
 
 func (client *PullRequestDetailService) listPullRequestReviewCommentReactionGroups(ids []string) (map[string][]ReactionGroup, error) {
@@ -175,22 +160,28 @@ func (client *PullRequestDetailService) pullRequestReviewCommentReactionGroupsBa
 }
 
 func parsePullRequestReviewCommentReactionGroups(stdout []byte) (map[string][]ReactionGroup, error) {
-	var response pullRequestReviewCommentReactionGroupsResponse
-	if err := json.Unmarshal(stdout, &response); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestReviewCommentReactionGroupsPayload, err)
+	var response struct {
+		Nodes []*struct {
+			ID             string          `json:"id"`
+			ReactionGroups []ReactionGroup `json:"reactionGroups"`
+		} `json:"nodes"`
 	}
-	for _, graphqlErr := range response.Errors {
-		message := strings.TrimSpace(graphqlErr.Message)
-		if message != "" {
-			return nil, fmt.Errorf("%w: %s", ErrInvalidPullRequestReviewCommentReactionGroupsPayload, message)
-		}
+	if err := decodeEndpointGraphQLResponse(stdout, &response, ErrInvalidPullRequestReviewCommentReactionGroupsPayload); err != nil {
+		return nil, err
 	}
-	if response.Data == nil {
-		return nil, ErrInvalidPullRequestReviewCommentReactionGroupsPayload
+	return mapPullRequestReviewCommentReactionGroupsDTO(response.Nodes), nil
+}
+
+func mapPullRequestReviewCommentReactionGroupsDTO(nodes []*struct {
+	ID             string          `json:"id"`
+	ReactionGroups []ReactionGroup `json:"reactionGroups"`
+}) map[string][]ReactionGroup {
+	if len(nodes) == 0 {
+		return nil
 	}
 
 	groupsByID := map[string][]ReactionGroup{}
-	for _, node := range response.Data.Nodes {
+	for _, node := range nodes {
 		if node == nil {
 			continue
 		}
@@ -200,7 +191,10 @@ func parsePullRequestReviewCommentReactionGroups(stdout []byte) (map[string][]Re
 		}
 		groupsByID[trimmedID] = normalizeReactionGroups(node.ReactionGroups)
 	}
-	return groupsByID, nil
+	if len(groupsByID) == 0 {
+		return nil
+	}
+	return groupsByID
 }
 
 func uniqueReactionTargetIDs(ids []string) []string {

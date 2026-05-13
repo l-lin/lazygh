@@ -1,0 +1,13 @@
+{
+  "data": {
+    "nodes": [
+      {
+        "id": " PRRC_kwDOA ",
+        "reactionGroups": [
+          {"content": " HEART ", "viewerHasReacted": true, "users": {"totalCount": 1}},
+          {"content": " LAUGH ", "viewerHasReacted": false, "users": {"totalCount": 2}}
+        ]
+      }
+    ]
+  }
+}

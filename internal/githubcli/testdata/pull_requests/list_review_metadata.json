@@ -1,0 +1,44 @@
+{
+  "data": {
+    "nodes": [
+      {
+        "id": " PR_kwDOA ",
+        "reviewDecision": " REVIEW_REQUIRED ",
+        "mergeable": " MERGEABLE ",
+        "mergeStateStatus": " CLEAN ",
+        "reviewRequests": {
+          "nodes": [
+            {
+              "requestedReviewer": {
+                "__typename": " User ",
+                "login": " reviewer-one ",
+                "name": " Reviewer One "
+              }
+            },
+            {
+              "requestedReviewer": {
+                "__typename": " Team ",
+                "name": " Platform ",
+                "slug": " acme/platform ",
+                "organization": {
+                  "login": " acme "
+                }
+              }
+            }
+          ]
+        },
+        "headRefStatusCheckRollup": {
+          "nodes": [
+            {
+              "commit": {
+                "statusCheckRollup": {
+                  "state": " SUCCESS "
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

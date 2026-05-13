@@ -1,0 +1,13 @@
+[
+  {
+    "bucket": " fail ",
+    "completedAt": " 2026-04-18T13:04:00Z ",
+    "description": " widget smoke test timed out ",
+    "event": " pull_request ",
+    "link": " https://github.com/acme/widgets/actions/runs/42 ",
+    "name": " test ",
+    "startedAt": " 2026-04-18T13:00:00Z ",
+    "state": " FAILURE ",
+    "workflow": " CI "
+  }
+]

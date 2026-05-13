@@ -1,7 +1,6 @@
 package githubcli
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -39,104 +38,14 @@ type pullRequestReviewThreadPageNode struct {
 	CommentsEndCursor   string
 }
 
-type pullRequestReviewThreadsResponse struct {
-	Data struct {
-		Repository *struct {
-			PullRequest *struct {
-				ReviewThreads struct {
-					PageInfo struct {
-						HasNextPage bool   `json:"hasNextPage"`
-						EndCursor   string `json:"endCursor"`
-					} `json:"pageInfo"`
-					Nodes []struct {
-						ID                 string `json:"id"`
-						IsResolved         bool   `json:"isResolved"`
-						IsOutdated         bool   `json:"isOutdated"`
-						ViewerCanResolve   bool   `json:"viewerCanResolve"`
-						ViewerCanUnresolve bool   `json:"viewerCanUnresolve"`
-						Path               string `json:"path"`
-						Line               int    `json:"line"`
-						OriginalLine       int    `json:"originalLine"`
-						StartLine          int    `json:"startLine"`
-						OriginalStartLine  int    `json:"originalStartLine"`
-						DiffSide           string `json:"diffSide"`
-						StartDiffSide      string `json:"startDiffSide"`
-						Comments           struct {
-							PageInfo struct {
-								HasNextPage bool   `json:"hasNextPage"`
-								EndCursor   string `json:"endCursor"`
-							} `json:"pageInfo"`
-							Nodes []PullRequestComment `json:"nodes"`
-						} `json:"comments"`
-					} `json:"nodes"`
-				} `json:"reviewThreads"`
-			} `json:"pullRequest"`
-		} `json:"repository"`
-	} `json:"data"`
-}
-
 type pullRequestReviewThreadCommentsPage struct {
 	Comments    []PullRequestComment
 	HasNextPage bool
 	EndCursor   string
 }
 
-type pullRequestReviewThreadCommentsResponse struct {
-	Data *struct {
-		Node *struct {
-			Comments struct {
-				PageInfo struct {
-					HasNextPage bool   `json:"hasNextPage"`
-					EndCursor   string `json:"endCursor"`
-				} `json:"pageInfo"`
-				Nodes []PullRequestComment `json:"nodes"`
-			} `json:"comments"`
-		} `json:"node"`
-	} `json:"data"`
-}
-
 func (client *PullRequestDetailService) listPullRequestReviewThreads(repository string, number int) ([]PullRequestReviewThread, error) {
-	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
-	if err != nil {
-		return nil, err
-	}
-
-	owner, name, err := splitRepositoryOwnerAndName(trimmedRepository)
-	if err != nil {
-		return nil, err
-	}
-
-	threads := make([]PullRequestReviewThread, 0)
-	cursor := ""
-	for {
-		page, err := client.pullRequestReviewThreadsPage(owner, name, number, cursor)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, threadNode := range page.Threads {
-			thread := threadNode.Thread
-			if threadNode.CommentsHasNextPage {
-				if strings.TrimSpace(thread.ID) == "" || strings.TrimSpace(threadNode.CommentsEndCursor) == "" {
-					return nil, ErrInvalidPullRequestReviewThreadsResponse
-				}
-				remainingComments, err := client.pullRequestReviewThreadCommentsAfter(thread.ID, threadNode.CommentsEndCursor)
-				if err != nil {
-					return nil, err
-				}
-				thread.Comments = append(thread.Comments, remainingComments...)
-			}
-			threads = append(threads, thread.normalized())
-		}
-
-		if !page.HasNextPage {
-			return threads, nil
-		}
-		if strings.TrimSpace(page.EndCursor) == "" {
-			return nil, ErrInvalidPullRequestReviewThreadsResponse
-		}
-		cursor = page.EndCursor
-	}
+	return newReviewThreadAssembler(client).List(repository, number)
 }
 
 func (client *PullRequestDetailService) pullRequestReviewThreadsPage(owner string, name string, number int, cursor string) (pullRequestReviewThreadsPage, error) {
@@ -189,15 +98,76 @@ func (client *PullRequestDetailService) pullRequestReviewThreadCommentsPage(thre
 }
 
 func parsePullRequestReviewThreadsPage(stdout []byte) (pullRequestReviewThreadsPage, error) {
-	var response pullRequestReviewThreadsResponse
-	if err := json.Unmarshal(stdout, &response); err != nil {
-		return pullRequestReviewThreadsPage{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestReviewThreadsResponse, err)
+	var response struct {
+		Repository *struct {
+			PullRequest *struct {
+				ReviewThreads struct {
+					PageInfo struct {
+						HasNextPage bool   `json:"hasNextPage"`
+						EndCursor   string `json:"endCursor"`
+					} `json:"pageInfo"`
+					Nodes []struct {
+						ID                 string `json:"id"`
+						IsResolved         bool   `json:"isResolved"`
+						IsOutdated         bool   `json:"isOutdated"`
+						ViewerCanResolve   bool   `json:"viewerCanResolve"`
+						ViewerCanUnresolve bool   `json:"viewerCanUnresolve"`
+						Path               string `json:"path"`
+						Line               int    `json:"line"`
+						OriginalLine       int    `json:"originalLine"`
+						StartLine          int    `json:"startLine"`
+						OriginalStartLine  int    `json:"originalStartLine"`
+						DiffSide           string `json:"diffSide"`
+						StartDiffSide      string `json:"startDiffSide"`
+						Comments           struct {
+							PageInfo struct {
+								HasNextPage bool   `json:"hasNextPage"`
+								EndCursor   string `json:"endCursor"`
+							} `json:"pageInfo"`
+							Nodes []PullRequestComment `json:"nodes"`
+						} `json:"comments"`
+					} `json:"nodes"`
+				} `json:"reviewThreads"`
+			} `json:"pullRequest"`
+		} `json:"repository"`
 	}
-	if response.Data.Repository == nil || response.Data.Repository.PullRequest == nil {
+	if err := decodeEndpointGraphQLResponse(stdout, &response, ErrInvalidPullRequestReviewThreadsResponse); err != nil {
+		return pullRequestReviewThreadsPage{}, err
+	}
+	if response.Repository == nil || response.Repository.PullRequest == nil {
 		return pullRequestReviewThreadsPage{}, ErrInvalidPullRequestReviewThreadsResponse
 	}
 
-	reviewThreads := response.Data.Repository.PullRequest.ReviewThreads
+	return mapPullRequestReviewThreadsPageDTO(response.Repository.PullRequest.ReviewThreads), nil
+}
+
+func mapPullRequestReviewThreadsPageDTO(reviewThreads struct {
+	PageInfo struct {
+		HasNextPage bool   `json:"hasNextPage"`
+		EndCursor   string `json:"endCursor"`
+	} `json:"pageInfo"`
+	Nodes []struct {
+		ID                 string `json:"id"`
+		IsResolved         bool   `json:"isResolved"`
+		IsOutdated         bool   `json:"isOutdated"`
+		ViewerCanResolve   bool   `json:"viewerCanResolve"`
+		ViewerCanUnresolve bool   `json:"viewerCanUnresolve"`
+		Path               string `json:"path"`
+		Line               int    `json:"line"`
+		OriginalLine       int    `json:"originalLine"`
+		StartLine          int    `json:"startLine"`
+		OriginalStartLine  int    `json:"originalStartLine"`
+		DiffSide           string `json:"diffSide"`
+		StartDiffSide      string `json:"startDiffSide"`
+		Comments           struct {
+			PageInfo struct {
+				HasNextPage bool   `json:"hasNextPage"`
+				EndCursor   string `json:"endCursor"`
+			} `json:"pageInfo"`
+			Nodes []PullRequestComment `json:"nodes"`
+		} `json:"comments"`
+	} `json:"nodes"`
+}) pullRequestReviewThreadsPage {
 	page := pullRequestReviewThreadsPage{
 		Threads:     make([]pullRequestReviewThreadPageNode, 0, len(reviewThreads.Nodes)),
 		HasNextPage: reviewThreads.PageInfo.HasNextPage,
@@ -219,30 +189,48 @@ func parsePullRequestReviewThreadsPage(stdout []byte) (pullRequestReviewThreadsP
 				DiffSide:           node.DiffSide,
 				StartDiffSide:      node.StartDiffSide,
 				Comments:           normalizePullRequestComments(node.Comments.Nodes),
-			},
+			}.normalized(),
 			CommentsHasNextPage: node.Comments.PageInfo.HasNextPage,
 			CommentsEndCursor:   strings.TrimSpace(node.Comments.PageInfo.EndCursor),
 		})
 	}
-
-	return page, nil
+	return page
 }
 
 func parsePullRequestReviewThreadCommentsPage(stdout []byte) (pullRequestReviewThreadCommentsPage, error) {
-	var response pullRequestReviewThreadCommentsResponse
-	if err := json.Unmarshal(stdout, &response); err != nil {
-		return pullRequestReviewThreadCommentsPage{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestReviewThreadsResponse, err)
+	var response struct {
+		Node *struct {
+			Comments struct {
+				PageInfo struct {
+					HasNextPage bool   `json:"hasNextPage"`
+					EndCursor   string `json:"endCursor"`
+				} `json:"pageInfo"`
+				Nodes []PullRequestComment `json:"nodes"`
+			} `json:"comments"`
+		} `json:"node"`
 	}
-	if response.Data == nil || response.Data.Node == nil {
+	if err := decodeEndpointGraphQLResponse(stdout, &response, ErrInvalidPullRequestReviewThreadsResponse); err != nil {
+		return pullRequestReviewThreadCommentsPage{}, err
+	}
+	if response.Node == nil {
 		return pullRequestReviewThreadCommentsPage{}, ErrInvalidPullRequestReviewThreadsResponse
 	}
 
-	comments := response.Data.Node.Comments
+	return mapPullRequestReviewThreadCommentsPageDTO(response.Node.Comments), nil
+}
+
+func mapPullRequestReviewThreadCommentsPageDTO(comments struct {
+	PageInfo struct {
+		HasNextPage bool   `json:"hasNextPage"`
+		EndCursor   string `json:"endCursor"`
+	} `json:"pageInfo"`
+	Nodes []PullRequestComment `json:"nodes"`
+}) pullRequestReviewThreadCommentsPage {
 	return pullRequestReviewThreadCommentsPage{
 		Comments:    normalizePullRequestComments(comments.Nodes),
 		HasNextPage: comments.PageInfo.HasNextPage,
 		EndCursor:   strings.TrimSpace(comments.PageInfo.EndCursor),
-	}, nil
+	}
 }
 
 func normalizePullRequestComments(comments []PullRequestComment) []PullRequestComment {

@@ -1,0 +1,27 @@
+{
+  "data": {
+    "node": {
+      "comments": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": [
+          {
+            "id": " PRRC_2 ",
+            "viewerDidAuthor": true,
+            "state": " SUBMITTED ",
+            "author": {"login": " reviewer-two "},
+            "body": " Second reply ",
+            "createdAt": " 2026-04-20T10:05:00Z ",
+            "url": " https://example.com/thread/2 ",
+            "diffHunk": " @@ -1 +1 @@\n-old\n+new ",
+            "reactionGroups": [
+              {"content": " THUMBS_DOWN ", "viewerHasReacted": true, "users": {"totalCount": 1}}
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "reviewThreads": {
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": " THREAD_CURSOR_1 "
+          },
+          "nodes": [
+            {
+              "id": " thread-1 ",
+              "isResolved": true,
+              "isOutdated": false,
+              "viewerCanResolve": true,
+              "viewerCanUnresolve": true,
+              "path": " internal/tui/render.go ",
+              "line": 11,
+              "originalLine": 11,
+              "startLine": 10,
+              "originalStartLine": 10,
+              "diffSide": " RIGHT ",
+              "startDiffSide": " LEFT ",
+              "comments": {
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": [
+                  {
+                    "id": " PRRC_1 ",
+                    "viewerDidAuthor": false,
+                    "state": " PENDING ",
+                    "author": {"login": " reviewer-one "},
+                    "body": " First reply ",
+                    "createdAt": " 2026-04-20T10:00:00Z ",
+                    "url": " https://example.com/thread/1 ",
+                    "diffHunk": " @@ -1 +1 @@\n-old\n+new ",
+                    "reactionGroups": [
+                      {"content": " ROCKET ", "viewerHasReacted": false, "users": {"totalCount": 4}}
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

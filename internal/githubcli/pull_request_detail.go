@@ -156,61 +156,16 @@ type PullRequestStatusCheck struct {
 }
 
 func (client *PullRequestDetailService) GetPullRequestDetail(repository string, number int) (PullRequestDetail, error) {
+	return newPullRequestDetailAssembler(client).Assemble(repository, number)
+}
+
+func (client *PullRequestDetailService) loadPullRequestBaseDetail(repository string, number int) (PullRequestDetail, error) {
 	trimmedRepository := strings.TrimSpace(repository)
 	result, err := client.execute(rawCommand("pr", "view", strconv.Itoa(number), "-R", trimmedRepository, "--json", pullRequestDetailJSONFields))
 	if err != nil {
 		return PullRequestDetail{}, err
 	}
-
-	var detail PullRequestDetail
-	if err := client.transport.decoder.DecodeJSON(result.Stdout, &detail); err != nil {
-		return PullRequestDetail{}, fmt.Errorf("%w: %v", ErrInvalidPullRequestDetailResponse, err)
-	}
-	if len(detail.StatusCheckRollup) > 0 {
-		if buildInfos, buildErr := client.listPullRequestBuildInfos(trimmedRepository, number); buildErr == nil {
-			detail.StatusCheckRollup = mergePullRequestStatusCheckLinks(detail.StatusCheckRollup, buildInfos)
-		}
-	}
-
-	inlineComments, err := client.listPullRequestInlineComments(trimmedRepository, number)
-	if err != nil {
-		return PullRequestDetail{}, err
-	}
-	if len(inlineComments) > 0 {
-		detail.InlineComments = inlineComments
-	}
-
-	inlineThreads, err := client.listPullRequestReviewThreads(trimmedRepository, number)
-	if err != nil {
-		return PullRequestDetail{}, err
-	}
-	if len(inlineThreads) > 0 {
-		detail.InlineCommentThreads = inlineThreads
-	}
-
-	reactionTargets, err := client.listPullRequestReactionTargets(trimmedRepository, number)
-	if err != nil {
-		return PullRequestDetail{}, err
-	}
-	if strings.TrimSpace(reactionTargets.PullRequestID) != "" {
-		detail.ID = reactionTargets.PullRequestID
-	}
-	if len(reactionTargets.ReactionGroups) > 0 {
-		detail.ReactionGroups = reactionTargets.ReactionGroups
-	}
-	if len(reactionTargets.Comments) > 0 {
-		detail.Comments = reactionTargets.Comments
-	}
-
-	inlineCommentReactionGroups, err := client.listPullRequestReviewCommentReactionGroups(pullRequestInlineCommentReactionTargetIDs(detail.InlineComments))
-	if err != nil {
-		return PullRequestDetail{}, err
-	}
-	if len(inlineCommentReactionGroups) > 0 {
-		detail.InlineComments = mergePullRequestInlineCommentReactionGroups(detail.InlineComments, inlineCommentReactionGroups)
-	}
-
-	return detail.normalized(), nil
+	return parsePullRequestDetailResponse(result.Stdout)
 }
 
 func (client *PullRequestDetailService) listPullRequestInlineComments(repository string, number int) ([]PullRequestInlineComment, error) {
@@ -219,11 +174,7 @@ func (client *PullRequestDetailService) listPullRequestInlineComments(repository
 		return nil, err
 	}
 
-	var comments []PullRequestInlineComment
-	if err := client.decodePaginatedOrFlatJSON(result.Stdout, &comments); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestInlineCommentResponse, err)
-	}
-	return comments, nil
+	return parsePullRequestInlineCommentsResponse(result.Stdout)
 }
 
 func pullRequestInlineCommentReactionTargetIDs(comments []PullRequestInlineComment) []string {

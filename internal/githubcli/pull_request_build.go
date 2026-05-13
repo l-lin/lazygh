@@ -2,7 +2,6 @@ package githubcli
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -27,16 +26,7 @@ type PullRequestBuildInfo struct {
 }
 
 func (client *BuildService) GetPullRequestBuildInfo(repository string, number int, check PullRequestStatusCheck) (PullRequestBuildInfo, error) {
-	buildInfos, err := client.listPullRequestBuildInfos(repository, number)
-	if err != nil {
-		return PullRequestBuildInfo{}, err
-	}
-
-	actual, ok := pullRequestBuildInfoMatchingCheck(check, buildInfos)
-	if !ok {
-		return PullRequestBuildInfo{}, ErrPullRequestBuildInfoNotFound
-	}
-	return actual, nil
+	return newBuildAssembler(client.serviceBase).FindBuildInfo(repository, number, check)
 }
 
 func (client serviceBase) listPullRequestBuildInfos(repository string, number int) ([]PullRequestBuildInfo, error) {
@@ -50,15 +40,7 @@ func (client serviceBase) listPullRequestBuildInfos(repository string, number in
 		return nil, err
 	}
 
-	var buildInfos []PullRequestBuildInfo
-	if err := client.transport.decoder.DecodeJSON(result.Stdout, &buildInfos); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestBuildResponse, err)
-	}
-
-	for index := range buildInfos {
-		buildInfos[index] = buildInfos[index].normalized()
-	}
-	return buildInfos, nil
+	return BuildAssembler{}.ParseBuildInfos(result.Stdout)
 }
 
 func mergePullRequestStatusCheckLinks(checks []PullRequestStatusCheck, buildInfos []PullRequestBuildInfo) []PullRequestStatusCheck {

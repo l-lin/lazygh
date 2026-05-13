@@ -30,23 +30,7 @@ func (client *PullRequestDetailService) GetPullRequestDiff(repository string, nu
 	if err != nil {
 		return PullRequestDiff{}, err
 	}
-
-	unifiedDiff, err := client.getPullRequestUnifiedDiff(trimmedRepository, number)
-	if err != nil {
-		return PullRequestDiff{}, err
-	}
-
-	files, err := client.listPullRequestDiffFiles(trimmedRepository, number)
-	if err != nil {
-		return PullRequestDiff{}, err
-	}
-
-	threads, err := client.listPullRequestReviewThreads(trimmedRepository, number)
-	if err != nil {
-		return PullRequestDiff{}, err
-	}
-
-	return PullRequestDiff{UnifiedDiff: unifiedDiff, Files: files, Threads: threads}, nil
+	return newPullRequestDiffAssembler(client).Assemble(trimmedRepository, number)
 }
 
 func (client *PullRequestDetailService) getPullRequestUnifiedDiff(repository string, number int) (string, error) {
@@ -64,14 +48,7 @@ func (client *PullRequestDetailService) listPullRequestDiffFiles(repository stri
 		return nil, err
 	}
 
-	var files []PullRequestDiffFile
-	if err := client.decodePaginatedOrFlatJSON(result.Stdout, &files); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestDiffFilesResponse, err)
-	}
-	for index := range files {
-		files[index] = files[index].normalized()
-	}
-	return files, nil
+	return parsePullRequestDiffFilesResponse(result.Stdout)
 }
 
 func (file PullRequestDiffFile) normalized() PullRequestDiffFile {

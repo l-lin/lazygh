@@ -77,11 +77,7 @@ func (client *NotificationService) ListNotifications() ([]Notification, error) {
 		return nil, normalizeNotificationEndpointError(err)
 	}
 
-	var notifications []Notification
-	if err := client.decodePaginatedOrFlatJSON(result.Stdout, &notifications); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidNotificationResponse, err)
-	}
-	return normalizedNotifications(notifications), nil
+	return NotificationAssembler{}.ParseList(result.Stdout)
 }
 
 func (client *NotificationService) GetIssueDetail(repository string, number int) (IssueDetail, error) {
@@ -94,12 +90,7 @@ func (client *NotificationService) GetIssueDetail(repository string, number int)
 	if err != nil {
 		return IssueDetail{}, err
 	}
-
-	var detail IssueDetail
-	if err := client.transport.decoder.DecodeJSON(result.Stdout, &detail); err != nil {
-		return IssueDetail{}, fmt.Errorf("%w: %v", ErrInvalidIssueDetailResponse, err)
-	}
-	return detail.normalized(), nil
+	return NotificationAssembler{}.ParseIssueDetail(result.Stdout)
 }
 
 func (client *NotificationService) GetReleaseDetail(repository string, id int) (ReleaseDetail, error) {
@@ -112,12 +103,7 @@ func (client *NotificationService) GetReleaseDetail(repository string, id int) (
 	if err != nil {
 		return ReleaseDetail{}, err
 	}
-
-	var detail ReleaseDetail
-	if err := client.transport.decoder.DecodeJSON(result.Stdout, &detail); err != nil {
-		return ReleaseDetail{}, fmt.Errorf("%w: %v", ErrInvalidReleaseDetailResponse, err)
-	}
-	return detail.normalized(), nil
+	return NotificationAssembler{}.ParseReleaseDetail(result.Stdout)
 }
 
 func normalizedNotifications(notifications []Notification) []Notification {

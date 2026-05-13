@@ -1,0 +1,32 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "id": " PR_kwDOA ",
+        "reactionGroups": [
+          {"content": " THUMBS_UP ", "viewerHasReacted": true, "users": {"totalCount": 2}},
+          {"content": " HOORAY ", "viewerHasReacted": false, "users": {"totalCount": 1}}
+        ],
+        "comments": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "id": " IC_kwDOA ",
+              "author": {"login": " reviewer "},
+              "body": " Looks good ",
+              "createdAt": " 2026-04-18T13:00:00Z ",
+              "url": " https://github.com/acme/widgets/pull/42#issuecomment-1 ",
+              "viewerDidAuthor": false,
+              "reactionGroups": [
+                {"content": " EYES ", "viewerHasReacted": false, "users": {"totalCount": 3}}
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -104,32 +104,6 @@ type pullRequestListReviewMetadata struct {
 	StatusCheckRollupState string
 }
 
-type pullRequestListReviewMetadataResponse struct {
-	Data *struct {
-		Nodes []*struct {
-			ID               string `json:"id"`
-			ReviewDecision   string `json:"reviewDecision"`
-			MergeStateStatus string `json:"mergeStateStatus"`
-			Mergeable        string `json:"mergeable"`
-			ReviewRequests   struct {
-				Nodes []PullRequestReviewRequest `json:"nodes"`
-			} `json:"reviewRequests"`
-			HeadRefStatusCheckRollup struct {
-				Nodes []struct {
-					Commit struct {
-						StatusCheckRollup *struct {
-							State string `json:"state"`
-						} `json:"statusCheckRollup"`
-					} `json:"commit"`
-				} `json:"nodes"`
-			} `json:"headRefStatusCheckRollup"`
-		} `json:"nodes"`
-	} `json:"data"`
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-}
-
 func (client *PullRequestListService) ListPullRequests(commandArguments []string) ([]PullRequest, error) {
 	resolvedCommandArguments := pullRequestSearchCommandArguments(commandArguments)
 	result, err := client.execute(rawCommand(resolvedCommandArguments...))
@@ -137,13 +111,9 @@ func (client *PullRequestListService) ListPullRequests(commandArguments []string
 		return nil, err
 	}
 
-	var pullRequests []PullRequest
-	if err := client.transport.decoder.DecodeJSON(result.Stdout, &pullRequests); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestResponse, err)
-	}
-
-	for index := range pullRequests {
-		pullRequests[index] = pullRequests[index].normalized()
+	pullRequests, err := parsePullRequestSearchResultsResponse(result.Stdout)
+	if err != nil {
+		return nil, err
 	}
 
 	reviewMetadataByID, err := client.listPullRequestReviewMetadata(pullRequests)
@@ -233,22 +203,56 @@ func uniquePullRequestIDs(pullRequests []PullRequest) []string {
 }
 
 func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestListReviewMetadata, error) {
-	var response pullRequestListReviewMetadataResponse
-	if err := json.Unmarshal(stdout, &response); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPullRequestReviewMetadataResponse, err)
+	var response struct {
+		Nodes []*struct {
+			ID               string `json:"id"`
+			ReviewDecision   string `json:"reviewDecision"`
+			MergeStateStatus string `json:"mergeStateStatus"`
+			Mergeable        string `json:"mergeable"`
+			ReviewRequests   struct {
+				Nodes []PullRequestReviewRequest `json:"nodes"`
+			} `json:"reviewRequests"`
+			HeadRefStatusCheckRollup struct {
+				Nodes []struct {
+					Commit struct {
+						StatusCheckRollup *struct {
+							State string `json:"state"`
+						} `json:"statusCheckRollup"`
+					} `json:"commit"`
+				} `json:"nodes"`
+			} `json:"headRefStatusCheckRollup"`
+		} `json:"nodes"`
 	}
-	for _, graphqlErr := range response.Errors {
-		message := strings.TrimSpace(graphqlErr.Message)
-		if message != "" {
-			return nil, fmt.Errorf("%w: %s", ErrInvalidPullRequestReviewMetadataResponse, message)
-		}
+	if err := decodeEndpointGraphQLResponse(stdout, &response, ErrInvalidPullRequestReviewMetadataResponse); err != nil {
+		return nil, err
 	}
-	if response.Data == nil {
-		return nil, ErrInvalidPullRequestReviewMetadataResponse
+	return mapPullRequestListReviewMetadataResponse(response.Nodes), nil
+}
+
+func mapPullRequestListReviewMetadataResponse(nodes []*struct {
+	ID               string `json:"id"`
+	ReviewDecision   string `json:"reviewDecision"`
+	MergeStateStatus string `json:"mergeStateStatus"`
+	Mergeable        string `json:"mergeable"`
+	ReviewRequests   struct {
+		Nodes []PullRequestReviewRequest `json:"nodes"`
+	} `json:"reviewRequests"`
+	HeadRefStatusCheckRollup struct {
+		Nodes []struct {
+			Commit struct {
+				StatusCheckRollup *struct {
+					State string `json:"state"`
+				} `json:"statusCheckRollup"`
+			} `json:"commit"`
+		} `json:"nodes"`
+	} `json:"headRefStatusCheckRollup"`
+}) map[string]pullRequestListReviewMetadata {
+	if len(nodes) == 0 {
+		return nil
 	}
 
-	reviewMetadataByID := make(map[string]pullRequestListReviewMetadata, len(response.Data.Nodes))
-	for _, node := range response.Data.Nodes {
+	reviewMetadataByID := make(map[string]pullRequestListReviewMetadata, len(nodes))
+	for _, node := range nodes {
 		if node == nil {
 			continue
 		}
@@ -271,7 +275,10 @@ func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestLi
 		}
 		reviewMetadataByID[trimmedID] = reviewMetadata
 	}
-	return reviewMetadataByID, nil
+	if len(reviewMetadataByID) == 0 {
+		return nil
+	}
+	return reviewMetadataByID
 }
 
 func pullRequestListStatusCheckRollupState(nodes []struct {

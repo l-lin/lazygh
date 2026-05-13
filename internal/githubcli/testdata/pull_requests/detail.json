@@ -1,0 +1,74 @@
+{
+  "id": " PR_kwDOA ",
+  "title": "  Ship it  ",
+  "number": 42,
+  "url": "  https://github.com/acme/widgets/pull/42  ",
+  "body": "  ## Summary\n\n- parser cleanup  ",
+  "author": {
+    "login": "  octocat  ",
+    "name": "  Octo Cat  ",
+    "is_bot": false
+  },
+  "state": "  OPEN  ",
+  "isDraft": false,
+  "createdAt": " 2026-04-18T10:00:00Z ",
+  "updatedAt": " 2026-04-18T12:30:00Z ",
+  "labels": [
+    {"name": "  bug  "},
+    {"name": "  backend  "}
+  ],
+  "assignees": [
+    {"login": "  assignee-one  ", "name": "  Assignee One  ", "is_bot": false}
+  ],
+  "reviewRequests": [
+    {"requestedReviewer": {"__typename": " User ", "login": " reviewer-requested ", "name": " Reviewer Requested "}},
+    {"requestedReviewer": {"__typename": " Team ", "name": " Platform ", "slug": " acme/platform ", "organization": {"login": " acme "}}}
+  ],
+  "baseRefName": "  main  ",
+  "headRefName": "  feature/parser-cleanup  ",
+  "mergeStateStatus": "  CLEAN  ",
+  "mergeable": "  MERGEABLE  ",
+  "comments": [
+    {
+      "id": "  IC_kwDOA  ",
+      "author": {"login": " reviewer-one "},
+      "body": "  Looks good  ",
+      "createdAt": " 2026-04-18T13:00:00Z ",
+      "url": "  https://github.com/acme/widgets/pull/42#issuecomment-1  ",
+      "reactionGroups": [
+        {"content": " THUMBS_UP ", "viewerHasReacted": true, "users": {"totalCount": 2}}
+      ]
+    }
+  ],
+  "commits": [
+    {
+      "oid": "  abc123  ",
+      "messageHeadline": "  split parser  ",
+      "messageBody": "  move dto and mapping  ",
+      "authoredDate": " 2026-04-18T14:00:00Z ",
+      "committedDate": " 2026-04-18T14:05:00Z ",
+      "authors": [
+        {"email": "  dev@example.com  ", "login": " dev-one ", "name": " Dev One "}
+      ]
+    }
+  ],
+  "reviews": [
+    {
+      "author": {"login": " reviewer-two "},
+      "state": " APPROVED ",
+      "submittedAt": " 2026-04-18T15:00:00Z "
+    }
+  ],
+  "additions": 12,
+  "deletions": 3,
+  "changedFiles": 5,
+  "statusCheckRollup": [
+    {
+      "__typename": " CheckRun ",
+      "name": " lint ",
+      "status": " COMPLETED ",
+      "conclusion": " SUCCESS ",
+      "workflowName": " CI "
+    }
+  ]
+}
