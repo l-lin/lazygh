@@ -38,10 +38,7 @@ func (document detailDocument) positionForGlobalIndex(index int) detailPosition 
 		return detailPosition{line: lineIndex, column: 0}
 	}
 
-	column := index - document.lineStartOffsets[lineIndex]
-	if column < 0 {
-		column = 0
-	}
+	column := max(index-document.lineStartOffsets[lineIndex], 0)
 	if column >= lineLength {
 		column = lineLength - 1
 	}
@@ -228,12 +225,12 @@ func (document detailDocument) selectionText(start detailPosition, end detailPos
 	var builder strings.Builder
 	for lineIndex := start.line; lineIndex <= end.line; lineIndex++ {
 		line := document.lines[lineIndex]
-		switch {
-		case lineIndex == start.line:
+		switch lineIndex {
+		case start.line:
 			if len(line) > 0 {
 				builder.WriteString(string(line[start.column:]))
 			}
-		case lineIndex == end.line:
+		case end.line:
 			if len(line) > 0 {
 				builder.WriteString(string(line[:end.column+1]))
 			}

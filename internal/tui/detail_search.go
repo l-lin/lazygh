@@ -55,10 +55,6 @@ func detailSearchMatchRanges(matches []detailSearchMatch) map[int][]detailColumn
 	return matchRanges
 }
 
-func (document detailDocument) searchMatchRanges(query string) map[int][]detailColumnRange {
-	return detailSearchMatchRanges(document.searchMatches(query))
-}
-
 func (state *detailViewState) syncSearch(document detailDocument, query string) {
 	state.searchMatches = document.searchMatches(query)
 	state.currentSearchMatch = state.searchMatchIndexAtCursor(document)

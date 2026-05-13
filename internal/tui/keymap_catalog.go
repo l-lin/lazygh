@@ -134,12 +134,6 @@ func keybindingActionFor(scope string, action string, viewNames []string, handle
 	}
 }
 
-func keybindingActionForDirectOnly(scope string, action string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, bindings ...string) keybindingAction {
-	definition := keybindingActionFor(scope, action, viewNames, handler, bindings...)
-	definition.allowSequences = false
-	return definition
-}
-
 func fixedKeybindingActionFor(scope string, action string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error, bindings ...string) keybindingAction {
 	definition := keybindingActionFor(scope, action, viewNames, handler, bindings...)
 	definition.configurable = false

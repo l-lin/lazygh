@@ -378,17 +378,6 @@ func (source detailImageHTMLSource) canLoadRenderedHTML() bool {
 	return source.applyRenderedHTML != nil && strings.TrimSpace(source.repository) != "" && strings.TrimSpace(source.markdown) != "" && strings.TrimSpace(source.renderedHTML) == "" && needsRenderedMarkdownHTML(source.markdown)
 }
 
-func hasPotentialMarkdownImages(markdown string) bool {
-	trimmedMarkdown := strings.TrimSpace(markdown)
-	if trimmedMarkdown == "" {
-		return false
-	}
-	if strings.Contains(trimmedMarkdown, "![") {
-		return true
-	}
-	return strings.Contains(strings.ToLower(trimmedMarkdown), "<img")
-}
-
 func needsRenderedMarkdownHTML(markdown string) bool {
 	trimmedMarkdown := strings.TrimSpace(markdown)
 	if trimmedMarkdown == "" {

@@ -10,14 +10,6 @@ func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
 	program.executeWorkflowCommands(gui, program.notificationStore.planLoad(program, gui))
 }
 
-func (program *Program) notificationsPendingLoad() bool {
-	rows := program.model.NotificationRows()
-	if len(rows) == 0 {
-		return true
-	}
-	return len(rows) == 1 && program.isNotificationLoadingItem(rows[0].Item)
-}
-
 func (program *Program) loadNotifications(gui *gocui.Gui) {
 	notifications, err := program.notificationQueries.ListNotifications()
 	if err == nil {

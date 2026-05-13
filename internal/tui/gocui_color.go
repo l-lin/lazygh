@@ -14,14 +14,6 @@ func gocuiColorOrDefault(hexColor string) gocui.Attribute {
 	return gocui.GetColor(hexColor)
 }
 
-func foregroundColorEscapeForAttribute(attribute gocui.Attribute) string {
-	hexColor := hexColorForAttribute(attribute)
-	if hexColor == "" {
-		return ""
-	}
-	return foregroundColorEscape(hexColor)
-}
-
 func hexColorForAttribute(attribute gocui.Attribute) string {
 	color := attribute & gocui.AttrColorBits
 	red, green, blue := color.RGB()

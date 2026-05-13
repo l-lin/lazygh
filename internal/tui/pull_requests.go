@@ -15,8 +15,6 @@ const (
 	myPullRequestsEmptyDetail                    = "GitHub returned no open pull requests authored by the authenticated user."
 	myPullRequestsUnauthenticatedTitle           = "GitHub authentication required"
 	myPullRequestsUnauthenticatedDetail          = "GitHub CLI is not authenticated.\n\nRun `gh auth login`, then restart `lazygh`."
-	myPullRequestsUnavailableTitle               = "`gh` not found"
-	myPullRequestsUnavailableDetail              = "Install GitHub CLI and make sure `gh` is in your `PATH`, then restart `lazygh`."
 	myPullRequestsGenericErrorTitle              = "Could not load my pull requests"
 	requestedPullRequestsLoadingTitle            = "Loading my reviews..."
 	requestedPullRequestsEmptyTitle              = "No reviewed pull requests"
@@ -46,13 +44,11 @@ type pullRequestListState struct {
 }
 
 var (
-	defaultPullRequestSearches              = appconfig.DefaultPullRequestSearches()
-	myPullRequestsLoadingDetail             = buildPullRequestListState(defaultPullRequestSearches[0]).loadingDetail
-	myPullRequestsGenericErrorPrefix        = buildPullRequestListState(defaultPullRequestSearches[0]).genericErrorPrefix
-	requestedPullRequestsLoadingDetail      = buildPullRequestListState(defaultPullRequestSearches[1]).loadingDetail
-	requestedPullRequestsGenericErrorPrefix = buildPullRequestListState(defaultPullRequestSearches[1]).genericErrorPrefix
-	myPullRequestsState                     = buildPullRequestListState(defaultPullRequestSearches[0])
-	requestedPullRequestsState              = buildPullRequestListState(defaultPullRequestSearches[1])
+	defaultPullRequestSearches         = appconfig.DefaultPullRequestSearches()
+	myPullRequestsLoadingDetail        = buildPullRequestListState(defaultPullRequestSearches[0]).loadingDetail
+	requestedPullRequestsLoadingDetail = buildPullRequestListState(defaultPullRequestSearches[1]).loadingDetail
+	myPullRequestsState                = buildPullRequestListState(defaultPullRequestSearches[0])
+	requestedPullRequestsState         = buildPullRequestListState(defaultPullRequestSearches[1])
 )
 
 func buildPullRequestListState(search appconfig.PullRequestSearch) pullRequestListState {
@@ -164,7 +160,7 @@ func normalizedPullRequestSearchCommand(command []string) []string {
 }
 
 func pullRequestSearchQueryContains(query string, prefix string) bool {
-	for _, term := range strings.Fields(strings.TrimSpace(query)) {
+	for term := range strings.FieldsSeq(strings.TrimSpace(query)) {
 		if strings.HasPrefix(term, prefix) {
 			return true
 		}
@@ -178,22 +174,6 @@ func myPullRequestsLoadingItem() Item {
 
 func requestedPullRequestsLoadingItem() Item {
 	return pullRequestLoadingItem(requestedPullRequestsState)
-}
-
-func myPullRequestsStateRows(pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
-	return pullRequestStateRows(myPullRequestsState, pullRequests, err)
-}
-
-func requestedPullRequestsStateRows(pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
-	return pullRequestStateRows(requestedPullRequestsState, pullRequests, err)
-}
-
-func myPullRequestsStateItems(pullRequests []githubdomain.PullRequest, err error) []Item {
-	return pullRequestItems(myPullRequestsStateRows(pullRequests, err))
-}
-
-func requestedPullRequestsStateItems(pullRequests []githubdomain.PullRequest, err error) []Item {
-	return pullRequestItems(requestedPullRequestsStateRows(pullRequests, err))
 }
 
 func myPullRequestRow(pullRequest any) PullRequestRow {

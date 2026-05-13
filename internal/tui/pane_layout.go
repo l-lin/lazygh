@@ -24,10 +24,6 @@ func calculateMainPaneLayout(maxX int, contentMaxY int, layoutSize PaneLayoutSiz
 	return calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, layoutSize, fullscreenPane, FocusUserView, userViewTotalHeight, true)
 }
 
-func calculateMainPaneLayoutWithUserViewHeight(maxX int, contentMaxY int, layoutSize PaneLayoutSize, fullscreenPane Focus, userHeight int) mainPaneLayout {
-	return calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, layoutSize, fullscreenPane, FocusUserView, userHeight, true)
-}
-
 func calculateMainPaneLayoutWithSidebarState(maxX int, contentMaxY int, layoutSize PaneLayoutSize, fullscreenPane Focus, focus Focus, userHeight int, showNotifications bool) mainPaneLayout {
 	if maxX < 1 {
 		maxX = 1

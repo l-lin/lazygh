@@ -171,10 +171,7 @@ func (document detailDocument) positionForRow(rowIndex int, desiredColumn int) d
 	}
 
 	rowLength := row.endColumn - row.startColumn + 1
-	clampedColumn := desiredColumn
-	if clampedColumn < 0 {
-		clampedColumn = 0
-	}
+	clampedColumn := max(desiredColumn, 0)
 	if clampedColumn >= rowLength {
 		clampedColumn = rowLength - 1
 	}

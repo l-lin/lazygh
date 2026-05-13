@@ -123,11 +123,11 @@ func nextReviewDiffPathToken(text string) (string, string, bool) {
 		return "", "", false
 	}
 	if trimmedText[0] != '"' {
-		separatorIndex := strings.IndexByte(trimmedText, ' ')
-		if separatorIndex < 0 {
+		before, after, ok := strings.Cut(trimmedText, " ")
+		if !ok {
 			return trimmedText, "", true
 		}
-		return trimmedText[:separatorIndex], trimmedText[separatorIndex+1:], true
+		return before, after, true
 	}
 
 	var builder strings.Builder

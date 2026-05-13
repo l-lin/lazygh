@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -66,7 +67,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	if detailView.TabIndex != 0 {
 		t.Fatalf("expected the pull request notification detail tab index %d, actual %d", 0, detailView.TabIndex)
 	}
-	if !containsString(loader.detailCalls, "acme/widgets#42") {
+	if !slices.Contains(loader.detailCalls, "acme/widgets#42") {
 		t.Fatalf("expected pull request detail load for %q, actual %v", "acme/widgets#42", loader.detailCalls)
 	}
 
@@ -84,7 +85,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected issue detail to avoid pull request tabs, actual %v", detailView.Tabs)
 	}
-	if !containsString(loader.issueDetailCalls, "acme/opencode#3235") {
+	if !slices.Contains(loader.issueDetailCalls, "acme/opencode#3235") {
 		t.Fatalf("expected issue detail load for %q, actual %v", "acme/opencode#3235", loader.issueDetailCalls)
 	}
 
@@ -100,7 +101,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected release detail to avoid pull request tabs, actual %v", detailView.Tabs)
 	}
-	if !containsString(loader.releaseDetailCalls, "acme/doctoboot#317927281") {
+	if !slices.Contains(loader.releaseDetailCalls, "acme/doctoboot#317927281") {
 		t.Fatalf("expected release detail load for %q, actual %v", "acme/doctoboot#317927281", loader.releaseDetailCalls)
 	}
 }
@@ -221,13 +222,4 @@ func given_notificationDetailView(t *testing.T, gui *gocui.Gui) *gocui.View {
 	actual, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	return actual
-}
-
-func containsString(items []string, expected string) bool {
-	for _, item := range items {
-		if item == expected {
-			return true
-		}
-	}
-	return false
 }

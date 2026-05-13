@@ -62,10 +62,7 @@ func adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int)
 		return selectedIndex
 	}
 
-	visibleSelectionIndex := indexOfInt(visibleIndexes, selectedIndex)
-	if visibleSelectionIndex < 0 {
-		visibleSelectionIndex = 0
-	}
+	visibleSelectionIndex := max(indexOfInt(visibleIndexes, selectedIndex), 0)
 
 	visibleSelectionIndex = clampIndex(visibleSelectionIndex+change, len(visibleIndexes))
 	return visibleIndexes[visibleSelectionIndex]

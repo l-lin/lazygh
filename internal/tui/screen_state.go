@@ -117,10 +117,6 @@ func newBrowserScreenStateWithSideFocus(activeFocus Focus, activeSideFocus Focus
 	return state
 }
 
-func newReviewScreenState(mode ScreenMode, activeFocus Focus) ScreenState {
-	return newReviewScreenStateWithSideFocus(mode, activeFocus, defaultReviewSideFocus(activeFocus))
-}
-
 func newReviewScreenStateWithSideFocus(mode ScreenMode, activeFocus Focus, activeSideFocus Focus) ScreenState {
 	state := ScreenState{
 		Mode:        mode,
@@ -149,15 +145,6 @@ func defaultBrowserSideFocus(activeFocus Focus) Focus {
 		return activeFocus
 	default:
 		return FocusUserView
-	}
-}
-
-func defaultReviewSideFocus(activeFocus Focus) Focus {
-	switch activeFocus {
-	case FocusUserView, FocusPullRequestsView:
-		return activeFocus
-	default:
-		return FocusPullRequestsView
 	}
 }
 

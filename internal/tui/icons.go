@@ -35,7 +35,6 @@ const (
 	iconBuild              = ""
 	iconAddReaction        = "󰞅"
 	iconTheme              = "󰸌"
-	iconReviewURL          = ""
 	iconMetadata           = "󰋽"
 	iconChapter            = "󰭤"
 	iconStatusSuccess      = ""
@@ -86,7 +85,6 @@ const (
 	detailChangesIcon               = iconChanges
 	pullRequestIcon                 = iconPullRequest
 	draftPullRequestIcon            = iconPullRequestDraft
-	detailRepositoryIcon            = iconPullRequest
 	detailAuthorIcon                = iconUser
 	detailReviewRequestsIcon        = iconReviewRequest
 	detailLabelIcon                 = iconLabel
@@ -97,7 +95,6 @@ const (
 
 	reviewDiffHeaderPathIcon    = iconFileLocation
 	reviewDiffDirectoryIcon     = iconDirectory
-	reviewDiffDefaultFileIcon   = iconFile
 	reviewDiffTeamOwnershipIcon = iconTeamOwnership
 
 	reviewModeMetadataIcon = iconMetadata
@@ -133,12 +130,10 @@ const (
 	actionsPopupMarkAllNotificationsDoneIcon = iconDelete
 	actionsPopupOpenNotificationBrowserIcon  = iconOpenBrowser
 	actionsPopupResolveInlineCommentIcon     = iconChecks
-	actionsPopupBuildActionIcon              = iconBuild
 	actionsPopupBuildRunIcon                 = iconBuild
 	actionsPopupBuildRunLogsIcon             = iconBuild
 	actionsPopupAddReactionIcon              = iconAddReaction
 	actionsPopupRemoveReactionIcon           = iconDelete
-	actionsPopupReviewPullRequestURLIcon     = iconReviewURL
 	actionsPopupChangeThemeIcon              = iconTheme
 	actionsPopupReviewStoryIcon              = iconReview
 

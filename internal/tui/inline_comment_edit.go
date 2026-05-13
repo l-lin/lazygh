@@ -224,14 +224,6 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 	}, true
 }
 
-func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubdomain.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
-	threadComment, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, renderer, width, cursorLine)
-	if !ok {
-		return pullRequestReviewCommentActionTarget{}, false
-	}
-	return pullRequestInlineThreadCommentActionTarget(threadComment)
-}
-
 func pullRequestInlineThreadCommentActionTarget(threadComment githubdomain.PullRequestComment) (pullRequestReviewCommentActionTarget, bool) {
 	if !hasUsablePullRequestMutationID(threadComment.ID) {
 		return pullRequestReviewCommentActionTarget{}, false

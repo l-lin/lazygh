@@ -28,49 +28,6 @@ func (state paneFooterState) Visible() bool {
 	return state.Text() != ""
 }
 
-func (program *Program) layoutPaneFooterViews(gui *gocui.Gui) error {
-	for _, focus := range program.mainPaneFooterFocuses() {
-		if err := program.layoutPaneFooterView(gui, focus); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (program *Program) mainPaneFooterFocuses() []Focus {
-	if program.actionContext().IsReviewContext() {
-		return []Focus{FocusUserView, FocusPullRequestsView, FocusDetailView}
-	}
-	return []Focus{FocusUserView, FocusPullRequestsView, FocusNotificationsView, FocusDetailView}
-}
-
-func (program *Program) layoutPaneFooterView(gui *gocui.Gui, focus Focus) error {
-	viewName := paneFooterViewName(focus)
-	if !program.model.PaneVisible(focus) {
-		return deleteViewIfPresent(gui, viewName)
-	}
-
-	state := program.paneFooterStateFor(focus)
-	if !state.Visible() {
-		return deleteViewIfPresent(gui, viewName)
-	}
-
-	view, err := program.layoutPaneBottomOverlayView(gui, viewName, paneViewName(focus))
-	if err != nil {
-		return err
-	}
-
-	program.configurePaneFooterView(view)
-	program.renderPaneFooterView(view, state.Text())
-	_, err = gui.SetViewOnTop(viewName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-
-	return err
-}
-
 func (program *Program) paneFooterStateFor(focus Focus) paneFooterState {
 	if program.model.SearchActive() && program.model.SearchTarget() == focus {
 		return paneFooterState{}
@@ -370,19 +327,6 @@ func (program *Program) renderPaneFooterView(view *gocui.View, text string) {
 	view.SetOrigin(0, 0)
 	view.SetCursor(0, 0)
 	fmt.Fprint(view, strings.TrimSpace(text))
-}
-
-func paneFooterViewName(focus Focus) string {
-	switch focus {
-	case FocusPullRequestsView:
-		return viewPullRequestsFooterName
-	case FocusNotificationsView:
-		return viewNotificationsFooterName
-	case FocusDetailView:
-		return viewDetailFooterName
-	default:
-		return viewUserFooterName
-	}
 }
 
 func paneViewName(focus Focus) string {

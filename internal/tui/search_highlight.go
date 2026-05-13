@@ -17,12 +17,6 @@ func highlightSearchMatches(text string, query string) (string, int) {
 	return highlightSearchMatchesWithBasePrefix(text, query, "")
 }
 
-func highlightSearchMatchesOnSelectedLine(text string, query string) (string, int) {
-	selectedLinePrefix := ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-	selectedMatchPrefix := ansiBold + backgroundColorEscape(theme.SearchHighlightHex)
-	return highlightSearchMatchesWithPrefixes(text, query, selectedLinePrefix, selectedMatchPrefix)
-}
-
 func highlightSearchMatchesWithBasePrefix(text string, query string, basePrefix string) (string, int) {
 	return highlightSearchMatchesWithPrefixes(text, query, basePrefix, backgroundColorEscape(theme.SearchHighlightHex))
 }
@@ -56,11 +50,6 @@ func applyPrefix(text string, prefix string) string {
 	}
 
 	return prefix + text + ansiReset
-}
-
-func countSearchMatches(text string, query string) int {
-	_, matchCount := highlightSearchMatches(text, query)
-	return matchCount
 }
 
 func backgroundColorEscape(hexColor string) string {

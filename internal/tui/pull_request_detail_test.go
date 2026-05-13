@@ -882,9 +882,9 @@ func given_detailDocumentLineContaining(t *testing.T, document detailDocument, s
 func given_runeIndexInString(t *testing.T, text string, segment string) int {
 	t.Helper()
 
-	byteIndex := strings.Index(text, segment)
-	if byteIndex < 0 {
+	before, _, ok := strings.Cut(text, segment)
+	if !ok {
 		t.Fatalf("expected %q to contain %q", text, segment)
 	}
-	return utf8.RuneCountInString(text[:byteIndex])
+	return utf8.RuneCountInString(before)
 }

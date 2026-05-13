@@ -29,10 +29,6 @@ func reviewTreeFoldEligible(mode ScreenMode, focus Focus, blocked bool) bool {
 	return isReviewScreenMode(mode) && focus == FocusPullRequestsView && !blocked
 }
 
-func reviewSelectedLineVisible(mode ScreenMode, usesManualSelectedLineRendering bool, shouldHighlightSelection bool) bool {
-	return isReviewScreenMode(mode) || (usesManualSelectedLineRendering && shouldHighlightSelection)
-}
-
 func (program *Program) reviewModeActive() bool {
 	if program == nil {
 		return false

@@ -128,19 +128,6 @@ func (program *Program) reviewSessionNoDiffDetail() string {
 	return strings.Join(lines, "\n")
 }
 
-func (program *Program) reviewSessionChangedFileCount() int {
-	if !program.reviewModeActive() {
-		return 0
-	}
-	if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil {
-		return result.data.Stats.ChangedFiles
-	}
-	if result, ok := program.pullRequestDetailForSummary(program.reviewSession.summary); ok && result.err == nil {
-		return result.detail.ChangedFiles
-	}
-	return 0
-}
-
 func (program *Program) reviewSessionDetailIdentity() string {
 	if !program.reviewModeActive() {
 		return ""

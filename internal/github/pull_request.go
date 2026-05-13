@@ -168,28 +168,6 @@ func pullRequestURLPathSegments(path string) []string {
 	return segments
 }
 
-func (pullRequest PullRequestSummary) normalized() PullRequestSummary {
-	pullRequest.ID = strings.TrimSpace(pullRequest.ID)
-	pullRequest.Title = strings.TrimSpace(pullRequest.Title)
-	pullRequest.URL = strings.TrimSpace(pullRequest.URL)
-	pullRequest.Body = strings.TrimSpace(pullRequest.Body)
-	pullRequest.State = strings.TrimSpace(pullRequest.State)
-	pullRequest.UpdatedAt = strings.TrimSpace(pullRequest.UpdatedAt)
-	pullRequest.ReviewDecision = strings.TrimSpace(pullRequest.ReviewDecision)
-	pullRequest.MergeStateStatus = strings.TrimSpace(pullRequest.MergeStateStatus)
-	pullRequest.Mergeable = strings.TrimSpace(pullRequest.Mergeable)
-	pullRequest.StatusCheckRollupState = strings.TrimSpace(pullRequest.StatusCheckRollupState)
-	if len(pullRequest.ReviewRequests) > 0 {
-		normalizedReviewRequests := make([]PullRequestReviewRequest, 0, len(pullRequest.ReviewRequests))
-		for _, reviewRequest := range pullRequest.ReviewRequests {
-			normalizedReviewRequests = append(normalizedReviewRequests, reviewRequest.normalized())
-		}
-		pullRequest.ReviewRequests = normalizedReviewRequests
-	}
-	pullRequest.Repository = pullRequest.Repository.normalized()
-	return pullRequest
-}
-
 func (repository RepositoryRef) normalized() RepositoryRef {
 	repository.Name = strings.TrimSpace(repository.Name)
 	repository.NameWithOwner = strings.TrimSpace(repository.NameWithOwner)

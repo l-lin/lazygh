@@ -70,14 +70,6 @@ func formatPullRequestBuildRunJobsCommand(repository string, check githubdomain.
 	return appconfig.FormatGHCommand(args)
 }
 
-func formatPullRequestBuildRunJobLogCommand(repository string, jobDatabaseID int) string {
-	args, err := pullRequestBuildRunJobLogCommandArguments(repository, jobDatabaseID)
-	if err != nil {
-		return appconfig.FormatGHCommand([]string{"run", "view"})
-	}
-	return appconfig.FormatGHCommand(args)
-}
-
 func pullRequestBuildRunCommandArguments(repository string, check githubdomain.PullRequestStatusCheck) ([]string, error) {
 	reference, trimmedRepository, err := pullRequestBuildRunCommandContext(repository, check)
 	if err != nil {
@@ -104,18 +96,6 @@ func pullRequestBuildRunJobsCommandArguments(repository string, check githubdoma
 	}
 	args = append(args, "--json", "jobs")
 	return args, nil
-}
-
-func pullRequestBuildRunJobLogCommandArguments(repository string, jobDatabaseID int) ([]string, error) {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || trimmedRepository == "-" {
-		return nil, githubdomain.ErrMissingPullRequestIdentity
-	}
-	if jobDatabaseID <= 0 {
-		return nil, githubdomain.ErrMissingPullRequestBuildLink
-	}
-
-	return []string{"run", "view", "--job=" + strconv.Itoa(jobDatabaseID), "--log", "--repo=" + trimmedRepository}, nil
 }
 
 func pullRequestBuildRunCommandContext(repository string, check githubdomain.PullRequestStatusCheck) (githubdomain.BuildRunReference, string, error) {

@@ -108,10 +108,10 @@ func reviewDiffTreeItems(tree reviewDiffTree, files []reviewDiffFile) []Item {
 }
 
 func reviewDiffTreeRowText(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowPrefix(row, files) + reviewDiffTreeRowDisplayLabel(row, files)
+	return reviewDiffTreeRowPrefix(row) + reviewDiffTreeRowDisplayLabel(row, files)
 }
 
-func reviewDiffTreeRowPrefix(row reviewDiffTreeRow, files []reviewDiffFile) string {
+func reviewDiffTreeRowPrefix(row reviewDiffTreeRow) string {
 	parts := make([]string, 0, 2)
 	if chevron := reviewDiffTreeRowChevron(row); chevron != "" {
 		parts = append(parts, chevron)
@@ -161,10 +161,6 @@ func reviewDiffTreeRowCommentCount(row reviewDiffTreeRow, files []reviewDiffFile
 		commentCount += len(thread.Comments)
 	}
 	return commentCount
-}
-
-func reviewDiffTreeRowStyledText(row reviewDiffTreeRow, files []reviewDiffFile) string {
-	return reviewDiffTreeRowStyledPrefix(row, files) + reviewDiffTreeRowDisplayLabel(row, files)
 }
 
 func reviewDiffTreeRowStyledPrefix(row reviewDiffTreeRow, files []reviewDiffFile) string {
@@ -314,27 +310,6 @@ func reviewDiffSelectableRowIndexes(tree reviewDiffTree) []int {
 		}
 	}
 	return indexes
-}
-
-func reviewDiffSelectableRowIndexesIncludingChapters(tree reviewDiffTree) []int {
-	indexes := make([]int, 0, len(tree.Rows))
-	for _, row := range tree.Rows {
-		if row.Kind == reviewDiffTreeRowKindChapter || row.FileIndex >= 0 {
-			indexes = append(indexes, row.VisibleRowIndex)
-		}
-	}
-	return indexes
-}
-
-func reviewDiffFileIndexAtRow(tree reviewDiffTree, rowIndex int) (int, bool) {
-	if len(tree.Rows) == 0 {
-		return 0, false
-	}
-	clampedRowIndex := clampIndex(rowIndex, len(tree.Rows))
-	if tree.Rows[clampedRowIndex].FileIndex >= 0 {
-		return tree.Rows[clampedRowIndex].FileIndex, true
-	}
-	return 0, false
 }
 
 func (node *reviewDiffTreeNode) isFile() bool {

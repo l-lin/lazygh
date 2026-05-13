@@ -1,7 +1,6 @@
 package github
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -212,38 +211,4 @@ func (detail IssueDetail) normalized() IssueDetail {
 		detail.Assignees = normalizedAssignees
 	}
 	return detail
-}
-
-func (detail ReleaseDetail) normalized() ReleaseDetail {
-	detail.Name = strings.TrimSpace(detail.Name)
-	detail.TagName = strings.TrimSpace(detail.TagName)
-	detail.URL = strings.TrimSpace(detail.URL)
-	detail.Body = strings.TrimSpace(detail.Body)
-	detail.BodyHTML = strings.TrimSpace(detail.BodyHTML)
-	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
-	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
-	detail.PublishedAt = strings.TrimSpace(detail.PublishedAt)
-	if detail.Author != nil {
-		normalizedAuthor := detail.Author.normalized()
-		detail.Author = &normalizedAuthor
-	}
-	return detail
-}
-
-// Keep a tiny JSON helper here because notification payloads sometimes arrive wrapped.
-func decodeNotifications(payload []byte) ([]Notification, error) {
-	var paged [][]Notification
-	if err := json.Unmarshal(payload, &paged); err == nil {
-		flattened := make([]Notification, 0)
-		for _, page := range paged {
-			flattened = append(flattened, page...)
-		}
-		return normalizedNotifications(flattened), nil
-	}
-
-	var notifications []Notification
-	if err := json.Unmarshal(payload, &notifications); err != nil {
-		return nil, err
-	}
-	return normalizedNotifications(notifications), nil
 }

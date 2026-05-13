@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -173,7 +174,7 @@ func (entry keybindingDispatchEntry) hasDispatchLogic() bool {
 	return entry.prefixTarget != (keySequenceTarget{}) || len(entry.continuationHandlers) > 0
 }
 
-func (program *Program) dispatchingKeybindingHandler(viewName string, key any, entry keybindingDispatchEntry) func(*gocui.Gui, *gocui.View) error {
+func (program *Program) dispatchingKeybindingHandler(viewName string, _ any, entry keybindingDispatchEntry) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
 		state := program.keySequenceStateForView(viewName)
 		if pendingHandler, ok := entry.consumePendingContinuation(state); ok {
@@ -271,7 +272,7 @@ var multiStepGlobalBindingViewNames = []string{
 
 func bindingViewNames(action keybindingAction, binding configuredKeySequence) []string {
 	viewNames := append([]string(nil), action.viewNames...)
-	if len(binding.keys) <= 1 || !containsViewName(viewNames, "") {
+	if len(binding.keys) <= 1 || !slices.Contains(viewNames, "") {
 		return viewNames
 	}
 
@@ -286,15 +287,6 @@ func bindingViewNames(action keybindingAction, binding configuredKeySequence) []
 		uniqueViewNames = append(uniqueViewNames, viewName)
 	}
 	return uniqueViewNames
-}
-
-func containsViewName(viewNames []string, candidate string) bool {
-	for _, viewName := range viewNames {
-		if viewName == candidate {
-			return true
-		}
-	}
-	return false
 }
 
 func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool {

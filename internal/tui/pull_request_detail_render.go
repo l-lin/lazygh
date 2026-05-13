@@ -94,10 +94,6 @@ func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width i
 	return strings.Join(sections, "\n\n")
 }
 
-func renderPullRequestChangesTab(files []reviewDiffFile, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestChangesRows(buildPullRequestChangesRenderedRows(files, renderer, width))
-}
-
 func renderPullRequestChangesTabError(err error) string {
 	message := strings.TrimSpace(err.Error())
 	if message == "" {
@@ -214,10 +210,6 @@ func renderPullRequestDetailError(summary githubdomain.PullRequest, err error) s
 		renderPullRequestDetailHeader(summary, githubdomain.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
 		fmt.Sprintf("Could not load rich pull request detail.\n\n%s\n\n%s", message, fallback),
 	)
-}
-
-func renderPullRequestMetaLine(summary any, detail any) string {
-	return renderPullRequestMetaLineWithOptions(summary, detail, true)
 }
 
 func renderPullRequestMetaLineWithOptions(summary any, detail any, includeStatusChecks bool) string {

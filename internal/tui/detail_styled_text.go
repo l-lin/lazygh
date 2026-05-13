@@ -443,12 +443,12 @@ func hyperlinkTargetFromOSCSequence(sequence string) (string, bool) {
 	trimmedSequence := strings.TrimSuffix(sequence, "\a")
 	trimmedSequence = strings.TrimSuffix(trimmedSequence, "\x1b\\")
 	payload := strings.TrimPrefix(trimmedSequence, "\x1b]8;")
-	separatorIndex := strings.Index(payload, ";")
-	if separatorIndex < 0 {
+	_, after, ok := strings.Cut(payload, ";")
+	if !ok {
 		return "", false
 	}
 
-	return strings.TrimSpace(payload[separatorIndex+1:]), true
+	return strings.TrimSpace(after), true
 }
 
 func updatedANSIStylePrefix(currentPrefix string, sequence string) string {

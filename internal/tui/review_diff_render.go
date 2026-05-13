@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -39,10 +40,6 @@ func renderReviewDiffFileForViewer(file reviewDiffFile, renderer MarkdownRendere
 	return renderReviewDiffFileWithCollapsedThreadsForViewer(file, renderer, width, nil, connectedUserLogin)
 }
 
-func renderReviewDiffFileWithCollapsedThreads(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) string {
-	return renderReviewDiffFileWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, "")
-}
-
 func renderReviewDiffFileWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) string {
 	return reviewDiffRenderedRowsText(buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin))
 }
@@ -55,10 +52,6 @@ func buildReviewDiffRenderedRowsForViewer(file reviewDiffFile, renderer Markdown
 	return buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, nil, connectedUserLogin)
 }
 
-func buildReviewDiffRenderedRowsWithCollapsedThreads(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) []reviewDiffRenderedRow {
-	return buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, "")
-}
-
 func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	filePath := strings.TrimSpace(file.Path)
 	rows := reviewDiffFileHeaderRows(file, renderReviewDiffFileHeader(file))
@@ -69,10 +62,6 @@ func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFil
 	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
 	rows = append(rows, contentRows...)
 	return rows
-}
-
-func buildReviewDiffFileContentRows(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool) []reviewDiffRenderedRow {
-	return buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, "")
 }
 
 func buildReviewDiffFileContentRowsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
@@ -216,12 +205,7 @@ func reviewDiffThreadMatchesLine(thread reviewDiffThread, line reviewDiffLine) b
 		return false
 	}
 	lineNumber := reviewDiffLineNumberForSide(line, side)
-	for _, candidateLine := range thread.anchorLineNumbers() {
-		if lineNumber == candidateLine {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(thread.anchorLineNumbers(), lineNumber)
 }
 
 func (thread reviewDiffThread) anchorSide() reviewDiffLineSide {
@@ -242,10 +226,6 @@ func (thread reviewDiffThread) anchorLineNumbers() []int {
 	return lineNumbers
 }
 
-func renderReviewDiffThreadRows(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int, collapsed bool) []reviewDiffRenderedRow {
-	return renderReviewDiffThreadRowsForViewer(thread, renderer, width, numberWidth, collapsed, "")
-}
-
 func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer MarkdownRenderer, width int, _ int, collapsed bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*8)
 	threadWidth := effectiveMarkdownWidth(width)
@@ -264,7 +244,7 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 	for commentIndex, comment := range thread.Comments {
 		commentCopy := comment
 		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(comment, suggestionContext, renderer, threadWidth, commentIndex, len(thread.Comments), connectedUserLogin)
-		for _, boxLine := range strings.Split(renderedCommentBlock, "\n") {
+		for boxLine := range strings.SplitSeq(renderedCommentBlock, "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}
 	}
@@ -282,28 +262,6 @@ func renderReviewDiffThreadStatus(thread reviewDiffThread, collapsed bool) strin
 		collapsed,
 		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
 	)
-}
-
-func reviewDiffThreadSideLabel(thread reviewDiffThread) string {
-	switch thread.anchorSide() {
-	case reviewDiffLineSideLeft:
-		return "L"
-	case reviewDiffLineSideRight:
-		return "R"
-	default:
-		return "?"
-	}
-}
-
-func reviewDiffThreadDisplayLine(thread reviewDiffThread) int {
-	switch thread.anchorSide() {
-	case reviewDiffLineSideLeft:
-		return firstPositive(thread.OriginalStartLine, thread.OriginalLine, thread.StartLine, thread.Line)
-	case reviewDiffLineSideRight:
-		return firstPositive(thread.StartLine, thread.Line, thread.OriginalStartLine, thread.OriginalLine)
-	default:
-		return firstPositive(thread.StartLine, thread.Line, thread.OriginalStartLine, thread.OriginalLine)
-	}
 }
 
 func renderReviewDiffFileHeader(file reviewDiffFile) string {

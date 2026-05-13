@@ -24,7 +24,7 @@ func (model *Model) StartSearch() {
 	model.searchTargetPullRequestTab = model.ActivePullRequestTab()
 	model.clearAppliedSearchQueriesForOtherViews(model.searchTarget)
 	model.searchDraft = ""
-	model.clampSearchSelectionForTarget(model.searchTarget, model.searchTargetPullRequestTab, model.searchDraft)
+	model.clampSearchSelectionForTarget(model.searchTarget, model.searchDraft)
 }
 
 func (model *Model) UpdateSearchDraft(query string) {
@@ -33,7 +33,7 @@ func (model *Model) UpdateSearchDraft(query string) {
 	}
 
 	model.searchDraft = query
-	model.clampSearchSelectionForTarget(model.searchTarget, model.searchTargetPullRequestTab, query)
+	model.clampSearchSelectionForTarget(model.searchTarget, query)
 }
 
 func (model *Model) SubmitSearch() {
@@ -62,7 +62,7 @@ func (model *Model) SubmitSearch() {
 		model.followSubmittedPullRequestSearch(tab, selectedPullRequestIndex)
 		return
 	}
-	model.clampSearchSelectionForTarget(target, tab, model.appliedSearchQuery(target, tab))
+	model.clampSearchSelectionForTarget(target, model.appliedSearchQuery(target, tab))
 }
 
 func (model *Model) CancelSearch() {
@@ -76,7 +76,7 @@ func (model *Model) CancelSearch() {
 
 	model.searchActive = false
 	model.searchDraft = ""
-	model.clampSearchSelectionForTarget(target, tab, query)
+	model.clampSearchSelectionForTarget(target, query)
 }
 
 func (model *Model) VisibleUsers() []Item {
@@ -133,18 +133,18 @@ func (model *Model) visibleNotificationIndexes() []int {
 }
 
 func (model *Model) clampSearchSelectionForUserView() {
-	model.clampSearchSelectionForTarget(FocusUserView, MyPullRequestsTab, model.UserSearchQuery())
+	model.clampSearchSelectionForTarget(FocusUserView, model.UserSearchQuery())
 }
 
 func (model *Model) clampSearchSelectionForPullRequestTab(tab PullRequestTab) {
-	model.clampSearchSelectionForTarget(FocusPullRequestsView, tab, model.PullRequestSearchQuery(tab))
+	model.clampSearchSelectionForTarget(FocusPullRequestsView, model.PullRequestSearchQuery(tab))
 }
 
 func (model *Model) clampSearchSelectionForNotificationsView() {
-	model.clampSearchSelectionForTarget(FocusNotificationsView, MyPullRequestsTab, model.NotificationSearchQuery())
+	model.clampSearchSelectionForTarget(FocusNotificationsView, model.NotificationSearchQuery())
 }
 
-func (model *Model) clampSearchSelectionForTarget(target Focus, tab PullRequestTab, query string) {
+func (model *Model) clampSearchSelectionForTarget(target Focus, query string) {
 	if strings.TrimSpace(query) == "" {
 		return
 	}

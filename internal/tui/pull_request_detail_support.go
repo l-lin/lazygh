@@ -267,14 +267,6 @@ func pullRequestReviewAuthorLogin(author *githubdomain.PullRequestCommentAuthor)
 	return strings.TrimSpace(author.Login)
 }
 
-func pullRequestTitleLine(title string, number int) string {
-	trimmedTitle := pullRequestTitleText(title)
-	if number <= 0 {
-		return trimmedTitle
-	}
-	return fmt.Sprintf("%s #%d", trimmedTitle, number)
-}
-
 func pullRequestTitleText(title string) string {
 	trimmedTitle := strings.TrimSpace(title)
 	if trimmedTitle == "" {
@@ -363,21 +355,6 @@ func summarizeStatusChecks(checks []githubdomain.PullRequestStatusCheck) string 
 	return strings.Join(parts, ", ")
 }
 
-func mergeableText(mergeable string) string {
-	switch strings.ToUpper(strings.TrimSpace(mergeable)) {
-	case "MERGEABLE":
-		return "yes"
-	case "":
-		return "-"
-	default:
-		return "no"
-	}
-}
-
-func formatCommentCount(count int) string {
-	return fmt.Sprintf("%d %s", count, pluralize(count, "comment", "comments"))
-}
-
 func renderPullRequestChurnParts(detail githubdomain.PullRequestDetail) []string {
 	if !pullRequestChurnAvailable(detail) {
 		return nil
@@ -406,15 +383,4 @@ func effectiveMarkdownWidth(width int) int {
 		return defaultDetailWrapWidth
 	}
 	return width
-}
-
-func compactBranchLabel(label string) string {
-	runes := []rune(strings.TrimSpace(label))
-	if len(runes) <= maximumBranchLabelWidth {
-		return string(runes)
-	}
-
-	prefixWidth := maximumBranchLabelWidth/2 - 1
-	suffixWidth := maximumBranchLabelWidth - prefixWidth - 1
-	return string(runes[:prefixWidth]) + "…" + string(runes[len(runes)-suffixWidth:])
 }

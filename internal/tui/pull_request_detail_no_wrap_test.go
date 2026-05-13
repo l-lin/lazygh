@@ -120,13 +120,3 @@ func TestRenderPullRequestCommentsTab_GivenALongRenderedCommentLine_WhenFormatti
 		t.Fatalf("expected the comment box width %d to match the visible body width %d", len([]rune(topBorderLine)), len([]rune(bodyLine)))
 	}
 }
-
-func detailDocumentRowCountForLine(document detailDocument, lineIndex int) int {
-	count := 0
-	for _, row := range document.rows {
-		if row.line == lineIndex {
-			count++
-		}
-	}
-	return count
-}

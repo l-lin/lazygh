@@ -2,7 +2,6 @@ package githubcli
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -85,12 +84,4 @@ func normalizePullRequestDiffText(text string) string {
 	normalizedText := strings.ReplaceAll(text, "\r\n", "\n")
 	normalizedText = strings.ReplaceAll(normalizedText, "\r", "\n")
 	return strings.TrimRight(normalizedText, "\n")
-}
-
-func pullRequestDiffKey(repository string, number int) string {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || number <= 0 {
-		return ""
-	}
-	return trimmedRepository + "#" + strconv.Itoa(number)
 }

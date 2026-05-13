@@ -242,10 +242,6 @@ func (program *Program) consumePendingListViewportPlacement(viewName string) (vi
 	return placement, true
 }
 
-func (program *Program) centerListLine(view *gocui.View, selectedIndex int, lineCount int) {
-	program.placeListLine(view, selectedIndex, lineCount, viewportPlacementCenter)
-}
-
 func visibleListLinePosition(selectedIndex int, currentOriginY int, visibleHeight int, lineCount int) (int, int) {
 	visibleHeight = maxInt(1, visibleHeight)
 	lineCount = maxInt(1, lineCount)

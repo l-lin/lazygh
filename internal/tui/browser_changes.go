@@ -157,14 +157,6 @@ func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, sum
 	return program.refreshViews(gui)
 }
 
-func reviewDiffFileHeaderAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (string, bool) {
-	row, ok := reviewDiffRenderedRowAtCursor(renderedRows, document, state)
-	if !ok || row.Kind != reviewDiffRenderedRowKindFileHeader {
-		return "", false
-	}
-	return strings.TrimSpace(row.FilePath), true
-}
-
 func reviewDiffFilePathAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (string, bool) {
 	row, ok := reviewDiffRenderedRowAtCursor(renderedRows, document, state)
 	if !ok || strings.TrimSpace(row.FilePath) == "" {

@@ -84,12 +84,6 @@ func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
 	}
 }
 
-func (program *Program) syncPullRequestLoadingItems() {
-	for _, tab := range program.model.PullRequestTabs() {
-		program.syncPullRequestLoadingItem(tab)
-	}
-}
-
 func (program *Program) syncPullRequestLoadingItem(tab PullRequestTab) {
 	rows := program.model.PullRequestRows(tab)
 	if len(rows) != 1 || !program.isPullRequestLoadingItem(rows[0].Item) {

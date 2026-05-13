@@ -11,36 +11,6 @@ import (
 
 const bottomPromptPrefix = "/"
 
-func (program *Program) layoutSearchView(gui *gocui.Gui) error {
-	view, err := program.layoutBottomPromptView(gui, viewSearchName)
-	if err != nil {
-		return err
-	}
-
-	program.configureSearchView(view)
-	program.renderSearchView(view)
-	_, err = gui.SetViewOnTop(viewSearchName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-
-	return err
-}
-
-func (program *Program) layoutPaneBottomOverlayView(gui *gocui.Gui, viewName string, parentViewName string) (*gocui.View, error) {
-	x0, _, x1, y1, err := gui.ViewPosition(parentViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	view, err := gui.SetView(viewName, x0, y1-1, x1, y1+1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return nil, err
-	}
-
-	return view, nil
-}
-
 func (program *Program) layoutBottomPromptView(gui *gocui.Gui, viewName string) (*gocui.View, error) {
 	maxX, maxY := gui.Size()
 	if maxX < 1 {
@@ -184,10 +154,7 @@ func (program *Program) setInputCursor(view *gocui.View, value string, cursorInd
 		return
 	}
 
-	innerWidth := view.InnerWidth()
-	if innerWidth < 1 {
-		innerWidth = 1
-	}
+	innerWidth := max(view.InnerWidth(), 1)
 
 	valueWidth := utf8.RuneCountInString(value)
 	if cursorIndex < 0 {
@@ -201,10 +168,7 @@ func (program *Program) setInputCursor(view *gocui.View, value string, cursorInd
 	if cursorIndex >= innerWidth {
 		originX = cursorIndex - innerWidth + 1
 	}
-	cursorX := cursorIndex - originX
-	if cursorX < 0 {
-		cursorX = 0
-	}
+	cursorX := max(cursorIndex-originX, 0)
 	if cursorX >= innerWidth {
 		cursorX = innerWidth - 1
 	}

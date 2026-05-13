@@ -126,10 +126,7 @@ func (client *PullRequestDetailService) listPullRequestReviewCommentReactionGrou
 
 	groupsByID := map[string][]ReactionGroup{}
 	for start := 0; start < len(trimmedIDs); start += 100 {
-		end := start + 100
-		if end > len(trimmedIDs) {
-			end = len(trimmedIDs)
-		}
+		end := min(start+100, len(trimmedIDs))
 		batchGroups, err := client.pullRequestReviewCommentReactionGroupsBatch(trimmedIDs[start:end])
 		if err != nil {
 			return nil, err

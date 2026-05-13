@@ -44,24 +44,6 @@ type BuildRunReference struct {
 	Attempt int
 }
 
-func (check BuildInfo) normalized() BuildInfo {
-	check.TypeName = strings.TrimSpace(check.TypeName)
-	check.Name = strings.TrimSpace(check.Name)
-	check.Status = strings.TrimSpace(check.Status)
-	check.Conclusion = strings.TrimSpace(check.Conclusion)
-	check.WorkflowName = strings.TrimSpace(check.WorkflowName)
-	check.Link = strings.TrimSpace(check.Link)
-	return check
-}
-
-func (job BuildRunJob) normalized() BuildRunJob {
-	job.Name = strings.TrimSpace(job.Name)
-	job.Status = strings.TrimSpace(job.Status)
-	job.Conclusion = strings.TrimSpace(job.Conclusion)
-	job.URL = strings.TrimSpace(job.URL)
-	return job
-}
-
 func ParseBuildRunReferenceFromURL(raw string) (BuildRunReference, error) {
 	trimmedLink := strings.TrimSpace(raw)
 	if trimmedLink == "" {

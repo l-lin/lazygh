@@ -92,11 +92,3 @@ func (program *Program) invalidatePullRequestDiff(repository string, number int)
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()
 }
-
-func (program *Program) selectedPullRequestDiffLoading() bool {
-	summary, ok := program.selectedPullRequestSummaryForDiff()
-	if !ok {
-		return false
-	}
-	return program.pullRequestDiffLoadInFlight[pullRequestDetailKey(summary.Repository, summary.Number)]
-}

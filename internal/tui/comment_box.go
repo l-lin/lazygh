@@ -31,10 +31,6 @@ func renderCommentBoxWithMetadataForViewer(author *githubdomain.PullRequestComme
 	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, nil, reactionGroups, body, width, connectedUserLogin)
 }
 
-func renderCommentBoxWithMetadataBadges(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int) string {
-	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, badges, reactionGroups, body, width, "")
-}
-
 func renderCommentBoxWithMetadataBadgesForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string) string {
 	metadataLine := renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, connectedUserLogin)
 
@@ -123,10 +119,6 @@ func sliceStyledTextLine(line styledTextLine, start int, end int) styledTextLine
 	return slicedLine
 }
 
-func maxStyledTextLineWidth(text string) int {
-	return maxStyledTextLineWidthFromLines(splitStyledTextLines(text))
-}
-
 func maxStyledTextLineWidthFromLines(lines []styledTextLine) int {
 	maximumWidth := 0
 	for _, line := range lines {
@@ -148,10 +140,6 @@ func styleCommentBorder(text string) string {
 	return foregroundColorEscape(theme.InactiveBorderHex) + text + ansiReset
 }
 
-func renderCommentBoxMetadataLine(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup) string {
-	return renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, "")
-}
-
 func renderCommentBoxMetadataLineForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, connectedUserLogin string) string {
 	segments := make([]string, 0, len(badges)+3)
 	if authorBadge := renderCommentAuthorBadgeForViewer(author, connectedUserLogin); authorBadge != "" {
@@ -169,10 +157,6 @@ func renderCommentBoxMetadataLineForViewer(author *githubdomain.PullRequestComme
 		segments = append(segments, renderedReactionGroups)
 	}
 	return strings.Join(segments, "  ")
-}
-
-func renderCommentAuthorBadge(author *githubdomain.PullRequestCommentAuthor) string {
-	return renderCommentAuthorBadgeForViewer(author, "")
 }
 
 func renderCommentAuthorBadgeForViewer(author *githubdomain.PullRequestCommentAuthor, connectedUserLogin string) string {
@@ -211,10 +195,6 @@ func renderCommentMetadataBadge(badge commentMetadataBadge) string {
 
 func commentAuthorBadgeText(author *githubdomain.PullRequestCommentAuthor) string {
 	return strings.TrimSpace(detailCommentsIcon) + "  " + pullRequestCommentAuthorLogin(author)
-}
-
-func styleCommentAuthorBadgeText(text string) string {
-	return styleCommentAuthorBadgeTextForViewer(text, "", "")
 }
 
 func styleCommentAuthorBadgeTextForViewer(text string, authorLogin string, connectedUserLogin string) string {

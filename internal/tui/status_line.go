@@ -8,68 +8,6 @@ import (
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func (program *Program) layoutStatusLineView(gui *gocui.Gui) error {
-	view, err := program.layoutBottomPromptView(gui, viewStatusLineName)
-	if err != nil {
-		return err
-	}
-
-	program.configureStatusLineView(view)
-	program.renderStatusLineView(view)
-	_, err = gui.SetViewOnTop(viewStatusLineName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-
-	return err
-}
-
-func (program *Program) layoutStatusLineKeyHintsView(gui *gocui.Gui) error {
-	text := strings.TrimSpace(program.statusLineKeyHintsText())
-	if text == "" {
-		return deleteViewIfPresent(gui, viewStatusLineKeyHintsName)
-	}
-
-	view, err := program.layoutStatusLineKeyHintsViewForText(gui, text)
-	if err != nil {
-		return err
-	}
-
-	program.configureStatusLineKeyHintsView(view)
-	program.renderStatusLineKeyHintsView(view, text)
-	_, err = gui.SetViewOnTop(viewStatusLineKeyHintsName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-
-	return err
-}
-
-func (program *Program) layoutStatusLineKeyHintsViewForText(gui *gocui.Gui, text string) (*gocui.View, error) {
-	maxX, maxY := gui.Size()
-	if maxX < 1 {
-		maxX = 1
-	}
-	if maxY < 1 {
-		maxY = 1
-	}
-
-	width := maxInt(1, runeCountInt(strings.TrimSpace(text)))
-	x0 := maxX - width - 1
-	if x0 < -1 {
-		x0 = -1
-	}
-	y0 := maxY - 2
-	x1 := maxX
-	y1 := maxY
-	view, err := gui.SetView(viewStatusLineKeyHintsName, x0, y0, x1, y1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return nil, err
-	}
-
-	return view, nil
-}
-
 func (program *Program) configureStatusLineView(view *gocui.View) {
 	program.configureBottomPromptView(view, nil, false)
 	view.Editable = false

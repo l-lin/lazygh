@@ -2,7 +2,6 @@ package tui
 
 import (
 	"net/http"
-	"strings"
 	"sync"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -19,13 +18,6 @@ type sessionStore struct {
 
 func newSessionStore() *sessionStore {
 	return &sessionStore{}
-}
-
-func (store *sessionStore) currentConnectedUserLogin() string {
-	if store == nil {
-		return ""
-	}
-	return strings.TrimSpace(store.connectedUserLogin)
 }
 
 type pullRequestListStore struct {

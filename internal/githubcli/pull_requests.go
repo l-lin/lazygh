@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -143,15 +144,10 @@ func (client *PullRequestListService) listPullRequestReviewMetadata(pullRequests
 
 	metadataByID := map[string]pullRequestListReviewMetadata{}
 	for batchStart := 0; batchStart < len(ids); batchStart += pullRequestListReviewMetadataBatchSize {
-		batchEnd := batchStart + pullRequestListReviewMetadataBatchSize
-		if batchEnd > len(ids) {
-			batchEnd = len(ids)
-		}
+		batchEnd := min(batchStart+pullRequestListReviewMetadataBatchSize, len(ids))
 
 		batchMetadataByID, err := client.listPullRequestReviewMetadataBatch(ids[batchStart:batchEnd])
-		for id, metadata := range batchMetadataByID {
-			metadataByID[id] = metadata
-		}
+		maps.Copy(metadataByID, batchMetadataByID)
 		if err != nil {
 			return metadataByID, err
 		}

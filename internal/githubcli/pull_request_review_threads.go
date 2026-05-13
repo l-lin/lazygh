@@ -62,26 +62,6 @@ func (client *PullRequestDetailService) pullRequestReviewThreadsPage(owner strin
 	return parsePullRequestReviewThreadsPage(result.Stdout)
 }
 
-func (client *PullRequestDetailService) pullRequestReviewThreadCommentsAfter(threadID string, cursor string) ([]PullRequestComment, error) {
-	comments := make([]PullRequestComment, 0)
-	nextCursor := strings.TrimSpace(cursor)
-	for nextCursor != "" {
-		page, err := client.pullRequestReviewThreadCommentsPage(threadID, nextCursor)
-		if err != nil {
-			return nil, err
-		}
-		comments = append(comments, page.Comments...)
-		if !page.HasNextPage {
-			return comments, nil
-		}
-		if strings.TrimSpace(page.EndCursor) == "" {
-			return nil, ErrInvalidPullRequestReviewThreadsResponse
-		}
-		nextCursor = page.EndCursor
-	}
-	return comments, nil
-}
-
 func (client *PullRequestDetailService) pullRequestReviewThreadCommentsPage(threadID string, cursor string) (pullRequestReviewThreadCommentsPage, error) {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	trimmedCursor := strings.TrimSpace(cursor)

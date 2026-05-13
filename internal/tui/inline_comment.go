@@ -131,10 +131,6 @@ func renderPullRequestInlineCommentThreadDiffPreview(comment githubdomain.PullRe
 	return strings.Join(renderedLines, "\n")
 }
 
-func renderInlineThreadCommentBoxes(comments []githubdomain.PullRequestComment, renderer MarkdownRenderer, width int) []string {
-	return renderInlineThreadCommentBoxesForViewer(comments, githubdomain.PullRequestInlineComment{}, renderer, width, "")
-}
-
 func renderInlineThreadCommentBoxesForViewer(comments []githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
 	renderedComments := make([]string, 0, len(comments))
 	for commentIndex, threadComment := range comments {

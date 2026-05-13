@@ -47,18 +47,6 @@ func (program *Program) clearPendingSelectionPrefix() {
 	program.pendingSelectionKeySequence.clear()
 }
 
-func (program *Program) armOrHandleSelectionKeySequence(target keySequenceTarget, handle func() error) error {
-	if target.viewName == "" {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-	if !program.pendingSelectionKeySequence.armOrConsume(target) {
-		return nil
-	}
-
-	return handle()
-}
-
 func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 	if gui == nil {
 		return nil

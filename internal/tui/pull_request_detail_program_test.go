@@ -2,6 +2,7 @@ package tui
 
 import (
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -1633,10 +1634,8 @@ func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubdomain.Conn
 
 func (loader *fakePullRequestDetailLoader) ListPullRequests(commandArguments []string) ([]githubdomain.PullRequestSummary, error) {
 	loader.listPullRequestCommands = append(loader.listPullRequestCommands, append([]string(nil), commandArguments...))
-	for _, argument := range commandArguments {
-		if argument == "--review-requested" {
-			return githubcli.ToDomainPullRequests(append([]githubcli.PullRequest(nil), loader.requestedPullRequests...)), nil
-		}
+	if slices.Contains(commandArguments, "--review-requested") {
+		return githubcli.ToDomainPullRequests(append([]githubcli.PullRequest(nil), loader.requestedPullRequests...)), nil
 	}
 
 	return githubcli.ToDomainPullRequests(append([]githubcli.PullRequest(nil), loader.myPullRequests...)), nil

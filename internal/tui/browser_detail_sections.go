@@ -294,8 +294,3 @@ func renderPullRequestInlineCommentConversationTitle(comment githubdomain.PullRe
 	}
 	return fmt.Sprintf("Comment on line %s%d", pullRequestInlineCommentSideLabel(comment), line)
 }
-
-func renderPullRequestInlineThreadConversationTitle(thread githubdomain.PullRequestReviewThread) string {
-	comment := pullRequestInlineCommentFromThread(thread)
-	return pullRequestInlineCommentLocation(comment)
-}

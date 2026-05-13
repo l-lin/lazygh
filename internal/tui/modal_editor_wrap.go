@@ -199,31 +199,19 @@ func (program *Program) setWrappedMultilineInputCursor(view *gocui.View, text st
 		return
 	}
 
-	innerWidth := view.InnerWidth()
-	if innerWidth < 1 {
-		innerWidth = 1
-	}
-	innerHeight := view.InnerHeight()
-	if innerHeight < 1 {
-		innerHeight = 1
-	}
+	innerWidth := max(view.InnerWidth(), 1)
+	innerHeight := max(view.InnerHeight(), 1)
 
 	position := wrappedInputCursorPositionForText(text, cursorIndex, innerWidth)
 	originY := 0
 	if position.row >= innerHeight {
 		originY = position.row - innerHeight + 1
 	}
-	cursorY := position.row - originY
-	if cursorY < 0 {
-		cursorY = 0
-	}
+	cursorY := max(position.row-originY, 0)
 	if cursorY >= innerHeight {
 		cursorY = innerHeight - 1
 	}
-	cursorX := position.column
-	if cursorX < 0 {
-		cursorX = 0
-	}
+	cursorX := max(position.column, 0)
 	if cursorX >= innerWidth {
 		cursorX = innerWidth - 1
 	}

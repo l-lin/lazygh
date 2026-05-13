@@ -419,10 +419,7 @@ func statusLineKeyHintsFrame(maxX int, maxY int, text string) paneFrame {
 		maxY = 1
 	}
 	width := maxInt(1, runeCountInt(strings.TrimSpace(text)))
-	x0 := maxX - width - 1
-	if x0 < -1 {
-		x0 = -1
-	}
+	x0 := max(maxX-width-1, -1)
 	return paneFrame{x0: x0, y0: maxY - 2, x1: maxX, y1: maxY}
 }
 

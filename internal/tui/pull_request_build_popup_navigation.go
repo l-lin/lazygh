@@ -165,8 +165,8 @@ func (program *Program) copyPullRequestBuildRunPopupContent(gui *gocui.Gui, view
 	if popup.viewState.mode.isVisual() {
 		selectedText := popup.viewState.selectedText(document)
 		var err error
-		switch {
-		case program.clipboardWriter == nil:
+		switch program.clipboardWriter {
+		case nil:
 			err = ErrClipboardUnavailable
 		default:
 			err = program.clipboardWriter.WriteText(selectedText)

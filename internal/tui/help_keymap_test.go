@@ -320,7 +320,7 @@ func TestHelpPopup_GivenReviewFocusAndConfiguredReviewMotionOverrides_WhenToggli
 func then_helpEntryUsesKey(t *testing.T, buffer string, description string, expectedKey string) {
 	t.Helper()
 
-	for _, line := range strings.Split(buffer, "\n") {
+	for line := range strings.SplitSeq(buffer, "\n") {
 		if !strings.HasSuffix(strings.TrimSpace(line), description) {
 			continue
 		}

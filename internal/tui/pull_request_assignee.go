@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"maps"
 	"sort"
 	"strings"
 
@@ -158,9 +159,7 @@ func newAssigneePickerState(target pullRequestAssigneePickerTarget, candidates [
 	sortAssigneePickerCandidates(mergedCandidates, selectedLogins, viewerLogin)
 
 	originalSelectedLogins := map[string]bool{}
-	for login, selected := range selectedLogins {
-		originalSelectedLogins[login] = selected
-	}
+	maps.Copy(originalSelectedLogins, selectedLogins)
 
 	return &assigneePickerState{
 		target:                 target,
@@ -282,7 +281,6 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 
 	actions := make([]actionsPopupAction, 0, len(program.assigneePicker.candidates))
 	for _, candidate := range program.assigneePicker.candidates {
-		candidate := candidate
 		actions = append(actions, actionsPopupAction{
 			id:    "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
 			title: program.assigneePickerLabel(candidate),

@@ -92,39 +92,6 @@ func (program *Program) closePullRequestBuildRunPopup(gui *gocui.Gui, _ *gocui.V
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) layoutPullRequestBuildRunPopupView(gui *gocui.Gui) error {
-	maxX, maxY := gui.Size()
-	totalWidth := boundedHalfWidth(maxX, pullRequestBuildRunPopupMinWidth, pullRequestBuildRunPopupFallbackWidth)
-	totalHeight := pullRequestBuildRunPopupMinHeight
-	if popup := program.pullRequestBuildRunPopup; popup != nil {
-		if popup.widthPercent > 0 {
-			totalWidth = maxInt(10, (maxX*popup.widthPercent)/100)
-		}
-		if popup.heightPercent > 0 {
-			totalHeight = maxInt(3, (maxY*popup.heightPercent)/100)
-		} else {
-			totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(popup.body))+2)
-			if totalHeight > maxY-2 {
-				totalHeight = maxInt(3, maxY-2)
-			}
-		}
-	}
-	frame := centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight)
-
-	view, err := gui.SetView(viewPullRequestBuildInfoName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return err
-	}
-
-	program.configurePullRequestBuildRunPopupView(view)
-	program.renderPullRequestBuildRunPopupView(view)
-	_, err = gui.SetViewOnTop(viewPullRequestBuildInfoName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-	return err
-}
-
 func (program *Program) configurePullRequestBuildRunPopupView(view *gocui.View) {
 	title := ""
 	if program.pullRequestBuildRunPopup != nil {
@@ -258,10 +225,7 @@ func sanitizePullRequestBuildRunLog(raw string) string {
 	lines := strings.Split(trimmedRaw, "\n")
 	for index, line := range lines {
 		if markerIndex := strings.Index(line, pullRequestBuildRunUnknownStepLabel); markerIndex >= 0 {
-			suffixStart := markerIndex + len(pullRequestBuildRunUnknownStepLabel)
-			if suffixStart > len(line) {
-				suffixStart = len(line)
-			}
+			suffixStart := min(markerIndex+len(pullRequestBuildRunUnknownStepLabel), len(line))
 			lines[index] = strings.TrimSpace(line[suffixStart:])
 			continue
 		}

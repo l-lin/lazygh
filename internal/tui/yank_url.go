@@ -58,16 +58,16 @@ func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View)
 	selectedText := program.detailViewState.selectedText(detailDocument)
 
 	var err error
-	switch {
-	case program.clipboardWriter == nil:
+	switch program.clipboardWriter {
+	case nil:
 		err = ErrClipboardUnavailable
 	default:
 		err = program.clipboardWriter.WriteText(selectedText)
 	}
 
 	program.detailViewState.exitVisualMode()
-	switch {
-	case err == nil:
+	switch err {
+	case nil:
 		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
 	default:
 		program.setFeedback(program.model.Focus(), detailYankFailureMessage)

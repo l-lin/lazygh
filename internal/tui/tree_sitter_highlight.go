@@ -290,8 +290,8 @@ func treeSitterCaptureStyleForName(name string) (treeSitterCaptureStyle, bool) {
 	}
 
 	primaryName := trimmedName
-	if separatorIndex := strings.IndexByte(trimmedName, '.'); separatorIndex >= 0 {
-		primaryName = trimmedName[:separatorIndex]
+	if before, _, ok := strings.Cut(trimmedName, "."); ok {
+		primaryName = before
 	}
 
 	switch primaryName {

@@ -20,26 +20,6 @@ type helpEntry struct {
 	Description string
 }
 
-func (program *Program) layoutHelpView(gui *gocui.Gui) error {
-	maxX, maxY := gui.Size()
-	innerWidth, innerHeight := program.helpViewSize(maxX, maxY)
-	frame := centeredOverlayFrame(maxX, maxY, innerWidth+2, innerHeight+2)
-
-	view, err := gui.SetView(viewHelpName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return err
-	}
-
-	program.configureHelpView(view)
-	program.renderHelpView(view)
-	_, err = gui.SetViewOnTop(viewHelpName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-
-	return err
-}
-
 func (program *Program) configureHelpView(view *gocui.View) {
 	configureFramedOverlayView(view, "Keybindings", "")
 	view.Wrap = false
@@ -346,20 +326,20 @@ func formatKeySequenceLabelForDisplay(label string) string {
 	normalizedLabel := strings.ToLower(trimmedLabel)
 	normalizedLabel = strings.TrimPrefix(normalizedLabel, "<")
 	normalizedLabel = strings.TrimSuffix(normalizedLabel, ">")
-	if strings.HasPrefix(normalizedLabel, "control+") {
-		normalizedLabel = "ctrl+" + strings.TrimPrefix(normalizedLabel, "control+")
+	if after, ok := strings.CutPrefix(normalizedLabel, "control+"); ok {
+		normalizedLabel = "ctrl+" + after
 	}
-	if strings.HasPrefix(normalizedLabel, "ctrl-") {
-		normalizedLabel = "ctrl+" + strings.TrimPrefix(normalizedLabel, "ctrl-")
+	if after, ok := strings.CutPrefix(normalizedLabel, "ctrl-"); ok {
+		normalizedLabel = "ctrl+" + after
 	}
-	if strings.HasPrefix(normalizedLabel, "c-") {
-		normalizedLabel = "ctrl+" + strings.TrimPrefix(normalizedLabel, "c-")
+	if after, ok := strings.CutPrefix(normalizedLabel, "c-"); ok {
+		normalizedLabel = "ctrl+" + after
 	}
-	if strings.HasPrefix(normalizedLabel, "alt-") {
-		normalizedLabel = "alt+" + strings.TrimPrefix(normalizedLabel, "alt-")
+	if after, ok := strings.CutPrefix(normalizedLabel, "alt-"); ok {
+		normalizedLabel = "alt+" + after
 	}
-	if strings.HasPrefix(normalizedLabel, "shift-") {
-		normalizedLabel = "shift+" + strings.TrimPrefix(normalizedLabel, "shift-")
+	if after, ok := strings.CutPrefix(normalizedLabel, "shift-"); ok {
+		normalizedLabel = "shift+" + after
 	}
 
 	switch normalizedLabel {
@@ -389,8 +369,8 @@ func formatKeySequenceLabelForDisplay(label string) string {
 		return "Alt+Enter"
 	}
 
-	if strings.HasPrefix(normalizedLabel, "ctrl+") {
-		suffix := strings.TrimPrefix(normalizedLabel, "ctrl+")
+	if after, ok := strings.CutPrefix(normalizedLabel, "ctrl+"); ok {
+		suffix := after
 		switch suffix {
 		case "space":
 			return "Ctrl+Space"
@@ -420,10 +400,6 @@ func (program *Program) helpViewportPlacementKeysOrFallback(topFallback string, 
 		program.helpKeysOrFallback(bottomFallback, bottomActionID),
 	}
 	return strings.Join(keys, "/")
-}
-
-func (program *Program) helpKeyChordOrFallback(prefixFallback string, suffixFallback string, prefixActionID keybindingActionID, suffixActionID keybindingActionID) string {
-	return program.helpKeysOrFallback(prefixFallback, prefixActionID) + program.helpKeysOrFallback(suffixFallback, suffixActionID)
 }
 
 func (program *Program) reviewFileMotionHelpKeys() string {

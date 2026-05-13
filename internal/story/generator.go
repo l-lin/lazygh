@@ -203,16 +203,16 @@ func decodeJSONReview(raw string) *Review {
 
 func extractFencedBlock(raw string) string {
 	for _, marker := range []string{"```json", "```"} {
-		start := strings.Index(raw, marker)
-		if start < 0 {
+		_, after, ok := strings.Cut(raw, marker)
+		if !ok {
 			continue
 		}
-		remaining := raw[start+len(marker):]
-		end := strings.Index(remaining, "```")
-		if end < 0 {
+		remaining := after
+		before, _, ok0 := strings.Cut(remaining, "```")
+		if !ok0 {
 			continue
 		}
-		return strings.TrimSpace(remaining[:end])
+		return strings.TrimSpace(before)
 	}
 	return ""
 }

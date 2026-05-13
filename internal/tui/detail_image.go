@@ -376,7 +376,7 @@ func parseDetailImageMarkerSequence(text string, startIndex int) (detailImageSpe
 	}
 
 	spec := detailImageSpec{}
-	for _, part := range strings.Split(strings.TrimPrefix(sequenceBody, detailImageOSCCommand+";"), ";") {
+	for part := range strings.SplitSeq(strings.TrimPrefix(sequenceBody, detailImageOSCCommand+";"), ";") {
 		key, value, found := strings.Cut(part, "=")
 		if !found {
 			continue

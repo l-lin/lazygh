@@ -7,30 +7,6 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func (program *Program) layoutModalEditorView(gui *gocui.Gui) error {
-	maxX, maxY := gui.Size()
-	totalWidth := boundedHalfWidth(maxX, modalEditorMinWidth, modalEditorFallbackWidth)
-	totalHeight := modalEditorTotalHeight
-	if program.modalEditor != nil {
-		totalHeight = program.modalEditor.Height()
-	}
-	frame := centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight)
-
-	view, err := gui.SetView(viewModalEditorName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
-	if err != nil && !isUnknownViewError(err) {
-		return err
-	}
-
-	program.configureModalEditorView(view)
-	program.renderModalEditorView(view)
-	_, err = gui.SetViewOnTop(viewModalEditorName)
-	if isUnknownViewError(err) {
-		return nil
-	}
-
-	return err
-}
-
 func (program *Program) configureModalEditorView(view *gocui.View) {
 	configureFramedOverlayView(view, program.modalEditorTitle(), "")
 	view.Wrap = program.modalEditor != nil && program.modalEditor.lineEditor == nil
@@ -94,14 +70,8 @@ func (program *Program) setMultilineInputCursor(view *gocui.View, column int, ro
 		return
 	}
 
-	innerWidth := view.InnerWidth()
-	if innerWidth < 1 {
-		innerWidth = 1
-	}
-	innerHeight := view.InnerHeight()
-	if innerHeight < 1 {
-		innerHeight = 1
-	}
+	innerWidth := max(view.InnerWidth(), 1)
+	innerHeight := max(view.InnerHeight(), 1)
 
 	if column < 0 {
 		column = 0

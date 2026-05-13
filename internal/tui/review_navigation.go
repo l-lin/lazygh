@@ -131,10 +131,7 @@ func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []
 
 	width := program.detailWrapWidth
 	if detailView != nil && detailView.InnerWidth() > 0 {
-		width = detailView.InnerWidth()
-		if width < 1 {
-			width = 1
-		}
+		width = max(detailView.InnerWidth(), 1)
 	}
 
 	locations := make([]reviewCommentLocation, 0)

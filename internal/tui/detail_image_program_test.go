@@ -276,8 +276,8 @@ func given_pngImageBytes(t *testing.T, width int, height int) []byte {
 	t.Helper()
 
 	actualImage := image.NewRGBA(image.Rect(0, 0, width, height))
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			actualImage.Set(x, y, color.RGBA{R: 0x44, G: 0x88, B: 0xCC, A: 0xFF})
 		}
 	}
