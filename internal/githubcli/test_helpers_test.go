@@ -73,41 +73,6 @@ func (runner *fakeRunner) nextResponse() fakeCommandResponse {
 	return response
 }
 
-type testClient struct {
-	serviceBase
-	*SessionService
-	*PullRequestListService
-	*PullRequestDetailService
-	*PullRequestMutationService
-	*ReviewService
-	*NotificationService
-	*ReactionService
-	*BuildService
-	*MarkdownService
-	*AuthService
-}
-
-func NewClient() *testClient {
-	return NewClientWithRunner(nil)
-}
-
-func NewClientWithRunner(runner Runner) *testClient {
-	transport := newSharedTransport(runner)
-	return &testClient{
-		serviceBase:                newServiceBase(transport),
-		SessionService:             newSessionService(transport),
-		PullRequestListService:     newPullRequestListService(transport),
-		PullRequestDetailService:   newPullRequestDetailService(transport),
-		PullRequestMutationService: newPullRequestMutationService(transport),
-		ReviewService:              newReviewService(transport),
-		NotificationService:        newNotificationService(transport),
-		ReactionService:            newReactionService(transport),
-		BuildService:               newBuildService(transport),
-		MarkdownService:            newMarkdownService(transport),
-		AuthService:                newAuthService(transport),
-	}
-}
-
 func then_commandIs(t *testing.T, runner *fakeRunner, expectedName string, expectedArgs []string) {
 	t.Helper()
 

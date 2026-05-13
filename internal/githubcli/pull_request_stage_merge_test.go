@@ -8,7 +8,7 @@ import (
 
 func TestMarkPullRequestReadyForReview_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrReady(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.MarkPullRequestReadyForReview("acme/widgets", 42)
 
@@ -18,7 +18,7 @@ func TestMarkPullRequestReadyForReview_GivenRepositoryAndNumber_WhenSubmitting_T
 
 func TestConvertPullRequestToDraft_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrReadyUndo(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.ConvertPullRequestToDraft("acme/widgets", 42)
 
@@ -28,7 +28,7 @@ func TestConvertPullRequestToDraft_GivenRepositoryAndNumber_WhenSubmitting_ThenI
 
 func TestClosePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrClose(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.ClosePullRequest("acme/widgets", 42)
 
@@ -38,7 +38,7 @@ func TestClosePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPr
 
 func TestReopenPullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrReopen(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.ReopenPullRequest("acme/widgets", 42)
 
@@ -48,7 +48,7 @@ func TestReopenPullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhP
 
 func TestSquashMergePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrMergeSquash(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.SquashMergePullRequest("acme/widgets", 42)
 
@@ -58,7 +58,7 @@ func TestSquashMergePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRu
 
 func TestMarkPullRequestReadyForReview_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrReadyError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.MarkPullRequestReadyForReview("acme/widgets", 42)
 
@@ -69,7 +69,7 @@ func TestMarkPullRequestReadyForReview_GivenCommandFailure_WhenSubmitting_ThenIt
 
 func TestClosePullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrCloseError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.ClosePullRequest("acme/widgets", 42)
 
@@ -80,7 +80,7 @@ func TestClosePullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhP
 
 func TestReopenPullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrReopenError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.ReopenPullRequest("acme/widgets", 42)
 
@@ -91,7 +91,7 @@ func TestReopenPullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGh
 
 func TestSquashMergePullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrMergeError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.SquashMergePullRequest("acme/widgets", 42)
 

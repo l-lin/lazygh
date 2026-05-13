@@ -7,7 +7,7 @@ import (
 
 func TestSubmitPullRequestReview_GivenApprovalEventAndSummaryBody_WhenSubmitting_ThenItRunsGhApiGraphQL(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"submitPullRequestReview":{"pullRequestReview":{"id":"PRR_pending"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.SubmitPullRequestReview("PRR_pending", PullRequestReviewEventApprove, "LGTM")
 
@@ -28,7 +28,7 @@ func TestSubmitPullRequestReview_GivenApprovalEventAndSummaryBody_WhenSubmitting
 
 func TestSubmitPullRequestReview_GivenBlankSummaryBody_WhenSubmitting_ThenItOmitsTheBodyField(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"submitPullRequestReview":{"pullRequestReview":{"id":"PRR_pending"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.SubmitPullRequestReview("  PRR_pending  ", PullRequestReviewEventComment, " \n\t ")
 
@@ -47,7 +47,7 @@ func TestSubmitPullRequestReview_GivenBlankSummaryBody_WhenSubmitting_ThenItOmit
 
 func TestSubmitPullRequestReview_GivenGraphQLErrorPayload_WhenSubmitting_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"A review cannot be submitted right now"}],"data":{"submitPullRequestReview":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.SubmitPullRequestReview("PRR_pending", PullRequestReviewEventRequestChanges, "Needs tests")
 
@@ -60,7 +60,7 @@ func TestSubmitPullRequestReview_GivenGraphQLErrorPayload_WhenSubmitting_ThenItR
 }
 
 func TestSubmitPullRequestReview_GivenMissingPendingReviewID_WhenSubmitting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.SubmitPullRequestReview(" ", PullRequestReviewEventApprove, "")
 

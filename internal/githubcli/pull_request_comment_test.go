@@ -8,7 +8,7 @@ import (
 
 func TestCommentOnPullRequest_GivenRepositoryNumberAndMultilineBody_WhenPosting_ThenItRunsGhPrCommentWithStdin(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 	body := "Looks good.\n\n```go\nfmt.Println(\"ok\")\n```"
 
 	actualErr := subject.CommentOnPullRequest("acme/widgets", 42, body)
@@ -23,7 +23,7 @@ func TestCommentOnPullRequest_GivenCommandFailure_WhenPosting_ThenItReturnsTheGh
 		stderr: []byte("boom"),
 		err:    errors.New("exit status 1"),
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.CommentOnPullRequest("acme/widgets", 42, "Ship it")
 
@@ -36,7 +36,7 @@ func TestCommentOnPullRequest_GivenCommandFailure_WhenPosting_ThenItReturnsTheGh
 }
 
 func TestCommentOnPullRequest_GivenMissingPullRequestIdentity_WhenPosting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.CommentOnPullRequest(" ", 0, "Ship it")
 
@@ -46,7 +46,7 @@ func TestCommentOnPullRequest_GivenMissingPullRequestIdentity_WhenPosting_ThenIt
 }
 
 func TestCommentOnPullRequest_GivenEmptyCommentBody_WhenPosting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.CommentOnPullRequest("acme/widgets", 42, " \n\t ")
 

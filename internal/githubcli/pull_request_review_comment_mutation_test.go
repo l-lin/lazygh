@@ -8,7 +8,7 @@ import (
 
 func TestUpdatePullRequestReviewComment_GivenCommentIDAndBody_WhenUpdating_ThenItRunsGhApiGraphQLWithTheUpdateMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"updatePullRequestReviewComment":{"pullRequestReviewComment":{"id":"PRRC_1"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestReviewComment("PRRC_1", "Updated body")
 
@@ -27,7 +27,7 @@ func TestUpdatePullRequestReviewComment_GivenCommentIDAndBody_WhenUpdating_ThenI
 
 func TestDeletePullRequestReviewComment_GivenCommentID_WhenDeleting_ThenItRunsGhApiGraphQLWithTheDeleteMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"deletePullRequestReviewComment":{"pullRequestReviewComment":{"id":"PRRC_1"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.DeletePullRequestReviewComment("PRRC_1")
 
@@ -44,7 +44,7 @@ func TestDeletePullRequestReviewComment_GivenCommentID_WhenDeleting_ThenItRunsGh
 
 func TestUpdatePullRequestReviewComment_GivenGraphQLErrorPayload_WhenUpdating_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Only the author can update this comment"}],"data":{"updatePullRequestReviewComment":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestReviewComment("PRRC_1", "Updated body")
 
@@ -57,7 +57,7 @@ func TestUpdatePullRequestReviewComment_GivenGraphQLErrorPayload_WhenUpdating_Th
 }
 
 func TestDeletePullRequestReviewComment_GivenAnEmptyCommentID_WhenDeleting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.DeletePullRequestReviewComment(" ")
 
@@ -68,7 +68,7 @@ func TestDeletePullRequestReviewComment_GivenAnEmptyCommentID_WhenDeleting_ThenI
 
 func TestUpdatePullRequestReviewComment_GivenCommandFailure_WhenUpdating_ThenItReturnsTheGhApiGraphQLError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestReviewComment("PRRC_1", "Updated body")
 

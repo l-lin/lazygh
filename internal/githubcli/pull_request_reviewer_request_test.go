@@ -7,7 +7,7 @@ import (
 
 func TestRequestPullRequestReviewer_GivenReviewerLogin_WhenRequesting_ThenItRunsGhPrEditWithAddReviewer(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.RequestPullRequestReviewer("acme/widgets", 42, " reviewer-one ")
 
@@ -16,7 +16,7 @@ func TestRequestPullRequestReviewer_GivenReviewerLogin_WhenRequesting_ThenItRuns
 }
 
 func TestRequestPullRequestReviewer_GivenMissingReviewerLogin_WhenRequesting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.RequestPullRequestReviewer("acme/widgets", 42, " \n\t ")
 

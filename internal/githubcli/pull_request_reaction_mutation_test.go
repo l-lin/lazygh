@@ -8,7 +8,7 @@ import (
 
 func TestAddReaction_GivenSubjectIDAndContent_WhenAdding_ThenItRunsGhApiGraphQLWithTheAddReactionMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"addReaction":{"reaction":{"content":"THUMBS_UP"},"subject":{"id":"PR_kwDOA"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReactionServiceWithRunner(runner)
 
 	actualErr := subject.AddReaction("PR_kwDOA", ReactionContentThumbsUp)
 
@@ -26,7 +26,7 @@ func TestAddReaction_GivenSubjectIDAndContent_WhenAdding_ThenItRunsGhApiGraphQLW
 }
 
 func TestAddReaction_GivenInvalidContent_WhenAdding_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReactionServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.AddReaction("PR_kwDOA", ReactionContent("wat"))
 
@@ -37,7 +37,7 @@ func TestAddReaction_GivenInvalidContent_WhenAdding_ThenItReturnsAValidationErro
 
 func TestAddReaction_GivenGraphQLErrorPayload_WhenAdding_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Reactions are disabled"}],"data":{"addReaction":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReactionServiceWithRunner(runner)
 
 	actualErr := subject.AddReaction("PR_kwDOA", ReactionContentThumbsUp)
 
@@ -51,7 +51,7 @@ func TestAddReaction_GivenGraphQLErrorPayload_WhenAdding_ThenItReturnsTheGitHubM
 
 func TestAddReaction_GivenCommandFailure_WhenAdding_ThenItReturnsTheGhApiGraphQLError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewReactionServiceWithRunner(runner)
 
 	actualErr := subject.AddReaction("PR_kwDOA", ReactionContentThumbsUp)
 
@@ -65,7 +65,7 @@ func TestAddReaction_GivenCommandFailure_WhenAdding_ThenItReturnsTheGhApiGraphQL
 
 func TestRemoveReaction_GivenSubjectIDAndContent_WhenRemoving_ThenItRunsGhApiGraphQLWithTheRemoveReactionMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"removeReaction":{"reaction":{"content":"THUMBS_UP"},"subject":{"id":"PR_kwDOA"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReactionServiceWithRunner(runner)
 
 	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContentThumbsUp)
 
@@ -83,7 +83,7 @@ func TestRemoveReaction_GivenSubjectIDAndContent_WhenRemoving_ThenItRunsGhApiGra
 }
 
 func TestRemoveReaction_GivenInvalidContent_WhenRemoving_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReactionServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContent("wat"))
 
@@ -94,7 +94,7 @@ func TestRemoveReaction_GivenInvalidContent_WhenRemoving_ThenItReturnsAValidatio
 
 func TestRemoveReaction_GivenGraphQLErrorPayload_WhenRemoving_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Reaction not found"}],"data":{"removeReaction":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReactionServiceWithRunner(runner)
 
 	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContentThumbsUp)
 
@@ -108,7 +108,7 @@ func TestRemoveReaction_GivenGraphQLErrorPayload_WhenRemoving_ThenItReturnsTheGi
 
 func TestRemoveReaction_GivenCommandFailure_WhenRemoving_ThenItReturnsTheGhApiGraphQLError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewReactionServiceWithRunner(runner)
 
 	actualErr := subject.RemoveReaction("PR_kwDOA", ReactionContentThumbsUp)
 

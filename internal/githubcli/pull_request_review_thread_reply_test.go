@@ -7,7 +7,7 @@ import (
 
 func TestAddPullRequestReviewThreadReply_GivenAPendingReview_WhenSubmitting_ThenItRunsGhApiGraphQLWithTheReplyInput(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"addPullRequestReviewThreadReply":{"comment":{"id":"PRRC_2"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.AddPullRequestReviewThreadReply("PRR_pending", "PRRT_1", "Please add context")
 
@@ -28,7 +28,7 @@ func TestAddPullRequestReviewThreadReply_GivenAPendingReview_WhenSubmitting_Then
 
 func TestAddPullRequestReviewThreadReply_GivenAStandaloneReply_WhenSubmitting_ThenItOmitsThePendingReviewID(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"addPullRequestReviewThreadReply":{"comment":{"id":"PRRC_2"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.AddPullRequestReviewThreadReply("", "PRRT_1", "Standalone reply")
 
@@ -47,7 +47,7 @@ func TestAddPullRequestReviewThreadReply_GivenAStandaloneReply_WhenSubmitting_Th
 
 func TestAddPullRequestReviewThreadReply_GivenGraphQLErrorPayload_WhenSubmitting_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Pull request review thread reply body cannot be blank"}],"data":{"addPullRequestReviewThreadReply":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.AddPullRequestReviewThreadReply("PRR_pending", "PRRT_1", "Please add context")
 
@@ -60,7 +60,7 @@ func TestAddPullRequestReviewThreadReply_GivenGraphQLErrorPayload_WhenSubmitting
 }
 
 func TestAddPullRequestReviewThreadReply_GivenAMissingThreadID_WhenSubmitting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.AddPullRequestReviewThreadReply("PRR_pending", " ", "Please add context")
 

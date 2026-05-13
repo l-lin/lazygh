@@ -11,14 +11,14 @@ import (
 )
 
 func TestRefactorGuard_GivenGithubcliFiles_WhenScanning_ThenCompatibilityClientFacadeAndRunGHWrappersAreGone(t *testing.T) {
-	for _, path := range []string{"provider_facade.go"} {
+	for _, path := range []string{"client.go", "provider_facade.go"} {
 		_, actualErr := os.Stat(filepath.Join(given_guardPackageRoot(t), path))
 		if !errors.Is(actualErr, os.ErrNotExist) {
 			t.Fatalf("expected %q to be deleted, actual error %v", path, actualErr)
 		}
 	}
 
-	actualMatches := given_forbiddenTextMatchesInGithubcliGoFiles(t, ".", []string{
+	actualMatches := given_forbiddenTextMatchesInGithubcliSourceGoFiles(t, ".", []string{
 		"type " + "Client struct",
 		"type " + "ProviderFacade struct",
 		"New" + "Client(",
@@ -32,7 +32,35 @@ func TestRefactorGuard_GivenGithubcliFiles_WhenScanning_ThenCompatibilityClientF
 	}
 }
 
-func given_forbiddenTextMatchesInGithubcliGoFiles(t *testing.T, root string, forbidden []string) []string {
+func TestRefactorGuard_GivenGithubcliTestFiles_WhenScanning_ThenBroadClientTestWrappersAreGone(t *testing.T) {
+	actualMatches := given_forbiddenTextMatchesInGithubcliTestGoFiles(t, ".", []string{
+		"type " + "testClient struct",
+		"New" + "Client(",
+		"NewClientWith" + "Runner(",
+	})
+
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected githubcli tests to use focused services instead of client wrappers, actual %v", actualMatches)
+	}
+}
+
+func given_forbiddenTextMatchesInGithubcliSourceGoFiles(t *testing.T, root string, forbidden []string) []string {
+	t.Helper()
+
+	return given_forbiddenTextMatchesInGithubcliFiles(t, root, forbidden, func(path string) bool {
+		return filepath.Ext(path) == ".go" && !strings.HasSuffix(path, "_test.go")
+	})
+}
+
+func given_forbiddenTextMatchesInGithubcliTestGoFiles(t *testing.T, root string, forbidden []string) []string {
+	t.Helper()
+
+	return given_forbiddenTextMatchesInGithubcliFiles(t, root, forbidden, func(path string) bool {
+		return filepath.Ext(path) == ".go" && strings.HasSuffix(path, "_test.go")
+	})
+}
+
+func given_forbiddenTextMatchesInGithubcliFiles(t *testing.T, root string, forbidden []string, includeFile func(path string) bool) []string {
 	t.Helper()
 
 	packageRoot := given_guardPackageRoot(t)
@@ -49,7 +77,7 @@ func given_forbiddenTextMatchesInGithubcliGoFiles(t *testing.T, root string, for
 			}
 			return nil
 		}
-		if filepath.Ext(path) != ".go" || strings.HasSuffix(path, "_test.go") {
+		if !includeFile(path) {
 			return nil
 		}
 

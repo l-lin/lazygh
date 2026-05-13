@@ -8,7 +8,7 @@ import (
 
 func TestUpdatePullRequestComment_GivenCommentIDAndBody_WhenUpdating_ThenItRunsGhApiGraphQLWithTheUpdateMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"updateIssueComment":{"issueComment":{"id":"IC_kwDOA"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestComment("IC_kwDOA", "Updated body")
 
@@ -27,7 +27,7 @@ func TestUpdatePullRequestComment_GivenCommentIDAndBody_WhenUpdating_ThenItRunsG
 
 func TestDeletePullRequestComment_GivenCommentID_WhenDeleting_ThenItRunsGhApiGraphQLWithTheDeleteMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"deleteIssueComment":{"clientMutationId":null}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.DeletePullRequestComment("IC_kwDOA")
 
@@ -44,7 +44,7 @@ func TestDeletePullRequestComment_GivenCommentID_WhenDeleting_ThenItRunsGhApiGra
 
 func TestUpdatePullRequestComment_GivenGraphQLErrorPayload_WhenUpdating_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Only the author can update this comment"}],"data":{"updateIssueComment":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestComment("IC_kwDOA", "Updated body")
 
@@ -57,7 +57,7 @@ func TestUpdatePullRequestComment_GivenGraphQLErrorPayload_WhenUpdating_ThenItRe
 }
 
 func TestDeletePullRequestComment_GivenAnEmptyCommentID_WhenDeleting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.DeletePullRequestComment(" ")
 
@@ -68,7 +68,7 @@ func TestDeletePullRequestComment_GivenAnEmptyCommentID_WhenDeleting_ThenItRetur
 
 func TestUpdatePullRequestComment_GivenCommandFailure_WhenUpdating_ThenItReturnsTheGhApiGraphQLError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestComment("IC_kwDOA", "Updated body")
 

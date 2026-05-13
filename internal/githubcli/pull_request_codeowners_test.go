@@ -12,7 +12,7 @@ func TestGetPullRequestFileTeamOwners_GivenBaseBranchCodeowners_WhenFetching_The
 			{stdout: []byte(`{"data":{"repository":{"dotgithub":{"text":"* @acme/Core\n!negated @acme/Nope\n/docs/ @acme/P3C\nREADME.md @octocat\n"},"root":null,"docs":null}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestFileTeamOwners("acme/widgets", 42, []string{" docs/design.md ", "internal/tui/render.go", "README.md", "docs/design.md"})
 
@@ -38,7 +38,7 @@ func TestGetPullRequestFileTeamOwners_GivenNoCodeownersFile_WhenFetching_ThenItR
 			{stdout: []byte(`{"data":{"repository":{"dotgithub":null,"root":null,"docs":null}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestFileTeamOwners("acme/widgets", 42, []string{"docs/design.md"})
 

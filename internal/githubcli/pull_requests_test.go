@@ -20,7 +20,7 @@ func TestPullRequestListReviewMetadataQuery_GivenTheStaticGraphQLDocument_WhenRe
 
 func TestListPullRequests_GivenPullRequestSearchArgumentsWithoutJSON_WhenFetching_ThenItAppendsTheRequiredJSONFields(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`[]`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListPullRequests([]string{"pr", "list", "--author", "@me", "--state", "open"})
 
@@ -33,7 +33,7 @@ func TestListPullRequests_GivenPullRequestSearchArgumentsWithoutJSON_WhenFetchin
 
 func TestListPullRequests_GivenPullRequestSearchArgumentsWithConfiguredJSON_WhenFetching_ThenItReplacesThemWithTheRequiredJSONFields(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`[]`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--json", "title,url", "--state", "open"})
 
@@ -49,7 +49,7 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRevi
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Ship it","number":42,"repository":{"nameWithOwner":"acme/widgets"},"url":"https://github.com/acme/widgets/pull/42","state":"OPEN"}]`)},
 		{stdout: []byte(`{"data":{"nodes":[{"id":" PR_kwDOA ","reviewDecision":" APPROVED "}]}}`)},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
 
@@ -78,7 +78,7 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequ
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Need teams","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
 		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","reviewDecision":"REVIEW_REQUIRED","mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewRequests":{"nodes":[{"requestedReviewer":{"__typename":"User","login":"reviewer-one"}},{"requestedReviewer":{"__typename":"Team","name":"VIBE","slug":"vibe","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"P3C","slug":"p3c","organization":{"login":"acme"}}},{"requestedReviewer":{"__typename":"Team","name":"FYP","slug":"fyp","organization":{"login":"acme"}}}]},"headRefStatusCheckRollup":{"nodes":[{"commit":{"statusCheckRollup":{"state":"SUCCESS"}}}]}}]}}`)},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
 
@@ -110,7 +110,7 @@ func TestListPullRequests_GivenReviewMetadataHydrationFailure_WhenFetching_ThenI
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Ship it","number":42,"repository":{"nameWithOwner":"acme/widgets"},"url":"https://github.com/acme/widgets/pull/42","state":"OPEN"}]`)},
 		{stderr: []byte("gh: HTTP 502"), err: errors.New("exit status 1")},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
 
@@ -138,7 +138,7 @@ func TestListPullRequests_GivenInvalidReviewMetadataResponse_WhenFetching_ThenIt
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Ship it","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
 		{stdout: []byte(`{"data":`)},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	_, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
 
@@ -166,7 +166,7 @@ func TestListPullRequests_GivenMorePullRequestIDsThanOneBatch_WhenFetching_ThenI
 		{stdout: []byte(`{"data":{"nodes":[]}}`)},
 		{stdout: []byte(`{"data":{"nodes":[]}}`)},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestListServiceWithRunner(runner)
 
 	_, actualErr = subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
 

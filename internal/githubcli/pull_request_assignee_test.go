@@ -7,7 +7,7 @@ import (
 
 func TestListAssignableUsers_GivenRepository_WhenListing_ThenItLoadsAndNormalizesTheAssignableUsers(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`[[{"login":" alice ","name":" Alice ","is_bot":false},{"login":"bob","name":" Bob "}],[{"login":"alice","name":"Duplicate"},{"login":"charlie","name":"  Charlie  ","is_bot":true}]]`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListAssignableUsers("acme/widgets")
 
@@ -25,7 +25,7 @@ func TestListAssignableUsers_GivenRepository_WhenListing_ThenItLoadsAndNormalize
 
 func TestUpdatePullRequestAssignees_GivenAddedLogins_WhenUpdating_ThenItRunsGhPrEditWithAddAssignee(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestAssignees("acme/widgets", 42, []string{"alice", " bob "}, nil)
 
@@ -35,7 +35,7 @@ func TestUpdatePullRequestAssignees_GivenAddedLogins_WhenUpdating_ThenItRunsGhPr
 
 func TestUpdatePullRequestAssignees_GivenRemovedLogins_WhenUpdating_ThenItRunsGhPrEditWithRemoveAssignee(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.UpdatePullRequestAssignees("acme/widgets", 42, nil, []string{"alice", " bob "})
 

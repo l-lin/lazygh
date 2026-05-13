@@ -4,7 +4,7 @@ import "testing"
 
 func TestRenderMarkdownHTML_GivenRepositoryContext_WhenRendering_ThenItCallsTheMarkdownEndpointWithJSONBody(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte("<p><img src=\"https://private-user-images.githubusercontent.com/signed\"></p>\n")}
-	subject := NewClientWithRunner(runner)
+	subject := NewMarkdownServiceWithRunner(runner)
 
 	actual, actualErr := subject.RenderMarkdownHTML("acme/widgets", `![Architecture](./docs/diagram.png)`)
 
@@ -18,7 +18,7 @@ func TestRenderMarkdownHTML_GivenRepositoryContext_WhenRendering_ThenItCallsTheM
 
 func TestGetAuthToken_GivenGhOutput_WhenFetching_ThenItTrimsTheToken(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte("ghp_example-token\n")}
-	subject := NewClientWithRunner(runner)
+	subject := NewAuthServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetAuthToken()
 

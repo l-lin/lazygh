@@ -18,7 +18,7 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 			{stdout: []byte(`{"data":{"nodes":[{"id":"PRRC_1","reactionGroups":[]}]}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 
@@ -123,7 +123,7 @@ func TestGetPullRequestDetail_GivenMissingOptionalFields_WhenFetching_ThenItNorm
 			{stdout: []byte(`{"data":{"nodes":[{"id":"PRRC_kw123","reactionGroups":[]}]}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 7)
 
@@ -184,7 +184,7 @@ func TestGetPullRequestDetail_GivenApprovalReviews_WhenFetching_ThenItReturnsNor
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reactionGroups":[],"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 
@@ -209,7 +209,7 @@ func TestGetPullRequestDetail_GivenPendingInlineReviewComments_WhenFetching_Then
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reactionGroups":[],"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 
@@ -235,7 +235,7 @@ func TestGetPullRequestDetail_GivenReactionTargets_WhenFetching_ThenItLoadsStabl
 			{stdout: []byte(`{"data":{"nodes":[{"id":"PRRC_kwDOA","reactionGroups":[{"content":"HEART","viewerHasReacted":true,"users":{"totalCount":1}},{"content":"LAUGH","viewerHasReacted":false,"users":{"totalCount":2}}]}]}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 
@@ -278,7 +278,7 @@ func TestGetPullRequestDetail_GivenReactionTargets_WhenFetching_ThenItLoadsStabl
 
 func TestGetPullRequestDetail_GivenInvalidJSON_WhenFetching_ThenReturnsAnInvalidResponseError(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"title":`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	_, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 
@@ -292,7 +292,7 @@ func TestGetPullRequestDetail_GivenCommandFailure_WhenFetching_ThenReturnsTheVie
 		stderr: []byte("boom"),
 		err:    errors.New("exit status 1"),
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	_, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 

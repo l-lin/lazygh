@@ -8,7 +8,7 @@ import (
 
 func TestGetPullRequestBuildRun_GivenABuildRunLink_WhenFetching_ThenItUsesGhRunViewVerbose(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte("Run #42\nStatus: completed\nConclusion: failure\n")}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestBuildRun("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
 
@@ -21,7 +21,7 @@ func TestGetPullRequestBuildRun_GivenABuildRunLink_WhenFetching_ThenItUsesGhRunV
 
 func TestGetPullRequestBuildRun_GivenABuildRunAttemptLink_WhenFetching_ThenItPassesTheAttemptNumber(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte("Run #42 attempt 3")}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	_, actualErr := subject.GetPullRequestBuildRun("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42/attempts/3/job/99"})
 
@@ -30,7 +30,7 @@ func TestGetPullRequestBuildRun_GivenABuildRunAttemptLink_WhenFetching_ThenItPas
 }
 
 func TestGetPullRequestBuildRun_GivenAMissingBuildRunLink_WhenFetching_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewBuildServiceWithRunner(&fakeRunner{})
 
 	_, actualErr := subject.GetPullRequestBuildRun("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI"})
 
@@ -41,7 +41,7 @@ func TestGetPullRequestBuildRun_GivenAMissingBuildRunLink_WhenFetching_ThenItRet
 
 func TestGetPullRequestBuildRunJobs_GivenABuildRunLink_WhenFetching_ThenItUsesGhRunViewJSONJobsAndReturnsNormalizedJobs(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"jobs":[{"databaseId":1234,"name":" Test ","status":" completed ","conclusion":" failure ","url":" https://github.com/acme/widgets/actions/runs/42/job/1234 "}]}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestBuildRunJobs("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
 
@@ -55,7 +55,7 @@ func TestGetPullRequestBuildRunJobs_GivenABuildRunLink_WhenFetching_ThenItUsesGh
 
 func TestGetPullRequestBuildRunJobLog_GivenAJobID_WhenFetching_ThenItUsesGhRunViewLogForThatJob(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte("job logs\n")}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestBuildRunJobLog("acme/widgets", 1234)
 
@@ -71,7 +71,7 @@ func TestGetPullRequestBuildRunJobLogForCheck_GivenAJobNameMatchingTheCheck_When
 		{stdout: []byte(`{"jobs":[{"databaseId":999,"name":"lint","url":"https://github.com/acme/widgets/actions/runs/42/job/999"},{"databaseId":1234,"name":"test","url":"https://github.com/acme/widgets/actions/runs/42/job/1234"}]}`)},
 		{stdout: []byte("job logs\n")},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	actualJob, actualLog, actualErr := subject.GetPullRequestBuildRunJobLogForCheck("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
 
@@ -99,7 +99,7 @@ func TestGetPullRequestBuildRunJobLogForCheck_GivenOnlyOneJobWithoutANameMatch_W
 		{stdout: []byte(`{"jobs":[{"databaseId":1234,"name":"lint","url":"https://github.com/acme/widgets/actions/runs/42/job/1234"}]}`)},
 		{stdout: []byte("job logs\n")},
 	}}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	actualJob, actualLog, actualErr := subject.GetPullRequestBuildRunJobLogForCheck("acme/widgets", PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
 

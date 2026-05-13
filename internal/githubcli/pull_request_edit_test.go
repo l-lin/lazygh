@@ -8,7 +8,7 @@ import (
 
 func TestEditPullRequestTitle_GivenRepositoryNumberAndTitle_WhenEditing_ThenItRunsGhPrEditTitle(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.EditPullRequestTitle("acme/widgets", 42, "New title")
 
@@ -18,7 +18,7 @@ func TestEditPullRequestTitle_GivenRepositoryNumberAndTitle_WhenEditing_ThenItRu
 
 func TestEditPullRequestDescription_GivenRepositoryNumberAndBody_WhenEditing_ThenItRunsGhPrEditBodyFileWithStdin(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 	body := "Updated body\n\n- more detail"
 
 	actualErr := subject.EditPullRequestDescription("acme/widgets", 42, body)
@@ -29,7 +29,7 @@ func TestEditPullRequestDescription_GivenRepositoryNumberAndBody_WhenEditing_The
 }
 
 func TestEditPullRequestTitle_GivenMissingPullRequestIdentity_WhenEditing_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.EditPullRequestTitle(" ", 0, "Ship it")
 
@@ -39,7 +39,7 @@ func TestEditPullRequestTitle_GivenMissingPullRequestIdentity_WhenEditing_ThenIt
 }
 
 func TestEditPullRequestTitle_GivenEmptyTitle_WhenEditing_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.EditPullRequestTitle("acme/widgets", 42, " \n\t ")
 
@@ -50,7 +50,7 @@ func TestEditPullRequestTitle_GivenEmptyTitle_WhenEditing_ThenItReturnsAValidati
 
 func TestEditPullRequestDescription_GivenCommandFailure_WhenEditing_ThenItReturnsTheGhPrEditError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.EditPullRequestDescription("acme/widgets", 42, "Updated body")
 

@@ -14,7 +14,7 @@ func TestGetPullRequestDiff_GivenValidDiffAndPagedFilesResponses_WhenFetching_Th
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDiff(" acme/widgets ", 42)
 
@@ -45,7 +45,7 @@ func TestGetPullRequestDiff_GivenInvalidPagedFilesJSON_WhenFetching_ThenItReturn
 			{stdout: []byte(`[{`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	_, actualErr := subject.GetPullRequestDiff("acme/widgets", 42)
 
@@ -63,7 +63,7 @@ func TestGetPullRequestDiff_GivenPaginatedReviewThreads_WhenFetching_ThenItRetur
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-2","isResolved":false,"isOutdated":true,"path":"internal/tui/model.go","originalLine":21,"diffSide":"LEFT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"reviewer-three"},"body":"Needs work","createdAt":"2026-04-20T11:00:00Z"}]}}]}}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDiff("acme/widgets", 42)
 
@@ -114,7 +114,7 @@ func TestGetPullRequestDiff_GivenReviewThreadCommentPagination_WhenFetching_Then
 			{stdout: []byte(`{"data":{"node":{"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"reviewer-two"},"body":"Second reply","createdAt":"2026-04-20T10:05:00Z"}]}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDiff("acme/widgets", 42)
 
@@ -143,7 +143,7 @@ func TestGetPullRequestDiff_GivenPendingInlineReviewComments_WhenFetching_ThenIt
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":11,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"PRRC_1","state":" PENDING ","author":{"login":"reviewer-one"},"body":"Draft reply","createdAt":"2026-04-20T10:00:00Z"}]}}]}}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDiff("acme/widgets", 42)
 
@@ -167,7 +167,7 @@ func TestGetPullRequestDiff_GivenThreadCommentReactions_WhenFetching_ThenItNorma
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":11,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"PRRC_1","author":{"login":"reviewer-one"},"body":"Reply","createdAt":"2026-04-20T10:00:00Z","reactionGroups":[{"content":"THUMBS_DOWN","viewerHasReacted":true,"users":{"totalCount":1}},{"content":"ROCKET","viewerHasReacted":false,"users":{"totalCount":4}}]}]}}]}}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestDetailServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestDiff("acme/widgets", 42)
 

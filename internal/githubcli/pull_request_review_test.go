@@ -8,7 +8,7 @@ import (
 
 func TestApprovePullRequest_GivenRepositoryAndNumber_WhenApproving_ThenItRunsGhPrReviewApprove(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.ApprovePullRequest("acme/widgets", 42)
 
@@ -18,7 +18,7 @@ func TestApprovePullRequest_GivenRepositoryAndNumber_WhenApproving_ThenItRunsGhP
 
 func TestReviewPullRequestWithComment_GivenRepositoryNumberAndBody_WhenSubmitting_ThenItRunsGhPrReviewCommentWithStdin(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 	body := "Please split this diff."
 
 	actualErr := subject.ReviewPullRequestWithComment("acme/widgets", 42, body)
@@ -30,7 +30,7 @@ func TestReviewPullRequestWithComment_GivenRepositoryNumberAndBody_WhenSubmittin
 
 func TestRequestChangesOnPullRequest_GivenRepositoryNumberAndBody_WhenSubmitting_ThenItRunsGhPrReviewRequestChangesWithStdin(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 	body := "Needs tests."
 
 	actualErr := subject.RequestChangesOnPullRequest("acme/widgets", 42, body)
@@ -41,7 +41,7 @@ func TestRequestChangesOnPullRequest_GivenRepositoryNumberAndBody_WhenSubmitting
 }
 
 func TestApprovePullRequest_GivenMissingPullRequestIdentity_WhenApproving_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.ApprovePullRequest(" ", 0)
 
@@ -51,7 +51,7 @@ func TestApprovePullRequest_GivenMissingPullRequestIdentity_WhenApproving_ThenIt
 }
 
 func TestReviewPullRequestWithComment_GivenEmptyBody_WhenSubmitting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.ReviewPullRequestWithComment("acme/widgets", 42, " \n\t ")
 
@@ -62,7 +62,7 @@ func TestReviewPullRequestWithComment_GivenEmptyBody_WhenSubmitting_ThenItReturn
 
 func TestRequestChangesOnPullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrReviewError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.RequestChangesOnPullRequest("acme/widgets", 42, "Needs tests")
 

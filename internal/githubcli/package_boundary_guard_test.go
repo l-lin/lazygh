@@ -3,7 +3,7 @@ package githubcli
 import "testing"
 
 func TestArchitectureGuard_GivenGithubcliFiles_WhenScanning_ThenTheyDoNotDependOnTUIOrCache(t *testing.T) {
-	actualMatches := given_forbiddenTextMatchesInGithubcliGoFiles(t, ".", []string{
+	actualMatches := given_forbiddenTextMatchesInGithubcliSourceGoFiles(t, ".", []string{
 		"github.com/l-lin/lazygh/internal/tui",
 		"github.com/l-lin/lazygh/internal/cache",
 	})

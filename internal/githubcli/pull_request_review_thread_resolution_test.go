@@ -7,7 +7,7 @@ import (
 
 func TestResolvePullRequestReviewThread_GivenAThreadID_WhenSubmitting_ThenItRunsGhApiGraphQLWithTheResolveMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"resolveReviewThread":{"thread":{"id":"PRRT_1","isResolved":true}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.ResolvePullRequestReviewThread("PRRT_1")
 
@@ -24,7 +24,7 @@ func TestResolvePullRequestReviewThread_GivenAThreadID_WhenSubmitting_ThenItRuns
 
 func TestUnresolvePullRequestReviewThread_GivenAThreadID_WhenSubmitting_ThenItRunsGhApiGraphQLWithTheUnresolveMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"unresolveReviewThread":{"thread":{"id":"PRRT_1","isResolved":false}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.UnresolvePullRequestReviewThread("PRRT_1")
 
@@ -41,7 +41,7 @@ func TestUnresolvePullRequestReviewThread_GivenAThreadID_WhenSubmitting_ThenItRu
 
 func TestResolvePullRequestReviewThread_GivenAGraphQLErrorPayload_WhenSubmitting_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"You cannot resolve this thread"}],"data":{"resolveReviewThread":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.ResolvePullRequestReviewThread("PRRT_1")
 
@@ -54,7 +54,7 @@ func TestResolvePullRequestReviewThread_GivenAGraphQLErrorPayload_WhenSubmitting
 }
 
 func TestResolvePullRequestReviewThread_GivenAnEmptyThreadID_WhenSubmitting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.ResolvePullRequestReviewThread(" ")
 

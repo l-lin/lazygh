@@ -7,7 +7,7 @@ import (
 
 func TestDeletePullRequestReview_GivenReviewID_WhenDeleting_ThenItRunsGhApiGraphQLWithTheDeleteMutation(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"deletePullRequestReview":{"pullRequestReview":{"id":"PRR_1"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.DeletePullRequestReview("PRR_1")
 
@@ -16,7 +16,7 @@ func TestDeletePullRequestReview_GivenReviewID_WhenDeleting_ThenItRunsGhApiGraph
 }
 
 func TestDeletePullRequestReview_GivenMissingReviewID_WhenDeleting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.DeletePullRequestReview(" ")
 
@@ -27,7 +27,7 @@ func TestDeletePullRequestReview_GivenMissingReviewID_WhenDeleting_ThenItReturns
 
 func TestDeletePullRequestReview_GivenGraphQLError_WhenDeleting_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Review is not pending"}]}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actualErr := subject.DeletePullRequestReview("PRR_1")
 

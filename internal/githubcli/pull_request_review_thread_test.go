@@ -7,7 +7,7 @@ import (
 
 func TestAddPullRequestReviewThread_GivenMultiLineTarget_WhenSubmitting_ThenItRunsGhApiGraphQLWithTheThreadInput(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"addPullRequestReviewThread":{"thread":{"id":"PRRT_1"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 	target := PullRequestReviewThreadTarget{
 		Path:        "internal/tui/render.go",
 		Line:        13,
@@ -46,7 +46,7 @@ func TestAddPullRequestReviewThread_GivenMultiLineTarget_WhenSubmitting_ThenItRu
 
 func TestAddPullRequestReviewThread_GivenSingleLineTarget_WhenSubmitting_ThenItOmitsTheRangeFields(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"data":{"addPullRequestReviewThread":{"thread":{"id":"PRRT_1"}}}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 	target := PullRequestReviewThreadTarget{
 		Path:        "internal/tui/render.go",
 		Line:        13,
@@ -79,7 +79,7 @@ func TestAddPullRequestReviewThread_GivenSingleLineTarget_WhenSubmitting_ThenItO
 
 func TestAddPullRequestReviewThread_GivenGraphQLErrorPayload_WhenSubmitting_ThenItReturnsTheGitHubMessage(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`{"errors":[{"message":"Pull request review thread line must be part of the diff"}],"data":{"addPullRequestReviewThread":null}}`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 	target := PullRequestReviewThreadTarget{Path: "internal/tui/render.go", Line: 13, Side: "RIGHT", SubjectType: "LINE"}
 
 	actualErr := subject.AddPullRequestReviewThread("PRR_pending", "Please add context", target)
@@ -93,7 +93,7 @@ func TestAddPullRequestReviewThread_GivenGraphQLErrorPayload_WhenSubmitting_Then
 }
 
 func TestAddPullRequestReviewThread_GivenAnInvalidTarget_WhenSubmitting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.AddPullRequestReviewThread(" ", "Please add context", PullRequestReviewThreadTarget{})
 

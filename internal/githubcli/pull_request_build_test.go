@@ -10,7 +10,7 @@ func TestGetPullRequestBuildInfo_GivenMatchingBuildLink_WhenFetching_ThenItRetur
 	runner := &fakeRunner{stdout: []byte(`[
 		{"bucket":" fail ","completedAt":" 2026-04-18T13:04:00Z ","description":" widget smoke test timed out ","event":" pull_request ","link":" https://github.com/acme/widgets/actions/runs/42 ","name":" test ","startedAt":" 2026-04-18T13:00:00Z ","state":" FAILURE ","workflow":" CI "}
 	]`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetPullRequestBuildInfo("acme/widgets", 42, PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
 
@@ -34,7 +34,7 @@ func TestGetPullRequestBuildInfo_GivenMatchingBuildLink_WhenFetching_ThenItRetur
 
 func TestGetPullRequestBuildInfo_GivenNoMatchingBuild_WhenFetching_ThenItReturnsNotFound(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`[{"name":"lint","workflow":"CI","link":"https://github.com/acme/widgets/actions/runs/1"}]`)}
-	subject := NewClientWithRunner(runner)
+	subject := NewBuildServiceWithRunner(runner)
 
 	_, actualErr := subject.GetPullRequestBuildInfo("acme/widgets", 42, PullRequestStatusCheck{Name: "test", WorkflowName: "CI", Link: "https://github.com/acme/widgets/actions/runs/42"})
 

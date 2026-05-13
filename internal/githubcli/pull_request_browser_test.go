@@ -8,7 +8,7 @@ import (
 
 func TestOpenPullRequestInBrowser_GivenRepositoryAndNumber_WhenOpening_ThenItRunsGhPrViewWithWeb(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.OpenPullRequestInBrowser("acme/widgets", 42)
 
@@ -17,7 +17,7 @@ func TestOpenPullRequestInBrowser_GivenRepositoryAndNumber_WhenOpening_ThenItRun
 }
 
 func TestOpenPullRequestInBrowser_GivenMissingPullRequestIdentity_WhenOpening_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewPullRequestMutationServiceWithRunner(&fakeRunner{})
 
 	actualErr := subject.OpenPullRequestInBrowser(" ", 0)
 
@@ -28,7 +28,7 @@ func TestOpenPullRequestInBrowser_GivenMissingPullRequestIdentity_WhenOpening_Th
 
 func TestOpenPullRequestInBrowser_GivenCommandFailure_WhenOpening_ThenItReturnsTheGhPrViewError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.OpenPullRequestInBrowser("acme/widgets", 42)
 

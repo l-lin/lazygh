@@ -13,7 +13,7 @@ import (
 
 func TestListNotifications_GivenPagedNotificationFixtures_WhenListing_ThenItFlattensAndNormalizesTheThreads(t *testing.T) {
 	runner := &fakeRunner{stdout: given_notificationFixtureBytes(t, "threads_pr_issue_release.json")}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListNotifications()
 
@@ -82,7 +82,7 @@ func TestListNotifications_GivenPagedNotificationFixtures_WhenListing_ThenItFlat
 
 func TestListNotifications_GivenDoneThreadsInFixture_WhenListing_ThenItOmitsDoneNotifications(t *testing.T) {
 	runner := &fakeRunner{stdout: given_notificationFixtureBytes(t, "threads_with_done.json")}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actual, actualErr := subject.ListNotifications()
 
@@ -98,7 +98,7 @@ func TestListNotifications_GivenDoneThreadsInFixture_WhenListing_ThenItOmitsDone
 
 func TestGetIssueDetail_GivenARealFixture_WhenFetching_ThenItReturnsTheNormalizedIssueDetail(t *testing.T) {
 	runner := &fakeRunner{stdout: given_notificationFixtureBytes(t, "issue_detail.json")}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetIssueDetail("acme/opencode", 3235)
 
@@ -132,7 +132,7 @@ func TestGetIssueDetail_GivenARealFixture_WhenFetching_ThenItReturnsTheNormalize
 
 func TestGetReleaseDetail_GivenARealFixture_WhenFetching_ThenItReturnsTheNormalizedReleaseDetail(t *testing.T) {
 	runner := &fakeRunner{stdout: given_notificationFixtureBytes(t, "release_detail.json")}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actual, actualErr := subject.GetReleaseDetail("acme/doctoboot", 317927281)
 
@@ -160,7 +160,7 @@ func TestGetReleaseDetail_GivenARealFixture_WhenFetching_ThenItReturnsTheNormali
 
 func TestMarkNotificationRead_GivenThreadID_WhenMarking_ThenItCallsTheThreadReadEndpoint(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actualErr := subject.MarkNotificationRead("1001")
 
@@ -170,7 +170,7 @@ func TestMarkNotificationRead_GivenThreadID_WhenMarking_ThenItCallsTheThreadRead
 
 func TestMarkNotificationDone_GivenThreadID_WhenMarking_ThenItCallsTheThreadDoneEndpoint(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actualErr := subject.MarkNotificationDone("1001")
 
@@ -185,7 +185,7 @@ func TestMarkAllNotificationsRead_GivenAcceptedResponse_WhenMarking_ThenItReturn
 		"",
 		`{"message":"Notifications are being marked as read in the background."}`,
 	}, "\n"))}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actual, actualErr := subject.MarkAllNotificationsRead()
 
@@ -198,7 +198,7 @@ func TestMarkAllNotificationsRead_GivenAcceptedResponse_WhenMarking_ThenItReturn
 
 func TestMarkAllNotificationsDone_GivenLoadedNotifications_WhenMarking_ThenItDeletesEachLoadedThread(t *testing.T) {
 	runner := &fakeRunner{}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 	notifications := []Notification{{ID: "1001"}, {ID: "1002"}, {ID: ""}, {ID: "1003"}}
 
 	actualCount, actualErr := subject.MarkAllNotificationsDone(notifications)
@@ -216,7 +216,7 @@ func TestMarkAllNotificationsDone_GivenLoadedNotifications_WhenMarking_ThenItDel
 
 func TestMarkAllNotificationsDone_GivenMoreNotificationsThanTheWorkerLimit_WhenMarking_ThenItCapsConcurrency(t *testing.T) {
 	runner := newBlockingNotificationDoneRunner()
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 	notifications := []Notification{{ID: "1001"}, {ID: "1002"}, {ID: "1003"}, {ID: "1004"}, {ID: "1005"}}
 	results := make(chan struct {
 		count int
@@ -257,7 +257,7 @@ func TestMarkAllNotificationsDone_GivenMoreNotificationsThanTheWorkerLimit_WhenM
 
 func TestMarkNotificationRead_GivenUnsupportedCredentialError_WhenMarking_ThenItReturnsActionableGuidance(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("Resource not accessible by personal access token"), err: errors.New("exit status 1")}
-	subject := NewClientWithRunner(runner)
+	subject := NewNotificationServiceWithRunner(runner)
 
 	actualErr := subject.MarkNotificationRead("1001")
 

@@ -10,7 +10,7 @@ func TestGetPendingPullRequestReviewID_GivenViewerPendingReview_WhenListingRevie
 	runner := &fakeRunner{
 		stdout: []byte(`{"data":{"viewer":{"login":"octocat"},"repository":{"pullRequest":{"id":"PR_kwDOAA","reviews":{"nodes":[{"id":"PRR_1","state":"COMMENTED","author":{"login":"octocat"}},{"id":"PRR_pending","state":"PENDING","author":{"login":"octocat"}},{"id":"PRR_other","state":"PENDING","author":{"login":"someone-else"}}]}}}}}`),
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actual, found, actualErr := subject.GetPendingPullRequestReviewID("acme/widgets", 42)
 
@@ -28,7 +28,7 @@ func TestStartPendingPullRequestReview_GivenExistingViewerPendingReview_WhenStar
 	runner := &fakeRunner{
 		stdout: []byte(`{"data":{"viewer":{"login":"octocat"},"repository":{"pullRequest":{"id":"PR_kwDOAA","reviews":{"nodes":[{"id":"PRR_pending","state":"PENDING","author":{"login":"octocat"}}]}}}}}`),
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actual, actualErr := subject.StartPendingPullRequestReview("acme/widgets", 42)
 
@@ -46,7 +46,7 @@ func TestStartPendingPullRequestReview_GivenNoViewerPendingReview_WhenStarting_T
 			{stdout: []byte(`{"data":{"addPullRequestReview":{"pullRequestReview":{"id":"PRR_new"}}}}`)},
 		},
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actual, actualErr := subject.StartPendingPullRequestReview("acme/widgets", 42)
 
@@ -61,7 +61,7 @@ func TestStartPendingPullRequestReview_GivenNoViewerPendingReview_WhenStarting_T
 }
 
 func TestStartPendingPullRequestReview_GivenMissingPullRequestIdentity_WhenStarting_ThenItReturnsAValidationError(t *testing.T) {
-	subject := NewClientWithRunner(&fakeRunner{})
+	subject := NewReviewServiceWithRunner(&fakeRunner{})
 
 	_, actualErr := subject.StartPendingPullRequestReview(" ", 0)
 
@@ -74,7 +74,7 @@ func TestGetPendingPullRequestReviewID_GivenWhitespacePayload_WhenListingReviews
 	runner := &fakeRunner{
 		stdout: []byte(`{"data":{"viewer":{"login":"  octocat  "},"repository":{"pullRequest":{"id":"  PR_kwDOAA  ","reviews":{"nodes":[{"id":"  PRR_pending  ","state":"  PENDING  ","author":{"login":"  octocat  "}}]}}}}}`),
 	}
-	subject := NewClientWithRunner(runner)
+	subject := NewReviewServiceWithRunner(runner)
 
 	actual, found, actualErr := subject.GetPendingPullRequestReviewID("acme/widgets", 42)
 

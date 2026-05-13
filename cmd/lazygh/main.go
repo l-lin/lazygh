@@ -37,7 +37,9 @@ func newRunner() configurableRunner {
 	return tui.NewProgramWithModelAndDeps(nil, newAppDepsWithRunner(nil))
 }
 
-// newAppDepsWithRunner is the single app composition root for provider ports.
+// newAppDepsWithRunner is the single app composition root for provider ports:
+// `internal/github` stays provider-neutral, while `internal/githubcli` stays the
+// `gh` adapter that implements those ports for the TUI.
 func newAppDepsWithRunner(runner githubcli.Runner) tui.AppDeps {
 	notifications := githubcli.NewNotificationAdapterWithRunner(runner)
 	return tui.AppDeps{
