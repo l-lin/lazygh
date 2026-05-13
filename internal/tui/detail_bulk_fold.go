@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) closeAllDetailFolds(gui *gocui.Gui, view *gocui.View) error {
@@ -22,7 +22,7 @@ func (program *Program) setAllDetailFolds(gui *gocui.Gui, view *gocui.View, coll
 		return nil
 	}
 
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		if program.reviewSessionShowsDescription() {
 			return program.setAllReviewDescriptionFolds(gui, view, collapsed)
 		}
@@ -127,7 +127,7 @@ func (program *Program) setAllBrowserDetailFolds(gui *gocui.Gui, view *gocui.Vie
 	}
 }
 
-func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githubcli.PullRequest, detail githubcli.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
+func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
 	sections := program.currentPullRequestOverviewSections(summary, detail, detailDocument.width)
 	sectionAtCursor, cursorOnSection := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailViewState.cursor.line)
 	if !program.setBrowserDetailSectionsCollapsed(browserDetailSectionIDs(sections), collapsed) {
@@ -145,7 +145,7 @@ func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githu
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary githubcli.PullRequest, detail githubcli.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
+func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
 	sections := program.currentPullRequestConversationSections(summary, detail, detailDocument.width)
 	sectionAtCursor, cursorOnSection := program.browserConversationSectionAtCursor(summary, detail, detailDocument.width, program.detailViewState.cursor.line)
 	if !program.setBrowserDetailSectionsCollapsed(browserDetailSectionIDs(sections), collapsed) {
@@ -163,7 +163,7 @@ func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary g
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary githubcli.PullRequest, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
+func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok || result.err != nil {
 		return nil
@@ -198,7 +198,7 @@ func browserDetailSectionIDs(sections []browserDetailSection) []string {
 	return sectionIDs
 }
 
-func browserChangesFileSectionIDs(summary githubcli.PullRequest, files []reviewDiffFile) []string {
+func browserChangesFileSectionIDs(summary githubdomain.PullRequest, files []reviewDiffFile) []string {
 	sectionIDs := make([]string, 0, len(files))
 	for _, file := range files {
 		if trimmedFilePath := strings.TrimSpace(file.Path); trimmedFilePath != "" {
@@ -208,7 +208,7 @@ func browserChangesFileSectionIDs(summary githubcli.PullRequest, files []reviewD
 	return sectionIDs
 }
 
-func browserChangesThreadSectionIDs(summary githubcli.PullRequest, files []reviewDiffFile) []string {
+func browserChangesThreadSectionIDs(summary githubdomain.PullRequest, files []reviewDiffFile) []string {
 	sectionIDs := make([]string, 0)
 	for _, file := range files {
 		for _, thread := range file.Threads {

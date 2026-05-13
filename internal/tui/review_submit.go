@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type pendingPullRequestReviewTarget struct {
@@ -44,18 +44,18 @@ func (program *Program) submitPendingReviewRequestChangesAction() actionsPopupAc
 }
 
 func (program *Program) executeSubmitPendingReviewCommentAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewCommentComposerTitle, githubcli.PullRequestReviewEventComment)
+	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewCommentComposerTitle, githubdomain.PullRequestReviewEventComment)
 }
 
 func (program *Program) executeSubmitPendingReviewApprovalAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewApprovalTitle, githubcli.PullRequestReviewEventApprove)
+	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewApprovalTitle, githubdomain.PullRequestReviewEventApprove)
 }
 
 func (program *Program) executeSubmitPendingReviewRequestChangesAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestRequestChangesComposerTitle, githubcli.PullRequestReviewEventRequestChanges)
+	return program.openPendingReviewSubmitComposer(gui, pullRequestRequestChangesComposerTitle, githubdomain.PullRequestReviewEventRequestChanges)
 }
 
-func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title string, event githubcli.PullRequestReviewEvent) actionsPopupActionResult {
+func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title string, event githubdomain.PullRequestReviewEvent) actionsPopupActionResult {
 	target, ok := program.selectedPendingPullRequestReviewTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
@@ -80,7 +80,7 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 }
 
 func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullRequestReviewTarget, bool) {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return pendingPullRequestReviewTarget{}, false
 	}
 
@@ -98,7 +98,7 @@ func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullReq
 	}, true
 }
 
-func (program *Program) submitPendingPullRequestReview(target pendingPullRequestReviewTarget, event githubcli.PullRequestReviewEvent, body string) error {
+func (program *Program) submitPendingPullRequestReview(target pendingPullRequestReviewTarget, event githubdomain.PullRequestReviewEvent, body string) error {
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.pendingReviewID) == "" {
 		return errors.New("missing pull request review context")
 	}
@@ -106,7 +106,7 @@ func (program *Program) submitPendingPullRequestReview(target pendingPullRequest
 		return errors.New("github loader is unavailable")
 	}
 
-	return program.reviewMutations.SubmitPullRequestReview(target.pendingReviewID, githubcli.ToDomainPullRequestReviewEvent(event), body)
+	return program.reviewMutations.SubmitPullRequestReview(target.pendingReviewID, event, body)
 }
 
 func (program *Program) finishSubmittedPendingPullRequestReview(gui *gocui.Gui, target pendingPullRequestReviewTarget) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -16,8 +16,8 @@ const (
 )
 
 type pullRequestBuildRunTarget struct {
-	summary      githubcli.PullRequest
-	check        githubcli.PullRequestStatusCheck
+	summary      githubdomain.PullRequest
+	check        githubdomain.PullRequestStatusCheck
 	popupContent pullRequestBuildRunPopupContent
 }
 
@@ -55,7 +55,7 @@ func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRe
 	}, true
 }
 
-func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary githubcli.PullRequest, check githubcli.PullRequestStatusCheck) error {
+func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary githubdomain.PullRequest, check githubdomain.PullRequestStatusCheck) error {
 	if !program.hasBuildQueries() || program.pullRequestBuildRunLoad != nil {
 		return nil
 	}
@@ -72,7 +72,7 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 	}
 	program.feedbackMessage = ""
 	program.pullRequestBuildRunPopup = nil
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: githubcli.FormatPullRequestBuildRunCommand(repository, check)}
+	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunCommand(repository, check)}
 	program.asyncRunner.Go(func() {
 		program.loadPullRequestBuildRun(gui, repository, target)
 	})
@@ -80,12 +80,10 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 }
 
 func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository string, target pullRequestBuildRunTarget) {
-	domainCheck := githubcli.ToDomainPullRequestStatusCheck(target.check)
-	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, domainCheck)
-	jobs := []githubcli.PullRequestBuildRunJob(nil)
+	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, target.check)
+	jobs := []githubdomain.PullRequestBuildRunJob(nil)
 	if err == nil {
-		domainJobs, _ := program.buildQueries.GetPullRequestBuildRunJobs(repository, domainCheck)
-		jobs = githubcli.PullRequestBuildRunJobsFromDomain(domainJobs)
+		jobs, _ = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
@@ -101,7 +99,7 @@ func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository strin
 	})
 }
 
-func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubcli.PullRequest, check githubcli.PullRequestStatusCheck) error {
+func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubdomain.PullRequest, check githubdomain.PullRequestStatusCheck) error {
 	if !program.hasBuildQueries() || program.pullRequestBuildRunLoad != nil {
 		return nil
 	}
@@ -112,16 +110,15 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 	}
 
 	program.feedbackMessage = ""
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: githubcli.FormatPullRequestBuildRunJobsCommand(repository, check)}
+	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunJobsCommand(repository, check)}
 	program.asyncRunner.Go(func() {
 		program.loadPullRequestBuildRunJobLog(gui, repository, check)
 	})
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubcli.PullRequestStatusCheck) {
-	domainJob, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, githubcli.ToDomainPullRequestStatusCheck(check))
-	job := githubcli.PullRequestBuildRunJobFromDomain(domainJob)
+func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubdomain.PullRequestStatusCheck) {
+	job, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, check)
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {
@@ -180,7 +177,7 @@ func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) act
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func pullRequestStatusCheckMatchingEntry(checks []githubcli.PullRequestStatusCheck, entry pullRequestOverviewEntry) (githubcli.PullRequestStatusCheck, bool) {
+func pullRequestStatusCheckMatchingEntry(checks []githubdomain.PullRequestStatusCheck, entry pullRequestOverviewEntry) (githubdomain.PullRequestStatusCheck, bool) {
 	trimmedLink := strings.TrimSpace(entry.Link)
 	if trimmedLink != "" {
 		for _, check := range checks {
@@ -192,17 +189,17 @@ func pullRequestStatusCheckMatchingEntry(checks []githubcli.PullRequestStatusChe
 
 	trimmedLabel := strings.TrimSpace(entry.Label)
 	if trimmedLabel == "" {
-		return githubcli.PullRequestStatusCheck{}, false
+		return githubdomain.PullRequestStatusCheck{}, false
 	}
 	for _, check := range checks {
 		if strings.EqualFold(strings.TrimSpace(buildPullRequestBuildEntry(check).Label), trimmedLabel) {
 			return check, true
 		}
 	}
-	return githubcli.PullRequestStatusCheck{}, false
+	return githubdomain.PullRequestStatusCheck{}, false
 }
 
-func checkTitleForPullRequestBuildRunPopup(check githubcli.PullRequestStatusCheck) string {
+func checkTitleForPullRequestBuildRunPopup(check githubdomain.PullRequestStatusCheck) string {
 	return pullRequestOverviewCheckDisplayName(check)
 }
 
@@ -229,22 +226,26 @@ func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document
 	return entry, true
 }
 
-func (program *Program) currentPullRequestDescriptionSummaryAndDetail() (githubcli.PullRequest, githubcli.PullRequestDetail, bool) {
+func (program *Program) currentPullRequestDescriptionSummaryAndDetail() (githubdomain.PullRequest, githubdomain.PullRequestDetail, bool) {
 	actionContext := program.actionContext()
 	if actionContext.IsReviewContext() {
-		return program.reviewSessionDescriptionSummaryAndDetail()
+		summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
+		if !ok {
+			return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
+		}
+		return summary, detail, true
 	}
 	if !actionContext.ShowsPullRequestDescription() {
-		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
 	}
 
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
-		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
 	}
 	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
-		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
 	}
 	return summary, result.detail, true
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 
 type pullRequestReactionRemovalTarget struct {
 	pullRequestReactionActionTarget
-	content githubcli.ReactionContent
+	content githubdomain.ReactionContent
 }
 
 func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool) {
@@ -49,7 +49,7 @@ func (program *Program) executeRemoveReactionAction(target pullRequestReactionRe
 	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.reactionMutations.RemoveReaction(target.subjectID, githubcli.ToDomainReactionContent(target.content)); err != nil {
+	if err := program.reactionMutations.RemoveReaction(target.subjectID, target.content); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 
@@ -77,7 +77,7 @@ func (program *Program) selectedPullRequestReactionRemovalTarget() (pullRequestR
 	return pullRequestReactionRemovalTarget{pullRequestReactionActionTarget: target, content: content}, true
 }
 
-func viewerReactionContentAtCursor(document detailDocument, position detailPosition, groups []githubcli.ReactionGroup) (githubcli.ReactionContent, bool) {
+func viewerReactionContentAtCursor(document detailDocument, position detailPosition, groups []githubdomain.ReactionGroup) (githubdomain.ReactionContent, bool) {
 	if len(document.lines) == 0 || len(groups) == 0 {
 		return "", false
 	}
@@ -90,9 +90,9 @@ func viewerReactionContentAtCursor(document detailDocument, position detailPosit
 	return viewerReactionContentAtLineColumn(string(document.lines[position.line]), position.column, groups)
 }
 
-func viewerReactionContentAtLineColumn(line string, column int, groups []githubcli.ReactionGroup) (githubcli.ReactionContent, bool) {
+func viewerReactionContentAtLineColumn(line string, column int, groups []githubdomain.ReactionGroup) (githubdomain.ReactionContent, bool) {
 	searchStartByte := 0
-	for _, content := range githubcli.SupportedReactionContents {
+	for _, content := range githubdomain.SupportedReactionContents {
 		group, ok := reactionGroupForContent(groups, content)
 		if !ok || !group.ViewerHasReacted || group.TotalCount <= 0 {
 			continue

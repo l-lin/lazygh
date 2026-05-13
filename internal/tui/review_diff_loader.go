@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type pullRequestDiffResult struct {
@@ -21,18 +21,21 @@ func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
 	program.executeWorkflowCommands(gui, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui))
 }
 
-func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.PullRequest) {
-	repository := pullRequestRepositoryName(summary.Repository)
-	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
+func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return
+	}
+	repository := pullRequestRepositoryName(summaryValue.Repository)
+	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summaryValue.Number)
+	key := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
+	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summaryValue)}
 	if err == nil {
-		legacyDiff := githubcli.PullRequestDiffFromDomain(rawDiff)
-		legacyDiff = program.withPullRequestDiffFileTeamOwners(repository, summary.Number, legacyDiff)
-		result.data = buildReviewDiffData(legacyDiff)
+		rawDiff = program.withPullRequestDiffFileTeamOwners(repository, summaryValue.Number, rawDiff)
+		result.data = buildReviewDiffData(rawDiff)
 		result.needsRefresh = false
-		result.fileTeamOwnersAttempted = legacyDiff.FileTeamOwnersAttempted
-		program.cachePullRequestDiff(summary, legacyDiff)
+		result.fileTeamOwnersAttempted = rawDiff.FileTeamOwnersAttempted
+		program.cachePullRequestDiff(summaryValue, rawDiff)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
@@ -46,7 +49,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 		}
 
 		cachedResult := program.pullRequestDiffCache[key]
-		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
+		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summaryValue)
 		cachedResult.needsRefresh = false
 		cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.shouldLoadPullRequestDiffTeamOwners()
 		program.pullRequestDiffCache[key] = cachedResult
@@ -55,27 +58,31 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 	})
 }
 
-func (program *Program) selectedPullRequestSummaryForDiff() (githubcli.PullRequest, bool) {
-	if program.reviewSession.active {
+func (program *Program) selectedPullRequestSummaryForDiff() (githubdomain.PullRequest, bool) {
+	if program.reviewModeActive() {
 		summary := program.reviewSession.summary
 		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
-			return githubcli.PullRequest{}, false
+			return githubdomain.PullRequest{}, false
 		}
 		return summary, true
 	}
 	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != ChangesDetailTab {
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 	return summary, true
 }
 
-func (program *Program) pullRequestDiffForSummary(summary githubcli.PullRequest) (pullRequestDiffResult, bool) {
-	result, ok := program.pullRequestDiffCache[pullRequestDetailKey(summary.Repository, summary.Number)]
+func (program *Program) pullRequestDiffForSummary(summary any) (pullRequestDiffResult, bool) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return pullRequestDiffResult{}, false
+	}
+	result, ok := program.pullRequestDiffCache[pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)]
 	return result, ok
 }
 

@@ -2,23 +2,23 @@ package tui
 
 import (
 	persistcache "github.com/l-lin/lazygh/internal/cache"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type notificationDoneStoreAdapter struct {
 	store *persistcache.NotificationDoneStore
 }
 
-func (adapter notificationDoneStoreAdapter) FilterNotifications(notifications []githubcli.Notification) []githubcli.Notification {
+func (adapter notificationDoneStoreAdapter) FilterNotifications(notifications []githubdomain.Notification) []githubdomain.Notification {
 	if adapter.store == nil {
-		return append([]githubcli.Notification(nil), notifications...)
+		return append([]githubdomain.Notification(nil), notifications...)
 	}
-	return githubcli.NotificationsFromDomain(adapter.store.FilterNotifications(githubcli.ToDomainNotifications(notifications)))
+	return adapter.store.FilterNotifications(notifications)
 }
 
-func (adapter notificationDoneStoreAdapter) HideNotifications(notifications []githubcli.Notification) error {
+func (adapter notificationDoneStoreAdapter) HideNotifications(notifications []githubdomain.Notification) error {
 	if adapter.store == nil {
 		return nil
 	}
-	return adapter.store.HideNotifications(githubcli.ToDomainNotifications(notifications))
+	return adapter.store.HideNotifications(notifications)
 }

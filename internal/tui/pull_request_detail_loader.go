@@ -6,20 +6,16 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 	program.executeWorkflowCommands(gui, program.detailStore.planSelectedPullRequestDetailLoad(program, gui))
 }
 
-func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.PullRequest) {
+func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdomain.PullRequest) {
 	repository := pullRequestRepositoryName(summary.Repository)
 	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
-	legacyDetail := githubcli.PullRequestDetail{}
-	if err == nil {
-		legacyDetail = githubcli.PullRequestDetailFromDomain(detail)
-	}
 	pendingReviewState := pendingPullRequestReviewState{}
 	pendingReviewStateKnown := false
 	if program.hasReviewMutations() {
@@ -33,7 +29,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDetailResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
-		clonedDetail := clonePullRequestDetail(legacyDetail)
+		clonedDetail := clonePullRequestDetail(detail)
 		result.detail = clonedDetail
 		result.needsRefresh = false
 		program.cachePullRequestDetail(summary, clonedDetail)
@@ -58,43 +54,47 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 	})
 }
 
-func (program *Program) selectedPullRequestSummaryForDetail() (githubcli.PullRequest, bool) {
+func (program *Program) selectedPullRequestSummaryForDetail() (githubdomain.PullRequest, bool) {
 	actionContext := program.actionContext()
 	if actionContext.IsReviewContext() {
-		summary := program.reviewSession.summary
-		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
-			return githubcli.PullRequest{}, false
+		summary, ok := toDomainPullRequestSummary(program.reviewSession.summary)
+		if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+			return githubdomain.PullRequest{}, false
 		}
 		return summary, true
 	}
 	if actionContext.MainView.ContentKind != MainContentKindPullRequestDetail {
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 
 	switch actionContext.MainView.SourceView.Focus {
 	case FocusPullRequestsView:
 		summary, ok := program.model.SelectedPullRequestSummary()
 		if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
-			return githubcli.PullRequest{}, false
+			return githubdomain.PullRequest{}, false
 		}
 		return summary, true
 	case FocusNotificationsView:
 		notification, ok := program.model.SelectedNotification()
 		if !ok {
-			return githubcli.PullRequest{}, false
+			return githubdomain.PullRequest{}, false
 		}
 		summary, ok := notification.PullRequestSummary()
 		if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
-			return githubcli.PullRequest{}, false
+			return githubdomain.PullRequest{}, false
 		}
 		return summary, true
 	default:
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 }
 
-func (program *Program) pullRequestDetailForSummary(summary githubcli.PullRequest) (pullRequestDetailResult, bool) {
-	result, ok := program.pullRequestDetailCache[pullRequestDetailKey(summary.Repository, summary.Number)]
+func (program *Program) pullRequestDetailForSummary(summary any) (pullRequestDetailResult, bool) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return pullRequestDetailResult{}, false
+	}
+	result, ok := program.pullRequestDetailCache[pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)]
 	return result, ok
 }
 
@@ -132,7 +132,7 @@ func (program *Program) invalidatePullRequestDetail(repository string, number in
 	program.invalidatePullRequestDetailDocumentCache()
 }
 
-func pullRequestDetailKey(repository githubcli.Repository, number int) string {
+func pullRequestDetailKey(repository any, number int) string {
 	repositoryName := strings.TrimSpace(pullRequestRepositoryName(repository))
 	if repositoryName == "" || repositoryName == "-" || number <= 0 {
 		return ""

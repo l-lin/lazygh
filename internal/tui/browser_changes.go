@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func renderPullRequestChangesRows(rows []reviewDiffRenderedRow) string {
@@ -41,15 +41,15 @@ func buildPullRequestChangesRenderedRowsForViewer(files []reviewDiffFile, render
 	return rows
 }
 
-func browserChangesFileSectionID(summary githubcli.PullRequest, filePath string) string {
+func browserChangesFileSectionID(summary githubdomain.PullRequest, filePath string) string {
 	return browserDetailSectionID(pullRequestDetailKey(summary.Repository, summary.Number), "changes-file", 0, filePath)
 }
 
-func browserChangesThreadSectionID(summary githubcli.PullRequest, thread reviewDiffThread) string {
+func browserChangesThreadSectionID(summary githubdomain.PullRequest, thread reviewDiffThread) string {
 	return browserDetailSectionID(pullRequestDetailKey(summary.Repository, summary.Number), "changes-thread", 0, thread.ID)
 }
 
-func (program *Program) browserCollapsedChangesFileIDs(summary githubcli.PullRequest, files []reviewDiffFile) map[string]bool {
+func (program *Program) browserCollapsedChangesFileIDs(summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
 	collapsedFileIDs := map[string]bool{}
 	for _, file := range files {
 		filePath := strings.TrimSpace(file.Path)
@@ -64,7 +64,7 @@ func (program *Program) browserCollapsedChangesFileIDs(summary githubcli.PullReq
 	return collapsedFileIDs
 }
 
-func (program *Program) browserCollapsedChangesThreadIDs(summary githubcli.PullRequest, files []reviewDiffFile) map[string]bool {
+func (program *Program) browserCollapsedChangesThreadIDs(summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
 	collapsedThreadIDs := map[string]bool{}
 	for _, file := range files {
 		for _, thread := range file.Threads {
@@ -81,7 +81,7 @@ func (program *Program) browserCollapsedChangesThreadIDs(summary githubcli.PullR
 	return collapsedThreadIDs
 }
 
-func (program *Program) currentPullRequestChangesRenderedRows(summary githubcli.PullRequest, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
+func (program *Program) currentPullRequestChangesRenderedRows(summary githubdomain.PullRequest, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
 	if cacheKey, ok := pullRequestChangesRenderedRowsCacheKey(summary, width); ok {
 		if rows, ok := program.pullRequestChangesRenderedRowsForKey(cacheKey); ok {
 			return rows
@@ -95,7 +95,7 @@ func (program *Program) currentPullRequestChangesRenderedRows(summary githubcli.
 	return buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
 }
 
-func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary githubcli.PullRequest, detailDocument detailDocument) error {
+func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, detailDocument detailDocument) error {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok || result.err != nil {
 		return nil
@@ -112,7 +112,7 @@ func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary g
 	return program.toggleBrowserChangesFileVisibility(gui, summary, result.data.Files, detailDocument.width, filePath)
 }
 
-func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summary githubcli.PullRequest, files []reviewDiffFile, width int, filePath string) error {
+func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, files []reviewDiffFile, width int, filePath string) error {
 	trimmedFilePath := strings.TrimSpace(filePath)
 	if trimmedFilePath == "" {
 		return nil
@@ -134,7 +134,7 @@ func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summa
 	return program.refreshViews(gui)
 }
 
-func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, summary githubcli.PullRequest, files []reviewDiffFile, detailDocument detailDocument) error {
+func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, files []reviewDiffFile, detailDocument detailDocument) error {
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
 	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
 	if !ok {

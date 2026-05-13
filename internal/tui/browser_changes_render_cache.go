@@ -1,13 +1,16 @@
 package tui
 
-import "github.com/l-lin/lazygh/internal/githubcli"
-
-func pullRequestChangesRenderedRowsCacheKey(summary githubcli.PullRequest, width int) (pullRequestDetailDocumentCacheKey, bool) {
+func pullRequestChangesRenderedRowsCacheKey(summary any, width int) (pullRequestDetailDocumentCacheKey, bool) {
 	if width < 1 {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
 
-	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return pullRequestDetailDocumentCacheKey{}, false
+	}
+
+	pullRequestKey := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
 	if pullRequestKey == "" {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}

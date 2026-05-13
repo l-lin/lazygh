@@ -14,7 +14,7 @@ func TestCurrentDetailDocument_GivenTheCommentsTabForTheSamePullRequest_WhenBuil
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.markdownRenderer = renderer
 	subject.activeDetailTab = CommentsDetailTab
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:  "First PR",
 		Number: 42,
 		Comments: []githubcli.PullRequestComment{{
@@ -32,7 +32,7 @@ func TestCurrentDetailDocument_GivenTheCommentsTabForTheSamePullRequest_WhenBuil
 			Side:         "RIGHT",
 			DiffHunk:     "@@ -42,1 +42,1 @@\n-old line\n+new line",
 		}},
-	}}
+	})}
 
 	firstDocument := subject.currentDetailDocument(nil)
 	secondDocument := subject.currentDetailDocument(nil)
@@ -51,7 +51,7 @@ func TestBrowserConversationSectionAtCursor_GivenCommentsTabDocumentAlreadyBuilt
 	}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.markdownRenderer = renderer
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:       "First PR",
 		Number:      42,
 		BaseRefName: "main",
@@ -72,7 +72,7 @@ func TestBrowserConversationSectionAtCursor_GivenCommentsTabDocumentAlreadyBuilt
 				DiffHunk:        "@@ -42,1 +42,1 @@\n-old line\n+new line",
 			}},
 		}},
-	}}
+	})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -117,7 +117,7 @@ func TestCurrentActionsPopupActions_GivenCommentsTabDocumentAlreadyBuilt_WhenRes
 	}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.markdownRenderer = renderer
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		ID:          "PR_kwDOA",
 		Title:       "First PR",
 		Number:      42,
@@ -139,7 +139,7 @@ func TestCurrentActionsPopupActions_GivenCommentsTabDocumentAlreadyBuilt_WhenRes
 				DiffHunk:        "@@ -42,1 +42,1 @@\n-old line\n+new line",
 			}},
 		}},
-	}}
+	})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

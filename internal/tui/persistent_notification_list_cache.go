@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/l-lin/lazygh/internal/githubcli"
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) hydrateNotificationsFromCache() bool {
 	if program.pullRequestCache == nil || !program.canHydrateNotificationsFromCache() {
@@ -12,8 +12,7 @@ func (program *Program) hydrateNotificationsFromCache() bool {
 		return false
 	}
 
-	convertedNotifications := githubcli.NotificationsFromDomain(notifications)
-	program.model.SetNotificationRows(notificationRows(program.filterDoneNotifications(convertedNotifications)))
+	program.model.SetNotificationRows(notificationRows(program.filterDoneNotifications(notifications)))
 	return true
 }
 
@@ -26,12 +25,12 @@ func (program *Program) canHydrateNotificationsFromCache() bool {
 	return len(rows) == 1 && program.isNotificationLoadingItem(rows[0].Item)
 }
 
-func (program *Program) cacheNotifications(notifications []githubcli.Notification) {
+func (program *Program) cacheNotifications(notifications []githubdomain.Notification) {
 	if program.pullRequestCache == nil {
 		return
 	}
 
-	_ = program.pullRequestCache.SaveNotifications(githubcli.ToDomainNotifications(program.filterDoneNotifications(notifications)))
+	_ = program.pullRequestCache.SaveNotifications(program.filterDoneNotifications(notifications))
 }
 
 func (program *Program) shouldPreserveNotificationRowsOnRefreshError() bool {

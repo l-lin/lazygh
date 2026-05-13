@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/story"
 )
 
@@ -21,8 +21,8 @@ type reviewStoryGenerator interface {
 }
 
 type preparedStoryReview struct {
-	summary         githubcli.PullRequest
-	detail          githubcli.PullRequestDetail
+	summary         githubdomain.PullRequest
+	detail          githubdomain.PullRequestDetail
 	detailOK        bool
 	diffData        reviewDiffData
 	storyData       reviewStoryData
@@ -64,7 +64,7 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubcli.PullRequest) {
+func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubdomain.PullRequest) {
 	prepared, actualErr := program.prepareStoryReview(summary)
 	if actualErr != nil {
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
@@ -96,7 +96,7 @@ func (program *Program) validateStoryReviewAvailability() error {
 	return nil
 }
 
-func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (preparedStoryReview, error) {
+func (program *Program) prepareStoryReview(summary githubdomain.PullRequest) (preparedStoryReview, error) {
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
 		return preparedStoryReview{}, errors.New("missing pull request identity")
@@ -107,12 +107,11 @@ func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (prepa
 	if actualErr != nil {
 		return preparedStoryReview{}, actualErr
 	}
-	legacyDiff := githubcli.PullRequestDiffFromDomain(rawDiff)
 
 	generatedStory, actualErr := program.storyGenerator.Generate(program.storyReviewConfig, story.Request{
-		Metadata:  buildStoryReviewMetadata(summary, detail, detailOK, legacyDiff),
-		DiffItems: buildStoryReviewDiffItems(legacyDiff.Files),
-		DiffText:  legacyDiff.UnifiedDiff,
+		Metadata:  buildStoryReviewMetadata(summary, detail, detailOK, rawDiff),
+		DiffItems: buildStoryReviewDiffItems(rawDiff.Files),
+		DiffText:  rawDiff.UnifiedDiff,
 	})
 	if actualErr != nil {
 		return preparedStoryReview{}, actualErr
@@ -123,7 +122,7 @@ func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (prepa
 		return preparedStoryReview{}, actualErr
 	}
 
-	diffData := buildReviewDiffData(legacyDiff)
+	diffData := buildReviewDiffData(rawDiff)
 	return preparedStoryReview{
 		summary:         summary,
 		detail:          detail,
@@ -144,25 +143,25 @@ func (program *Program) applyPreparedStoryReview(prepared preparedStoryReview) {
 	program.startStoryReviewSession(prepared.summary, prepared.pendingReviewID, prepared.storyData)
 }
 
-func (program *Program) storyReviewDetail(summary githubcli.PullRequest) (githubcli.PullRequestDetail, bool) {
+func (program *Program) storyReviewDetail(summary githubdomain.PullRequest) (githubdomain.PullRequestDetail, bool) {
 	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
 		return result.detail, true
 	}
 	if !program.hasDetailQueries() {
-		return githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequestDetail{}, false
 	}
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequestDetail{}, false
 	}
 	detail, actualErr := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
 	if actualErr != nil {
-		return githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequestDetail{}, false
 	}
-	return githubcli.PullRequestDetailFromDomain(detail), true
+	return detail, true
 }
 
-func buildStoryReviewMetadata(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, detailOK bool, rawDiff githubcli.PullRequestDiff) story.Metadata {
+func buildStoryReviewMetadata(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailOK bool, rawDiff githubdomain.PullRequestDiff) story.Metadata {
 	metadata := story.Metadata{
 		Number:       summary.Number,
 		Title:        strings.TrimSpace(summary.Title),
@@ -198,7 +197,7 @@ func buildStoryReviewMetadata(summary githubcli.PullRequest, detail githubcli.Pu
 	return metadata
 }
 
-func buildStoryReviewDiffItems(files []githubcli.PullRequestDiffFile) []story.DiffItem {
+func buildStoryReviewDiffItems(files []githubdomain.PullRequestDiffFile) []story.DiffItem {
 	items := make([]story.DiffItem, 0, len(files))
 	for _, file := range files {
 		trimmedPath := strings.TrimSpace(file.Path)

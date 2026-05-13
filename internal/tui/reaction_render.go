@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func renderPullRequestReactionLine(groups []githubcli.ReactionGroup) string {
+func renderPullRequestReactionLine(groups any) string {
 	renderedGroups := renderReactionGroups(groups)
 	if strings.TrimSpace(renderedGroups) == "" {
 		return ""
@@ -16,14 +16,15 @@ func renderPullRequestReactionLine(groups []githubcli.ReactionGroup) string {
 	return renderedGroups
 }
 
-func renderReactionGroups(groups []githubcli.ReactionGroup) string {
-	if len(groups) == 0 {
+func renderReactionGroups(groups any) string {
+	domainGroups := toDomainReactionGroups(groups)
+	if len(domainGroups) == 0 {
 		return ""
 	}
 
-	renderedGroups := make([]string, 0, len(groups))
-	for _, content := range githubcli.SupportedReactionContents {
-		group, ok := reactionGroupForContent(groups, content)
+	renderedGroups := make([]string, 0, len(domainGroups))
+	for _, content := range githubdomain.SupportedReactionContents {
+		group, ok := reactionGroupForContent(domainGroups, content)
 		if !ok || group.TotalCount <= 0 {
 			continue
 		}
@@ -34,28 +35,32 @@ func renderReactionGroups(groups []githubcli.ReactionGroup) string {
 	return strings.Join(renderedGroups, " ")
 }
 
-func reactionGroupForContent(groups []githubcli.ReactionGroup, content githubcli.ReactionContent) (githubcli.ReactionGroup, bool) {
+func reactionGroupForContent(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) (githubdomain.ReactionGroup, bool) {
 	for _, group := range groups {
 		if strings.TrimSpace(string(group.Content)) != strings.TrimSpace(string(content)) {
 			continue
 		}
 		return group, true
 	}
-	return githubcli.ReactionGroup{}, false
+	return githubdomain.ReactionGroup{}, false
 }
 
-func renderReactionGroup(group githubcli.ReactionGroup) string {
-	label := reactionGroupLabel(group)
+func renderReactionGroup(group any) string {
+	groupValue, ok := toDomainReactionGroup(group)
+	if !ok {
+		return ""
+	}
+	label := reactionGroupLabel(groupValue)
 	if label == "" {
 		return ""
 	}
-	if group.ViewerHasReacted {
+	if groupValue.ViewerHasReacted {
 		return renderRoundedPill(label, theme.CommentAuthorBadgeHex, theme.CommentAuthorBadgeBackgroundHex)
 	}
 	return renderRoundedPill(label, theme.PendingHex, theme.PendingBackgroundHex)
 }
 
-func reactionGroupLabel(group githubcli.ReactionGroup) string {
+func reactionGroupLabel(group githubdomain.ReactionGroup) string {
 	emoji := reactionContentEmoji(group.Content)
 	if emoji == "" || group.TotalCount <= 0 {
 		return ""
@@ -63,23 +68,23 @@ func reactionGroupLabel(group githubcli.ReactionGroup) string {
 	return fmt.Sprintf("%s %d", emoji, group.TotalCount)
 }
 
-func reactionContentEmoji(content githubcli.ReactionContent) string {
+func reactionContentEmoji(content githubdomain.ReactionContent) string {
 	switch content {
-	case githubcli.ReactionContentThumbsUp:
+	case githubdomain.ReactionContentThumbsUp:
 		return "👍"
-	case githubcli.ReactionContentThumbsDown:
+	case githubdomain.ReactionContentThumbsDown:
 		return "👎"
-	case githubcli.ReactionContentLaugh:
+	case githubdomain.ReactionContentLaugh:
 		return "😄"
-	case githubcli.ReactionContentHooray:
+	case githubdomain.ReactionContentHooray:
 		return "🎉"
-	case githubcli.ReactionContentConfused:
+	case githubdomain.ReactionContentConfused:
 		return "😕"
-	case githubcli.ReactionContentHeart:
+	case githubdomain.ReactionContentHeart:
 		return "❤️"
-	case githubcli.ReactionContentRocket:
+	case githubdomain.ReactionContentRocket:
 		return "🚀"
-	case githubcli.ReactionContentEyes:
+	case githubdomain.ReactionContentEyes:
 		return "👀"
 	default:
 		return ""

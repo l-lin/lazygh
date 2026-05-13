@@ -3,10 +3,10 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.PullRequest) bool {
+func (program *Program) hydratePullRequestDetailFromCache(summary githubdomain.PullRequest) bool {
 	if program.pullRequestCache == nil {
 		return false
 	}
@@ -24,7 +24,7 @@ func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.Pull
 		return false
 	}
 
-	clonedDetail := clonePullRequestDetail(githubcli.PullRequestDetailFromDomain(cached.Detail))
+	clonedDetail := clonePullRequestDetail(cached.Detail)
 	program.pullRequestDetailCache[key] = pullRequestDetailResult{
 		detail:          clonedDetail,
 		sourceUpdatedAt: strings.TrimSpace(cached.SourceUpdatedAt),
@@ -34,7 +34,7 @@ func (program *Program) hydratePullRequestDetailFromCache(summary githubcli.Pull
 	return true
 }
 
-func (program *Program) pullRequestDetailNeedsRefresh(summary githubcli.PullRequest, result pullRequestDetailResult, ok bool) bool {
+func (program *Program) pullRequestDetailNeedsRefresh(summary githubdomain.PullRequest, result pullRequestDetailResult, ok bool) bool {
 	if !ok || result.err != nil {
 		return true
 	}
@@ -52,15 +52,15 @@ func (program *Program) canKeepPullRequestDetailOnRefreshError(key string) bool 
 	return ok && result.err == nil
 }
 
-func (program *Program) cachePullRequestDetail(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) {
+func (program *Program) cachePullRequestDetail(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) {
 	if program.pullRequestCache == nil {
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequestDetail(githubcli.ToDomainPullRequestSummary(summary), githubcli.ToDomainPullRequestDetail(detail))
+	_ = program.pullRequestCache.SavePullRequestDetail(summary, detail)
 }
 
-func (program *Program) hydratePullRequestDiffFromCache(summary githubcli.PullRequest) bool {
+func (program *Program) hydratePullRequestDiffFromCache(summary githubdomain.PullRequest) bool {
 	if program.pullRequestCache == nil {
 		return false
 	}
@@ -78,19 +78,18 @@ func (program *Program) hydratePullRequestDiffFromCache(summary githubcli.PullRe
 		return false
 	}
 
-	convertedDiff := githubcli.PullRequestDiffFromDomain(cached.Diff)
 	program.pullRequestDiffCache[key] = pullRequestDiffResult{
-		data:                    buildReviewDiffData(convertedDiff),
+		data:                    buildReviewDiffData(cached.Diff),
 		sourceUpdatedAt:         strings.TrimSpace(cached.SourceUpdatedAt),
 		needsRefresh:            cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt),
-		fileTeamOwnersAttempted: convertedDiff.FileTeamOwnersAttempted,
+		fileTeamOwnersAttempted: cached.Diff.FileTeamOwnersAttempted,
 	}
 	program.invalidateReviewDiffRenderCache()
 	program.clampReviewSessionSelection()
 	return true
 }
 
-func (program *Program) pullRequestDiffNeedsRefresh(summary githubcli.PullRequest, result pullRequestDiffResult, ok bool) bool {
+func (program *Program) pullRequestDiffNeedsRefresh(summary githubdomain.PullRequest, result pullRequestDiffResult, ok bool) bool {
 	if !ok || result.err != nil {
 		return true
 	}
@@ -112,12 +111,12 @@ func (program *Program) canKeepPullRequestDiffOnRefreshError(key string) bool {
 	return ok && result.err == nil
 }
 
-func (program *Program) cachePullRequestDiff(summary githubcli.PullRequest, diff githubcli.PullRequestDiff) {
+func (program *Program) cachePullRequestDiff(summary githubdomain.PullRequest, diff githubdomain.PullRequestDiff) {
 	if program.pullRequestCache == nil {
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequestDiff(githubcli.ToDomainPullRequestSummary(summary), githubcli.ToDomainPullRequestDiff(diff))
+	_ = program.pullRequestCache.SavePullRequestDiff(summary, diff)
 }
 
 func (program *Program) invalidatePersistentPullRequest(repository string, number int) {
@@ -128,11 +127,15 @@ func (program *Program) invalidatePersistentPullRequest(repository string, numbe
 	_ = program.pullRequestCache.InvalidatePullRequest(strings.TrimSpace(repository), number)
 }
 
-func pullRequestSummaryVersion(summary githubcli.PullRequest) string {
-	return strings.TrimSpace(summary.UpdatedAt)
+func pullRequestSummaryVersion(summary any) string {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(summaryValue.UpdatedAt)
 }
 
-func cachedPullRequestNeedsRefresh(summary githubcli.PullRequest, cachedSourceUpdatedAt string) bool {
+func cachedPullRequestNeedsRefresh(summary any, cachedSourceUpdatedAt string) bool {
 	currentVersion := pullRequestSummaryVersion(summary)
 	if currentVersion == "" {
 		return true
@@ -141,12 +144,16 @@ func cachedPullRequestNeedsRefresh(summary githubcli.PullRequest, cachedSourceUp
 	return strings.TrimSpace(cachedSourceUpdatedAt) != currentVersion
 }
 
-func pullRequestDetailMissingBrowserTabData(detail githubcli.PullRequestDetail) bool {
-	if len(detail.Commits) == 0 {
+func pullRequestDetailMissingBrowserTabData(detail any) bool {
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return true
+	}
+	if len(detailValue.Commits) == 0 {
 		return true
 	}
 
-	for _, check := range detail.StatusCheckRollup {
+	for _, check := range detailValue.StatusCheckRollup {
 		if pullRequestOverviewStatusForCheck(check) == pullRequestOverviewStatusPending {
 			continue
 		}

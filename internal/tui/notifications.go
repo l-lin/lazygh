@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -23,7 +23,7 @@ func notificationsLoadingItem() Item {
 	return Item{Title: notificationsLoadingTitle, Detail: notificationsLoadingDetail}
 }
 
-func notificationsStateRows(notifications []githubcli.Notification, err error) []NotificationRow {
+func notificationsStateRows(notifications []githubdomain.Notification, err error) []NotificationRow {
 	if err != nil {
 		return []NotificationRow{{Item: notificationsErrorItem(err)}}
 	}
@@ -46,9 +46,9 @@ func notificationsErrorItem(err error) Item {
 	switch {
 	case err == nil:
 		return notificationsEmptyItem()
-	case strings.Contains(strings.ToLower(err.Error()), strings.ToLower(githubcli.ErrUnauthenticated.Error())):
+	case isProviderUnauthenticatedError(err):
 		return Item{Title: notificationsUnauthenticatedTitle, Detail: notificationsUnauthenticatedDetail}
-	case strings.Contains(strings.ToLower(err.Error()), strings.ToLower(githubcli.ErrUnavailable.Error())):
+	case isProviderUnavailableError(err):
 		return Item{Title: notificationsUnavailableTitle, Detail: notificationsUnavailableDetail}
 	default:
 		message := strings.TrimSpace(err.Error())
@@ -59,29 +59,33 @@ func notificationsErrorItem(err error) Item {
 	}
 }
 
-func notificationRow(notification githubcli.Notification) NotificationRow {
-	reference := notificationDisplayReference(notification)
-	title := strings.TrimSpace(notification.Subject.Title)
-	rowTitle := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{notificationReadStateIcon(notification.Unread), notificationIcon(notification.Subject.Type), reference, title}), " "))
+func notificationRow(notification any) NotificationRow {
+	notificationValue, ok := toDomainNotification(notification)
+	if !ok {
+		return NotificationRow{}
+	}
+	reference := notificationDisplayReference(notificationValue)
+	title := strings.TrimSpace(notificationValue.Subject.Title)
+	rowTitle := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{notificationReadStateIcon(notificationValue.Unread), notificationIcon(notificationValue.Subject.Type), reference, title}), " "))
 	if rowTitle == "" {
-		rowTitle = notificationReadStateIcon(notification.Unread)
+		rowTitle = notificationReadStateIcon(notificationValue.Unread)
 	}
 
 	detailLines := []string{
-		fmt.Sprintf("Repository: %s", valueOrDash(strings.TrimSpace(notification.Repository.NameWithOwner))),
-		fmt.Sprintf("Type: %s", notificationTypeLabel(notification.Subject.Type)),
-		fmt.Sprintf("Reason: %s", valueOrDash(strings.TrimSpace(notification.Reason))),
-		fmt.Sprintf("Unread: %s", yesNo(notification.Unread)),
-		fmt.Sprintf("Updated: %s", valueOrDash(strings.TrimSpace(notification.UpdatedAt))),
+		fmt.Sprintf("Repository: %s", valueOrDash(strings.TrimSpace(notificationValue.Repository.NameWithOwner))),
+		fmt.Sprintf("Type: %s", notificationTypeLabel(notificationValue.Subject.Type)),
+		fmt.Sprintf("Reason: %s", valueOrDash(strings.TrimSpace(notificationValue.Reason))),
+		fmt.Sprintf("Unread: %s", yesNo(notificationValue.Unread)),
+		fmt.Sprintf("Updated: %s", valueOrDash(strings.TrimSpace(notificationValue.UpdatedAt))),
 	}
-	if subjectURL := strings.TrimSpace(notification.Subject.URL); subjectURL != "" {
+	if subjectURL := strings.TrimSpace(notificationValue.Subject.URL); subjectURL != "" {
 		detailLines = append(detailLines, fmt.Sprintf("API URL: %s", subjectURL))
 	}
 	if title != "" {
 		detailLines = append(detailLines, "", title)
 	}
 
-	notificationCopy := notification
+	notificationCopy := notificationValue
 	return NotificationRow{
 		Item: Item{
 			Title:  rowTitle,
@@ -91,7 +95,7 @@ func notificationRow(notification githubcli.Notification) NotificationRow {
 	}
 }
 
-func notificationDisplayReference(notification githubcli.Notification) string {
+func notificationDisplayReference(notification githubdomain.Notification) string {
 	if summary, ok := notification.PullRequestSummary(); ok {
 		return fmt.Sprintf("%s#%d", strings.TrimSpace(summary.Repository.NameWithOwner), summary.Number)
 	}
@@ -113,11 +117,11 @@ func notificationReadStateIcon(unread bool) string {
 
 func notificationTypeLabel(kind string) string {
 	switch strings.TrimSpace(kind) {
-	case githubcli.NotificationSubjectTypePullRequest:
+	case githubdomain.NotificationSubjectTypePullRequest:
 		return "Pull request"
-	case githubcli.NotificationSubjectTypeIssue:
+	case githubdomain.NotificationSubjectTypeIssue:
 		return "Issue"
-	case githubcli.NotificationSubjectTypeRelease:
+	case githubdomain.NotificationSubjectTypeRelease:
 		return "Release"
 	default:
 		trimmedKind := strings.TrimSpace(kind)
@@ -130,11 +134,11 @@ func notificationTypeLabel(kind string) string {
 
 func notificationIcon(kind string) string {
 	switch strings.TrimSpace(kind) {
-	case githubcli.NotificationSubjectTypePullRequest:
+	case githubdomain.NotificationSubjectTypePullRequest:
 		return iconNotificationPullRequest
-	case githubcli.NotificationSubjectTypeIssue:
+	case githubdomain.NotificationSubjectTypeIssue:
 		return iconNotificationIssue
-	case githubcli.NotificationSubjectTypeRelease:
+	case githubdomain.NotificationSubjectTypeRelease:
 		return iconNotificationRelease
 	default:
 		return iconWarning

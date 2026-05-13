@@ -7,20 +7,11 @@ func (model *Model) ScreenState() ScreenState {
 func (model *Model) browserScreenState() ScreenState {
 	return newBrowserScreenStateWithSideFocus(
 		model.focus,
-		model.legacySideFocus(),
+		browserSideFocus(model.lastSideFocus),
 		model.activePullRequestTab,
 		nil,
 		model.pullRequestScreenTabs(),
 	)
-}
-
-func (model *Model) legacySideFocus() Focus {
-	switch model.lastSideFocus {
-	case FocusPullRequestsView, FocusNotificationsView:
-		return model.lastSideFocus
-	default:
-		return FocusUserView
-	}
 }
 
 func (model *Model) pullRequestScreenTabs() []TabState {

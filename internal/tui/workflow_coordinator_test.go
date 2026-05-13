@@ -7,6 +7,7 @@ import (
 
 	persistcache "github.com/l-lin/lazygh/internal/cache"
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -16,7 +17,7 @@ func TestSubmitPullRequestTitleEdit_GivenLoadedSummaryAndDetail_WhenEditing_Then
 	cache := &fakePersistentPullRequestCache{}
 	subject := given_workflowProgram(summary, loader)
 	subject.pullRequestCache = cache
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", State: "OPEN"}, sourceUpdatedAt: summary.UpdatedAt}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", State: "OPEN"}), sourceUpdatedAt: summary.UpdatedAt}
 
 	actualErr := subject.submitPullRequestTitleEdit(pullRequestActionTarget{repository: "acme/widgets", number: 42}, "New title")
 
@@ -46,7 +47,7 @@ func TestSubmitPullRequestDescriptionEdit_GivenLoadedSummaryAndDetail_WhenEditin
 	cache := &fakePersistentPullRequestCache{}
 	subject := given_workflowProgram(summary, loader)
 	subject.pullRequestCache = cache
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", BodyHTML: "<p>Old body</p>", State: "OPEN"}, sourceUpdatedAt: summary.UpdatedAt}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", BodyHTML: "<p>Old body</p>", State: "OPEN"}), sourceUpdatedAt: summary.UpdatedAt}
 
 	actualErr := subject.submitPullRequestDescriptionEdit(pullRequestActionTarget{repository: "acme/widgets", number: 42}, "New body")
 
@@ -243,7 +244,7 @@ func TestOptimisticMutationCoordinator_GivenLoadedPullRequestDetail_WhenAppendin
 	subject := given_workflowProgram(summary, &fakePullRequestDetailLoader{})
 	subject.pullRequestCache = cache
 	subject.connectedUserLogin = "octocat"
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, URL: summary.URL, Body: summary.Body, State: summary.State}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, URL: summary.URL, Body: summary.Body, State: summary.State})}
 
 	subject.optimisticallyAppendPullRequestComment(pullRequestCommentTarget{repository: "acme/widgets", number: 42}, "Ship it")
 
@@ -265,10 +266,10 @@ func TestOptimisticMutationCoordinator_GivenLoadedPullRequestDetail_WhenAppendin
 func TestOptimisticMutationCoordinator_GivenLoadedDetailAndDiff_WhenAddingAReaction_ThenItUpdatesBothCaches(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Body", State: "OPEN"}
 	subject := given_workflowProgram(summary, &fakePullRequestDetailLoader{})
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{ID: "PR_kw42", InlineCommentThreads: []githubcli.PullRequestReviewThread{{ID: "thread-1", Path: "main.go", Comments: []githubcli.PullRequestComment{{ID: "PRRC_1"}}}}}}
-	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "main.go", Threads: []reviewDiffThread{{ID: "thread-1", Comments: []githubcli.PullRequestComment{{ID: "PRRC_1"}}}}}}}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{ID: "PR_kw42", InlineCommentThreads: []githubcli.PullRequestReviewThread{{ID: "thread-1", Path: "main.go", Comments: []githubcli.PullRequestComment{{ID: "PRRC_1"}}}}})}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "main.go", Threads: []reviewDiffThread{{ID: "thread-1", Comments: toDomainPullRequestComments([]githubcli.PullRequestComment{{ID: "PRRC_1"}})}}}}}}
 
-	subject.optimisticallyAddReaction(pullRequestReactionActionTarget{repository: "acme/widgets", number: 42, subjectID: "PRRC_1", invalidateDiff: true}, githubcli.ReactionContentHeart)
+	subject.optimisticallyAddReaction(pullRequestReactionActionTarget{repository: "acme/widgets", number: 42, subjectID: "PRRC_1", invalidateDiff: true}, githubdomain.ReactionContentHeart)
 
 	actualDetail := subject.pullRequestDetailCache["acme/widgets#42"]
 	actualDiff := subject.pullRequestDiffCache["acme/widgets#42"]
@@ -278,7 +279,7 @@ func TestOptimisticMutationCoordinator_GivenLoadedDetailAndDiff_WhenAddingAReact
 	if !actualDiff.needsRefresh {
 		t.Fatal("expected the diff cache to be marked for refresh")
 	}
-	expectedReactions := []githubcli.ReactionGroup{{Content: githubcli.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}}
+	expectedReactions := []githubdomain.ReactionGroup{{Content: githubdomain.ReactionContentHeart, TotalCount: 1, ViewerHasReacted: true}}
 	if !reflect.DeepEqual(actualDiff.data.Files[0].Threads[0].Comments[0].ReactionGroups, expectedReactions) {
 		t.Fatalf("expected reaction groups %+v, actual %+v", expectedReactions, actualDiff.data.Files[0].Threads[0].Comments[0].ReactionGroups)
 	}
@@ -287,8 +288,8 @@ func TestOptimisticMutationCoordinator_GivenLoadedDetailAndDiff_WhenAddingAReact
 func TestOptimisticMutationCoordinator_GivenLoadedDetailAndDiff_WhenResolvingAReviewThread_ThenItUpdatesBothCaches(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Body", State: "OPEN"}
 	subject := given_workflowProgram(summary, &fakePullRequestDetailLoader{})
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{InlineCommentThreads: []githubcli.PullRequestReviewThread{{ID: "thread-1", Path: "main.go", Comments: []githubcli.PullRequestComment{{ID: "PRRC_1"}}}}}}
-	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "main.go", Threads: []reviewDiffThread{{ID: "thread-1", Path: "main.go", Comments: []githubcli.PullRequestComment{{ID: "PRRC_1"}}}}}}}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{InlineCommentThreads: []githubcli.PullRequestReviewThread{{ID: "thread-1", Path: "main.go", Comments: []githubcli.PullRequestComment{{ID: "PRRC_1"}}}}})}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "main.go", Threads: []reviewDiffThread{{ID: "thread-1", Path: "main.go", Comments: toDomainPullRequestComments([]githubcli.PullRequestComment{{ID: "PRRC_1"}})}}}}}}
 
 	subject.optimisticallySetReviewThreadResolved(pullRequestReviewThreadActionTarget{repository: "acme/widgets", number: 42, threadID: "thread-1"}, true)
 

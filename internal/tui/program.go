@@ -5,7 +5,7 @@ import (
 
 	clip "github.com/l-lin/lazygh/internal/clipboard"
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/story"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -74,7 +74,7 @@ type Program struct {
 	pullRequestSearches                     []appconfig.PullRequestSearch
 	storyReviewConfig                       story.Config
 	themePresetStore                        ThemePresetStore
-	openedPullRequestSummary                *githubcli.PullRequest
+	openedPullRequestSummary                *githubdomain.PullRequest
 	openedPullRequestTab                    PullRequestTab
 	pendingSelectionKeySequence             keySequenceState
 	pendingListViewportPlacements           map[string]viewportPlacement

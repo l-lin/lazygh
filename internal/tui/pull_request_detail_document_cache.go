@@ -7,7 +7,7 @@ type pullRequestDetailDocumentCacheKey struct {
 }
 
 func (program *Program) currentPullRequestDetailDocumentCacheKey(width int) (pullRequestDetailDocumentCacheKey, bool) {
-	if program.reviewSession.active || width < 1 {
+	if program.reviewModeActive() || width < 1 {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
 

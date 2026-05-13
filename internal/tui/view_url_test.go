@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -119,8 +120,8 @@ func TestOpenPullRequestByURL_GivenAnInvalidGitHubURL_WhenOpening_ThenItReturnsA
 
 	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/widgets/issues/42")
 
-	if !errors.Is(actualErr, githubcli.ErrInvalidPullRequestURL) {
-		t.Fatalf("expected error %v, actual %v", githubcli.ErrInvalidPullRequestURL, actualErr)
+	if !errors.Is(actualErr, githubdomain.ErrInvalidPullRequestURL) {
+		t.Fatalf("expected error %v, actual %v", githubdomain.ErrInvalidPullRequestURL, actualErr)
 	}
 	if subject.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the validation error")

@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
-
-	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 const (
@@ -26,8 +24,12 @@ type pendingPullRequestReviewActionTarget struct {
 	sourceFocus     Focus
 }
 
-func (program *Program) pendingPullRequestReviewStateForSummary(summary githubcli.PullRequest) (pendingPullRequestReviewState, bool) {
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
+func (program *Program) pendingPullRequestReviewStateForSummary(summary any) (pendingPullRequestReviewState, bool) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return pendingPullRequestReviewState{}, false
+	}
+	key := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
 	if key == "" {
 		return pendingPullRequestReviewState{}, false
 	}
@@ -36,8 +38,12 @@ func (program *Program) pendingPullRequestReviewStateForSummary(summary githubcl
 	return state, ok
 }
 
-func (program *Program) setPendingPullRequestReviewState(summary githubcli.PullRequest, pendingReviewID string) {
-	program.setPendingPullRequestReviewStateByIdentity(pullRequestRepositoryName(summary.Repository), summary.Number, pendingReviewID)
+func (program *Program) setPendingPullRequestReviewState(summary any, pendingReviewID string) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return
+	}
+	program.setPendingPullRequestReviewStateByIdentity(pullRequestRepositoryName(summaryValue.Repository), summaryValue.Number, pendingReviewID)
 }
 
 func (program *Program) setPendingPullRequestReviewStateByIdentity(repository string, number int, pendingReviewID string) {
@@ -91,7 +97,7 @@ func (program *Program) cancelPendingPullRequestReviewAction() actionsPopupActio
 }
 
 func (program *Program) selectedPendingPullRequestReviewActionTarget() (pendingPullRequestReviewActionTarget, bool) {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return pendingPullRequestReviewActionTarget{}, false
 	}
 

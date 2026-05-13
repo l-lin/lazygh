@@ -22,7 +22,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 
 	program.maybeLoadConnectedUser(gui)
 	program.maybeLoadActivePullRequests(gui)
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		program.maybeLoadNotifications(gui)
 		program.maybeLoadSelectedNotificationDetail(gui)
 	}
@@ -35,7 +35,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 }
 
 func (program *Program) sidebarTopPaneHeight() int {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return reviewModeMetadataViewHeight
 	}
 	return userViewTotalHeight
@@ -56,7 +56,7 @@ func (program *Program) configureDetailView(view *gocui.View) {
 }
 
 func (program *Program) configureUserView(view *gocui.View) {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		program.applyViewStyle(view, FocusUserView, program.userViewTitle(), false)
 		view.Wrap = false
 		view.Editable = false
@@ -68,7 +68,7 @@ func (program *Program) configureUserView(view *gocui.View) {
 }
 
 func (program *Program) configurePullRequestsView(view *gocui.View) {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), program.reviewFileTreeSearchQuery())
 		return
 	}
@@ -113,7 +113,7 @@ func (program *Program) applyViewStyle(view *gocui.View, focus Focus, title stri
 }
 
 func (program *Program) renderUserView(view *gocui.View) {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		renderReadOnlyTextView(view, program.reviewSessionMetadataContent())
 		return
 	}
@@ -127,7 +127,7 @@ func (program *Program) renderUserView(view *gocui.View) {
 }
 
 func (program *Program) renderPullRequestsView(view *gocui.View) {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		query := program.reviewFileTreeSearchQuery()
 		if tree, files, ok := program.reviewSessionCurrentTree(); ok && len(tree.Rows) > 0 {
 			program.renderReviewDiffTreeView(view, tree, files, query, program.reviewSessionSelectedVisibleLine())

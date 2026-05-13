@@ -44,7 +44,7 @@ func TestReviewStoryMode_GivenTheAgentIsStillRunning_WhenStartingStoryReview_The
 	loader := &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()}}
 	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42})}
 	subject.asyncRunner = asyncRunner
 	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
 	gui := given_headlessGui(t)

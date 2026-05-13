@@ -15,7 +15,7 @@ func (program *Program) startReviewFileTreeSearch() {
 }
 
 func (program *Program) activeSearchIsReviewFileTreeSearch() bool {
-	return program.reviewSession.active && program.model.SearchActive() && program.model.SearchTarget() == FocusPullRequestsView
+	return program.reviewModeActive() && program.model.SearchActive() && program.model.SearchTarget() == FocusPullRequestsView
 }
 
 func (program *Program) updateActiveSearchDraft(query string) {
@@ -57,7 +57,7 @@ func (program *Program) previousReviewFileTreeSearchMatch(gui *gocui.Gui, _ *goc
 }
 
 func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose searchMatchIndexChooser) error {
-	if !program.reviewSession.active || program.model.Focus() != FocusPullRequestsView {
+	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView {
 		return nil
 	}
 

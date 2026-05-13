@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) toggleSelectedReviewTreeRowVisibility(gui *gocui.Gui) (bool, error) {
-	if !program.reviewSession.active || program.model.Focus() != FocusPullRequestsView || program.reviewTreeFoldBlocked() {
+	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView || program.reviewTreeFoldBlocked() {
 		return false, nil
 	}
 
@@ -46,7 +46,7 @@ func (program *Program) openAllReviewTreeFolds(gui *gocui.Gui, view *gocui.View)
 }
 
 func (program *Program) setAllReviewTreeFolds(gui *gocui.Gui, _ *gocui.View, collapsed bool) error {
-	if !program.reviewSession.active || program.model.Focus() != FocusPullRequestsView || program.reviewTreeFoldBlocked() {
+	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView || program.reviewTreeFoldBlocked() {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}

@@ -3,10 +3,10 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) withPullRequestDiffFileTeamOwners(repository string, number int, rawDiff githubcli.PullRequestDiff) githubcli.PullRequestDiff {
+func (program *Program) withPullRequestDiffFileTeamOwners(repository string, number int, rawDiff githubdomain.PullRequestDiff) githubdomain.PullRequestDiff {
 	if rawDiff.FileTeamOwnersAttempted || !program.hasDetailQueries() || !program.shouldLoadPullRequestDiffTeamOwners() {
 		return rawDiff
 	}
@@ -29,7 +29,7 @@ func (program *Program) withPullRequestDiffFileTeamOwners(repository string, num
 	return rawDiff
 }
 
-func pullRequestDiffFilePaths(files []githubcli.PullRequestDiffFile) []string {
+func pullRequestDiffFilePaths(files []githubdomain.PullRequestDiffFile) []string {
 	if len(files) == 0 {
 		return nil
 	}
@@ -50,12 +50,12 @@ func pullRequestDiffFilePaths(files []githubcli.PullRequestDiffFile) []string {
 	return paths
 }
 
-func pullRequestDiffFilesWithTeamOwners(files []githubcli.PullRequestDiffFile, teamOwnersByPath map[string][]string) []githubcli.PullRequestDiffFile {
+func pullRequestDiffFilesWithTeamOwners(files []githubdomain.PullRequestDiffFile, teamOwnersByPath map[string][]string) []githubdomain.PullRequestDiffFile {
 	if len(files) == 0 {
 		return nil
 	}
 
-	updatedFiles := make([]githubcli.PullRequestDiffFile, 0, len(files))
+	updatedFiles := make([]githubdomain.PullRequestDiffFile, 0, len(files))
 	for _, file := range files {
 		updatedFile := file
 		updatedFile.TeamOwners = normalizeReviewDiffTeamOwners(teamOwnersByPath[strings.TrimSpace(file.Path)])
@@ -65,7 +65,7 @@ func pullRequestDiffFilesWithTeamOwners(files []githubcli.PullRequestDiffFile, t
 }
 
 func (program *Program) shouldLoadPullRequestDiffTeamOwners() bool {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return true
 	}
 	return program.shouldShowPullRequestDetailTabs() && program.activeDetailTab == ChangesDetailTab

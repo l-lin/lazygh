@@ -3,11 +3,11 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) optimisticallyUpdatePullRequestTitle(repository string, number int, title string) {
-	program.optimisticallyUpdatePullRequestFields(repository, number, func(summary *githubcli.PullRequest, detail *githubcli.PullRequestDetail) {
+	program.optimisticallyUpdatePullRequestFields(repository, number, func(summary *githubdomain.PullRequest, detail *githubdomain.PullRequestDetail) {
 		trimmedTitle := strings.TrimSpace(title)
 		summary.Title = trimmedTitle
 		detail.Title = trimmedTitle
@@ -15,7 +15,7 @@ func (program *Program) optimisticallyUpdatePullRequestTitle(repository string, 
 }
 
 func (program *Program) optimisticallyUpdatePullRequestDescription(repository string, number int, body string) {
-	program.optimisticallyUpdatePullRequestFields(repository, number, func(summary *githubcli.PullRequest, detail *githubcli.PullRequestDetail) {
+	program.optimisticallyUpdatePullRequestFields(repository, number, func(summary *githubdomain.PullRequest, detail *githubdomain.PullRequestDetail) {
 		trimmedBody := strings.TrimSpace(body)
 		summary.Body = trimmedBody
 		detail.Body = trimmedBody
@@ -23,7 +23,7 @@ func (program *Program) optimisticallyUpdatePullRequestDescription(repository st
 	})
 }
 
-func (program *Program) optimisticallyUpdatePullRequestFields(repository string, number int, mutate func(*githubcli.PullRequest, *githubcli.PullRequestDetail)) {
+func (program *Program) optimisticallyUpdatePullRequestFields(repository string, number int, mutate func(*githubdomain.PullRequest, *githubdomain.PullRequestDetail)) {
 	if program == nil || mutate == nil {
 		return
 	}
@@ -33,8 +33,8 @@ func (program *Program) optimisticallyUpdatePullRequestFields(repository string,
 		return
 	}
 
-	identity := githubcli.PullRequest{Repository: githubcli.Repository{NameWithOwner: strings.TrimSpace(repository)}, Number: number}
-	program.mutateLoadedPullRequestSummaries(identity, func(summary *githubcli.PullRequest) {
+	identity := githubdomain.PullRequest{Repository: githubdomain.Repository{NameWithOwner: strings.TrimSpace(repository)}, Number: number}
+	program.mutateLoadedPullRequestSummaries(identity, func(summary *githubdomain.PullRequest) {
 		if summary == nil {
 			return
 		}
@@ -54,8 +54,8 @@ func (program *Program) optimisticallyUpdatePullRequestFields(repository string,
 	program.invalidatePersistentPullRequest(repository, number)
 }
 
-func (program *Program) optimisticPullRequestDetailSeed(identity githubcli.PullRequest) githubcli.PullRequestDetail {
-	seed := githubcli.PullRequestDetail{Number: identity.Number}
+func (program *Program) optimisticPullRequestDetailSeed(identity githubdomain.PullRequest) githubdomain.PullRequestDetail {
+	seed := githubdomain.PullRequestDetail{Number: identity.Number}
 	if program == nil {
 		return seed
 	}
@@ -66,7 +66,7 @@ func (program *Program) optimisticPullRequestDetailSeed(identity githubcli.PullR
 	}
 
 	if summary, ok := program.currentPullRequestSummary(); ok && samePullRequestIdentity(summary, identity) {
-		return githubcli.PullRequestDetail{
+		return githubdomain.PullRequestDetail{
 			Title:   strings.TrimSpace(summary.Title),
 			Number:  summary.Number,
 			URL:     strings.TrimSpace(summary.URL),
@@ -78,7 +78,7 @@ func (program *Program) optimisticPullRequestDetailSeed(identity githubcli.PullR
 
 	if program.openedPullRequestSummary != nil && samePullRequestIdentity(*program.openedPullRequestSummary, identity) {
 		summary := *program.openedPullRequestSummary
-		return githubcli.PullRequestDetail{
+		return githubdomain.PullRequestDetail{
 			Title:   strings.TrimSpace(summary.Title),
 			Number:  summary.Number,
 			URL:     strings.TrimSpace(summary.URL),
@@ -90,7 +90,7 @@ func (program *Program) optimisticPullRequestDetailSeed(identity githubcli.PullR
 
 	if samePullRequestIdentity(program.reviewSession.summary, identity) {
 		summary := program.reviewSession.summary
-		return githubcli.PullRequestDetail{
+		return githubdomain.PullRequestDetail{
 			Title:   strings.TrimSpace(summary.Title),
 			Number:  summary.Number,
 			URL:     strings.TrimSpace(summary.URL),

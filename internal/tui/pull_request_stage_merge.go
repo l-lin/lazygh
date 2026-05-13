@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -46,7 +46,7 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 }
 
 func (program *Program) pullRequestStateMutationVisible() bool {
-	if !program.isPullRequestContext() || program.reviewSession.active {
+	if !program.isPullRequestContext() || program.reviewModeActive() {
 		return false
 	}
 
@@ -215,12 +215,12 @@ func (program *Program) executePullRequestLifecycleMutation(commandName string, 
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func (program *Program) applyVisiblePullRequestLifecycleMutation(summary githubcli.PullRequest, state string, isDraft bool) {
+func (program *Program) applyVisiblePullRequestLifecycleMutation(summary githubdomain.PullRequest, state string, isDraft bool) {
 	if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 		return
 	}
 
-	program.mutateLoadedPullRequestSummaries(summary, func(current *githubcli.PullRequest) {
+	program.mutateLoadedPullRequestSummaries(summary, func(current *githubdomain.PullRequest) {
 		current.State = state
 		current.IsDraft = isDraft
 		if strings.EqualFold(state, "MERGED") {
@@ -235,7 +235,7 @@ func (program *Program) applyVisiblePullRequestLifecycleMutation(summary githubc
 	program.invalidatePullRequestMutationCaches(summary)
 }
 
-func (program *Program) mutateLoadedPullRequestSummaries(identity githubcli.PullRequest, mutate func(*githubcli.PullRequest)) {
+func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.PullRequest, mutate func(*githubdomain.PullRequest)) {
 	if program == nil || program.model == nil {
 		return
 	}
@@ -273,7 +273,7 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubcli.Pull
 	}
 }
 
-func (program *Program) mutateOrSeedPullRequestDetail(summary githubcli.PullRequest, state string, isDraft bool) {
+func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullRequest, state string, isDraft bool) {
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	if key == "" {
 		return
@@ -281,7 +281,7 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubcli.PullRequ
 
 	result, ok := program.pullRequestDetailCache[key]
 	if !ok || result.err != nil {
-		result = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+		result = pullRequestDetailResult{detail: githubdomain.PullRequestDetail{
 			Title:   strings.TrimSpace(summary.Title),
 			Number:  summary.Number,
 			URL:     strings.TrimSpace(summary.URL),
@@ -306,7 +306,7 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubcli.PullRequ
 	delete(program.pullRequestDetailLoadInFlight, key)
 }
 
-func (program *Program) invalidatePullRequestMutationCaches(summary githubcli.PullRequest) {
+func (program *Program) invalidatePullRequestMutationCaches(summary githubdomain.PullRequest) {
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	if key == "" {
 		return

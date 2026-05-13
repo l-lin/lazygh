@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/l-lin/lazygh/internal/githubcli"
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type Focus int
 
@@ -35,12 +35,12 @@ type Item struct {
 
 type PullRequestRow struct {
 	Item    Item
-	Summary *githubcli.PullRequest
+	Summary *githubdomain.PullRequest
 }
 
 type NotificationRow struct {
 	Item         Item
-	Notification *githubcli.Notification
+	Notification *githubdomain.Notification
 }
 
 type PullRequestTabSeed struct {
@@ -287,18 +287,18 @@ func (model *Model) SelectedNotificationRow() (NotificationRow, bool) {
 	return notificationRowAt(model.notifications, model.selectedNotificationIndex)
 }
 
-func (model *Model) SelectedNotification() (githubcli.Notification, bool) {
+func (model *Model) SelectedNotification() (githubdomain.Notification, bool) {
 	row, ok := model.SelectedNotificationRow()
 	if !ok || row.Notification == nil {
-		return githubcli.Notification{}, false
+		return githubdomain.Notification{}, false
 	}
 	return *row.Notification, true
 }
 
-func (model *Model) SelectedPullRequestSummary() (githubcli.PullRequest, bool) {
+func (model *Model) SelectedPullRequestSummary() (githubdomain.PullRequest, bool) {
 	row, ok := model.SelectedPullRequestRow()
 	if !ok || row.Summary == nil {
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 
 	return *row.Summary, true

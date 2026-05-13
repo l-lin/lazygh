@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -15,27 +15,27 @@ type commentMetadataBadge struct {
 	BackgroundHex string
 }
 
-func renderPullRequestCommentSection(comment githubcli.PullRequestComment, body string, width int) string {
+func renderPullRequestCommentSection(comment githubdomain.PullRequestComment, body string, width int) string {
 	return renderPullRequestCommentSectionForViewer(comment, body, width, "")
 }
 
-func renderPullRequestCommentSectionForViewer(comment githubcli.PullRequestComment, body string, width int, connectedUserLogin string) string {
+func renderPullRequestCommentSectionForViewer(comment githubdomain.PullRequestComment, body string, width int, connectedUserLogin string) string {
 	return renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width, connectedUserLogin)
 }
 
-func renderCommentBoxWithMetadata(author *githubcli.PullRequestCommentAuthor, createdAt string, reactionGroups []githubcli.ReactionGroup, body string, width int) string {
+func renderCommentBoxWithMetadata(author *githubdomain.PullRequestCommentAuthor, createdAt string, reactionGroups []githubdomain.ReactionGroup, body string, width int) string {
 	return renderCommentBoxWithMetadataForViewer(author, createdAt, reactionGroups, body, width, "")
 }
 
-func renderCommentBoxWithMetadataForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, reactionGroups []githubcli.ReactionGroup, body string, width int, connectedUserLogin string) string {
+func renderCommentBoxWithMetadataForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string) string {
 	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, nil, reactionGroups, body, width, connectedUserLogin)
 }
 
-func renderCommentBoxWithMetadataBadges(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, body string, width int) string {
+func renderCommentBoxWithMetadataBadges(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int) string {
 	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, badges, reactionGroups, body, width, "")
 }
 
-func renderCommentBoxWithMetadataBadgesForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, body string, width int, connectedUserLogin string) string {
+func renderCommentBoxWithMetadataBadgesForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string) string {
 	metadataLine := renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, connectedUserLogin)
 
 	contentLines := make([]string, 0, 2)
@@ -148,11 +148,11 @@ func styleCommentBorder(text string) string {
 	return foregroundColorEscape(theme.InactiveBorderHex) + text + ansiReset
 }
 
-func renderCommentBoxMetadataLine(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup) string {
+func renderCommentBoxMetadataLine(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup) string {
 	return renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, "")
 }
 
-func renderCommentBoxMetadataLineForViewer(author *githubcli.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubcli.ReactionGroup, connectedUserLogin string) string {
+func renderCommentBoxMetadataLineForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, connectedUserLogin string) string {
 	segments := make([]string, 0, len(badges)+3)
 	if authorBadge := renderCommentAuthorBadgeForViewer(author, connectedUserLogin); authorBadge != "" {
 		segments = append(segments, authorBadge)
@@ -171,11 +171,11 @@ func renderCommentBoxMetadataLineForViewer(author *githubcli.PullRequestCommentA
 	return strings.Join(segments, "  ")
 }
 
-func renderCommentAuthorBadge(author *githubcli.PullRequestCommentAuthor) string {
+func renderCommentAuthorBadge(author *githubdomain.PullRequestCommentAuthor) string {
 	return renderCommentAuthorBadgeForViewer(author, "")
 }
 
-func renderCommentAuthorBadgeForViewer(author *githubcli.PullRequestCommentAuthor, connectedUserLogin string) string {
+func renderCommentAuthorBadgeForViewer(author *githubdomain.PullRequestCommentAuthor, connectedUserLogin string) string {
 	badgeText := commentAuthorBadgeText(author)
 	if badgeText == "" {
 		return ""
@@ -183,7 +183,7 @@ func renderCommentAuthorBadgeForViewer(author *githubcli.PullRequestCommentAutho
 	return styleCommentAuthorBadgeTextForViewer(badgeText, commentAuthorLogin(author), connectedUserLogin)
 }
 
-func commentAuthorLogin(author *githubcli.PullRequestCommentAuthor) string {
+func commentAuthorLogin(author *githubdomain.PullRequestCommentAuthor) string {
 	if author == nil {
 		return ""
 	}
@@ -209,7 +209,7 @@ func renderCommentMetadataBadge(badge commentMetadataBadge) string {
 	return renderRoundedPill(label, badge.ForegroundHex, badge.BackgroundHex)
 }
 
-func commentAuthorBadgeText(author *githubcli.PullRequestCommentAuthor) string {
+func commentAuthorBadgeText(author *githubdomain.PullRequestCommentAuthor) string {
 	return strings.TrimSpace(detailCommentsIcon) + "  " + pullRequestCommentAuthorLogin(author)
 }
 

@@ -30,14 +30,14 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 		},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:       "Old PR",
 		Number:      42,
 		Body:        "Old body",
 		BaseRefName: "main",
 		HeadRefName: "old-branch",
 		State:       "OPEN",
-	}}
+	})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

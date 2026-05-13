@@ -28,7 +28,7 @@ func (program *Program) nextReviewComment(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return nil
 	}
 
@@ -52,7 +52,7 @@ type reviewCommentLocation struct {
 }
 
 func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction reviewNavigationDirection) error {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return nil
 	}
 
@@ -78,7 +78,7 @@ func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction revie
 
 func (program *Program) currentReviewCommentPosition(detailView *gocui.View) (int, int) {
 	currentFileTreeRow := program.reviewSession.selectedFileTreeRow
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return currentFileTreeRow, 0
 	}
 

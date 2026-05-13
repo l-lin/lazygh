@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 )
 
 func TestReviewDiffThreadTargetForSelection_GivenTheCursorOnADiffLine_WhenBuilding_ThenItReturnsTheSingleLineGitHubTarget(t *testing.T) {

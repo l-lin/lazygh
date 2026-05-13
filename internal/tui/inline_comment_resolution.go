@@ -86,7 +86,7 @@ func (program *Program) selectedPullRequestReviewThreadActionTarget() (pullReque
 	if program.model.Focus() != FocusDetailView {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return program.selectedReviewDiffReviewThreadActionTarget()
 	}
 	return program.selectedBrowserInlineCommentThreadActionTarget()
@@ -125,7 +125,7 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 }
 
 func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 

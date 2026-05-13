@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
@@ -32,22 +32,18 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 	user, err := program.sessionQueries.GetConnectedUser()
-	legacyUser := githubcli.ConnectedUser{}
-	if err == nil {
-		legacyUser = githubcli.ConnectedUserFromDomain(user)
-	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		connectedUserLogin := ""
 		if err == nil {
-			connectedUserLogin = strings.TrimSpace(legacyUser.Login)
+			connectedUserLogin = strings.TrimSpace(user.Login)
 		}
 		if program.connectedUserLogin != connectedUserLogin {
 			program.connectedUserLogin = connectedUserLogin
 			program.invalidatePullRequestDetailDocumentCache()
 			program.invalidateReviewDiffRenderCache()
 		}
-		program.model.SetUsers([]Item{connectedUserStateItem(legacyUser, err)})
+		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
 		return program.refreshViews(gui)
 	})
 }
@@ -76,15 +72,11 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 	})
 }
 
-func (program *Program) listPullRequests(tab PullRequestTab) ([]githubcli.PullRequest, error) {
-	pullRequests, err := program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
-	if err != nil {
-		return nil, err
-	}
-	return githubcli.PullRequestsFromDomain(pullRequests), nil
+func (program *Program) listPullRequests(tab PullRequestTab) ([]githubdomain.PullRequest, error) {
+	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
 }
 
-func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
 	if err == nil {
 		pullRequests = program.pullRequestsWithOpenedPullRequestSummary(tab, pullRequests)
 	}

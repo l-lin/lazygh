@@ -8,7 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 )
 
 type notificationActionTarget struct {
-	notification githubcli.Notification
+	notification githubdomain.Notification
 	threadID     string
 }
 
@@ -76,12 +76,12 @@ func (program *Program) selectedNotificationActionTarget() (notificationActionTa
 	return notificationActionTarget{notification: notification, threadID: strings.TrimSpace(notification.ID)}, true
 }
 
-func (program *Program) loadedNotifications() []githubcli.Notification {
+func (program *Program) loadedNotifications() []githubdomain.Notification {
 	return notificationValues(program.model.NotificationRows())
 }
 
-func notificationValues(rows []NotificationRow) []githubcli.Notification {
-	notifications := make([]githubcli.Notification, 0, len(rows))
+func notificationValues(rows []NotificationRow) []githubdomain.Notification {
+	notifications := make([]githubdomain.Notification, 0, len(rows))
 	for _, row := range rows {
 		if row.Notification == nil {
 			continue
@@ -104,7 +104,7 @@ func (program *Program) restoreNotificationMutationSnapshot(snapshot notificatio
 	program.model.clampSearchSelectionForNotificationsView()
 }
 
-func markNotificationReadState(notifications []githubcli.Notification, threadID string, unread bool) bool {
+func markNotificationReadState(notifications []githubdomain.Notification, threadID string, unread bool) bool {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	if trimmedThreadID == "" {
 		return false
@@ -119,13 +119,13 @@ func markNotificationReadState(notifications []githubcli.Notification, threadID 
 	return false
 }
 
-func removeNotificationWithThreadID(notifications []githubcli.Notification, threadID string) ([]githubcli.Notification, bool) {
+func removeNotificationWithThreadID(notifications []githubdomain.Notification, threadID string) ([]githubdomain.Notification, bool) {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	if trimmedThreadID == "" {
-		return append([]githubcli.Notification(nil), notifications...), false
+		return append([]githubdomain.Notification(nil), notifications...), false
 	}
 
-	filteredNotifications := make([]githubcli.Notification, 0, len(notifications))
+	filteredNotifications := make([]githubdomain.Notification, 0, len(notifications))
 	removed := false
 	for _, notification := range notifications {
 		if strings.TrimSpace(notification.ID) == trimmedThreadID {
@@ -137,7 +137,7 @@ func removeNotificationWithThreadID(notifications []githubcli.Notification, thre
 	return filteredNotifications, removed
 }
 
-func markAllNotificationsRead(notifications []githubcli.Notification) {
+func markAllNotificationsRead(notifications []githubdomain.Notification) {
 	for index := range notifications {
 		notifications[index].Unread = false
 	}
@@ -269,7 +269,7 @@ func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
 			if err := normalizedNotificationMutationError(program.notificationMutations.MarkNotificationDone(target.threadID)); err != nil {
 				return err
 			}
-			program.hideDoneNotificationsBestEffort([]githubcli.Notification{target.notification})
+			program.hideDoneNotificationsBestEffort([]githubdomain.Notification{target.notification})
 			return nil
 		},
 	)
@@ -282,7 +282,7 @@ func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
 		return program.refreshViewsIfGUI(gui)
 	}
 
-	optimisticNotifications := append([]githubcli.Notification(nil), loadedNotifications...)
+	optimisticNotifications := append([]githubdomain.Notification(nil), loadedNotifications...)
 	markAllNotificationsRead(optimisticNotifications)
 	return program.startNotificationMutation(
 		gui,
@@ -310,7 +310,7 @@ func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 		notificationMarkedAllDoneMessage,
 		notificationRows(nil),
 		func() error {
-			_, err := program.notificationMutations.MarkAllNotificationsDone(githubcli.ToDomainNotifications(loadedNotifications))
+			_, err := program.notificationMutations.MarkAllNotificationsDone(loadedNotifications)
 			if err = normalizedNotificationMutationError(err); err != nil {
 				return err
 			}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -109,10 +110,10 @@ func TestNotificationDetailRouting_GivenAnUnsupportedNotificationType_WhenRender
 	model.FocusNotificationsView()
 	model.SetNotificationRows([]NotificationRow{{
 		Item: Item{Title: iconWarning + " acme/widgets push", Detail: "Repository: acme/widgets\nType: Unsupported (Push)"},
-		Notification: &githubcli.Notification{
+		Notification: &githubdomain.Notification{
 			ID:         "n-unsupported",
-			Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
-			Subject:    githubcli.NotificationSubject{Type: "Push", Title: "A push happened"},
+			Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"},
+			Subject:    githubdomain.NotificationSubject{Type: "Push", Title: "A push happened"},
 		},
 	}})
 	subject := NewProgramWithModel(model)

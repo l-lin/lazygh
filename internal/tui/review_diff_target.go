@@ -3,7 +3,7 @@ package tui
 import (
 	"errors"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const reviewThreadTargetUnavailableMessage = "Inline comments require a diff line or valid diff-line selection"
@@ -15,7 +15,7 @@ type reviewDiffRenderedRowAnchor struct {
 	Line reviewDiffLine
 }
 
-func reviewDiffThreadTargetForSelection(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (githubcli.PullRequestReviewThreadTarget, error) {
+func reviewDiffThreadTargetForSelection(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (githubdomain.PullRequestReviewThreadTarget, error) {
 	selectedRenderedRowIndexes := reviewDiffSelectedRenderedRowIndexes(document, state)
 	return reviewDiffThreadTargetForRenderedRows(renderedRows, selectedRenderedRowIndexes)
 }
@@ -52,7 +52,7 @@ func reviewDiffSelectedRenderedRowIndexes(document detailDocument, state detailV
 	return selectedRenderedRowIndexes
 }
 
-func reviewDiffThreadTargetForRenderedRows(renderedRows []reviewDiffRenderedRow, selectedRenderedRowIndexes []int) (githubcli.PullRequestReviewThreadTarget, error) {
+func reviewDiffThreadTargetForRenderedRows(renderedRows []reviewDiffRenderedRow, selectedRenderedRowIndexes []int) (githubdomain.PullRequestReviewThreadTarget, error) {
 	selectedLines := make([]reviewDiffLine, 0, len(selectedRenderedRowIndexes))
 	path := ""
 	for _, renderedRowIndex := range selectedRenderedRowIndexes {
@@ -71,7 +71,7 @@ func reviewDiffThreadTargetForRenderedRows(renderedRows []reviewDiffRenderedRow,
 
 	target, ok := reviewDiffThreadTargetForLines(path, selectedLines)
 	if !ok {
-		return githubcli.PullRequestReviewThreadTarget{}, errReviewThreadTargetUnavailable
+		return githubdomain.PullRequestReviewThreadTarget{}, errReviewThreadTargetUnavailable
 	}
 	return target, nil
 }

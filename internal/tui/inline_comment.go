@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -18,11 +18,11 @@ const (
 	inlineThreadReplyBoxPrefixWidth          = 2
 )
 
-func renderPullRequestInlineCommentSection(comment githubcli.PullRequestInlineComment, body string, width int) string {
+func renderPullRequestInlineCommentSection(comment githubdomain.PullRequestInlineComment, body string, width int) string {
 	return renderPullRequestInlineCommentSectionForViewer(comment, body, width, "")
 }
 
-func renderPullRequestInlineCommentSectionForViewer(comment githubcli.PullRequestInlineComment, body string, width int, connectedUserLogin string) string {
+func renderPullRequestInlineCommentSectionForViewer(comment githubdomain.PullRequestInlineComment, body string, width int, connectedUserLogin string) string {
 	lines := []string{renderPullRequestInlineCommentLocationLine(comment)}
 
 	diffPreview := renderPullRequestInlineCommentDiffPreview(comment)
@@ -33,64 +33,80 @@ func renderPullRequestInlineCommentSectionForViewer(comment githubcli.PullReques
 	return strings.Join(lines, "\n")
 }
 
-func renderPullRequestInlineCommentThreadSection(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+func renderPullRequestInlineCommentThreadSection(thread any, renderer MarkdownRenderer, width int) string {
 	return renderPullRequestInlineCommentThreadSectionForViewer(thread, renderer, width, "")
 }
 
-func renderPullRequestInlineCommentThreadSectionForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
-	header := renderPullRequestInlineCommentThreadHeader(thread, false, width)
-	body := renderPullRequestInlineCommentThreadBodyForViewer(thread, renderer, width, connectedUserLogin)
+func renderPullRequestInlineCommentThreadSectionForViewer(thread any, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
+	threadValue, ok := toDomainPullRequestReviewThread(thread)
+	if !ok {
+		return ""
+	}
+	header := renderPullRequestInlineCommentThreadHeader(threadValue, false, width)
+	body := renderPullRequestInlineCommentThreadBodyForViewer(threadValue, renderer, width, connectedUserLogin)
 	if strings.TrimSpace(body) == "" {
 		return header
 	}
 	return header + "\n" + body
 }
 
-func renderPullRequestInlineCommentThreadHeader(thread githubcli.PullRequestReviewThread, collapsed bool, _ int) string {
+func renderPullRequestInlineCommentThreadHeader(thread any, collapsed bool, _ int) string {
+	threadValue, ok := toDomainPullRequestReviewThread(thread)
+	if !ok {
+		return ""
+	}
 	return renderInlineThreadHeaderLine(
-		pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(thread)),
+		pullRequestInlineCommentLocation(pullRequestInlineCommentFromThread(threadValue)),
 		collapsed,
-		inlineThreadStatusBadges(thread.IsResolved, thread.IsOutdated),
+		inlineThreadStatusBadges(threadValue.IsResolved, threadValue.IsOutdated),
 	)
 }
 
-func renderPullRequestInlineCommentThreadBody(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int) string {
+func renderPullRequestInlineCommentThreadBody(thread any, renderer MarkdownRenderer, width int) string {
 	return renderPullRequestInlineCommentThreadBodyForViewer(thread, renderer, width, "")
 }
 
-func renderPullRequestInlineCommentThreadBodyForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
+func renderPullRequestInlineCommentThreadBodyForViewer(thread any, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
+	threadValue, ok := toDomainPullRequestReviewThread(thread)
+	if !ok {
+		return ""
+	}
 	threadWidth := normalizedInlineThreadCommentBoxWidth(width)
-	suggestionContext := pullRequestInlineCommentFromThread(thread)
-	lines := make([]string, 0, len(thread.Comments)+1)
+	suggestionContext := pullRequestInlineCommentFromThread(threadValue)
+	lines := make([]string, 0, len(threadValue.Comments)+1)
 	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(suggestionContext); diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
-	if len(thread.Comments) == 0 {
+	if len(threadValue.Comments) == 0 {
 		lines = append(lines, renderRoundedCommentBox("No comments in thread.", threadWidth))
 		return strings.Join(lines, "\n")
 	}
 
-	lines = append(lines, renderInlineThreadCommentBoxesForViewer(thread.Comments, suggestionContext, renderer, width, connectedUserLogin)...)
+	lines = append(lines, renderInlineThreadCommentBoxesForViewer(threadValue.Comments, suggestionContext, renderer, width, connectedUserLogin)...)
 	return strings.Join(lines, "\n")
 }
 
-func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, connectedUserLogin string) []int {
+func inlineThreadBodyCommentIndexesForViewer(thread any, renderer MarkdownRenderer, width int, connectedUserLogin string) []int {
+	threadValue, ok := toDomainPullRequestReviewThread(thread)
+	if !ok {
+		return nil
+	}
 	commentIndexes := make([]int, 0)
-	suggestionContext := pullRequestInlineCommentFromThread(thread)
+	suggestionContext := pullRequestInlineCommentFromThread(threadValue)
 	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(suggestionContext); diffPreview != "" {
 		for range renderedTextLineCount(diffPreview) {
 			commentIndexes = append(commentIndexes, -1)
 		}
 	}
-	if len(thread.Comments) == 0 {
+	if len(threadValue.Comments) == 0 {
 		for range renderedTextLineCount(renderRoundedCommentBox("No comments in thread.", normalizedInlineThreadCommentBoxWidth(width))) {
 			commentIndexes = append(commentIndexes, -1)
 		}
 		return commentIndexes
 	}
 
-	for commentIndex, threadComment := range thread.Comments {
-		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(thread.Comments), connectedUserLogin)
+	for commentIndex, threadComment := range threadValue.Comments {
+		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(threadValue.Comments), connectedUserLogin)
 		for range renderedTextLineCount(renderedCommentBlock) {
 			commentIndexes = append(commentIndexes, commentIndex)
 		}
@@ -98,7 +114,7 @@ func inlineThreadBodyCommentIndexesForViewer(thread githubcli.PullRequestReviewT
 	return commentIndexes
 }
 
-func renderPullRequestInlineCommentThreadDiffPreview(comment githubcli.PullRequestInlineComment) string {
+func renderPullRequestInlineCommentThreadDiffPreview(comment githubdomain.PullRequestInlineComment) string {
 	previewLines := parseDiffPreviewLines(comment.DiffHunk)
 	if len(previewLines) == 0 {
 		return ""
@@ -115,11 +131,11 @@ func renderPullRequestInlineCommentThreadDiffPreview(comment githubcli.PullReque
 	return strings.Join(renderedLines, "\n")
 }
 
-func renderInlineThreadCommentBoxes(comments []githubcli.PullRequestComment, renderer MarkdownRenderer, width int) []string {
-	return renderInlineThreadCommentBoxesForViewer(comments, githubcli.PullRequestInlineComment{}, renderer, width, "")
+func renderInlineThreadCommentBoxes(comments []githubdomain.PullRequestComment, renderer MarkdownRenderer, width int) []string {
+	return renderInlineThreadCommentBoxesForViewer(comments, githubdomain.PullRequestInlineComment{}, renderer, width, "")
 }
 
-func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
+func renderInlineThreadCommentBoxesForViewer(comments []githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
 	renderedComments := make([]string, 0, len(comments))
 	for commentIndex, threadComment := range comments {
 		renderedComments = append(renderedComments, renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(comments), connectedUserLogin))
@@ -127,11 +143,11 @@ func renderInlineThreadCommentBoxesForViewer(comments []githubcli.PullRequestCom
 	return renderedComments
 }
 
-func renderInlineThreadCommentBlock(comment githubcli.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int) string {
-	return renderInlineThreadCommentBlockForViewer(comment, githubcli.PullRequestInlineComment{}, renderer, width, commentIndex, commentCount, "")
+func renderInlineThreadCommentBlock(comment githubdomain.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int) string {
+	return renderInlineThreadCommentBlockForViewer(comment, githubdomain.PullRequestInlineComment{}, renderer, width, commentIndex, commentCount, "")
 }
 
-func renderInlineThreadCommentBlockForViewer(comment githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int, connectedUserLogin string) string {
+func renderInlineThreadCommentBlockForViewer(comment githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int, connectedUserLogin string) string {
 	renderedCommentBox := renderInlineThreadCommentBoxForViewer(comment, suggestionContext, renderer, width, connectedUserLogin, commentIndex > 0)
 	if commentIndex == 0 {
 		return renderedCommentBox
@@ -139,7 +155,7 @@ func renderInlineThreadCommentBlockForViewer(comment githubcli.PullRequestCommen
 	return renderInlineThreadReplyBlock(renderedCommentBox, commentIndex < commentCount-1)
 }
 
-func renderInlineThreadCommentBoxForViewer(comment githubcli.PullRequestComment, suggestionContext githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
+func renderInlineThreadCommentBoxForViewer(comment githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
 	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
 	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
 	body := renderInlineCommentBodyForThreadComment(comment, suggestionContext, renderer, commentBodyWidth)
@@ -197,7 +213,7 @@ func inlineThreadStatusBadges(resolved bool, outdated bool) []commentMetadataBad
 	return badges
 }
 
-func inlineThreadCommentMetadataBadges(comment githubcli.PullRequestComment) []commentMetadataBadge {
+func inlineThreadCommentMetadataBadges(comment githubdomain.PullRequestComment) []commentMetadataBadge {
 	if !strings.EqualFold(strings.TrimSpace(comment.State), "PENDING") {
 		return nil
 	}
@@ -248,17 +264,21 @@ func renderInlineThreadHeaderBadge(badge commentMetadataBadge) string {
 	return renderRoundedPill(label, badge.ForegroundHex, badge.BackgroundHex)
 }
 
-func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread) githubcli.PullRequestInlineComment {
-	comment := githubcli.PullRequestInlineComment{
-		Path:              strings.TrimSpace(thread.Path),
-		Line:              thread.Line,
-		OriginalLine:      thread.OriginalLine,
-		StartLine:         thread.StartLine,
-		OriginalStartLine: thread.OriginalStartLine,
-		Side:              strings.TrimSpace(thread.DiffSide),
-		StartSide:         strings.TrimSpace(thread.StartDiffSide),
+func pullRequestInlineCommentFromThread(thread any) githubdomain.PullRequestInlineComment {
+	threadValue, ok := toDomainPullRequestReviewThread(thread)
+	if !ok {
+		return githubdomain.PullRequestInlineComment{}
 	}
-	for _, threadComment := range thread.Comments {
+	comment := githubdomain.PullRequestInlineComment{
+		Path:              strings.TrimSpace(threadValue.Path),
+		Line:              threadValue.Line,
+		OriginalLine:      threadValue.OriginalLine,
+		StartLine:         threadValue.StartLine,
+		OriginalStartLine: threadValue.OriginalStartLine,
+		Side:              strings.TrimSpace(threadValue.DiffSide),
+		StartSide:         strings.TrimSpace(threadValue.StartDiffSide),
+	}
+	for _, threadComment := range threadValue.Comments {
 		if strings.TrimSpace(threadComment.DiffHunk) == "" {
 			continue
 		}
@@ -268,8 +288,8 @@ func pullRequestInlineCommentFromThread(thread githubcli.PullRequestReviewThread
 	return comment
 }
 
-func pullRequestInlineCommentFromReviewDiffThread(thread reviewDiffThread) githubcli.PullRequestInlineComment {
-	comment := githubcli.PullRequestInlineComment{
+func pullRequestInlineCommentFromReviewDiffThread(thread reviewDiffThread) githubdomain.PullRequestInlineComment {
+	comment := githubdomain.PullRequestInlineComment{
 		Path:              strings.TrimSpace(thread.Path),
 		Line:              thread.Line,
 		OriginalLine:      thread.OriginalLine,
@@ -288,7 +308,7 @@ func pullRequestInlineCommentFromReviewDiffThread(thread reviewDiffThread) githu
 	return comment
 }
 
-func renderPullRequestInlineCommentLocationLine(comment githubcli.PullRequestInlineComment) string {
+func renderPullRequestInlineCommentLocationLine(comment githubdomain.PullRequestInlineComment) string {
 	additions, deletions := diffHunkChangeCounts(comment.DiffHunk)
 	location := pullRequestInlineCommentLocation(comment)
 	additionText := styleText(fmt.Sprintf("+%d", additions), foregroundColorEscape(theme.DiffAdditionHex))
@@ -306,7 +326,7 @@ func renderPullRequestInlineCommentLocationLine(comment githubcli.PullRequestInl
 	return segments[0] + " " + strings.Join(segments[1:], "  ")
 }
 
-func renderPullRequestInlineCommentDiffPreview(comment githubcli.PullRequestInlineComment) string {
+func renderPullRequestInlineCommentDiffPreview(comment githubdomain.PullRequestInlineComment) string {
 	previewLines := parseDiffPreviewLines(comment.DiffHunk)
 	if len(previewLines) == 0 {
 		return styleText("No diff preview available.", foregroundColorEscape(theme.DiffHunkHeaderHex))
@@ -322,7 +342,7 @@ func renderPullRequestInlineCommentDiffPreview(comment githubcli.PullRequestInli
 	return strings.Join(renderedLines, "\n")
 }
 
-func pullRequestInlineCommentLocation(comment githubcli.PullRequestInlineComment) string {
+func pullRequestInlineCommentLocation(comment githubdomain.PullRequestInlineComment) string {
 	path := strings.TrimSpace(comment.Path)
 	if path == "" {
 		return ""
@@ -341,7 +361,7 @@ func pullRequestInlineCommentLocation(comment githubcli.PullRequestInlineComment
 	}
 }
 
-func pullRequestInlineCommentTargetRange(comment githubcli.PullRequestInlineComment) (int, int, string) {
+func pullRequestInlineCommentTargetRange(comment githubdomain.PullRequestInlineComment) (int, int, string) {
 	side := strings.ToUpper(strings.TrimSpace(comment.Side))
 	if side == "LEFT" {
 		startLine := firstPositive(comment.OriginalStartLine, comment.OriginalLine, comment.StartLine, comment.Line)
@@ -354,7 +374,7 @@ func pullRequestInlineCommentTargetRange(comment githubcli.PullRequestInlineComm
 	return startLine, endLine, "RIGHT"
 }
 
-func pullRequestInlineCommentSideLabel(comment githubcli.PullRequestInlineComment) string {
+func pullRequestInlineCommentSideLabel(comment githubdomain.PullRequestInlineComment) string {
 	_, _, side := pullRequestInlineCommentTargetRange(comment)
 	switch side {
 	case "LEFT":
@@ -366,7 +386,7 @@ func pullRequestInlineCommentSideLabel(comment githubcli.PullRequestInlineCommen
 	}
 }
 
-func pullRequestInlineCommentDisplayLine(comment githubcli.PullRequestInlineComment) int {
+func pullRequestInlineCommentDisplayLine(comment githubdomain.PullRequestInlineComment) int {
 	_, endLine, _ := pullRequestInlineCommentTargetRange(comment)
 	return endLine
 }

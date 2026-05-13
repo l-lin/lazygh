@@ -592,7 +592,7 @@ func given_notificationValue(t *testing.T, row NotificationRow) githubcli.Notifi
 	if row.Notification == nil {
 		t.Fatal("expected a notification row with a notification value")
 	}
-	return *row.Notification
+	return githubcli.NotificationFromDomain(*row.Notification)
 }
 
 func given_unsupportedNotification(threadID string, unread bool, title string) githubcli.Notification {

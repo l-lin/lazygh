@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type pullRequestActionTarget struct {
@@ -13,10 +13,14 @@ type pullRequestActionTarget struct {
 	body       string
 }
 
-func (program *Program) currentPullRequestSummary() (githubcli.PullRequest, bool) {
+func (program *Program) currentPullRequestSummary() (githubdomain.PullRequest, bool) {
 	actionContext := program.actionContext()
 	if actionContext.IsReviewContext() {
-		return program.reviewSession.summary, true
+		summary, ok := toDomainPullRequestSummary(program.reviewSession.summary)
+		if !ok {
+			return githubdomain.PullRequest{}, false
+		}
+		return summary, true
 	}
 
 	switch actionContext.ActiveView.Focus {
@@ -24,11 +28,11 @@ func (program *Program) currentPullRequestSummary() (githubcli.PullRequest, bool
 		return program.model.SelectedPullRequestSummary()
 	case FocusDetailView:
 		if actionContext.MainView.ContentKind != MainContentKindPullRequestDetail {
-			return githubcli.PullRequest{}, false
+			return githubdomain.PullRequest{}, false
 		}
 		return program.selectedPullRequestSummaryForDetail()
 	default:
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 }
 

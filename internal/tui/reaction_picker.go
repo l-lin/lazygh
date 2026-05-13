@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -52,14 +52,14 @@ func (program *Program) currentReactionPickerActions() []actionsPopupAction {
 		return nil
 	}
 
-	actions := make([]actionsPopupAction, 0, len(githubcli.SupportedReactionContents))
-	for _, content := range githubcli.SupportedReactionContents {
+	actions := make([]actionsPopupAction, 0, len(githubdomain.SupportedReactionContents))
+	for _, content := range githubdomain.SupportedReactionContents {
 		actions = append(actions, program.reactionPickerAction(content))
 	}
 	return actions
 }
 
-func (program *Program) reactionPickerAction(content githubcli.ReactionContent) actionsPopupAction {
+func (program *Program) reactionPickerAction(content githubdomain.ReactionContent) actionsPopupAction {
 	title := reactionPickerActionMetadata(content)
 	return actionsPopupAction{
 		id:    "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
@@ -70,30 +70,30 @@ func (program *Program) reactionPickerAction(content githubcli.ReactionContent) 
 	}
 }
 
-func reactionPickerActionMetadata(content githubcli.ReactionContent) string {
+func reactionPickerActionMetadata(content githubdomain.ReactionContent) string {
 	switch content {
-	case githubcli.ReactionContentThumbsUp:
+	case githubdomain.ReactionContentThumbsUp:
 		return "👍 Thumbs up (+1)"
-	case githubcli.ReactionContentThumbsDown:
+	case githubdomain.ReactionContentThumbsDown:
 		return "👎 Thumbs down (-1)"
-	case githubcli.ReactionContentLaugh:
+	case githubdomain.ReactionContentLaugh:
 		return "😄 Laugh"
-	case githubcli.ReactionContentHooray:
+	case githubdomain.ReactionContentHooray:
 		return "🎉 Hooray"
-	case githubcli.ReactionContentConfused:
+	case githubdomain.ReactionContentConfused:
 		return "😕 Confused"
-	case githubcli.ReactionContentHeart:
+	case githubdomain.ReactionContentHeart:
 		return "❤️ Heart"
-	case githubcli.ReactionContentRocket:
+	case githubdomain.ReactionContentRocket:
 		return "🚀 Rocket"
-	case githubcli.ReactionContentEyes:
+	case githubdomain.ReactionContentEyes:
 		return "👀 Eyes"
 	default:
 		return strings.TrimSpace(string(content))
 	}
 }
 
-func (program *Program) executeReactionPickerAction(content githubcli.ReactionContent) actionsPopupActionResult {
+func (program *Program) executeReactionPickerAction(content githubdomain.ReactionContent) actionsPopupActionResult {
 	if !program.reactionPickerVisible() {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
@@ -106,7 +106,7 @@ func (program *Program) executeReactionPickerAction(content githubcli.ReactionCo
 	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.reactionMutations.AddReaction(target.subjectID, githubcli.ToDomainReactionContent(content)); err != nil {
+	if err := program.reactionMutations.AddReaction(target.subjectID, content); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 
@@ -115,7 +115,7 @@ func (program *Program) executeReactionPickerAction(content githubcli.ReactionCo
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func reactionGroupViewerHasReacted(groups []githubcli.ReactionGroup, content githubcli.ReactionContent) bool {
+func reactionGroupViewerHasReacted(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) bool {
 	for _, group := range groups {
 		if strings.TrimSpace(string(group.Content)) != strings.TrimSpace(string(content)) {
 			continue

@@ -10,11 +10,11 @@ import (
 
 func TestViewZeroScroll_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenItScrollsTheDetailViewportWithoutChangingSelection(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:  "First PR",
 		Number: 42,
 		Body:   strings.TrimSpace(strings.Repeat("detail line\n", 80)),
-	}}
+	})}
 	gui := given_headlessGuiWithSize(t, 120, 12)
 	defer gui.Close()
 	subject.configureGUI(gui)

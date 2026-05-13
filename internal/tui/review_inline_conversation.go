@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {
@@ -44,7 +44,7 @@ func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view 
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		if program.reviewSessionShowsDescription() {
 			return program.toggleReviewDescriptionSectionVisibility(gui, view)
 		}
@@ -144,7 +144,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 	return program.toggleOverviewSectionVisibility(gui, view, summary, result.detail)
 }
 
-func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *gocui.View, summary githubcli.PullRequest, detail githubcli.PullRequestDetail) error {
+func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *gocui.View, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) error {
 	actualView := view
 	if actualView == nil && gui != nil {
 		detailView, err := gui.View(viewDetailName)

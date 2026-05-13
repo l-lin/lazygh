@@ -1,12 +1,11 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -57,7 +56,7 @@ var (
 )
 
 func buildPullRequestListState(search appconfig.PullRequestSearch) pullRequestListState {
-	commandLine := githubcli.FormatPullRequestSearchCommand(search.Command)
+	commandLine := formatPullRequestSearchCommand(search.Command)
 	label := strings.TrimSpace(search.Label)
 	switch pullRequestSearchKind(search.Command) {
 	case pullRequestSearchKindReviewRequested:
@@ -181,35 +180,35 @@ func requestedPullRequestsLoadingItem() Item {
 	return pullRequestLoadingItem(requestedPullRequestsState)
 }
 
-func myPullRequestsStateRows(pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+func myPullRequestsStateRows(pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
 	return pullRequestStateRows(myPullRequestsState, pullRequests, err)
 }
 
-func requestedPullRequestsStateRows(pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+func requestedPullRequestsStateRows(pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
 	return pullRequestStateRows(requestedPullRequestsState, pullRequests, err)
 }
 
-func myPullRequestsStateItems(pullRequests []githubcli.PullRequest, err error) []Item {
+func myPullRequestsStateItems(pullRequests []githubdomain.PullRequest, err error) []Item {
 	return pullRequestItems(myPullRequestsStateRows(pullRequests, err))
 }
 
-func requestedPullRequestsStateItems(pullRequests []githubcli.PullRequest, err error) []Item {
+func requestedPullRequestsStateItems(pullRequests []githubdomain.PullRequest, err error) []Item {
 	return pullRequestItems(requestedPullRequestsStateRows(pullRequests, err))
 }
 
-func myPullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
+func myPullRequestRow(pullRequest any) PullRequestRow {
 	return pullRequestRow(pullRequest)
 }
 
-func requestedPullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
+func requestedPullRequestRow(pullRequest any) PullRequestRow {
 	return pullRequestRow(pullRequest)
 }
 
-func myPullRequestItem(pullRequest githubcli.PullRequest) Item {
+func myPullRequestItem(pullRequest any) Item {
 	return myPullRequestRow(pullRequest).Item
 }
 
-func requestedPullRequestItem(pullRequest githubcli.PullRequest) Item {
+func requestedPullRequestItem(pullRequest any) Item {
 	return requestedPullRequestRow(pullRequest).Item
 }
 
@@ -225,7 +224,7 @@ func pullRequestLoadingItem(state pullRequestListState) Item {
 	return Item{Title: state.loadingTitle, Detail: state.loadingDetail}
 }
 
-func pullRequestStateRows(state pullRequestListState, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {
+func pullRequestStateRows(state pullRequestListState, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
 	if err != nil {
 		return []PullRequestRow{{Item: pullRequestErrorItem(state, err)}}
 	}
@@ -240,37 +239,41 @@ func pullRequestStateRows(state pullRequestListState, pullRequests []githubcli.P
 	return rows
 }
 
-func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
-	repositoryName := pullRequestRepositoryName(pullRequest.Repository)
-	body := strings.TrimSpace(pullRequest.Body)
+func pullRequestRow(pullRequest any) PullRequestRow {
+	pullRequestValue, ok := toDomainPullRequestSummary(pullRequest)
+	if !ok {
+		return PullRequestRow{}
+	}
+	repositoryName := pullRequestRepositoryName(pullRequestValue.Repository)
+	body := strings.TrimSpace(pullRequestValue.Body)
 	if body == "" {
 		body = "No description available."
 	}
 
 	detailLines := []string{
 		fmt.Sprintf("Repository: %s", repositoryName),
-		fmt.Sprintf("Number: #%d", pullRequest.Number),
-		fmt.Sprintf("State: %s", valueOrDash(pullRequest.State)),
-		fmt.Sprintf("Draft: %s", yesNo(pullRequest.IsDraft)),
-		fmt.Sprintf("Updated: %s", valueOrDash(pullRequest.UpdatedAt)),
-		fmt.Sprintf("URL: %s", valueOrDash(pullRequest.URL)),
+		fmt.Sprintf("Number: #%d", pullRequestValue.Number),
+		fmt.Sprintf("State: %s", valueOrDash(pullRequestValue.State)),
+		fmt.Sprintf("Draft: %s", yesNo(pullRequestValue.IsDraft)),
+		fmt.Sprintf("Updated: %s", valueOrDash(pullRequestValue.UpdatedAt)),
+		fmt.Sprintf("URL: %s", valueOrDash(pullRequestValue.URL)),
 		"",
 		body,
 	}
 
-	mergeChecksBackgroundHex := pullRequestMergeChecksBackgroundHex(pullRequest)
+	mergeChecksBackgroundHex := pullRequestMergeChecksBackgroundHex(pullRequestValue)
 	mergeChecksBackgroundPrefix := backgroundColorEscape(mergeChecksBackgroundHex)
-	status := effectivePullRequestStatus(pullRequest.State, pullRequest.IsDraft)
+	status := effectivePullRequestStatus(pullRequestValue.State, pullRequestValue.IsDraft)
 	statusIconSegment := ItemTitleSegment{Text: pullRequestStatusIcon(status) + " ", Prefix: mergeChecksBackgroundPrefix, BackgroundHex: mergeChecksBackgroundHex, MinimumContrast: 3.0}
 	if statusStyle, ok := pullRequestStatusStyleFor(status); ok {
 		statusIconSegment.ForegroundHex = statusStyle.foregroundHex
 		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex) + mergeChecksBackgroundPrefix
 	}
 
-	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequest.Number)
-	titleSuffix := " " + valueOrDash(pullRequest.Title)
+	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequestValue.Number)
+	titleSuffix := " " + valueOrDash(pullRequestValue.Title)
 
-	summaryCopy := pullRequest
+	summaryCopy := pullRequestValue
 	return PullRequestRow{
 		Item: Item{
 			Title:  statusIconSegment.Text + titlePrefix + titleSuffix,
@@ -285,7 +288,7 @@ func pullRequestRow(pullRequest githubcli.PullRequest) PullRequestRow {
 	}
 }
 
-func pullRequestMergeChecksBackgroundHex(pullRequest githubcli.PullRequest) string {
+func pullRequestMergeChecksBackgroundHex(pullRequest githubdomain.PullRequest) string {
 	switch pullRequestMergeChecksStatus(pullRequest) {
 	case pullRequestOverviewStatusSuccess:
 		return theme.SuccessBackgroundHex
@@ -322,7 +325,7 @@ func restyledPullRequestRows(rows []PullRequestRow) []PullRequestRow {
 	return restyledRows
 }
 
-func pullRequestMergeChecksStatus(pullRequest githubcli.PullRequest) pullRequestOverviewStatus {
+func pullRequestMergeChecksStatus(pullRequest githubdomain.PullRequest) pullRequestOverviewStatus {
 	entries := []pullRequestOverviewEntry{
 		{Status: pullRequestMergeChecksReviewStatus(pullRequest)},
 		{Status: pullRequestOverviewStatusForStatusCheckRollupState(pullRequest.StatusCheckRollupState)},
@@ -331,7 +334,7 @@ func pullRequestMergeChecksStatus(pullRequest githubcli.PullRequest) pullRequest
 	return pullRequestOverviewBlockStatus(entries)
 }
 
-func pullRequestMergeChecksReviewStatus(pullRequest githubcli.PullRequest) pullRequestOverviewStatus {
+func pullRequestMergeChecksReviewStatus(pullRequest githubdomain.PullRequest) pullRequestOverviewStatus {
 	reviewDecisionStatus := pullRequestOverviewStatusForReviewDecision(pullRequest.ReviewDecision)
 	if reviewDecisionStatus == pullRequestOverviewStatusFailure {
 		return pullRequestOverviewStatusFailure
@@ -344,9 +347,9 @@ func pullRequestMergeChecksReviewStatus(pullRequest githubcli.PullRequest) pullR
 
 func pullRequestErrorItem(state pullRequestListState, err error) Item {
 	switch {
-	case errors.Is(err, githubcli.ErrUnauthenticated):
+	case isProviderUnauthenticatedError(err):
 		return Item{Title: state.unauthenticatedTitle, Detail: state.unauthenticatedDetail}
-	case errors.Is(err, githubcli.ErrUnavailable):
+	case isProviderUnavailableError(err):
 		return Item{Title: state.unavailableTitle, Detail: state.unavailableDetail}
 	default:
 		return Item{Title: state.genericErrorTitle, Detail: formatPullRequestErrorDetail(state.genericErrorPrefix, err)}
@@ -366,12 +369,16 @@ func formatPullRequestErrorDetail(prefix string, err error) string {
 	return fmt.Sprintf("%s\n\n%s", prefix, message)
 }
 
-func pullRequestRepositoryName(repository githubcli.Repository) string {
-	if repository.NameWithOwner != "" {
-		return repository.NameWithOwner
+func pullRequestRepositoryName(repository any) string {
+	repositoryRef, ok := toDomainRepository(repository)
+	if !ok {
+		return "-"
 	}
-	if repository.Name != "" {
-		return repository.Name
+	if repositoryRef.NameWithOwner != "" {
+		return repositoryRef.NameWithOwner
+	}
+	if repositoryRef.Name != "" {
+		return repositoryRef.Name
 	}
 	return "-"
 }

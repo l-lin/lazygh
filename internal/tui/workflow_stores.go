@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type persistentCacheStore struct {
@@ -78,7 +78,7 @@ type detailStore struct {
 	issueDetailLoadInFlight              map[string]bool
 	releaseDetailCache                   map[string]releaseDetailResult
 	releaseDetailLoadInFlight            map[string]bool
-	assignableUsersCache                 map[string][]githubcli.PullRequestAuthor
+	assignableUsersCache                 map[string][]githubdomain.PullRequestAuthor
 	browserCollapsedSectionStates        map[string]bool
 }
 
@@ -94,7 +94,7 @@ func newDetailStore(persistence *persistentCacheStore) *detailStore {
 		issueDetailLoadInFlight:              map[string]bool{},
 		releaseDetailCache:                   map[string]releaseDetailResult{},
 		releaseDetailLoadInFlight:            map[string]bool{},
-		assignableUsersCache:                 map[string][]githubcli.PullRequestAuthor{},
+		assignableUsersCache:                 map[string][]githubdomain.PullRequestAuthor{},
 		browserCollapsedSectionStates:        map[string]bool{},
 	}
 }

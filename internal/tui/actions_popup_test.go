@@ -369,7 +369,7 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenI
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.pendingPullRequestReviewCache["acme/widgets#42"] = pendingPullRequestReviewState{id: "PRR_pending"}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"})}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
 	asyncRunner := &capturingAsyncRunner{}
 	subject.asyncRunner = asyncRunner

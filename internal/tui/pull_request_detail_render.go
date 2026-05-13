@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const shortPullRequestCommitOIDLength = 7
@@ -14,29 +14,37 @@ type pullRequestHeaderOptions struct {
 	includeReviewers    bool
 }
 
-func renderPullRequestDetailHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+func renderPullRequestDetailHeader(summary any, detail any) string {
 	return renderPullRequestHeader(summary, detail, pullRequestHeaderOptions{includeStatusChecks: true, includeReviewers: true})
 }
 
-func renderPullRequestBrowserHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+func renderPullRequestBrowserHeader(summary any, detail any) string {
 	return renderPullRequestHeader(summary, detail, pullRequestHeaderOptions{})
 }
 
-func renderPullRequestHeader(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, options pullRequestHeaderOptions) string {
+func renderPullRequestHeader(summary any, detail any, options pullRequestHeaderOptions) string {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return ""
+	}
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return ""
+	}
 	headerLines := filterEmptyStrings([]string{
-		renderPullRequestTitleAndReferenceLine(summary, detail),
-		renderPullRequestLifecycleLine(summary, detail),
-		renderPullRequestAssigneesLine(detail.Assignees),
+		renderPullRequestTitleAndReferenceLine(summaryValue, detailValue),
+		renderPullRequestLifecycleLine(summaryValue, detailValue),
+		renderPullRequestAssigneesLine(detailValue.Assignees),
 	})
 	metadataLines := filterEmptyStrings([]string{
-		renderPullRequestMetaLineWithOptions(summary, detail, options.includeStatusChecks),
-		renderPullRequestLabelsLine(detail.Labels),
-		renderPullRequestReactionLine(detail.ReactionGroups),
+		renderPullRequestMetaLineWithOptions(summaryValue, detailValue, options.includeStatusChecks),
+		renderPullRequestLabelsLine(detailValue.Labels),
+		renderPullRequestReactionLine(detailValue.ReactionGroups),
 	})
 	if options.includeReviewers {
 		metadataLines = append(metadataLines, filterEmptyStrings([]string{
-			renderPullRequestReviewRequestsLine(detail.ReviewRequests),
-			renderPullRequestApprovalsLine(detail.Reviews),
+			renderPullRequestReviewRequestsLine(detailValue.ReviewRequests),
+			renderPullRequestApprovalsLine(detailValue.Reviews),
 		})...)
 	}
 	if len(metadataLines) == 0 {
@@ -48,12 +56,20 @@ func renderPullRequestHeader(summary githubcli.PullRequest, detail githubcli.Pul
 	return strings.Join(append(append(headerLines, ""), metadataLines...), "\n")
 }
 
-func renderPullRequestDescription(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, renderer MarkdownRenderer, width int) string {
-	return renderMarkdownWithFallback(prepareMarkdownForImageRendering(detailBody(detail, summary), detailBodyHTML(detail)), renderer, width, "No description available.")
+func renderPullRequestDescription(summary any, detail any, renderer MarkdownRenderer, width int) string {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		summaryValue = githubdomain.PullRequest{}
+	}
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		detailValue = githubdomain.PullRequestDetail{}
+	}
+	return renderMarkdownWithFallback(prepareMarkdownForImageRendering(detailBody(detailValue, summaryValue), detailBodyHTML(detailValue)), renderer, width, "No description available.")
 }
 
-func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlineThreads []githubcli.PullRequestReviewThread, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) string {
-	sections := buildPullRequestCommentsRenderedSections(comments, inlineThreads, inlineComments, renderer, width)
+func renderPullRequestCommentsTab(comments any, inlineThreads any, inlineComments any, renderer MarkdownRenderer, width int) string {
+	sections := buildPullRequestCommentsRenderedSections(toDomainPullRequestComments(comments), toDomainPullRequestReviewThreads(inlineThreads), toDomainPullRequestInlineComments(inlineComments), renderer, width)
 	if len(sections) == 0 {
 		return "No comments yet."
 	}
@@ -65,13 +81,14 @@ func renderPullRequestCommentsTab(comments []githubcli.PullRequestComment, inlin
 	return strings.Join(texts, "\n\n")
 }
 
-func renderPullRequestCommitsTab(commits []githubcli.PullRequestCommit, renderer MarkdownRenderer, width int) string {
-	if len(commits) == 0 {
+func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width int) string {
+	commitValues := toDomainPullRequestCommits(commits)
+	if len(commitValues) == 0 {
 		return "No commits yet."
 	}
 
-	sections := make([]string, 0, len(commits))
-	for _, commit := range commits {
+	sections := make([]string, 0, len(commitValues))
+	for _, commit := range commitValues {
 		sections = append(sections, renderPullRequestCommitSection(commit, renderer, width))
 	}
 	return strings.Join(sections, "\n\n")
@@ -89,7 +106,7 @@ func renderPullRequestChangesTabError(err error) string {
 	return fmt.Sprintf("Could not load pull request changes.\n\n%s", message)
 }
 
-func renderPullRequestCommitSection(commit githubcli.PullRequestCommit, renderer MarkdownRenderer, width int) string {
+func renderPullRequestCommitSection(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int) string {
 	sectionParts := []string{renderPullRequestCommitHeader(commit)}
 	metadataLines := filterEmptyStrings([]string{
 		renderPullRequestCommitAuthorsLine(commit.Authors),
@@ -104,7 +121,7 @@ func renderPullRequestCommitSection(commit githubcli.PullRequestCommit, renderer
 	return renderRoundedCommentBox(strings.Join(sectionParts, "\n\n"), width)
 }
 
-func renderPullRequestCommitHeader(commit githubcli.PullRequestCommit) string {
+func renderPullRequestCommitHeader(commit githubdomain.PullRequestCommit) string {
 	shortOID := shortPullRequestCommitOID(commit.OID)
 	headline := strings.TrimSpace(commit.MessageHeadline)
 	switch {
@@ -119,7 +136,7 @@ func renderPullRequestCommitHeader(commit githubcli.PullRequestCommit) string {
 	}
 }
 
-func renderPullRequestCommitAuthorsLine(authors []githubcli.PullRequestCommitAuthor) string {
+func renderPullRequestCommitAuthorsLine(authors []githubdomain.PullRequestCommitAuthor) string {
 	labels := pullRequestCommitAuthorLabels(authors)
 	if len(labels) == 0 {
 		return ""
@@ -127,7 +144,7 @@ func renderPullRequestCommitAuthorsLine(authors []githubcli.PullRequestCommitAut
 	return "Authors: " + strings.Join(labels, ", ")
 }
 
-func renderPullRequestCommitTimestampsLine(commit githubcli.PullRequestCommit) string {
+func renderPullRequestCommitTimestampsLine(commit githubdomain.PullRequestCommit) string {
 	parts := filterEmptyStrings([]string{
 		renderPullRequestCommitTimestampPart("Authored", commit.AuthoredDate),
 		renderPullRequestCommitTimestampPart("Committed", commit.CommittedDate),
@@ -143,7 +160,7 @@ func renderPullRequestCommitTimestampPart(label string, value string) string {
 	return strings.TrimSpace(label) + " " + formatted
 }
 
-func pullRequestCommitAuthorLabels(authors []githubcli.PullRequestCommitAuthor) []string {
+func pullRequestCommitAuthorLabels(authors []githubdomain.PullRequestCommitAuthor) []string {
 	labels := make([]string, 0, len(authors))
 	seen := map[string]bool{}
 	for _, author := range authors {
@@ -157,7 +174,7 @@ func pullRequestCommitAuthorLabels(authors []githubcli.PullRequestCommitAuthor) 
 	return labels
 }
 
-func pullRequestCommitAuthorLabel(author githubcli.PullRequestCommitAuthor) string {
+func pullRequestCommitAuthorLabel(author githubdomain.PullRequestCommitAuthor) string {
 	if trimmedName := strings.TrimSpace(author.Name); trimmedName != "" {
 		return trimmedName
 	}
@@ -175,14 +192,14 @@ func shortPullRequestCommitOID(oid string) string {
 	return string([]rune(trimmedOID)[:shortPullRequestCommitOIDLength])
 }
 
-func renderPullRequestDetailLoading(summary githubcli.PullRequest, spinner string) string {
+func renderPullRequestDetailLoading(summary githubdomain.PullRequest, spinner string) string {
 	return renderPullRequestDetailContent(
-		renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
+		renderPullRequestDetailHeader(summary, githubdomain.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
 		strings.TrimSpace(spinner),
 	)
 }
 
-func renderPullRequestDetailError(summary githubcli.PullRequest, err error) string {
+func renderPullRequestDetailError(summary githubdomain.PullRequest, err error) string {
 	message := strings.TrimSpace(err.Error())
 	if message == "" {
 		message = "Unknown error. GitHub found a new way to be unhelpful."
@@ -194,32 +211,40 @@ func renderPullRequestDetailError(summary githubcli.PullRequest, err error) stri
 	}
 
 	return renderPullRequestDetailContent(
-		renderPullRequestDetailHeader(summary, githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
+		renderPullRequestDetailHeader(summary, githubdomain.PullRequestDetail{Title: summary.Title, Number: summary.Number, State: summary.State, UpdatedAt: summary.UpdatedAt}),
 		fmt.Sprintf("Could not load rich pull request detail.\n\n%s\n\n%s", message, fallback),
 	)
 }
 
-func renderPullRequestMetaLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+func renderPullRequestMetaLine(summary any, detail any) string {
 	return renderPullRequestMetaLineWithOptions(summary, detail, true)
 }
 
-func renderPullRequestMetaLineWithOptions(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, includeStatusChecks bool) string {
-	parts := []string{renderPullRequestStatusBadge(detailStatus(detail, summary))}
+func renderPullRequestMetaLineWithOptions(summary any, detail any, includeStatusChecks bool) string {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		summaryValue = githubdomain.PullRequest{}
+	}
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		detailValue = githubdomain.PullRequestDetail{}
+	}
+	parts := []string{renderPullRequestStatusBadge(detailStatus(detailValue, summaryValue))}
 
-	baseRefName := strings.TrimSpace(detail.BaseRefName)
-	headRefName := strings.TrimSpace(detail.HeadRefName)
+	baseRefName := strings.TrimSpace(detailValue.BaseRefName)
+	headRefName := strings.TrimSpace(detailValue.HeadRefName)
 	if baseRefName != "" || headRefName != "" {
 		parts = append(parts, fmt.Sprintf("%s ← %s", valueOrDash(baseRefName), valueOrDash(headRefName)))
 	}
 
 	if includeStatusChecks {
-		checkSummary := summarizeStatusChecks(detail.StatusCheckRollup)
+		checkSummary := summarizeStatusChecks(detailValue.StatusCheckRollup)
 		if checkSummary != "-" {
 			parts = append(parts, fmt.Sprintf("%s %s", detailChecksIcon, checkSummary))
 		}
 	}
 
-	parts = append(parts, renderPullRequestChurnParts(detail)...)
+	parts = append(parts, renderPullRequestChurnParts(detailValue)...)
 	return strings.Join(filterEmptyStrings(parts), "  ")
 }
 
@@ -275,10 +300,10 @@ func renderPullRequestDetailSectionSeparator(width int) string {
 
 type pullRequestCommentsRenderedSection struct {
 	text         string
-	inlineThread *githubcli.PullRequestReviewThread
+	inlineThread *githubdomain.PullRequestReviewThread
 }
 
-func buildPullRequestCommentsRenderedSections(comments []githubcli.PullRequestComment, inlineThreads []githubcli.PullRequestReviewThread, inlineComments []githubcli.PullRequestInlineComment, renderer MarkdownRenderer, width int) []pullRequestCommentsRenderedSection {
+func buildPullRequestCommentsRenderedSections(comments []githubdomain.PullRequestComment, inlineThreads []githubdomain.PullRequestReviewThread, inlineComments []githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int) []pullRequestCommentsRenderedSection {
 	sections := make([]pullRequestCommentsRenderedSection, 0, len(comments)+maxInt(len(inlineThreads), len(inlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
 	for _, comment := range comments {
@@ -299,15 +324,19 @@ func buildPullRequestCommentsRenderedSections(comments []githubcli.PullRequestCo
 	return sections
 }
 
-func pullRequestDetailCommentCount(detail githubcli.PullRequestDetail) int {
-	count := len(detail.Comments)
-	if len(detail.InlineCommentThreads) > 0 {
-		for _, inlineThread := range detail.InlineCommentThreads {
+func pullRequestDetailCommentCount(detail any) int {
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return 0
+	}
+	count := len(detailValue.Comments)
+	if len(detailValue.InlineCommentThreads) > 0 {
+		for _, inlineThread := range detailValue.InlineCommentThreads {
 			count += len(inlineThread.Comments)
 		}
 		return count
 	}
-	return count + len(detail.InlineComments)
+	return count + len(detailValue.InlineComments)
 }
 
 func renderMarkdownWithFallback(markdown string, renderer MarkdownRenderer, width int, emptyMessage string) string {

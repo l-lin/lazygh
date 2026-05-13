@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -28,7 +28,7 @@ type reviewDiffRenderedRow struct {
 	FilePath string
 	Anchor   *reviewDiffRenderedRowAnchor
 	Thread   *reviewDiffThread
-	Comment  *githubcli.PullRequestComment
+	Comment  *githubdomain.PullRequestComment
 }
 
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {

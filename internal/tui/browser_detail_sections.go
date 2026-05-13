@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -17,9 +17,9 @@ type browserDetailSection struct {
 	collapsed                    bool
 	overviewBlockTitle           string
 	overviewEntries              []pullRequestOverviewEntry
-	comment                      *githubcli.PullRequestComment
-	inlineComment                *githubcli.PullRequestInlineComment
-	inlineThread                 *githubcli.PullRequestReviewThread
+	comment                      *githubdomain.PullRequestComment
+	inlineComment                *githubdomain.PullRequestInlineComment
+	inlineThread                 *githubdomain.PullRequestReviewThread
 	inlineThreadBodyCommentIndex []int
 }
 
@@ -127,9 +127,17 @@ func (program *Program) setBrowserDetailSectionCollapsed(sectionID string, colla
 	program.invalidatePullRequestDetailDocumentCache()
 }
 
-func (program *Program) currentPullRequestOverviewSections(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) []browserDetailSection {
-	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
-	overview := buildPullRequestOverviewSection(detail)
+func (program *Program) currentPullRequestOverviewSections(summary any, detail any, width int) []browserDetailSection {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return nil
+	}
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return nil
+	}
+	pullRequestKey := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
+	overview := buildPullRequestOverviewSection(detailValue)
 	blocks := []pullRequestOverviewBlock{overview.Reviewers, overview.MergeChecks, overview.Builds}
 	sections := make([]browserDetailSection, 0, len(blocks))
 	for index, block := range blocks {
@@ -153,19 +161,27 @@ func (program *Program) currentPullRequestOverviewSections(summary githubcli.Pul
 	return sections
 }
 
-func (program *Program) renderCurrentPullRequestOverview(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) string {
+func (program *Program) renderCurrentPullRequestOverview(summary any, detail any, width int) string {
 	return renderBrowserDetailSections(program.currentPullRequestOverviewSections(summary, detail, width), false)
 }
 
-func browserDescriptionOverviewStartLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) int {
-	header := strings.TrimSpace(renderPullRequestBrowserHeader(summary, detail))
+func browserDescriptionOverviewStartLine(summary any, detail any) int {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return 0
+	}
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return 0
+	}
+	header := strings.TrimSpace(renderPullRequestBrowserHeader(summaryValue, detailValue))
 	if header == "" {
 		return 0
 	}
 	return renderedTextLineCount(header) + 1
 }
 
-func (program *Program) browserOverviewSectionAtCursor(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int, cursorLine int) (browserDetailSectionCursor, bool) {
+func (program *Program) browserOverviewSectionAtCursor(summary any, detail any, width int, cursorLine int) (browserDetailSectionCursor, bool) {
 	overviewStartLine := browserDescriptionOverviewStartLine(summary, detail)
 	relativeCursorLine := cursorLine - overviewStartLine
 	if relativeCursorLine < 0 {
@@ -180,7 +196,7 @@ func (program *Program) browserOverviewSectionAtCursor(summary githubcli.PullReq
 	return sectionAtCursor, true
 }
 
-func (program *Program) buildPullRequestConversationSections(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) []browserDetailSection {
+func (program *Program) buildPullRequestConversationSections(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, width int) []browserDetailSection {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	sections := make([]browserDetailSection, 0, len(detail.Comments)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
@@ -235,12 +251,12 @@ func (program *Program) buildPullRequestConversationSections(summary githubcli.P
 	return sections
 }
 
-func (program *Program) currentPullRequestConversationSections(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) []browserDetailSection {
+func (program *Program) currentPullRequestConversationSections(summary any, detail any, width int) []browserDetailSection {
 	document := program.currentPullRequestConversationDocument(summary, detail, width)
 	return append([]browserDetailSection(nil), document.sections...)
 }
 
-func (program *Program) renderCurrentPullRequestConversationsTab(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) string {
+func (program *Program) renderCurrentPullRequestConversationsTab(summary any, detail any, width int) string {
 	document := program.currentPullRequestConversationDocument(summary, detail, width)
 	if len(document.sections) == 0 {
 		return "No comments yet."
@@ -248,30 +264,30 @@ func (program *Program) renderCurrentPullRequestConversationsTab(summary githubc
 	return document.text
 }
 
-func (program *Program) browserConversationSectionAtCursor(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int, cursorLine int) (browserDetailSectionCursor, bool) {
+func (program *Program) browserConversationSectionAtCursor(summary any, detail any, width int, cursorLine int) (browserDetailSectionCursor, bool) {
 	if cursorLine < 0 {
 		return browserDetailSectionCursor{}, false
 	}
 	return program.currentPullRequestConversationDocument(summary, detail, width).sectionAtCursor(cursorLine)
 }
 
-func browserConversationInlineThreadCommentAtCursor(sectionAtCursor browserDetailSectionCursor) (githubcli.PullRequestComment, bool) {
+func browserConversationInlineThreadCommentAtCursor(sectionAtCursor browserDetailSectionCursor) (githubdomain.PullRequestComment, bool) {
 	if sectionAtCursor.section.inlineThread == nil || !sectionAtCursor.inBody {
-		return githubcli.PullRequestComment{}, false
+		return githubdomain.PullRequestComment{}, false
 	}
 	thread := *sectionAtCursor.section.inlineThread
 	commentIndex := sectionAtCursor.inlineThreadCommentIndex
 	if commentIndex < 0 || commentIndex >= len(thread.Comments) {
-		return githubcli.PullRequestComment{}, false
+		return githubdomain.PullRequestComment{}, false
 	}
 	return thread.Comments[commentIndex], true
 }
 
-func renderPullRequestCommentConversationTitle(_ githubcli.PullRequestComment) string {
+func renderPullRequestCommentConversationTitle(_ githubdomain.PullRequestComment) string {
 	return "Comment"
 }
 
-func renderPullRequestInlineCommentConversationTitle(comment githubcli.PullRequestInlineComment) string {
+func renderPullRequestInlineCommentConversationTitle(comment githubdomain.PullRequestInlineComment) string {
 	line := pullRequestInlineCommentDisplayLine(comment)
 	if line <= 0 {
 		return "Inline comment"
@@ -279,7 +295,7 @@ func renderPullRequestInlineCommentConversationTitle(comment githubcli.PullReque
 	return fmt.Sprintf("Comment on line %s%d", pullRequestInlineCommentSideLabel(comment), line)
 }
 
-func renderPullRequestInlineThreadConversationTitle(thread githubcli.PullRequestReviewThread) string {
+func renderPullRequestInlineThreadConversationTitle(thread githubdomain.PullRequestReviewThread) string {
 	comment := pullRequestInlineCommentFromThread(thread)
 	return pullRequestInlineCommentLocation(comment)
 }

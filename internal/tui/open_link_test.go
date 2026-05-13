@@ -215,7 +215,7 @@ func TestOpenLinkUnderCursor_GivenGXOnABuildLine_WhenOpening_ThenItUsesTheConfig
 	subject := given_pullRequestCommentProgram(model, loader)
 	opener := &fakeLinkOpener{}
 	subject.linkOpener = opener
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:       "First PR",
 		Number:      42,
 		Body:        "Body 42",
@@ -229,7 +229,7 @@ func TestOpenLinkUnderCursor_GivenGXOnABuildLine_WhenOpening_ThenItUsesTheConfig
 			Conclusion:   "FAILURE",
 			Link:         "https://github.com/acme/widgets/actions/runs/42",
 		}},
-	}}
+	})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -259,7 +259,7 @@ func TestActionsPopup_GivenDetailCursorOnAPendingBuild_WhenOpening_ThenItHidesOp
 	model := given_pullRequestCommentModel()
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(model, loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:       "First PR",
 		Number:      42,
 		Body:        "Body 42",
@@ -270,7 +270,7 @@ func TestActionsPopup_GivenDetailCursorOnAPendingBuild_WhenOpening_ThenItHidesOp
 			{Name: "test", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "FAILURE", Link: "https://github.com/acme/widgets/actions/runs/42"},
 			{Name: "deploy", Status: "IN_PROGRESS"},
 		},
-	}}
+	})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -297,7 +297,7 @@ func TestActionsPopup_GivenDetailFocusWithALinkUnderCursor_WhenExecutingOpenLink
 	subject := given_pullRequestCommentProgram(model, &fakePullRequestDetailLoader{})
 	opener := &fakeLinkOpener{}
 	subject.linkOpener = opener
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Docs https://example.com/docs", URL: "https://github.com/acme/widgets/pull/42"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Docs https://example.com/docs", URL: "https://github.com/acme/widgets/pull/42"})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -375,7 +375,7 @@ func given_pullRequestDetailProgramWithRenderedBody(renderedBody string) *Progra
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, &fakePullRequestDetailLoader{})
 	subject.markdownRenderer = &fakeMarkdownRenderer{output: renderedBody}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Body 42", URL: "https://github.com/acme/widgets/pull/42"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Body 42", URL: "https://github.com/acme/widgets/pull/42"})}
 	return subject
 }
 

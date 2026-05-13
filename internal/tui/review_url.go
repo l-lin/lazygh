@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) OpenReviewByURL(rawURL string) error {
@@ -12,14 +12,14 @@ func (program *Program) OpenReviewByURL(rawURL string) error {
 		return errors.New("github loader is unavailable")
 	}
 
-	summary, err := githubcli.ParsePullRequestURL(rawURL)
+	summary, err := githubdomain.ParsePullRequestURL(rawURL)
 	if err != nil {
 		return err
 	}
 	return program.openPullRequestReview(summary)
 }
 
-func (program *Program) openPullRequestReview(summary githubcli.PullRequest) error {
+func (program *Program) openPullRequestReview(summary githubdomain.PullRequest) error {
 	if !program.hasReviewMutations() {
 		return errors.New("github loader is unavailable")
 	}

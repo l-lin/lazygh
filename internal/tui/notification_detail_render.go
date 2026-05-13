@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func renderIssueDetail(repository string, detail githubcli.IssueDetail, renderer MarkdownRenderer, width int) string {
+func renderIssueDetail(repository string, detail githubdomain.IssueDetail, renderer MarkdownRenderer, width int) string {
 	header := strings.Join(filterEmptyStrings([]string{
 		stylePullRequestTitleText(iconNotificationIssue + " " + firstNonEmpty(detail.Title, fmt.Sprintf("Issue #%d", detail.Number))),
 		stylePullRequestReferenceText(fmt.Sprintf("%s#%d", strings.TrimSpace(repository), detail.Number)),
@@ -19,7 +19,7 @@ func renderIssueDetail(repository string, detail githubcli.IssueDetail, renderer
 	return renderPullRequestDetailContent(header, body)
 }
 
-func renderReleaseDetail(repository string, detail githubcli.ReleaseDetail, renderer MarkdownRenderer, width int) string {
+func renderReleaseDetail(repository string, detail githubdomain.ReleaseDetail, renderer MarkdownRenderer, width int) string {
 	header := strings.Join(filterEmptyStrings([]string{
 		stylePullRequestTitleText(iconNotificationRelease + " " + firstNonEmpty(detail.Name, detail.TagName, "Release")),
 		stylePullRequestReferenceText(strings.TrimSpace(repository)),
@@ -29,19 +29,19 @@ func renderReleaseDetail(repository string, detail githubcli.ReleaseDetail, rend
 	return renderPullRequestDetailContent(header, body)
 }
 
-func renderNotificationDetailLoading(notification githubcli.Notification, repository string, spinner string) string {
+func renderNotificationDetailLoading(notification githubdomain.Notification, repository string, spinner string) string {
 	return renderPullRequestDetailContent(renderNotificationHeader(notification, repository), strings.TrimSpace(spinner))
 }
 
-func renderIssueDetailError(notification githubcli.Notification, repository string, err error) string {
+func renderIssueDetailError(notification githubdomain.Notification, repository string, err error) string {
 	return renderNotificationDetailError(notification, repository, "Could not load issue detail.", err)
 }
 
-func renderReleaseDetailError(notification githubcli.Notification, repository string, err error) string {
+func renderReleaseDetailError(notification githubdomain.Notification, repository string, err error) string {
 	return renderNotificationDetailError(notification, repository, "Could not load release detail.", err)
 }
 
-func renderNotificationDetailError(notification githubcli.Notification, repository string, title string, err error) string {
+func renderNotificationDetailError(notification githubdomain.Notification, repository string, title string, err error) string {
 	message := strings.TrimSpace(err.Error())
 	if message == "" {
 		message = "Unknown error. GitHub found another way to be unhelpful."
@@ -53,13 +53,13 @@ func renderNotificationDetailError(notification githubcli.Notification, reposito
 	return renderPullRequestDetailContent(renderNotificationHeader(notification, repository), fmt.Sprintf("%s\n\n%s\n\n%s", strings.TrimSpace(title), message, fallback))
 }
 
-func renderUnsupportedNotificationDetail(notification githubcli.Notification) string {
+func renderUnsupportedNotificationDetail(notification githubdomain.Notification) string {
 	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
 	body := fmt.Sprintf("Unsupported notification type: %s\n\n%s", notificationTypeLabel(notification.Subject.Type), strings.TrimSpace(notificationRow(notification).Item.Detail))
 	return renderPullRequestDetailContent(renderNotificationHeader(notification, repository), body)
 }
 
-func renderNotificationHeader(notification githubcli.Notification, repository string) string {
+func renderNotificationHeader(notification githubdomain.Notification, repository string) string {
 	reference := notificationDisplayReference(notification)
 	if reference == "" {
 		reference = strings.TrimSpace(repository)
@@ -74,7 +74,7 @@ func renderNotificationHeader(notification githubcli.Notification, repository st
 	}), "\n")
 }
 
-func renderIssueMetaLine(detail githubcli.IssueDetail) string {
+func renderIssueMetaLine(detail githubdomain.IssueDetail) string {
 	parts := []string{}
 	if state := strings.ToUpper(strings.TrimSpace(detail.State)); state != "" {
 		parts = append(parts, state)
@@ -97,7 +97,7 @@ func renderIssueMetaLine(detail githubcli.IssueDetail) string {
 	return stylePullRequestMutedText(strings.Join(parts, "  "))
 }
 
-func renderReleaseMetaLine(detail githubcli.ReleaseDetail) string {
+func renderReleaseMetaLine(detail githubdomain.ReleaseDetail) string {
 	parts := []string{}
 	if tag := strings.TrimSpace(detail.TagName); tag != "" {
 		parts = append(parts, "Tag "+tag)

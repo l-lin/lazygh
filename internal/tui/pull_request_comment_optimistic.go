@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const optimisticPullRequestMutationIDPrefix = "optimistic:"
@@ -35,20 +35,20 @@ func hasUsablePullRequestMutationID(id string) bool {
 	return trimmedID != "" && !isOptimisticPullRequestMutationID(trimmedID)
 }
 
-func (program *Program) optimisticPullRequestCommentAuthor() *githubcli.PullRequestCommentAuthor {
+func (program *Program) optimisticPullRequestCommentAuthor() *githubdomain.PullRequestCommentAuthor {
 	login := program.currentConnectedUserLogin()
 	if login == "" {
 		return nil
 	}
-	return &githubcli.PullRequestCommentAuthor{Login: login}
+	return &githubdomain.PullRequestCommentAuthor{Login: login}
 }
 
-func (program *Program) newOptimisticPullRequestComment(body string, pending bool) githubcli.PullRequestComment {
+func (program *Program) newOptimisticPullRequestComment(body string, pending bool) githubdomain.PullRequestComment {
 	state := ""
 	if pending {
 		state = "PENDING"
 	}
-	return githubcli.PullRequestComment{
+	return githubdomain.PullRequestComment{
 		ID:              program.nextOptimisticPullRequestMutationID("comment"),
 		ViewerDidAuthor: true,
 		Author:          program.optimisticPullRequestCommentAuthor(),
@@ -60,27 +60,27 @@ func (program *Program) newOptimisticPullRequestComment(body string, pending boo
 
 func (program *Program) optimisticallyAppendPullRequestComment(target pullRequestCommentTarget, body string) {
 	comment := program.newOptimisticPullRequestComment(body, false)
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		detail.Comments = append(detail.Comments, comment)
 		return true
 	})
 }
 
 func (program *Program) optimisticallyUpdatePullRequestComment(target pullRequestCommentEditActionTarget, body string) {
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return updatePullRequestCommentInPullRequestDetail(detail, target.commentID, body)
 	})
 }
 
 func (program *Program) optimisticallyDeletePullRequestComment(target pullRequestCommentEditActionTarget) {
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return deletePullRequestCommentFromPullRequestDetail(detail, target.commentID)
 	})
 }
 
 func (program *Program) optimisticallyAppendInlineCommentReply(target pullRequestReviewThreadReplyTarget, body string) {
 	reply := program.newOptimisticPullRequestComment(body, strings.TrimSpace(target.pendingReview) != "")
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return appendReplyToPullRequestDetail(detail, target.threadID, reply)
 	})
 	_ = program.mutatePullRequestDiffOptimistically(target.repository, target.number, func(data *reviewDiffData) bool {
@@ -91,9 +91,13 @@ func (program *Program) optimisticallyAppendInlineCommentReply(target pullReques
 func (program *Program) optimisticallyAppendInlineComment(target pullRequestInlineCommentTarget, body string) {
 	comment := program.newOptimisticPullRequestComment(body, true)
 	threadID := program.nextOptimisticPullRequestMutationID("thread")
-	thread := newOptimisticPullRequestReviewThread(target.threadTarget, comment, threadID)
+	threadTarget, ok := toDomainReviewThreadTarget(target.threadTarget)
+	if !ok {
+		return
+	}
+	thread := newOptimisticPullRequestReviewThread(threadTarget, comment, threadID)
 	if target.updateDetail {
-		_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+		_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 			return appendThreadToPullRequestDetail(detail, thread)
 		})
 	}
@@ -102,11 +106,11 @@ func (program *Program) optimisticallyAppendInlineComment(target pullRequestInli
 	})
 }
 
-func (program *Program) optimisticallyAddReaction(target pullRequestReactionActionTarget, content githubcli.ReactionContent) {
-	update := func(groups []githubcli.ReactionGroup) []githubcli.ReactionGroup {
+func (program *Program) optimisticallyAddReaction(target pullRequestReactionActionTarget, content githubdomain.ReactionContent) {
+	update := func(groups []githubdomain.ReactionGroup) []githubdomain.ReactionGroup {
 		return optimisticReactionGroupsWithAddedReaction(groups, content)
 	}
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return updateReactionGroupsInPullRequestDetail(detail, target.subjectID, update)
 	})
 	if target.invalidateDiff {
@@ -117,10 +121,10 @@ func (program *Program) optimisticallyAddReaction(target pullRequestReactionActi
 }
 
 func (program *Program) optimisticallyRemoveReaction(target pullRequestReactionRemovalTarget) {
-	update := func(groups []githubcli.ReactionGroup) []githubcli.ReactionGroup {
+	update := func(groups []githubdomain.ReactionGroup) []githubdomain.ReactionGroup {
 		return optimisticReactionGroupsWithRemovedReaction(groups, target.content)
 	}
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return updateReactionGroupsInPullRequestDetail(detail, target.subjectID, update)
 	})
 	if target.invalidateDiff {
@@ -131,7 +135,7 @@ func (program *Program) optimisticallyRemoveReaction(target pullRequestReactionR
 }
 
 func (program *Program) optimisticallySetReviewThreadResolved(target pullRequestReviewThreadActionTarget, resolved bool) {
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return updateReviewThreadResolutionInPullRequestDetail(detail, target.threadID, resolved)
 	})
 	_ = program.mutatePullRequestDiffOptimistically(target.repository, target.number, func(data *reviewDiffData) bool {
@@ -140,7 +144,7 @@ func (program *Program) optimisticallySetReviewThreadResolved(target pullRequest
 }
 
 func (program *Program) optimisticallyUpdateReviewComment(target pullRequestReviewCommentActionTarget, body string) {
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return updateReviewCommentInPullRequestDetail(detail, target.commentID, body)
 	})
 	_ = program.mutatePullRequestDiffOptimistically(target.repository, target.number, func(data *reviewDiffData) bool {
@@ -149,7 +153,7 @@ func (program *Program) optimisticallyUpdateReviewComment(target pullRequestRevi
 }
 
 func (program *Program) optimisticallyDeleteReviewComment(target pullRequestReviewCommentActionTarget) {
-	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubcli.PullRequestDetail) bool {
+	_ = program.mutatePullRequestDetailOptimistically(target.repository, target.number, func(detail *githubdomain.PullRequestDetail) bool {
 		return deleteReviewCommentFromPullRequestDetail(detail, target.commentID)
 	})
 	_ = program.mutatePullRequestDiffOptimistically(target.repository, target.number, func(data *reviewDiffData) bool {
@@ -157,15 +161,15 @@ func (program *Program) optimisticallyDeleteReviewComment(target pullRequestRevi
 	})
 }
 
-func newOptimisticPullRequestReviewThread(target githubcli.PullRequestReviewThreadTarget, comment githubcli.PullRequestComment, threadID string) githubcli.PullRequestReviewThread {
-	thread := githubcli.PullRequestReviewThread{
+func newOptimisticPullRequestReviewThread(target githubdomain.PullRequestReviewThreadTarget, comment githubdomain.PullRequestComment, threadID string) githubdomain.PullRequestReviewThread {
+	thread := githubdomain.PullRequestReviewThread{
 		ID:            strings.TrimSpace(threadID),
 		Path:          strings.TrimSpace(target.Path),
 		Line:          target.Line,
 		StartLine:     target.StartLine,
 		DiffSide:      strings.TrimSpace(target.Side),
 		StartDiffSide: strings.TrimSpace(target.StartSide),
-		Comments:      []githubcli.PullRequestComment{comment},
+		Comments:      []githubdomain.PullRequestComment{comment},
 	}
 	if strings.EqualFold(thread.DiffSide, string(reviewDiffLineSideLeft)) {
 		thread.OriginalLine = thread.Line
@@ -176,7 +180,7 @@ func newOptimisticPullRequestReviewThread(target githubcli.PullRequestReviewThre
 	return thread
 }
 
-func (program *Program) mutatePullRequestDetailOptimistically(repository string, number int, mutate func(*githubcli.PullRequestDetail) bool) bool {
+func (program *Program) mutatePullRequestDetailOptimistically(repository string, number int, mutate func(*githubdomain.PullRequestDetail) bool) bool {
 	if program == nil || mutate == nil {
 		return false
 	}
@@ -231,7 +235,7 @@ func (program *Program) mutatePullRequestDiffOptimistically(repository string, n
 	return true
 }
 
-func appendReplyToPullRequestDetail(detail *githubcli.PullRequestDetail, threadID string, reply githubcli.PullRequestComment) bool {
+func appendReplyToPullRequestDetail(detail *githubdomain.PullRequestDetail, threadID string, reply githubdomain.PullRequestComment) bool {
 	if detail == nil || !hasUsablePullRequestMutationID(threadID) {
 		return false
 	}
@@ -247,7 +251,7 @@ func appendReplyToPullRequestDetail(detail *githubcli.PullRequestDetail, threadI
 	return false
 }
 
-func appendReplyToPullRequestDiff(data *reviewDiffData, threadID string, reply githubcli.PullRequestComment) bool {
+func appendReplyToPullRequestDiff(data *reviewDiffData, threadID string, reply githubdomain.PullRequestComment) bool {
 	if data == nil || !hasUsablePullRequestMutationID(threadID) {
 		return false
 	}
@@ -265,7 +269,7 @@ func appendReplyToPullRequestDiff(data *reviewDiffData, threadID string, reply g
 	return false
 }
 
-func appendThreadToPullRequestDetail(detail *githubcli.PullRequestDetail, thread githubcli.PullRequestReviewThread) bool {
+func appendThreadToPullRequestDetail(detail *githubdomain.PullRequestDetail, thread githubdomain.PullRequestReviewThread) bool {
 	if detail == nil || strings.TrimSpace(thread.Path) == "" {
 		return false
 	}
@@ -290,7 +294,7 @@ func appendThreadToPullRequestDiff(data *reviewDiffData, thread reviewDiffThread
 	return false
 }
 
-func updateReactionGroupsInPullRequestDetail(detail *githubcli.PullRequestDetail, subjectID string, update func([]githubcli.ReactionGroup) []githubcli.ReactionGroup) bool {
+func updateReactionGroupsInPullRequestDetail(detail *githubdomain.PullRequestDetail, subjectID string, update func([]githubdomain.ReactionGroup) []githubdomain.ReactionGroup) bool {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
 	if detail == nil || trimmedSubjectID == "" || update == nil {
 		return false
@@ -327,7 +331,7 @@ func updateReactionGroupsInPullRequestDetail(detail *githubcli.PullRequestDetail
 	return updated
 }
 
-func updateReactionGroupsInPullRequestDiff(data *reviewDiffData, subjectID string, update func([]githubcli.ReactionGroup) []githubcli.ReactionGroup) bool {
+func updateReactionGroupsInPullRequestDiff(data *reviewDiffData, subjectID string, update func([]githubdomain.ReactionGroup) []githubdomain.ReactionGroup) bool {
 	trimmedSubjectID := strings.TrimSpace(subjectID)
 	if data == nil || trimmedSubjectID == "" || update == nil {
 		return false
@@ -348,8 +352,8 @@ func updateReactionGroupsInPullRequestDiff(data *reviewDiffData, subjectID strin
 	return updated
 }
 
-func optimisticReactionGroupsWithAddedReaction(groups []githubcli.ReactionGroup, content githubcli.ReactionContent) []githubcli.ReactionGroup {
-	updatedGroups := append([]githubcli.ReactionGroup(nil), groups...)
+func optimisticReactionGroupsWithAddedReaction(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) []githubdomain.ReactionGroup {
+	updatedGroups := append([]githubdomain.ReactionGroup(nil), groups...)
 	trimmedContent := strings.TrimSpace(string(content))
 	for index := range updatedGroups {
 		if strings.TrimSpace(string(updatedGroups[index].Content)) != trimmedContent {
@@ -362,11 +366,11 @@ func optimisticReactionGroupsWithAddedReaction(groups []githubcli.ReactionGroup,
 		updatedGroups[index].ViewerHasReacted = true
 		return updatedGroups
 	}
-	return append(updatedGroups, githubcli.ReactionGroup{Content: content, TotalCount: 1, ViewerHasReacted: true})
+	return append(updatedGroups, githubdomain.ReactionGroup{Content: content, TotalCount: 1, ViewerHasReacted: true})
 }
 
-func optimisticReactionGroupsWithRemovedReaction(groups []githubcli.ReactionGroup, content githubcli.ReactionContent) []githubcli.ReactionGroup {
-	updatedGroups := append([]githubcli.ReactionGroup(nil), groups...)
+func optimisticReactionGroupsWithRemovedReaction(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) []githubdomain.ReactionGroup {
+	updatedGroups := append([]githubdomain.ReactionGroup(nil), groups...)
 	trimmedContent := strings.TrimSpace(string(content))
 	filteredGroups := updatedGroups[:0]
 	for _, group := range updatedGroups {
@@ -381,10 +385,10 @@ func optimisticReactionGroupsWithRemovedReaction(groups []githubcli.ReactionGrou
 		group.ViewerHasReacted = false
 		filteredGroups = append(filteredGroups, group)
 	}
-	return append([]githubcli.ReactionGroup(nil), filteredGroups...)
+	return append([]githubdomain.ReactionGroup(nil), filteredGroups...)
 }
 
-func updateReviewThreadResolutionInPullRequestDetail(detail *githubcli.PullRequestDetail, threadID string, resolved bool) bool {
+func updateReviewThreadResolutionInPullRequestDetail(detail *githubdomain.PullRequestDetail, threadID string, resolved bool) bool {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	if detail == nil || !hasUsablePullRequestMutationID(trimmedThreadID) {
 		return false
@@ -420,7 +424,7 @@ func updateReviewThreadResolutionInPullRequestDiff(data *reviewDiffData, threadI
 	return updated
 }
 
-func updatePullRequestCommentInPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string, body string) bool {
+func updatePullRequestCommentInPullRequestDetail(detail *githubdomain.PullRequestDetail, commentID string, body string) bool {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
 		return false
@@ -438,7 +442,7 @@ func updatePullRequestCommentInPullRequestDetail(detail *githubcli.PullRequestDe
 	return updated
 }
 
-func updateReviewCommentInPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string, body string) bool {
+func updateReviewCommentInPullRequestDetail(detail *githubdomain.PullRequestDetail, commentID string, body string) bool {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
 		return false
@@ -488,7 +492,7 @@ func updateReviewCommentInPullRequestDiff(data *reviewDiffData, commentID string
 	return updated
 }
 
-func deletePullRequestCommentFromPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string) bool {
+func deletePullRequestCommentFromPullRequestDetail(detail *githubdomain.PullRequestDetail, commentID string) bool {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
 		return false
@@ -507,7 +511,7 @@ func deletePullRequestCommentFromPullRequestDetail(detail *githubcli.PullRequest
 	return updated
 }
 
-func deleteReviewCommentFromPullRequestDetail(detail *githubcli.PullRequestDetail, commentID string) bool {
+func deleteReviewCommentFromPullRequestDetail(detail *githubdomain.PullRequestDetail, commentID string) bool {
 	trimmedCommentID := strings.TrimSpace(commentID)
 	if detail == nil || !hasUsablePullRequestMutationID(trimmedCommentID) {
 		return false

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -50,12 +50,16 @@ type pullRequestReviewerOverview struct {
 	TotalCount            int
 }
 
-func buildPullRequestOverviewSection(detail githubcli.PullRequestDetail) pullRequestOverviewSection {
-	reviewers := buildPullRequestReviewerOverview(detail)
+func buildPullRequestOverviewSection(detail any) pullRequestOverviewSection {
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return pullRequestOverviewSection{}
+	}
+	reviewers := buildPullRequestReviewerOverview(detailValue)
 	return pullRequestOverviewSection{
 		Reviewers:   buildPullRequestReviewersBlock(reviewers),
-		MergeChecks: buildPullRequestMergeChecksBlock(detail, reviewers),
-		Builds:      buildPullRequestBuildsBlock(detail),
+		MergeChecks: buildPullRequestMergeChecksBlock(detailValue, reviewers),
+		Builds:      buildPullRequestBuildsBlock(detailValue),
 	}
 }
 
@@ -196,7 +200,7 @@ func pullRequestReviewerSummary(reviewers pullRequestReviewerOverview) string {
 	return fmt.Sprintf("%d/%d", reviewers.ApprovedCount, reviewers.TotalCount)
 }
 
-func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRequestReviewerOverview {
+func buildPullRequestReviewerOverview(detail githubdomain.PullRequestDetail) pullRequestReviewerOverview {
 	latestReviews := latestPullRequestReviewsByLogin(detail.Reviews)
 	requestedUserLogins := requestedPullRequestReviewerLogins(detail.ReviewRequests)
 	entriesByLabel := map[string]pullRequestOverviewEntry{}
@@ -272,7 +276,7 @@ func buildPullRequestReviewerOverview(detail githubcli.PullRequestDetail) pullRe
 	return reviewers
 }
 
-func pullRequestReviewRequestTeamName(reviewer githubcli.PullRequestRequestedReviewer) string {
+func pullRequestReviewRequestTeamName(reviewer githubdomain.PullRequestRequestedReviewer) string {
 	if !strings.EqualFold(strings.TrimSpace(reviewer.TypeName), "Team") {
 		return ""
 	}
@@ -285,7 +289,7 @@ func pullRequestReviewRequestTeamName(reviewer githubcli.PullRequestRequestedRev
 	return ""
 }
 
-func requestedPullRequestReviewerLogins(reviewRequests []githubcli.PullRequestReviewRequest) map[string]bool {
+func requestedPullRequestReviewerLogins(reviewRequests []githubdomain.PullRequestReviewRequest) map[string]bool {
 	logins := map[string]bool{}
 	for _, reviewRequest := range reviewRequests {
 		reviewer := reviewRequest.RequestedReviewer
@@ -301,7 +305,7 @@ func requestedPullRequestReviewerLogins(reviewRequests []githubcli.PullRequestRe
 	return logins
 }
 
-func latestPullRequestReviewsByLogin(reviews []githubcli.PullRequestReview) map[string]string {
+func latestPullRequestReviewsByLogin(reviews []githubdomain.PullRequestReview) map[string]string {
 	latestByLogin := latestPullRequestReviews(reviews)
 	statesByLogin := make(map[string]string, len(latestByLogin))
 	for login, review := range latestByLogin {
@@ -310,7 +314,7 @@ func latestPullRequestReviewsByLogin(reviews []githubcli.PullRequestReview) map[
 	return statesByLogin
 }
 
-func buildPullRequestMergeChecksBlock(detail githubcli.PullRequestDetail, reviewers pullRequestReviewerOverview) pullRequestOverviewBlock {
+func buildPullRequestMergeChecksBlock(detail githubdomain.PullRequestDetail, reviewers pullRequestReviewerOverview) pullRequestOverviewBlock {
 	entries := []pullRequestOverviewEntry{
 		buildPullRequestReviewSummaryEntry(reviewers),
 		buildPullRequestBuildSummaryEntry(detail.StatusCheckRollup),
@@ -352,7 +356,7 @@ func buildPullRequestReviewSummaryEntry(reviewers pullRequestReviewerOverview) p
 	}
 }
 
-func buildPullRequestBuildSummaryEntry(checks []githubcli.PullRequestStatusCheck) pullRequestOverviewEntry {
+func buildPullRequestBuildSummaryEntry(checks []githubdomain.PullRequestStatusCheck) pullRequestOverviewEntry {
 	summary := summarizeStatusChecks(checks)
 	if summary == "-" {
 		return pullRequestOverviewEntry{
@@ -371,7 +375,7 @@ func buildPullRequestBuildSummaryEntry(checks []githubcli.PullRequestStatusCheck
 	}
 }
 
-func buildPullRequestMergeabilityEntry(detail githubcli.PullRequestDetail) pullRequestOverviewEntry {
+func buildPullRequestMergeabilityEntry(detail githubdomain.PullRequestDetail) pullRequestOverviewEntry {
 	mergeState := strings.ToUpper(strings.TrimSpace(detail.MergeStateStatus))
 	switch pullRequestOverviewStatusForMergeability(detail.Mergeable, detail.MergeStateStatus) {
 	case pullRequestOverviewStatusSuccess:
@@ -405,7 +409,7 @@ func buildPullRequestMergeabilityEntry(detail githubcli.PullRequestDetail) pullR
 	}
 }
 
-func buildPullRequestBuildsBlock(detail githubcli.PullRequestDetail) pullRequestOverviewBlock {
+func buildPullRequestBuildsBlock(detail githubdomain.PullRequestDetail) pullRequestOverviewBlock {
 	entries := make([]pullRequestOverviewEntry, 0, len(detail.StatusCheckRollup))
 	for _, check := range detail.StatusCheckRollup {
 		entries = append(entries, buildPullRequestBuildEntry(check))
@@ -417,23 +421,31 @@ func buildPullRequestBuildsBlock(detail githubcli.PullRequestDetail) pullRequest
 	return pullRequestOverviewBlock{Title: "Builds", Status: pullRequestOverviewBlockStatus(entries), Entries: entries}
 }
 
-func buildPullRequestBuildEntry(check githubcli.PullRequestStatusCheck) pullRequestOverviewEntry {
-	status := pullRequestOverviewStatusForCheck(check)
+func buildPullRequestBuildEntry(check any) pullRequestOverviewEntry {
+	checkValue, ok := toDomainPullRequestStatusCheck(check)
+	if !ok {
+		return pullRequestOverviewEntry{}
+	}
+	status := pullRequestOverviewStatusForCheck(checkValue)
 	link := ""
 	if status != pullRequestOverviewStatusPending {
-		link = strings.TrimSpace(check.Link)
+		link = strings.TrimSpace(checkValue.Link)
 	}
 	return pullRequestOverviewEntry{
-		Label:    fmt.Sprintf("%s (%s)", pullRequestOverviewCheckDisplayName(check), pullRequestOverviewCheckStateLabel(check)),
+		Label:    fmt.Sprintf("%s (%s)", pullRequestOverviewCheckDisplayName(checkValue), pullRequestOverviewCheckStateLabel(checkValue)),
 		Status:   status,
 		ShowIcon: true,
 		Link:     link,
 	}
 }
 
-func pullRequestOverviewCheckDisplayName(check githubcli.PullRequestStatusCheck) string {
-	workflowName := strings.TrimSpace(check.WorkflowName)
-	checkName := strings.TrimSpace(check.Name)
+func pullRequestOverviewCheckDisplayName(check any) string {
+	checkValue, ok := toDomainPullRequestStatusCheck(check)
+	if !ok {
+		return "Build"
+	}
+	workflowName := strings.TrimSpace(checkValue.WorkflowName)
+	checkName := strings.TrimSpace(checkValue.Name)
 	switch {
 	case workflowName != "" && checkName != "" && !strings.EqualFold(workflowName, checkName):
 		return workflowName + " / " + checkName
@@ -446,7 +458,7 @@ func pullRequestOverviewCheckDisplayName(check githubcli.PullRequestStatusCheck)
 	}
 }
 
-func pullRequestOverviewCheckStateLabel(check githubcli.PullRequestStatusCheck) string {
+func pullRequestOverviewCheckStateLabel(check githubdomain.PullRequestStatusCheck) string {
 	return classifyPullRequestStatusCheck(check).StateLabel
 }
 
@@ -513,7 +525,7 @@ func pullRequestOverviewStatusForMergeability(mergeable string, mergeState strin
 	}
 }
 
-func pullRequestOverviewStatusForChecks(checks []githubcli.PullRequestStatusCheck) pullRequestOverviewStatus {
+func pullRequestOverviewStatusForChecks(checks []githubdomain.PullRequestStatusCheck) pullRequestOverviewStatus {
 	overall := pullRequestOverviewStatusMuted
 	for _, check := range checks {
 		switch pullRequestOverviewStatusForCheck(check) {
@@ -530,7 +542,7 @@ func pullRequestOverviewStatusForChecks(checks []githubcli.PullRequestStatusChec
 	return overall
 }
 
-func pullRequestOverviewStatusForCheck(check githubcli.PullRequestStatusCheck) pullRequestOverviewStatus {
+func pullRequestOverviewStatusForCheck(check githubdomain.PullRequestStatusCheck) pullRequestOverviewStatus {
 	return classifyPullRequestStatusCheck(check).OverviewStatus
 }
 

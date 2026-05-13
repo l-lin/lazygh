@@ -55,7 +55,7 @@ func TestCopyPullRequestURL_GivenDetailViewAndCachedDetailURL_WhenHandlingTheAct
 	clipboardWriter := &fakeClipboardWriter{}
 	subject := NewProgramWithModel(model)
 	subject.clipboardWriter = clipboardWriter
-	subject.pullRequestDetailCache[pullRequestDetailKey(githubcli.Repository{NameWithOwner: "acme/widgets"}, 42)] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{URL: "https://github.com/acme/widgets/pull/canonical"}}
+	subject.pullRequestDetailCache[pullRequestDetailKey(githubcli.Repository{NameWithOwner: "acme/widgets"}, 42)] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{URL: "https://github.com/acme/widgets/pull/canonical"})}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

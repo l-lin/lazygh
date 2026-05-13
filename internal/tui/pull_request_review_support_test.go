@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubcli "github.com/l-lin/lazygh/internal/github"
 )
 
 func TestLatestPullRequestReviews_GivenMultipleReviewsPerAuthor_WhenSelectingLatest_ThenItUsesSubmittedAtAndInputOrderAsTieBreaker(t *testing.T) {

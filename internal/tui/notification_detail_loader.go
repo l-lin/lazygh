@@ -6,16 +6,16 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type issueDetailResult struct {
-	detail githubcli.IssueDetail
+	detail githubdomain.IssueDetail
 	err    error
 }
 
 type releaseDetailResult struct {
-	detail githubcli.ReleaseDetail
+	detail githubdomain.ReleaseDetail
 	err    error
 }
 
@@ -26,10 +26,7 @@ func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
 func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, number int) {
 	detail, err := program.notificationQueries.GetIssueDetail(repository, number)
 	key := notificationDetailKey(repository, number)
-	result := issueDetailResult{err: err}
-	if err == nil {
-		result.detail = githubcli.IssueDetailFromDomain(detail)
-	}
+	result := issueDetailResult{detail: detail, err: err}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.issueDetailLoadInFlight, key)
@@ -41,10 +38,7 @@ func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, numbe
 func (program *Program) loadReleaseDetail(gui *gocui.Gui, repository string, id int) {
 	detail, err := program.notificationQueries.GetReleaseDetail(repository, id)
 	key := notificationDetailKey(repository, id)
-	result := releaseDetailResult{err: err}
-	if err == nil {
-		result.detail = githubcli.ReleaseDetailFromDomain(detail)
-	}
+	result := releaseDetailResult{detail: detail, err: err}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.releaseDetailLoadInFlight, key)
@@ -63,7 +57,7 @@ func (program *Program) releaseDetailLoaded(key string) bool {
 	return ok
 }
 
-func (program *Program) issueDetailForNotification(notification githubcli.Notification) (issueDetailResult, bool) {
+func (program *Program) issueDetailForNotification(notification githubdomain.Notification) (issueDetailResult, bool) {
 	repository, number, ok := notification.IssueIdentity()
 	if !ok {
 		return issueDetailResult{}, false
@@ -72,7 +66,7 @@ func (program *Program) issueDetailForNotification(notification githubcli.Notifi
 	return result, ok
 }
 
-func (program *Program) releaseDetailForNotification(notification githubcli.Notification) (releaseDetailResult, bool) {
+func (program *Program) releaseDetailForNotification(notification githubdomain.Notification) (releaseDetailResult, bool) {
 	repository, id, ok := notification.ReleaseIdentity()
 	if !ok {
 		return releaseDetailResult{}, false
@@ -82,7 +76,7 @@ func (program *Program) releaseDetailForNotification(notification githubcli.Noti
 }
 
 func (program *Program) selectedNotificationDetailLoading() bool {
-	if program.reviewSession.active || program.model.currentSideFocus() != FocusNotificationsView {
+	if program.reviewModeActive() || program.model.currentSideFocus() != FocusNotificationsView {
 		return false
 	}
 

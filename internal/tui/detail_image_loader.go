@@ -8,7 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type detailImageHTMLSource struct {
@@ -86,7 +86,7 @@ func (program *Program) detailImageAuthToken() string {
 }
 
 func (program *Program) currentDetailImageHTMLSources() []detailImageHTMLSource {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return program.currentReviewSessionImageHTMLSources()
 	}
 	if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
@@ -137,7 +137,7 @@ func (program *Program) currentReviewSessionImageHTMLSources() []detailImageHTML
 	return program.reviewDiffFileImageHTMLSources(program.reviewSession.summary, selectedFile)
 }
 
-func (program *Program) currentPullRequestImageHTMLSources(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) []detailImageHTMLSource {
+func (program *Program) currentPullRequestImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
 	switch program.activeDetailTab {
 	case CommentsDetailTab:
 		return program.pullRequestCommentsImageHTMLSources(summary, detail)
@@ -153,7 +153,7 @@ func (program *Program) currentPullRequestImageHTMLSources(summary githubcli.Pul
 	}
 }
 
-func (program *Program) pullRequestDescriptionImageHTMLSource(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) detailImageHTMLSource {
+func (program *Program) pullRequestDescriptionImageHTMLSource(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) detailImageHTMLSource {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	markdown := detailBody(detail, summary)
 	revision := detailImageMarkdownRevision(markdown)
@@ -173,7 +173,7 @@ func (program *Program) pullRequestDescriptionImageHTMLSource(summary githubcli.
 	}
 }
 
-func (program *Program) pullRequestCommentsImageHTMLSources(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) []detailImageHTMLSource {
+func (program *Program) pullRequestCommentsImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	repository := pullRequestRepositoryName(summary.Repository)
 	sources := make([]detailImageHTMLSource, 0, len(detail.Comments)+len(detail.InlineComments))
@@ -240,7 +240,7 @@ func (program *Program) pullRequestCommentsImageHTMLSources(summary githubcli.Pu
 	return sources
 }
 
-func (program *Program) pullRequestCommitImageHTMLSources(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) []detailImageHTMLSource {
+func (program *Program) pullRequestCommitImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	repository := pullRequestRepositoryName(summary.Repository)
 	sources := make([]detailImageHTMLSource, 0, len(detail.Commits))
@@ -265,7 +265,7 @@ func (program *Program) pullRequestCommitImageHTMLSources(summary githubcli.Pull
 	return sources
 }
 
-func (program *Program) pullRequestDiffImageHTMLSources(summary githubcli.PullRequest, files []reviewDiffFile) []detailImageHTMLSource {
+func (program *Program) pullRequestDiffImageHTMLSources(summary any, files []reviewDiffFile) []detailImageHTMLSource {
 	sources := make([]detailImageHTMLSource, 0)
 	for fileIndex, file := range files {
 		sources = append(sources, program.reviewDiffFileImageHTMLSourcesWithIndex(summary, file, fileIndex)...)
@@ -273,13 +273,17 @@ func (program *Program) pullRequestDiffImageHTMLSources(summary githubcli.PullRe
 	return sources
 }
 
-func (program *Program) reviewDiffFileImageHTMLSources(summary githubcli.PullRequest, file reviewDiffFile) []detailImageHTMLSource {
+func (program *Program) reviewDiffFileImageHTMLSources(summary any, file reviewDiffFile) []detailImageHTMLSource {
 	return program.reviewDiffFileImageHTMLSourcesWithIndex(summary, file, -1)
 }
 
-func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary githubcli.PullRequest, file reviewDiffFile, fileIndexHint int) []detailImageHTMLSource {
-	diffKey := pullRequestDetailKey(summary.Repository, summary.Number)
-	repository := pullRequestRepositoryName(summary.Repository)
+func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary any, file reviewDiffFile, fileIndexHint int) []detailImageHTMLSource {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return nil
+	}
+	diffKey := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
+	repository := pullRequestRepositoryName(summaryValue.Repository)
 	sources := make([]detailImageHTMLSource, 0)
 	for threadIndex, thread := range file.Threads {
 		for commentIndex, comment := range thread.Comments {
@@ -309,7 +313,7 @@ func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary githubcl
 	return sources
 }
 
-func (program *Program) pullRequestDiffFileIndex(summary githubcli.PullRequest, filePath string) int {
+func (program *Program) pullRequestDiffFileIndex(summary any, filePath string) int {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok {
 		return -1

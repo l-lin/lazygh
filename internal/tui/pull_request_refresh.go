@@ -23,7 +23,7 @@ func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) actionsP
 	}
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		program.invalidatePullRequestDiff(target.repository, target.number)
 	} else {
 		program.reloadActivePullRequestsTab(gui)

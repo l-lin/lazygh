@@ -6,7 +6,7 @@ import (
 	"charm.land/glamour/v2"
 	glamouransi "charm.land/glamour/v2/ansi"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -37,7 +37,7 @@ type glamourMarkdownRenderer struct {
 }
 
 type pullRequestDetailResult struct {
-	detail          githubcli.PullRequestDetail
+	detail          githubdomain.PullRequestDetail
 	err             error
 	sourceUpdatedAt string
 	needsRefresh    bool

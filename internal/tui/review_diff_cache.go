@@ -31,7 +31,7 @@ func (program *Program) reviewDiffRenderKey(file reviewDiffFile, width int) revi
 
 func (program *Program) reviewDiffRenderIdentity(file reviewDiffFile) string {
 	path := strings.TrimSpace(file.Path)
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return path
 	}
 

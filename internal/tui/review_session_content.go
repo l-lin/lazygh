@@ -6,16 +6,16 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) reviewSessionMetadataContent() string {
-	reference := pullRequestReference(program.reviewSession.summary, githubcli.PullRequestDetail{})
+	reference := pullRequestReference(program.reviewSession.summary, githubdomain.PullRequestDetail{})
 	return valueOrDash(strings.TrimSpace(reference))
 }
 
 func (program *Program) reviewSessionDetailContent() string {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return ""
 	}
 	if program.reviewSessionShowsDescription() {
@@ -68,28 +68,28 @@ func (program *Program) reviewSessionStoryChapterContent() string {
 	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), program.markdownRenderer, program.detailWrapWidth, "No chapter narrative is available.")
 }
 
-func (program *Program) reviewSessionDescriptionSummaryAndDetail() (githubcli.PullRequest, githubcli.PullRequestDetail, bool) {
+func (program *Program) reviewSessionDescriptionSummaryAndDetail() (githubdomain.PullRequest, githubdomain.PullRequestDetail, bool) {
 	if !program.reviewSessionShowsDescription() {
-		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
 	}
 
 	summary := program.reviewSession.summary
 	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
-		return summary, githubcli.PullRequestDetail{}, false
+		return summary, githubdomain.PullRequestDetail{}, false
 	}
 	return summary, result.detail, true
 }
 
 func (program *Program) reviewSessionShowsDescription() bool {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return false
 	}
 	return program.mainViewResolver().ContentKind == MainContentKindReviewDescription
 }
 
 func (program *Program) reviewSessionShowsStoryChapter() bool {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return false
 	}
 	return program.mainViewResolver().ContentKind == MainContentKindStoryChapter
@@ -129,7 +129,7 @@ func (program *Program) reviewSessionNoDiffDetail() string {
 }
 
 func (program *Program) reviewSessionChangedFileCount() int {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return 0
 	}
 	if result, ok := program.reviewSessionDiffResult(); ok && result.err == nil {
@@ -142,7 +142,7 @@ func (program *Program) reviewSessionChangedFileCount() int {
 }
 
 func (program *Program) reviewSessionDetailIdentity() string {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return ""
 	}
 	if program.reviewSessionShowsDescription() {
@@ -176,7 +176,7 @@ func (program *Program) reviewSessionDetailIdentity() string {
 }
 
 func (program *Program) reviewSessionDiffResult() (pullRequestDiffResult, bool) {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return pullRequestDiffResult{}, false
 	}
 	return program.pullRequestDiffForSummary(program.reviewSession.summary)

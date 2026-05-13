@@ -6,11 +6,11 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) detailViewContent() string {
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return program.reviewSessionDetailContent()
 	}
 	if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
@@ -67,7 +67,7 @@ func (program *Program) detailViewContent() string {
 	return program.fallbackDetailViewContent(item)
 }
 
-func (program *Program) renderCurrentPullRequestChangesTab(summary githubcli.PullRequest, width int) string {
+func (program *Program) renderCurrentPullRequestChangesTab(summary githubdomain.PullRequest, width int) string {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok {
 		return strings.TrimSpace(program.loadingSpinnerFrame())
@@ -113,7 +113,7 @@ func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
 		width = 1
 	}
 
-	if program.reviewSession.active && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter() {
+	if program.reviewModeActive() && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter() {
 		if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
 			return program.currentReviewDiffDocument(selectedFile, width)
 		}

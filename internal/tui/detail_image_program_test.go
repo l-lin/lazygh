@@ -16,7 +16,7 @@ import (
 func TestLayout_GivenMarkdownWithoutImages_WhenRendering_ThenItQueuesNoImageWork(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "No diagrams today.", State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "No diagrams today.", State: "OPEN"})}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	gui := given_headlessGui(t)
@@ -36,7 +36,7 @@ func TestLayout_GivenMarkdownWithoutImages_WhenRendering_ThenItQueuesNoImageWork
 
 func TestLayout_GivenAnHTMLImageTag_WhenRendering_ThenItShowsTheInlineFallbackAndQueuesTheImageLoad(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: `<img src="https://example.com/diagram.png" alt="Architecture">`, State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: `<img src="https://example.com/diagram.png" alt="Architecture">`, State: "OPEN"})}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.markdownRenderer = glamourMarkdownRenderer{imageStore: subject.detailImageStore, imageProtocol: kittyImageProtocol{support: fakeImageProtocolSupport{supported: true}}, terminalCellSize: fixedTerminalCellSize{width: 10, height: 10}}
@@ -65,7 +65,7 @@ func TestLayout_GivenAnHTMLImageTag_WhenRendering_ThenItShowsTheInlineFallbackAn
 func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsTheInlineFallbackAndSkipsGitHubMarkdownRendering(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"})}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.markdownRenderer = glamourMarkdownRenderer{imageStore: subject.detailImageStore, imageProtocol: kittyImageProtocol{support: fakeImageProtocolSupport{supported: true}}, terminalCellSize: fixedTerminalCellSize{width: 10, height: 10}}
@@ -96,7 +96,7 @@ func TestLayout_GivenAPublicMarkdownImage_WhenRendering_ThenItShowsTheInlineFall
 
 func TestLayout_GivenAPublicMarkdownImage_WhenTheAsyncImageLoadCompletes_ThenItShowsOnlyTheImage(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"})}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.imageHTTPClient = &http.Client{Transport: &stubImageRoundTripper{statusCode: http.StatusOK, body: given_pngImageBytes(t, 40, 20)}}
@@ -137,7 +137,7 @@ func TestLayout_GivenAPublicMarkdownImage_WhenTheAsyncImageLoadCompletes_ThenItS
 
 func TestLayout_GivenAnImageLoadFailure_WhenAsyncLoading_ThenItKeepsTheInlineFallbackVisible(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](https://example.com/diagram.png)", State: "OPEN"})}
 	asyncRunner := &recordingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.imageHTTPClient = &http.Client{Transport: &stubImageRoundTripper{statusCode: http.StatusBadGateway, body: []byte("boom")}}
@@ -177,7 +177,7 @@ func TestLayout_GivenAPrivateGitHubMarkdownImage_WhenRendering_ThenItLoadsRender
 		authToken: "ghp_secret-token",
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](./docs/diagram.png)", State: "OPEN"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "![Architecture](./docs/diagram.png)", State: "OPEN"})}
 	transport := &stubImageRoundTripper{statusCode: http.StatusOK, body: given_pngImageBytes(t, 40, 20)}
 	subject.imageHTTPClient = &http.Client{Transport: transport}
 	subject.markdownRenderer = glamourMarkdownRenderer{imageStore: subject.detailImageStore, imageProtocol: kittyImageProtocol{support: fakeImageProtocolSupport{supported: true}}, terminalCellSize: fixedTerminalCellSize{width: 10, height: 10}}

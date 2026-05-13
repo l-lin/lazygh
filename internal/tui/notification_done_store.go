@@ -1,30 +1,30 @@
 package tui
 
-import "github.com/l-lin/lazygh/internal/githubcli"
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type notificationDoneStore interface {
-	FilterNotifications([]githubcli.Notification) []githubcli.Notification
-	HideNotifications([]githubcli.Notification) error
+	FilterNotifications([]githubdomain.Notification) []githubdomain.Notification
+	HideNotifications([]githubdomain.Notification) error
 }
 
 type noopNotificationDoneStore struct{}
 
-func (noopNotificationDoneStore) FilterNotifications(notifications []githubcli.Notification) []githubcli.Notification {
-	return append([]githubcli.Notification(nil), notifications...)
+func (noopNotificationDoneStore) FilterNotifications(notifications []githubdomain.Notification) []githubdomain.Notification {
+	return append([]githubdomain.Notification(nil), notifications...)
 }
 
-func (noopNotificationDoneStore) HideNotifications([]githubcli.Notification) error {
+func (noopNotificationDoneStore) HideNotifications([]githubdomain.Notification) error {
 	return nil
 }
 
-func (program *Program) filterDoneNotifications(notifications []githubcli.Notification) []githubcli.Notification {
+func (program *Program) filterDoneNotifications(notifications []githubdomain.Notification) []githubdomain.Notification {
 	if program == nil || program.notificationDoneStore == nil {
-		return append([]githubcli.Notification(nil), notifications...)
+		return append([]githubdomain.Notification(nil), notifications...)
 	}
 	return program.notificationDoneStore.FilterNotifications(notifications)
 }
 
-func (program *Program) hideDoneNotificationsBestEffort(notifications []githubcli.Notification) {
+func (program *Program) hideDoneNotificationsBestEffort(notifications []githubdomain.Notification) {
 	if program == nil || program.notificationDoneStore == nil {
 		return
 	}

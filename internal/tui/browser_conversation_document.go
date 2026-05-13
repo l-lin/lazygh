@@ -2,8 +2,6 @@ package tui
 
 import (
 	"strings"
-
-	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 type browserConversationDocument struct {
@@ -85,26 +83,39 @@ func (document browserConversationDocument) sectionAtCursor(cursorLine int) (bro
 	}, true
 }
 
-func (program *Program) currentPullRequestConversationDocument(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, width int) browserConversationDocument {
-	if cacheKey, ok := pullRequestConversationDocumentCacheKey(summary, width); ok {
+func (program *Program) currentPullRequestConversationDocument(summary any, detail any, width int) browserConversationDocument {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return browserConversationDocument{}
+	}
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		return browserConversationDocument{}
+	}
+	if cacheKey, ok := pullRequestConversationDocumentCacheKey(summaryValue, width); ok {
 		if document, ok := program.pullRequestConversationDocumentForKey(cacheKey); ok {
 			return document
 		}
 
-		document := buildBrowserConversationDocument(program.buildPullRequestConversationSections(summary, detail, width))
+		document := buildBrowserConversationDocument(program.buildPullRequestConversationSections(summaryValue, detailValue, width))
 		program.cachePullRequestConversationDocument(cacheKey, document)
 		return document
 	}
 
-	return buildBrowserConversationDocument(program.buildPullRequestConversationSections(summary, detail, width))
+	return buildBrowserConversationDocument(program.buildPullRequestConversationSections(summaryValue, detailValue, width))
 }
 
-func pullRequestConversationDocumentCacheKey(summary githubcli.PullRequest, width int) (pullRequestDetailDocumentCacheKey, bool) {
+func pullRequestConversationDocumentCacheKey(summary any, width int) (pullRequestDetailDocumentCacheKey, bool) {
 	if width < 1 {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
 
-	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return pullRequestDetailDocumentCacheKey{}, false
+	}
+
+	pullRequestKey := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
 	if pullRequestKey == "" {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}

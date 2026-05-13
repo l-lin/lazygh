@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -107,7 +107,7 @@ func diffHunkChangeCounts(diffHunk string) (int, int) {
 	return additions, deletions
 }
 
-func markTargetDiffPreviewLines(previewLines []diffPreviewLine, comment githubcli.PullRequestInlineComment) {
+func markTargetDiffPreviewLines(previewLines []diffPreviewLine, comment githubdomain.PullRequestInlineComment) {
 	startLine, endLine, side := pullRequestInlineCommentTargetRange(comment)
 	if startLine <= 0 && endLine <= 0 {
 		return
@@ -233,7 +233,7 @@ func diffPreviewLineNumberWidth(previewLines []diffPreviewLine) int {
 	return width
 }
 
-func trimDiffPreviewLinesForConversation(previewLines []diffPreviewLine, comment githubcli.PullRequestInlineComment, minimumVisibleLines int) []diffPreviewLine {
+func trimDiffPreviewLinesForConversation(previewLines []diffPreviewLine, comment githubdomain.PullRequestInlineComment, minimumVisibleLines int) []diffPreviewLine {
 	if len(previewLines) == 0 {
 		return nil
 	}

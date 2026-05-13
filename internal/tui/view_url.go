@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) OpenPullRequestByURL(rawURL string) error {
@@ -12,14 +12,14 @@ func (program *Program) OpenPullRequestByURL(rawURL string) error {
 		return errors.New("github loader is unavailable")
 	}
 
-	summary, err := githubcli.ParsePullRequestURL(rawURL)
+	summary, err := githubdomain.ParsePullRequestURL(rawURL)
 	if err != nil {
 		return err
 	}
 	return program.openPullRequestInBrowser(summary)
 }
 
-func (program *Program) openPullRequestInBrowser(summary githubcli.PullRequest) error {
+func (program *Program) openPullRequestInBrowser(summary githubdomain.PullRequest) error {
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
 		return errors.New("missing pull request identity")
@@ -60,26 +60,26 @@ func (program *Program) showOpenedPullRequestInDetailFullscreen() {
 	program.model.focus = FocusDetailView
 }
 
-func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubcli.PullRequest) {
+func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {
 	summaryCopy := summary
 	program.openedPullRequestSummary = &summaryCopy
 	program.openedPullRequestTab = tab
 }
 
-func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (githubcli.PullRequest, bool) {
+func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (githubdomain.PullRequest, bool) {
 	if program.openedPullRequestSummary == nil || program.openedPullRequestTab != tab {
-		return githubcli.PullRequest{}, false
+		return githubdomain.PullRequest{}, false
 	}
 	return *program.openedPullRequestSummary, true
 }
 
-func (program *Program) pullRequestsWithOpenedPullRequestSummary(tab PullRequestTab, pullRequests []githubcli.PullRequest) []githubcli.PullRequest {
+func (program *Program) pullRequestsWithOpenedPullRequestSummary(tab PullRequestTab, pullRequests []githubdomain.PullRequest) []githubdomain.PullRequest {
 	openedSummary, ok := program.openedPullRequestSummaryForTab(tab)
 	if !ok {
 		return pullRequests
 	}
 
-	updatedPullRequests := append([]githubcli.PullRequest(nil), pullRequests...)
+	updatedPullRequests := append([]githubdomain.PullRequest(nil), pullRequests...)
 	for index, pullRequest := range updatedPullRequests {
 		if !samePullRequestIdentity(pullRequest, openedSummary) {
 			continue
@@ -89,7 +89,7 @@ func (program *Program) pullRequestsWithOpenedPullRequestSummary(tab PullRequest
 		return updatedPullRequests
 	}
 
-	return append([]githubcli.PullRequest{openedSummary}, updatedPullRequests...)
+	return append([]githubdomain.PullRequest{openedSummary}, updatedPullRequests...)
 }
 
 func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
@@ -118,8 +118,16 @@ func pullRequestSummaryRowCount(rows []PullRequestRow) int {
 	return count
 }
 
-func samePullRequestIdentity(left githubcli.PullRequest, right githubcli.PullRequest) bool {
-	leftKey := pullRequestDetailKey(left.Repository, left.Number)
-	rightKey := pullRequestDetailKey(right.Repository, right.Number)
+func samePullRequestIdentity(left any, right any) bool {
+	leftSummary, ok := toDomainPullRequestSummary(left)
+	if !ok {
+		return false
+	}
+	rightSummary, ok := toDomainPullRequestSummary(right)
+	if !ok {
+		return false
+	}
+	leftKey := pullRequestDetailKey(leftSummary.Repository, leftSummary.Number)
+	rightKey := pullRequestDetailKey(rightSummary.Repository, rightSummary.Number)
 	return leftKey != "" && leftKey == rightKey
 }

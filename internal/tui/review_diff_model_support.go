@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func buildReviewDiffThreadsByPath(rawThreads []githubcli.PullRequestReviewThread) map[string][]reviewDiffThread {
+func buildReviewDiffThreadsByPath(rawThreads []githubdomain.PullRequestReviewThread) map[string][]reviewDiffThread {
 	threadsByPath := make(map[string][]reviewDiffThread, len(rawThreads))
 	for _, rawThread := range rawThreads {
 		thread := buildReviewDiffThread(rawThread)
@@ -19,7 +19,7 @@ func buildReviewDiffThreadsByPath(rawThreads []githubcli.PullRequestReviewThread
 	return threadsByPath
 }
 
-func buildReviewDiffThread(rawThread githubcli.PullRequestReviewThread) reviewDiffThread {
+func buildReviewDiffThread(rawThread githubdomain.PullRequestReviewThread) reviewDiffThread {
 	return reviewDiffThread{
 		ID:                strings.TrimSpace(rawThread.ID),
 		Path:              strings.TrimSpace(rawThread.Path),
@@ -31,7 +31,7 @@ func buildReviewDiffThread(rawThread githubcli.PullRequestReviewThread) reviewDi
 		OriginalStartLine: rawThread.OriginalStartLine,
 		Side:              reviewDiffLineSideFromGitHub(rawThread.DiffSide),
 		StartSide:         reviewDiffLineSideFromGitHub(rawThread.StartDiffSide),
-		Comments:          append([]githubcli.PullRequestComment(nil), rawThread.Comments...),
+		Comments:          append([]githubdomain.PullRequestComment(nil), rawThread.Comments...),
 	}
 }
 

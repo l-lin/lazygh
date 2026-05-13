@@ -81,7 +81,7 @@ func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenLoadingAssignees_
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -118,7 +118,7 @@ func TestActionsPopup_GivenCachedAssignableUsers_WhenOpeningTheAssigneePickerAga
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

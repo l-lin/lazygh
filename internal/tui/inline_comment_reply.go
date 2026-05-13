@@ -82,7 +82,7 @@ func (program *Program) selectedPullRequestReviewThreadReplyTarget() (pullReques
 	if program.model.Focus() != FocusDetailView {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return program.selectedReviewInlineCommentReplyTarget()
 	}
 	return program.selectedBrowserInlineCommentReplyTarget()
@@ -162,7 +162,7 @@ func (program *Program) selectedBrowserChangesInlineCommentReplyTarget() (pullRe
 }
 
 func (program *Program) selectedReviewInlineCommentReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 
@@ -216,7 +216,7 @@ func (program *Program) inlineCommentReplyShortcutContextActive() bool {
 	if program.model.Focus() != FocusDetailView {
 		return false
 	}
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return true
 	}
 	if !program.shouldShowPullRequestDetailTabs() {

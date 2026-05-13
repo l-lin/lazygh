@@ -3,14 +3,14 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type pullRequestReactionActionTarget struct {
 	repository     string
 	number         int
 	subjectID      string
-	reactionGroups []githubcli.ReactionGroup
+	reactionGroups []githubdomain.ReactionGroup
 	invalidateDiff bool
 }
 
@@ -23,7 +23,7 @@ func (program *Program) selectedPullRequestReactionActionTarget() (pullRequestRe
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		if program.model.Focus() == FocusDetailView {
 			if target, ok := program.selectedReviewDiffReactionActionTarget(); ok {
 				return target, true
@@ -66,7 +66,7 @@ func (program *Program) selectedPullRequestReactionActionTarget() (pullRequestRe
 	}
 }
 
-func (program *Program) selectedPullRequestReactionTargetFromSummary(summary githubcli.PullRequest) (pullRequestReactionActionTarget, bool) {
+func (program *Program) selectedPullRequestReactionTargetFromSummary(summary githubdomain.PullRequest) (pullRequestReactionActionTarget, bool) {
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || summary.Number <= 0 {
 		return pullRequestReactionActionTarget{}, false
@@ -81,11 +81,11 @@ func (program *Program) selectedPullRequestReactionTargetFromSummary(summary git
 		repository:     repository,
 		number:         summary.Number,
 		subjectID:      strings.TrimSpace(result.detail.ID),
-		reactionGroups: append([]githubcli.ReactionGroup(nil), result.detail.ReactionGroups...),
+		reactionGroups: append([]githubdomain.ReactionGroup(nil), result.detail.ReactionGroups...),
 	}, true
 }
 
-func (program *Program) selectedBrowserCommentReactionActionTarget(summary githubcli.PullRequest) (pullRequestReactionActionTarget, bool) {
+func (program *Program) selectedBrowserCommentReactionActionTarget(summary githubdomain.PullRequest) (pullRequestReactionActionTarget, bool) {
 	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
 		return pullRequestReactionActionTarget{}, false
 	}
@@ -114,7 +114,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 			repository:     repository,
 			number:         summary.Number,
 			subjectID:      strings.TrimSpace(comment.ID),
-			reactionGroups: append([]githubcli.ReactionGroup(nil), comment.ReactionGroups...),
+			reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
 		}, true
 	}
 
@@ -127,7 +127,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 			repository:     repository,
 			number:         summary.Number,
 			subjectID:      strings.TrimSpace(comment.ID),
-			reactionGroups: append([]githubcli.ReactionGroup(nil), comment.ReactionGroups...),
+			reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
 			invalidateDiff: true,
 		}, true
 	}
@@ -140,13 +140,13 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 		repository:     repository,
 		number:         summary.Number,
 		subjectID:      strings.TrimSpace(comment.ID),
-		reactionGroups: append([]githubcli.ReactionGroup(nil), comment.ReactionGroups...),
+		reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
 		invalidateDiff: true,
 	}, true
 }
 
 func (program *Program) selectedReviewDiffReactionActionTarget() (pullRequestReactionActionTarget, bool) {
-	if !program.reviewSession.active || program.model.Focus() != FocusDetailView {
+	if !program.reviewModeActive() || program.model.Focus() != FocusDetailView {
 		return pullRequestReactionActionTarget{}, false
 	}
 
@@ -171,7 +171,7 @@ func (program *Program) selectedReviewDiffReactionActionTarget() (pullRequestRea
 		repository:     repository,
 		number:         program.reviewSession.summary.Number,
 		subjectID:      strings.TrimSpace(comment.ID),
-		reactionGroups: append([]githubcli.ReactionGroup(nil), comment.ReactionGroups...),
+		reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
 		invalidateDiff: true,
 	}, true
 }

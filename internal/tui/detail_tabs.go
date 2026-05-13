@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
@@ -90,17 +90,17 @@ func (program *Program) selectedPullRequestDetailCommitCount() (int, bool) {
 	return len(detail.Commits), true
 }
 
-func (program *Program) selectedPullRequestDetailForTabs() (githubcli.PullRequestDetail, bool) {
+func (program *Program) selectedPullRequestDetailForTabs() (githubdomain.PullRequestDetail, bool) {
 	if program.modeDescriptor().Mode() != ScreenModeBrowser {
-		return githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequestDetail{}, false
 	}
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
-		return githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequestDetail{}, false
 	}
 	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
-		return githubcli.PullRequestDetail{}, false
+		return githubdomain.PullRequestDetail{}, false
 	}
 	return result.detail, true
 }

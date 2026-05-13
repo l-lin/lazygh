@@ -5,7 +5,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -33,7 +33,7 @@ type reviewSessionState struct {
 	sourcePaneLayoutSize         PaneLayoutSize
 	sourceFullscreenPane         Focus
 	sourceDetailFullscreenReturn PaneLayoutSize
-	summary                      githubcli.PullRequest
+	summary                      githubdomain.PullRequest
 	pendingReviewID              string
 	selectedFileTreeRow          int
 	fileTreeSearchQuery          string
@@ -62,15 +62,23 @@ func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActio
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func (program *Program) startReviewSession(summary githubcli.PullRequest, pendingReviewID string) {
-	program.startReviewSessionWithMode(summary, pendingReviewID, reviewSessionModeDiff, reviewStoryData{})
+func (program *Program) startReviewSession(summary any, pendingReviewID string) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return
+	}
+	program.startReviewSessionWithMode(summaryValue, pendingReviewID, reviewSessionModeDiff, reviewStoryData{})
 }
 
-func (program *Program) startStoryReviewSession(summary githubcli.PullRequest, pendingReviewID string, story reviewStoryData) {
-	program.startReviewSessionWithMode(summary, pendingReviewID, reviewSessionModeStory, story)
+func (program *Program) startStoryReviewSession(summary any, pendingReviewID string, story reviewStoryData) {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		return
+	}
+	program.startReviewSessionWithMode(summaryValue, pendingReviewID, reviewSessionModeStory, story)
 }
 
-func (program *Program) startReviewSessionWithMode(summary githubcli.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
+func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
 	program.detailViewState.clearPendingPrefix()
 	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
 	program.reviewSession = reviewSessionState{

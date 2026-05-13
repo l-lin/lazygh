@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type pullRequestStatusCheckSummaryKind int
@@ -20,7 +20,7 @@ type pullRequestStatusCheckClassification struct {
 	SummaryKind    pullRequestStatusCheckSummaryKind
 }
 
-func classifyPullRequestStatusCheck(check githubcli.PullRequestStatusCheck) pullRequestStatusCheckClassification {
+func classifyPullRequestStatusCheck(check githubdomain.PullRequestStatusCheck) pullRequestStatusCheckClassification {
 	status := strings.ToUpper(strings.TrimSpace(check.Status))
 	conclusion := strings.ToUpper(strings.TrimSpace(check.Conclusion))
 	if status != "COMPLETED" {

@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/l-lin/lazygh/internal/githubcli"
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) hydratePullRequestsFromCache(tab PullRequestTab) bool {
 	if program.pullRequestCache == nil || !program.canHydratePullRequestsFromCache(tab) {
@@ -12,9 +12,8 @@ func (program *Program) hydratePullRequestsFromCache(tab PullRequestTab) bool {
 		return false
 	}
 
-	convertedPullRequests := githubcli.PullRequestsFromDomain(pullRequests)
-	program.setPullRequestsCount(tab, len(convertedPullRequests), true)
-	program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, convertedPullRequests, nil))
+	program.setPullRequestsCount(tab, len(pullRequests), true)
+	program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, pullRequests, nil))
 	return true
 }
 
@@ -27,12 +26,12 @@ func (program *Program) canHydratePullRequestsFromCache(tab PullRequestTab) bool
 	return len(rows) == 1 && program.isPullRequestLoadingItem(rows[0].Item)
 }
 
-func (program *Program) cachePullRequests(tab PullRequestTab, pullRequests []githubcli.PullRequest) {
+func (program *Program) cachePullRequests(tab PullRequestTab, pullRequests []githubdomain.PullRequest) {
 	if program.pullRequestCache == nil {
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequests(program.pullRequestSearch(tab), githubcli.ToDomainPullRequests(pullRequests))
+	_ = program.pullRequestCache.SavePullRequests(program.pullRequestSearch(tab), pullRequests)
 }
 
 func (program *Program) shouldPreservePullRequestRowsOnRefreshError(tab PullRequestTab) bool {

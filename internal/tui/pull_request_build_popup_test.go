@@ -8,6 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -72,7 +73,7 @@ func TestBrowserMode_GivenTheCursorOnANonPendingBuild_WhenPressingEnter_ThenItCo
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -123,7 +124,7 @@ func TestBrowserMode_GivenTheCursorOnAPendingBuild_WhenPressingEnter_ThenItStill
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -531,7 +532,7 @@ func TestActionsPopup_GivenBuildRunActionSelected_WhenExecuting_ThenItClosesTheP
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -618,7 +619,7 @@ func TestActionsPopup_GivenBuildRunPopupVisible_WhenOpening_ThenItDoesNotShowThe
 		runURL:     "https://github.com/acme/widgets/actions/runs/42",
 		repository: "acme/widgets",
 		body:       "Run #42\nStatus: completed",
-		jobs:       []githubcli.PullRequestBuildRunJob{{DatabaseID: 1234, Name: "Test job"}},
+		jobs:       []githubdomain.PullRequestBuildRunJob{{DatabaseID: 1234, Name: "Test job"}},
 	})
 	then_noError(t, actualErr)
 
@@ -664,7 +665,7 @@ func TestActionsPopup_GivenViewJobLogsActionSelectedFromTheBuildOverview_WhenExe
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: loader.details["acme/widgets#42"]}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

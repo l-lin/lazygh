@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -114,7 +114,7 @@ func (program *Program) selectedPullRequestReviewCommentActionTarget() (pullRequ
 	if program.model.Focus() != FocusDetailView {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
-	if program.reviewSession.active {
+	if program.reviewModeActive() {
 		return program.selectedReviewDiffInlineCommentActionTarget()
 	}
 	return program.selectedBrowserInlineCommentActionTarget()
@@ -196,7 +196,7 @@ func (program *Program) selectedBrowserChangesInlineCommentActionTarget() (pullR
 }
 
 func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {
-	if !program.reviewSession.active {
+	if !program.reviewModeActive() {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
@@ -224,7 +224,7 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 	}, true
 }
 
-func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
+func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubdomain.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (pullRequestReviewCommentActionTarget, bool) {
 	threadComment, ok := pullRequestInlineThreadCommentAtBodyCursor(thread, renderer, width, cursorLine)
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
@@ -232,45 +232,53 @@ func pullRequestInlineThreadCommentActionTargetAtBodyCursor(thread githubcli.Pul
 	return pullRequestInlineThreadCommentActionTarget(threadComment)
 }
 
-func pullRequestInlineThreadCommentActionTarget(threadComment githubcli.PullRequestComment) (pullRequestReviewCommentActionTarget, bool) {
+func pullRequestInlineThreadCommentActionTarget(threadComment githubdomain.PullRequestComment) (pullRequestReviewCommentActionTarget, bool) {
 	if !hasUsablePullRequestMutationID(threadComment.ID) {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 	return pullRequestReviewCommentActionTarget{commentID: strings.TrimSpace(threadComment.ID), body: threadComment.Body}, true
 }
 
-func pullRequestInlineThreadCommentAtBodyCursor(thread githubcli.PullRequestReviewThread, renderer MarkdownRenderer, width int, cursorLine int) (githubcli.PullRequestComment, bool) {
+func pullRequestInlineThreadCommentAtBodyCursor(thread any, renderer MarkdownRenderer, width int, cursorLine int) (githubdomain.PullRequestComment, bool) {
+	threadValue, ok := toDomainPullRequestReviewThread(thread)
+	if !ok {
+		return githubdomain.PullRequestComment{}, false
+	}
 	lineIndex := cursorLine
-	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(thread)); diffPreview != "" {
+	if diffPreview := renderPullRequestInlineCommentThreadDiffPreview(pullRequestInlineCommentFromThread(threadValue)); diffPreview != "" {
 		lineIndex -= renderedTextLineCount(diffPreview)
 		if lineIndex < 0 {
-			return githubcli.PullRequestComment{}, false
+			return githubdomain.PullRequestComment{}, false
 		}
 	}
 
-	for commentIndex, threadComment := range thread.Comments {
-		commentLineCount := renderedTextLineCount(renderInlineThreadCommentBlock(threadComment, renderer, width, commentIndex, len(thread.Comments)))
+	for commentIndex, threadComment := range threadValue.Comments {
+		commentLineCount := renderedTextLineCount(renderInlineThreadCommentBlock(threadComment, renderer, width, commentIndex, len(threadValue.Comments)))
 		if lineIndex < commentLineCount {
 			return threadComment, true
 		}
 		lineIndex -= commentLineCount
 	}
 
-	return githubcli.PullRequestComment{}, false
+	return githubdomain.PullRequestComment{}, false
 }
 
-func reviewDiffCommentAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (reviewDiffThread, githubcli.PullRequestComment, bool) {
+func reviewDiffCommentAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (reviewDiffThread, githubdomain.PullRequestComment, bool) {
 	if len(renderedRows) == 0 || len(document.rows) == 0 {
-		return reviewDiffThread{}, githubcli.PullRequestComment{}, false
+		return reviewDiffThread{}, githubdomain.PullRequestComment{}, false
 	}
 
 	renderedRowIndex := document.rows[document.rowIndexForPosition(state.cursor)].line
 	if renderedRowIndex < 0 || renderedRowIndex >= len(renderedRows) {
-		return reviewDiffThread{}, githubcli.PullRequestComment{}, false
+		return reviewDiffThread{}, githubdomain.PullRequestComment{}, false
 	}
 	row := renderedRows[renderedRowIndex]
 	if row.Thread == nil || row.Comment == nil {
-		return reviewDiffThread{}, githubcli.PullRequestComment{}, false
+		return reviewDiffThread{}, githubdomain.PullRequestComment{}, false
 	}
-	return *row.Thread, *row.Comment, true
+	comment, ok := toDomainPullRequestComment(row.Comment)
+	if !ok {
+		return reviewDiffThread{}, githubdomain.PullRequestComment{}, false
+	}
+	return *row.Thread, comment, true
 }

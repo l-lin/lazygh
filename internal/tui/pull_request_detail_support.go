@@ -6,20 +6,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func detailBody(detail githubcli.PullRequestDetail, summary githubcli.PullRequest) string {
+func detailBody(detail githubdomain.PullRequestDetail, summary githubdomain.PullRequest) string {
 	return firstNonEmpty(detail.Body, summary.Body)
 }
 
-func detailBodyHTML(detail githubcli.PullRequestDetail) string {
+func detailBodyHTML(detail githubdomain.PullRequestDetail) string {
 	return strings.TrimSpace(detail.BodyHTML)
 }
 
-func detailStatus(detail githubcli.PullRequestDetail, summary githubcli.PullRequest) string {
-	return effectivePullRequestStatus(firstNonEmpty(detail.State, summary.State), detail.IsDraft || summary.IsDraft)
+func detailStatus(detail any, summary any) string {
+	detailValue, ok := toDomainPullRequestDetail(detail)
+	if !ok {
+		detailValue = githubdomain.PullRequestDetail{}
+	}
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		summaryValue = githubdomain.PullRequest{}
+	}
+	return effectivePullRequestStatus(firstNonEmpty(detailValue.State, summaryValue.State), detailValue.IsDraft || summaryValue.IsDraft)
 }
 
 func effectivePullRequestStatus(state string, isDraft bool) string {
@@ -73,7 +81,7 @@ func pullRequestStatusStyleFor(status string) (pullRequestStatusStyle, bool) {
 	}
 }
 
-func renderPullRequestTitleAndReferenceLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+func renderPullRequestTitleAndReferenceLine(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) string {
 	reference := pullRequestReference(summary, detail)
 	title := pullRequestTitleText(firstNonEmpty(detail.Title, summary.Title))
 	if reference == "" {
@@ -82,7 +90,7 @@ func renderPullRequestTitleAndReferenceLine(summary githubcli.PullRequest, detai
 	return stylePullRequestReferenceText(reference) + " " + stylePullRequestTitleText(title)
 }
 
-func pullRequestReference(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+func pullRequestReference(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) string {
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	number := firstNonZero(detail.Number, summary.Number)
 	if number <= 0 {
@@ -91,7 +99,7 @@ func pullRequestReference(summary githubcli.PullRequest, detail githubcli.PullRe
 	return fmt.Sprintf("%s#%d", repository, number)
 }
 
-func renderPullRequestLifecycleLine(summary githubcli.PullRequest, detail githubcli.PullRequestDetail) string {
+func renderPullRequestLifecycleLine(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) string {
 	authorBadge := renderPullRequestActorBadge(pullRequestAuthorLogin(detail.Author))
 	createdAt := formattedOptionalTimestamp(detail.CreatedAt)
 	updatedAt := formattedOptionalTimestamp(firstNonEmpty(detail.UpdatedAt, summary.UpdatedAt))
@@ -117,7 +125,7 @@ func renderPullRequestLifecycleLine(summary githubcli.PullRequest, detail github
 	return ""
 }
 
-func renderPullRequestLabelsLine(labels []githubcli.PullRequestLabel) string {
+func renderPullRequestLabelsLine(labels []githubdomain.PullRequestLabel) string {
 	entries := make([]string, 0, len(labels))
 	for _, label := range labels {
 		trimmedName := strings.TrimSpace(label.Name)
@@ -132,7 +140,7 @@ func renderPullRequestLabelsLine(labels []githubcli.PullRequestLabel) string {
 	return stylePullRequestMutedText(strings.Join(entries, "  "))
 }
 
-func renderPullRequestAssigneesLine(assignees []githubcli.PullRequestAuthor) string {
+func renderPullRequestAssigneesLine(assignees []githubdomain.PullRequestAuthor) string {
 	entries := make([]string, 0, len(assignees))
 	for _, assignee := range assignees {
 		badge := renderPullRequestActorBadge(pullRequestAssigneeLogin(&assignee))
@@ -167,7 +175,7 @@ func stylePullRequestMutedText(text string) string {
 	return styleText(text, foregroundColorEscape(theme.PullRequestReferenceHex))
 }
 
-func renderPullRequestReviewRequestsLine(reviewRequests []githubcli.PullRequestReviewRequest) string {
+func renderPullRequestReviewRequestsLine(reviewRequests []githubdomain.PullRequestReviewRequest) string {
 	entries := make([]string, 0, len(reviewRequests))
 	for _, reviewRequest := range reviewRequests {
 		label := pullRequestReviewRequestLabel(reviewRequest.RequestedReviewer)
@@ -182,7 +190,7 @@ func renderPullRequestReviewRequestsLine(reviewRequests []githubcli.PullRequestR
 	return strings.Join(entries, "  ")
 }
 
-func renderPullRequestApprovalsLine(reviews []githubcli.PullRequestReview) string {
+func renderPullRequestApprovalsLine(reviews []githubdomain.PullRequestReview) string {
 	approverLogins := approvedPullRequestReviewerLogins(reviews)
 	if len(approverLogins) == 0 {
 		return ""
@@ -195,12 +203,13 @@ func renderPullRequestApprovalsLine(reviews []githubcli.PullRequestReview) strin
 	return strings.Join(approvals, "  ")
 }
 
-func approvedPullRequestReviewerLogins(reviews []githubcli.PullRequestReview) []string {
-	if len(reviews) == 0 {
+func approvedPullRequestReviewerLogins(reviews any) []string {
+	reviewValues := toDomainPullRequestReviews(reviews)
+	if len(reviewValues) == 0 {
 		return nil
 	}
 
-	latestReviewByLogin := latestPullRequestReviews(reviews)
+	latestReviewByLogin := latestPullRequestReviews(reviewValues)
 	approverLogins := make([]string, 0, len(latestReviewByLogin))
 	for login, review := range latestReviewByLogin {
 		if strings.EqualFold(strings.TrimSpace(review.State), "APPROVED") {
@@ -211,10 +220,10 @@ func approvedPullRequestReviewerLogins(reviews []githubcli.PullRequestReview) []
 	return approverLogins
 }
 
-func latestPullRequestReviews(reviews []githubcli.PullRequestReview) map[string]githubcli.PullRequestReview {
-	latestByLogin := map[string]githubcli.PullRequestReview{}
+func latestPullRequestReviews(reviews any) map[string]githubdomain.PullRequestReview {
+	latestByLogin := map[string]githubdomain.PullRequestReview{}
 	latestIndexes := map[string]int{}
-	for index, review := range reviews {
+	for index, review := range toDomainPullRequestReviews(reviews) {
 		login := pullRequestReviewAuthorLogin(review.Author)
 		if login == "" {
 			continue
@@ -229,7 +238,7 @@ func latestPullRequestReviews(reviews []githubcli.PullRequestReview) map[string]
 	return latestByLogin
 }
 
-func pullRequestReviewIsLater(candidate githubcli.PullRequestReview, candidateIndex int, current githubcli.PullRequestReview, currentIndex int) bool {
+func pullRequestReviewIsLater(candidate githubdomain.PullRequestReview, candidateIndex int, current githubdomain.PullRequestReview, currentIndex int) bool {
 	candidateTime, candidateHasTime := parsePullRequestReviewSubmittedAt(candidate.SubmittedAt)
 	currentTime, currentHasTime := parsePullRequestReviewSubmittedAt(current.SubmittedAt)
 	if candidateHasTime && currentHasTime {
@@ -251,7 +260,7 @@ func parsePullRequestReviewSubmittedAt(value string) (time.Time, bool) {
 	return submittedAt, true
 }
 
-func pullRequestReviewAuthorLogin(author *githubcli.PullRequestCommentAuthor) string {
+func pullRequestReviewAuthorLogin(author *githubdomain.PullRequestCommentAuthor) string {
 	if author == nil {
 		return ""
 	}
@@ -274,21 +283,21 @@ func pullRequestTitleText(title string) string {
 	return trimmedTitle
 }
 
-func pullRequestAuthorLogin(author *githubcli.PullRequestAuthor) string {
+func pullRequestAuthorLogin(author *githubdomain.PullRequestAuthor) string {
 	if author == nil {
 		return "-"
 	}
 	return formatLogin(author.Login)
 }
 
-func pullRequestAssigneeLogin(author *githubcli.PullRequestAuthor) string {
+func pullRequestAssigneeLogin(author *githubdomain.PullRequestAuthor) string {
 	if author == nil {
 		return "-"
 	}
 	return formatLogin(author.Login)
 }
 
-func pullRequestReviewRequestLabel(reviewer githubcli.PullRequestRequestedReviewer) string {
+func pullRequestReviewRequestLabel(reviewer githubdomain.PullRequestRequestedReviewer) string {
 	if login := formatLogin(reviewer.Login); login != "-" {
 		return login
 	}
@@ -310,14 +319,14 @@ func pullRequestReviewRequestLabel(reviewer githubcli.PullRequestRequestedReview
 	return "-"
 }
 
-func pullRequestCommentAuthorLogin(author *githubcli.PullRequestCommentAuthor) string {
+func pullRequestCommentAuthorLogin(author *githubdomain.PullRequestCommentAuthor) string {
 	if author == nil {
 		return "-"
 	}
 	return formatLogin(author.Login)
 }
 
-func summarizeStatusChecks(checks []githubcli.PullRequestStatusCheck) string {
+func summarizeStatusChecks(checks []githubdomain.PullRequestStatusCheck) string {
 	if len(checks) == 0 {
 		return "-"
 	}
@@ -369,7 +378,7 @@ func formatCommentCount(count int) string {
 	return fmt.Sprintf("%d %s", count, pluralize(count, "comment", "comments"))
 }
 
-func renderPullRequestChurnParts(detail githubcli.PullRequestDetail) []string {
+func renderPullRequestChurnParts(detail githubdomain.PullRequestDetail) []string {
 	if !pullRequestChurnAvailable(detail) {
 		return nil
 	}
@@ -380,7 +389,7 @@ func renderPullRequestChurnParts(detail githubcli.PullRequestDetail) []string {
 	}
 }
 
-func pullRequestChurnAvailable(detail githubcli.PullRequestDetail) bool {
+func pullRequestChurnAvailable(detail githubdomain.PullRequestDetail) bool {
 	return detail.ChangedFiles > 0 || detail.Additions > 0 || detail.Deletions > 0
 }
 

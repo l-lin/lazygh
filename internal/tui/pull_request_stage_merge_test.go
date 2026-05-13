@@ -88,7 +88,7 @@ func TestActionsPopup_GivenAClosedDraftPullRequestDescriptionDetail_WhenOpening_
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("CLOSED", true))
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("CLOSED", true)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("CLOSED", true))}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -123,7 +123,7 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 	asyncRunner := &capturingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("OPEN", true)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", true))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 	gui := given_headlessGui(t)
@@ -186,7 +186,7 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 	asyncRunner := &capturingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("OPEN", false)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 	gui := given_headlessGui(t)
@@ -238,7 +238,7 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("OPEN", false)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -290,7 +290,7 @@ func TestLayout_GivenAReopenClosedDraftPullRequestMutation_WhenRendering_ThenThe
 	asyncRunner := &capturingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("CLOSED", true)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("CLOSED", true))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 	gui := given_headlessGui(t)
@@ -341,7 +341,7 @@ func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsThe
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("CLOSED", true))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("CLOSED", true)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("CLOSED", true))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -422,7 +422,7 @@ func TestLayout_GivenAConfirmedSquashMerge_WhenRendering_ThenTheMergedStateFeedb
 	asyncRunner := &capturingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("OPEN", false)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 	cache := &fakePersistentPullRequestCache{
@@ -480,7 +480,7 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
-	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: given_pullRequestLifecycleDetail("OPEN", false)}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
 	defer gui.Close()

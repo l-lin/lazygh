@@ -7,7 +7,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -21,12 +21,12 @@ var errNoAssignableUsers = errors.New("no assignable users available")
 type pullRequestAssigneePickerTarget struct {
 	repository string
 	number     int
-	assignees  []githubcli.PullRequestAuthor
+	assignees  []githubdomain.PullRequestAuthor
 }
 
 type assigneePickerState struct {
 	target                 pullRequestAssigneePickerTarget
-	candidates             []githubcli.PullRequestAuthor
+	candidates             []githubdomain.PullRequestAuthor
 	selectedLogins         map[string]bool
 	originalSelectedLogins map[string]bool
 	viewerLogin            string
@@ -92,7 +92,7 @@ func (program *Program) startAssigneePickerLoad(gui *gocui.Gui, target pullReque
 
 	program.feedbackMessage = ""
 	program.assigneePicker = nil
-	program.assigneePickerLoad = &assigneePickerLoadState{target: target, command: githubcli.FormatAssignableUsersCommand(target.repository)}
+	program.assigneePickerLoad = &assigneePickerLoadState{target: target, command: formatAssignableUsersCommand(target.repository)}
 	program.actionsPopupSearchEditor = nil
 	program.actionsPopupErrorMessage = ""
 	program.model.OpenActionsPopup(1)
@@ -103,8 +103,7 @@ func (program *Program) startAssigneePickerLoad(gui *gocui.Gui, target pullReque
 }
 
 func (program *Program) loadAssigneePicker(gui *gocui.Gui, target pullRequestAssigneePickerTarget) {
-	domainCandidates, err := program.pullRequestMutations.ListAssignableUsers(target.repository)
-	candidates := githubcli.PullRequestAuthorsFromDomain(domainCandidates)
+	candidates, err := program.pullRequestMutations.ListAssignableUsers(target.repository)
 	if err == nil {
 		program.storeAssignableUsers(target.repository, candidates)
 	}
@@ -127,7 +126,7 @@ func (program *Program) loadAssigneePicker(gui *gocui.Gui, target pullRequestAss
 	})
 }
 
-func (program *Program) openAssigneePickerWithCandidates(target pullRequestAssigneePickerTarget, candidates []githubcli.PullRequestAuthor) actionsPopupActionResult {
+func (program *Program) openAssigneePickerWithCandidates(target pullRequestAssigneePickerTarget, candidates []githubdomain.PullRequestAuthor) actionsPopupActionResult {
 	picker, err := newAssigneePickerState(target, candidates, program.currentConnectedUserLogin())
 	if err != nil {
 		return actionsPopupActionResult{err: err}
@@ -141,7 +140,7 @@ func (program *Program) openAssigneePickerWithCandidates(target pullRequestAssig
 	return actionsPopupActionResult{}
 }
 
-func newAssigneePickerState(target pullRequestAssigneePickerTarget, candidates []githubcli.PullRequestAuthor, viewerLogin string) (*assigneePickerState, error) {
+func newAssigneePickerState(target pullRequestAssigneePickerTarget, candidates []githubdomain.PullRequestAuthor, viewerLogin string) (*assigneePickerState, error) {
 	selectedLogins := map[string]bool{}
 	for _, assignee := range target.assignees {
 		trimmedLogin := strings.TrimSpace(assignee.Login)
@@ -172,10 +171,10 @@ func newAssigneePickerState(target pullRequestAssigneePickerTarget, candidates [
 	}, nil
 }
 
-func mergedAssigneePickerCandidates(currentAssignees []githubcli.PullRequestAuthor, assignableUsers []githubcli.PullRequestAuthor) []githubcli.PullRequestAuthor {
-	mergedCandidates := make([]githubcli.PullRequestAuthor, 0, len(currentAssignees)+len(assignableUsers))
+func mergedAssigneePickerCandidates(currentAssignees []githubdomain.PullRequestAuthor, assignableUsers []githubdomain.PullRequestAuthor) []githubdomain.PullRequestAuthor {
+	mergedCandidates := make([]githubdomain.PullRequestAuthor, 0, len(currentAssignees)+len(assignableUsers))
 	seenLogins := map[string]bool{}
-	for _, candidate := range append(append([]githubcli.PullRequestAuthor(nil), currentAssignees...), assignableUsers...) {
+	for _, candidate := range append(append([]githubdomain.PullRequestAuthor(nil), currentAssignees...), assignableUsers...) {
 		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
 		if normalizedCandidate.Login == "" || seenLogins[normalizedCandidate.Login] {
 			continue
@@ -186,7 +185,7 @@ func mergedAssigneePickerCandidates(currentAssignees []githubcli.PullRequestAuth
 	return mergedCandidates
 }
 
-func sortAssigneePickerCandidates(candidates []githubcli.PullRequestAuthor, selectedLogins map[string]bool, viewerLogin string) {
+func sortAssigneePickerCandidates(candidates []githubdomain.PullRequestAuthor, selectedLogins map[string]bool, viewerLogin string) {
 	sort.SliceStable(candidates, func(i int, j int) bool {
 		left := candidates[i]
 		right := candidates[j]
@@ -210,7 +209,7 @@ func assigneePickerCandidatePriority(login string, selectedLogins map[string]boo
 	}
 }
 
-func (program *Program) cachedAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, bool) {
+func (program *Program) cachedAssignableUsers(repository string) ([]githubdomain.PullRequestAuthor, bool) {
 	if program == nil || len(program.assignableUsersCache) == 0 {
 		return nil, false
 	}
@@ -218,18 +217,18 @@ func (program *Program) cachedAssignableUsers(repository string) ([]githubcli.Pu
 	if !ok {
 		return nil, false
 	}
-	return append([]githubcli.PullRequestAuthor(nil), candidates...), true
+	return append([]githubdomain.PullRequestAuthor(nil), candidates...), true
 }
 
-func (program *Program) storeAssignableUsers(repository string, candidates []githubcli.PullRequestAuthor) {
+func (program *Program) storeAssignableUsers(repository string, candidates []githubdomain.PullRequestAuthor) {
 	trimmedRepository := strings.TrimSpace(repository)
 	if trimmedRepository == "" || trimmedRepository == "-" {
 		return
 	}
 	if program.assignableUsersCache == nil {
-		program.assignableUsersCache = map[string][]githubcli.PullRequestAuthor{}
+		program.assignableUsersCache = map[string][]githubdomain.PullRequestAuthor{}
 	}
-	program.assignableUsersCache[trimmedRepository] = append([]githubcli.PullRequestAuthor(nil), candidates...)
+	program.assignableUsersCache[trimmedRepository] = append([]githubdomain.PullRequestAuthor(nil), candidates...)
 }
 
 func (program *Program) assigneePickerLoadMatches(target pullRequestAssigneePickerTarget) bool {
@@ -261,7 +260,7 @@ func (program *Program) selectedPullRequestAssigneePickerTarget() (pullRequestAs
 	return pullRequestAssigneePickerTarget{
 		repository: repository,
 		number:     summary.Number,
-		assignees:  append([]githubcli.PullRequestAuthor(nil), result.detail.Assignees...),
+		assignees:  append([]githubdomain.PullRequestAuthor(nil), result.detail.Assignees...),
 	}, true
 }
 
@@ -295,7 +294,7 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 	return actions
 }
 
-func (program *Program) assigneePickerLabel(candidate githubcli.PullRequestAuthor) string {
+func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAuthor) string {
 	if !program.assigneePickerVisible() {
 		return ""
 	}
@@ -323,7 +322,7 @@ func (program *Program) assigneePickerLabel(candidate githubcli.PullRequestAutho
 	return checkbox + " " + identityLabel + " (" + trimmedName + ")"
 }
 
-func (program *Program) toggleAssigneePickerSelection(candidate githubcli.PullRequestAuthor) actionsPopupActionResult {
+func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.PullRequestAuthor) actionsPopupActionResult {
 	if !program.assigneePickerVisible() {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
@@ -385,7 +384,7 @@ func (state *assigneePickerState) selectedDiff() ([]string, []string) {
 	return addLogins, removeLogins
 }
 
-func normalizedAssigneePickerCandidate(candidate githubcli.PullRequestAuthor) githubcli.PullRequestAuthor {
+func normalizedAssigneePickerCandidate(candidate githubdomain.PullRequestAuthor) githubdomain.PullRequestAuthor {
 	candidate.Login = strings.TrimSpace(candidate.Login)
 	candidate.Name = strings.TrimSpace(candidate.Name)
 	return candidate

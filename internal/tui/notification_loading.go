@@ -3,7 +3,7 @@ package tui
 import (
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
@@ -19,8 +19,7 @@ func (program *Program) notificationsPendingLoad() bool {
 }
 
 func (program *Program) loadNotifications(gui *gocui.Gui) {
-	domainNotifications, err := program.notificationQueries.ListNotifications()
-	notifications := githubcli.NotificationsFromDomain(domainNotifications)
+	notifications, err := program.notificationQueries.ListNotifications()
 	if err == nil {
 		notifications = program.filterDoneNotifications(notifications)
 		program.cacheNotifications(notifications)
@@ -40,6 +39,6 @@ func (program *Program) loadNotifications(gui *gocui.Gui) {
 	})
 }
 
-func notificationRows(notifications []githubcli.Notification) []NotificationRow {
+func notificationRows(notifications []githubdomain.Notification) []NotificationRow {
 	return notificationsStateRows(notifications, nil)
 }

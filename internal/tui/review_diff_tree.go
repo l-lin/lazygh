@@ -281,7 +281,7 @@ func (program *Program) renderReviewDiffTreeView(view *gocui.View, tree reviewDi
 	}
 
 	view.Clear()
-	showSelectedLine := program.reviewSession.active || (program.usesManualSelectedLineRendering(query) && program.shouldHighlightSelection(FocusPullRequestsView, true))
+	showSelectedLine := program.reviewModeActive() || (program.usesManualSelectedLineRendering(query) && program.shouldHighlightSelection(FocusPullRequestsView, true))
 	for _, row := range tree.Rows {
 		fmt.Fprintln(view, renderReviewDiffTreeRow(row, files, query, showSelectedLine && row.VisibleRowIndex == selectedVisibleLine))
 	}

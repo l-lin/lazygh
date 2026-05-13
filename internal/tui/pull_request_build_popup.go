@@ -6,7 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -28,7 +28,7 @@ type pullRequestBuildRunPopupContent struct {
 	runURL        string
 	repository    string
 	body          string
-	jobs          []githubcli.PullRequestBuildRunJob
+	jobs          []githubdomain.PullRequestBuildRunJob
 	previousPopup *pullRequestBuildRunPopupState
 	widthPercent  int
 	heightPercent int
@@ -39,7 +39,7 @@ type pullRequestBuildRunPopupState struct {
 	runURL        string
 	repository    string
 	body          string
-	jobs          []githubcli.PullRequestBuildRunJob
+	jobs          []githubdomain.PullRequestBuildRunJob
 	previousPopup *pullRequestBuildRunPopupState
 	widthPercent  int
 	heightPercent int
@@ -59,7 +59,7 @@ func (program *Program) openPullRequestBuildRunPopup(gui *gocui.Gui, content pul
 		title = pullRequestBuildRunPopupTitle(content.checkTitle)
 	}
 
-	copiedJobs := append([]githubcli.PullRequestBuildRunJob(nil), content.jobs...)
+	copiedJobs := append([]githubdomain.PullRequestBuildRunJob(nil), content.jobs...)
 	program.pullRequestBuildRunPopup = &pullRequestBuildRunPopupState{
 		title:         title,
 		runURL:        strings.TrimSpace(content.runURL),
@@ -226,7 +226,7 @@ func renderPullRequestBuildRunPopupContent(content pullRequestBuildRunPopupConte
 	return strings.Join(sections, "\n\n")
 }
 
-func renderPullRequestBuildRunPopupJobs(jobs []githubcli.PullRequestBuildRunJob) string {
+func renderPullRequestBuildRunPopupJobs(jobs []githubdomain.PullRequestBuildRunJob) string {
 	if len(jobs) == 0 {
 		return ""
 	}
@@ -238,7 +238,7 @@ func renderPullRequestBuildRunPopupJobs(jobs []githubcli.PullRequestBuildRunJob)
 	return strings.Join(lines, "\n")
 }
 
-func renderPullRequestBuildRunPopupJobLine(job githubcli.PullRequestBuildRunJob) string {
+func renderPullRequestBuildRunPopupJobLine(job githubdomain.PullRequestBuildRunJob) string {
 	jobName := strings.TrimSpace(job.Name)
 	if jobName == "" {
 		jobName = "Job"

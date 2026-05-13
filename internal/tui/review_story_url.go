@@ -1,13 +1,13 @@
 package tui
 
-import "github.com/l-lin/lazygh/internal/githubcli"
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) OpenStoryReviewByURL(rawURL string) error {
 	if actualErr := program.validateStoryReviewAvailability(); actualErr != nil {
 		return actualErr
 	}
 
-	summary, actualErr := githubcli.ParsePullRequestURL(rawURL)
+	summary, actualErr := githubdomain.ParsePullRequestURL(rawURL)
 	if actualErr != nil {
 		return actualErr
 	}

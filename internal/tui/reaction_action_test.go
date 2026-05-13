@@ -77,8 +77,9 @@ func TestSelectedPullRequestReactionActionTarget_GivenCommentsTabCursorOnPullReq
 	if actual.invalidateDiff {
 		t.Fatal("expected pull request comment reactions to avoid diff invalidation")
 	}
-	if !reflect.DeepEqual(actual.reactionGroups, []githubcli.ReactionGroup{{Content: githubcli.ReactionContentEyes, TotalCount: 2}}) {
-		t.Fatalf("expected comment reaction groups %+v, actual %+v", []githubcli.ReactionGroup{{Content: githubcli.ReactionContentEyes, TotalCount: 2}}, actual.reactionGroups)
+	expectedReactionGroups := toDomainReactionGroups([]githubcli.ReactionGroup{{Content: githubcli.ReactionContentEyes, TotalCount: 2}})
+	if !reflect.DeepEqual(actual.reactionGroups, expectedReactionGroups) {
+		t.Fatalf("expected comment reaction groups %+v, actual %+v", expectedReactionGroups, actual.reactionGroups)
 	}
 }
 
@@ -163,7 +164,7 @@ func TestSelectedPullRequestReactionRemovalTarget_GivenDescriptionTabCursorOnVie
 	if actual.subjectID != "PR_kwDOA" {
 		t.Fatalf("expected subject id %q, actual %q", "PR_kwDOA", actual.subjectID)
 	}
-	if actual.content != githubcli.ReactionContentThumbsUp {
+	if string(actual.content) != string(githubcli.ReactionContentThumbsUp) {
 		t.Fatalf("expected reaction content %q, actual %q", githubcli.ReactionContentThumbsUp, actual.content)
 	}
 }
@@ -210,7 +211,7 @@ func TestSelectedPullRequestReactionRemovalTarget_GivenCommentsTabCursorOnViewer
 	if actual.subjectID != "IC_kwDOA" {
 		t.Fatalf("expected subject id %q, actual %q", "IC_kwDOA", actual.subjectID)
 	}
-	if actual.content != githubcli.ReactionContentEyes {
+	if string(actual.content) != string(githubcli.ReactionContentEyes) {
 		t.Fatalf("expected reaction content %q, actual %q", githubcli.ReactionContentEyes, actual.content)
 	}
 }
@@ -260,7 +261,7 @@ func TestSelectedPullRequestReactionRemovalTarget_GivenReviewModeCursorOnViewerR
 	if actual.subjectID != "PRRC_1" {
 		t.Fatalf("expected subject id %q, actual %q", "PRRC_1", actual.subjectID)
 	}
-	if actual.content != githubcli.ReactionContentHeart {
+	if string(actual.content) != string(githubcli.ReactionContentHeart) {
 		t.Fatalf("expected reaction content %q, actual %q", githubcli.ReactionContentHeart, actual.content)
 	}
 	if !actual.invalidateDiff {

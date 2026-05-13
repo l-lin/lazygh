@@ -109,7 +109,7 @@ func (program *Program) deletePullRequestComment(target pullRequestCommentEditAc
 }
 
 func (program *Program) selectedPullRequestCommentEditActionTarget() (pullRequestCommentEditActionTarget, bool) {
-	if program.model.Focus() != FocusDetailView || program.reviewSession.active {
+	if program.model.Focus() != FocusDetailView || program.reviewModeActive() {
 		return pullRequestCommentEditActionTarget{}, false
 	}
 	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {

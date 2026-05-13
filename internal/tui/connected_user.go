@@ -1,11 +1,8 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 const (
@@ -28,42 +25,43 @@ func connectedUserLoadingItem() Item {
 	}
 }
 
-func connectedUserItem(user githubcli.ConnectedUser) Item {
-	if user.Login == "" {
+func connectedUserItem(user any) Item {
+	userValue, ok := toDomainConnectedUser(user)
+	if !ok || userValue.Login == "" {
 		return connectedUserEmptyItem()
 	}
 
 	lines := []string{
-		fmt.Sprintf("Login: %s", formatLogin(user.Login)),
-		fmt.Sprintf("Name: %s", valueOrDash(user.Name)),
-		fmt.Sprintf("Bio: %s", valueOrDash(user.Bio)),
-		fmt.Sprintf("Company: %s", valueOrDash(user.Company)),
-		fmt.Sprintf("Location: %s", valueOrDash(user.Location)),
-		fmt.Sprintf("Public repos: %d", user.PublicRepos),
-		fmt.Sprintf("Followers: %d", user.Followers),
-		fmt.Sprintf("Profile: %s", valueOrDash(user.URL)),
+		fmt.Sprintf("Login: %s", formatLogin(userValue.Login)),
+		fmt.Sprintf("Name: %s", valueOrDash(userValue.Name)),
+		fmt.Sprintf("Bio: %s", valueOrDash(userValue.Bio)),
+		fmt.Sprintf("Company: %s", valueOrDash(userValue.Company)),
+		fmt.Sprintf("Location: %s", valueOrDash(userValue.Location)),
+		fmt.Sprintf("Public repos: %d", userValue.PublicRepos),
+		fmt.Sprintf("Followers: %d", userValue.Followers),
+		fmt.Sprintf("Profile: %s", valueOrDash(userValue.URL)),
 	}
 
 	return Item{
-		Title:  formatLogin(user.Login),
+		Title:  formatLogin(userValue.Login),
 		Detail: strings.Join(lines, "\n"),
 	}
 }
 
 func connectedUserErrorItem(err error) Item {
 	switch {
-	case errors.Is(err, githubcli.ErrEmptyConnectedUser):
+	case isProviderEmptyConnectedUserError(err):
 		return connectedUserEmptyItem()
-	case errors.Is(err, githubcli.ErrUnauthenticated):
+	case isProviderUnauthenticatedError(err):
 		return Item{Title: connectedUserUnauthenticatedTitle, Detail: connectedUserUnauthenticatedDetail}
-	case errors.Is(err, githubcli.ErrUnavailable):
+	case isProviderUnavailableError(err):
 		return Item{Title: connectedUserUnavailableTitle, Detail: connectedUserUnavailableDetail}
 	default:
 		return Item{Title: connectedUserGenericErrorTitle, Detail: formatConnectedUserErrorDetail(err)}
 	}
 }
 
-func connectedUserStateItem(user githubcli.ConnectedUser, err error) Item {
+func connectedUserStateItem(user any, err error) Item {
 	if err != nil {
 		return connectedUserErrorItem(err)
 	}

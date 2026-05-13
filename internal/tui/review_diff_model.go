@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type reviewDiffChangeType string
@@ -56,7 +56,7 @@ type reviewDiffThread struct {
 	OriginalStartLine int
 	Side              reviewDiffLineSide
 	StartSide         reviewDiffLineSide
-	Comments          []githubcli.PullRequestComment
+	Comments          []githubdomain.PullRequestComment
 }
 
 type reviewDiffFile struct {
@@ -107,19 +107,23 @@ type reviewDiffData struct {
 	FileTree reviewDiffTree
 }
 
-type reviewDiffThreadTarget = githubcli.PullRequestReviewThreadTarget
+type reviewDiffThreadTarget = githubdomain.PullRequestReviewThreadTarget
 
-func buildReviewDiffData(raw githubcli.PullRequestDiff) reviewDiffData {
-	parsedFiles := parseUnifiedReviewDiff(raw.UnifiedDiff)
+func buildReviewDiffData(raw any) reviewDiffData {
+	rawDiff, ok := toDomainPullRequestDiff(raw)
+	if !ok {
+		return reviewDiffData{}
+	}
+	parsedFiles := parseUnifiedReviewDiff(rawDiff.UnifiedDiff)
 	parsedFilesByPath := make(map[string]reviewDiffFile, len(parsedFiles))
 	for _, file := range parsedFiles {
 		parsedFilesByPath[file.Path] = file
 	}
 
-	threadsByPath := buildReviewDiffThreadsByPath(raw.Threads)
-	files := make([]reviewDiffFile, 0, maxInt(len(raw.Files), len(parsedFiles))+len(threadsByPath))
-	usedPaths := make(map[string]bool, len(raw.Files)+len(parsedFiles))
-	for _, rawFile := range raw.Files {
+	threadsByPath := buildReviewDiffThreadsByPath(rawDiff.Threads)
+	files := make([]reviewDiffFile, 0, maxInt(len(rawDiff.Files), len(parsedFiles))+len(threadsByPath))
+	usedPaths := make(map[string]bool, len(rawDiff.Files)+len(parsedFiles))
+	for _, rawFile := range rawDiff.Files {
 		file := reviewDiffFile{
 			Path:         strings.TrimSpace(rawFile.Path),
 			PreviousPath: strings.TrimSpace(rawFile.PreviousPath),

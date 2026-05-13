@@ -52,7 +52,7 @@ func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, 
 }
 
 func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []workflowCommand {
-	if store == nil || program == nil || gui == nil || program.reviewSession.active || store.notificationsLoadStarted {
+	if store == nil || program == nil || gui == nil || program.reviewModeActive() || store.notificationsLoadStarted {
 		return nil
 	}
 
@@ -124,7 +124,7 @@ func (store *reviewStore) planSelectedPullRequestDiffLoad(program *Program, gui 
 }
 
 func (store *detailStore) planSelectedNotificationDetailLoad(program *Program, gui *gocui.Gui) []workflowCommand {
-	if store == nil || program == nil || gui == nil || program.reviewSession.active || program.model.currentSideFocus() != FocusNotificationsView {
+	if store == nil || program == nil || gui == nil || program.reviewModeActive() || program.model.currentSideFocus() != FocusNotificationsView {
 		return nil
 	}
 
