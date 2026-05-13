@@ -17,6 +17,10 @@ const (
 
 var ErrMissingNotificationSubjectTarget = errors.New("missing notification subject target")
 
+type NotificationBulkReadResult struct {
+	Accepted bool
+}
+
 type Notification struct {
 	ID              string              `json:"id"`
 	Done            bool                `json:"done"`

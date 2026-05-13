@@ -103,7 +103,8 @@ func (program *Program) startAssigneePickerLoad(gui *gocui.Gui, target pullReque
 }
 
 func (program *Program) loadAssigneePicker(gui *gocui.Gui, target pullRequestAssigneePickerTarget) {
-	candidates, err := program.pullRequestMutations.ListAssignableUsers(target.repository)
+	domainCandidates, err := program.pullRequestMutations.ListAssignableUsers(target.repository)
+	candidates := githubcli.PullRequestAuthorsFromDomain(domainCandidates)
 	if err == nil {
 		program.storeAssignableUsers(target.repository, candidates)
 	}

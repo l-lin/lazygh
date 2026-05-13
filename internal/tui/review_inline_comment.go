@@ -199,7 +199,7 @@ func (program *Program) submitPullRequestInlineComment(target pullRequestInlineC
 	if err != nil {
 		return err
 	}
-	if err := program.reviewMutations.AddPullRequestReviewThread(pendingReviewID, body, target.threadTarget); err != nil {
+	if err := program.reviewMutations.AddPullRequestReviewThread(pendingReviewID, body, githubcli.ToDomainPullRequestReviewThreadTarget(target.threadTarget)); err != nil {
 		return err
 	}
 

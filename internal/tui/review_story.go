@@ -107,11 +107,12 @@ func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (prepa
 	if actualErr != nil {
 		return preparedStoryReview{}, actualErr
 	}
+	legacyDiff := githubcli.PullRequestDiffFromDomain(rawDiff)
 
 	generatedStory, actualErr := program.storyGenerator.Generate(program.storyReviewConfig, story.Request{
-		Metadata:  buildStoryReviewMetadata(summary, detail, detailOK, rawDiff),
-		DiffItems: buildStoryReviewDiffItems(rawDiff.Files),
-		DiffText:  rawDiff.UnifiedDiff,
+		Metadata:  buildStoryReviewMetadata(summary, detail, detailOK, legacyDiff),
+		DiffItems: buildStoryReviewDiffItems(legacyDiff.Files),
+		DiffText:  legacyDiff.UnifiedDiff,
 	})
 	if actualErr != nil {
 		return preparedStoryReview{}, actualErr
@@ -122,7 +123,7 @@ func (program *Program) prepareStoryReview(summary githubcli.PullRequest) (prepa
 		return preparedStoryReview{}, actualErr
 	}
 
-	diffData := buildReviewDiffData(rawDiff)
+	diffData := buildReviewDiffData(legacyDiff)
 	return preparedStoryReview{
 		summary:         summary,
 		detail:          detail,
@@ -158,7 +159,7 @@ func (program *Program) storyReviewDetail(summary githubcli.PullRequest) (github
 	if actualErr != nil {
 		return githubcli.PullRequestDetail{}, false
 	}
-	return detail, true
+	return githubcli.PullRequestDetailFromDomain(detail), true
 }
 
 func buildStoryReviewMetadata(summary githubcli.PullRequest, detail githubcli.PullRequestDetail, detailOK bool, rawDiff githubcli.PullRequestDiff) story.Metadata {

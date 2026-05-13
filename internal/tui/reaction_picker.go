@@ -106,7 +106,7 @@ func (program *Program) executeReactionPickerAction(content githubcli.ReactionCo
 	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.reactionMutations.AddReaction(target.subjectID, content); err != nil {
+	if err := program.reactionMutations.AddReaction(target.subjectID, githubcli.ToDomainReactionContent(content)); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 

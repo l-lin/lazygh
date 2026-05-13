@@ -80,10 +80,12 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 }
 
 func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository string, target pullRequestBuildRunTarget) {
-	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, target.check)
+	domainCheck := githubcli.ToDomainPullRequestStatusCheck(target.check)
+	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, domainCheck)
 	jobs := []githubcli.PullRequestBuildRunJob(nil)
 	if err == nil {
-		jobs, _ = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
+		domainJobs, _ := program.buildQueries.GetPullRequestBuildRunJobs(repository, domainCheck)
+		jobs = githubcli.PullRequestBuildRunJobsFromDomain(domainJobs)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
@@ -118,7 +120,8 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 }
 
 func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubcli.PullRequestStatusCheck) {
-	job, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, check)
+	domainJob, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, githubcli.ToDomainPullRequestStatusCheck(check))
+	job := githubcli.PullRequestBuildRunJobFromDomain(domainJob)
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {

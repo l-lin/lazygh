@@ -32,18 +32,22 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 	user, err := program.sessionQueries.GetConnectedUser()
+	legacyUser := githubcli.ConnectedUser{}
+	if err == nil {
+		legacyUser = githubcli.ConnectedUserFromDomain(user)
+	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		connectedUserLogin := ""
 		if err == nil {
-			connectedUserLogin = strings.TrimSpace(user.Login)
+			connectedUserLogin = strings.TrimSpace(legacyUser.Login)
 		}
 		if program.connectedUserLogin != connectedUserLogin {
 			program.connectedUserLogin = connectedUserLogin
 			program.invalidatePullRequestDetailDocumentCache()
 			program.invalidateReviewDiffRenderCache()
 		}
-		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
+		program.model.SetUsers([]Item{connectedUserStateItem(legacyUser, err)})
 		return program.refreshViews(gui)
 	})
 }
@@ -73,7 +77,11 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 }
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubcli.PullRequest, error) {
-	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
+	pullRequests, err := program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
+	if err != nil {
+		return nil, err
+	}
+	return githubcli.PullRequestsFromDomain(pullRequests), nil
 }
 
 func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubcli.PullRequest, err error) []PullRequestRow {

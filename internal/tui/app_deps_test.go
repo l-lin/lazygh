@@ -3,37 +3,39 @@ package tui
 import (
 	"testing"
 
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 var (
-	_ SessionQueries         = (*githubcli.SessionService)(nil)
-	_ PullRequestListQueries = (*githubcli.PullRequestListService)(nil)
-	_ NotificationQueries    = (*githubcli.NotificationService)(nil)
-	_ DetailQueries          = (*githubcli.PullRequestDetailService)(nil)
-	_ PullRequestMutations   = (*githubcli.PullRequestMutationService)(nil)
-	_ ReviewMutations        = (*githubcli.ReviewService)(nil)
-	_ NotificationMutations  = (*githubcli.NotificationService)(nil)
-	_ ReactionMutations      = (*githubcli.ReactionService)(nil)
-	_ BuildQueries           = (*githubcli.BuildService)(nil)
+	_ SessionQueries         = (*githubcli.SessionAdapter)(nil)
+	_ PullRequestListQueries = (*githubcli.PullRequestListAdapter)(nil)
+	_ NotificationQueries    = (*githubcli.NotificationAdapter)(nil)
+	_ DetailQueries          = (*githubcli.PullRequestDetailAdapter)(nil)
+	_ PullRequestMutations   = (*githubcli.PullRequestMutationAdapter)(nil)
+	_ ReviewMutations        = (*githubcli.ReviewAdapter)(nil)
+	_ NotificationMutations  = (*githubcli.NotificationAdapter)(nil)
+	_ ReactionMutations      = (*githubcli.ReactionAdapter)(nil)
+	_ BuildQueries           = (*githubcli.BuildAdapter)(nil)
 	_ MarkdownHTMLRenderer   = (*githubcli.MarkdownService)(nil)
 	_ AuthTokenProvider      = (*githubcli.AuthService)(nil)
-
-	_ SessionQueries         = (*githubcli.Client)(nil)
-	_ PullRequestListQueries = (*githubcli.Client)(nil)
-	_ NotificationQueries    = (*githubcli.Client)(nil)
-	_ DetailQueries          = (*githubcli.Client)(nil)
-	_ PullRequestMutations   = (*githubcli.Client)(nil)
-	_ ReviewMutations        = (*githubcli.Client)(nil)
-	_ NotificationMutations  = (*githubcli.Client)(nil)
-	_ ReactionMutations      = (*githubcli.Client)(nil)
-	_ BuildQueries           = (*githubcli.Client)(nil)
-	_ MarkdownHTMLRenderer   = (*githubcli.Client)(nil)
-	_ AuthTokenProvider      = (*githubcli.Client)(nil)
 )
 
-func TestNewProgram_GivenAGitHubCliClient_WhenCreating_ThenItWiresTheCapabilityPortsAndDefaultShellDeps(t *testing.T) {
-	subject := NewProgram(githubcli.NewClient())
+func TestNewProgram_GivenFocusedGitHubCapabilityAdapters_WhenCreating_ThenItWiresTheCapabilityPortsAndDefaultShellDeps(t *testing.T) {
+	notifications := githubcli.NewNotificationAdapterWithRunner(nil)
+	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{
+		SessionQueries:        githubcli.NewSessionAdapterWithRunner(nil),
+		PullRequestList:       githubcli.NewPullRequestListAdapterWithRunner(nil),
+		NotificationQueries:   notifications,
+		DetailQueries:         githubcli.NewPullRequestDetailAdapterWithRunner(nil),
+		PullRequestMutations:  githubcli.NewPullRequestMutationAdapterWithRunner(nil),
+		ReviewMutations:       githubcli.NewReviewAdapterWithRunner(nil),
+		NotificationMutations: notifications,
+		ReactionMutations:     githubcli.NewReactionAdapterWithRunner(nil),
+		BuildQueries:          githubcli.NewBuildAdapterWithRunner(nil),
+		MarkdownHTMLRenderer:  githubcli.NewMarkdownServiceWithRunner(nil),
+		AuthTokenProvider:     githubcli.NewAuthServiceWithRunner(nil),
+	})
 
 	if !subject.hasSessionQueries() || !subject.hasPullRequestListQueries() || !subject.hasNotificationQueries() || !subject.hasDetailQueries() {
 		t.Fatal("expected the program to wire the GitHub capability query ports")
@@ -50,8 +52,8 @@ func TestNewProgram_GivenAGitHubCliClient_WhenCreating_ThenItWiresTheCapabilityP
 }
 
 func TestLoadConnectedUser_GivenSessionQueriesOnly_WhenLoading_ThenItUsesTheSessionPort(t *testing.T) {
-	loader := &fakeSessionQueries{user: githubcli.ConnectedUser{Login: "octocat"}}
-	subject := NewProgramWithModelAndLoader(given_model(), loader)
+	loader := &fakeSessionQueries{user: githubdomain.ConnectedUser{Login: "octocat"}}
+	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{SessionQueries: loader})
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -68,10 +70,10 @@ func TestLoadConnectedUser_GivenSessionQueriesOnly_WhenLoading_ThenItUsesTheSess
 }
 
 func TestLoadPullRequests_GivenPullRequestListQueriesOnly_WhenLoading_ThenItUsesTheListPort(t *testing.T) {
-	loader := &fakePullRequestListQueries{pullRequests: []githubcli.PullRequest{{Title: "Ship notifications", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", State: "OPEN"}}}
+	loader := &fakePullRequestListQueries{pullRequests: []githubdomain.PullRequestSummary{{Title: "Ship notifications", Number: 42, Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", State: "OPEN"}}}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
-	subject := NewProgramWithModelAndLoader(model, loader)
+	subject := NewProgramWithModelAndDeps(model, AppDeps{PullRequestList: loader})
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -90,7 +92,7 @@ func TestLoadPullRequests_GivenPullRequestListQueriesOnly_WhenLoading_ThenItUses
 
 func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_ThenItUsesThatPort(t *testing.T) {
 	renderer := &fakeMarkdownHTMLRenderer{renderedHTML: "<p>resolved</p>"}
-	subject := NewProgramWithModelAndLoader(given_model(), renderer)
+	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{MarkdownHTMLRenderer: renderer})
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -116,7 +118,7 @@ func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_Th
 
 func TestDetailImageAuthToken_GivenAuthTokenProviderOnly_WhenLoading_ThenItCachesTheToken(t *testing.T) {
 	provider := &fakeAuthTokenProvider{token: " ghp_secret-token "}
-	subject := NewProgramWithModelAndLoader(given_model(), provider)
+	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{AuthTokenProvider: provider})
 
 	actualFirst := subject.detailImageAuthToken()
 	actualSecond := subject.detailImageAuthToken()
@@ -130,23 +132,23 @@ func TestDetailImageAuthToken_GivenAuthTokenProviderOnly_WhenLoading_ThenItCache
 }
 
 type fakeSessionQueries struct {
-	user  githubcli.ConnectedUser
+	user  githubdomain.ConnectedUser
 	calls int
 }
 
-func (loader *fakeSessionQueries) GetConnectedUser() (githubcli.ConnectedUser, error) {
+func (loader *fakeSessionQueries) GetConnectedUser() (githubdomain.ConnectedUser, error) {
 	loader.calls++
 	return loader.user, nil
 }
 
 type fakePullRequestListQueries struct {
-	pullRequests []githubcli.PullRequest
+	pullRequests []githubdomain.PullRequestSummary
 	calls        int
 }
 
-func (loader *fakePullRequestListQueries) ListPullRequests(_ []string) ([]githubcli.PullRequest, error) {
+func (loader *fakePullRequestListQueries) ListPullRequests(_ []string) ([]githubdomain.PullRequestSummary, error) {
 	loader.calls++
-	return append([]githubcli.PullRequest(nil), loader.pullRequests...), nil
+	return append([]githubdomain.PullRequestSummary(nil), loader.pullRequests...), nil
 }
 
 type fakeMarkdownHTMLRenderer struct {

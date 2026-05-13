@@ -258,6 +258,242 @@ func NotificationFromDomain(notification githubdomain.Notification) Notification
 	}
 }
 
+func ToDomainIssueDetail(detail IssueDetail) githubdomain.IssueDetail {
+	actual := githubdomain.IssueDetail{
+		Title:     detail.Title,
+		Number:    detail.Number,
+		URL:       detail.URL,
+		Body:      detail.Body,
+		BodyHTML:  detail.BodyHTML,
+		State:     detail.State,
+		CreatedAt: detail.CreatedAt,
+		UpdatedAt: detail.UpdatedAt,
+		Labels:    toDomainPullRequestLabels(detail.Labels),
+		Assignees: toDomainPullRequestAuthors(detail.Assignees),
+		Comments:  detail.Comments,
+	}
+	if detail.Author != nil {
+		author := toDomainPullRequestAuthor(*detail.Author)
+		actual.Author = &author
+	}
+	return actual
+}
+
+func IssueDetailFromDomain(detail githubdomain.IssueDetail) IssueDetail {
+	actual := IssueDetail{
+		Title:     detail.Title,
+		Number:    detail.Number,
+		URL:       detail.URL,
+		Body:      detail.Body,
+		BodyHTML:  detail.BodyHTML,
+		State:     detail.State,
+		CreatedAt: detail.CreatedAt,
+		UpdatedAt: detail.UpdatedAt,
+		Labels:    pullRequestLabelsFromDomain(detail.Labels),
+		Assignees: pullRequestAuthorsFromDomain(detail.Assignees),
+		Comments:  detail.Comments,
+	}
+	if detail.Author != nil {
+		author := pullRequestAuthorFromDomain(*detail.Author)
+		actual.Author = &author
+	}
+	return actual
+}
+
+func ToDomainReleaseDetail(detail ReleaseDetail) githubdomain.ReleaseDetail {
+	actual := githubdomain.ReleaseDetail{
+		Name:        detail.Name,
+		TagName:     detail.TagName,
+		URL:         detail.URL,
+		Body:        detail.Body,
+		BodyHTML:    detail.BodyHTML,
+		Draft:       detail.Draft,
+		PreRelease:  detail.PreRelease,
+		CreatedAt:   detail.CreatedAt,
+		UpdatedAt:   detail.UpdatedAt,
+		PublishedAt: detail.PublishedAt,
+	}
+	if detail.Author != nil {
+		author := toDomainPullRequestAuthor(*detail.Author)
+		actual.Author = &author
+	}
+	return actual
+}
+
+func ReleaseDetailFromDomain(detail githubdomain.ReleaseDetail) ReleaseDetail {
+	actual := ReleaseDetail{
+		Name:        detail.Name,
+		TagName:     detail.TagName,
+		URL:         detail.URL,
+		Body:        detail.Body,
+		BodyHTML:    detail.BodyHTML,
+		Draft:       detail.Draft,
+		PreRelease:  detail.PreRelease,
+		CreatedAt:   detail.CreatedAt,
+		UpdatedAt:   detail.UpdatedAt,
+		PublishedAt: detail.PublishedAt,
+	}
+	if detail.Author != nil {
+		author := pullRequestAuthorFromDomain(*detail.Author)
+		actual.Author = &author
+	}
+	return actual
+}
+
+func ToDomainConnectedUser(user ConnectedUser) githubdomain.ConnectedUser {
+	return githubdomain.ConnectedUser{
+		Login:       user.Login,
+		Name:        user.Name,
+		Bio:         user.Bio,
+		Company:     user.Company,
+		Location:    user.Location,
+		PublicRepos: user.PublicRepos,
+		Followers:   user.Followers,
+		URL:         user.URL,
+	}
+}
+
+func ConnectedUserFromDomain(user githubdomain.ConnectedUser) ConnectedUser {
+	return ConnectedUser{
+		Login:       user.Login,
+		Name:        user.Name,
+		Bio:         user.Bio,
+		Company:     user.Company,
+		Location:    user.Location,
+		PublicRepos: user.PublicRepos,
+		Followers:   user.Followers,
+		URL:         user.URL,
+	}
+}
+
+func ToDomainNotificationBulkReadResult(result NotificationBulkReadResult) githubdomain.NotificationBulkReadResult {
+	return githubdomain.NotificationBulkReadResult{Accepted: result.Accepted}
+}
+
+func NotificationBulkReadResultFromDomain(result githubdomain.NotificationBulkReadResult) NotificationBulkReadResult {
+	return NotificationBulkReadResult{Accepted: result.Accepted}
+}
+
+func ToDomainPullRequestAuthor(author PullRequestAuthor) githubdomain.PullRequestAuthor {
+	return toDomainPullRequestAuthor(author)
+}
+
+func PullRequestAuthorFromDomain(author githubdomain.PullRequestAuthor) PullRequestAuthor {
+	return pullRequestAuthorFromDomain(author)
+}
+
+func ToDomainPullRequestAuthors(authors []PullRequestAuthor) []githubdomain.PullRequestAuthor {
+	return toDomainPullRequestAuthors(authors)
+}
+
+func PullRequestAuthorsFromDomain(authors []githubdomain.PullRequestAuthor) []PullRequestAuthor {
+	return pullRequestAuthorsFromDomain(authors)
+}
+
+func ToDomainPullRequestReviewEvent(event PullRequestReviewEvent) githubdomain.PullRequestReviewEvent {
+	return githubdomain.PullRequestReviewEvent(event)
+}
+
+func PullRequestReviewEventFromDomain(event githubdomain.PullRequestReviewEvent) PullRequestReviewEvent {
+	return PullRequestReviewEvent(event)
+}
+
+func ToDomainPullRequestReviewThreadTarget(target PullRequestReviewThreadTarget) githubdomain.PullRequestReviewThreadTarget {
+	return githubdomain.ReviewThreadTarget{
+		Path:        target.Path,
+		Line:        target.Line,
+		Side:        target.Side,
+		StartLine:   target.StartLine,
+		StartSide:   target.StartSide,
+		SubjectType: target.SubjectType,
+	}
+}
+
+func PullRequestReviewThreadTargetFromDomain(target githubdomain.PullRequestReviewThreadTarget) PullRequestReviewThreadTarget {
+	return PullRequestReviewThreadTarget{
+		Path:        target.Path,
+		Line:        target.Line,
+		Side:        target.Side,
+		StartLine:   target.StartLine,
+		StartSide:   target.StartSide,
+		SubjectType: target.SubjectType,
+	}
+}
+
+func ToDomainReactionContent(content ReactionContent) githubdomain.ReactionContent {
+	return githubdomain.ReactionContent(content)
+}
+
+func ReactionContentFromDomain(content githubdomain.ReactionContent) ReactionContent {
+	return ReactionContent(content)
+}
+
+func ToDomainPullRequestStatusCheck(check PullRequestStatusCheck) githubdomain.PullRequestStatusCheck {
+	return githubdomain.BuildInfo{
+		TypeName:     check.TypeName,
+		Name:         check.Name,
+		Status:       check.Status,
+		Conclusion:   check.Conclusion,
+		WorkflowName: check.WorkflowName,
+		Link:         check.Link,
+	}
+}
+
+func PullRequestStatusCheckFromDomain(check githubdomain.PullRequestStatusCheck) PullRequestStatusCheck {
+	return PullRequestStatusCheck{
+		TypeName:     check.TypeName,
+		Name:         check.Name,
+		Status:       check.Status,
+		Conclusion:   check.Conclusion,
+		WorkflowName: check.WorkflowName,
+		Link:         check.Link,
+	}
+}
+
+func ToDomainPullRequestBuildRunJob(job PullRequestBuildRunJob) githubdomain.PullRequestBuildRunJob {
+	return githubdomain.BuildRunJob{
+		DatabaseID: job.DatabaseID,
+		Name:       job.Name,
+		Status:     job.Status,
+		Conclusion: job.Conclusion,
+		URL:        job.URL,
+	}
+}
+
+func PullRequestBuildRunJobFromDomain(job githubdomain.PullRequestBuildRunJob) PullRequestBuildRunJob {
+	return PullRequestBuildRunJob{
+		DatabaseID: job.DatabaseID,
+		Name:       job.Name,
+		Status:     job.Status,
+		Conclusion: job.Conclusion,
+		URL:        job.URL,
+	}
+}
+
+func ToDomainPullRequestBuildRunJobs(jobs []PullRequestBuildRunJob) []githubdomain.PullRequestBuildRunJob {
+	if len(jobs) == 0 {
+		return nil
+	}
+
+	converted := make([]githubdomain.PullRequestBuildRunJob, 0, len(jobs))
+	for _, job := range jobs {
+		converted = append(converted, ToDomainPullRequestBuildRunJob(job))
+	}
+	return converted
+}
+
+func PullRequestBuildRunJobsFromDomain(jobs []githubdomain.PullRequestBuildRunJob) []PullRequestBuildRunJob {
+	if len(jobs) == 0 {
+		return nil
+	}
+
+	converted := make([]PullRequestBuildRunJob, 0, len(jobs))
+	for _, job := range jobs {
+		converted = append(converted, PullRequestBuildRunJobFromDomain(job))
+	}
+	return converted
+}
+
 func toDomainPullRequestAuthors(authors []PullRequestAuthor) []githubdomain.PullRequestAuthor {
 	if len(authors) == 0 {
 		return nil

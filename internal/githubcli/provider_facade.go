@@ -78,6 +78,8 @@ type authProvider interface {
 	GetAuthToken() (string, error)
 }
 
+// ProviderFacade is a transport-typed compatibility facade kept for legacy
+// callers and tests while the app composes focused services or adapters.
 type ProviderFacade struct {
 	session              sessionProvider
 	pullRequestLists     pullRequestListProvider

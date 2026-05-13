@@ -310,7 +310,7 @@ func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 		notificationMarkedAllDoneMessage,
 		notificationRows(nil),
 		func() error {
-			_, err := program.notificationMutations.MarkAllNotificationsDone(loadedNotifications)
+			_, err := program.notificationMutations.MarkAllNotificationsDone(githubcli.ToDomainNotifications(loadedNotifications))
 			if err = normalizedNotificationMutationError(err); err != nil {
 				return err
 			}

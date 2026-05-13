@@ -49,7 +49,7 @@ func (program *Program) executeRemoveReactionAction(target pullRequestReactionRe
 	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.reactionMutations.RemoveReaction(target.subjectID, target.content); err != nil {
+	if err := program.reactionMutations.RemoveReaction(target.subjectID, githubcli.ToDomainReactionContent(target.content)); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
 

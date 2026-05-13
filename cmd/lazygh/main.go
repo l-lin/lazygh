@@ -26,10 +26,32 @@ type configurableRunner interface {
 
 func main() {
 	if err := run(os.Args[1:], appconfig.LoadDefault, func() configurableRunner {
-		return tui.NewProgram(githubcli.NewClient())
+		return newRunner()
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "lazygh: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+func newRunner() configurableRunner {
+	return tui.NewProgramWithModelAndDeps(nil, newAppDepsWithRunner(nil))
+}
+
+// newAppDepsWithRunner is the single app composition root for provider ports.
+func newAppDepsWithRunner(runner githubcli.Runner) tui.AppDeps {
+	notifications := githubcli.NewNotificationAdapterWithRunner(runner)
+	return tui.AppDeps{
+		SessionQueries:        githubcli.NewSessionAdapterWithRunner(runner),
+		PullRequestList:       githubcli.NewPullRequestListAdapterWithRunner(runner),
+		NotificationQueries:   notifications,
+		DetailQueries:         githubcli.NewPullRequestDetailAdapterWithRunner(runner),
+		PullRequestMutations:  githubcli.NewPullRequestMutationAdapterWithRunner(runner),
+		ReviewMutations:       githubcli.NewReviewAdapterWithRunner(runner),
+		NotificationMutations: notifications,
+		ReactionMutations:     githubcli.NewReactionAdapterWithRunner(runner),
+		BuildQueries:          githubcli.NewBuildAdapterWithRunner(runner),
+		MarkdownHTMLRenderer:  githubcli.NewMarkdownServiceWithRunner(runner),
+		AuthTokenProvider:     githubcli.NewAuthServiceWithRunner(runner),
 	}
 }
 

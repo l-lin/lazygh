@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/story"
 	apptheme "github.com/l-lin/lazygh/internal/theme"
 )
@@ -159,6 +161,50 @@ func TestRun_GivenLoadedCacheConfig_WhenStartingTheProgram_ThenItAppliesItBefore
 	}
 	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}) {
 		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	}
+}
+
+func TestNewAppDepsWithRunner_GivenRunnerResponses_WhenCallingSelectedCapabilityPorts_ThenItReturnsProviderNeutralValuesFromFocusedAdapters(t *testing.T) {
+	runner := &fakeCommandRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`{"login":"octocat","name":"Octo Cat","html_url":"https://github.com/octocat"}`)},
+		{stdout: []byte(`[{"title":"Ship notifications","number":42,"repository":{"name":"widgets","nameWithOwner":"acme/widgets"},"url":"https://github.com/acme/widgets/pull/42","body":"Ship it","state":"OPEN","updatedAt":"2026-05-05T10:00:00Z"}]`)},
+		{stdout: []byte(`[[{"id":"1001","unread":true,"reason":"review_requested","updated_at":"2026-05-08T16:53:11Z","repository":{"name":"widgets","nameWithOwner":"acme/widgets"},"subject":{"title":"Ship notifications","type":"PullRequest","url":"https://api.github.com/repos/acme/widgets/pulls/42"}}]]`)},
+	}}
+
+	deps := newAppDepsWithRunner(runner)
+
+	if deps.SessionQueries == nil || deps.PullRequestList == nil || deps.NotificationQueries == nil || deps.DetailQueries == nil || deps.PullRequestMutations == nil || deps.ReviewMutations == nil || deps.NotificationMutations == nil || deps.ReactionMutations == nil || deps.BuildQueries == nil || deps.MarkdownHTMLRenderer == nil || deps.AuthTokenProvider == nil {
+		t.Fatal("expected the composition root to wire every capability port")
+	}
+
+	actualUser, actualErr := deps.SessionQueries.GetConnectedUser()
+	then_noError(t, actualErr)
+	if actualUser.Login != "octocat" || actualUser.URL != "https://github.com/octocat" {
+		t.Fatalf("expected connected user %+v, actual %+v", githubdomain.ConnectedUser{Login: "octocat", URL: "https://github.com/octocat"}, actualUser)
+	}
+
+	actualPullRequests, actualErr := deps.PullRequestList.ListPullRequests([]string{"search", "prs", "--author", "@me"})
+	then_noError(t, actualErr)
+	if len(actualPullRequests) != 1 || actualPullRequests[0].Repository.NameWithOwner != "acme/widgets" || actualPullRequests[0].Number != 42 {
+		t.Fatalf("expected provider-neutral pull requests %+v, actual %+v", []githubdomain.PullRequestSummary{{Number: 42, Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}}}, actualPullRequests)
+	}
+
+	actualNotifications, actualErr := deps.NotificationQueries.ListNotifications()
+	then_noError(t, actualErr)
+	if len(actualNotifications) != 1 || actualNotifications[0].Subject.Type != githubdomain.NotificationSubjectTypePullRequest {
+		t.Fatalf("expected provider-neutral notifications %+v, actual %+v", []string{githubdomain.NotificationSubjectTypePullRequest}, actualNotifications)
+	}
+}
+
+func TestNewAppDepsWithRunner_GivenNotificationMutation_WhenMarkingItRead_ThenItUsesTheFocusedNotificationAdapter(t *testing.T) {
+	runner := &fakeCommandRunner{}
+	deps := newAppDepsWithRunner(runner)
+
+	actualErr := deps.NotificationMutations.MarkNotificationRead("1001")
+
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(runner.calls, []fakeCommandCall{{name: "gh", args: []string{"api", "/notifications/threads/1001", "--method", "PATCH"}}}) {
+		t.Fatalf("expected notification mutation calls %+v, actual %+v", []fakeCommandCall{{name: "gh", args: []string{"api", "/notifications/threads/1001", "--method", "PATCH"}}}, runner.calls)
 	}
 }
 
@@ -411,6 +457,36 @@ func (runner *fakeConfigurableRunner) Run() error {
 	runner.runCalled = true
 	runner.calls = append(runner.calls, "run")
 	return runner.runErr
+}
+
+type fakeCommandResponse struct {
+	stdout []byte
+	stderr []byte
+	err    error
+}
+
+type fakeCommandCall struct {
+	name string
+	args []string
+}
+
+type fakeCommandRunner struct {
+	responses []fakeCommandResponse
+	calls     []fakeCommandCall
+}
+
+func (runner *fakeCommandRunner) Run(name string, args ...string) (githubcli.CommandResult, error) {
+	runner.calls = append(runner.calls, fakeCommandCall{name: name, args: append([]string(nil), args...)})
+	if len(runner.responses) == 0 {
+		return githubcli.CommandResult{}, nil
+	}
+	response := runner.responses[0]
+	runner.responses = runner.responses[1:]
+	return githubcli.CommandResult{Stdout: response.stdout, Stderr: response.stderr}, response.err
+}
+
+func (runner *fakeCommandRunner) RunWithInput(name string, input []byte, args ...string) (githubcli.CommandResult, error) {
+	return runner.Run(name, args...)
 }
 
 func then_noError(t *testing.T, actualErr error) {

@@ -28,7 +28,7 @@ func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, numbe
 	key := notificationDetailKey(repository, number)
 	result := issueDetailResult{err: err}
 	if err == nil {
-		result.detail = detail
+		result.detail = githubcli.IssueDetailFromDomain(detail)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
@@ -43,7 +43,7 @@ func (program *Program) loadReleaseDetail(gui *gocui.Gui, repository string, id 
 	key := notificationDetailKey(repository, id)
 	result := releaseDetailResult{err: err}
 	if err == nil {
-		result.detail = detail
+		result.detail = githubcli.ReleaseDetailFromDomain(detail)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {

@@ -106,7 +106,7 @@ func (program *Program) submitPendingPullRequestReview(target pendingPullRequest
 		return errors.New("github loader is unavailable")
 	}
 
-	return program.reviewMutations.SubmitPullRequestReview(target.pendingReviewID, event, body)
+	return program.reviewMutations.SubmitPullRequestReview(target.pendingReviewID, githubcli.ToDomainPullRequestReviewEvent(event), body)
 }
 
 func (program *Program) finishSubmittedPendingPullRequestReview(gui *gocui.Gui, target pendingPullRequestReviewTarget) {

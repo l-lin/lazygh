@@ -40,6 +40,86 @@ type AuthService struct {
 	serviceBase
 }
 
+func NewSessionService() *SessionService {
+	return NewSessionServiceWithRunner(nil)
+}
+
+func NewSessionServiceWithRunner(runner Runner) *SessionService {
+	return newSessionService(newSharedTransport(runner))
+}
+
+func NewPullRequestListService() *PullRequestListService {
+	return NewPullRequestListServiceWithRunner(nil)
+}
+
+func NewPullRequestListServiceWithRunner(runner Runner) *PullRequestListService {
+	return newPullRequestListService(newSharedTransport(runner))
+}
+
+func NewPullRequestDetailService() *PullRequestDetailService {
+	return NewPullRequestDetailServiceWithRunner(nil)
+}
+
+func NewPullRequestDetailServiceWithRunner(runner Runner) *PullRequestDetailService {
+	return newPullRequestDetailService(newSharedTransport(runner))
+}
+
+func NewPullRequestMutationService() *PullRequestMutationService {
+	return NewPullRequestMutationServiceWithRunner(nil)
+}
+
+func NewPullRequestMutationServiceWithRunner(runner Runner) *PullRequestMutationService {
+	return newPullRequestMutationService(newSharedTransport(runner))
+}
+
+func NewReviewService() *ReviewService {
+	return NewReviewServiceWithRunner(nil)
+}
+
+func NewReviewServiceWithRunner(runner Runner) *ReviewService {
+	return newReviewService(newSharedTransport(runner))
+}
+
+func NewNotificationService() *NotificationService {
+	return NewNotificationServiceWithRunner(nil)
+}
+
+func NewNotificationServiceWithRunner(runner Runner) *NotificationService {
+	return newNotificationService(newSharedTransport(runner))
+}
+
+func NewReactionService() *ReactionService {
+	return NewReactionServiceWithRunner(nil)
+}
+
+func NewReactionServiceWithRunner(runner Runner) *ReactionService {
+	return newReactionService(newSharedTransport(runner))
+}
+
+func NewBuildService() *BuildService {
+	return NewBuildServiceWithRunner(nil)
+}
+
+func NewBuildServiceWithRunner(runner Runner) *BuildService {
+	return newBuildService(newSharedTransport(runner))
+}
+
+func NewMarkdownService() *MarkdownService {
+	return NewMarkdownServiceWithRunner(nil)
+}
+
+func NewMarkdownServiceWithRunner(runner Runner) *MarkdownService {
+	return newMarkdownService(newSharedTransport(runner))
+}
+
+func NewAuthService() *AuthService {
+	return NewAuthServiceWithRunner(nil)
+}
+
+func NewAuthServiceWithRunner(runner Runner) *AuthService {
+	return newAuthService(newSharedTransport(runner))
+}
+
 func newSessionService(transport sharedTransport) *SessionService {
 	return &SessionService{serviceBase: newServiceBase(transport)}
 }

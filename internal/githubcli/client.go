@@ -27,6 +27,9 @@ type Runner interface {
 	RunWithInput(name string, input []byte, args ...string) (CommandResult, error)
 }
 
+// Client is a compatibility shim around the focused `githubcli` services.
+// Deprecated: new app code should compose capability adapters or services
+// directly instead of depending on this transport-typed surface.
 type Client struct {
 	serviceBase
 	*ProviderFacade

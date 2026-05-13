@@ -27,11 +27,12 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary githubcli.Pu
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
-		rawDiff = program.withPullRequestDiffFileTeamOwners(repository, summary.Number, rawDiff)
-		result.data = buildReviewDiffData(rawDiff)
+		legacyDiff := githubcli.PullRequestDiffFromDomain(rawDiff)
+		legacyDiff = program.withPullRequestDiffFileTeamOwners(repository, summary.Number, legacyDiff)
+		result.data = buildReviewDiffData(legacyDiff)
 		result.needsRefresh = false
-		result.fileTeamOwnersAttempted = rawDiff.FileTeamOwnersAttempted
-		program.cachePullRequestDiff(summary, rawDiff)
+		result.fileTeamOwnersAttempted = legacyDiff.FileTeamOwnersAttempted
+		program.cachePullRequestDiff(summary, legacyDiff)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {

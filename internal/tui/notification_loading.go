@@ -19,7 +19,8 @@ func (program *Program) notificationsPendingLoad() bool {
 }
 
 func (program *Program) loadNotifications(gui *gocui.Gui) {
-	notifications, err := program.notificationQueries.ListNotifications()
+	domainNotifications, err := program.notificationQueries.ListNotifications()
+	notifications := githubcli.NotificationsFromDomain(domainNotifications)
 	if err == nil {
 		notifications = program.filterDoneNotifications(notifications)
 		program.cacheNotifications(notifications)

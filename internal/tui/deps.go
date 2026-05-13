@@ -2,26 +2,26 @@ package tui
 
 import (
 	clip "github.com/l-lin/lazygh/internal/clipboard"
-	"github.com/l-lin/lazygh/internal/githubcli"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type SessionQueries interface {
-	GetConnectedUser() (githubcli.ConnectedUser, error)
+	GetConnectedUser() (githubdomain.ConnectedUser, error)
 }
 
 type PullRequestListQueries interface {
-	ListPullRequests(commandArguments []string) ([]githubcli.PullRequest, error)
+	ListPullRequests(commandArguments []string) ([]githubdomain.PullRequestSummary, error)
 }
 
 type NotificationQueries interface {
-	ListNotifications() ([]githubcli.Notification, error)
-	GetIssueDetail(repository string, number int) (githubcli.IssueDetail, error)
-	GetReleaseDetail(repository string, id int) (githubcli.ReleaseDetail, error)
+	ListNotifications() ([]githubdomain.Notification, error)
+	GetIssueDetail(repository string, number int) (githubdomain.IssueDetail, error)
+	GetReleaseDetail(repository string, id int) (githubdomain.ReleaseDetail, error)
 }
 
 type DetailQueries interface {
-	GetPullRequestDetail(repository string, number int) (githubcli.PullRequestDetail, error)
-	GetPullRequestDiff(repository string, number int) (githubcli.PullRequestDiff, error)
+	GetPullRequestDetail(repository string, number int) (githubdomain.PullRequestDetail, error)
+	GetPullRequestDiff(repository string, number int) (githubdomain.PullRequestDiff, error)
 	GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error)
 }
 
@@ -31,7 +31,7 @@ type PullRequestMutations interface {
 	DeletePullRequestComment(commentID string) error
 	RequestPullRequestReviewer(repository string, number int, reviewerLogin string) error
 	OpenPullRequestInBrowser(repository string, number int) error
-	ListAssignableUsers(repository string) ([]githubcli.PullRequestAuthor, error)
+	ListAssignableUsers(repository string) ([]githubdomain.PullRequestAuthor, error)
 	UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error
@@ -46,8 +46,8 @@ type ReviewMutations interface {
 	ApprovePullRequest(repository string, number int) error
 	ReviewPullRequestWithComment(repository string, number int, body string) error
 	RequestChangesOnPullRequest(repository string, number int, body string) error
-	SubmitPullRequestReview(pullRequestReviewID string, event githubcli.PullRequestReviewEvent, body string) error
-	AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubcli.PullRequestReviewThreadTarget) error
+	SubmitPullRequestReview(pullRequestReviewID string, event githubdomain.PullRequestReviewEvent, body string) error
+	AddPullRequestReviewThread(pullRequestReviewID string, body string, target githubdomain.PullRequestReviewThreadTarget) error
 	AddPullRequestReviewThreadReply(pullRequestReviewID string, pullRequestReviewThreadID string, body string) error
 	UpdatePullRequestReviewComment(commentID string, body string) error
 	DeletePullRequestReviewComment(commentID string) error
@@ -61,20 +61,20 @@ type ReviewMutations interface {
 type NotificationMutations interface {
 	MarkNotificationRead(threadID string) error
 	MarkNotificationDone(threadID string) error
-	MarkAllNotificationsRead() (githubcli.NotificationBulkReadResult, error)
-	MarkAllNotificationsDone(notifications []githubcli.Notification) (int, error)
+	MarkAllNotificationsRead() (githubdomain.NotificationBulkReadResult, error)
+	MarkAllNotificationsDone(notifications []githubdomain.Notification) (int, error)
 }
 
 type ReactionMutations interface {
-	AddReaction(subjectID string, content githubcli.ReactionContent) error
-	RemoveReaction(subjectID string, content githubcli.ReactionContent) error
+	AddReaction(subjectID string, content githubdomain.ReactionContent) error
+	RemoveReaction(subjectID string, content githubdomain.ReactionContent) error
 }
 
 type BuildQueries interface {
-	GetPullRequestBuildRun(repository string, check githubcli.PullRequestStatusCheck) (string, error)
-	GetPullRequestBuildRunJobs(repository string, check githubcli.PullRequestStatusCheck) ([]githubcli.PullRequestBuildRunJob, error)
+	GetPullRequestBuildRun(repository string, check githubdomain.PullRequestStatusCheck) (string, error)
+	GetPullRequestBuildRunJobs(repository string, check githubdomain.PullRequestStatusCheck) ([]githubdomain.PullRequestBuildRunJob, error)
 	GetPullRequestBuildRunJobLog(repository string, jobDatabaseID int) (string, error)
-	GetPullRequestBuildRunJobLogForCheck(repository string, check githubcli.PullRequestStatusCheck) (githubcli.PullRequestBuildRunJob, string, error)
+	GetPullRequestBuildRunJobLogForCheck(repository string, check githubdomain.PullRequestStatusCheck) (githubdomain.PullRequestBuildRunJob, string, error)
 }
 
 type MarkdownHTMLRenderer interface {
@@ -153,58 +153,4 @@ func (program *Program) hasMarkdownHTMLRenderer() bool {
 
 func (program *Program) hasAuthTokenProvider() bool {
 	return program != nil && program.authTokenProvider != nil
-}
-
-func appDepsFromCompatibilityLoader(loader any) AppDeps {
-	if loader == nil {
-		return AppDeps{}
-	}
-
-	deps := AppDeps{}
-	if actual, ok := loader.(SessionQueries); ok {
-		deps.SessionQueries = actual
-	}
-	if actual, ok := loader.(PullRequestListQueries); ok {
-		deps.PullRequestList = actual
-	}
-	if actual, ok := loader.(NotificationQueries); ok {
-		deps.NotificationQueries = actual
-	}
-	if actual, ok := loader.(DetailQueries); ok {
-		deps.DetailQueries = actual
-	}
-	if actual, ok := loader.(PullRequestMutations); ok {
-		deps.PullRequestMutations = actual
-	}
-	if actual, ok := loader.(ReviewMutations); ok {
-		deps.ReviewMutations = actual
-	}
-	if actual, ok := loader.(NotificationMutations); ok {
-		deps.NotificationMutations = actual
-	}
-	if actual, ok := loader.(ReactionMutations); ok {
-		deps.ReactionMutations = actual
-	}
-	if actual, ok := loader.(BuildQueries); ok {
-		deps.BuildQueries = actual
-	}
-	if actual, ok := loader.(MarkdownHTMLRenderer); ok {
-		deps.MarkdownHTMLRenderer = actual
-	}
-	if actual, ok := loader.(AuthTokenProvider); ok {
-		deps.AuthTokenProvider = actual
-	}
-	if actual, ok := loader.(ClipboardWriter); ok {
-		deps.ClipboardWriter = actual
-	}
-	if actual, ok := loader.(ExternalEditor); ok {
-		deps.ExternalEditor = actual
-	}
-	if actual, ok := loader.(LinkOpener); ok {
-		deps.LinkOpener = actual
-	}
-	if actual, ok := loader.(ThemePresetStore); ok {
-		deps.ThemePresetStore = actual
-	}
-	return deps
 }

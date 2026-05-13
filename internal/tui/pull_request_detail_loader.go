@@ -16,6 +16,10 @@ func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.PullRequest) {
 	repository := pullRequestRepositoryName(summary.Repository)
 	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
+	legacyDetail := githubcli.PullRequestDetail{}
+	if err == nil {
+		legacyDetail = githubcli.PullRequestDetailFromDomain(detail)
+	}
 	pendingReviewState := pendingPullRequestReviewState{}
 	pendingReviewStateKnown := false
 	if program.hasReviewMutations() {
@@ -29,7 +33,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	result := pullRequestDetailResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
 	if err == nil {
-		clonedDetail := clonePullRequestDetail(detail)
+		clonedDetail := clonePullRequestDetail(legacyDetail)
 		result.detail = clonedDetail
 		result.needsRefresh = false
 		program.cachePullRequestDetail(summary, clonedDetail)
