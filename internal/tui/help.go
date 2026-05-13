@@ -70,8 +70,9 @@ func (program *Program) helpSections() []helpSection {
 }
 
 func (program *Program) localHelpEntries() []helpEntry {
-	if program.reviewSession.active {
-		switch program.model.Focus() {
+	actionContext := program.actionContext()
+	if actionContext.IsReviewContext() {
+		switch actionContext.ActiveView.Focus {
 		case FocusDetailView:
 			entries := []helpEntry{
 				{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},
@@ -135,7 +136,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 		}
 	}
 
-	switch program.model.Focus() {
+	switch actionContext.ActiveView.Focus {
 	case FocusDetailView:
 		entries := []helpEntry{
 			{Key: "h/j/k/l/<up>/<down>/<left>/<right>", Description: "Move cursor"},

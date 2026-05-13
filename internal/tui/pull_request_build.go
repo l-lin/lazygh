@@ -227,10 +227,11 @@ func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document
 }
 
 func (program *Program) currentPullRequestDescriptionSummaryAndDetail() (githubcli.PullRequest, githubcli.PullRequestDetail, bool) {
-	if program.reviewSession.active {
+	actionContext := program.actionContext()
+	if actionContext.IsReviewContext() {
 		return program.reviewSessionDescriptionSummaryAndDetail()
 	}
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != DescriptionDetailTab {
+	if !actionContext.ShowsPullRequestDescription() {
 		return githubcli.PullRequest{}, githubcli.PullRequestDetail{}, false
 	}
 
@@ -246,8 +247,9 @@ func (program *Program) currentPullRequestDescriptionSummaryAndDetail() (githubc
 }
 
 func (program *Program) detailCursorActionsAvailable() bool {
-	if program.model.Focus() == FocusDetailView {
+	actionContext := program.actionContext()
+	if actionContext.ActiveView.Focus == FocusDetailView {
 		return true
 	}
-	return program.reviewSession.active && program.model.Focus() == FocusUserView && program.reviewSessionShowsDescription()
+	return actionContext.IsReviewContext() && actionContext.ActiveView.Focus == FocusUserView && actionContext.ShowsPullRequestDescription()
 }

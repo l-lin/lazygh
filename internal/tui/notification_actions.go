@@ -42,22 +42,7 @@ type notificationMutationSnapshot struct {
 }
 
 func (program *Program) isNotificationContext() bool {
-	if program.reviewSession.active {
-		return false
-	}
-
-	switch program.model.Focus() {
-	case FocusNotificationsView:
-		return true
-	case FocusDetailView:
-		if program.model.currentSideFocus() != FocusNotificationsView {
-			return false
-		}
-		_, ok := program.selectedPullRequestSummaryForDetail()
-		return !ok
-	default:
-		return false
-	}
+	return program.actionContext().IsNotificationContext()
 }
 
 func (program *Program) currentNotificationActionsPopupActions() []actionsPopupAction {

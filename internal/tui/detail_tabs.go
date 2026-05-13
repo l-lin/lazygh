@@ -9,7 +9,7 @@ import (
 )
 
 func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return nil
 	}
 	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
@@ -23,7 +23,7 @@ func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
 }
 
 func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) error {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return nil
 	}
 
@@ -37,11 +37,10 @@ func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) erro
 }
 
 func (program *Program) shouldShowPullRequestDetailTabs() bool {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return false
 	}
-	_, ok := program.selectedPullRequestSummaryForDetail()
-	return ok
+	return program.mainViewResolver().ContentKind == MainContentKindPullRequestDetail
 }
 
 var browserDetailTabs = []DetailTab{DescriptionDetailTab, CommentsDetailTab, CommitsDetailTab, ChangesDetailTab}
@@ -92,7 +91,7 @@ func (program *Program) selectedPullRequestDetailCommitCount() (int, bool) {
 }
 
 func (program *Program) selectedPullRequestDetailForTabs() (githubcli.PullRequestDetail, bool) {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return githubcli.PullRequestDetail{}, false
 	}
 	summary, ok := program.selectedPullRequestSummaryForDetail()

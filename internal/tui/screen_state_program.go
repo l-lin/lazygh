@@ -9,19 +9,7 @@ func (program *Program) screenState() ScreenState {
 }
 
 func (program *Program) baseScreenState() ScreenState {
-	if program.reviewSession.active {
-		mode := ScreenModeReview
-		if program.reviewSession.mode == reviewSessionModeStory {
-			mode = ScreenModeStoryReview
-		}
-		return newReviewScreenStateWithSideFocus(mode, program.model.Focus(), program.model.currentSideFocus())
-	}
-
-	state := program.model.ScreenState()
-	if program.browserShowsPullRequestDetailTabs() {
-		state = state.WithViewTabs(mainPanelViewNumber, int(program.activeDetailTab), program.detailScreenTabs())
-	}
-	return state
+	return program.modeDescriptor().ScreenState(program)
 }
 
 func (program *Program) detailScreenTabs() []TabState {
@@ -33,7 +21,7 @@ func (program *Program) detailScreenTabs() []TabState {
 }
 
 func (program *Program) browserShowsPullRequestDetailTabs() bool {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return false
 	}
 

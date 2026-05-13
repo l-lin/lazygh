@@ -39,7 +39,7 @@ func (program *Program) layoutPaneFooterViews(gui *gocui.Gui) error {
 }
 
 func (program *Program) mainPaneFooterFocuses() []Focus {
-	if program.reviewSession.active {
+	if program.actionContext().IsReviewContext() {
 		return []Focus{FocusUserView, FocusPullRequestsView, FocusDetailView}
 	}
 	return []Focus{FocusUserView, FocusPullRequestsView, FocusNotificationsView, FocusDetailView}
@@ -309,7 +309,7 @@ func paneFooterActionsActionID(focus Focus) (keybindingActionID, bool) {
 }
 
 func (program *Program) appliedSearchFooterText(focus Focus) string {
-	if program.reviewSession.active {
+	if program.actionContext().IsReviewContext() {
 		switch focus {
 		case FocusPullRequestsView:
 			query := program.reviewFileTreeSearchQuery()

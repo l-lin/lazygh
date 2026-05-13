@@ -10,7 +10,7 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 	if program.model.Focus() == FocusDetailView {
 		return program.mutateDetailViewState(gui, view, mutateDetail)
 	}
-	if program.reviewSession.active {
+	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
 			return nil
 		}
@@ -30,7 +30,7 @@ func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideC
 	if program.model.Focus() == FocusDetailView {
 		return program.mutateDetailViewState(gui, view, mutateDetail)
 	}
-	if program.reviewSession.active {
+	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
 			return nil
 		}
@@ -65,6 +65,38 @@ func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 	}
 
 	return program.refreshViews(gui)
+}
+
+func (program *Program) applyProjectedScreenState(state ScreenState) {
+	program.model.focus = state.ActiveView().Focus
+	program.model.lastSideFocus = state.ActiveSideView().Focus
+
+	if state.Mode != ScreenModeBrowser {
+		return
+	}
+	if pullRequestView, ok := state.ViewByNumber(sidePanelPullRequestsViewNumber); ok {
+		program.model.activePullRequestTab = PullRequestTab(clampScreenTabIndex(pullRequestView.ActiveTab, len(pullRequestView.Tabs)))
+	}
+	if mainView, ok := state.ViewByNumber(mainPanelViewNumber); ok && len(mainView.Tabs) > 0 {
+		program.activeDetailTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
+	}
+}
+
+func (program *Program) applyModeScreenState(gui *gocui.Gui, state ScreenState) error {
+	program.applyProjectedScreenState(state)
+	return program.refreshViewsIfGUI(gui)
+}
+
+func (program *Program) focusPanelViewNumber(gui *gocui.Gui, viewNumber int) error {
+	state := program.screenState()
+	targetView, ok := state.ViewByNumber(viewNumber)
+	if !ok {
+		return nil
+	}
+	if program.model.PaneLayoutSize() == PaneLayoutFullscreen && program.model.FullscreenPane() != targetView.Focus {
+		return nil
+	}
+	return program.applyModeScreenState(gui, state.FocusViewNumber(viewNumber))
 }
 
 func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackName string) *gocui.View {
@@ -102,7 +134,7 @@ func (program *Program) placeListSelection(gui *gocui.Gui, view *gocui.View, fal
 }
 
 func (program *Program) currentSideListState() (string, int, int) {
-	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
+	if program.actionContext().IsReviewContext() && program.model.Focus() == FocusPullRequestsView {
 		if tree, _, ok := program.reviewSessionCurrentTree(); ok && len(tree.Rows) > 0 {
 			return viewPullRequestsName, program.reviewSessionSelectedVisibleLine(), len(tree.Rows)
 		}
@@ -161,7 +193,7 @@ func (program *Program) refreshDetailView(gui *gocui.Gui) error {
 }
 
 func (program *Program) sideViewCyclingBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible()
+	return program.model.PaneLayoutSize() == PaneLayoutFullscreen || program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible()
 }
 
 func (program *Program) mainPaneActionBlocked() bool {

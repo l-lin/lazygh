@@ -37,15 +37,16 @@ func (program *Program) currentGlobalActionsPopupActions() []actionsPopupAction 
 }
 
 func (program *Program) currentContextualActionsPopupActions() []actionsPopupAction {
-	if program.isNotificationContext() {
+	actionContext := program.actionContext()
+	if actionContext.IsNotificationContext() {
 		return program.currentNotificationActionsPopupActions()
 	}
-	if !program.isPullRequestContext() {
+	if !actionContext.IsPullRequestContext() {
 		return nil
 	}
 
 	actions := []actionsPopupAction{}
-	if program.reviewSession.active {
+	if actionContext.IsReviewContext() {
 		actions = append(actions,
 			actionsPopupGrouped(actionsPopupGroupPullRequest,
 				program.yankPullRequestURLActionsPopupAction(),

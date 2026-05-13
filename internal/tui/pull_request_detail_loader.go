@@ -55,22 +55,22 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubcli.
 }
 
 func (program *Program) selectedPullRequestSummaryForDetail() (githubcli.PullRequest, bool) {
-	if program.reviewSession.active {
+	actionContext := program.actionContext()
+	if actionContext.IsReviewContext() {
 		summary := program.reviewSession.summary
 		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 			return githubcli.PullRequest{}, false
 		}
 		return summary, true
 	}
+	if actionContext.MainView.ContentKind != MainContentKindPullRequestDetail {
+		return githubcli.PullRequest{}, false
+	}
 
-	resolver := program.baseScreenState().MainViewResolver()
-	switch resolver.SourceView.Focus {
+	switch actionContext.MainView.SourceView.Focus {
 	case FocusPullRequestsView:
 		summary, ok := program.model.SelectedPullRequestSummary()
-		if !ok {
-			return githubcli.PullRequest{}, false
-		}
-		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
+		if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 			return githubcli.PullRequest{}, false
 		}
 		return summary, true
@@ -95,25 +95,23 @@ func (program *Program) pullRequestDetailForSummary(summary githubcli.PullReques
 }
 
 func (program *Program) currentDetailIdentity() string {
-	if program.reviewSession.active {
+	actionContext := program.actionContext()
+	if actionContext.IsReviewContext() {
 		return program.reviewSessionDetailIdentity()
 	}
 
-	resolver := program.baseScreenState().MainViewResolver()
-	switch resolver.SourceView.Focus {
-	case FocusPullRequestsView:
-		if summary, ok := program.model.SelectedPullRequestSummary(); ok {
+	switch actionContext.MainView.ContentKind {
+	case MainContentKindPullRequestDetail:
+		if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
 			if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
+				if actionContext.MainView.SourceView.Focus == FocusNotificationsView {
+					return fmt.Sprintf("notification-pr:%s:tab:%d", key, program.activeDetailTab)
+				}
 				return fmt.Sprintf("pr:%s:tab:%d", key, program.activeDetailTab)
 			}
 		}
 		return fmt.Sprintf("pr-state:%d:%d", program.model.ActivePullRequestTab(), program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))
-	case FocusNotificationsView:
-		if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
-			if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-				return fmt.Sprintf("notification-pr:%s:tab:%d", key, program.activeDetailTab)
-			}
-		}
+	case MainContentKindNotificationDetail:
 		if notification, ok := program.model.SelectedNotification(); ok {
 			return fmt.Sprintf("notification:%s", strings.TrimSpace(notification.ID))
 		}

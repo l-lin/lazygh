@@ -13,18 +13,7 @@ func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	if program.reviewSession.active {
-		switch program.model.Focus() {
-		case FocusUserView:
-			program.model.FocusPullRequestsView()
-		case FocusPullRequestsView:
-			program.model.FocusUserView()
-		}
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	program.model.NextSideView()
-	return program.syncCurrentView(gui)
+	return program.applyModeScreenState(gui, program.screenState().NextSideView())
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
@@ -34,18 +23,7 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	if program.reviewSession.active {
-		switch program.model.Focus() {
-		case FocusUserView:
-			program.model.FocusPullRequestsView()
-		case FocusPullRequestsView:
-			program.model.FocusUserView()
-		}
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	program.model.PreviousSideView()
-	return program.syncCurrentView(gui)
+	return program.applyModeScreenState(gui, program.screenState().PreviousSideView())
 }
 
 func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
@@ -165,7 +143,7 @@ func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) er
 	if program.selectionChangeBlocked() {
 		return nil
 	}
-	if program.reviewSession.active {
+	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
 			return nil
 		}
@@ -182,7 +160,7 @@ func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View)
 	if program.selectionChangeBlocked() {
 		return nil
 	}
-	if program.reviewSession.active {
+	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
 			return nil
 		}
@@ -281,7 +259,7 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return nil
 	}
 
@@ -296,7 +274,7 @@ func (program *Program) nextPullRequestTab(gui *gocui.Gui, view *gocui.View) err
 }
 
 func (program *Program) previousPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return nil
 	}
 
@@ -317,11 +295,7 @@ func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	program.model.FocusDetailView()
-	if program.reviewSession.active {
-		return program.refreshViewsIfGUI(gui)
-	}
-	return program.syncCurrentView(gui)
+	return program.focusPanelViewNumber(gui, mainPanelViewNumber)
 }
 
 func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
@@ -331,11 +305,7 @@ func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	program.detailViewState.clearPendingPrefix()
-	program.model.FocusUserView()
-	if program.reviewSession.active {
-		return program.refreshViewsIfGUI(gui)
-	}
-	return program.syncCurrentView(gui)
+	return program.focusPanelViewNumber(gui, sidePanelUserViewNumber)
 }
 
 func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
@@ -345,22 +315,17 @@ func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) err
 	}
 
 	program.detailViewState.clearPendingPrefix()
-	program.model.FocusPullRequestsView()
-	if program.reviewSession.active {
-		return program.refreshViewsIfGUI(gui)
-	}
-	return program.syncCurrentView(gui)
+	return program.focusPanelViewNumber(gui, sidePanelPullRequestsViewNumber)
 }
 
 func (program *Program) focusNotificationsView(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if program.mainPaneActionBlocked() || program.reviewSession.active {
+	if program.mainPaneActionBlocked() {
 		return nil
 	}
 
 	program.detailViewState.clearPendingPrefix()
-	program.model.FocusNotificationsView()
-	return program.syncCurrentView(gui)
+	return program.focusPanelViewNumber(gui, sidePanelNotificationsViewNumber)
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
@@ -396,15 +361,16 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 		program.searchEditor = newLineEditor("")
 		return program.layout(gui)
 	}
-	if program.mainPaneActionBlocked() || (program.reviewSession.active && program.model.Focus() == FocusUserView) {
+	inputContext := program.inputContext()
+	if program.mainPaneActionBlocked() || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
 		return nil
 	}
 
 	program.detailViewState.clearPendingPrefix()
-	if program.reviewSession.active && program.model.Focus() == FocusPullRequestsView {
+	if inputContext.SearchUsesReviewTree {
 		program.startReviewFileTreeSearch()
 	} else {
-		if program.reviewSession.active && program.model.Focus() == FocusDetailView {
+		if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
 			program.reviewSession.fileTreeSearchQuery = ""
 		}
 		program.model.StartSearch()

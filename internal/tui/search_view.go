@@ -113,26 +113,26 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 }
 
 func (program *Program) userViewTitle() string {
-	if program.reviewSession.active {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return reviewModeMetadataTitle
 	}
 	return "[1]-" + detailAuthorIcon + " Connected user"
 }
 
 func (program *Program) detailViewTitle() string {
-	if program.reviewSession.active {
-		if program.reviewSessionShowsDescription() {
-			return reviewModeDescriptionTitle
-		}
-		if program.reviewSessionShowsStoryChapter() {
-			return reviewModeChapterTitle
-		}
+	switch program.mainViewResolver().ContentKind {
+	case MainContentKindReviewDescription:
+		return reviewModeDescriptionTitle
+	case MainContentKindStoryChapter:
+		return reviewModeChapterTitle
+	case MainContentKindReviewDiff:
 		return reviewModeDiffTitle
+	default:
+		if program.shouldShowPullRequestDetailTabs() {
+			return ""
+		}
+		return "[0]-Detail"
 	}
-	if program.shouldShowPullRequestDetailTabs() {
-		return ""
-	}
-	return "[0]-Detail"
 }
 
 func (program *Program) notificationsViewTitle() string {
@@ -169,13 +169,14 @@ func (program *Program) notificationsCount() (int, bool) {
 }
 
 func (program *Program) pullRequestsViewTitle() string {
-	if program.reviewSession.active {
-		if program.reviewSession.mode == reviewSessionModeStory {
-			return reviewModeChaptersTitle
-		}
+	switch program.modeDescriptor().Mode() {
+	case ScreenModeStoryReview:
+		return reviewModeChaptersTitle
+	case ScreenModeReview:
 		return reviewModeFilesTitle
+	default:
+		return ""
 	}
-	return ""
 }
 
 func (program *Program) setInputCursor(view *gocui.View, value string, cursorIndex int) {

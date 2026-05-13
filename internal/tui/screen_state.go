@@ -74,8 +74,20 @@ type OverlayState struct {
 	Kind OverlayKind
 }
 
+type MainContentKind int
+
+const (
+	MainContentKindUserDetail MainContentKind = iota
+	MainContentKindPullRequestDetail
+	MainContentKindNotificationDetail
+	MainContentKindReviewDescription
+	MainContentKindReviewDiff
+	MainContentKindStoryChapter
+)
+
 type MainViewResolver struct {
-	SourceView ViewState
+	SourceView  ViewState
+	ContentKind MainContentKind
 }
 
 func newBrowserScreenState(activeFocus Focus, activePullRequestTab PullRequestTab, mainTabs []TabState, pullRequestTabs []TabState) ScreenState {
@@ -318,7 +330,32 @@ func (state ScreenState) WithOverlay(overlay OverlayState) ScreenState {
 }
 
 func (state ScreenState) MainViewResolver() MainViewResolver {
-	return MainViewResolver{SourceView: state.ActiveSideView()}
+	sourceView := state.ActiveSideView()
+	return MainViewResolver{SourceView: sourceView, ContentKind: defaultMainContentKind(state.Mode, sourceView)}
+}
+
+func defaultMainContentKind(mode ScreenMode, sourceView ViewState) MainContentKind {
+	switch mode {
+	case ScreenModeReview:
+		if sourceView.Focus == FocusUserView {
+			return MainContentKindReviewDescription
+		}
+		return MainContentKindReviewDiff
+	case ScreenModeStoryReview:
+		if sourceView.Focus == FocusUserView {
+			return MainContentKindReviewDescription
+		}
+		return MainContentKindReviewDiff
+	default:
+		switch sourceView.Focus {
+		case FocusPullRequestsView:
+			return MainContentKindPullRequestDetail
+		case FocusNotificationsView:
+			return MainContentKindNotificationDetail
+		default:
+			return MainContentKindUserDetail
+		}
+	}
 }
 
 func (state ScreenState) AllowsMainCursor() bool {

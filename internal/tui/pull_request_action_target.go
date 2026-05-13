@@ -14,14 +14,18 @@ type pullRequestActionTarget struct {
 }
 
 func (program *Program) currentPullRequestSummary() (githubcli.PullRequest, bool) {
-	if program.reviewSession.active {
+	actionContext := program.actionContext()
+	if actionContext.IsReviewContext() {
 		return program.reviewSession.summary, true
 	}
 
-	switch program.model.Focus() {
+	switch actionContext.ActiveView.Focus {
 	case FocusPullRequestsView:
 		return program.model.SelectedPullRequestSummary()
 	case FocusDetailView:
+		if actionContext.MainView.ContentKind != MainContentKindPullRequestDetail {
+			return githubcli.PullRequest{}, false
+		}
 		return program.selectedPullRequestSummaryForDetail()
 	default:
 		return githubcli.PullRequest{}, false

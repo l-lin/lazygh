@@ -265,16 +265,14 @@ func (program *Program) selectedPullRequestAssigneePickerTarget() (pullRequestAs
 }
 
 func (program *Program) pullRequestAssigneeStateVisible() bool {
-	if !program.isPullRequestContext() {
+	actionContext := program.actionContext()
+	if !actionContext.IsPullRequestContext() || !actionContext.ShowsPullRequestDescription() {
 		return false
 	}
-	if program.reviewSession.active {
-		return program.model.Focus() == FocusDetailView && program.reviewSessionShowsDescription()
+	if actionContext.IsReviewContext() {
+		return actionContext.ActiveView.Focus == FocusDetailView
 	}
-	if program.model.Focus() != FocusPullRequestsView && program.model.Focus() != FocusDetailView {
-		return false
-	}
-	return program.shouldShowPullRequestDetailTabs() && program.activeDetailTab == DescriptionDetailTab
+	return actionContext.ActiveView.Focus == FocusPullRequestsView || actionContext.ActiveView.Focus == FocusDetailView
 }
 
 func (program *Program) currentAssigneePickerActions() []actionsPopupAction {

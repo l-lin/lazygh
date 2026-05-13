@@ -85,15 +85,14 @@ func (program *Program) reviewSessionShowsDescription() bool {
 	if !program.reviewSession.active {
 		return false
 	}
-	return program.baseScreenState().MainViewResolver().SourceView.Focus == FocusUserView
+	return program.mainViewResolver().ContentKind == MainContentKindReviewDescription
 }
 
 func (program *Program) reviewSessionShowsStoryChapter() bool {
-	if !program.reviewSession.active || program.reviewSession.mode != reviewSessionModeStory {
+	if !program.reviewSession.active {
 		return false
 	}
-	_, ok := program.selectedReviewSessionStoryChapter()
-	return ok
+	return program.mainViewResolver().ContentKind == MainContentKindStoryChapter
 }
 
 func (program *Program) reviewSessionLoadingDetail() string {

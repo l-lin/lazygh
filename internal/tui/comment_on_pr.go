@@ -37,13 +37,17 @@ func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, vie
 	if program.pullRequestCommentComposerBlocked() {
 		return nil
 	}
-	if program.reviewSession.active {
+
+	switch program.inputContext().DetailInputMode {
+	case DetailInputModeReviewInlineComment:
 		return program.openInlineReviewCommentComposer(gui, view)
-	}
-	if program.browserChangesInlineCommentShortcutActive() {
+	case DetailInputModeBrowserChangesInlineComment:
 		return program.openBrowserChangesInlineCommentComposer(gui, view)
+	case DetailInputModePullRequestComment:
+		return program.openPullRequestCommentComposer(gui, nil)
+	default:
+		return nil
 	}
-	return program.openPullRequestCommentComposer(gui, nil)
 }
 
 func (program *Program) pullRequestCommentComposerBlocked() bool {
