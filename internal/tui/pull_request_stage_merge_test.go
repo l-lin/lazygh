@@ -505,9 +505,10 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "GitHub rejected the squash merge") {
-		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the squash merge", popupView.Title)
+	if strings.Contains(popupView.Title, "GitHub rejected the squash merge") {
+		t.Fatalf("expected the popup title to hide %q, actual %q", "GitHub rejected the squash merge", popupView.Title)
 	}
+	then_statusLineContains(t, gui, "GitHub rejected the squash merge")
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "OPEN") {

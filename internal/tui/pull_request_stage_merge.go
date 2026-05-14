@@ -172,7 +172,7 @@ func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) action
 	}
 
 	program.clearActionsPopupPendingConfirmation()
-	return program.executePullRequestLifecycleMutation(
+	result := program.executePullRequestLifecycleMutation(
 		"gh pr merge",
 		func(repository string, number int) error {
 			return program.pullRequestMutations.SquashMergePullRequest(repository, number)
@@ -181,6 +181,11 @@ func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) action
 		false,
 		pullRequestSquashMergedSuccessMessage,
 	)
+	if result.err != nil {
+		result.feedbackMessage = strings.TrimSpace(result.err.Error())
+		result.feedbackTarget = program.model.Focus()
+	}
+	return result
 }
 
 func (program *Program) currentPullRequestDraftState() bool {
