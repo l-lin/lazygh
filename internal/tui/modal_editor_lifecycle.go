@@ -30,7 +30,11 @@ func (program *Program) openMultilineModalEditor(gui *gocui.Gui, title string, i
 }
 
 func (program *Program) openLineModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error) error {
-	program.modalEditor = newLineModalEditorState(title, initialText, submit)
+	return program.openLineModalEditorWithHeight(gui, title, initialText, submit, lineModalEditorTotalHeight)
+}
+
+func (program *Program) openLineModalEditorWithHeight(gui *gocui.Gui, title string, initialText string, submit func(string) error, totalHeight int) error {
+	program.modalEditor = newLineModalEditorStateWithHeight(title, initialText, submit, totalHeight)
 	if gui == nil {
 		return nil
 	}

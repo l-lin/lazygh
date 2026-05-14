@@ -247,6 +247,8 @@ label = "Escalated"
 flags = ["--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
 ```
 
+In view `2`, press `:` to open a one-line custom search popup. Submitting it creates or updates the `Custom` tab.
+
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.

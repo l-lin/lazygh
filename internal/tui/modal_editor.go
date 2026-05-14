@@ -29,15 +29,22 @@ func newModalEditorState(title string, initialText string, submit func(string) e
 }
 
 func newLineModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
+	return newLineModalEditorStateWithHeight(title, initialText, submit, lineModalEditorTotalHeight)
+}
+
+func newLineModalEditorStateWithHeight(title string, initialText string, submit func(string) error, totalHeight int) *modalEditorState {
 	if submit == nil {
 		submit = func(string) error { return nil }
+	}
+	if totalHeight < 1 {
+		totalHeight = lineModalEditorTotalHeight
 	}
 
 	return &modalEditorState{
 		title:       strings.TrimSpace(title),
 		lineEditor:  newLineEditor(initialText),
 		submit:      submit,
-		totalHeight: lineModalEditorTotalHeight,
+		totalHeight: totalHeight,
 	}
 }
 
