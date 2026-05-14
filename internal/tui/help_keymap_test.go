@@ -33,6 +33,24 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_helpEntryUsesKey(t, actualBuffer, "Quit", "Ctrl+X")
 }
 
+func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomSearchShortcut(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Custom search", ":")
+}
+
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
