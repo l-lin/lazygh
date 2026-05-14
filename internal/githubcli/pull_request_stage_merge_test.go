@@ -56,6 +56,16 @@ func TestSquashMergePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRu
 	then_commandIs(t, runner, "gh", []string{"pr", "merge", "42", "-R", "acme/widgets", "--squash"})
 }
 
+func TestUpdatePullRequestBranch_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrUpdateBranch(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.UpdatePullRequestBranch("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"pr", "update-branch", "42", "-R", "acme/widgets"})
+}
+
 func TestMarkPullRequestReadyForReview_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrReadyError(t *testing.T) {
 	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
 	subject := NewPullRequestMutationServiceWithRunner(runner)
@@ -97,5 +107,16 @@ func TestSquashMergePullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturns
 
 	if !strings.Contains(actualErr.Error(), "gh pr merge") {
 		t.Fatalf("expected error to mention %q, actual %v", "gh pr merge", actualErr)
+	}
+}
+
+func TestUpdatePullRequestBranch_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrUpdateBranchError(t *testing.T) {
+	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.UpdatePullRequestBranch("acme/widgets", 42)
+
+	if !strings.Contains(actualErr.Error(), "gh pr update-branch") {
+		t.Fatalf("expected error to mention %q, actual %v", "gh pr update-branch", actualErr)
 	}
 }

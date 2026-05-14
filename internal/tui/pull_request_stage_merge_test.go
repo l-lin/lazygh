@@ -60,6 +60,48 @@ func TestActionsPopup_GivenAnOpenPullRequestDescriptionDetail_WhenOpening_ThenIt
 	}
 }
 
+func TestActionsPopup_GivenAnOutOfDateOpenPullRequestDescriptionDetail_WhenOpening_ThenItShowsUpdateBranch(t *testing.T) {
+	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestOutOfDateLifecycleDetail("OPEN", false))}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), updatePullRequestBranchActionTitle) {
+		t.Fatalf("expected the popup to contain %q, actual %q", updatePullRequestBranchActionTitle, popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenAnUpToDateOpenPullRequestDescriptionDetail_WhenOpening_ThenItHidesUpdateBranch(t *testing.T) {
+	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Buffer(), updatePullRequestBranchActionTitle) {
+		t.Fatalf("expected the popup to hide %q, actual %q", updatePullRequestBranchActionTitle, popupView.Buffer())
+	}
+}
+
 func TestActionsPopup_GivenAnOpenPullRequestCommentsTab_WhenOpening_ThenItHidesTheLifecycleActions(t *testing.T) {
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
 	model.OpenDetail()
@@ -233,6 +275,68 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 	}
 }
 
+func TestLayout_GivenAnUpdateBranchMutation_WhenRendering_ThenItRemovesTheOutOfDateIndicatorAndQueuesARefresh(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", false)
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": given_pullRequestOutOfDateLifecycleDetail("OPEN", false),
+		},
+	}
+	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestOutOfDateLifecycleDetail("OPEN", false))}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
+	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(updatePullRequestBranchActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), updatePullRequestBranchActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.updateBranchCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected update branch calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
+	}
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_statusLineContains(t, gui, pullRequestBranchUpdatedSuccessMessage)
+	detailResult, ok := subject.pullRequestDetailCache["acme/widgets#42"]
+	if !ok {
+		t.Fatal("expected the pull request detail cache to stay warm after updating the branch")
+	}
+	if detailResult.detail.OutOfDateWithBase {
+		t.Fatal("expected the optimistic detail cache to clear the out-of-date flag")
+	}
+	if !detailResult.needsRefresh {
+		t.Fatal("expected the detail cache to queue a background refresh after updating the branch")
+	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Out of date with base branch") {
+		t.Fatalf("expected the optimistic detail view to drop the out-of-date line, actual %q", detailView.Buffer())
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the cached pull-request diff to be invalidated after updating the branch")
+	}
+	if len(subject.reviewDiffRenderCache) != 0 {
+		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
+	}
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	}
+}
+
 func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheUIStableAndShowsTheGitHubError(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{closePullRequestErr: errors.New("GitHub rejected the close")}
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
@@ -274,6 +378,47 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	}
 	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; !ok {
 		t.Fatal("expected the cached pull-request diff to stay intact after the failed close")
+	}
+}
+
+func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUIStableAndShowsTheGitHubError(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{updateBranchErr: errors.New("GitHub rejected the branch update")}
+	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
+	model.OpenDetail()
+	subject := given_pullRequestCommentProgram(model, loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestOutOfDateLifecycleDetail("OPEN", false))}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(updatePullRequestBranchActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), updatePullRequestBranchActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	if !reflect.DeepEqual(loader.updateBranchCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected update branch calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
+	}
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Title, "GitHub rejected the branch update") {
+		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the branch update", popupView.Title)
+	}
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Out of date with base branch") {
+		t.Fatalf("expected the detail to keep the out-of-date line after the failure, actual %q", detailView.Buffer())
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; !ok {
+		t.Fatal("expected the cached pull-request diff to stay intact after the failed branch update")
 	}
 }
 
@@ -551,4 +696,11 @@ func given_pullRequestLifecycleDetail(state string, isDraft bool) githubcli.Pull
 		State:       state,
 		IsDraft:     isDraft,
 	}
+}
+
+func given_pullRequestOutOfDateLifecycleDetail(state string, isDraft bool) githubcli.PullRequestDetail {
+	detail := given_pullRequestLifecycleDetail(state, isDraft)
+	detail.OutOfDateWithBase = true
+	detail.MergeStateStatus = "BLOCKED"
+	return detail
 }

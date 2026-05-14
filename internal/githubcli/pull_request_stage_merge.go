@@ -65,3 +65,16 @@ func (client *PullRequestMutationService) SquashMergePullRequest(repository stri
 
 	return nil
 }
+
+func (client *PullRequestMutationService) UpdatePullRequestBranch(repository string, number int) error {
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.execute(rawCommand("pr", "update-branch", strconv.Itoa(number), "-R", trimmedRepository)); err != nil {
+		return err
+	}
+
+	return nil
+}

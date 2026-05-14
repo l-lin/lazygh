@@ -15,12 +15,14 @@ const (
 	closePullRequestActionTitle                     = "Close PR"
 	reopenPullRequestActionTitle                    = "Reopen PR"
 	squashMergePullRequestActionTitle               = "Squash and merge PR"
+	updatePullRequestBranchActionTitle              = "Update branch"
 	squashMergePullRequestConfirmationPromptMessage = "Press Enter again to squash-merge PR"
 	pullRequestMarkedReadyForReviewSuccessMessage   = "PR marked ready for review"
 	pullRequestConvertedToDraftSuccessMessage       = "PR converted to draft"
 	pullRequestClosedSuccessMessage                 = "PR closed"
 	pullRequestReopenedSuccessMessage               = "PR reopened"
 	pullRequestSquashMergedSuccessMessage           = "PR squash-merged"
+	pullRequestBranchUpdatedSuccessMessage          = "PR branch updated"
 )
 
 func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupAction {
@@ -35,9 +37,17 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 
 	switch status {
 	case "DRAFT":
-		return []actionsPopupAction{program.markPullRequestReadyForReviewAction(), program.closePullRequestAction()}
+		actions := []actionsPopupAction{program.markPullRequestReadyForReviewAction()}
+		if program.currentPullRequestCanUpdateBranch() {
+			actions = append(actions, program.updatePullRequestBranchAction())
+		}
+		return append(actions, program.closePullRequestAction())
 	case "OPEN":
-		return []actionsPopupAction{program.convertPullRequestToDraftAction(), program.squashMergePullRequestAction(), program.closePullRequestAction()}
+		actions := []actionsPopupAction{program.convertPullRequestToDraftAction(), program.squashMergePullRequestAction()}
+		if program.currentPullRequestCanUpdateBranch() {
+			actions = append(actions, program.updatePullRequestBranchAction())
+		}
+		return append(actions, program.closePullRequestAction())
 	case "CLOSED":
 		return []actionsPopupAction{program.reopenPullRequestAction()}
 	default:
@@ -116,6 +126,15 @@ func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 	}
 }
 
+func (program *Program) updatePullRequestBranchAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:      "update-pull-request-branch",
+		title:   updatePullRequestBranchActionTitle,
+		icon:    actionsPopupRefreshPullRequestIcon,
+		execute: program.executeUpdatePullRequestBranchAction,
+	}
+}
+
 func (program *Program) executeMarkPullRequestReadyForReviewAction(_ *gocui.Gui) actionsPopupActionResult {
 	return program.executePullRequestLifecycleMutation(
 		"gh pr ready",
@@ -188,6 +207,27 @@ func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) action
 	return result
 }
 
+func (program *Program) executeUpdatePullRequestBranchAction(_ *gocui.Gui) actionsPopupActionResult {
+	target, ok := program.selectedPullRequestActionTarget()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+	if !program.hasPullRequestMutations() {
+		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+	}
+	if err := program.pullRequestMutations.UpdatePullRequestBranch(target.repository, target.number); err != nil {
+		return actionsPopupActionResult{err: normalizedPullRequestMutationError(err, "gh pr update-branch")}
+	}
+
+	program.applyVisiblePullRequestBranchUpdate(summary)
+	program.setFeedback(program.model.Focus(), pullRequestBranchUpdatedSuccessMessage)
+	return actionsPopupActionResult{closePopup: true}
+}
+
 func (program *Program) currentPullRequestDraftState() bool {
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
@@ -197,6 +237,17 @@ func (program *Program) currentPullRequestDraftState() bool {
 		return result.detail.IsDraft || summary.IsDraft
 	}
 	return summary.IsDraft
+}
+
+func (program *Program) currentPullRequestCanUpdateBranch() bool {
+	summary, ok := program.currentPullRequestSummary()
+	if !ok || !strings.EqualFold(strings.TrimSpace(summary.State), "OPEN") {
+		return false
+	}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+		return pullRequestOutOfDateWithBase(result.detail)
+	}
+	return strings.EqualFold(strings.TrimSpace(summary.MergeStateStatus), "BEHIND")
 }
 
 func (program *Program) executePullRequestLifecycleMutation(commandName string, mutate func(string, int) error, state string, isDraft bool, successMessage string) actionsPopupActionResult {
@@ -309,6 +360,29 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullR
 	result.needsRefresh = true
 	program.pullRequestDetailCache[key] = result
 	delete(program.pullRequestDetailLoadInFlight, key)
+}
+
+func (program *Program) applyVisiblePullRequestBranchUpdate(summary githubdomain.PullRequest) {
+	key := pullRequestDetailKey(summary.Repository, summary.Number)
+	if key != "" {
+		if result, ok := program.pullRequestDetailCache[key]; ok && result.err == nil {
+			result.detail.OutOfDateWithBase = false
+			if strings.EqualFold(strings.TrimSpace(result.detail.MergeStateStatus), "BEHIND") {
+				result.detail.MergeStateStatus = ""
+			}
+			result.sourceUpdatedAt = ""
+			result.needsRefresh = true
+			program.pullRequestDetailCache[key] = result
+			delete(program.pullRequestDetailLoadInFlight, key)
+		}
+	}
+
+	program.mutateLoadedPullRequestSummaries(summary, func(current *githubdomain.PullRequest) {
+		if strings.EqualFold(strings.TrimSpace(current.MergeStateStatus), "BEHIND") {
+			current.MergeStateStatus = ""
+		}
+	})
+	program.invalidatePullRequestMutationCaches(summary)
 }
 
 func (program *Program) invalidatePullRequestMutationCaches(summary githubdomain.PullRequest) {

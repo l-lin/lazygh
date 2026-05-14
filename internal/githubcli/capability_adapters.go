@@ -238,6 +238,10 @@ func (adapter *PullRequestMutationAdapter) SquashMergePullRequest(repository str
 	return adapter.service.SquashMergePullRequest(repository, number)
 }
 
+func (adapter *PullRequestMutationAdapter) UpdatePullRequestBranch(repository string, number int) error {
+	return adapter.service.UpdatePullRequestBranch(repository, number)
+}
+
 func (adapter *ReviewAdapter) ApprovePullRequest(repository string, number int) error {
 	return adapter.service.ApprovePullRequest(repository, number)
 }

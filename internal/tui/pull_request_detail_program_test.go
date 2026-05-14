@@ -1611,6 +1611,8 @@ type fakePullRequestDetailLoader struct {
 	reopenPullRequestErr              error
 	squashMergeCalls                  []string
 	squashMergeErr                    error
+	updateBranchCalls                 []string
+	updateBranchErr                   error
 	startReviewCalls                  []string
 	startReviewID                     string
 	startReviewErr                    error
@@ -2181,6 +2183,26 @@ func (loader *fakePullRequestDetailLoader) SquashMergePullRequest(repository str
 		detail.IsDraft = false
 		detail.Mergeable = ""
 		detail.MergeStateStatus = ""
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) UpdatePullRequestBranch(repository string, number int) error {
+	loader.updateBranchCalls = append(loader.updateBranchCalls, repository+"#"+strconv.Itoa(number))
+	if loader.updateBranchErr != nil {
+		return loader.updateBranchErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		if strings.EqualFold(strings.TrimSpace(pullRequest.MergeStateStatus), "BEHIND") {
+			pullRequest.MergeStateStatus = ""
+		}
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.OutOfDateWithBase = false
+		if strings.EqualFold(strings.TrimSpace(detail.MergeStateStatus), "BEHIND") {
+			detail.MergeStateStatus = ""
+		}
 	})
 	return nil
 }
