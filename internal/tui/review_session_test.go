@@ -230,7 +230,7 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	for _, expected := range []string{"acme/widgets#42 First PR", "Created by", "@octocat", "the 2026-04-18 10:00 UTC", "(last updated at 2026-04-18 12:30 UTC)", "Assigned to", "@assignee-one", detailStatusIcon + " OPEN", "+12", "-3", detailLabelIcon + " bug", " " + pullRequestOverviewPendingIcon + " Reviewers (0/1)", " " + pullRequestOverviewPendingIcon + " Merge Checks", " " + pullRequestOverviewMutedIcon + " Builds", "Rendered body 42"} {
+	for _, expected := range []string{"acme/widgets#42 First PR", "Created by", "@octocat", "the 2026-04-18 10:00 UTC", "(last updated at 2026-04-18 12:30 UTC)", "Assigned to", "@assignee-one", detailStatusIcon + " OPEN", "+12", "-3", detailLabelIcon + " bug", " " + pullRequestOverviewPendingIcon + " Reviewers (0/1)", "@reviewer-requested", " " + pullRequestOverviewPendingIcon + " Merge Checks", " " + pullRequestOverviewMutedIcon + " Builds", "Rendered body 42"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the review detail pane to contain %q, actual %q", expected, detailView.Buffer())
 		}
@@ -238,9 +238,9 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected review mode description to hide tabs, actual %v", detailView.Tabs)
 	}
-	for _, hidden := range []string{detailReviewRequestsIcon + " @reviewer-requested", "No reviewer activity yet.", "No builds reported."} {
+	for _, hidden := range []string{"1 reviewer has not approved yet.", "No status checks reported.", "No builds reported."} {
 		if strings.Contains(detailView.Buffer(), hidden) {
-			t.Fatalf("expected the folded review overview to hide %q, actual %q", hidden, detailView.Buffer())
+			t.Fatalf("expected the still-folded merge-check and build overview sections to hide %q, actual %q", hidden, detailView.Buffer())
 		}
 	}
 	if strings.Contains(detailView.Buffer(), "@@ -1,2 +1,3 @@") {
@@ -252,8 +252,8 @@ func TestReviewMode_GivenTheMetadataPaneSelected_WhenRendering_ThenViewZeroShows
 	if detailView.Title != reviewModeDescriptionTitle {
 		t.Fatalf("expected detail view title %q when focusing view 0 from metadata, actual %q", reviewModeDescriptionTitle, detailView.Title)
 	}
-	if !strings.Contains(detailView.Buffer(), "Created by") || !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "Rendered body 42") {
-		t.Fatalf("expected the review detail pane to keep showing the rendered overview with metadata, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "Created by") || !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "@reviewer-requested") || !strings.Contains(detailView.Buffer(), "Rendered body 42") {
+		t.Fatalf("expected the review detail pane to keep showing the rendered overview with the open reviewer section, actual %q", detailView.Buffer())
 	}
 
 	actualErr = subject.focusPullRequestsView(gui, nil)
@@ -300,24 +300,24 @@ func TestReviewMode_GivenTheDescriptionOverviewSections_WhenPressingEnter_ThenIt
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
-	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)")
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)")
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "@reviewer-requested") {
-		t.Fatalf("expected enter to expand the review overview section, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") {
+		t.Fatalf("expected enter to collapse the review overview section, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "@reviewer-requested") {
+		t.Fatalf("expected the collapsed review overview section to hide its body, actual %q", detailView.Buffer())
 	}
 
 	actualErr = toggleHandler(gui, detailView)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") {
-		t.Fatalf("expected enter to collapse the review overview section again, actual %q", detailView.Buffer())
-	}
-	if strings.Contains(detailView.Buffer(), "@reviewer-requested") {
-		t.Fatalf("expected the collapsed review overview section to hide its body, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), " "+pullRequestOverviewPendingIcon+" Reviewers (0/1)") || !strings.Contains(detailView.Buffer(), "@reviewer-requested") {
+		t.Fatalf("expected enter to expand the review overview section again, actual %q", detailView.Buffer())
 	}
 }
 

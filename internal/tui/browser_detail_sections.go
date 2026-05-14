@@ -147,7 +147,7 @@ func (program *Program) currentPullRequestOverviewSections(summary any, detail a
 		}
 
 		sectionID := browserDetailSectionID(pullRequestKey, "overview", index, strings.ToLower(strings.ReplaceAll(strings.TrimSpace(block.Title), " ", "-")))
-		collapsedByDefault := block.Status != pullRequestOverviewStatusFailure
+		collapsedByDefault := pullRequestOverviewBlockCollapsedByDefault(block)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, collapsedByDefault)
 		sections = append(sections, browserDetailSection{
 			id:                 sectionID,
@@ -159,6 +159,13 @@ func (program *Program) currentPullRequestOverviewSections(summary any, detail a
 		})
 	}
 	return sections
+}
+
+func pullRequestOverviewBlockCollapsedByDefault(block pullRequestOverviewBlock) bool {
+	if strings.EqualFold(strings.TrimSpace(block.Title), "Reviewers") {
+		return block.Status == pullRequestOverviewStatusSuccess
+	}
+	return block.Status != pullRequestOverviewStatusFailure
 }
 
 func (program *Program) renderCurrentPullRequestOverview(summary any, detail any, width int) string {
