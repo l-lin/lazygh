@@ -393,6 +393,27 @@ func TestPullRequestDetailAssembler_GivenWorkflowLoaders_WhenAssembling_ThenItSt
 	}
 }
 
+func TestPullRequestDetailAssembler_GivenOutOfDateLookupFailure_WhenAssembling_ThenItKeepsTheBaseDetail(t *testing.T) {
+	assembler := PullRequestDetailAssembler{
+		LoadBaseDetail: func(repository string, number int) (PullRequestDetail, error) {
+			return PullRequestDetail{Title: "Ship it", Number: 42, State: "OPEN", BaseRefName: "main", HeadRefName: "feature/detail"}, nil
+		},
+		LoadOutOfDateWithBase: func(repository string, detail PullRequestDetail) (bool, error) {
+			return false, errors.New("compare failed")
+		},
+	}
+
+	actual, actualErr := assembler.Assemble("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	if actual.OutOfDateWithBase {
+		t.Fatal("expected compare lookup failures to stay best-effort")
+	}
+	if actual.Title != "Ship it" || actual.Number != 42 {
+		t.Fatalf("expected the base detail to survive compare lookup failures, actual %+v", actual)
+	}
+}
+
 func TestPullRequestDiffAssembler_GivenWorkflowLoaders_WhenAssembling_ThenItReturnsTheUnifiedDiffFilesAndThreads(t *testing.T) {
 	assembler := PullRequestDiffAssembler{
 		LoadUnifiedDiff: func(repository string, number int) (string, error) {

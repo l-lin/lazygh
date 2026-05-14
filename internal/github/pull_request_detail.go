@@ -21,6 +21,7 @@ type PullRequestDetail struct {
 	HeadRefName          string                     `json:"headRefName"`
 	MergeStateStatus     string                     `json:"mergeStateStatus"`
 	Mergeable            string                     `json:"mergeable"`
+	OutOfDateWithBase    bool                       `json:"outOfDateWithBase,omitempty"`
 	ReactionGroups       []ReactionGroup            `json:"reactionGroups,omitempty"`
 	Comments             []PullRequestComment       `json:"comments"`
 	Commits              []PullRequestCommit        `json:"commits"`

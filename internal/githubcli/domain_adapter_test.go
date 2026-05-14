@@ -29,6 +29,7 @@ func TestDomainAdapters_GivenTransportPayloads_WhenMappingToProviderNeutralModel
 		State:                "OPEN",
 		BaseRefName:          "main",
 		HeadRefName:          "feature/cache",
+		OutOfDateWithBase:    true,
 		Comments:             []PullRequestComment{{ID: "comment-1", Body: "Looks good", Author: &PullRequestCommentAuthor{Login: "reviewer-one"}, ReactionGroups: []ReactionGroup{{Content: ReactionContentEyes, TotalCount: 2}}}},
 		StatusCheckRollup:    []PullRequestStatusCheck{{Name: "test", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "SUCCESS", Link: "https://github.com/acme/widgets/actions/runs/42"}},
 		InlineCommentThreads: []PullRequestReviewThread{{ID: "thread-1", Path: "main.go", Line: 12, Comments: []PullRequestComment{{ID: "comment-2", Body: "ship it"}}}},

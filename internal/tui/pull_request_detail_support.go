@@ -141,7 +141,7 @@ func renderPullRequestLabelsLine(labels []githubdomain.PullRequestLabel) string 
 }
 
 func renderPullRequestOutOfDateLine(detail githubdomain.PullRequestDetail) string {
-	if !pullRequestOutOfDateWithBase(detail.MergeStateStatus) {
+	if !pullRequestOutOfDateWithBase(detail) {
 		return ""
 	}
 
@@ -152,8 +152,8 @@ func renderPullRequestOutOfDateLine(detail githubdomain.PullRequestDetail) strin
 	return styleText(iconWarning+" "+message, foregroundColorEscape(theme.PendingHex))
 }
 
-func pullRequestOutOfDateWithBase(mergeStateStatus string) bool {
-	return strings.EqualFold(strings.TrimSpace(mergeStateStatus), "BEHIND")
+func pullRequestOutOfDateWithBase(detail githubdomain.PullRequestDetail) bool {
+	return detail.OutOfDateWithBase || strings.EqualFold(strings.TrimSpace(detail.MergeStateStatus), "BEHIND")
 }
 
 func renderPullRequestAssigneesLine(assignees []githubdomain.PullRequestAuthor) string {

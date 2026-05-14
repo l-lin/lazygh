@@ -8,6 +8,10 @@ type pullRequestSearchResultDTO PullRequest
 
 type pullRequestDiffFileDTO PullRequestDiffFile
 
+type pullRequestBranchComparison struct {
+	BehindBy int `json:"behind_by"`
+}
+
 func parsePullRequestDetailResponse(stdout []byte) (PullRequestDetail, error) {
 	var dto pullRequestDetailDTO
 	if err := decodeEndpointJSONResponse(stdout, &dto, ErrInvalidPullRequestDetailResponse); err != nil {
@@ -38,6 +42,14 @@ func parsePullRequestDiffFilesResponse(stdout []byte) ([]PullRequestDiffFile, er
 		return nil, err
 	}
 	return mapPullRequestDiffFileDTOs(dtos), nil
+}
+
+func parsePullRequestBranchComparisonResponse(stdout []byte) (pullRequestBranchComparison, error) {
+	var comparison pullRequestBranchComparison
+	if err := decodeEndpointJSONResponse(stdout, &comparison, ErrInvalidPullRequestBranchComparisonResponse); err != nil {
+		return pullRequestBranchComparison{}, err
+	}
+	return comparison, nil
 }
 
 func mapPullRequestInlineCommentDTOs(dtos []pullRequestInlineCommentDTO) []PullRequestInlineComment {

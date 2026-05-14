@@ -2,6 +2,7 @@ package githubcli
 
 type PullRequestDetailAssembler struct {
 	LoadBaseDetail                  func(repository string, number int) (PullRequestDetail, error)
+	LoadOutOfDateWithBase           func(repository string, detail PullRequestDetail) (bool, error)
 	HydrateBuildLinks               func(repository string, number int, checks []PullRequestStatusCheck) []PullRequestStatusCheck
 	ListInlineComments              func(repository string, number int) ([]PullRequestInlineComment, error)
 	ListReviewThreads               func(repository string, number int) ([]PullRequestReviewThread, error)
@@ -13,6 +14,7 @@ func newPullRequestDetailAssembler(service *PullRequestDetailService) PullReques
 	builds := newBuildAssembler(service.serviceBase)
 	return PullRequestDetailAssembler{
 		LoadBaseDetail:                  service.loadPullRequestBaseDetail,
+		LoadOutOfDateWithBase:           service.pullRequestOutOfDateWithBase,
 		HydrateBuildLinks:               builds.HydrateStatusCheckLinks,
 		ListInlineComments:              service.listPullRequestInlineComments,
 		ListReviewThreads:               service.listPullRequestReviewThreads,
@@ -29,6 +31,12 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 	detail, err := assembler.LoadBaseDetail(repository, number)
 	if err != nil {
 		return PullRequestDetail{}, err
+	}
+	if assembler.LoadOutOfDateWithBase != nil {
+		outOfDateWithBase, actualErr := assembler.LoadOutOfDateWithBase(repository, detail)
+		if actualErr == nil {
+			detail.OutOfDateWithBase = outOfDateWithBase
+		}
 	}
 	if assembler.HydrateBuildLinks != nil && len(detail.StatusCheckRollup) > 0 {
 		detail.StatusCheckRollup = assembler.HydrateBuildLinks(repository, number, detail.StatusCheckRollup)

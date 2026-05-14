@@ -325,12 +325,13 @@ func TestRenderPullRequestDetailHeader_GivenReactionGroups_WhenFormatting_ThenIt
 func TestRenderPullRequestDetailHeader_GivenPullRequestBehindBaseBranch_WhenFormatting_ThenItShowsAnOutOfDateLineBelowTheReactions(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42}
 	detail := githubcli.PullRequestDetail{
-		Title:            "First PR",
-		Number:           42,
-		State:            "OPEN",
-		BaseRefName:      "main",
-		MergeStateStatus: "BEHIND",
-		ReactionGroups:   []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 2}},
+		Title:             "First PR",
+		Number:            42,
+		State:             "OPEN",
+		BaseRefName:       "main",
+		MergeStateStatus:  "BLOCKED",
+		OutOfDateWithBase: true,
+		ReactionGroups:    []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 2}},
 	}
 
 	actual := renderPullRequestDetailHeader(summary, detail)

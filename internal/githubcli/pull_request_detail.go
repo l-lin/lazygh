@@ -10,8 +10,9 @@ import (
 const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
-	ErrInvalidPullRequestDetailResponse        = fmt.Errorf("invalid pull request detail response")
-	ErrInvalidPullRequestInlineCommentResponse = fmt.Errorf("invalid pull request inline comment response")
+	ErrInvalidPullRequestDetailResponse           = fmt.Errorf("invalid pull request detail response")
+	ErrInvalidPullRequestInlineCommentResponse    = fmt.Errorf("invalid pull request inline comment response")
+	ErrInvalidPullRequestBranchComparisonResponse = fmt.Errorf("invalid pull request branch comparison response")
 )
 
 type PullRequestDetail struct {
@@ -33,6 +34,7 @@ type PullRequestDetail struct {
 	HeadRefName          string                     `json:"headRefName"`
 	MergeStateStatus     string                     `json:"mergeStateStatus"`
 	Mergeable            string                     `json:"mergeable"`
+	OutOfDateWithBase    bool                       `json:"outOfDateWithBase,omitempty"`
 	ReactionGroups       []ReactionGroup            `json:"reactionGroups,omitempty"`
 	Comments             []PullRequestComment       `json:"comments"`
 	Commits              []PullRequestCommit        `json:"commits"`
@@ -166,6 +168,27 @@ func (client *PullRequestDetailService) loadPullRequestBaseDetail(repository str
 		return PullRequestDetail{}, err
 	}
 	return parsePullRequestDetailResponse(result.Stdout)
+}
+
+func (client *PullRequestDetailService) pullRequestOutOfDateWithBase(repository string, detail PullRequestDetail) (bool, error) {
+	if !pullRequestCanBeOutOfDateWithBase(detail) {
+		return false, nil
+	}
+
+	result, err := client.doREST(RESTRequest{Path: fmt.Sprintf("repos/%s/compare/%s...%s", strings.TrimSpace(repository), strings.TrimSpace(detail.BaseRefName), strings.TrimSpace(detail.HeadRefName))})
+	if err != nil {
+		return false, err
+	}
+
+	comparison, err := parsePullRequestBranchComparisonResponse(result.Stdout)
+	if err != nil {
+		return false, err
+	}
+	return comparison.BehindBy > 0, nil
+}
+
+func pullRequestCanBeOutOfDateWithBase(detail PullRequestDetail) bool {
+	return strings.EqualFold(strings.TrimSpace(detail.State), "OPEN") && strings.TrimSpace(detail.BaseRefName) != "" && strings.TrimSpace(detail.HeadRefName) != ""
 }
 
 func (client *PullRequestDetailService) listPullRequestInlineComments(repository string, number int) ([]PullRequestInlineComment, error) {
