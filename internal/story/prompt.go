@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const defaultPrompt = "Group the changes into a logical, reviewer-friendly story. Use a professional tone. Prefer chapters that reflect one cohesive behavior change, refactor step, or debugging thread. Explain what each chapter is doing, why it exists, and what a reviewer should mentally connect across the listed files. Write each chapter narrative as readable markdown with short paragraphs, lists, emphasis, links, and code fences when they help the review. Prefer multiple lines with spacing over one dense sentence. Keep the narrative concise, concrete, and useful for code review."
+const defaultPrompt = "Group the changes into a logical, reviewer-friendly story. Use a professional tone. Prefer chapters that reflect one cohesive behavior change, refactor step, or debugging thread. Explain what each chapter is doing, why it exists, and what a reviewer should mentally connect across the listed files. Call out where the reviewer should pay special attention, especially for risky behavior changes, subtle invariants, migrations, edge cases, or files where the diff hides important logic. When a chapter deserves extra scrutiny, say so explicitly with a short \"Pay special attention to:\" note in the narrative. Write each chapter narrative as readable markdown with short paragraphs, lists, emphasis, links, and code fences when they help the review. Prefer multiple lines with spacing over one dense sentence. Keep the narrative concise, concrete, and useful for code review."
 
 func DefaultPrompt() string {
 	return defaultPrompt
@@ -53,6 +53,8 @@ func BuildPrompt(request Request, prompt string) string {
 		"- Group files by reviewer intent, behavior change, refactor step, or shared debugging thread.",
 		"- Keep titles concise and specific.",
 		"- Explain what each chapter is about and why it matters for review.",
+		"- Highlight any files, flows, or edge cases that deserve special reviewer attention, and explain why they are risky, subtle, or easy to miss.",
+		"- When a chapter needs extra scrutiny, add a short \"Pay special attention to:\" line inside the narrative.",
 		"- Prefer readable markdown structure over one dense sentence: short paragraphs, bullets, and code fences are welcome when they help review.",
 		"- The narrative is guidance for a reviewer, not a code review verdict.",
 		"",
