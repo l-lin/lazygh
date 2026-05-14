@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -49,6 +50,14 @@ func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 
 	program.modalEditor.errorMessage = ""
 	if err := program.modalEditor.submit(program.modalEditor.Text()); err != nil {
+		var feedbackErr modalEditorStatusLineError
+		if errors.As(err, &feedbackErr) {
+			program.setFeedback(feedbackErr.feedbackTarget, err.Error())
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
+		}
 		program.modalEditor.errorMessage = strings.TrimSpace(err.Error())
 		if gui == nil {
 			return nil

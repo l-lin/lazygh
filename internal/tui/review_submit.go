@@ -63,7 +63,11 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 
 	wasVisible := program.modalEditorVisible()
 	err := program.openModalEditor(gui, title, "", func(body string) error {
-		return program.submitPendingPullRequestReview(target, event, body)
+		submitErr := program.submitPendingPullRequestReview(target, event, body)
+		if submitErr != nil && event == githubdomain.PullRequestReviewEventRequestChanges {
+			return newModalEditorStatusLineError(program.model.Focus(), submitErr)
+		}
+		return submitErr
 	})
 	if err != nil {
 		return actionsPopupActionResult{err: err}

@@ -146,6 +146,40 @@ func TestActionsPopup_GivenReviewModeSubmitApprovalActionSelected_WhenSubmitting
 	}
 }
 
+func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubmittingWithAnEmptySummary_ThenItSubmitsThePendingReviewAsRequestChanges(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending"}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestRequestChangesComposerTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestRequestChangesComposerTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.submitReviewIDs, []string{"PRR_pending"}) {
+		t.Fatalf("expected submitted review ids %v, actual %v", []string{"PRR_pending"}, loader.submitReviewIDs)
+	}
+	if !reflect.DeepEqual(loader.submitReviewEvents, []githubcli.PullRequestReviewEvent{githubcli.PullRequestReviewEventRequestChanges}) {
+		t.Fatalf("expected submitted review events %v, actual %v", []githubcli.PullRequestReviewEvent{githubcli.PullRequestReviewEventRequestChanges}, loader.submitReviewEvents)
+	}
+	if !reflect.DeepEqual(loader.submitReviewBodies, []string{""}) {
+		t.Fatalf("expected submitted review bodies %v, actual %v", []string{""}, loader.submitReviewBodies)
+	}
+}
+
 func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubmittingFails_ThenItKeepsTheDraftAndPendingReviewVisible(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", submitReviewErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
@@ -192,7 +226,8 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 	if !strings.Contains(composerView.Buffer(), "Needs tests") {
 		t.Fatalf("expected composer buffer to contain %q, actual %q", "Needs tests", composerView.Buffer())
 	}
-	if !strings.Contains(composerView.Title, "boom") {
-		t.Fatalf("expected composer title to contain %q, actual %q", "boom", composerView.Title)
+	if strings.Contains(composerView.Title, "boom") {
+		t.Fatalf("expected composer title to hide %q, actual %q", "boom", composerView.Title)
 	}
+	then_statusLineContains(t, gui, "boom")
 }
