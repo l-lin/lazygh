@@ -77,8 +77,8 @@ func TestRenderCommentBoxWithMetadata_GivenALongMarkdownCodeBlockLineWithErrorTo
 			actualBlankLineCountBeforeCode++
 		}
 	}
-	if actualBlankLineCountBeforeCode != 1 {
-		t.Fatalf("expected exactly 1 blank line before the wrapped code block, actual %d in %q", actualBlankLineCountBeforeCode, actualDocument.text)
+	if actualBlankLineCountBeforeCode != 2 {
+		t.Fatalf("expected exactly 2 blank lines before the wrapped code block, actual %d in %q", actualBlankLineCountBeforeCode, actualDocument.text)
 	}
 
 	actualBlankLineCountInsideCodeBlock := 0
@@ -91,8 +91,10 @@ func TestRenderCommentBoxWithMetadata_GivenALongMarkdownCodeBlockLineWithErrorTo
 		t.Fatalf("expected wrapped code block lines to stay adjacent, actual %d blank lines in %q", actualBlankLineCountInsideCodeBlock, actualDocument.text)
 	}
 
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lastCodeLineIndex+1]))); actualInnerText != "" {
-		t.Fatalf("expected exactly 1 blank line after the wrapped code block, actual %q", actualInnerText)
+	for _, lineIndex := range []int{lastCodeLineIndex + 1, lastCodeLineIndex + 2} {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lineIndex]))); actualInnerText != "" {
+			t.Fatalf("expected exactly 2 blank lines after the wrapped code block, actual %q", actualInnerText)
+		}
 	}
 }
 

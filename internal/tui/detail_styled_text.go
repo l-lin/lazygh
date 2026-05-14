@@ -97,27 +97,33 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 		return lines
 	}
 
-	normalizedLines := normalizeMarkdownCodeBlockAdjacentBlankLines(lines)
-	paddedLines := make([]styledTextLine, 0, len(normalizedLines)+2)
-	for index, rawLine := range normalizedLines {
+	paddedLines := make([]styledTextLine, 0, len(lines)+6)
+	for index, rawLine := range lines {
 		if styledLineHasInlineCommentSuggestionSentinel(rawLine) {
 			paddedLines = append(paddedLines, stripInlineCommentSuggestionSentinel(rawLine))
 			continue
 		}
 
-		hasExistingCodeBlockPadding := styledLineHasMarkdownCodeBlockPaddingSentinel(rawLine)
 		line := stripMarkdownCodeBlockPaddingSentinel(rawLine)
 		isCodeBlockLine := styledLineUsesCommentBoxCodeBlockBackground(line)
-		previousLineIsCodeBlock := index > 0 && styledLineUsesCommentBoxCodeBlockBackground(stripMarkdownCodeBlockPaddingSentinel(normalizedLines[index-1]))
-		nextLineIsCodeBlock := index < len(normalizedLines)-1 && styledLineUsesCommentBoxCodeBlockBackground(stripMarkdownCodeBlockPaddingSentinel(normalizedLines[index+1]))
-		if isCodeBlockLine && !hasExistingCodeBlockPadding && !previousLineIsCodeBlock {
+		previousLineIsCodeBlock := index > 0 && styledLineUsesCommentBoxCodeBlockBackground(stripMarkdownCodeBlockPaddingSentinel(lines[index-1]))
+		nextLineIsCodeBlock := index < len(lines)-1 && styledLineUsesCommentBoxCodeBlockBackground(stripMarkdownCodeBlockPaddingSentinel(lines[index+1]))
+		previousLineIsBlank := index > 0 && styledLineIsBlank(stripMarkdownCodeBlockPaddingSentinel(lines[index-1]))
+		nextLineIsBlank := index < len(lines)-1 && styledLineIsBlank(stripMarkdownCodeBlockPaddingSentinel(lines[index+1]))
+		if isCodeBlockLine && !previousLineIsCodeBlock {
+			if !previousLineIsBlank {
+				paddedLines = append(paddedLines, styledTextLine{})
+			}
 			paddedLines = append(paddedLines, styledPaddingLine(line))
 		}
 
 		paddedLines = append(paddedLines, line)
 
-		if isCodeBlockLine && !hasExistingCodeBlockPadding && !nextLineIsCodeBlock {
+		if isCodeBlockLine && !nextLineIsCodeBlock {
 			paddedLines = append(paddedLines, styledPaddingLine(line))
+			if !nextLineIsBlank {
+				paddedLines = append(paddedLines, styledTextLine{})
+			}
 		}
 	}
 

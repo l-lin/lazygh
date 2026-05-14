@@ -1287,17 +1287,22 @@ func TestLayout_GivenMarkdownCodeBlock_WhenRendering_ThenItAddsBlankBackgroundLi
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	codeLineIndex := given_viewLineIndexContaining(t, detailView, `fmt.Println("hi")`)
-	if codeLineIndex < 1 || codeLineIndex >= len(detailView.BufferLines())-1 {
-		t.Fatalf("expected blank padding lines around the code block, actual lines %q", detailView.BufferLines())
+	if codeLineIndex < 2 || codeLineIndex >= len(detailView.BufferLines())-2 {
+		t.Fatalf("expected blank outer spacing and padding lines around the code block, actual lines %q", detailView.BufferLines())
 	}
-	if strings.Trim(detailView.BufferLines()[codeLineIndex-1], " ⠀") != "" {
-		t.Fatalf("expected the line above the code block to stay blank, actual %q", detailView.BufferLines()[codeLineIndex-1])
-	}
-	if strings.Trim(detailView.BufferLines()[codeLineIndex+1], " ⠀") != "" {
-		t.Fatalf("expected the line below the code block to stay blank, actual %q", detailView.BufferLines()[codeLineIndex+1])
+	for _, lineIndex := range []int{codeLineIndex - 2, codeLineIndex - 1, codeLineIndex + 1, codeLineIndex + 2} {
+		if strings.Trim(detailView.BufferLines()[lineIndex], " ⠀") != "" {
+			t.Fatalf("expected the code block spacer line %d to stay blank, actual %q", lineIndex, detailView.BufferLines()[lineIndex])
+		}
 	}
 	then_viewLineHasBackgroundColor(t, gui, viewDetailName, codeLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "markdown code block top padding background")
 	then_viewLineHasBackgroundColor(t, gui, viewDetailName, codeLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "markdown code block bottom padding background")
+	actualDocument := subject.currentDetailDocument(detailView)
+	for _, lineIndex := range []int{codeLineIndex - 2, codeLineIndex + 2} {
+		if len(actualDocument.lineStylePrefixes[lineIndex]) != 0 {
+			t.Fatalf("expected the outer spacing line %d to keep the default background, actual prefixes %q", lineIndex, actualDocument.lineStylePrefixes[lineIndex])
+		}
+	}
 }
 
 func TestLayout_GivenRenderedMarkdownDescription_WhenRendering_ThenVisibleLinesDoNotLeakRawANSISequences(t *testing.T) {
