@@ -81,9 +81,13 @@ type Program struct {
 }
 
 func NewProgram() *Program {
+	return NewProgramWithModel(defaultProgramModel())
+}
+
+func defaultProgramModel() *Model {
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
-	return NewProgramWithModel(model)
+	return model
 }
 
 func NewProgramWithModel(model *Model) *Program {
@@ -92,7 +96,7 @@ func NewProgramWithModel(model *Model) *Program {
 
 func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	if model == nil {
-		model = NewModel(DefaultSeedData())
+		model = defaultProgramModel()
 	}
 
 	resolvedDeps := resolveAppDeps(deps)

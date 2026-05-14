@@ -35,6 +35,17 @@ func TestScreenStateShell_GivenBrowserModeProgram_WhenHandlingNumberAndTabBindin
 	}
 }
 
+func TestScreenStateShell_GivenNilModelProgram_WhenRendering_ThenItStartsOnViewTwo(t *testing.T) {
+	subject := NewProgramWithModelAndDeps(nil, AppDeps{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_currentPanelViewIs(t, gui, sidePanelViewTwo)
+	then_screenFocusIs(t, subject.screenState(), ActivePanelSide, sidePanelViewTwo, FocusPullRequestsView)
+}
+
 func TestScreenStateShell_GivenOverlayTransitions_WhenHandlingActionsAndModalEditing_ThenTheProjectedKeyHintContextMatchesTheVisibleOverlay(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
 	gui := given_headlessGui(t)
