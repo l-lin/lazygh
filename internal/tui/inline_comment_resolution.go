@@ -93,10 +93,21 @@ func (program *Program) selectedPullRequestReviewThreadActionTarget() (pullReque
 }
 
 func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
+	switch program.activeDetailTab {
+	case CommentsDetailTab:
+		return program.selectedBrowserCommentsInlineCommentThreadActionTarget()
+	case ChangesDetailTab:
+		return program.selectedBrowserChangesInlineCommentThreadActionTarget()
+	default:
+		return pullRequestReviewThreadActionTarget{}, false
+	}
+}
+
+func (program *Program) selectedBrowserCommentsInlineCommentThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
@@ -111,6 +122,36 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 	thread := *sectionAtCursor.section.inlineThread
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
+		return pullRequestReviewThreadActionTarget{}, false
+	}
+
+	return pullRequestReviewThreadActionTarget{
+		repository: repository,
+		number:     summary.Number,
+		threadID:   strings.TrimSpace(thread.ID),
+		resolved:   thread.IsResolved,
+	}, true
+}
+
+func (program *Program) selectedBrowserChangesInlineCommentThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {
+	summary, ok := program.selectedPullRequestSummaryForDetail()
+	if !ok {
+		return pullRequestReviewThreadActionTarget{}, false
+	}
+	result, ok := program.pullRequestDiffForSummary(summary)
+	if !ok || result.err != nil {
+		return pullRequestReviewThreadActionTarget{}, false
+	}
+
+	detailDocument := program.currentDetailDocument(nil)
+	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
+	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
+	if !ok {
+		return pullRequestReviewThreadActionTarget{}, false
+	}
+
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadActionTarget{}, false
