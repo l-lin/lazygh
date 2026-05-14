@@ -22,6 +22,7 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"open_external_editor": {"ctrl+g"},
 		},
 		"pull_requests": {
+			"custom_search":           {":"},
 			"reply_to_inline_comment": {"r"},
 		},
 	}
