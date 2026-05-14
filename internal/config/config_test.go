@@ -113,23 +113,46 @@ comment_on_pull_request = "c"
 	}
 }
 
-func TestLoad_GivenPullRequestSearches_WhenLoading_ThenItPreservesConfiguredLabelsAndCommands(t *testing.T) {
+func TestLoad_GivenPullRequestSearches_WhenLoading_ThenItPreservesConfiguredLabelsAndPrependsSearchPRs(t *testing.T) {
 	configPath := given_configFile(t, `
 [[pull_requests.searches]]
 label = "Mine"
-command = ["pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+flags = ["--author", "@me", "--state", "open"]
 
 [[pull_requests.searches]]
-label = "Team Review"
-command = "search prs --review-requested @me --limit 50 --state open --json title,number,repository,url,body,state,isDraft,updatedAt"
+label = "Escalated"
+flags = "--search \"label:escalated state:open\" --sort updated --order desc"
 `)
 
 	actual, actualErr := when_loading(configPath)
 
 	then_noError(t, actualErr)
 	expected := Config{PullRequests: []PullRequestSearch{
-		{Label: "Mine", Command: []string{"pr", "list", "--author", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
-		{Label: "Team Review", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "50", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"}},
+		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}},
+		{Label: "Escalated", Command: []string{"search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"}},
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoad_GivenLegacyPullRequestSearchCommands_WhenLoading_ThenItNormalizesThemToSearchPRs(t *testing.T) {
+	configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "Mine"
+command = ["search", "prs", "--author", "@me", "--state", "open"]
+
+[[pull_requests.searches]]
+label = "Reviewed"
+command = ["pr", "list", "--search", "reviewed-by:@me status:open"]
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{PullRequests: []PullRequestSearch{
+		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}},
+		{Label: "Reviewed", Command: []string{"search", "prs", "--search", "reviewed-by:@me status:open"}},
 	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)
@@ -269,15 +292,15 @@ func TestLoad_GivenInvalidPullRequestSearchEntries_WhenLoading_ThenItIgnoresOnly
 	configPath := given_configFile(t, `
 [[pull_requests.searches]]
 label = "   "
-command = ["search", "prs", "--author", "@me"]
+flags = ["--author", "@me"]
 
 [[pull_requests.searches]]
 label = "Valid"
-command = ["search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"]
+flags = ["--review-requested", "@me", "--state", "open"]
 
 [[pull_requests.searches]]
 label = "Broken"
-command = 1
+flags = 1
 `)
 
 	actual, actualErr := when_loading(configPath)
@@ -285,7 +308,7 @@ command = 1
 	then_noError(t, actualErr)
 	expected := Config{PullRequests: []PullRequestSearch{{
 		Label:   "Valid",
-		Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--json", "title,number,repository,url,body,state,isDraft,updatedAt"},
+		Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open"},
 	}}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)

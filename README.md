@@ -227,24 +227,24 @@ You can find some prompt examples in [`prompts/story-review/`](./prompts/story-r
 ### Pull request searches
 
 You can customize your own pull request searches under `[[pull_requests.searches]]`.
+`lazygh` prepends `gh search prs` for you, so each entry only needs the flags.
 
 ```toml
 [[pull_requests.searches]]
 label = "My PRs"
-command = ["search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"]
+flags = ["--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"]
 
 [[pull_requests.searches]]
 label = "My reviews"
-command = ["search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
+flags = ["--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
 
 [[pull_requests.searches]]
 label = "Requested"
-command = ["search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
+flags = ["--review-requested", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
 
-# Your own search search
 [[pull_requests.searches]]
 label = "Escalated"
-command = ["search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
+flags = ["--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"]
 ```
 
 ### Keymap overrides

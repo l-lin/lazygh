@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"unicode"
 
 	"github.com/BurntSushi/toml"
 	"github.com/l-lin/lazygh/internal/story"
@@ -16,6 +17,11 @@ const (
 	configDirectoryName = "lazygh"
 	configFileName      = "config.toml"
 	cacheFileName       = "cache.sqlite3"
+)
+
+var (
+	pullRequestSearchCommandPrefix     = []string{"search", "prs"}
+	legacyPullRequestListCommandPrefix = []string{"pr", "list"}
 )
 
 type Config struct {
@@ -63,6 +69,7 @@ type rawPullRequestConfig struct {
 
 type rawPullRequestSearch struct {
 	Label   string `toml:"label"`
+	Flags   any    `toml:"flags"`
 	Command any    `toml:"command"`
 }
 
@@ -256,7 +263,7 @@ func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequ
 	normalized := make([]PullRequestSearch, 0, len(rawSearches))
 	for _, rawSearch := range rawSearches {
 		label := strings.TrimSpace(rawSearch.Label)
-		command := normalizeCommand(rawSearch.Command)
+		command := normalizePullRequestSearchCommand(rawSearch)
 		if label == "" || len(command) == 0 {
 			continue
 		}
@@ -270,10 +277,56 @@ func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequ
 	return normalized
 }
 
+func normalizePullRequestSearchCommand(raw rawPullRequestSearch) []string {
+	arguments := normalizePullRequestSearchArguments(raw.Flags)
+	if len(arguments) == 0 {
+		arguments = normalizePullRequestSearchArguments(raw.Command)
+	}
+	if len(arguments) == 0 {
+		return nil
+	}
+
+	command := make([]string, 0, len(arguments)+len(pullRequestSearchCommandPrefix))
+	command = append(command, pullRequestSearchCommandPrefix...)
+	command = append(command, arguments...)
+	return command
+}
+
+func normalizePullRequestSearchArguments(rawValue any) []string {
+	arguments := normalizeCommand(rawValue)
+	if len(arguments) == 0 {
+		return nil
+	}
+	return stripPullRequestSearchCommandPrefix(arguments)
+}
+
+func stripPullRequestSearchCommandPrefix(arguments []string) []string {
+	normalizedArguments := normalizeCommandArguments(arguments)
+	if len(normalizedArguments) == 0 {
+		return nil
+	}
+	if hasCommandPrefix(normalizedArguments, pullRequestSearchCommandPrefix) || hasCommandPrefix(normalizedArguments, legacyPullRequestListCommandPrefix) {
+		return append([]string(nil), normalizedArguments[2:]...)
+	}
+	return normalizedArguments
+}
+
+func hasCommandPrefix(arguments []string, prefix []string) bool {
+	if len(arguments) < len(prefix) || len(prefix) == 0 {
+		return false
+	}
+	for index, part := range prefix {
+		if !strings.EqualFold(strings.TrimSpace(arguments[index]), part) {
+			return false
+		}
+	}
+	return true
+}
+
 func normalizeCommand(rawValue any) []string {
 	switch actual := rawValue.(type) {
 	case string:
-		return normalizeCommandArguments(strings.Fields(actual))
+		return ParseCommandLine(actual)
 	case []string:
 		return normalizeCommandArguments(actual)
 	case []any:
@@ -306,6 +359,72 @@ func normalizeCommandArguments(arguments []string) []string {
 	}
 
 	return normalizedArguments
+}
+
+func ParseCommandLine(command string) []string {
+	trimmedCommand := strings.TrimSpace(command)
+	if trimmedCommand == "" {
+		return nil
+	}
+
+	arguments := make([]string, 0)
+	currentArgument := strings.Builder{}
+	argumentStarted := false
+	quotedBy := rune(0)
+	escaped := false
+	flushArgument := func(force bool) {
+		if !argumentStarted && !force {
+			return
+		}
+		arguments = append(arguments, currentArgument.String())
+		currentArgument.Reset()
+		argumentStarted = false
+	}
+
+	for _, character := range trimmedCommand {
+		if escaped {
+			currentArgument.WriteRune(character)
+			argumentStarted = true
+			escaped = false
+			continue
+		}
+		if quotedBy != 0 {
+			switch {
+			case character == '\\' && quotedBy == '"':
+				escaped = true
+			case character == quotedBy:
+				quotedBy = 0
+				argumentStarted = true
+			default:
+				currentArgument.WriteRune(character)
+				argumentStarted = true
+			}
+			continue
+		}
+
+		switch {
+		case unicode.IsSpace(character):
+			if argumentStarted {
+				flushArgument(false)
+			}
+		case character == '\\':
+			escaped = true
+			argumentStarted = true
+		case character == '"' || character == '\'':
+			quotedBy = character
+			argumentStarted = true
+		default:
+			currentArgument.WriteRune(character)
+			argumentStarted = true
+		}
+	}
+	if escaped {
+		currentArgument.WriteRune('\\')
+	}
+	if argumentStarted || currentArgument.Len() > 0 {
+		flushArgument(true)
+	}
+	return normalizeCommandArguments(arguments)
 }
 
 func normalizeStoryReviewConfig(raw rawStoryReviewConfig) story.Config {
