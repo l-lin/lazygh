@@ -355,10 +355,22 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
+	return program.openSearchWithInitialQuery(gui, "")
+}
+
+func (program *Program) openSearchWithWordUnderCursor(gui *gocui.Gui, view *gocui.View) error {
+	actualView := program.resolveView(gui, view, viewDetailName)
+	document := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(document, viewPageSize(actualView))
+	query, _ := document.wordAt(program.detailViewState.cursor)
+	return program.openSearchWithInitialQuery(gui, query)
+}
+
+func (program *Program) openSearchWithInitialQuery(gui *gocui.Gui, query string) error {
 	program.clearPendingSelectionPrefix()
 	if program.pullRequestBuildRunPopupVisible() {
 		program.startPullRequestBuildRunPopupSearch()
-		program.searchEditor = newLineEditor("")
+		program.searchEditor = newLineEditor(query)
 		return program.layout(gui)
 	}
 	inputContext := program.inputContext()
@@ -375,7 +387,8 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 		}
 		program.model.StartSearch()
 	}
-	program.searchEditor = newLineEditor("")
+	program.updateActiveSearchDraft(query)
+	program.searchEditor = newLineEditor(query)
 	return program.layout(gui)
 }
 

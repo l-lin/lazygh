@@ -90,6 +90,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheL
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Search word under cursor", "*/#")
 }
 
 func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSharedFoldKeys(t *testing.T) {
@@ -299,6 +300,7 @@ func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAn
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
+	then_helpEntryUsesKey(t, actualBuffer, "Search word under cursor", "*/#")
 }
 
 func TestHelpPopup_GivenReviewFocusAndConfiguredReviewMotionOverrides_WhenTogglingHelp_ThenItShowsTheConfiguredSequences(t *testing.T) {

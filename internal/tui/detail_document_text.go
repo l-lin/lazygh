@@ -175,6 +175,35 @@ func (document detailDocument) moveToPreviousWordWithKind(position detailPositio
 	return document.positionForGlobalIndex(cursor)
 }
 
+func (document detailDocument) wordAt(position detailPosition) (string, bool) {
+	position = document.clampPosition(position)
+	if position.line < 0 || position.line >= len(document.lines) {
+		return "", false
+	}
+
+	line := document.lines[position.line]
+	if len(line) == 0 || position.column < 0 || position.column >= len(line) {
+		return "", false
+	}
+
+	currentClass := wordMotionClass(line[position.column], wordMotionSmall)
+	if currentClass == wordMotionWhitespaceClass {
+		return "", false
+	}
+
+	start := position.column
+	for start > 0 && wordMotionClass(line[start-1], wordMotionSmall) == currentClass {
+		start--
+	}
+
+	end := position.column
+	for end+1 < len(line) && wordMotionClass(line[end+1], wordMotionSmall) == currentClass {
+		end++
+	}
+
+	return string(line[start : end+1]), true
+}
+
 func wordMotionClass(value rune, kind wordMotionKind) int {
 	if unicode.IsSpace(value) {
 		return wordMotionWhitespaceClass

@@ -75,6 +75,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 				{Key: "+/-", Description: "Toggle fullscreen"},
 				{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search diff"},
+				program.searchWordUnderCursorHelpEntry(),
 				{Key: "<esc>/q", Description: "Exit visual / return"},
 			}
 			if program.inlineCommentReplyShortcutAvailable() {
@@ -134,6 +135,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Toggle fullscreen"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search detail"},
+			program.searchWordUnderCursorHelpEntry(),
 			{Key: "<esc>/q", Description: "Exit visual / return"},
 		}
 		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"})
@@ -421,6 +423,10 @@ func (program *Program) wordMotionHelpKeys(scope string) string {
 		program.helpKeysOrFallback("B", keybindingActionID{scope: scope, action: "move_cursor_to_previous_big_word"}),
 	}
 	return strings.Join(keys, "/")
+}
+
+func (program *Program) searchWordUnderCursorHelpEntry() helpEntry {
+	return helpEntry{Key: program.helpKeysOrFallback("*/#", keybindingActionID{scope: keymapScopeCursor, action: "search_word_under_cursor"}), Description: "Search word under cursor"}
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {

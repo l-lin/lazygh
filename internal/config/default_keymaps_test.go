@@ -13,6 +13,9 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"next_side_view":     {"tab", "l"},
 			"previous_side_view": {"shift+tab", "h"},
 		},
+		"cursor": {
+			"search_word_under_cursor": {"*", "#"},
+		},
 		"modal_editor": {
 			"cancel":               {"esc"},
 			"open_external_editor": {"ctrl+g"},
