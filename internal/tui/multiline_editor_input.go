@@ -33,6 +33,9 @@ func (editor *multilineEditor) HandleKey(key gocui.Key, ch rune, mod gocui.Modif
 	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2 || key == gocui.KeyCtrlH:
 		editor.DeleteBackwardChar()
 		return true
+	case key == gocui.KeyCtrlD:
+		editor.DeleteForwardChar()
+		return true
 	case key == gocui.KeyCtrlW:
 		editor.DeleteBackwardWord()
 		return true
@@ -41,6 +44,9 @@ func (editor *multilineEditor) HandleKey(key gocui.Key, ch rune, mod gocui.Modif
 		return true
 	case key == gocui.KeyCtrlK:
 		editor.DeleteToLineEnd()
+		return true
+	case (ch == 'd' || ch == 'D') && (mod&gocui.ModAlt) != 0:
+		editor.DeleteForwardWord()
 		return true
 	case (ch == 'b' || ch == 'B') && (mod&gocui.ModAlt) != 0:
 		editor.MoveCursorWordLeft()
@@ -104,6 +110,15 @@ func (editor *multilineEditor) DeleteBackwardChar() {
 	editor.preferredColumn = -1
 }
 
+func (editor *multilineEditor) DeleteForwardChar() {
+	if editor == nil || editor.cursor >= len(editor.text) || len(editor.text) == 0 {
+		return
+	}
+
+	editor.text = append(editor.text[:editor.cursor], editor.text[editor.cursor+1:]...)
+	editor.preferredColumn = -1
+}
+
 func (editor *multilineEditor) DeleteBackwardWord() {
 	if editor == nil || editor.cursor == 0 {
 		return
@@ -119,6 +134,23 @@ func (editor *multilineEditor) DeleteBackwardWord() {
 
 	editor.text = append(editor.text[:start], editor.text[editor.cursor:]...)
 	editor.cursor = start
+	editor.preferredColumn = -1
+}
+
+func (editor *multilineEditor) DeleteForwardWord() {
+	if editor == nil || editor.cursor >= len(editor.text) {
+		return
+	}
+
+	end := editor.cursor
+	for end < len(editor.text) && unicode.IsSpace(editor.text[end]) {
+		end++
+	}
+	for end < len(editor.text) && !unicode.IsSpace(editor.text[end]) {
+		end++
+	}
+
+	editor.text = append(editor.text[:editor.cursor], editor.text[end:]...)
 	editor.preferredColumn = -1
 }
 

@@ -43,6 +43,17 @@ func TestKeybindingSpecs_GivenProgram_WhenListingFullPageBindings_ThenTextInputs
 	}
 }
 
+func TestKeybindingSpecs_GivenProgram_WhenListingPagingBindings_ThenTextInputsDoNotCaptureControlDOrControlU(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewSearchName, viewActionsPopupSearchName, viewModalEditorName} {
+		then_bindingDoesNotExist(t, actual, viewName, gocui.KeyCtrlD)
+		then_bindingDoesNotExist(t, actual, viewName, gocui.KeyCtrlU)
+	}
+}
+
 func TestFullPageNavigation_GivenUserViewSelection_WhenPressingControlFAndControlB_ThenItMovesAFullPageAndRecenters(t *testing.T) {
 	subject := NewProgramWithModel(NewModel(SeedData{Users: given_manyItems("user", 60)}))
 	gui := given_headlessGuiWithSize(t, 120, 12)

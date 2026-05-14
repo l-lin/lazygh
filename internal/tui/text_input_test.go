@@ -95,6 +95,43 @@ func TestLineEditor_GivenCursorAfterCharacter_WhenDeletingBackwardCharacter_Then
 	}
 }
 
+func TestLineEditor_GivenCursorBeforeCharacter_WhenDeletingForwardCharacter_ThenItDeletesTheCharacterToTheRight(t *testing.T) {
+	subject := newLineEditor("abcd")
+	subject.MoveCursorToStart()
+	subject.MoveCursorRight()
+
+	actual := subject.HandleKey(gocui.KeyCtrlD, 0, gocui.ModNone)
+	if !actual {
+		t.Fatal("expected ctrl-d to be handled")
+	}
+
+	expectedText := "acd"
+	if subject.Text() != expectedText {
+		t.Fatalf("expected text %q, actual %q", expectedText, subject.Text())
+	}
+	if subject.Cursor() != 1 {
+		t.Fatalf("expected cursor 1, actual %d", subject.Cursor())
+	}
+}
+
+func TestLineEditor_GivenCursorAtStartOfLastWord_WhenDeletingForwardWord_ThenItDeletesTheWordToTheRight(t *testing.T) {
+	subject := newLineEditor("alpha beta gamma")
+	subject.cursor = len([]rune("alpha beta "))
+
+	actual := subject.HandleKey(0, 'd', gocui.ModAlt)
+	if !actual {
+		t.Fatal("expected alt-d to be handled")
+	}
+
+	expectedText := "alpha beta "
+	if subject.Text() != expectedText {
+		t.Fatalf("expected text %q, actual %q", expectedText, subject.Text())
+	}
+	if subject.Cursor() != len([]rune(expectedText)) {
+		t.Fatalf("expected cursor at %d, actual %d", len([]rune(expectedText)), subject.Cursor())
+	}
+}
+
 func TestLineEditor_GivenAltWordMovement_WhenMovingByWord_ThenTheCursorJumpsAcrossWords(t *testing.T) {
 	subject := newLineEditor("alpha beta gamma")
 

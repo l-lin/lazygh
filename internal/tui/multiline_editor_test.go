@@ -44,6 +44,43 @@ func TestMultilineEditor_GivenAltC_WhenHandlingInput_ThenItInsertsTheFenceSnippe
 	}
 }
 
+func TestMultilineEditor_GivenCursorBeforeCharacter_WhenDeletingForwardCharacter_ThenItDeletesTheCharacterToTheRight(t *testing.T) {
+	subject := newMultilineEditor("abcd")
+	subject.MoveCursorToLineStart()
+	subject.MoveCursorRight()
+
+	actual := subject.HandleKey(gocui.KeyCtrlD, 0, gocui.ModNone)
+	if !actual {
+		t.Fatal("expected ctrl-d to be handled")
+	}
+
+	expectedText := "acd"
+	if subject.Text() != expectedText {
+		t.Fatalf("expected text %q, actual %q", expectedText, subject.Text())
+	}
+	if subject.Cursor() != 1 {
+		t.Fatalf("expected cursor 1, actual %d", subject.Cursor())
+	}
+}
+
+func TestMultilineEditor_GivenCursorAtStartOfLastWord_WhenDeletingForwardWord_ThenItDeletesTheWordToTheRight(t *testing.T) {
+	subject := newMultilineEditor("alpha beta gamma")
+	subject.cursor = len([]rune("alpha beta "))
+
+	actual := subject.HandleKey(0, 'd', gocui.ModAlt)
+	if !actual {
+		t.Fatal("expected alt-d to be handled")
+	}
+
+	expectedText := "alpha beta "
+	if subject.Text() != expectedText {
+		t.Fatalf("expected text %q, actual %q", expectedText, subject.Text())
+	}
+	if subject.Cursor() != len([]rune(expectedText)) {
+		t.Fatalf("expected cursor at %d, actual %d", len([]rune(expectedText)), subject.Cursor())
+	}
+}
+
 func TestMultilineEditor_GivenMixedLineLengths_WhenMovingVertically_ThenItRestoresThePreferredColumnWhenPossible(t *testing.T) {
 	subject := newMultilineEditor("12345\n12\n1234")
 	subject.cursor = 4
