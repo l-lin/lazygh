@@ -50,6 +50,7 @@ func TestConfig_ResolvedTheme_GivenBundledPresetNames_WhenResolving_ThenEachPres
 			"pending":            actual.PendingHex,
 			"pending_background": actual.PendingBackgroundHex,
 			"muted":              actual.MutedHex,
+			"warning":            actual.WarningHex,
 		} {
 			if value == "" {
 				t.Fatalf("expected %q to define %q", presetName, key)

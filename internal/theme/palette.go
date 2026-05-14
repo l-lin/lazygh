@@ -16,6 +16,7 @@ type Palette struct {
 	PendingHex                           string `toml:"pending"`
 	PendingBackgroundHex                 string `toml:"pending_background"`
 	MutedHex                             string `toml:"muted"`
+	WarningHex                           string `toml:"warning"`
 	PullRequestReferenceHex              string `toml:"pull_request_reference"`
 	PullRequestTitleHex                  string `toml:"pull_request_title"`
 	SelectedLineBackgroundHex            string `toml:"selected_line_background"`
@@ -64,6 +65,7 @@ func newDefaultLightPalette() Palette {
 	successBackgroundHex := "#DFF3E4"
 	failureHex := "#CF222E"
 	failureBackgroundHex := "#FFE2E5"
+	warningHex := "#9A6700"
 	searchHighlightHex := "#F9EAB3"
 	commentAuthorBadgeHex := "#0969DA"
 	commentAuthorBadgeBackgroundHex := "#DDF4FF"
@@ -83,6 +85,7 @@ func newDefaultLightPalette() Palette {
 		PendingHex:                           pendingHex,
 		PendingBackgroundHex:                 pendingBackgroundHex,
 		MutedHex:                             mutedHex,
+		WarningHex:                           warningHex,
 		PullRequestReferenceHex:              pendingHex,
 		PullRequestTitleHex:                  activeTextHex,
 		SelectedLineBackgroundHex:            pendingBackgroundHex,
@@ -132,6 +135,7 @@ func newDefaultDarkPalette() Palette {
 	successBackgroundHex := "#033A16"
 	failureHex := "#F85149"
 	failureBackgroundHex := "#67060C"
+	warningHex := "#D29922"
 	commentAuthorBadgeHex := "#DDF4FF"
 	commentAuthorBadgeBackgroundHex := "#1F6FEB"
 	mergedHex := "#A371F7"
@@ -150,6 +154,7 @@ func newDefaultDarkPalette() Palette {
 		PendingHex:                           pendingHex,
 		PendingBackgroundHex:                 pendingBackgroundHex,
 		MutedHex:                             mutedHex,
+		WarningHex:                           warningHex,
 		PullRequestReferenceHex:              pendingHex,
 		PullRequestTitleHex:                  activeTextHex,
 		SelectedLineBackgroundHex:            "#21262D",
@@ -206,6 +211,7 @@ var (
 	PendingHex                           = initialDefaultPalette.PendingHex
 	PendingBackgroundHex                 = initialDefaultPalette.PendingBackgroundHex
 	MutedHex                             = initialDefaultPalette.MutedHex
+	WarningHex                           = initialDefaultPalette.WarningHex
 	PullRequestReferenceHex              = initialDefaultPalette.PullRequestReferenceHex
 	PullRequestTitleHex                  = initialDefaultPalette.PullRequestTitleHex
 	SelectedLineBackgroundHex            = initialDefaultPalette.SelectedLineBackgroundHex
@@ -314,6 +320,7 @@ func applyResolvedPalette(palette Palette) {
 	PendingHex = palette.PendingHex
 	PendingBackgroundHex = palette.PendingBackgroundHex
 	MutedHex = palette.MutedHex
+	WarningHex = palette.WarningHex
 	PullRequestReferenceHex = palette.PullRequestReferenceHex
 	PullRequestTitleHex = palette.PullRequestTitleHex
 	SelectedLineBackgroundHex = palette.SelectedLineBackgroundHex
@@ -388,6 +395,7 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.PendingHex,
 		&palette.PendingBackgroundHex,
 		&palette.MutedHex,
+		&palette.WarningHex,
 		&palette.PullRequestReferenceHex,
 		&palette.PullRequestTitleHex,
 		&palette.SelectedLineBackgroundHex,

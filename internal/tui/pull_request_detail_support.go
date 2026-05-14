@@ -149,7 +149,7 @@ func renderPullRequestOutOfDateLine(detail githubdomain.PullRequestDetail) strin
 	if baseRefName := strings.TrimSpace(detail.BaseRefName); baseRefName != "" {
 		message += " " + baseRefName
 	}
-	return styleText(iconWarning+" "+message, foregroundColorEscape(theme.PendingHex))
+	return styleText(iconWarning+" "+message, foregroundColorEscape(theme.WarningHex))
 }
 
 func pullRequestOutOfDateWithBase(detail githubdomain.PullRequestDetail) bool {

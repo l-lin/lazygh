@@ -346,8 +346,8 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestBehindBaseBranch_WhenForm
 	if !strings.Contains(outOfDateLine, "main") {
 		t.Fatalf("expected the out-of-date line to mention the base branch %q, actual %q", "main", outOfDateLine)
 	}
-	if actualStylePrefix := actualDocument.lineStylePrefixes[outOfDateLineIndex][warningIndex]; actualStylePrefix != foregroundColorEscape(theme.PendingHex) {
-		t.Fatalf("expected out-of-date warning prefix %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[outOfDateLineIndex][warningIndex]; actualStylePrefix != foregroundColorEscape(theme.WarningHex) {
+		t.Fatalf("expected out-of-date warning prefix %q, actual %q", foregroundColorEscape(theme.WarningHex), actualStylePrefix)
 	}
 }
 
