@@ -388,6 +388,7 @@ func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, 
 	program.model.StartSearch()
 	program.updateActiveSearchDraft(query)
 	program.model.SubmitSearch()
+	program.detailSearchReversed = reverse
 	program.searchEditor = nil
 
 	if reverse {
@@ -442,6 +443,9 @@ func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
 	targetPullRequestTab := program.model.SearchTargetPullRequestTab()
 	targetPullRequestIndex := program.model.SelectedPullRequestIndex(targetPullRequestTab)
 	program.model.SubmitSearch()
+	if target == FocusDetailView {
+		program.detailSearchReversed = false
+	}
 	program.searchEditor = nil
 
 	if target == FocusDetailView {

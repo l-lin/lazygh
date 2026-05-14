@@ -41,7 +41,7 @@ func TestDetailSearch_GivenBrowserDetailFocusAndWordUnderCursor_WhenPressingStar
 	then_detailCursorIs(t, subject.detailViewState, expectedNext)
 }
 
-func TestDetailSearch_GivenReviewDetailFocusAndWordUnderCursor_WhenPressingPound_ThenItAppliesTheSearchBackwardsWithoutOpeningThePrompt(t *testing.T) {
+func TestDetailSearch_GivenReviewDetailFocusAndWordUnderCursor_WhenPressingPound_ThenItAppliesTheSearchBackwardsAndFlipsNAndNWithoutOpeningThePrompt(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
 		diffs: map[string]githubcli.PullRequestDiff{
@@ -61,6 +61,7 @@ func TestDetailSearch_GivenReviewDetailFocusAndWordUnderCursor_WhenPressingPound
 	then_noError(t, actualErr)
 	given_detailCursorOnSegmentOccurrence(t, gui, subject, "line", 2)
 	expectedPrevious := given_detailPositionOfSegmentOccurrence(t, gui, subject, "line", 1)
+	expectedForward := expectedPrevious
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
@@ -75,6 +76,14 @@ func TestDetailSearch_GivenReviewDetailFocusAndWordUnderCursor_WhenPressingPound
 		t.Fatal("expected reverse word search to avoid leaving the search prompt active")
 	}
 	then_detailCursorIs(t, subject.detailViewState, expectedPrevious)
+
+	actualErr = subject.nextDetailSearchMatch(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, given_detailPositionOfSegmentOccurrence(t, gui, subject, "line", 0))
+
+	actualErr = subject.previousDetailSearchMatch(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, expectedForward)
 }
 
 func given_detailCursorOnSegment(t *testing.T, gui *gocui.Gui, subject *Program, segment string) {

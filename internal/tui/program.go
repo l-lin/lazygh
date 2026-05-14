@@ -53,6 +53,7 @@ type Program struct {
 	detailViewState                         detailViewState
 	clipboardWriter                         ClipboardWriter
 	helpVisible                             bool
+	detailSearchReversed                    bool
 	searchEditor                            *lineEditor
 	actionsPopupSearchEditor                *lineEditor
 	actionsPopupErrorMessage                string
