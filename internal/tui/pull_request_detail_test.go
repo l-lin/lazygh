@@ -322,6 +322,45 @@ func TestRenderPullRequestDetailHeader_GivenReactionGroups_WhenFormatting_ThenIt
 	}
 }
 
+func TestRenderPullRequestDetailHeader_GivenPullRequestBehindBaseBranch_WhenFormatting_ThenItShowsAnOutOfDateLineBelowTheReactions(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42}
+	detail := githubcli.PullRequestDetail{
+		Title:            "First PR",
+		Number:           42,
+		State:            "OPEN",
+		BaseRefName:      "main",
+		MergeStateStatus: "BEHIND",
+		ReactionGroups:   []githubcli.ReactionGroup{{Content: githubcli.ReactionContentThumbsUp, TotalCount: 2}},
+	}
+
+	actual := renderPullRequestDetailHeader(summary, detail)
+	actualDocument := newDetailDocument(actual, 120)
+	reactionLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "👍")
+	outOfDateLineIndex, outOfDateLine := given_detailDocumentLineContaining(t, actualDocument, "Out of date with base branch")
+	warningIndex := given_runeIndexInString(t, outOfDateLine, iconWarning)
+
+	if outOfDateLineIndex != reactionLineIndex+1 {
+		t.Fatalf("expected the out-of-date line to render directly below the reactions, actual reaction=%d outOfDate=%d", reactionLineIndex, outOfDateLineIndex)
+	}
+	if !strings.Contains(outOfDateLine, "main") {
+		t.Fatalf("expected the out-of-date line to mention the base branch %q, actual %q", "main", outOfDateLine)
+	}
+	if actualStylePrefix := actualDocument.lineStylePrefixes[outOfDateLineIndex][warningIndex]; actualStylePrefix != foregroundColorEscape(theme.PendingHex) {
+		t.Fatalf("expected out-of-date warning prefix %q, actual %q", foregroundColorEscape(theme.PendingHex), actualStylePrefix)
+	}
+}
+
+func TestRenderPullRequestDetailHeader_GivenPullRequestUpToDateWithBaseBranch_WhenFormatting_ThenItOmitsTheOutOfDateLine(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42}
+	detail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, State: "OPEN", BaseRefName: "main", MergeStateStatus: "CLEAN"}
+
+	actual := renderPullRequestDetailHeader(summary, detail)
+
+	if strings.Contains(actual, "Out of date with base branch") {
+		t.Fatalf("expected the header to omit the out-of-date line, actual %q", actual)
+	}
+}
+
 func TestRenderPullRequestCommentsTab_GivenCommentReactionGroups_WhenFormatting_ThenItShowsThemOnTheMetadataLine(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered comment one"}
 	comments := []githubcli.PullRequestComment{{

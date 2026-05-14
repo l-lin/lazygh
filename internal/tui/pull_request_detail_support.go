@@ -140,6 +140,22 @@ func renderPullRequestLabelsLine(labels []githubdomain.PullRequestLabel) string 
 	return stylePullRequestMutedText(strings.Join(entries, "  "))
 }
 
+func renderPullRequestOutOfDateLine(detail githubdomain.PullRequestDetail) string {
+	if !pullRequestOutOfDateWithBase(detail.MergeStateStatus) {
+		return ""
+	}
+
+	message := "Out of date with base branch"
+	if baseRefName := strings.TrimSpace(detail.BaseRefName); baseRefName != "" {
+		message += " " + baseRefName
+	}
+	return styleText(iconWarning+" "+message, foregroundColorEscape(theme.PendingHex))
+}
+
+func pullRequestOutOfDateWithBase(mergeStateStatus string) bool {
+	return strings.EqualFold(strings.TrimSpace(mergeStateStatus), "BEHIND")
+}
+
 func renderPullRequestAssigneesLine(assignees []githubdomain.PullRequestAuthor) string {
 	entries := make([]string, 0, len(assignees))
 	for _, assignee := range assignees {

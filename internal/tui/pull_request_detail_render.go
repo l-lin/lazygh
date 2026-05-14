@@ -40,6 +40,7 @@ func renderPullRequestHeader(summary any, detail any, options pullRequestHeaderO
 		renderPullRequestMetaLineWithOptions(summaryValue, detailValue, options.includeStatusChecks),
 		renderPullRequestLabelsLine(detailValue.Labels),
 		renderPullRequestReactionLine(detailValue.ReactionGroups),
+		renderPullRequestOutOfDateLine(detailValue),
 	})
 	if options.includeReviewers {
 		metadataLines = append(metadataLines, filterEmptyStrings([]string{
