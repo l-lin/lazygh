@@ -284,7 +284,10 @@ func (program *Program) keybindingActions() []keybindingAction {
 		configuredKeybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupName}, program.submitSelectedActionsPopupAction),
 		closeKeybindingActionFor(keymapScopeActionsPopup, []string{viewActionsPopupName}, program.closeActionsPopup),
 
-		aliasedConfiguredKeybindingActionFor(keymapScopeSearch, "submit", keymapScopeSearch, "submit", []string{viewActionsPopupSearchName}, program.focusActionsPopupList),
+		fixedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_down_search", []string{viewActionsPopupSearchName}, program.moveActionsPopupSelectionDown, "ctrl+n", "down"),
+		fixedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_up_search", []string{viewActionsPopupSearchName}, program.moveActionsPopupSelectionUp, "ctrl+p", "up"),
+		configuredKeybindingActionFor(keymapScopeActionsPopup, "execute_selected_action", []string{viewActionsPopupSearchName}, program.executeSelectedActionsPopupAction),
+		configuredKeybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupSearchName}, program.submitSelectedActionsPopupAction),
 		configuredKeybindingActionFor(keymapScopeSearch, "cancel", []string{viewActionsPopupSearchName}, program.closeActionsPopup),
 
 		configuredKeybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor),

@@ -18,6 +18,7 @@ const (
 	viewSearchName               = "search"
 	viewStatusLineName           = "status-line"
 	viewStatusLineKeyHintsName   = "status-line-key-hints"
+	viewActionsPopupChromeName   = "actions-popup-chrome"
 	viewActionsPopupName         = "actions-popup"
 	viewActionsPopupSearchName   = "actions-popup-search"
 	viewPullRequestBuildInfoName = "pull-request-build-info"

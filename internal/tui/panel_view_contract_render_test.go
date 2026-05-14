@@ -52,8 +52,8 @@ func TestPanelViewContracts_GivenOverlayTransitions_WhenRendering_ThenBottomRigh
 	then_statusLineKeyHintsAreRightAligned(t, gui, "?: help, /: search, a: action")
 
 	then_noError(t, subject.openActionsPopup(gui, nil))
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
-	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Enter: execute, Escape: cancel")
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel")
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
 	then_noError(t, subject.refreshViews(gui))
@@ -71,22 +71,29 @@ func TestPanelViewContracts_GivenActionsAndTextEditing_WhenOpeningOverlays_ThenA
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openActionsPopup(gui, nil))
 
-	popupView, actualErr := gui.View(viewActionsPopupName)
+	popupChromeView, actualErr := gui.View(viewActionsPopupChromeName)
 	then_noError(t, actualErr)
-	if !popupView.Frame {
+	if !popupChromeView.Frame {
 		t.Fatal("expected actions to use framed popup chrome")
 	}
-	if popupView.Editable {
-		t.Fatal("expected actions popup to stay read-only")
+	if !strings.Contains(popupChromeView.Title, "Actions") {
+		t.Fatalf("expected actions popup title to contain %q, actual %q", "Actions", popupChromeView.Title)
 	}
-	if !strings.Contains(popupView.Title, "Actions") {
-		t.Fatalf("expected actions popup title to contain %q, actual %q", "Actions", popupView.Title)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if popupView.Frame {
+		t.Fatal("expected actions list to stay borderless inside the popup chrome")
+	}
+	if popupView.Editable {
+		t.Fatal("expected actions popup list to stay read-only")
 	}
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
 	then_noError(t, subject.refreshViews(gui))
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupChromeName)
 
 	modalView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)

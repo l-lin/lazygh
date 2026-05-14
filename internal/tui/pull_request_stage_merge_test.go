@@ -359,7 +359,7 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.closePullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected close pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.closePullRequestCalls)
 	}
@@ -403,7 +403,7 @@ func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUISta
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.updateBranchCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected update branch calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
 	}
@@ -503,7 +503,7 @@ func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsThe
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.reopenPullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
 	}
@@ -543,7 +543,7 @@ func TestActionsPopup_GivenASquashMergeAction_WhenExecutingOnce_ThenItAsksForCon
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if len(loader.squashMergeCalls) != 0 {
 		t.Fatalf("expected no squash-merge calls before confirmation, actual %v", loader.squashMergeCalls)
 	}
@@ -644,7 +644,7 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.squashMergeCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected squash-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.squashMergeCalls)
 	}

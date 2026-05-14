@@ -141,6 +141,8 @@ func (renderer OverlayRenderer) Renderer(viewName string) (ViewRenderer, bool) {
 		return viewRendererFuncs{configure: renderer.program.configureModalEditorView, render: renderer.program.renderModalEditorView}, true
 	case viewPullRequestBuildInfoName:
 		return viewRendererFuncs{configure: renderer.program.configurePullRequestBuildRunPopupView, render: renderer.program.renderPullRequestBuildRunPopupView}, true
+	case viewActionsPopupChromeName:
+		return viewRendererFuncs{configure: renderer.program.configureActionsPopupChromeView, render: renderer.program.renderActionsPopupChromeView}, true
 	case viewActionsPopupName:
 		return viewRendererFuncs{configure: renderer.program.configureActionsPopupView, render: renderer.program.renderActionsPopupView}, true
 	case viewActionsPopupSearchName:
@@ -198,16 +200,18 @@ func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) scree
 			}
 		}
 		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
+	case viewActionsPopupChromeName:
+		if !renderer.program.model.ActionsPopupVisible() {
+			return screenViewFrame{ViewName: viewName}
+		}
+		return screenViewFrame{ViewName: viewName, Frame: renderer.program.actionsPopupFrame(maxX, maxY), Visible: true, OnTop: true}
 	case viewActionsPopupName:
 		if !renderer.program.model.ActionsPopupVisible() {
 			return screenViewFrame{ViewName: viewName}
 		}
-		contentMaxY := renderer.program.layoutContentHeight(maxY)
-		totalWidth := boundedQuarterWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
-		totalHeight := renderer.program.actionsPopupHeight(contentMaxY)
-		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, contentMaxY, totalWidth, totalHeight), Visible: true, OnTop: true}
+		return screenViewFrame{ViewName: viewName, Frame: renderer.program.actionsPopupListFrame(maxX, maxY), Visible: true, OnTop: true}
 	case viewActionsPopupSearchName:
-		return screenViewFrame{ViewName: viewName, Frame: bottomPromptFrame(maxX, maxY), Visible: renderer.program.model.ActionsPopupSearchActive(), OnTop: true}
+		return screenViewFrame{ViewName: viewName, Frame: renderer.program.actionsPopupSearchFrame(maxX, maxY), Visible: renderer.program.model.ActionsPopupSearchActive(), OnTop: true}
 	default:
 		return screenViewFrame{ViewName: viewName}
 	}
@@ -314,7 +318,7 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 	}
 
 	overlayRenderer := program.overlayRenderer()
-	for _, overlayViewName := range []string{viewHelpName, viewSearchName, viewModalEditorName, viewPullRequestBuildInfoName, viewActionsPopupName, viewActionsPopupSearchName} {
+	for _, overlayViewName := range []string{viewHelpName, viewSearchName, viewModalEditorName, viewPullRequestBuildInfoName, viewActionsPopupChromeName, viewActionsPopupName, viewActionsPopupSearchName} {
 		layout.OverlayFrames = append(layout.OverlayFrames, overlayRenderer.Frame(overlayViewName, maxX, maxY))
 	}
 

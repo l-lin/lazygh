@@ -368,7 +368,7 @@ func TestActionsPopup_GivenPullRequestAddReactionAction_WhenExecuting_ThenItShow
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	if !strings.Contains(popupView.Title, reactionPickerTitle) {

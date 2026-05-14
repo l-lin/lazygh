@@ -59,10 +59,10 @@ func TestScreenStateShell_GivenOverlayTransitions_WhenHandlingActionsAndModalEdi
 	}
 
 	then_noError(t, given_handlerForScreenStateBinding(t, subject, panelViewName(sidePanelViewTwo), 'a')(gui, nil))
-	if actual := subject.screenState().KeyHintContext(); actual != KeyHintContextActionsPopup {
-		t.Fatalf("expected key hint context %v, actual %v", KeyHintContextActionsPopup, actual)
+	if actual := subject.screenState().KeyHintContext(); actual != KeyHintContextActionsPopupSearch {
+		t.Fatalf("expected key hint context %v, actual %v", KeyHintContextActionsPopupSearch, actual)
 	}
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
 	then_noError(t, subject.refreshViews(gui))

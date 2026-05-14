@@ -77,7 +77,7 @@ func TestKeybindingSpecs_GivenFullPageOverride_WhenListingBindings_ThenItKeepsHa
 	}
 }
 
-func TestKeybindingSpecs_GivenSearchSubmitOverride_WhenListingBindings_ThenItAppliesToTheActionsPopupSearchPrompt(t *testing.T) {
+func TestKeybindingSpecs_GivenSearchSubmitOverride_WhenListingBindings_ThenItDoesNotReplacePickerExecution(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"search": {
 			"submit": {"x"},
@@ -87,9 +87,8 @@ func TestKeybindingSpecs_GivenSearchSubmitOverride_WhenListingBindings_ThenItApp
 	actual := subject.keybindingSpecs()
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewSearchName, key: 'x', handler: subject.submitSearch})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: 'x', handler: subject.focusActionsPopupList})
-	then_bindingDoesNotExist(t, actual, viewSearchName, gocui.KeyEnter)
-	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyEnter)
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, 'x')
 	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyTab)
 }
 

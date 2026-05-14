@@ -36,7 +36,7 @@ func TestActionsPopup_GivenClearCacheActionSelected_WhenExecutingOnce_ThenItAsks
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if cache.clearCalls != 0 {
 		t.Fatalf("expected cache clear calls %d, actual %d", 0, cache.clearCalls)
 	}

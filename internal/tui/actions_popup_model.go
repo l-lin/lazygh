@@ -8,6 +8,7 @@ func (model *Model) OpenActionsPopup(actionCount int) {
 
 	model.actionsPopup = actionsPopupState{
 		visible:               true,
+		searchActive:          true,
 		filteredActionIndexes: actionIndexes(actionCount),
 		selectedActionIndex:   0,
 	}

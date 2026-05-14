@@ -21,7 +21,7 @@ func TestActionsPopup_GivenUserView_WhenOpening_ThenItShowsTheGlobalGroupedActio
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
@@ -36,7 +36,7 @@ func TestActionsPopup_GivenUserView_WhenOpening_ThenItShowsTheGlobalGroupedActio
 	}
 }
 
-func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenHighlighting_ThenItKeepsThePopupVisibleAndHighlightsTheMatchingHeader(t *testing.T) {
+func TestActionsPopup_GivenSearchMatchingOnlyAHiddenKeyword_WhenFiltering_ThenItKeepsTheMatchingActionVisibleUnderItsGroupHeader(t *testing.T) {
 	subject := given_pullRequestDetailProgramWithRenderedBody("Docs https://example.com/docs")
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -50,12 +50,10 @@ func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenHighlighting_ThenI
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	actualErr = subject.focusActionsPopupSearch(gui, nil)
-	then_noError(t, actualErr)
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	for _, ch := range "navigation" {
+	for _, ch := range "visit" {
 		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
 		if !actualHandled {
 			t.Fatalf("expected typing %q to be handled", string(ch))
@@ -64,13 +62,14 @@ func TestActionsPopup_GivenSearchMatchingOnlyTheGroupName_WhenHighlighting_ThenI
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	for _, expected := range []string{"Navigation", "Open link under cursor", "Open PR in browser"} {
+	for _, expected := range []string{"Navigation", "Open link under cursor"} {
 		if !strings.Contains(popupView.Buffer(), expected) {
 			t.Fatalf("expected popup buffer to keep %q visible, actual %q", expected, popupView.Buffer())
 		}
 	}
-	matchLineIndex := given_viewLineIndexContaining(t, popupView, "Navigation")
-	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, matchLineIndex, "Navigation")
+	if strings.Contains(popupView.Buffer(), "Open PR in browser") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "Open PR in browser", popupView.Buffer())
+	}
 }
 
 func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAndUsesMarkdownHeadingBackgroundWithItsOwnForegroundColor(t *testing.T) {

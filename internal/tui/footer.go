@@ -95,9 +95,25 @@ func (program *Program) actionsPopupSearchKeyHintsText() string {
 	if !program.shouldShowActionsPopupSearchStatusLineKeyHints() {
 		return ""
 	}
+	if program.assigneePickerLoading() {
+		return program.statusLineKeyHints(
+			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "cancel"}}},
+		)
+	}
+	if program.assigneePickerVisible() {
+		return program.statusLineKeyHints(
+			statusLineHintSpec{label: "next", fallback: "Ctrl+N/↓"},
+			statusLineHintSpec{label: "previous", fallback: "Ctrl+P/↑"},
+			statusLineHintSpec{label: "toggle", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "execute_selected_action"}}},
+			statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "submit_selected_picker"}}},
+			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "cancel"}}},
+		)
+	}
 
 	return program.statusLineKeyHints(
-		statusLineHintSpec{label: "list", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "submit"}}},
+		statusLineHintSpec{label: "next", fallback: "Ctrl+N/↓"},
+		statusLineHintSpec{label: "previous", fallback: "Ctrl+P/↑"},
+		statusLineHintSpec{label: "execute", fallback: "Enter", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "execute_selected_action"}}},
 		statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "cancel"}}},
 	)
 }

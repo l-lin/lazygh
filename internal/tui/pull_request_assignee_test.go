@@ -148,7 +148,7 @@ func TestActionsPopup_GivenCachedAssignableUsers_WhenOpeningTheAssigneePickerAga
 	})
 }
 
-func TestAssigneePicker_GivenSearchQuery_WhenHighlighting_ThenItShowsTheMatchingAssigneeWithoutHidingTheOthers(t *testing.T) {
+func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsOnlyTheMatchingAssignee(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -171,10 +171,13 @@ func TestAssigneePicker_GivenSearchQuery_WhenHighlighting_ThenItShowsTheMatching
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[x] @alice (Alice)",
-		"[ ] @bob (Bob)",
 		"[ ] @charlie (Charlie)",
 	})
+	for _, unexpected := range []string{"@alice", "@bob"} {
+		if strings.Contains(popupView.Buffer(), unexpected) {
+			t.Fatalf("expected the filtered assignee picker to hide %q, actual %q", unexpected, popupView.Buffer())
+		}
+	}
 	matchLineIndex := -1
 	for lineIndex := 0; ; lineIndex++ {
 		line, ok := popupView.Line(lineIndex)

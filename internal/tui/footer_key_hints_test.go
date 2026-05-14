@@ -54,9 +54,9 @@ func TestStatusLineKeyHints_GivenActionsPopupVisible_WhenRendering_ThenItShowsLo
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "/: search, Enter: execute, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, Enter: execute, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Enter: execute, Escape: cancel")
+	then_statusLineKeyHintsAre(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel")
 }
 
 func TestStatusLineKeyHints_GivenActionsPopupSearchVisible_WhenRendering_ThenItShowsLowercasePopupSearchHintsIncludingCancelRightAlignedOnTheBottomRow(t *testing.T) {
@@ -72,9 +72,9 @@ func TestStatusLineKeyHints_GivenActionsPopupSearchVisible_WhenRendering_ThenItS
 	actualErr = subject.focusActionsPopupSearch(gui, nil)
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "Enter: list, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Enter: list, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup search key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter: list, Escape: cancel")
+	then_statusLineKeyHintsAre(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "actions popup search key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel")
 }
 
 func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShowsDarkGreyPopupHintsRightAlignedOnTheBottomRow(t *testing.T) {
@@ -85,9 +85,9 @@ func TestStatusLineKeyHints_GivenAssigneePickerVisible_WhenRendering_ThenItShows
 
 	_ = given_openAssigneePicker(t, gui, subject)
 
-	then_statusLineKeyHintsAre(t, gui, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "assignee picker key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Enter: toggle, Alt+Enter: submit, Escape: cancel")
+	then_statusLineKeyHintsAre(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: toggle, Alt+Enter: submit, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: toggle, Alt+Enter: submit, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "assignee picker key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: toggle, Alt+Enter: submit, Escape: cancel")
 }
 
 func TestStatusLineKeyHints_GivenBuildRunPopupVisible_WhenRendering_ThenItShowsPopupHintsRightAlignedOnTheBottomRow(t *testing.T) {

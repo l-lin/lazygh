@@ -32,10 +32,14 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyAltEnter, handler: subject.submitSelectedActionsPopupAction})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupName, key: 'q', handler: subject.closeActionsPopup})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.focusActionsPopupList})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlJ, handler: subject.focusActionsPopupList})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlS, handler: subject.focusActionsPopupList})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlN, handler: subject.moveActionsPopupSelectionDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyArrowDown, handler: subject.moveActionsPopupSelectionDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlP, handler: subject.moveActionsPopupSelectionUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyArrowUp, handler: subject.moveActionsPopupSelectionUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEnter, handler: subject.executeSelectedActionsPopupAction})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyAltEnter, handler: subject.submitSelectedActionsPopupAction})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
+	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, 'q')
 	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyTab)
 }
 
@@ -49,7 +53,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
@@ -87,7 +91,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		t.Fatalf("expected the first selectable action to start below the header, actual cursor row %d", actualCursorY)
 	}
 
-	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+	then_viewExists(t, gui, viewActionsPopupSearchName)
 }
 
 func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalActionsAndTakesFocus(t *testing.T) {
@@ -104,7 +108,7 @@ func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalA
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
@@ -113,10 +117,10 @@ func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalA
 		"Cache",
 		actionsPopupLabel(iconDelete, "Clear cache"),
 	})
-	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+	then_viewExists(t, gui, viewActionsPopupSearchName)
 }
 
-func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABorderlessBottomPromptAndHighlightsMatchesWithoutHidingTheOtherActionsLive(t *testing.T) {
+func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABorderlessInlinePromptAndFiltersTheMatchingActionsLive(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -125,8 +129,6 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
-	then_noError(t, actualErr)
-	actualErr = subject.focusActionsPopupSearch(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !gui.Cursor {
@@ -142,20 +144,24 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 	if searchView.Title != "" {
 		t.Fatalf("expected an empty popup search title, actual %q", searchView.Title)
 	}
-	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
-		t.Fatalf("expected popup search buffer %q, actual %q", "/", actual)
+	if actual := strings.TrimSpace(searchView.Buffer()); actual != ">" {
+		t.Fatalf("expected popup search buffer %q, actual %q", ">", actual)
 	}
 	if searchView.InnerHeight() != 1 {
 		t.Fatalf("expected the popup search prompt to expose one visible content row, actual %d", searchView.InnerHeight())
 	}
-	if searchView.InnerWidth() != 120 {
-		t.Fatalf("expected the popup search prompt to span the full width, actual %d", searchView.InnerWidth())
-	}
 
-	_, _, _, detailY1, actualErr := gui.ViewPosition(viewDetailName)
+	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if detailY1 != 28 {
-		t.Fatalf("expected detail view to stop above the popup prompt at y=%d, actual y=%d", 28, detailY1)
+	searchX0, searchY0, searchX1, _, actualErr := gui.ViewPosition(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	popupX0, popupY0, popupX1, _, actualErr := gui.ViewPosition(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if searchX0 != popupX0 || searchX1 != popupX1 {
+		t.Fatalf("expected the popup search prompt to share the action list width, search=(%d,%d) popup=(%d,%d)", searchX0, searchX1, popupX0, popupX1)
+	}
+	if searchY0 >= popupY0 {
+		t.Fatalf("expected the popup search prompt to stay above the action list, search y=%d popup y=%d", searchY0, popupY0)
 	}
 
 	for _, ch := range "clipboard" {
@@ -165,15 +171,22 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 		}
 	}
 
-	popupView, actualErr := gui.View(viewActionsPopupName)
+	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	if strings.Contains(popupView.Buffer(), "1 of 12 actions") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 12 actions", popupView.Buffer())
 	}
-	then_viewFooterIsRenderedOnBottomBorder(t, gui, viewActionsPopupName, "1 of 12 actions")
-	for _, expected := range []string{"Yank URL to clipboard", "Comment on PR", "Edit PR title"} {
-		if !strings.Contains(popupView.Buffer(), expected) {
-			t.Fatalf("expected popup buffer to keep %q visible, actual %q", expected, popupView.Buffer())
+	popupChromeView, actualErr := gui.View(viewActionsPopupChromeName)
+	then_noError(t, actualErr)
+	if popupChromeView.Footer != "1 of 12 actions" {
+		t.Fatalf("expected popup footer %q, actual %q", "1 of 12 actions", popupChromeView.Footer)
+	}
+	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
+		t.Fatalf("expected popup buffer to keep %q visible, actual %q", "Yank URL to clipboard", popupView.Buffer())
+	}
+	for _, unexpected := range []string{"Comment on PR", "Edit PR title"} {
+		if strings.Contains(popupView.Buffer(), unexpected) {
+			t.Fatalf("expected popup buffer to hide %q, actual %q", unexpected, popupView.Buffer())
 		}
 	}
 }
@@ -205,8 +218,8 @@ func TestActionsPopup_GivenTitleSearch_WhenHighlighting_ThenItCanStillJumpToRevi
 	if !strings.Contains(popupView.Buffer(), "Review: Approve PR") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Review: Approve PR", popupView.Buffer())
 	}
-	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
-		t.Fatalf("expected popup buffer to keep %q visible, actual %q", "Yank URL to clipboard", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
 	}
 	if len(expectedReviewIndexes) != 1 || subject.model.ActionsPopupSelectedActionIndex() != expectedReviewIndexes[0] {
 		t.Fatalf("expected selected action index %v, actual %d", expectedReviewIndexes, subject.model.ActionsPopupSelectedActionIndex())
@@ -230,8 +243,8 @@ func TestActionsPopup_GivenTitleSearch_WhenHighlighting_ThenItCanStillJumpToRevi
 	if !strings.Contains(popupView.Buffer(), "Edit PR title") {
 		t.Fatalf("expected popup buffer to contain %q, actual %q", "Edit PR title", popupView.Buffer())
 	}
-	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
-		t.Fatalf("expected popup buffer to keep %q visible, actual %q", "Yank URL to clipboard", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "Yank URL to clipboard", popupView.Buffer())
 	}
 	if len(expectedEditIndexes) == 0 || subject.model.ActionsPopupSelectedActionIndex() != expectedEditIndexes[0] {
 		t.Fatalf("expected selected action index to jump to %v, actual %d", expectedEditIndexes, subject.model.ActionsPopupSelectedActionIndex())
@@ -288,7 +301,7 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	if !strings.Contains(popupView.Title, "review refused") {
@@ -495,7 +508,7 @@ func TestActionsPopup_GivenTitleSearchOnTheSelectedRow_WhenFiltering_ThenItKeeps
 	then_viewLineSegmentIsBold(t, gui, viewActionsPopupName, matchLineIndex, "Review: ")
 }
 
-func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSearchingWithoutExecutingTheAction(t *testing.T) {
+func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItExecutesTheSelectedAction(t *testing.T) {
 	clipboardWriter := &fakeClipboardWriter{}
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.clipboardWriter = clipboardWriter
@@ -506,8 +519,6 @@ func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSe
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
-	then_noError(t, actualErr)
-	actualErr = subject.focusActionsPopupSearch(gui, nil)
 	then_noError(t, actualErr)
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
@@ -524,16 +535,13 @@ func TestActionsPopupSearch_GivenFilteredResults_WhenPressingEnter_ThenItStopsSe
 	actualErr = actualHandler(gui, searchView)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
-	if subject.model.ActionsPopupSearchActive() {
-		t.Fatal("expected the popup search to stop")
+	if len(expectedIndexes) != 1 {
+		t.Fatalf("expected one matching action index, actual %v", expectedIndexes)
 	}
-	if len(expectedIndexes) != 1 || subject.model.ActionsPopupSelectedActionIndex() != expectedIndexes[0] {
-		t.Fatalf("expected selected action index %v, actual %d", expectedIndexes, subject.model.ActionsPopupSelectedActionIndex())
-	}
-	if len(clipboardWriter.writes) != 0 {
-		t.Fatalf("expected no clipboard writes, actual %v", clipboardWriter.writes)
+	if !reflect.DeepEqual(clipboardWriter.writes, []string{"https://github.com/acme/widgets/pull/42"}) {
+		t.Fatalf("expected one clipboard write, actual %v", clipboardWriter.writes)
 	}
 }
 
@@ -595,8 +603,8 @@ func TestActionsPopup_GivenExistingFilter_WhenStartingANewSearch_ThenItClearsThe
 
 	searchView, actualErr = gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	if actual := strings.TrimSpace(searchView.Buffer()); actual != "/" {
-		t.Fatalf("expected popup search buffer %q, actual %q", "/", actual)
+	if actual := strings.TrimSpace(searchView.Buffer()); actual != ">" {
+		t.Fatalf("expected popup search buffer %q, actual %q", ">", actual)
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
@@ -693,8 +701,8 @@ func TestActionsPopup_GivenSubmittedSearch_WhenRepeatingWithNAndN_ThenItMovesBet
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "Start review") {
-		t.Fatalf("expected the non-matching actions to stay visible, actual %q", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "Start review") {
+		t.Fatalf("expected the non-matching actions to be hidden, actual %q", popupView.Buffer())
 	}
 
 	nextHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, 'n')

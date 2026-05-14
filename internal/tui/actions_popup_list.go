@@ -70,7 +70,7 @@ func (program *Program) currentActionsPopupVisibleLines() []actionsPopupVisibleL
 		return nil
 	}
 	actions := program.currentActionsPopupActions()
-	return buildActionsPopupVisibleLines(actions, actionIndexes(len(actions)))
+	return buildActionsPopupVisibleLines(actions, program.model.ActionsPopupFilteredActionIndexes())
 }
 
 func (program *Program) currentActionsPopupSelectedRenderedLine() int {

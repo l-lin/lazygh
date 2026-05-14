@@ -28,7 +28,7 @@ func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	if popupView.Title != "Actions" {

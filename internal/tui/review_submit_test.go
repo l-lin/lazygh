@@ -25,7 +25,7 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupName)
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{

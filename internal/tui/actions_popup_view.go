@@ -11,25 +11,35 @@ import (
 )
 
 const (
-	actionsPopupFallbackWidth    = 20
-	actionsPopupMinWidth         = 20
-	actionsPopupMinHeight        = 6
-	actionsPopupCompactMinHeight = 4
+	actionsPopupFallbackWidth      = 20
+	actionsPopupMinWidth           = 20
+	actionsPopupMinHeight          = 6
+	actionsPopupCompactMinHeight   = 4
+	actionsPopupSearchPromptPrefix = "> "
 )
 
 func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
-	contentMaxY := program.layoutContentHeight(maxY)
-	totalWidth := boundedQuarterWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
-	totalHeight := program.actionsPopupHeight(contentMaxY)
-	frame := centeredOverlayFrame(maxX, contentMaxY, totalWidth, totalHeight)
+	chromeFrame := program.actionsPopupFrame(maxX, maxY)
 
-	popupView, err := gui.SetView(viewActionsPopupName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
+	chromeView, err := gui.SetView(viewActionsPopupChromeName, chromeFrame.x0, chromeFrame.y0, chromeFrame.x1, chromeFrame.y1, 0)
+	if err != nil && !isUnknownViewError(err) {
+		return err
+	}
+	program.configureActionsPopupChromeView(chromeView)
+	program.renderActionsPopupChromeView(chromeView)
+
+	listFrame := program.actionsPopupListFrame(maxX, maxY)
+	popupView, err := gui.SetView(viewActionsPopupName, listFrame.x0, listFrame.y0, listFrame.x1, listFrame.y1, 0)
 	if err != nil && !isUnknownViewError(err) {
 		return err
 	}
 	program.configureActionsPopupView(popupView)
 	program.renderActionsPopupView(popupView)
+
+	if _, err = gui.SetViewOnTop(viewActionsPopupChromeName); err != nil && !isUnknownViewError(err) {
+		return err
+	}
 	_, err = gui.SetViewOnTop(viewActionsPopupName)
 	if isUnknownViewError(err) {
 		return nil
@@ -38,8 +48,10 @@ func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 }
 
 func (program *Program) layoutActionsPopupSearchView(gui *gocui.Gui) error {
-	view, err := program.layoutBottomPromptView(gui, viewActionsPopupSearchName)
-	if err != nil {
+	maxX, maxY := gui.Size()
+	frame := program.actionsPopupSearchFrame(maxX, maxY)
+	view, err := gui.SetView(viewActionsPopupSearchName, frame.x0, frame.y0, frame.x1, frame.y1, 0)
+	if err != nil && !isUnknownViewError(err) {
 		return err
 	}
 
@@ -52,8 +64,25 @@ func (program *Program) layoutActionsPopupSearchView(gui *gocui.Gui) error {
 	return err
 }
 
+func (program *Program) actionsPopupFrame(maxX int, maxY int) paneFrame {
+	contentMaxY := program.layoutContentHeight(maxY)
+	totalWidth := boundedQuarterWidth(maxX, actionsPopupMinWidth, actionsPopupFallbackWidth)
+	totalHeight := program.actionsPopupHeight(contentMaxY)
+	return centeredOverlayFrame(maxX, contentMaxY, totalWidth, totalHeight)
+}
+
+func (program *Program) actionsPopupSearchFrame(maxX int, maxY int) paneFrame {
+	popupFrame := program.actionsPopupFrame(maxX, maxY)
+	return paneFrame{x0: popupFrame.x0, y0: popupFrame.y0, x1: popupFrame.x1, y1: popupFrame.y0 + 2}
+}
+
+func (program *Program) actionsPopupListFrame(maxX int, maxY int) paneFrame {
+	popupFrame := program.actionsPopupFrame(maxX, maxY)
+	return paneFrame{x0: popupFrame.x0, y0: popupFrame.y0 + 1, x1: popupFrame.x1, y1: popupFrame.y1}
+}
+
 func (program *Program) actionsPopupHeight(contentMaxY int) int {
-	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+2)
+	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+3)
 	if program.assigneePickerVisible() {
 		totalHeight = maxInt(actionsPopupCompactMinHeight, actionsPopupCompactHeight(program.currentActionsPopupRenderedLineCount()))
 	} else if program.assigneePickerLoading() {
@@ -69,13 +98,31 @@ func actionsPopupCompactHeight(renderedLineCount int) int {
 	if renderedLineCount < 1 {
 		return actionsPopupCompactMinHeight
 	}
-	return (renderedLineCount+1)/2 + 2
+	return (renderedLineCount+1)/2 + 3
 }
 
-func (program *Program) configureActionsPopupView(view *gocui.View) {
+func (program *Program) configureActionsPopupChromeView(view *gocui.View) {
 	configureFramedOverlayView(view, program.actionsPopupTitle(), program.actionsPopupFooter())
 	view.Wrap = false
 	view.Editable = false
+	view.Highlight = false
+	view.HighlightInactive = false
+}
+
+func (program *Program) renderActionsPopupChromeView(view *gocui.View) {
+	if view == nil || !program.model.ActionsPopupVisible() {
+		return
+	}
+
+	view.Clear()
+	view.SetOrigin(0, 0)
+	view.SetCursor(0, 0)
+}
+
+func (program *Program) configureActionsPopupView(view *gocui.View) {
+	program.configureBottomPromptView(view, nil, false)
+	view.Title = program.actionsPopupTitle()
+	view.Footer = program.actionsPopupFooter()
 	view.Highlight = true
 	view.HighlightInactive = true
 	if program.usesManualSelectedLineRendering(program.model.ActionsPopupSearchQuery()) {
@@ -126,7 +173,14 @@ func (program *Program) configureActionsPopupSearchView(view *gocui.View) {
 }
 
 func (program *Program) renderActionsPopupSearchView(view *gocui.View) {
-	program.renderBottomPromptView(view, program.currentActionsPopupSearchText(), program.currentActionsPopupSearchCursor())
+	if view == nil || !program.model.ActionsPopupSearchActive() {
+		return
+	}
+
+	view.Clear()
+	prompt := actionsPopupSearchPromptPrefix + program.currentActionsPopupSearchText()
+	fmt.Fprint(view, prompt)
+	program.setInputCursor(view, prompt, program.currentActionsPopupSearchCursor()+utf8.RuneCountInString(actionsPopupSearchPromptPrefix))
 }
 
 func (program *Program) actionsPopupTitle() string {

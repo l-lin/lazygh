@@ -12,6 +12,9 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	}
 	program.maybeLoadSelectedPullRequestDetail(gui)
 	program.maybeLoadSelectedPullRequestDiff(gui)
+	if program.model.ActionsPopupVisible() {
+		program.syncActionsPopupSearch()
+	}
 
 	maxX, maxY := gui.Size()
 	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
@@ -49,7 +52,7 @@ func (program *Program) refreshOverlayView(gui *gocui.Gui, visible bool, viewNam
 
 func (program *Program) refreshActionsPopupViews(gui *gocui.Gui) error {
 	if !program.model.ActionsPopupVisible() {
-		return deleteViewsIfPresent(gui, viewActionsPopupSearchName, viewActionsPopupName)
+		return deleteViewsIfPresent(gui, viewActionsPopupSearchName, viewActionsPopupName, viewActionsPopupChromeName)
 	}
 
 	program.syncActionsPopupSearch()

@@ -90,7 +90,7 @@ func (program *Program) focusActionsPopupList(gui *gocui.Gui, _ *gocui.View) err
 
 func (program *Program) moveActionsPopupSelectionDown(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -106,7 +106,7 @@ func (program *Program) moveActionsPopupSelectionDown(gui *gocui.Gui, _ *gocui.V
 
 func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -122,7 +122,7 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 
 func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -136,7 +136,7 @@ func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) e
 
 func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -150,7 +150,7 @@ func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) err
 
 func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -164,7 +164,7 @@ func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.Vie
 
 func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -177,7 +177,7 @@ func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View)
 }
 
 func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocui.View) error {
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}
@@ -187,7 +187,7 @@ func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocu
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}
@@ -197,7 +197,7 @@ func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, v
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
 		return nil
 	}
@@ -208,7 +208,7 @@ func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 
@@ -224,7 +224,7 @@ func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.
 
 func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
+	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
 

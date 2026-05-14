@@ -13,8 +13,8 @@ func TestActionsPopupState_GivenSevenActions_WhenOpening_ThenItStartsVisibleWith
 	if !subject.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to be visible")
 	}
-	if subject.ActionsPopupSearchActive() {
-		t.Fatal("expected the actions popup search to start unfocused")
+	if !subject.ActionsPopupSearchActive() {
+		t.Fatal("expected the actions popup search to start focused")
 	}
 	if subject.ActionsPopupSearchQuery() != "" {
 		t.Fatalf("expected an empty search query, actual %q", subject.ActionsPopupSearchQuery())
