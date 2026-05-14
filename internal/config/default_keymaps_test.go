@@ -14,7 +14,8 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"previous_side_view": {"shift+tab", "h"},
 		},
 		"cursor": {
-			"search_word_under_cursor": {"*", "#"},
+			"search_word_under_cursor_forward":  {"*"},
+			"search_word_under_cursor_backward": {"#"},
 		},
 		"modal_editor": {
 			"cancel":               {"esc"},

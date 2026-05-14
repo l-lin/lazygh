@@ -48,3 +48,13 @@ func (program *Program) followSubmittedDetailSearch(gui *gocui.Gui) error {
 		program.detailViewState.followSubmittedSearch(document, program.model.DetailSearchQuery(), viewportHeight)
 	})
 }
+
+func (program *Program) followReverseDetailSearch(gui *gocui.Gui) error {
+	if strings.TrimSpace(program.model.DetailSearchQuery()) == "" {
+		return nil
+	}
+
+	return program.mutateDetailViewStateWithoutRefresh(gui, nil, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.followPreviousSearchMatch(document, program.model.DetailSearchQuery(), viewportHeight)
+	})
+}

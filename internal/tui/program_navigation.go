@@ -358,12 +358,48 @@ func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
 	return program.openSearchWithInitialQuery(gui, "")
 }
 
-func (program *Program) openSearchWithWordUnderCursor(gui *gocui.Gui, view *gocui.View) error {
+func (program *Program) searchWordUnderCursorForward(gui *gocui.Gui, view *gocui.View) error {
+	return program.searchWordUnderCursor(gui, view, false)
+}
+
+func (program *Program) searchWordUnderCursorBackward(gui *gocui.Gui, view *gocui.View) error {
+	return program.searchWordUnderCursor(gui, view, true)
+}
+
+func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, reverse bool) error {
+	program.clearPendingSelectionPrefix()
+	if program.mainPaneActionBlocked() {
+		return nil
+	}
+
 	actualView := program.resolveView(gui, view, viewDetailName)
 	document := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(document, viewPageSize(actualView))
-	query, _ := document.wordAt(program.detailViewState.cursor)
-	return program.openSearchWithInitialQuery(gui, query)
+	query, ok := document.wordAt(program.detailViewState.cursor)
+	if !ok {
+		return nil
+	}
+
+	inputContext := program.inputContext()
+	program.detailViewState.clearPendingPrefix()
+	if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
+		program.reviewSession.fileTreeSearchQuery = ""
+	}
+	program.model.StartSearch()
+	program.updateActiveSearchDraft(query)
+	program.model.SubmitSearch()
+	program.searchEditor = nil
+
+	if reverse {
+		if actualErr := program.followReverseDetailSearch(gui); actualErr != nil {
+			return actualErr
+		}
+	} else {
+		if actualErr := program.followSubmittedDetailSearch(gui); actualErr != nil {
+			return actualErr
+		}
+	}
+	return program.refreshViewsIfGUI(gui)
 }
 
 func (program *Program) openSearchWithInitialQuery(gui *gocui.Gui, query string) error {

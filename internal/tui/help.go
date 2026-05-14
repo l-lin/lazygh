@@ -426,7 +426,7 @@ func (program *Program) wordMotionHelpKeys(scope string) string {
 }
 
 func (program *Program) searchWordUnderCursorHelpEntry() helpEntry {
-	return helpEntry{Key: program.helpKeysOrFallback("*/#", keybindingActionID{scope: keymapScopeCursor, action: "search_word_under_cursor"}), Description: "Search word under cursor"}
+	return helpEntry{Key: program.helpKeysOrFallback("*/#", keybindingActionID{scope: keymapScopeCursor, action: "search_word_under_cursor_forward"}, keybindingActionID{scope: keymapScopeCursor, action: "search_word_under_cursor_backward"}), Description: "Search word under cursor"}
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {
