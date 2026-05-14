@@ -53,9 +53,17 @@ func (program *Program) handleInlineCommentSelectionError(gui *gocui.Gui, err er
 }
 
 func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, selection pullRequestInlineCommentSelection) error {
-	return program.openMultilineModalEditor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) error {
+	if err := program.openMultilineModalEditor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) error {
 		return program.submitPullRequestInlineComment(selection.target, body)
-	}, reviewInlineCommentModalHeight)
+	}, reviewInlineCommentModalHeight); err != nil {
+		return err
+	}
+	if program.modalEditor != nil {
+		program.modalEditor.afterSubmit = func(*gocui.Gui) {
+			program.detailViewState.exitVisualMode()
+		}
+	}
+	return nil
 }
 
 func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, bool) {

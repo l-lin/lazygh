@@ -162,6 +162,60 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
+func TestReviewMode_GivenALinewiseSelection_WhenSubmittingAnInlineComment_ThenItReturnsViewZeroToNormalMode(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeLinewiseSelectionBetweenLinesContaining(t, gui, subject, "new line", "another line")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+	if subject.detailViewState.mode != detailLineVisualMode {
+		t.Fatalf("expected mode %v before submission, actual %v", detailLineVisualMode, subject.detailViewState.mode)
+	}
+	if subject.detailViewState.visualAnchor == subject.detailViewState.cursor {
+		t.Fatalf("expected a linewise selection before submission, actual anchor %+v cursor %+v", subject.detailViewState.visualAnchor, subject.detailViewState.cursor)
+	}
+
+	subject.modalEditor.editor.SetText("Please add context")
+	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	expectedTargets := []githubcli.PullRequestReviewThreadTarget{{Path: "internal/tui/render.go", Line: 3, Side: "RIGHT", StartLine: 2, StartSide: "RIGHT", SubjectType: "LINE"}}
+	if !reflect.DeepEqual(loader.reviewThreadTargets, expectedTargets) {
+		t.Fatalf("expected review thread targets %+v, actual %+v", expectedTargets, loader.reviewThreadTargets)
+	}
+	if subject.detailViewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after submission, actual %v", detailNormalMode, subject.detailViewState.mode)
+	}
+	if subject.detailViewState.visualAnchor != subject.detailViewState.cursor {
+		t.Fatalf("expected visual anchor %+v to match cursor %+v after submission", subject.detailViewState.visualAnchor, subject.detailViewState.cursor)
+	}
+
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
+	then_viewDoesNotExist(t, gui, viewDetailFooterName)
+}
+
 func TestReviewMode_GivenInlineCommentSubmit_WhenPostingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
