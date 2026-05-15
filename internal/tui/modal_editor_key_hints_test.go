@@ -55,6 +55,27 @@ func TestStatusLineKeyHints_GivenConfiguredModalEditorExternalEditorOverride_Whe
 
 }
 
+func TestStatusLineKeyHints_GivenPullRequestURLPrompt_WhenRendering_ThenItShowsEnterSubmitAndNoModalFooter(t *testing.T) {
+	subject := given_pullRequestByURLProgram(given_model(), given_pullRequestByURLLoader())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestByURLEditor(gui)
+	then_noError(t, actualErr)
+
+	modalView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	if modalView.Footer != "" {
+		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
+	}
+	then_statusLineKeyHintsAre(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "pull request URL prompt key hints")
+}
+
 func TestStatusLineKeyHints_GivenPullRequestDescriptionEditor_WhenRendering_ThenItShowsTheStandardGreySubmitEditorAndCancelHintsAndNoModalFooter(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Rich body", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)

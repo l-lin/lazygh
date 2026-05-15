@@ -15,13 +15,14 @@ const (
 )
 
 type modalEditorState struct {
-	title        string
-	editor       *multilineEditor
-	lineEditor   *lineEditor
-	errorMessage string
-	submit       func(string) error
-	afterSubmit  func(*gocui.Gui)
-	totalHeight  int
+	title         string
+	editor        *multilineEditor
+	lineEditor    *lineEditor
+	errorMessage  string
+	submit        func(string) error
+	afterSubmit   func(*gocui.Gui)
+	totalHeight   int
+	submitOnEnter bool
 }
 
 func newModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {

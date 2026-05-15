@@ -164,7 +164,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingOpenPullRequestByURL_Th
 	}
 }
 
-func TestOpenPullRequestByURL_GivenFullscreenBrowserDetail_WhenSubmittingTheCtrlVPrompt_ThenItShowsTheRequestedPullRequestInFullscreenViewZero(t *testing.T) {
+func TestOpenPullRequestByURL_GivenTheURLInputPopup_WhenPressingEnter_ThenItSubmitsTheRequestedPullRequest(t *testing.T) {
 	loader := given_pullRequestByURLLoader()
 	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
 		Title:       "Widgets PR",
@@ -175,26 +175,33 @@ func TestOpenPullRequestByURL_GivenFullscreenBrowserDetail_WhenSubmittingTheCtrl
 		HeadRefName: "feature/widgets",
 		State:       "OPEN",
 	}
-	subject := given_pullRequestByURLProgram(given_model(), loader)
-
-	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/rocket/pull/77")
-	then_noError(t, actualErr)
-
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := given_pullRequestByURLProgram(model, loader)
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
-	actualErr = subject.layout(gui)
-	then_noError(t, actualErr)
 
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyCtrlV)(gui, nil)
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("open pr from url", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "open pr from url"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	modalView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
 	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
 		t.Fatal("expected the PR URL prompt to use the single-line editor")
 	}
 	subject.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/pull/13")
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)(gui, nil)
-	then_noError(t, actualErr)
+	if actual := subject.editModalEditor(modalView, gocui.KeyEnter, 0, gocui.ModNone); !actual {
+		t.Fatal("expected Enter to submit the PR URL prompt")
+	}
 
 	then_currentViewNameIs(t, gui, viewDetailName)
 	if subject.model.Focus() != FocusDetailView {

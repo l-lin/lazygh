@@ -18,7 +18,13 @@ func (program *Program) openPullRequestByURLShortcut(gui *gocui.Gui, _ *gocui.Vi
 }
 
 func (program *Program) openPullRequestByURLEditor(gui *gocui.Gui) error {
-	return program.openLineModalEditorWithHeight(gui, openPullRequestByURLActionTitle, "", program.OpenPullRequestByURL, openPullRequestByURLEditorHeight)
+	if err := program.openLineModalEditorWithHeight(gui, openPullRequestByURLActionTitle, "", program.OpenPullRequestByURL, openPullRequestByURLEditorHeight); err != nil {
+		return err
+	}
+	if program.modalEditor != nil {
+		program.modalEditor.submitOnEnter = true
+	}
+	return program.refreshViewsIfGUI(gui)
 }
 
 func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAction {
