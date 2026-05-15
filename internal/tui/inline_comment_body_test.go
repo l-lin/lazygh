@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -67,18 +68,43 @@ func TestPrepareInlineCommentMarkdown_GivenLanguageSuggestionFence_WhenFormattin
 	}
 }
 
-func TestPrepareInlineCommentMarkdown_GivenRegularCodeFence_WhenFormatting_ThenItAddsAVisibleCodeBlockLabel(t *testing.T) {
+func TestPrepareInlineCommentMarkdown_GivenRegularCodeFence_WhenFormatting_ThenItKeepsOnlyTheOriginalFence(t *testing.T) {
 	actual := prepareInlineCommentMarkdown("```go\nfmt.Println(\"hello\")\n```")
 
 	expected := strings.Join([]string{
-		"**Code block · go**",
-		"",
 		"```go",
 		"fmt.Println(\"hello\")",
 		"```",
 	}, "\n")
 	if actual != expected {
 		t.Fatalf("expected prepared markdown %q, actual %q", expected, actual)
+	}
+}
+
+func TestRenderInlineCommentBodyForInlineComment_GivenRegularCodeFence_WhenRendering_ThenItDoesNotShowACodeBlockPlaceholder(t *testing.T) {
+	comment := githubcli.PullRequestInlineComment{
+		Body: "```kotlin\nfun process(settings: list<notificationsetting>, frequency: notificationfrequency) {\n    settings.foreach { it.updatefrequency(frequency) }\n}\n```",
+		Path: "settings/domain/src/main/kotlin/com/doctolib/patient_account/settings/domain/NotificationSettingsManager.kt",
+	}
+
+	actualDocument := newDetailDocumentWithWrap(renderRoundedCommentBox(renderInlineCommentBodyForInlineComment(comment, glamourMarkdownRenderer{}, 96), 96), 96, false)
+	given_detailDocumentLineContaining(t, actualDocument, "fun process(settings")
+	if strings.Contains(string(actualDocument.text), "Code block") {
+		t.Fatalf("expected the inline comment body to omit the code block placeholder, actual %q", string(actualDocument.text))
+	}
+}
+
+func TestRenderInlineThreadCommentBlock_GivenRegularCodeFence_WhenRendering_ThenItDoesNotShowACodeBlockPlaceholder(t *testing.T) {
+	comment := githubdomain.PullRequestComment{
+		Author:    &githubdomain.PullRequestCommentAuthor{Login: "reviewer-one"},
+		Body:      "```kotlin\nfun process(settings: list<notificationsetting>, frequency: notificationfrequency) {\n    settings.foreach { it.updatefrequency(frequency) }\n}\n```",
+		CreatedAt: "2026-04-20T10:00:00Z",
+	}
+
+	actualDocument := newDetailDocumentWithWrap(renderInlineThreadCommentBlock(comment, glamourMarkdownRenderer{}, 96, 0, 1), 96, false)
+	given_detailDocumentLineContaining(t, actualDocument, "fun process(settings")
+	if strings.Contains(string(actualDocument.text), "Code block") {
+		t.Fatalf("expected the review thread comment to omit the code block placeholder, actual %q", string(actualDocument.text))
 	}
 }
 

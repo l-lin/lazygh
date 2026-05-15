@@ -223,12 +223,9 @@ func inlineCommentSuggestionMarker(index int) string {
 }
 
 func prepareInlineCommentCodeFence(info string, lines []string, suggestionContext githubdomain.PullRequestInlineComment) []string {
-	label := inlineCommentCodeBlockLabel(info)
 	preparedLines := make([]string, 0, len(lines)+4)
-	if label != "" {
-		preparedLines = append(preparedLines, label, "")
-	}
 	if inlineCommentSuggestionFence(info) {
+		preparedLines = append(preparedLines, "**Suggestion**", "")
 		preparedLines = append(preparedLines, "```diff")
 		preparedLines = append(preparedLines, inlineCommentSuggestionDiffLines(lines, suggestionContext)...)
 		preparedLines = append(preparedLines, "```")
@@ -239,25 +236,6 @@ func prepareInlineCommentCodeFence(info string, lines []string, suggestionContex
 	preparedLines = append(preparedLines, lines...)
 	preparedLines = append(preparedLines, "```")
 	return preparedLines
-}
-
-func inlineCommentCodeBlockLabel(info string) string {
-	language := inlineCommentCodeBlockLanguage(info)
-	if inlineCommentSuggestionFence(info) {
-		return "**Suggestion**"
-	}
-	if language == "" {
-		return "**Code block**"
-	}
-	return fmt.Sprintf("**Code block · %s**", language)
-}
-
-func inlineCommentCodeBlockLanguage(info string) string {
-	fields := strings.Fields(strings.TrimSpace(info))
-	if len(fields) == 0 {
-		return ""
-	}
-	return fields[0]
 }
 
 func inlineCommentSuggestionFence(info string) bool {
