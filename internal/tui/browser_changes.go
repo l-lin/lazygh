@@ -35,7 +35,9 @@ func buildPullRequestChangesRenderedRowsForViewer(files []reviewDiffFile, render
 		if len(contentRows) == 0 {
 			continue
 		}
-		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
+		if reviewDiffHeaderRowsNeedContentSpacer(rows) {
+			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
+		}
 		rows = append(rows, contentRows...)
 	}
 	return rows

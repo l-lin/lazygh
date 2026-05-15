@@ -83,6 +83,57 @@ func TestBuildReviewDiffRenderedRows_GivenTeamOwnedFileAndInlineThread_WhenRende
 	}
 }
 
+func TestBuildReviewDiffRenderedRows_GivenTeamOwnedFile_WhenRendering_ThenItKeepsTheOwnershipRowDirectlyAboveTheFirstChange(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		TeamOwners: []string{"P3C"},
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,2 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight}},
+		}},
+	}
+
+	actual := buildReviewDiffRenderedRows(file, nil, 96)
+
+	if len(actual) < 4 {
+		t.Fatalf("expected a file header, team owners row, and visible diff content, actual %+v", actual)
+	}
+	if actual[1].Kind != reviewDiffRenderedRowKindTeamOwners {
+		t.Fatalf("expected row 1 to be team ownership metadata, actual %+v", actual[1])
+	}
+	if actual[2].Kind != reviewDiffRenderedRowKindHunkHeader {
+		t.Fatalf("expected the first change row to follow the team ownership row immediately, actual %+v", actual)
+	}
+}
+
+func TestBuildReviewDiffRenderedRows_GivenFileWithoutTeamOwners_WhenRendering_ThenItKeepsABlankRowBeforeTheFirstChange(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,2 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight}},
+		}},
+	}
+
+	actual := buildReviewDiffRenderedRows(file, nil, 96)
+
+	if len(actual) < 4 {
+		t.Fatalf("expected a file header followed by a spacer and visible diff content, actual %+v", actual)
+	}
+	if actual[1].Kind != reviewDiffRenderedRowKindSpacer {
+		t.Fatalf("expected the plain file header to stay separated from the diff content, actual %+v", actual)
+	}
+	if actual[2].Kind != reviewDiffRenderedRowKindHunkHeader {
+		t.Fatalf("expected the first change row after the spacer, actual %+v", actual)
+	}
+}
+
 func TestBuildPullRequestChangesRenderedRows_GivenTeamOwnedFile_WhenRendering_ThenItPlacesOwnershipBelowTheFilePath(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "internal/tui/render.go",
@@ -113,5 +164,31 @@ func TestBuildPullRequestChangesRenderedRows_GivenTeamOwnedFile_WhenRendering_Th
 	teamOwnershipIndex := given_runeIndexInString(t, teamOwnershipLine, "P3C")
 	if actualStylePrefix := actualDocument.lineStylePrefixes[teamOwnershipLineIndex][teamOwnershipIndex]; !strings.Contains(actualStylePrefix, foregroundColorEscape(theme.TeamOwnershipHex)) {
 		t.Fatalf("expected team ownership prefix to contain %q, actual %q", foregroundColorEscape(theme.TeamOwnershipHex), actualStylePrefix)
+	}
+}
+
+func TestBuildPullRequestChangesRenderedRows_GivenTeamOwnedFile_WhenRendering_ThenItKeepsTheOwnershipRowDirectlyAboveTheFirstChange(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		TeamOwners: []string{"P3C"},
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,2 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight}},
+		}},
+	}
+
+	actual := buildPullRequestChangesRenderedRows([]reviewDiffFile{file}, nil, 96)
+
+	if len(actual) < 4 {
+		t.Fatalf("expected a file header, team owners row, and visible diff content, actual %+v", actual)
+	}
+	if actual[1].Kind != reviewDiffRenderedRowKindTeamOwners {
+		t.Fatalf("expected row 1 to be team ownership metadata, actual %+v", actual[1])
+	}
+	if actual[2].Kind != reviewDiffRenderedRowKindHunkHeader {
+		t.Fatalf("expected the first change row to follow the team ownership row immediately, actual %+v", actual)
 	}
 }

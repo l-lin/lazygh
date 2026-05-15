@@ -59,7 +59,9 @@ func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFil
 	if len(contentRows) == 0 {
 		return rows
 	}
-	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
+	if reviewDiffHeaderRowsNeedContentSpacer(rows) {
+		rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
+	}
 	rows = append(rows, contentRows...)
 	return rows
 }
@@ -165,6 +167,13 @@ func reviewDiffFileHeaderRows(file reviewDiffFile, headerText string) []reviewDi
 		rows = append(rows, teamOwnersRow)
 	}
 	return rows
+}
+
+func reviewDiffHeaderRowsNeedContentSpacer(rows []reviewDiffRenderedRow) bool {
+	if len(rows) == 0 {
+		return false
+	}
+	return rows[len(rows)-1].Kind != reviewDiffRenderedRowKindTeamOwners
 }
 
 func reviewDiffTeamOwnersRenderedRow(file reviewDiffFile) (reviewDiffRenderedRow, bool) {
