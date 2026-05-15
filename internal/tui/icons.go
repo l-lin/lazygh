@@ -114,6 +114,7 @@ const (
 	actionsPopupCancelPendingReviewIcon      = iconDelete
 	actionsPopupYankPullRequestURLIcon       = iconCopy
 	actionsPopupOpenPullRequestBrowserIcon   = iconOpenBrowser
+	actionsPopupOpenPullRequestByURLIcon     = iconPullRequest
 	actionsPopupOpenLinkIcon                 = iconLink
 	actionsPopupRefreshPullRequestIcon       = iconRefresh
 	actionsPopupReviewApproveIcon            = iconReviewApprove

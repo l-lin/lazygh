@@ -33,7 +33,7 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_helpEntryUsesKey(t, actualBuffer, "Quit", "Ctrl+X")
 }
 
-func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomSearchShortcut(t *testing.T) {
+func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomSearchAndOpenPRFromURLShortcuts(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModel(model)
@@ -49,6 +49,7 @@ func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomS
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Custom search", ":")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from URL", "Ctrl+V")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
@@ -74,7 +75,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacemen
 	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "Ctrl+B/PageUp")
 }
 
-func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheLinkUnderCursor(t *testing.T) {
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXCtrlVAndSearchWordBindings(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -90,6 +91,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXForOpeningTheL
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from URL", "Ctrl+V")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Search word under cursor", "*/#")
 }
 

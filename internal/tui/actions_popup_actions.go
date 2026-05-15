@@ -102,9 +102,12 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 		if inlineCommentAction, ok := program.currentBrowserChangesInlineCommentAction(); ok {
 			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
 		}
+		navigationActions := []actionsPopupAction{}
 		if actionContext.ActiveView.Focus == FocusPullRequestsView {
-			actions = append(actions, program.pullRequestCustomSearchActionsPopupAction().withGroup(actionsPopupGroupNavigation))
+			navigationActions = append(navigationActions, program.pullRequestCustomSearchActionsPopupAction())
 		}
+		navigationActions = append(navigationActions, program.openPullRequestByURLActionsPopupAction())
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, navigationActions...)...)
 	}
 	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
 		actions = append(actions,

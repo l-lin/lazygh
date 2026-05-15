@@ -76,6 +76,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
 		"Navigation",
 		actionsPopupLabel(actionsPopupCustomSearchIcon, "Custom search"),
+		actionsPopupLabel(actionsPopupOpenPullRequestByURLIcon, "Open PR from URL"),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 	})
@@ -175,13 +176,13 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "1 of 13 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 13 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "1 of 14 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 14 actions", popupView.Buffer())
 	}
 	popupChromeView, actualErr := gui.View(viewActionsPopupChromeName)
 	then_noError(t, actualErr)
-	if popupChromeView.Footer != "1 of 13 actions" {
-		t.Fatalf("expected popup footer %q, actual %q", "1 of 13 actions", popupChromeView.Footer)
+	if popupChromeView.Footer != "1 of 14 actions" {
+		t.Fatalf("expected popup footer %q, actual %q", "1 of 14 actions", popupChromeView.Footer)
 	}
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to keep %q visible, actual %q", "Yank URL to clipboard", popupView.Buffer())

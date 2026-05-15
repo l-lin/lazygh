@@ -250,6 +250,8 @@ flags = ["--search", "label:escalated state:open", "--sort", "updated", "--order
 
 In view `2`, press `:` or choose `Custom search` from the actions popup. Submitting it creates or updates the `Custom` tab.
 
+Press `Ctrl+V`, or choose `Open PR from URL` from the actions popup, to open a GitHub pull request URL directly in fullscreen view `0`.
+
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.

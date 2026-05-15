@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jesseduffield/gocui"
+
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
@@ -112,6 +114,112 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLAfterLayout_WhenOpening_Then
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Body 77") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Body 77", detailView.Buffer())
+	}
+}
+
+func TestKeybindingSpecs_GivenProgram_WhenListingOpenPullRequestByURLBindings_ThenCtrlVIsAvailableInThePullRequestBrowserViews(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: gocui.KeyCtrlV, handler: subject.openPullRequestByURLShortcut})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyCtrlV, handler: subject.openPullRequestByURLShortcut})
+	then_bindingDoesNotExist(t, actual, viewUserName, gocui.KeyCtrlV)
+	then_bindingDoesNotExist(t, actual, viewNotificationsName, gocui.KeyCtrlV)
+}
+
+func TestActionsPopup_GivenPullRequestsView_WhenExecutingOpenPullRequestByURL_ThenItOpensTheInputBox(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := given_pullRequestByURLProgram(model, loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("open pr from url", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "open pr from url"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+		t.Fatal("expected the PR URL prompt to use the single-line editor")
+	}
+	modalView, actualErr := gui.View(viewModalEditorName)
+	then_noError(t, actualErr)
+	if !strings.Contains(modalView.Title, "Open PR from URL") {
+		t.Fatalf("expected modal title to contain %q, actual %q", "Open PR from URL", modalView.Title)
+	}
+}
+
+func TestOpenPullRequestByURL_GivenFullscreenBrowserDetail_WhenSubmittingTheCtrlVPrompt_ThenItShowsTheRequestedPullRequestInFullscreenViewZero(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
+		Title:       "Widgets PR",
+		Number:      13,
+		URL:         "https://github.com/acme/widgets/pull/13",
+		Body:        "Body 13",
+		BaseRefName: "main",
+		HeadRefName: "feature/widgets",
+		State:       "OPEN",
+	}
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+
+	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+		t.Fatal("expected the PR URL prompt to use the single-line editor")
+	}
+	subject.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/pull/13")
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewDetailName)
+	if subject.model.Focus() != FocusDetailView {
+		t.Fatalf("expected focus %v, actual %v", FocusDetailView, subject.model.Focus())
+	}
+	if subject.model.PaneLayoutSize() != PaneLayoutFullscreen {
+		t.Fatalf("expected layout size %v, actual %v", PaneLayoutFullscreen, subject.model.PaneLayoutSize())
+	}
+	if subject.model.FullscreenPane() != FocusDetailView {
+		t.Fatalf("expected fullscreen pane %v, actual %v", FocusDetailView, subject.model.FullscreenPane())
+	}
+
+	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
+	if !ok {
+		t.Fatal("expected a selected pull request summary")
+	}
+	if selectedSummary.Repository.NameWithOwner != "acme/widgets" {
+		t.Fatalf("expected repository %q, actual %q", "acme/widgets", selectedSummary.Repository.NameWithOwner)
+	}
+	if selectedSummary.Number != 13 {
+		t.Fatalf("expected pull request number %d, actual %d", 13, selectedSummary.Number)
+	}
+	if selectedSummary.URL != "https://github.com/acme/widgets/pull/13" {
+		t.Fatalf("expected pull request url %q, actual %q", "https://github.com/acme/widgets/pull/13", selectedSummary.URL)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Body 13") {
+		t.Fatalf("expected detail buffer to contain %q, actual %q", "Body 13", detailView.Buffer())
 	}
 }
 
