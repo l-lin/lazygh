@@ -46,6 +46,9 @@ func given_testAppDeps(loader any) AppDeps {
 	if actual, ok := loader.(AuthTokenProvider); ok {
 		deps.AuthTokenProvider = actual
 	}
+	if actual, ok := loader.(ClipboardReader); ok {
+		deps.ClipboardReader = actual
+	}
 	if actual, ok := loader.(ClipboardWriter); ok {
 		deps.ClipboardWriter = actual
 	}

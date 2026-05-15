@@ -49,7 +49,7 @@ func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomS
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Custom search", ":")
-	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from URL", "Ctrl+V")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
@@ -91,7 +91,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXCtrlVAndSearch
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
-	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from URL", "Ctrl+V")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Search word under cursor", "*/#")
 }
 

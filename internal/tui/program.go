@@ -52,6 +52,7 @@ type Program struct {
 	activeDetailTab                         DetailTab
 	lastDetailIdentity                      string
 	detailViewState                         detailViewState
+	clipboardReader                         ClipboardReader
 	clipboardWriter                         ClipboardWriter
 	helpVisible                             bool
 	detailSearchReversed                    bool
@@ -140,6 +141,7 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 		themePresetStore:              resolvedDeps.ThemePresetStore,
 		asyncRunner:                   goroutineAsyncRunner{},
 		uiUpdater:                     queuedUIUpdater{},
+		clipboardReader:               resolvedDeps.ClipboardReader,
 		clipboardWriter:               resolvedDeps.ClipboardWriter,
 		detailViewState:               newDetailViewState(),
 		detailWrapWidth:               defaultDetailWrapWidth,
@@ -157,6 +159,9 @@ func resolveAppDeps(deps AppDeps) AppDeps {
 	}
 	if deps.ThemePresetStore == nil {
 		deps.ThemePresetStore = &defaultThemePresetStore{save: appconfig.SaveThemePresetDefault}
+	}
+	if deps.ClipboardReader == nil {
+		deps.ClipboardReader = clip.NewSystemReader()
 	}
 	if deps.ClipboardWriter == nil {
 		deps.ClipboardWriter = clip.NewSystemWriter()

@@ -122,8 +122,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingOpenPullRequestByURLBindings_Th
 
 	actual := subject.keybindingSpecs()
 
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: gocui.KeyCtrlV, handler: subject.openPullRequestByURLShortcut})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyCtrlV, handler: subject.openPullRequestByURLShortcut})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: gocui.KeyCtrlV, handler: subject.openPullRequestByClipboardShortcut})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: gocui.KeyCtrlV, handler: subject.openPullRequestByClipboardShortcut})
 	then_bindingDoesNotExist(t, actual, viewUserName, gocui.KeyCtrlV)
 	then_bindingDoesNotExist(t, actual, viewNotificationsName, gocui.KeyCtrlV)
 }
@@ -232,6 +232,80 @@ func TestOpenPullRequestByURL_GivenTheURLInputPopup_WhenPressingEnter_ThenItSubm
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Body 13") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Body 13", detailView.Buffer())
+	}
+}
+
+func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtrlV_ThenItDirectlyOpensThatPullRequest(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
+		Title:       "Widgets PR",
+		Number:      13,
+		URL:         "https://github.com/acme/widgets/pull/13",
+		Body:        "Body 13",
+		BaseRefName: "main",
+		HeadRefName: "feature/widgets",
+		State:       "OPEN",
+	}
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+	subject.clipboardReader = &fakeClipboardWriter{readText: "https://github.com/acme/widgets/pull/13"}
+
+	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	actualErr = subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
+	if !ok {
+		t.Fatal("expected a selected pull request summary")
+	}
+	if selectedSummary.Repository.NameWithOwner != "acme/widgets" {
+		t.Fatalf("expected repository %q, actual %q", "acme/widgets", selectedSummary.Repository.NameWithOwner)
+	}
+	if selectedSummary.Number != 13 {
+		t.Fatalf("expected pull request number %d, actual %d", 13, selectedSummary.Number)
+	}
+	if selectedSummary.URL != "https://github.com/acme/widgets/pull/13" {
+		t.Fatalf("expected pull request url %q, actual %q", "https://github.com/acme/widgets/pull/13", selectedSummary.URL)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Body 13") {
+		t.Fatalf("expected detail buffer to contain %q, actual %q", "Body 13", detailView.Buffer())
+	}
+}
+
+func TestOpenPullRequestByURL_GivenClipboardDoesNotContainAGitHubPRURL_WhenPressingCtrlV_ThenItShowsFeedbackAndDoesNotOpenThePrompt(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := given_pullRequestByURLProgram(model, given_pullRequestByURLLoader())
+	subject.clipboardReader = &fakeClipboardWriter{readText: "not a pull request url"}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	statusView, actualErr := gui.View(viewStatusLineName)
+	then_noError(t, actualErr)
+	if !strings.Contains(statusView.Buffer(), "Clipboard does not contain a GitHub pull request URL") {
+		t.Fatalf("expected status line to contain %q, actual %q", "Clipboard does not contain a GitHub pull request URL", statusView.Buffer())
 	}
 }
 

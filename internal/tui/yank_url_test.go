@@ -151,9 +151,15 @@ func TestCopyPullRequestURL_GivenClipboardFailure_WhenHandlingTheAction_ThenItSh
 type fakeClipboardWriter struct {
 	writes   []string
 	writeErr error
+	readText string
+	readErr  error
 }
 
 func (writer *fakeClipboardWriter) WriteText(text string) error {
 	writer.writes = append(writer.writes, text)
 	return writer.writeErr
+}
+
+func (writer *fakeClipboardWriter) ReadText() (string, error) {
+	return writer.readText, writer.readErr
 }

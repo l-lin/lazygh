@@ -86,6 +86,8 @@ type AuthTokenProvider interface {
 	GetAuthToken() (string, error)
 }
 
+type ClipboardReader = clip.Reader
+
 type ClipboardWriter = clip.Writer
 
 type ExternalEditor = externalEditor
@@ -106,6 +108,7 @@ type AppDeps struct {
 	BuildQueries          BuildQueries
 	MarkdownHTMLRenderer  MarkdownHTMLRenderer
 	AuthTokenProvider     AuthTokenProvider
+	ClipboardReader       ClipboardReader
 	ClipboardWriter       ClipboardWriter
 	ExternalEditor        ExternalEditor
 	LinkOpener            LinkOpener

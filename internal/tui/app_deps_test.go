@@ -46,7 +46,7 @@ func TestNewProgram_GivenFocusedGitHubCapabilityAdapters_WhenCreating_ThenItWire
 	if !subject.hasMarkdownHTMLRenderer() || !subject.hasAuthTokenProvider() {
 		t.Fatal("expected the program to wire the markdown and auth capability ports")
 	}
-	if subject.clipboardWriter == nil || subject.externalEditor == nil || subject.linkOpener == nil || subject.themePresetStore == nil {
+	if subject.clipboardReader == nil || subject.clipboardWriter == nil || subject.externalEditor == nil || subject.linkOpener == nil || subject.themePresetStore == nil {
 		t.Fatal("expected the default shell dependencies to stay wired")
 	}
 }
