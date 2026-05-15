@@ -4,7 +4,7 @@ import "github.com/jesseduffield/gocui"
 
 const (
 	openPullRequestByURLActionTitle  = "Open PR from URL"
-	openPullRequestByURLEditorHeight = 5
+	openPullRequestByURLEditorHeight = lineModalEditorTotalHeight
 )
 
 func (program *Program) openPullRequestByURLShortcut(gui *gocui.Gui, _ *gocui.View) error {

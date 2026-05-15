@@ -157,6 +157,11 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingOpenPullRequestByURL_Th
 	if !strings.Contains(modalView.Title, "Open PR from URL") {
 		t.Fatalf("expected modal title to contain %q, actual %q", "Open PR from URL", modalView.Title)
 	}
+	_, y0, _, y1, actualErr := gui.ViewPosition(viewModalEditorName)
+	then_noError(t, actualErr)
+	if actual := y1 - y0 + 1; actual != 3 {
+		t.Fatalf("expected the PR URL prompt height %d, actual %d", 3, actual)
+	}
 }
 
 func TestOpenPullRequestByURL_GivenFullscreenBrowserDetail_WhenSubmittingTheCtrlVPrompt_ThenItShowsTheRequestedPullRequestInFullscreenViewZero(t *testing.T) {
