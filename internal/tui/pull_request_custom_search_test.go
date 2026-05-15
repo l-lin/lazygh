@@ -2,6 +2,7 @@ package tui
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jesseduffield/gocui"
@@ -16,6 +17,50 @@ func TestPullRequestCustomSearch_GivenProgram_WhenListingKeybindings_ThenItBinds
 	actual := subject.keybindingSpecs()
 
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: ':', handler: subject.openPullRequestCustomSearch})
+}
+
+func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsTheCustomSearchAction(t *testing.T) {
+	subject := given_pullRequestCustomSearchProgram(&fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "Custom search") {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", "Custom search", popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpensThePrefilledSearchPopup(t *testing.T) {
+	subject := given_pullRequestCustomSearchProgram(&fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("custom search", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "custom search"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+		t.Fatal("expected the custom search popup to use the single-line editor")
+	}
+	if actual := subject.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
+		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --state open --sort updated --order desc", actual)
+	}
 }
 
 func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefillsTheActiveSearchCriteriaAndUsesFiveLines(t *testing.T) {

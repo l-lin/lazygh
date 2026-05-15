@@ -35,6 +35,7 @@ const (
 	iconBuild              = ""
 	iconAddReaction        = "󰞅"
 	iconTheme              = "󰸌"
+	iconSearch             = ""
 	iconMetadata           = "󰋽"
 	iconChapter            = "󰭤"
 	iconStatusSuccess      = ""
@@ -135,6 +136,7 @@ const (
 	actionsPopupAddReactionIcon              = iconAddReaction
 	actionsPopupRemoveReactionIcon           = iconDelete
 	actionsPopupChangeThemeIcon              = iconTheme
+	actionsPopupCustomSearchIcon             = iconSearch
 	actionsPopupReviewStoryIcon              = iconReview
 
 	reviewDiffTreeCommentCountIcon = iconCommentCount

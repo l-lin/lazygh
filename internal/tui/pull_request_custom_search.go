@@ -12,6 +12,7 @@ import (
 
 const (
 	pullRequestCustomSearchLabel        = "Custom"
+	pullRequestCustomSearchActionTitle  = "Custom search"
 	pullRequestCustomSearchEditorTitle  = "Search PRs"
 	pullRequestCustomSearchEditorHeight = 5
 )
@@ -22,6 +23,10 @@ func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.Vie
 		return nil
 	}
 
+	return program.openPullRequestCustomSearchEditor(gui)
+}
+
+func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error {
 	actualErr := program.openLineModalEditorWithHeight(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), program.submitPullRequestCustomSearch, pullRequestCustomSearchEditorHeight)
 	if actualErr != nil {
 		return actualErr
@@ -32,6 +37,26 @@ func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.Vie
 		}
 	}
 	return nil
+}
+
+func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:      "custom-pull-request-search",
+		title:   pullRequestCustomSearchActionTitle,
+		icon:    actionsPopupCustomSearchIcon,
+		execute: program.executeOpenPullRequestCustomSearchAction,
+	}
+}
+
+func (program *Program) executeOpenPullRequestCustomSearchAction(gui *gocui.Gui) actionsPopupActionResult {
+	wasVisible := program.modalEditorVisible()
+	if err := program.openPullRequestCustomSearchEditor(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	if !wasVisible && program.modalEditorVisible() {
+		return actionsPopupActionResult{closePopup: true}
+	}
+	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 }
 
 func (program *Program) currentPullRequestSearchCriteria() string {
