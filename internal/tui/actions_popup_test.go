@@ -67,6 +67,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
 		actionsPopupLabel(actionsPopupOpenPullRequestByURLIcon, "Open PR from URL"),
+		actionsPopupLabel(actionsPopupCustomSearchIcon, "Custom search"),
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
@@ -75,8 +76,6 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
 		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
 		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
-		"Navigation",
-		actionsPopupLabel(actionsPopupCustomSearchIcon, "Custom search"),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 	})
@@ -127,12 +126,12 @@ func TestActionsPopup_GivenPullRequestLevelReactionAction_WhenOpening_ThenItKeep
 	}
 	reviewHeaderIndex := strings.Index(buffer, actionsPopupGroupReview)
 	addReactionIndex := strings.Index(buffer, reactionPickerTitle)
-	navigationHeaderIndex := strings.Index(buffer, actionsPopupGroupNavigation)
-	if reviewHeaderIndex < 0 || addReactionIndex < 0 || navigationHeaderIndex < 0 {
-		t.Fatalf("expected popup buffer to contain %q, %q, and %q, actual %q", actionsPopupGroupReview, reactionPickerTitle, actionsPopupGroupNavigation, buffer)
+	themeHeaderIndex := strings.Index(buffer, actionsPopupGroupTheme)
+	if reviewHeaderIndex < 0 || addReactionIndex < 0 || themeHeaderIndex < 0 {
+		t.Fatalf("expected popup buffer to contain %q, %q, and %q, actual %q", actionsPopupGroupReview, reactionPickerTitle, actionsPopupGroupTheme, buffer)
 	}
-	if !(reviewHeaderIndex < addReactionIndex && addReactionIndex < navigationHeaderIndex) {
-		t.Fatalf("expected %q to stay inside the %q group before %q, actual %q", reactionPickerTitle, actionsPopupGroupReview, actionsPopupGroupNavigation, buffer)
+	if !(reviewHeaderIndex < addReactionIndex && addReactionIndex < themeHeaderIndex) {
+		t.Fatalf("expected %q to stay inside the %q group before %q, actual %q", reactionPickerTitle, actionsPopupGroupReview, actionsPopupGroupTheme, buffer)
 	}
 }
 

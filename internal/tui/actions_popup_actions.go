@@ -74,6 +74,11 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
 			program.openPullRequestByURLActionsPopupAction(),
+		)
+		if actionContext.ActiveView.Focus == FocusPullRequestsView {
+			pullRequestActions = append(pullRequestActions, program.pullRequestCustomSearchActionsPopupAction())
+		}
+		pullRequestActions = append(pullRequestActions,
 			program.refreshPullRequestAction(),
 			program.commendOnPrAction(),
 		)
@@ -121,9 +126,6 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 	}
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
 		actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
-	}
-	if !actionContext.IsReviewContext() && actionContext.ActiveView.Focus == FocusPullRequestsView {
-		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, program.pullRequestCustomSearchActionsPopupAction())...)
 	}
 	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
 		actions = append(actions,
