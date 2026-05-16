@@ -181,6 +181,39 @@ func TestAssigneePicker_GivenPinnedAndSearchResultAssignees_WhenRendering_ThenIt
 	}
 }
 
+func TestAssigneePicker_GivenPinnedAndSearchResultAssignees_WhenRendering_ThenThePopupHeightFitsAllVisibleLines(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGuiWithSize(t, 120, 40)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "char" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if popupView.InnerHeight() < subject.currentActionsPopupRenderedLineCount() {
+		t.Fatalf("expected assignee picker inner height %d to fit %d visible lines", popupView.InnerHeight(), subject.currentActionsPopupRenderedLineCount())
+	}
+}
+
 func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_ThenItKeepsTheCommandOutOfThePopupTitle(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	loader.searchAssignableUserErr = errors.New("run `gh api graphql -F owner=acme -F name=widgets -F first=20 -F search=char`: exit status 1: Field 'isBot' doesn't exist on type 'User'")

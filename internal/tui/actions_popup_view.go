@@ -14,7 +14,6 @@ const (
 	actionsPopupFallbackWidth      = 20
 	actionsPopupMinWidth           = 20
 	actionsPopupMinHeight          = 6
-	actionsPopupCompactMinHeight   = 4
 	actionsPopupSearchPromptPrefix = "> "
 )
 
@@ -83,23 +82,10 @@ func (program *Program) actionsPopupListFrame(maxX int, maxY int) paneFrame {
 
 func (program *Program) actionsPopupHeight(contentMaxY int) int {
 	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+3)
-	if program.assigneePickerVisible() {
-		totalHeight = maxInt(actionsPopupCompactMinHeight, actionsPopupCompactHeight(program.currentActionsPopupRenderedLineCount()))
-		if program.assigneePickerLoading() {
-			totalHeight = maxInt(totalHeight, actionsPopupCompactMinHeight+2)
-		}
-	}
 	if totalHeight > contentMaxY-2 {
 		totalHeight = maxInt(3, contentMaxY-2)
 	}
 	return totalHeight
-}
-
-func actionsPopupCompactHeight(renderedLineCount int) int {
-	if renderedLineCount < 1 {
-		return actionsPopupCompactMinHeight
-	}
-	return (renderedLineCount+1)/2 + 3
 }
 
 func (program *Program) configureActionsPopupChromeView(view *gocui.View) {
