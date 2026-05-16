@@ -24,7 +24,7 @@ func TestListAssignableUsers_GivenRepository_WhenListing_ThenItLoadsAndNormalize
 }
 
 func TestSearchAssignableUsers_GivenRepositoryAndQuery_WhenSearching_ThenItRunsGraphQLAndNormalizesTheAssignableUsers(t *testing.T) {
-	runner := &fakeRunner{stdout: []byte(`{"data":{"repository":{"assignableUsers":{"nodes":[{"login":" bob ","name":" Bob ","is_bot":false},{"login":"alice","name":" Alice "},{"login":"bob","name":"Duplicate"}]}}}}`)}
+	runner := &fakeRunner{stdout: []byte(`{"data":{"repository":{"assignableUsers":{"nodes":[{"login":" bob ","name":" Bob "},{"login":"alice","name":" Alice "},{"login":"bob","name":"Duplicate"}]}}}}`)}
 	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actual, actualErr := subject.SearchAssignableUsers("acme/widgets", "bob")
@@ -34,7 +34,7 @@ func TestSearchAssignableUsers_GivenRepositoryAndQuery_WhenSearching_ThenItRunsG
 		"api",
 		"graphql",
 		"-f",
-		"query=query($owner:String!,$name:String!,$first:Int!,$search:String){repository(owner:$owner,name:$name){assignableUsers(first:$first,query:$search){nodes{login name is_bot:isBot}}}}",
+		"query=query($owner:String!,$name:String!,$first:Int!,$search:String){repository(owner:$owner,name:$name){assignableUsers(first:$first,query:$search){nodes{login name}}}}",
 		"-F",
 		"owner=acme",
 		"-F",

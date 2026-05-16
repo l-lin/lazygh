@@ -14,7 +14,7 @@ const (
 	assignableUserSearchResultSize = 20
 )
 
-const searchAssignableUsersQuery = `query($owner:String!,$name:String!,$first:Int!,$search:String){repository(owner:$owner,name:$name){assignableUsers(first:$first,query:$search){nodes{login name is_bot:isBot}}}}`
+const searchAssignableUsersQuery = `query($owner:String!,$name:String!,$first:Int!,$search:String){repository(owner:$owner,name:$name){assignableUsers(first:$first,query:$search){nodes{login name}}}}`
 
 func (client *PullRequestMutationService) ListAssignableUsers(repository string) ([]PullRequestAuthor, error) {
 	trimmedRepository := strings.TrimSpace(repository)
