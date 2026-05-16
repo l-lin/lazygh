@@ -16,18 +16,28 @@ const (
 )
 
 type actionsPopupVisibleLine struct {
-	text        string
-	actionIndex int
-	selectable  bool
-	centered    bool
+	text          string
+	actionIndex   int
+	selectable    bool
+	centered      bool
+	separator     bool
+	titleSegments []ItemTitleSegment
 }
 
 func (line actionsPopupVisibleLine) item(viewWidth int) Item {
+	if line.separator {
+		separatorWidth := maxInt(viewWidth, 1)
+		separatorText := strings.Repeat("─", separatorWidth)
+		return Item{Title: separatorText, TitleSegments: []ItemTitleSegment{{
+			Text:   separatorText,
+			Prefix: foregroundColorEscape(theme.InactiveBorderHex),
+		}}}
+	}
 	if line.selectable {
-		return Item{Title: line.text}
+		return Item{Title: line.text, TitleSegments: append([]ItemTitleSegment(nil), line.titleSegments...)}
 	}
 	if !line.centered {
-		return Item{Title: line.text}
+		return Item{Title: line.text, TitleSegments: append([]ItemTitleSegment(nil), line.titleSegments...)}
 	}
 
 	centeredTitle := centeredActionsPopupGroupTitle(line.text, viewWidth)
@@ -83,7 +93,25 @@ func (program *Program) currentActionsPopupVisibleLines() []actionsPopupVisibleL
 
 func (program *Program) currentAssigneePickerVisibleLines() []actionsPopupVisibleLine {
 	actions := program.currentActionsPopupActions()
-	visibleLines := buildActionsPopupVisibleLines(actions, actionIndexes(len(actions)))
+	pinnedCandidates := program.currentPinnedAssigneePickerCandidates()
+	otherCandidates := program.currentAssigneePickerSearchResultCandidatesForQuery(program.model.ActionsPopupSearchQuery())
+	visibleLines := make([]actionsPopupVisibleLine, 0, len(actions)+2)
+	for index := range pinnedCandidates {
+		if index >= len(actions) {
+			break
+		}
+		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: actions[index].label(), actionIndex: index, selectable: true})
+	}
+	if len(pinnedCandidates) > 0 && len(otherCandidates) > 0 {
+		visibleLines = append(visibleLines, actionsPopupVisibleLine{separator: true})
+	}
+	for index := range otherCandidates {
+		actionIndex := len(pinnedCandidates) + index
+		if actionIndex >= len(actions) {
+			break
+		}
+		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: actions[actionIndex].label(), actionIndex: actionIndex, selectable: true})
+	}
 	if program.assigneePickerLoading() {
 		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: program.loadingSpinnerStatus("Fetching assignees")})
 	}

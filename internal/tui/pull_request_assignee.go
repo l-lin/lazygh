@@ -337,25 +337,40 @@ func (program *Program) currentAssigneePickerVisibleCandidatesForQuery(query str
 		return nil
 	}
 
-	visible := program.currentPinnedAssigneePickerCandidates()
+	visible := append([]githubdomain.PullRequestAuthor(nil), program.currentPinnedAssigneePickerCandidates()...)
+	visible = append(visible, program.currentAssigneePickerSearchResultCandidatesForQuery(query)...)
+	return visible
+}
+
+func (program *Program) currentAssigneePickerSearchResultCandidatesForQuery(query string) []githubdomain.PullRequestAuthor {
+	if !program.assigneePickerVisible() {
+		return nil
+	}
+
 	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" || strings.TrimSpace(program.assigneePicker.searchQuery) != trimmedQuery {
-		return visible
+		return nil
 	}
 
 	seenLogins := map[string]bool{}
-	for _, candidate := range visible {
-		seenLogins[strings.TrimSpace(candidate.Login)] = true
+	for _, candidate := range program.currentPinnedAssigneePickerCandidates() {
+		trimmedLogin := strings.TrimSpace(candidate.Login)
+		if trimmedLogin == "" {
+			continue
+		}
+		seenLogins[trimmedLogin] = true
 	}
+
+	searchResultCandidates := make([]githubdomain.PullRequestAuthor, 0, len(program.assigneePicker.searchResults))
 	for _, candidate := range program.assigneePicker.searchResults {
 		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
 		if normalizedCandidate.Login == "" || seenLogins[normalizedCandidate.Login] {
 			continue
 		}
 		seenLogins[normalizedCandidate.Login] = true
-		visible = append(visible, normalizedCandidate)
+		searchResultCandidates = append(searchResultCandidates, normalizedCandidate)
 	}
-	return visible
+	return searchResultCandidates
 }
 
 func (program *Program) matchingAssigneePickerIndexes(query string) []int {

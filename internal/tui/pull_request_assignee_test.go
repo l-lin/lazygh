@@ -110,9 +110,11 @@ func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatch
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
+	separatorLine := given_actionsPopupSeparatorLine(t, popupView)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
 		"[ ] @me (Bob)",
 		"[x] @alice (Alice)",
+		separatorLine,
 		"[ ] @charlie (Charlie)",
 	})
 	if strings.Contains(popupView.Buffer(), "@dora") {
@@ -138,6 +140,45 @@ func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatch
 		t.Fatalf("expected a visible assignee line containing %q, actual %q", "@charlie", strings.Join(popupView.BufferLines(), "\n"))
 	}
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, matchLineIndex, "char")
+}
+
+func TestAssigneePicker_GivenPinnedAndSearchResultAssignees_WhenRendering_ThenItSeparatesThemWithAContinuousLine(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "char" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	separatorLineIndex := given_viewLineIndexContaining(t, popupView, "────")
+	expectedSeparator := strings.Repeat("─", popupView.InnerWidth())
+	actualSeparator, ok := popupView.Line(separatorLineIndex)
+	if !ok {
+		t.Fatalf("expected the assignee picker to render a separator line at index %d", separatorLineIndex)
+	}
+	if actualSeparator != expectedSeparator {
+		t.Fatalf("expected separator line %q, actual %q", expectedSeparator, actualSeparator)
+	}
 }
 
 func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_ThenItKeepsTheCommandOutOfThePopupTitle(t *testing.T) {
@@ -211,9 +252,11 @@ func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStr
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
+	separatorLine := given_actionsPopupSeparatorLine(t, popupView)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
 		"[ ] @me (Bob)",
 		"[x] @alice (Alice)",
+		separatorLine,
 		"[ ] @dclaraLeo0808 (Clara Léonard)",
 		"[ ] @felixleopold (FELIX LEOPOLD)",
 		"[ ] @Leo-Vrmed (Leonardo Manca)",
@@ -315,10 +358,12 @@ func TestAssigneePicker_GivenSelectedSearchResult_WhenSearchingForAnotherAssigne
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
+	separatorLine := given_actionsPopupSeparatorLine(t, popupView)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
 		"[ ] @me (Bob)",
 		"[x] @alice (Alice)",
 		"[x] @charlie (Charlie)",
+		separatorLine,
 		"[ ] @dora (Dora)",
 	})
 	then_noError(t, executeHandler(gui, searchView))
@@ -628,6 +673,15 @@ func given_runQueuedAsync(t *testing.T, runner *capturingAsyncRunner, index int)
 		t.Fatalf("expected queued async run index %d, actual runs %d", index, len(runner.runs))
 	}
 	runner.runs[index]()
+}
+
+func given_actionsPopupSeparatorLine(t *testing.T, popupView *gocui.View) string {
+	t.Helper()
+
+	if popupView == nil {
+		t.Fatal("expected a popup view")
+	}
+	return strings.Repeat("─", popupView.InnerWidth())
 }
 
 func then_actionsPopupFooterHintIsSet(t *testing.T, gui *gocui.Gui, expected string) {

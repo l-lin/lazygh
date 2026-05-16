@@ -155,6 +155,13 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	selectedRenderedLine := program.currentActionsPopupSelectedRenderedLine()
 	showSelectedLine := program.usesManualSelectedLineRendering(query)
 	for visibleIndex, line := range visibleLines {
+		if line.separator {
+			originalForegroundColor := view.FgColor
+			view.FgColor = gocui.GetColor(theme.InactiveBorderHex)
+			fmt.Fprintln(view, strings.Repeat("─", maxInt(view.InnerWidth(), 1)))
+			view.FgColor = originalForegroundColor
+			continue
+		}
 		program.renderItemLine(view, line.item(view.InnerWidth()), query, showSelectedLine && line.selectable && visibleIndex == selectedRenderedLine)
 	}
 
