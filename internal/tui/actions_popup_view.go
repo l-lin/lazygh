@@ -37,10 +37,10 @@ func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	program.configureActionsPopupView(popupView)
 	program.renderActionsPopupView(popupView)
 
-	if _, err = gui.SetViewOnTop(viewActionsPopupName); err != nil && !isUnknownViewError(err) {
+	if _, err = gui.SetViewOnTop(viewActionsPopupChromeName); err != nil && !isUnknownViewError(err) {
 		return err
 	}
-	_, err = gui.SetViewOnTop(viewActionsPopupChromeName)
+	_, err = gui.SetViewOnTop(viewActionsPopupName)
 	if isUnknownViewError(err) {
 		return nil
 	}
@@ -78,13 +78,16 @@ func (program *Program) actionsPopupSearchFrame(maxX int, maxY int) paneFrame {
 
 func (program *Program) actionsPopupListFrame(maxX int, maxY int) paneFrame {
 	popupFrame := program.actionsPopupFrame(maxX, maxY)
-	return paneFrame{x0: popupFrame.x0, y0: popupFrame.y0 + 1, x1: popupFrame.x1, y1: popupFrame.y1 - 1}
+	return paneFrame{x0: popupFrame.x0, y0: popupFrame.y0 + 1, x1: popupFrame.x1, y1: popupFrame.y1}
 }
 
 func (program *Program) actionsPopupHeight(contentMaxY int) int {
 	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+3)
 	if program.assigneePickerVisible() {
 		totalHeight = maxInt(actionsPopupCompactMinHeight, actionsPopupCompactHeight(program.currentActionsPopupRenderedLineCount()))
+		if program.assigneePickerLoading() {
+			totalHeight = maxInt(totalHeight, actionsPopupCompactMinHeight+2)
+		}
 	}
 	if totalHeight > contentMaxY-2 {
 		totalHeight = maxInt(3, contentMaxY-2)
@@ -115,6 +118,7 @@ func (program *Program) renderActionsPopupChromeView(view *gocui.View) {
 	view.Clear()
 	view.SetOrigin(0, 0)
 	view.SetCursor(0, 0)
+	fmt.Fprintln(view)
 }
 
 func (program *Program) configureActionsPopupView(view *gocui.View) {

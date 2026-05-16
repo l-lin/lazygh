@@ -59,7 +59,7 @@ func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenOpeningTheAssigne
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
 		"[ ] @me (Bob)",
 		"[x] @alice (Alice)",
-		string(loadingSpinnerFrames[0]),
+		string(loadingSpinnerFrames[0]) + " Fetching assignees",
 	})
 	then_actionsPopupFooterHintIsSet(t, gui, assigneePickerSearchFooterHint)
 	then_statusLineContains(t, gui, "Running `gh api graphql -F owner=acme -F name=widgets -F first=20`.")

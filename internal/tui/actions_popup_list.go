@@ -85,7 +85,7 @@ func (program *Program) currentAssigneePickerVisibleLines() []actionsPopupVisibl
 	actions := program.currentActionsPopupActions()
 	visibleLines := buildActionsPopupVisibleLines(actions, actionIndexes(len(actions)))
 	if program.assigneePickerLoading() {
-		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: strings.TrimSpace(program.loadingSpinnerFrame())})
+		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: program.loadingSpinnerStatus("Fetching assignees")})
 	}
 	return visibleLines
 }
