@@ -11,6 +11,17 @@ func (program *Program) modalEditorVisible() bool {
 	return program != nil && program.modalEditor != nil
 }
 
+func (program *Program) openModalEditorFromActionsPopup(gui *gocui.Gui, open func(*gocui.Gui) error) actionsPopupActionResult {
+	wasVisible := program.modalEditorVisible()
+	if err := open(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	if !wasVisible && program.modalEditorVisible() {
+		return actionsPopupActionResult{closePopup: true}
+	}
+	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+}
+
 func (program *Program) openModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error) error {
 	program.modalEditor = newModalEditorState(title, initialText, submit)
 	if gui == nil {

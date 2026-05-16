@@ -98,20 +98,12 @@ func (program *Program) addInlineCommentAction() actionsPopupAction {
 }
 
 func (program *Program) executeAddInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
-	wasVisible := program.modalEditorVisible()
-	var err error
-	if program.reviewModeActive() {
-		err = program.openInlineReviewCommentComposer(gui, nil)
-	} else {
-		err = program.openBrowserChangesInlineCommentComposer(gui, nil)
-	}
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		if program.reviewModeActive() {
+			return program.openInlineReviewCommentComposer(gui, nil)
+		}
+		return program.openBrowserChangesInlineCommentComposer(gui, nil)
+	})
 }
 
 func (program *Program) selectedReviewInlineCommentSelection(gui *gocui.Gui, view *gocui.View) (pullRequestInlineCommentSelection, error) {

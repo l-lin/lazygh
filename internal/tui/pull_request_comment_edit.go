@@ -52,17 +52,11 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) ac
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
-		return program.submitPullRequestCommentUpdate(target, body)
-	}, reviewInlineCommentModalHeight)
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		return program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
+			return program.submitPullRequestCommentUpdate(target, body)
+		}, reviewInlineCommentModalHeight)
+	})
 }
 
 func (program *Program) executeDeletePullRequestCommentAction(_ *gocui.Gui) actionsPopupActionResult {

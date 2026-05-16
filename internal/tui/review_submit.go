@@ -61,26 +61,23 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openModalEditor(gui, title, "", func(body string) error {
-		submitErr := program.submitPendingPullRequestReview(target, event, body)
-		if submitErr != nil && event == githubdomain.PullRequestReviewEventRequestChanges {
-			return newModalEditorStatusLineError(program.model.Focus(), submitErr)
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		if err := program.openModalEditor(gui, title, "", func(body string) error {
+			submitErr := program.submitPendingPullRequestReview(target, event, body)
+			if submitErr != nil && event == githubdomain.PullRequestReviewEventRequestChanges {
+				return newModalEditorStatusLineError(program.model.Focus(), submitErr)
+			}
+			return submitErr
+		}); err != nil {
+			return err
 		}
-		return submitErr
+		if program.modalEditor != nil {
+			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				program.finishSubmittedPendingPullRequestReview(gui, target)
+			}
+		}
+		return nil
 	})
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if program.modalEditor != nil {
-		program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			program.finishSubmittedPendingPullRequestReview(gui, target)
-		}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 }
 
 func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullRequestReviewTarget, bool) {

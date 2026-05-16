@@ -42,15 +42,9 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openInlineCommentReplyComposer(gui, target)
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		return program.openInlineCommentReplyComposer(gui, target)
+	})
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {

@@ -319,14 +319,9 @@ func (program *Program) commendOnPrAction() actionsPopupAction {
 }
 
 func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
-	wasVisible := program.modalEditorVisible()
-	if err := program.openPullRequestCommentComposer(gui, nil); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		return program.openPullRequestCommentComposer(gui, nil)
+	})
 }
 
 func (program *Program) executeYankPullRequestURLAction(_ *gocui.Gui) actionsPopupActionResult {

@@ -30,22 +30,19 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openLineModalEditor(gui, pullRequestTitleEditorTitle, target.title, func(title string) error {
-		return program.submitPullRequestTitleEdit(target, title)
-	})
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if program.modalEditor != nil {
-		program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			program.reloadActivePullRequestsTab(gui)
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		if err := program.openLineModalEditor(gui, pullRequestTitleEditorTitle, target.title, func(title string) error {
+			return program.submitPullRequestTitleEdit(target, title)
+		}); err != nil {
+			return err
 		}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		if program.modalEditor != nil {
+			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				program.reloadActivePullRequestsTab(gui)
+			}
+		}
+		return nil
+	})
 }
 
 func (program *Program) editPullRequestDescriptionAction() actionsPopupAction {
@@ -63,22 +60,19 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
-		return program.submitPullRequestDescriptionEdit(target, body)
-	}, pullRequestDescriptionEditorHeight)
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if program.modalEditor != nil {
-		program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			program.reloadActivePullRequestsTab(gui)
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		if err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
+			return program.submitPullRequestDescriptionEdit(target, body)
+		}, pullRequestDescriptionEditorHeight); err != nil {
+			return err
 		}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		if program.modalEditor != nil {
+			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				program.reloadActivePullRequestsTab(gui)
+			}
+		}
+		return nil
+	})
 }
 
 func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarget, title string) error {

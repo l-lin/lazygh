@@ -84,12 +84,5 @@ func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAct
 }
 
 func (program *Program) executeOpenPullRequestByURLAction(gui *gocui.Gui) actionsPopupActionResult {
-	wasVisible := program.modalEditorVisible()
-	if err := program.openPullRequestByURLEditor(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return program.openModalEditorFromActionsPopup(gui, program.openPullRequestByURLEditor)
 }

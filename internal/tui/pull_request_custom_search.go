@@ -49,14 +49,7 @@ func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopup
 }
 
 func (program *Program) executeOpenPullRequestCustomSearchAction(gui *gocui.Gui) actionsPopupActionResult {
-	wasVisible := program.modalEditorVisible()
-	if err := program.openPullRequestCustomSearchEditor(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return program.openModalEditorFromActionsPopup(gui, program.openPullRequestCustomSearchEditor)
 }
 
 func (program *Program) currentPullRequestSearchCriteria() string {

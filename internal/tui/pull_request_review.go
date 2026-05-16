@@ -56,17 +56,11 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupA
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
-		return program.submitPullRequestReviewComment(target, body)
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		return program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
+			return program.submitPullRequestReviewComment(target, body)
+		})
 	})
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 }
 
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
@@ -84,17 +78,11 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) actionsPopup
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	wasVisible := program.modalEditorVisible()
-	err := program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
-		return program.submitPullRequestRequestChanges(target, body)
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+		return program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
+			return program.submitPullRequestRequestChanges(target, body)
+		})
 	})
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
-	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 }
 
 func (program *Program) submitPullRequestReviewComment(target pullRequestActionTarget, body string) error {
