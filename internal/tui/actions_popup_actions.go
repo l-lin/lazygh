@@ -73,6 +73,7 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 			program.reviewStoryAction(),
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
+			program.openPullRequestByURLActionsPopupAction(),
 			program.refreshPullRequestAction(),
 			program.commendOnPrAction(),
 		)
@@ -99,23 +100,6 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 		if inlineCommentAction, ok := program.currentBrowserChangesInlineCommentAction(); ok {
 			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
 		}
-		navigationActions := []actionsPopupAction{}
-		if actionContext.ActiveView.Focus == FocusPullRequestsView {
-			navigationActions = append(navigationActions, program.pullRequestCustomSearchActionsPopupAction())
-		}
-		navigationActions = append(navigationActions, program.openPullRequestByURLActionsPopupAction())
-		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, navigationActions...)...)
-	}
-	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupNavigation,
-				program.pullRequestBuildRunActionsPopupAction(),
-				program.pullRequestBuildRunLogsActionsPopupAction(),
-			)...,
-		)
-	}
-	if program.detailCursorActionsAvailable() && program.detailCursorHasLink() {
-		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
 	}
 	if reRequestReviewAction, ok := program.currentReRequestPullRequestReviewAction(); ok {
 		actions = append(actions, reRequestReviewAction.withGroup(actionsPopupGroupReview))
@@ -137,6 +121,20 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 	}
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
 		actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
+	}
+	if !actionContext.IsReviewContext() && actionContext.ActiveView.Focus == FocusPullRequestsView {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, program.pullRequestCustomSearchActionsPopupAction())...)
+	}
+	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
+		actions = append(actions,
+			actionsPopupGrouped(actionsPopupGroupNavigation,
+				program.pullRequestBuildRunActionsPopupAction(),
+				program.pullRequestBuildRunLogsActionsPopupAction(),
+			)...,
+		)
+	}
+	if program.detailCursorActionsAvailable() && program.detailCursorHasLink() {
+		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
 	}
 	return actions
 }

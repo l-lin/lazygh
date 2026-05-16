@@ -66,6 +66,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		actionsPopupLabel(actionsPopupReviewStoryIcon, reviewStoryActionTitle),
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
+		actionsPopupLabel(actionsPopupOpenPullRequestByURLIcon, "Open PR from URL"),
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
@@ -76,7 +77,6 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
 		"Navigation",
 		actionsPopupLabel(actionsPopupCustomSearchIcon, "Custom search"),
-		actionsPopupLabel(actionsPopupOpenPullRequestByURLIcon, "Open PR from URL"),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 	})
@@ -95,6 +95,45 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 	}
 
 	then_viewExists(t, gui, viewActionsPopupSearchName)
+}
+
+func TestActionsPopup_GivenPullRequestLevelReactionAction_WhenOpening_ThenItKeepsAddReactionInsideTheReviewGroup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {ID: "PR_kwDOA", Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	buffer := popupView.Buffer()
+	reviewHeaderCount := 0
+	for _, line := range strings.Split(strings.TrimSpace(buffer), "\n") {
+		if strings.TrimSpace(line) == actionsPopupGroupReview {
+			reviewHeaderCount++
+		}
+	}
+	if reviewHeaderCount != 1 {
+		t.Fatalf("expected exactly one %q header, actual %d in %q", actionsPopupGroupReview, reviewHeaderCount, buffer)
+	}
+	reviewHeaderIndex := strings.Index(buffer, actionsPopupGroupReview)
+	addReactionIndex := strings.Index(buffer, reactionPickerTitle)
+	navigationHeaderIndex := strings.Index(buffer, actionsPopupGroupNavigation)
+	if reviewHeaderIndex < 0 || addReactionIndex < 0 || navigationHeaderIndex < 0 {
+		t.Fatalf("expected popup buffer to contain %q, %q, and %q, actual %q", actionsPopupGroupReview, reactionPickerTitle, actionsPopupGroupNavigation, buffer)
+	}
+	if !(reviewHeaderIndex < addReactionIndex && addReactionIndex < navigationHeaderIndex) {
+		t.Fatalf("expected %q to stay inside the %q group before %q, actual %q", reactionPickerTitle, actionsPopupGroupReview, actionsPopupGroupNavigation, buffer)
+	}
 }
 
 func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalActionsAndTakesFocus(t *testing.T) {
