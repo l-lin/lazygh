@@ -304,11 +304,15 @@ func (program *Program) pullRequestAssigneeStateVisible() bool {
 }
 
 func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
+	return program.currentAssigneePickerActionsForQuery(program.model.ActionsPopupSearchQuery())
+}
+
+func (program *Program) currentAssigneePickerActionsForQuery(query string) []actionsPopupAction {
 	if !program.assigneePickerVisible() {
 		return nil
 	}
 
-	candidates := program.currentAssigneePickerVisibleCandidates()
+	candidates := program.currentAssigneePickerVisibleCandidatesForQuery(query)
 	actions := make([]actionsPopupAction, 0, len(candidates))
 	for _, candidate := range candidates {
 		candidate := candidate
@@ -325,12 +329,16 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 }
 
 func (program *Program) currentAssigneePickerVisibleCandidates() []githubdomain.PullRequestAuthor {
+	return program.currentAssigneePickerVisibleCandidatesForQuery(program.model.ActionsPopupSearchQuery())
+}
+
+func (program *Program) currentAssigneePickerVisibleCandidatesForQuery(query string) []githubdomain.PullRequestAuthor {
 	if !program.assigneePickerVisible() {
 		return nil
 	}
 
 	visible := program.currentPinnedAssigneePickerCandidates()
-	trimmedQuery := strings.TrimSpace(program.model.ActionsPopupSearchQuery())
+	trimmedQuery := strings.TrimSpace(query)
 	if trimmedQuery == "" || strings.TrimSpace(program.assigneePicker.searchQuery) != trimmedQuery {
 		return visible
 	}
@@ -348,6 +356,37 @@ func (program *Program) currentAssigneePickerVisibleCandidates() []githubdomain.
 		visible = append(visible, normalizedCandidate)
 	}
 	return visible
+}
+
+func (program *Program) matchingAssigneePickerIndexes(query string) []int {
+	trimmedQuery := strings.TrimSpace(query)
+	actions := program.currentAssigneePickerActionsForQuery(trimmedQuery)
+	if trimmedQuery == "" {
+		return actionIndexes(len(actions))
+	}
+
+	searchResultLogins := map[string]bool{}
+	if program.assigneePickerVisible() && strings.TrimSpace(program.assigneePicker.searchQuery) == trimmedQuery {
+		for _, candidate := range program.assigneePicker.searchResults {
+			trimmedLogin := strings.ToLower(strings.TrimSpace(candidate.Login))
+			if trimmedLogin == "" {
+				continue
+			}
+			searchResultLogins[trimmedLogin] = true
+		}
+	}
+
+	matchingIndexes := make([]int, 0, len(actions))
+	for index, candidate := range program.currentAssigneePickerVisibleCandidatesForQuery(trimmedQuery) {
+		if index >= len(actions) {
+			break
+		}
+		trimmedLogin := strings.ToLower(strings.TrimSpace(candidate.Login))
+		if searchResultLogins[trimmedLogin] || actionsPopupActionMatchesQuery(actions[index], strings.ToLower(trimmedQuery)) {
+			matchingIndexes = append(matchingIndexes, index)
+		}
+	}
+	return matchingIndexes
 }
 
 func (program *Program) currentPinnedAssigneePickerCandidates() []githubdomain.PullRequestAuthor {

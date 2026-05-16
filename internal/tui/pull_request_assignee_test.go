@@ -172,6 +172,61 @@ func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_
 	}
 }
 
+func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStringMatches_WhenMovingToOneAndPressingEnter_ThenItTogglesThatAssignee(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	loader.searchAssignableUsers["acme/widgets|Léo"] = []githubcli.PullRequestAuthor{
+		{Login: "dclaraLeo0808", Name: "Clara Léonard"},
+		{Login: "felixleopold", Name: "FELIX LEOPOLD"},
+		{Login: "Leo-Vrmed", Name: "Leonardo Manca"},
+		{Login: "LeoDocto", Name: "Léo Dedier"},
+	}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "Léo" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[ ] @me (Bob)",
+		"[x] @alice (Alice)",
+		"[ ] @dclaraLeo0808 (Clara Léonard)",
+		"[ ] @felixleopold (FELIX LEOPOLD)",
+		"[ ] @Leo-Vrmed (Leonardo Manca)",
+		"[ ] @LeoDocto (Léo Dedier)",
+	})
+
+	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyCtrlN)
+	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	then_noError(t, moveDownHandler(gui, searchView))
+	then_noError(t, executeHandler(gui, searchView))
+
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "[x] @felixleopold (FELIX LEOPOLD)") {
+		t.Fatalf("expected the visible GitHub search result to toggle, actual %q", popupView.Buffer())
+	}
+}
+
 func TestAssigneePicker_GivenViewerMatchedOnlyByItsHiddenLogin_WhenPressingEnter_ThenItTogglesMe(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	loader.searchAssignableUsers["acme/widgets|l-lin"] = []githubcli.PullRequestAuthor{{Login: "l-lin", Name: "Louis Lin"}}

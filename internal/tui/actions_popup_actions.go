@@ -160,7 +160,14 @@ func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) 
 }
 
 func (program *Program) updateActionsPopupSearch(query string) {
-	program.model.UpdateActionsPopupSearch(query, matchingActionsPopupIndexes(program.currentActionsPopupActions(), query))
+	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
+}
+
+func (program *Program) currentActionsPopupMatchingIndexes(query string) []int {
+	if program.assigneePickerVisible() {
+		return program.matchingAssigneePickerIndexes(query)
+	}
+	return matchingActionsPopupIndexes(program.currentActionsPopupActions(), query)
 }
 
 func (program *Program) syncActionsPopupSearch() {
