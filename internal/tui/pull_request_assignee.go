@@ -468,10 +468,10 @@ func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAu
 		return ""
 	}
 
-	checkbox := "[ ]"
+	checkbox := iconCheckboxUnchecked
 	trimmedLogin := strings.TrimSpace(candidate.Login)
 	if program.assigneePicker.selectedLogins[trimmedLogin] {
-		checkbox = "[x]"
+		checkbox = iconCheckboxChecked
 	}
 
 	identityLabel := "@" + trimmedLogin

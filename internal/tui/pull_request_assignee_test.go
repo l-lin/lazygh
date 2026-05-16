@@ -30,8 +30,8 @@ func TestAssigneePicker_GivenSelectedAssigneesAndCurrentUser_WhenOpeningAndWarmu
 		t.Fatalf("expected popup title %q, actual %q", assigneePickerTitle, popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
+		"󰄱 @me (Bob)",
+		"󰱒 @alice (Alice)",
 	})
 	if !reflect.DeepEqual(loader.searchAssignableUserCalls, []string{"acme/widgets|"}) {
 		t.Fatalf("expected assignable user search calls %v, actual %v", []string{"acme/widgets|"}, loader.searchAssignableUserCalls)
@@ -58,8 +58,8 @@ func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenOpeningTheAssigne
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
+		given_assigneePickerLine(false, "@me (Bob)"),
+		given_assigneePickerLine(true, "@alice (Alice)"),
 		string(loadingSpinnerFrames[0]) + " Fetching assignees",
 	})
 	then_actionsPopupFooterHintIsSet(t, gui, assigneePickerSearchFooterHint)
@@ -70,8 +70,8 @@ func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenOpeningTheAssigne
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
+		given_assigneePickerLine(false, "@me (Bob)"),
+		given_assigneePickerLine(true, "@alice (Alice)"),
 	})
 	if strings.Contains(popupView.Buffer(), "@charlie") {
 		t.Fatalf("expected the warmup search to keep hidden results like %q, actual %q", "@charlie", popupView.Buffer())
@@ -112,10 +112,10 @@ func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatch
 	then_noError(t, actualErr)
 	separatorLine := given_actionsPopupSeparatorLine(t, popupView)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
+		given_assigneePickerLine(false, "@me (Bob)"),
+		given_assigneePickerLine(true, "@alice (Alice)"),
 		separatorLine,
-		"[ ] @charlie (Charlie)",
+		given_assigneePickerLine(false, "@charlie (Charlie)"),
 	})
 	if strings.Contains(popupView.Buffer(), "@dora") {
 		t.Fatalf("expected the assignee picker to hide %q, actual %q", "@dora", popupView.Buffer())
@@ -254,13 +254,13 @@ func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStr
 	then_noError(t, actualErr)
 	separatorLine := given_actionsPopupSeparatorLine(t, popupView)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
+		given_assigneePickerLine(false, "@me (Bob)"),
+		given_assigneePickerLine(true, "@alice (Alice)"),
 		separatorLine,
-		"[ ] @dclaraLeo0808 (Clara Léonard)",
-		"[ ] @felixleopold (FELIX LEOPOLD)",
-		"[ ] @Leo-Vrmed (Leonardo Manca)",
-		"[ ] @LeoDocto (Léo Dedier)",
+		given_assigneePickerLine(false, "@dclaraLeo0808 (Clara Léonard)"),
+		given_assigneePickerLine(false, "@felixleopold (FELIX LEOPOLD)"),
+		given_assigneePickerLine(false, "@Leo-Vrmed (Leonardo Manca)"),
+		given_assigneePickerLine(false, "@LeoDocto (Léo Dedier)"),
 	})
 
 	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyCtrlN)
@@ -271,7 +271,7 @@ func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStr
 
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "[x] @dclaraLeo0808 (Clara Léonard)") {
+	if !strings.Contains(popupView.Buffer(), given_assigneePickerLine(true, "@dclaraLeo0808 (Clara Léonard)")) {
 		t.Fatalf("expected the visible GitHub search result to toggle, actual %q", popupView.Buffer())
 	}
 }
@@ -307,7 +307,7 @@ func TestAssigneePicker_GivenSearchQueryDoesNotMatchViewer_WhenPressingEnterImme
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "[x] @me (Bob)") {
+	if !strings.Contains(popupView.Buffer(), given_assigneePickerLine(true, "@me (Bob)")) {
 		t.Fatalf("expected @me to stay selectable even when the query does not match it, actual %q", popupView.Buffer())
 	}
 }
@@ -360,17 +360,17 @@ func TestAssigneePicker_GivenSelectedSearchResult_WhenSearchingForAnotherAssigne
 	then_noError(t, actualErr)
 	separatorLine := given_actionsPopupSeparatorLine(t, popupView)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
-		"[x] @charlie (Charlie)",
+		given_assigneePickerLine(false, "@me (Bob)"),
+		given_assigneePickerLine(true, "@alice (Alice)"),
+		given_assigneePickerLine(true, "@charlie (Charlie)"),
 		separatorLine,
-		"[ ] @dora (Dora)",
+		given_assigneePickerLine(false, "@dora (Dora)"),
 	})
 	then_noError(t, executeHandler(gui, searchView))
 
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "[x] @charlie (Charlie)") {
+	if strings.Contains(popupView.Buffer(), given_assigneePickerLine(true, "@charlie (Charlie)")) {
 		t.Fatalf("expected the selected assignee to stay selectable while another search is active, actual %q", popupView.Buffer())
 	}
 }
@@ -407,7 +407,7 @@ func TestAssigneePicker_GivenViewerMatchedOnlyByItsHiddenLogin_WhenPressingEnter
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "[x] @me (Louis Lin)") {
+	if !strings.Contains(popupView.Buffer(), given_assigneePickerLine(true, "@me (Louis Lin)")) {
 		t.Fatalf("expected the viewer row to toggle after pressing Enter, actual %q", popupView.Buffer())
 	}
 }
@@ -450,9 +450,9 @@ func TestAssigneePicker_GivenSearchResultSelected_WhenClearingTheQuery_ThenItKee
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[ ] @me (Bob)",
-		"[x] @alice (Alice)",
-		"[x] @charlie (Charlie)",
+		given_assigneePickerLine(false, "@me (Bob)"),
+		given_assigneePickerLine(true, "@alice (Alice)"),
+		given_assigneePickerLine(true, "@charlie (Charlie)"),
 	})
 }
 
@@ -682,6 +682,14 @@ func given_actionsPopupSeparatorLine(t *testing.T, popupView *gocui.View) string
 		t.Fatal("expected a popup view")
 	}
 	return strings.Repeat("─", popupView.InnerWidth())
+}
+
+func given_assigneePickerLine(selected bool, label string) string {
+	icon := iconCheckboxUnchecked
+	if selected {
+		icon = iconCheckboxChecked
+	}
+	return icon + " " + label
 }
 
 func then_actionsPopupFooterHintIsSet(t *testing.T, gui *gocui.Gui, expected string) {

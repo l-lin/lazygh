@@ -48,6 +48,8 @@ const (
 	iconUnavailable        = "󰌑"
 	iconMarkdownLink       = "󰌹"
 	iconMarkdownImage      = ""
+	iconCheckboxUnchecked  = "󰄱"
+	iconCheckboxChecked    = "󰱒"
 
 	iconNotificationPullRequest = iconPullRequest
 	iconNotificationIssue       = ""
