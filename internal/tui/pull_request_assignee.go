@@ -359,34 +359,7 @@ func (program *Program) currentAssigneePickerVisibleCandidatesForQuery(query str
 }
 
 func (program *Program) matchingAssigneePickerIndexes(query string) []int {
-	trimmedQuery := strings.TrimSpace(query)
-	actions := program.currentAssigneePickerActionsForQuery(trimmedQuery)
-	if trimmedQuery == "" {
-		return actionIndexes(len(actions))
-	}
-
-	searchResultLogins := map[string]bool{}
-	if program.assigneePickerVisible() && strings.TrimSpace(program.assigneePicker.searchQuery) == trimmedQuery {
-		for _, candidate := range program.assigneePicker.searchResults {
-			trimmedLogin := strings.ToLower(strings.TrimSpace(candidate.Login))
-			if trimmedLogin == "" {
-				continue
-			}
-			searchResultLogins[trimmedLogin] = true
-		}
-	}
-
-	matchingIndexes := make([]int, 0, len(actions))
-	for index, candidate := range program.currentAssigneePickerVisibleCandidatesForQuery(trimmedQuery) {
-		if index >= len(actions) {
-			break
-		}
-		trimmedLogin := strings.ToLower(strings.TrimSpace(candidate.Login))
-		if searchResultLogins[trimmedLogin] || actionsPopupActionMatchesQuery(actions[index], strings.ToLower(trimmedQuery)) {
-			matchingIndexes = append(matchingIndexes, index)
-		}
-	}
-	return matchingIndexes
+	return actionIndexes(len(program.currentAssigneePickerActionsForQuery(query)))
 }
 
 func (program *Program) currentPinnedAssigneePickerCandidates() []githubdomain.PullRequestAuthor {

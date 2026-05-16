@@ -118,6 +118,11 @@ func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatch
 	if strings.Contains(popupView.Buffer(), "@dora") {
 		t.Fatalf("expected the assignee picker to hide %q, actual %q", "@dora", popupView.Buffer())
 	}
+	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyCtrlN)
+	then_noError(t, moveDownHandler(gui, searchView))
+	then_noError(t, moveDownHandler(gui, searchView))
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
 	matchLineIndex := -1
 	for lineIndex := 0; ; lineIndex++ {
 		line, ok := popupView.Line(lineIndex)
@@ -218,12 +223,110 @@ func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStr
 	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyCtrlN)
 	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
 	then_noError(t, moveDownHandler(gui, searchView))
+	then_noError(t, moveDownHandler(gui, searchView))
 	then_noError(t, executeHandler(gui, searchView))
 
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Buffer(), "[x] @felixleopold (FELIX LEOPOLD)") {
+	if !strings.Contains(popupView.Buffer(), "[x] @dclaraLeo0808 (Clara Léonard)") {
 		t.Fatalf("expected the visible GitHub search result to toggle, actual %q", popupView.Buffer())
+	}
+}
+
+func TestAssigneePicker_GivenSearchQueryDoesNotMatchViewer_WhenPressingEnterImmediately_ThenItStillTogglesMe(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "char" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	then_noError(t, executeHandler(gui, searchView))
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "[x] @me (Bob)") {
+		t.Fatalf("expected @me to stay selectable even when the query does not match it, actual %q", popupView.Buffer())
+	}
+}
+
+func TestAssigneePicker_GivenSelectedSearchResult_WhenSearchingForAnotherAssignee_ThenItKeepsThatSelectedAssigneeVisibleAndSelectable(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	loader.searchAssignableUsers["acme/widgets|dora"] = []githubcli.PullRequestAuthor{{Login: "dora", Name: "Dora"}}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "char" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyCtrlN)
+	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	then_noError(t, moveDownHandler(gui, searchView))
+	then_noError(t, moveDownHandler(gui, searchView))
+	then_noError(t, executeHandler(gui, searchView))
+
+	if !subject.editActionsPopupSearch(searchView, gocui.KeyCtrlU, 0, gocui.ModNone) {
+		t.Fatal("expected ctrl+u to clear the assignee picker query")
+	}
+	for _, ch := range "dora" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[ ] @me (Bob)",
+		"[x] @alice (Alice)",
+		"[x] @charlie (Charlie)",
+		"[ ] @dora (Dora)",
+	})
+	then_noError(t, executeHandler(gui, searchView))
+
+	popupView, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Buffer(), "[x] @charlie (Charlie)") {
+		t.Fatalf("expected the selected assignee to stay selectable while another search is active, actual %q", popupView.Buffer())
 	}
 }
 
@@ -290,7 +393,10 @@ func TestAssigneePicker_GivenSearchResultSelected_WhenClearingTheQuery_ThenItKee
 	}
 	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
 
+	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyCtrlN)
 	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	then_noError(t, moveDownHandler(gui, searchView))
+	then_noError(t, moveDownHandler(gui, searchView))
 	then_noError(t, executeHandler(gui, searchView))
 	if !subject.editActionsPopupSearch(searchView, gocui.KeyCtrlU, 0, gocui.ModNone) {
 		t.Fatal("expected ctrl+u to clear the assignee picker query")
