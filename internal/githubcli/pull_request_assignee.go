@@ -112,16 +112,7 @@ func parseAssignableUserSearchResults(stdout []byte) ([]PullRequestAuthor, error
 }
 
 func normalizeAssignableUsers(users []PullRequestAuthor) []PullRequestAuthor {
-	normalizedUsers := make([]PullRequestAuthor, 0, len(users))
-	seenLogins := map[string]bool{}
-	for _, user := range users {
-		normalizedUser := user.normalized()
-		if normalizedUser.Login == "" || seenLogins[normalizedUser.Login] {
-			continue
-		}
-		seenLogins[normalizedUser.Login] = true
-		normalizedUsers = append(normalizedUsers, normalizedUser)
-	}
+	normalizedUsers := normalizeUniquePullRequestAuthors(users)
 	sort.SliceStable(normalizedUsers, func(i int, j int) bool {
 		return normalizedUsers[i].Login < normalizedUsers[j].Login
 	})
@@ -129,6 +120,10 @@ func normalizeAssignableUsers(users []PullRequestAuthor) []PullRequestAuthor {
 }
 
 func normalizeAssignableUserSearchResults(users []PullRequestAuthor) []PullRequestAuthor {
+	return normalizeUniquePullRequestAuthors(users)
+}
+
+func normalizeUniquePullRequestAuthors(users []PullRequestAuthor) []PullRequestAuthor {
 	normalizedUsers := make([]PullRequestAuthor, 0, len(users))
 	seenLogins := map[string]bool{}
 	for _, user := range users {
@@ -168,15 +163,19 @@ func searchAssignableUsersDisplayArgs(owner string, name string, query string) [
 }
 
 func normalizePullRequestAssigneeLogins(logins []string) []string {
-	normalizedLogins := make([]string, 0, len(logins))
-	seenLogins := map[string]bool{}
-	for _, login := range logins {
-		trimmedLogin := strings.TrimSpace(login)
-		if trimmedLogin == "" || seenLogins[trimmedLogin] {
+	return normalizeUniqueStrings(logins)
+}
+
+func normalizeUniqueStrings(values []string) []string {
+	normalizedValues := make([]string, 0, len(values))
+	seenValues := map[string]bool{}
+	for _, value := range values {
+		trimmedValue := strings.TrimSpace(value)
+		if trimmedValue == "" || seenValues[trimmedValue] {
 			continue
 		}
-		seenLogins[trimmedLogin] = true
-		normalizedLogins = append(normalizedLogins, trimmedLogin)
+		seenValues[trimmedValue] = true
+		normalizedValues = append(normalizedValues, trimmedValue)
 	}
-	return normalizedLogins
+	return normalizedValues
 }
