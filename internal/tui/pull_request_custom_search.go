@@ -14,7 +14,7 @@ const (
 	pullRequestCustomSearchLabel        = "Custom"
 	pullRequestCustomSearchActionTitle  = "Custom search"
 	pullRequestCustomSearchEditorTitle  = "Search PRs"
-	pullRequestCustomSearchEditorHeight = 5
+	pullRequestCustomSearchEditorHeight = lineModalEditorTotalHeight
 )
 
 func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.View) error {

@@ -63,7 +63,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpen
 	}
 }
 
-func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefillsTheActiveSearchCriteriaAndUsesFiveLines(t *testing.T) {
+func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefillsTheActiveSearchCriteriaAndUsesASingleInputLine(t *testing.T) {
 	subject := given_pullRequestCustomSearchProgram(&fakePullRequestDetailLoader{})
 	gui := given_headlessGuiWithSize(t, 120, 40)
 	defer gui.Close()
@@ -83,8 +83,8 @@ func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefill
 	}
 	_, y0, _, y1, actualErr := gui.ViewPosition(viewModalEditorName)
 	then_noError(t, actualErr)
-	if actual := y1 - y0 + 1; actual != 5 {
-		t.Fatalf("expected custom search popup height %d, actual %d", 5, actual)
+	if actual := y1 - y0 + 1; actual != 3 {
+		t.Fatalf("expected custom search popup height %d, actual %d", 3, actual)
 	}
 }
 
