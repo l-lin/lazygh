@@ -93,20 +93,19 @@ func (program *Program) currentActionsPopupVisibleLines() []actionsPopupVisibleL
 
 func (program *Program) currentAssigneePickerVisibleLines() []actionsPopupVisibleLine {
 	actions := program.currentActionsPopupActions()
-	pinnedCandidates := program.currentPinnedAssigneePickerCandidates()
-	otherCandidates := program.currentAssigneePickerSearchResultCandidatesForQuery(program.model.ActionsPopupSearchQuery())
+	sections := program.currentAssigneePickerCandidateSections(program.model.ActionsPopupSearchQuery())
 	visibleLines := make([]actionsPopupVisibleLine, 0, len(actions)+2)
-	for index := range pinnedCandidates {
+	for index := range sections.pinned {
 		if index >= len(actions) {
 			break
 		}
 		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: actions[index].label(), actionIndex: index, selectable: true})
 	}
-	if len(pinnedCandidates) > 0 && len(otherCandidates) > 0 {
+	if len(sections.pinned) > 0 && len(sections.searchResults) > 0 {
 		visibleLines = append(visibleLines, actionsPopupVisibleLine{separator: true})
 	}
-	for index := range otherCandidates {
-		actionIndex := len(pinnedCandidates) + index
+	for index := range sections.searchResults {
+		actionIndex := len(sections.pinned) + index
 		if actionIndex >= len(actions) {
 			break
 		}

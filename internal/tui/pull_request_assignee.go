@@ -45,6 +45,17 @@ type assigneePickerLoadState struct {
 	command string
 }
 
+type assigneePickerCandidateSections struct {
+	pinned        []githubdomain.PullRequestAuthor
+	searchResults []githubdomain.PullRequestAuthor
+}
+
+func (sections assigneePickerCandidateSections) visibleCandidates() []githubdomain.PullRequestAuthor {
+	visible := append([]githubdomain.PullRequestAuthor(nil), sections.pinned...)
+	visible = append(visible, sections.searchResults...)
+	return visible
+}
+
 func (program *Program) assigneePickerVisible() bool {
 	return program.assigneePicker != nil
 }
@@ -333,27 +344,37 @@ func (program *Program) currentAssigneePickerVisibleCandidates() []githubdomain.
 }
 
 func (program *Program) currentAssigneePickerVisibleCandidatesForQuery(query string) []githubdomain.PullRequestAuthor {
-	if !program.assigneePickerVisible() {
-		return nil
-	}
-
-	visible := append([]githubdomain.PullRequestAuthor(nil), program.currentPinnedAssigneePickerCandidates()...)
-	visible = append(visible, program.currentAssigneePickerSearchResultCandidatesForQuery(query)...)
-	return visible
+	return program.currentAssigneePickerCandidateSections(query).visibleCandidates()
 }
 
 func (program *Program) currentAssigneePickerSearchResultCandidatesForQuery(query string) []githubdomain.PullRequestAuthor {
+	return program.currentAssigneePickerCandidateSections(query).searchResults
+}
+
+func (program *Program) currentAssigneePickerCandidateSections(query string) assigneePickerCandidateSections {
 	if !program.assigneePickerVisible() {
+		return assigneePickerCandidateSections{}
+	}
+
+	pinnedCandidates := program.currentPinnedAssigneePickerCandidates()
+	return assigneePickerCandidateSections{
+		pinned:        pinnedCandidates,
+		searchResults: program.assigneePicker.searchResultCandidatesForQuery(query, pinnedCandidates),
+	}
+}
+
+func (state *assigneePickerState) searchResultCandidatesForQuery(query string, pinnedCandidates []githubdomain.PullRequestAuthor) []githubdomain.PullRequestAuthor {
+	if state == nil {
 		return nil
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
-	if trimmedQuery == "" || strings.TrimSpace(program.assigneePicker.searchQuery) != trimmedQuery {
+	if trimmedQuery == "" || strings.TrimSpace(state.searchQuery) != trimmedQuery {
 		return nil
 	}
 
 	seenLogins := map[string]bool{}
-	for _, candidate := range program.currentPinnedAssigneePickerCandidates() {
+	for _, candidate := range pinnedCandidates {
 		trimmedLogin := strings.TrimSpace(candidate.Login)
 		if trimmedLogin == "" {
 			continue
@@ -361,8 +382,8 @@ func (program *Program) currentAssigneePickerSearchResultCandidatesForQuery(quer
 		seenLogins[trimmedLogin] = true
 	}
 
-	searchResultCandidates := make([]githubdomain.PullRequestAuthor, 0, len(program.assigneePicker.searchResults))
-	for _, candidate := range program.assigneePicker.searchResults {
+	searchResultCandidates := make([]githubdomain.PullRequestAuthor, 0, len(state.searchResults))
+	for _, candidate := range state.searchResults {
 		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
 		if normalizedCandidate.Login == "" || seenLogins[normalizedCandidate.Login] {
 			continue
