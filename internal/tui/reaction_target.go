@@ -7,11 +7,20 @@ import (
 )
 
 type pullRequestReactionActionTarget struct {
-	repository     string
-	number         int
-	subjectID      string
-	reactionGroups []githubdomain.ReactionGroup
-	invalidateDiff bool
+	repository        string
+	number            int
+	subjectID         string
+	reactionGroups    []githubdomain.ReactionGroup
+	invalidateDiff    bool
+	actionsPopupGroup string
+}
+
+func (target pullRequestReactionActionTarget) popupGroup() string {
+	group := strings.TrimSpace(target.actionsPopupGroup)
+	if group != "" {
+		return group
+	}
+	return actionsPopupGroupReview
 }
 
 type reactionPickerState struct {
@@ -78,10 +87,11 @@ func (program *Program) selectedPullRequestReactionTargetFromSummary(summary git
 	}
 
 	return pullRequestReactionActionTarget{
-		repository:     repository,
-		number:         summary.Number,
-		subjectID:      strings.TrimSpace(result.detail.ID),
-		reactionGroups: append([]githubdomain.ReactionGroup(nil), result.detail.ReactionGroups...),
+		repository:        repository,
+		number:            summary.Number,
+		subjectID:         strings.TrimSpace(result.detail.ID),
+		reactionGroups:    append([]githubdomain.ReactionGroup(nil), result.detail.ReactionGroups...),
+		actionsPopupGroup: actionsPopupGroupPullRequest,
 	}, true
 }
 

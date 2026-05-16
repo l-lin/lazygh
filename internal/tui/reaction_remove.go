@@ -35,7 +35,7 @@ func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool
 		execute: func(_ *gocui.Gui) actionsPopupActionResult {
 			return program.executeRemoveReactionAction(target)
 		},
-	}, true
+	}.withGroup(target.popupGroup()), true
 }
 
 func (program *Program) executeRemoveReactionAction(target pullRequestReactionRemovalTarget) actionsPopupActionResult {

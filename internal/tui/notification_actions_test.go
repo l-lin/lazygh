@@ -253,7 +253,7 @@ func TestActionsPopup_GivenPullRequestNotificationDetailFocus_WhenOpening_ThenIt
 	then_noError(t, actualErr)
 	for _, expected := range []string{
 		"Start review",
-		"Review PR as story",
+		"Start review as story",
 		"Yank URL to clipboard",
 		"Open PR in browser",
 		"Refresh current PR information",
@@ -292,7 +292,7 @@ func TestActionsPopup_GivenPullRequestNotificationDetailFocusAndPendingReview_Wh
 	for _, expected := range []string{
 		"Start review",
 		"Cancel pending review",
-		"Review PR as story",
+		"Start review as story",
 		"Yank URL to clipboard",
 		"Open PR in browser",
 		"Refresh current PR information",

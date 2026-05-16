@@ -42,90 +42,35 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 		return nil
 	}
 
-	actions := []actionsPopupAction{}
-	if actionContext.IsReviewContext() {
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupPullRequest,
-				program.yankPullRequestURLActionsPopupAction(),
-				program.openPullRequestInBrowserActionsPopupAction(),
-				program.refreshPullRequestAction(),
-			)...,
-		)
-		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
-			actions = append(actions, assignAction.withGroup(actionsPopupGroupPullRequest))
-		}
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupReview,
-				program.submitPendingReviewApprovalAction(),
-				program.submitPendingReviewCommentAction(),
-				program.submitPendingReviewRequestChangesAction(),
-			)...,
-		)
-		if inlineCommentAction, ok := program.currentReviewInlineCommentAction(); ok {
-			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
-		}
-	} else {
-		pullRequestActions := []actionsPopupAction{program.startReviewAction()}
-		if cancelPendingReviewAction, ok := program.currentCancelPendingPullRequestReviewAction(); ok {
-			pullRequestActions = append(pullRequestActions, cancelPendingReviewAction)
-		}
-		pullRequestActions = append(pullRequestActions,
-			program.reviewStoryAction(),
-			program.yankPullRequestURLActionsPopupAction(),
-			program.openPullRequestInBrowserActionsPopupAction(),
-			program.openPullRequestByURLActionsPopupAction(),
-		)
-		if actionContext.ActiveView.Focus == FocusPullRequestsView {
-			pullRequestActions = append(pullRequestActions, program.pullRequestCustomSearchActionsPopupAction())
-		}
-		pullRequestActions = append(pullRequestActions,
-			program.refreshPullRequestAction(),
-			program.commendOnPrAction(),
-		)
-		actions = append(actions, actionsPopupGrouped(actionsPopupGroupPullRequest, pullRequestActions...)...)
-		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
-			actions = append(actions, assignAction.withGroup(actionsPopupGroupPullRequest))
-		}
-		if stateActions := program.currentPullRequestStageAndMergeActions(); len(stateActions) > 0 {
-			actions = append(actions, actionsPopupGrouped(actionsPopupGroupPullRequest, stateActions...)...)
-		}
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupPullRequest,
-				program.editPullRequestTitleAction(),
-				program.editPullRequestDescriptionAction(),
-			)...,
-		)
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupReview,
-				program.reviewApproveAction(),
-				program.reviewCommentAction(),
-				program.reviewRequestChangesAction(),
-			)...,
-		)
-		if inlineCommentAction, ok := program.currentBrowserChangesInlineCommentAction(); ok {
-			actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
-		}
-	}
+	reviewActions, pullRequestActions := program.currentPullRequestActionsPopupGroupActions(actionContext)
 	if reRequestReviewAction, ok := program.currentReRequestPullRequestReviewAction(); ok {
-		actions = append(actions, reRequestReviewAction.withGroup(actionsPopupGroupReview))
+		reviewActions = append(reviewActions, reRequestReviewAction)
 	}
 	if reactionAction, ok := program.currentReactionAction(); ok {
-		actions = append(actions, reactionAction.withGroup(actionsPopupGroupReview))
+		reviewActions, pullRequestActions = appendActionsPopupActionToMatchingGroup(reviewActions, pullRequestActions, reactionAction)
 	}
 	if reactionRemovalAction, ok := program.currentReactionRemovalAction(); ok {
-		actions = append(actions, reactionRemovalAction.withGroup(actionsPopupGroupReview))
+		reviewActions, pullRequestActions = appendActionsPopupActionToMatchingGroup(reviewActions, pullRequestActions, reactionRemovalAction)
 	}
 	for _, action := range program.currentPullRequestCommentEditActions() {
-		actions = append(actions, action.withGroup(actionsPopupGroupReview))
+		reviewActions = append(reviewActions, action)
 	}
 	if replyAction, ok := program.currentInlineCommentReplyAction(); ok {
-		actions = append(actions, replyAction.withGroup(actionsPopupGroupReview))
+		reviewActions = append(reviewActions, replyAction)
 	}
 	for _, action := range program.currentInlineCommentEditActions() {
-		actions = append(actions, action.withGroup(actionsPopupGroupReview))
+		reviewActions = append(reviewActions, action)
 	}
 	if inlineCommentAction, ok := program.currentInlineCommentResolutionAction(); ok {
-		actions = append(actions, inlineCommentAction.withGroup(actionsPopupGroupReview))
+		reviewActions = append(reviewActions, inlineCommentAction)
+	}
+
+	actions := make([]actionsPopupAction, 0, len(reviewActions)+len(pullRequestActions)+2)
+	if len(reviewActions) > 0 {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupReview, reviewActions...)...)
+	}
+	if len(pullRequestActions) > 0 {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupPullRequest, pullRequestActions...)...)
 	}
 	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
 		actions = append(actions,
@@ -139,6 +84,75 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
 	}
 	return actions
+}
+
+func (program *Program) currentPullRequestActionsPopupGroupActions(actionContext ActionContext) ([]actionsPopupAction, []actionsPopupAction) {
+	reviewActions := []actionsPopupAction{}
+	pullRequestActions := []actionsPopupAction{}
+	if actionContext.IsReviewContext() {
+		reviewActions = append(reviewActions,
+			program.submitPendingReviewApprovalAction(),
+			program.submitPendingReviewCommentAction(),
+			program.submitPendingReviewRequestChangesAction(),
+		)
+		if inlineCommentAction, ok := program.currentReviewInlineCommentAction(); ok {
+			reviewActions = append(reviewActions, inlineCommentAction)
+		}
+		pullRequestActions = append(pullRequestActions,
+			program.yankPullRequestURLActionsPopupAction(),
+			program.openPullRequestInBrowserActionsPopupAction(),
+			program.refreshPullRequestAction(),
+		)
+		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
+			pullRequestActions = append(pullRequestActions, assignAction)
+		}
+		return reviewActions, pullRequestActions
+	}
+
+	reviewActions = append(reviewActions,
+		program.startReviewAction(),
+		program.reviewStoryAction(),
+	)
+	if cancelPendingReviewAction, ok := program.currentCancelPendingPullRequestReviewAction(); ok {
+		reviewActions = append(reviewActions, cancelPendingReviewAction)
+	}
+	reviewActions = append(reviewActions,
+		program.reviewApproveAction(),
+		program.reviewCommentAction(),
+		program.reviewRequestChangesAction(),
+	)
+	if inlineCommentAction, ok := program.currentBrowserChangesInlineCommentAction(); ok {
+		reviewActions = append(reviewActions, inlineCommentAction)
+	}
+
+	pullRequestActions = append(pullRequestActions,
+		program.yankPullRequestURLActionsPopupAction(),
+		program.openPullRequestInBrowserActionsPopupAction(),
+		program.openPullRequestByURLActionsPopupAction(),
+	)
+	if actionContext.ActiveView.Focus == FocusPullRequestsView {
+		pullRequestActions = append(pullRequestActions, program.pullRequestCustomSearchActionsPopupAction())
+	}
+	pullRequestActions = append(pullRequestActions,
+		program.refreshPullRequestAction(),
+		program.commendOnPrAction(),
+	)
+	if assignAction, ok := program.currentAssignPullRequestAction(); ok {
+		pullRequestActions = append(pullRequestActions, assignAction)
+	}
+	pullRequestActions = append(pullRequestActions, program.currentPullRequestStageAndMergeActions()...)
+	pullRequestActions = append(pullRequestActions,
+		program.editPullRequestTitleAction(),
+		program.editPullRequestDescriptionAction(),
+	)
+	return reviewActions, pullRequestActions
+}
+
+func appendActionsPopupActionToMatchingGroup(reviewActions []actionsPopupAction, pullRequestActions []actionsPopupAction, action actionsPopupAction) ([]actionsPopupAction, []actionsPopupAction) {
+	if strings.TrimSpace(action.group) == actionsPopupGroupPullRequest {
+		return reviewActions, append(pullRequestActions, action)
+	}
+	return append(reviewActions, action.withGroup(actionsPopupGroupReview)), pullRequestActions
 }
 
 func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) {

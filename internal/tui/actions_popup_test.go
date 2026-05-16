@@ -43,7 +43,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingActionsPopupBindings_ThenAOpens
 	then_bindingDoesNotExist(t, actual, viewActionsPopupSearchName, gocui.KeyTab)
 }
 
-func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRequestReviewAndThemeActionsAndTakesFocus(t *testing.T) {
+func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedReviewPullRequestAndThemeActionsAndTakesFocus(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -61,9 +61,13 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		t.Fatalf("expected popup title to contain %q, actual %q", "Actions", popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"Pull request",
+		"Review",
 		actionsPopupLabel(actionsPopupStartReviewIcon, "Start review"),
-		actionsPopupLabel(actionsPopupReviewStoryIcon, reviewStoryActionTitle),
+		actionsPopupLabel(actionsPopupReviewStoryIcon, "Start review as story"),
+		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
+		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
+		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
+		"Pull request",
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
 		actionsPopupLabel(actionsPopupOpenPullRequestByURLIcon, "Open PR from URL"),
@@ -72,10 +76,6 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
-		"Review",
-		actionsPopupLabel(actionsPopupReviewApproveIcon, "Review: Approve PR"),
-		actionsPopupLabel(actionsPopupReviewCommentIcon, "Review: Comment on PR"),
-		actionsPopupLabel(actionsPopupReviewRequestChangesIcon, "Review: Request changes"),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 	})
@@ -96,7 +96,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedPullRe
 	then_viewExists(t, gui, viewActionsPopupSearchName)
 }
 
-func TestActionsPopup_GivenPullRequestLevelReactionAction_WhenOpening_ThenItKeepsAddReactionInsideTheReviewGroup(t *testing.T) {
+func TestActionsPopup_GivenPullRequestLevelReactionAction_WhenOpening_ThenItKeepsAddReactionInsideThePullRequestGroupAfterReview(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {ID: "PR_kwDOA", Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"},
@@ -116,22 +116,30 @@ func TestActionsPopup_GivenPullRequestLevelReactionAction_WhenOpening_ThenItKeep
 	then_noError(t, actualErr)
 	buffer := popupView.Buffer()
 	reviewHeaderCount := 0
+	pullRequestHeaderCount := 0
 	for _, line := range strings.Split(strings.TrimSpace(buffer), "\n") {
-		if strings.TrimSpace(line) == actionsPopupGroupReview {
+		switch strings.TrimSpace(line) {
+		case actionsPopupGroupReview:
 			reviewHeaderCount++
+		case actionsPopupGroupPullRequest:
+			pullRequestHeaderCount++
 		}
 	}
 	if reviewHeaderCount != 1 {
 		t.Fatalf("expected exactly one %q header, actual %d in %q", actionsPopupGroupReview, reviewHeaderCount, buffer)
 	}
+	if pullRequestHeaderCount != 1 {
+		t.Fatalf("expected exactly one %q header, actual %d in %q", actionsPopupGroupPullRequest, pullRequestHeaderCount, buffer)
+	}
 	reviewHeaderIndex := strings.Index(buffer, actionsPopupGroupReview)
+	pullRequestHeaderIndex := strings.Index(buffer, actionsPopupGroupPullRequest)
 	addReactionIndex := strings.Index(buffer, reactionPickerTitle)
 	themeHeaderIndex := strings.Index(buffer, actionsPopupGroupTheme)
-	if reviewHeaderIndex < 0 || addReactionIndex < 0 || themeHeaderIndex < 0 {
-		t.Fatalf("expected popup buffer to contain %q, %q, and %q, actual %q", actionsPopupGroupReview, reactionPickerTitle, actionsPopupGroupTheme, buffer)
+	if reviewHeaderIndex < 0 || pullRequestHeaderIndex < 0 || addReactionIndex < 0 || themeHeaderIndex < 0 {
+		t.Fatalf("expected popup buffer to contain %q, %q, %q, and %q, actual %q", actionsPopupGroupReview, actionsPopupGroupPullRequest, reactionPickerTitle, actionsPopupGroupTheme, buffer)
 	}
-	if !(reviewHeaderIndex < addReactionIndex && addReactionIndex < themeHeaderIndex) {
-		t.Fatalf("expected %q to stay inside the %q group before %q, actual %q", reactionPickerTitle, actionsPopupGroupReview, actionsPopupGroupTheme, buffer)
+	if !(reviewHeaderIndex < pullRequestHeaderIndex && pullRequestHeaderIndex < addReactionIndex && addReactionIndex < themeHeaderIndex) {
+		t.Fatalf("expected %q to stay inside the %q group after %q and before %q, actual %q", reactionPickerTitle, actionsPopupGroupPullRequest, actionsPopupGroupReview, actionsPopupGroupTheme, buffer)
 	}
 }
 
@@ -410,9 +418,10 @@ func TestActionsPopup_GivenSelectedPullRequestWithPendingReviewLoadingInBackgrou
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	startLineIndex := given_viewLineIndexContaining(t, popupView, "Start review")
+	storyLineIndex := given_viewLineIndexContaining(t, popupView, "Start review as story")
 	cancelLineIndex := given_viewLineIndexContaining(t, popupView, "Cancel pending review")
-	if cancelLineIndex != startLineIndex+1 {
-		t.Fatalf("expected cancel pending review to render right after start review, actual %q", popupView.Buffer())
+	if storyLineIndex != startLineIndex+1 || cancelLineIndex != storyLineIndex+1 {
+		t.Fatalf("expected start review and start review as story to stay on top before cancel pending review, actual %q", popupView.Buffer())
 	}
 	if !reflect.DeepEqual(loader.getPendingReviewCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected pending review lookup calls %v, actual %v", []string{"acme/widgets#42"}, loader.getPendingReviewCalls)

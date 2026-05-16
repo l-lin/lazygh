@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	reviewStoryActionTitle           = "Review PR as story"
+	reviewStoryActionTitle           = "Start review as story"
 	storyReviewConfigureAgentMessage = "configure `story_review.agent_command` in ~/.config/lazygh/config.toml before using story review"
 	storyReviewUnavailableMessage    = "story review is unavailable"
 )

@@ -20,10 +20,11 @@ func (program *Program) reactionPickerVisible() bool {
 }
 
 func (program *Program) currentReactionAction() (actionsPopupAction, bool) {
-	if _, ok := program.selectedPullRequestReactionActionTarget(); !ok {
+	target, ok := program.selectedPullRequestReactionActionTarget()
+	if !ok {
 		return actionsPopupAction{}, false
 	}
-	return program.addReactionAction(), true
+	return program.addReactionAction().withGroup(target.popupGroup()), true
 }
 
 func (program *Program) addReactionAction() actionsPopupAction {

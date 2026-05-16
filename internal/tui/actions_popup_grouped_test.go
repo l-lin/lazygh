@@ -93,10 +93,10 @@ func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAn
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_viewLineHasBackgroundColor(t, gui, viewActionsPopupName, 0, given_themeColorHex(t, theme.MarkdownHeadingBackgroundHex), "actions popup group header background")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, actionsPopupGroupPullRequest, given_themeColorHex(t, theme.ActionsPopupGroupForegroundHex), "actions popup group header foreground")
-	then_viewLineSegmentIsCenteredInView(t, gui, viewActionsPopupName, 0, actionsPopupGroupPullRequest)
-	if actual := strings.TrimSpace(popupView.BufferLines()[0]); actual != actionsPopupGroupPullRequest {
-		t.Fatalf("expected grouped header %q, actual %q", actionsPopupGroupPullRequest, actual)
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, actionsPopupGroupReview, given_themeColorHex(t, theme.ActionsPopupGroupForegroundHex), "actions popup group header foreground")
+	then_viewLineSegmentIsCenteredInView(t, gui, viewActionsPopupName, 0, actionsPopupGroupReview)
+	if actual := strings.TrimSpace(popupView.BufferLines()[0]); actual != actionsPopupGroupReview {
+		t.Fatalf("expected grouped header %q, actual %q", actionsPopupGroupReview, actual)
 	}
 	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewActionsPopupName, 0, 0, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "actions popup group header selected background")
 }
@@ -115,7 +115,7 @@ func TestActionsPopup_GivenADarkBundledTheme_WhenRenderingGroupedHeaders_ThenItU
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, actionsPopupGroupPullRequest, given_themeColorHex(t, theme.MarkdownHeadingHex), "actions popup group header preset foreground")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, actionsPopupGroupReview, given_themeColorHex(t, theme.MarkdownHeadingHex), "actions popup group header preset foreground")
 }
 
 func TestActionsPopup_GivenNoPersistentCache_WhenOpening_ThenItHidesTheClearCacheAction(t *testing.T) {
