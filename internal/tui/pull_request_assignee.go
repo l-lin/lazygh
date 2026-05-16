@@ -226,7 +226,7 @@ func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID in
 		program.assigneePicker.searchQuery = trimmedQuery
 		if err != nil {
 			program.assigneePicker.searchResults = nil
-			program.actionsPopupErrorMessage = strings.TrimSpace(err.Error())
+			program.actionsPopupErrorMessage = strings.TrimSpace(normalizedAssigneePickerError(err).Error())
 			program.syncActionsPopupSearch()
 			return program.refreshViews(gui)
 		}
@@ -590,8 +590,11 @@ func normalizedAssigneePickerError(err error) error {
 	}
 
 	message := strings.TrimSpace(err.Error())
-	message = strings.TrimPrefix(message, "run `gh pr edit`:")
-	message = strings.TrimSpace(message)
+	if strings.HasPrefix(message, "run `") {
+		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
+			message = strings.TrimSpace(message[separatorIndex+1:])
+		}
+	}
 	if strings.HasPrefix(message, "exit status ") {
 		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
 			message = strings.TrimSpace(message[separatorIndex+1:])

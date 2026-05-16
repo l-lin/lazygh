@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -132,6 +133,43 @@ func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatch
 		t.Fatalf("expected a visible assignee line containing %q, actual %q", "@charlie", strings.Join(popupView.BufferLines(), "\n"))
 	}
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, matchLineIndex, "char")
+}
+
+func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_ThenItKeepsTheCommandOutOfThePopupTitle(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	loader.searchAssignableUserErr = errors.New("run `gh api graphql -F owner=acme -F name=widgets -F first=20 -F search=char`: exit status 1: Field 'isBot' doesn't exist on type 'User'")
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "char" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if strings.Contains(popupView.Title, "gh api graphql") {
+		t.Fatalf("expected popup title to hide the gh command, actual %q", popupView.Title)
+	}
+	if !strings.Contains(popupView.Title, "Field 'isBot' doesn't exist on type 'User'") {
+		t.Fatalf("expected popup title to contain the stripped error, actual %q", popupView.Title)
+	}
 }
 
 func TestAssigneePicker_GivenSearchResultSelected_WhenClearingTheQuery_ThenItKeepsTheToggledAssigneeVisible(t *testing.T) {
