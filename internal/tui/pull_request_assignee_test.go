@@ -172,6 +172,43 @@ func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_
 	}
 }
 
+func TestAssigneePicker_GivenViewerMatchedOnlyByItsHiddenLogin_WhenPressingEnter_ThenItTogglesMe(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	loader.searchAssignableUsers["acme/widgets|l-lin"] = []githubcli.PullRequestAuthor{{Login: "l-lin", Name: "Louis Lin"}}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "l-lin"
+	subject.connectedUserName = "Louis Lin"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
+	then_noError(t, actualErr)
+	for _, ch := range "l-lin" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	then_noError(t, executeHandler(gui, searchView))
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), "[x] @me (Louis Lin)") {
+		t.Fatalf("expected the viewer row to toggle after pressing Enter, actual %q", popupView.Buffer())
+	}
+}
+
 func TestAssigneePicker_GivenSearchResultSelected_WhenClearingTheQuery_ThenItKeepsTheToggledAssigneeVisible(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	asyncRunner := &capturingAsyncRunner{}

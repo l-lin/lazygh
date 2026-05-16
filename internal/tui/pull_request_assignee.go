@@ -313,8 +313,9 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 	for _, candidate := range candidates {
 		candidate := candidate
 		actions = append(actions, actionsPopupAction{
-			id:    "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
-			title: program.assigneePickerLabel(candidate),
+			id:       "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
+			title:    program.assigneePickerLabel(candidate),
+			keywords: program.assigneePickerSearchKeywords(candidate),
 			execute: func(_ *gocui.Gui) actionsPopupActionResult {
 				return program.toggleAssigneePickerSelection(candidate)
 			},
@@ -419,6 +420,20 @@ func assigneePickerCandidatePriority(login string, selectedLogins map[string]boo
 	default:
 		return 2
 	}
+}
+
+func (program *Program) assigneePickerSearchKeywords(candidate githubdomain.PullRequestAuthor) []string {
+	if !program.assigneePickerVisible() {
+		return nil
+	}
+
+	trimmedLogin := strings.TrimSpace(candidate.Login)
+	trimmedName := strings.TrimSpace(candidate.Name)
+	keywords := filterEmptyStrings([]string{trimmedLogin, "@" + trimmedLogin, trimmedName})
+	if trimmedLogin != "" && trimmedLogin == program.assigneePicker.viewerLogin {
+		keywords = append(keywords, "@me")
+	}
+	return keywords
 }
 
 func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAuthor) string {
