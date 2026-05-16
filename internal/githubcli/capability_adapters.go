@@ -206,6 +206,14 @@ func (adapter *PullRequestMutationAdapter) ListAssignableUsers(repository string
 	return ToDomainPullRequestAuthors(authors), nil
 }
 
+func (adapter *PullRequestMutationAdapter) SearchAssignableUsers(repository string, query string) ([]githubdomain.PullRequestAuthor, error) {
+	authors, err := adapter.service.SearchAssignableUsers(repository, query)
+	if err != nil {
+		return nil, err
+	}
+	return ToDomainPullRequestAuthors(authors), nil
+}
+
 func (adapter *PullRequestMutationAdapter) UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error {
 	return adapter.service.UpdatePullRequestAssignees(repository, number, addLogins, removeLogins)
 }

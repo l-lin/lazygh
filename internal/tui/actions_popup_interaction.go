@@ -309,7 +309,15 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 	}
 
 	program.clearActionsPopupPendingConfirmation()
-	program.updateActionsPopupSearch(program.actionsPopupSearchEditor.Text())
+	query := program.actionsPopupSearchEditor.Text()
+	requestID := 0
+	if program.assigneePickerVisible() {
+		requestID = program.resetAssigneePickerSearch(query)
+	}
+	program.updateActionsPopupSearch(query)
+	if program.assigneePickerVisible() {
+		program.queueAssigneePickerSearch(program.gui, requestID, query)
+	}
 	program.actionsPopupErrorMessage = ""
 	if program.gui != nil {
 		_ = program.refreshViews(program.gui)

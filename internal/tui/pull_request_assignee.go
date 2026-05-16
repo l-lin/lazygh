@@ -2,9 +2,9 @@ package tui
 
 import (
 	"errors"
-	"maps"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jesseduffield/gocui"
 
@@ -14,10 +14,11 @@ import (
 const (
 	assignPullRequestActionTitle              = "Assign PR"
 	assigneePickerTitle                       = "Select assignees"
+	assigneePickerSearchFooterHint            = "Type to search"
 	pullRequestAssigneesUpdatedSuccessMessage = "PR assignees updated"
+	assigneePickerSearchResultLimit           = 20
+	defaultAssigneePickerSearchDebounceDelay  = 250 * time.Millisecond
 )
-
-var errNoAssignableUsers = errors.New("no assignable users available")
 
 type pullRequestAssigneePickerTarget struct {
 	repository string
@@ -27,10 +28,16 @@ type pullRequestAssigneePickerTarget struct {
 
 type assigneePickerState struct {
 	target                 pullRequestAssigneePickerTarget
-	candidates             []githubdomain.PullRequestAuthor
 	selectedLogins         map[string]bool
 	originalSelectedLogins map[string]bool
+	knownCandidates        map[string]githubdomain.PullRequestAuthor
 	viewerLogin            string
+	viewerName             string
+	searchQuery            string
+	searchResults          []githubdomain.PullRequestAuthor
+	searchLoading          bool
+	searchCommand          string
+	searchRequestID        int
 }
 
 type assigneePickerLoadState struct {
@@ -43,7 +50,7 @@ func (program *Program) assigneePickerVisible() bool {
 }
 
 func (program *Program) assigneePickerLoading() bool {
-	return program != nil && program.assigneePickerLoad != nil
+	return program != nil && program.assigneePicker != nil && program.assigneePicker.searchLoading
 }
 
 func (program *Program) currentAssignPullRequestAction() (actionsPopupAction, bool) {
@@ -70,171 +77,193 @@ func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) actionsP
 	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if candidates, ok := program.cachedAssignableUsers(target.repository); ok {
-		return program.openAssigneePickerWithCandidates(target, candidates)
-	}
-	if err := program.startAssigneePickerLoad(gui, target); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
+
+	program.openAssigneePicker(target)
+	program.startAssigneePickerWarmup(gui)
 	return actionsPopupActionResult{}
 }
 
-func (program *Program) startAssigneePickerLoad(gui *gocui.Gui, target pullRequestAssigneePickerTarget) error {
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if program.assigneePickerLoading() {
-		return nil
-	}
-	if candidates, ok := program.cachedAssignableUsers(target.repository); ok {
-		result := program.openAssigneePickerWithCandidates(target, candidates)
-		return program.handleActionsPopupActionResult(gui, result)
-	}
-
-	program.feedbackMessage = ""
-	program.assigneePicker = nil
-	program.assigneePickerLoad = &assigneePickerLoadState{target: target, command: formatAssignableUsersCommand(target.repository)}
+func (program *Program) openAssigneePicker(target pullRequestAssigneePickerTarget) {
+	program.assigneePicker = newAssigneePickerState(target, program.currentConnectedUserLogin(), program.currentConnectedUserName())
 	program.actionsPopupSearchEditor = nil
 	program.actionsPopupErrorMessage = ""
-	program.model.OpenActionsPopup(1)
-	program.asyncRunner.Go(func() {
-		program.loadAssigneePicker(gui, target)
-	})
-	return program.refreshViewsIfGUI(gui)
+	program.model.OpenActionsPopup(program.currentAssigneePickerActionCount())
+	program.updateActionsPopupSearch("")
 }
 
-func (program *Program) loadAssigneePicker(gui *gocui.Gui, target pullRequestAssigneePickerTarget) {
-	candidates, err := program.pullRequestMutations.ListAssignableUsers(target.repository)
-	if err == nil {
-		program.storeAssignableUsers(target.repository, candidates)
+func (program *Program) currentAssigneePickerActionCount() int {
+	actionCount := len(program.currentActionsPopupActions())
+	if actionCount > 0 {
+		return actionCount
 	}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		if !program.assigneePickerLoadMatches(target) {
-			return nil
-		}
-
-		program.assigneePickerLoad = nil
-		if err != nil {
-			program.assigneePicker = nil
-			program.actionsPopupSearchEditor = nil
-			program.actionsPopupErrorMessage = strings.TrimSpace(err.Error())
-			program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
-			return program.refreshViews(gui)
-		}
-
-		return program.handleActionsPopupActionResult(gui, program.openAssigneePickerWithCandidates(target, candidates))
-	})
+	return 1
 }
 
-func (program *Program) openAssigneePickerWithCandidates(target pullRequestAssigneePickerTarget, candidates []githubdomain.PullRequestAuthor) actionsPopupActionResult {
-	picker, err := newAssigneePickerState(target, candidates, program.currentConnectedUserLogin())
-	if err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-
-	program.assigneePickerLoad = nil
-	program.assigneePicker = picker
-	program.actionsPopupSearchEditor = nil
-	program.actionsPopupErrorMessage = ""
-	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
-	return actionsPopupActionResult{}
-}
-
-func newAssigneePickerState(target pullRequestAssigneePickerTarget, candidates []githubdomain.PullRequestAuthor, viewerLogin string) (*assigneePickerState, error) {
+func newAssigneePickerState(target pullRequestAssigneePickerTarget, viewerLogin string, viewerName string) *assigneePickerState {
 	selectedLogins := map[string]bool{}
+	knownCandidates := map[string]githubdomain.PullRequestAuthor{}
 	for _, assignee := range target.assignees {
-		trimmedLogin := strings.TrimSpace(assignee.Login)
-		if trimmedLogin == "" {
+		normalizedCandidate := normalizedAssigneePickerCandidate(assignee)
+		if normalizedCandidate.Login == "" {
 			continue
 		}
-		selectedLogins[trimmedLogin] = true
+		selectedLogins[normalizedCandidate.Login] = true
+		knownCandidates[normalizedCandidate.Login] = normalizedCandidate
 	}
 
-	mergedCandidates := mergedAssigneePickerCandidates(target.assignees, candidates)
-	if len(mergedCandidates) == 0 {
-		return nil, errNoAssignableUsers
-	}
 	viewerLogin = strings.TrimSpace(viewerLogin)
-	sortAssigneePickerCandidates(mergedCandidates, selectedLogins, viewerLogin)
+	viewerName = strings.TrimSpace(viewerName)
+	if viewerLogin != "" {
+		knownCandidates[viewerLogin] = normalizedAssigneePickerCandidate(githubdomain.PullRequestAuthor{Login: viewerLogin, Name: viewerName})
+	}
 
 	originalSelectedLogins := map[string]bool{}
-	maps.Copy(originalSelectedLogins, selectedLogins)
+	for login, selected := range selectedLogins {
+		originalSelectedLogins[login] = selected
+	}
 
 	return &assigneePickerState{
 		target:                 target,
-		candidates:             mergedCandidates,
 		selectedLogins:         selectedLogins,
 		originalSelectedLogins: originalSelectedLogins,
+		knownCandidates:        knownCandidates,
 		viewerLogin:            viewerLogin,
-	}, nil
-}
-
-func mergedAssigneePickerCandidates(currentAssignees []githubdomain.PullRequestAuthor, assignableUsers []githubdomain.PullRequestAuthor) []githubdomain.PullRequestAuthor {
-	mergedCandidates := make([]githubdomain.PullRequestAuthor, 0, len(currentAssignees)+len(assignableUsers))
-	seenLogins := map[string]bool{}
-	for _, candidate := range append(append([]githubdomain.PullRequestAuthor(nil), currentAssignees...), assignableUsers...) {
-		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
-		if normalizedCandidate.Login == "" || seenLogins[normalizedCandidate.Login] {
-			continue
-		}
-		seenLogins[normalizedCandidate.Login] = true
-		mergedCandidates = append(mergedCandidates, normalizedCandidate)
+		viewerName:             viewerName,
+		searchQuery:            "",
+		searchResults:          nil,
 	}
-	return mergedCandidates
 }
 
-func sortAssigneePickerCandidates(candidates []githubdomain.PullRequestAuthor, selectedLogins map[string]bool, viewerLogin string) {
-	sort.SliceStable(candidates, func(i int, j int) bool {
-		left := candidates[i]
-		right := candidates[j]
-		leftPriority := assigneePickerCandidatePriority(strings.TrimSpace(left.Login), selectedLogins, viewerLogin)
-		rightPriority := assigneePickerCandidatePriority(strings.TrimSpace(right.Login), selectedLogins, viewerLogin)
-		if leftPriority != rightPriority {
-			return leftPriority < rightPriority
+func (program *Program) startAssigneePickerWarmup(gui *gocui.Gui) {
+	if !program.assigneePickerVisible() || !program.hasPullRequestMutations() {
+		return
+	}
+
+	requestID := program.resetAssigneePickerSearch("")
+	program.markAssigneePickerSearchLoading("")
+	program.asyncRunner.Go(func() {
+		program.performAssigneePickerSearch(gui, requestID, "")
+	})
+	_ = program.refreshViewsIfGUI(gui)
+}
+
+func (program *Program) resetAssigneePickerSearch(query string) int {
+	if !program.assigneePickerVisible() {
+		return 0
+	}
+
+	trimmedQuery := strings.TrimSpace(query)
+	program.assigneePicker.searchRequestID++
+	program.assigneePicker.searchQuery = trimmedQuery
+	program.assigneePicker.searchResults = nil
+	program.assigneePicker.searchLoading = false
+	program.assigneePicker.searchCommand = ""
+	return program.assigneePicker.searchRequestID
+}
+
+func (program *Program) queueAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
+	if !program.assigneePickerVisible() || !program.hasPullRequestMutations() {
+		return
+	}
+
+	trimmedQuery := strings.TrimSpace(query)
+	if requestID <= 0 || trimmedQuery == "" {
+		return
+	}
+
+	delay := program.assigneePickerSearchDebounceDelay
+	program.asyncRunner.Go(func() {
+		if delay > 0 {
+			timer := time.NewTimer(delay)
+			defer timer.Stop()
+			<-timer.C
 		}
-		return strings.TrimSpace(left.Login) < strings.TrimSpace(right.Login)
+
+		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+			if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
+				return nil
+			}
+			program.markAssigneePickerSearchLoading(trimmedQuery)
+			return program.refreshViews(gui)
+		})
+		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
+			return
+		}
+		program.performAssigneePickerSearch(gui, requestID, trimmedQuery)
 	})
 }
 
-func assigneePickerCandidatePriority(login string, selectedLogins map[string]bool, viewerLogin string) int {
-	switch {
-	case login != "" && login == viewerLogin:
-		return 0
-	case selectedLogins[login]:
-		return 1
-	default:
-		return 2
-	}
-}
-
-func (program *Program) cachedAssignableUsers(repository string) ([]githubdomain.PullRequestAuthor, bool) {
-	if program == nil || len(program.assignableUsersCache) == 0 {
-		return nil, false
-	}
-	candidates, ok := program.assignableUsersCache[strings.TrimSpace(repository)]
-	if !ok {
-		return nil, false
-	}
-	return append([]githubdomain.PullRequestAuthor(nil), candidates...), true
-}
-
-func (program *Program) storeAssignableUsers(repository string, candidates []githubdomain.PullRequestAuthor) {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || trimmedRepository == "-" {
+func (program *Program) markAssigneePickerSearchLoading(query string) {
+	if !program.assigneePickerVisible() {
 		return
 	}
-	if program.assignableUsersCache == nil {
-		program.assignableUsersCache = map[string][]githubdomain.PullRequestAuthor{}
-	}
-	program.assignableUsersCache[trimmedRepository] = append([]githubdomain.PullRequestAuthor(nil), candidates...)
+
+	program.assigneePicker.searchLoading = true
+	program.assigneePicker.searchCommand = formatAssigneeSearchCommand(program.assigneePicker.target.repository, query)
 }
 
-func (program *Program) assigneePickerLoadMatches(target pullRequestAssigneePickerTarget) bool {
-	if !program.assigneePickerLoading() {
+func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query string) bool {
+	if !program.assigneePickerVisible() {
 		return false
 	}
-	return strings.TrimSpace(program.assigneePickerLoad.target.repository) == strings.TrimSpace(target.repository) && program.assigneePickerLoad.target.number == target.number
+	if program.assigneePicker.searchRequestID != requestID {
+		return false
+	}
+	return strings.TrimSpace(program.model.ActionsPopupSearchQuery()) == strings.TrimSpace(query)
+}
+
+func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
+	trimmedQuery := strings.TrimSpace(query)
+	results, err := program.pullRequestMutations.SearchAssignableUsers(program.assigneePicker.target.repository, trimmedQuery)
+
+	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
+			return nil
+		}
+
+		program.assigneePicker.searchLoading = false
+		program.assigneePicker.searchCommand = ""
+		program.assigneePicker.searchQuery = trimmedQuery
+		if err != nil {
+			program.assigneePicker.searchResults = nil
+			program.actionsPopupErrorMessage = strings.TrimSpace(err.Error())
+			program.syncActionsPopupSearch()
+			return program.refreshViews(gui)
+		}
+
+		program.assigneePicker.rememberCandidates(results)
+		program.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), results...)
+		program.actionsPopupErrorMessage = ""
+		program.syncActionsPopupSearch()
+		return program.refreshViews(gui)
+	})
+}
+
+func (state *assigneePickerState) rememberCandidates(candidates []githubdomain.PullRequestAuthor) {
+	if state == nil {
+		return
+	}
+	if state.knownCandidates == nil {
+		state.knownCandidates = map[string]githubdomain.PullRequestAuthor{}
+	}
+
+	for _, candidate := range candidates {
+		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
+		if normalizedCandidate.Login == "" {
+			continue
+		}
+		existing := state.knownCandidates[normalizedCandidate.Login]
+		if normalizedCandidate.Name == "" {
+			normalizedCandidate.Name = existing.Name
+		}
+		if normalizedCandidate.Name == "" && normalizedCandidate.Login == state.viewerLogin {
+			normalizedCandidate.Name = state.viewerName
+		}
+		state.knownCandidates[normalizedCandidate.Login] = normalizedCandidate
+		if normalizedCandidate.Login == state.viewerLogin && normalizedCandidate.Name != "" {
+			state.viewerName = normalizedCandidate.Name
+		}
+	}
 }
 
 func (program *Program) selectedPullRequestAssigneePickerTarget() (pullRequestAssigneePickerTarget, bool) {
@@ -279,8 +308,10 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 		return nil
 	}
 
-	actions := make([]actionsPopupAction, 0, len(program.assigneePicker.candidates))
-	for _, candidate := range program.assigneePicker.candidates {
+	candidates := program.currentAssigneePickerVisibleCandidates()
+	actions := make([]actionsPopupAction, 0, len(candidates))
+	for _, candidate := range candidates {
+		candidate := candidate
 		actions = append(actions, actionsPopupAction{
 			id:    "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
 			title: program.assigneePickerLabel(candidate),
@@ -290,6 +321,104 @@ func (program *Program) currentAssigneePickerActions() []actionsPopupAction {
 		})
 	}
 	return actions
+}
+
+func (program *Program) currentAssigneePickerVisibleCandidates() []githubdomain.PullRequestAuthor {
+	if !program.assigneePickerVisible() {
+		return nil
+	}
+
+	visible := program.currentPinnedAssigneePickerCandidates()
+	trimmedQuery := strings.TrimSpace(program.model.ActionsPopupSearchQuery())
+	if trimmedQuery == "" || strings.TrimSpace(program.assigneePicker.searchQuery) != trimmedQuery {
+		return visible
+	}
+
+	seenLogins := map[string]bool{}
+	for _, candidate := range visible {
+		seenLogins[strings.TrimSpace(candidate.Login)] = true
+	}
+	for _, candidate := range program.assigneePicker.searchResults {
+		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
+		if normalizedCandidate.Login == "" || seenLogins[normalizedCandidate.Login] {
+			continue
+		}
+		seenLogins[normalizedCandidate.Login] = true
+		visible = append(visible, normalizedCandidate)
+	}
+	return visible
+}
+
+func (program *Program) currentPinnedAssigneePickerCandidates() []githubdomain.PullRequestAuthor {
+	if !program.assigneePickerVisible() {
+		return nil
+	}
+
+	logins := make([]string, 0, len(program.assigneePicker.selectedLogins)+1)
+	for login := range program.assigneePicker.selectedLogins {
+		trimmedLogin := strings.TrimSpace(login)
+		if trimmedLogin == "" {
+			continue
+		}
+		logins = append(logins, trimmedLogin)
+	}
+	if viewerLogin := strings.TrimSpace(program.assigneePicker.viewerLogin); viewerLogin != "" && !program.assigneePicker.selectedLogins[viewerLogin] {
+		logins = append(logins, viewerLogin)
+	}
+	if len(logins) == 0 {
+		return nil
+	}
+
+	candidates := make([]githubdomain.PullRequestAuthor, 0, len(logins))
+	seenLogins := map[string]bool{}
+	for _, login := range logins {
+		trimmedLogin := strings.TrimSpace(login)
+		if trimmedLogin == "" || seenLogins[trimmedLogin] {
+			continue
+		}
+		seenLogins[trimmedLogin] = true
+		candidates = append(candidates, program.assigneePicker.candidateForLogin(trimmedLogin))
+	}
+	sortAssigneePickerCandidates(candidates, program.assigneePicker.selectedLogins, program.assigneePicker.viewerLogin)
+	return candidates
+}
+
+func (state *assigneePickerState) candidateForLogin(login string) githubdomain.PullRequestAuthor {
+	trimmedLogin := strings.TrimSpace(login)
+	if trimmedLogin == "" {
+		return githubdomain.PullRequestAuthor{}
+	}
+
+	candidate := normalizedAssigneePickerCandidate(state.knownCandidates[trimmedLogin])
+	candidate.Login = trimmedLogin
+	if candidate.Name == "" && trimmedLogin == state.viewerLogin {
+		candidate.Name = strings.TrimSpace(state.viewerName)
+	}
+	return candidate
+}
+
+func sortAssigneePickerCandidates(candidates []githubdomain.PullRequestAuthor, selectedLogins map[string]bool, viewerLogin string) {
+	sort.SliceStable(candidates, func(i int, j int) bool {
+		left := candidates[i]
+		right := candidates[j]
+		leftPriority := assigneePickerCandidatePriority(strings.TrimSpace(left.Login), selectedLogins, viewerLogin)
+		rightPriority := assigneePickerCandidatePriority(strings.TrimSpace(right.Login), selectedLogins, viewerLogin)
+		if leftPriority != rightPriority {
+			return leftPriority < rightPriority
+		}
+		return strings.TrimSpace(left.Login) < strings.TrimSpace(right.Login)
+	})
+}
+
+func assigneePickerCandidatePriority(login string, selectedLogins map[string]bool, viewerLogin string) int {
+	switch {
+	case login != "" && login == viewerLogin:
+		return 0
+	case selectedLogins[login]:
+		return 1
+	default:
+		return 2
+	}
 }
 
 func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAuthor) string {
@@ -308,6 +437,9 @@ func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAu
 		identityLabel = "@me"
 	}
 	trimmedName := strings.TrimSpace(candidate.Name)
+	if trimmedName == "" && trimmedLogin == program.assigneePicker.viewerLogin {
+		trimmedName = strings.TrimSpace(program.assigneePicker.viewerName)
+	}
 	if trimmedName == "" && trimmedLogin == program.assigneePicker.viewerLogin {
 		trimmedName = trimmedLogin
 	}
@@ -334,6 +466,7 @@ func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.Pul
 	} else {
 		program.assigneePicker.selectedLogins[trimmedLogin] = true
 	}
+	program.assigneePicker.rememberCandidates([]githubdomain.PullRequestAuthor{candidate})
 	return actionsPopupActionResult{}
 }
 
@@ -353,9 +486,70 @@ func (program *Program) executeSubmitAssigneePickerAction(_ *gocui.Gui) actionsP
 		return actionsPopupActionResult{err: normalizedAssigneePickerError(err)}
 	}
 
-	program.invalidatePullRequestDetail(program.assigneePicker.target.repository, program.assigneePicker.target.number)
+	program.optimisticallyUpdatePullRequestAssignees(program.assigneePicker.target.repository, program.assigneePicker.target.number, addLogins, removeLogins)
 	program.setFeedback(program.model.Focus(), pullRequestAssigneesUpdatedSuccessMessage)
 	return actionsPopupActionResult{closePopup: true}
+}
+
+func (program *Program) optimisticallyUpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) {
+	if program == nil {
+		return
+	}
+
+	key := pullRequestMutationCacheKey(repository, number)
+	if key == "" {
+		return
+	}
+
+	identity := githubdomain.PullRequest{Repository: githubdomain.Repository{NameWithOwner: strings.TrimSpace(repository)}, Number: number}
+	result, ok := program.pullRequestDetailCache[key]
+	if !ok || result.err != nil {
+		result = pullRequestDetailResult{detail: program.optimisticPullRequestDetailSeed(identity)}
+	}
+
+	updatedAssignees := append([]githubdomain.PullRequestAuthor(nil), result.detail.Assignees...)
+	for _, login := range removeLogins {
+		trimmedLogin := strings.TrimSpace(login)
+		if trimmedLogin == "" {
+			continue
+		}
+		filteredAssignees := updatedAssignees[:0]
+		for _, assignee := range updatedAssignees {
+			if strings.TrimSpace(assignee.Login) == trimmedLogin {
+				continue
+			}
+			filteredAssignees = append(filteredAssignees, assignee)
+		}
+		updatedAssignees = filteredAssignees
+	}
+	for _, login := range addLogins {
+		trimmedLogin := strings.TrimSpace(login)
+		if trimmedLogin == "" {
+			continue
+		}
+		alreadyAssigned := false
+		for _, assignee := range updatedAssignees {
+			if strings.TrimSpace(assignee.Login) == trimmedLogin {
+				alreadyAssigned = true
+				break
+			}
+		}
+		if alreadyAssigned {
+			continue
+		}
+		candidate := githubdomain.PullRequestAuthor{Login: trimmedLogin}
+		if program.assigneePickerVisible() {
+			candidate = program.assigneePicker.candidateForLogin(trimmedLogin)
+		}
+		updatedAssignees = append(updatedAssignees, normalizedAssigneePickerCandidate(candidate))
+	}
+
+	result.detail.Assignees = updatedAssignees
+	result.sourceUpdatedAt = ""
+	result.needsRefresh = true
+	program.pullRequestDetailCache[key] = result
+	program.invalidatePullRequestDetailDocumentCache()
+	program.invalidatePersistentPullRequest(repository, number)
 }
 
 func (state *assigneePickerState) selectedDiff() ([]string, []string) {
@@ -365,20 +559,22 @@ func (state *assigneePickerState) selectedDiff() ([]string, []string) {
 
 	addLogins := make([]string, 0)
 	removeLogins := make([]string, 0)
-	for _, candidate := range state.candidates {
-		trimmedLogin := strings.TrimSpace(candidate.Login)
-		if trimmedLogin == "" {
+	for login := range state.selectedLogins {
+		trimmedLogin := strings.TrimSpace(login)
+		if trimmedLogin == "" || state.originalSelectedLogins[trimmedLogin] {
 			continue
 		}
-		selectedNow := state.selectedLogins[trimmedLogin]
-		selectedOriginally := state.originalSelectedLogins[trimmedLogin]
-		switch {
-		case selectedNow && !selectedOriginally:
-			addLogins = append(addLogins, trimmedLogin)
-		case selectedOriginally && !selectedNow:
-			removeLogins = append(removeLogins, trimmedLogin)
-		}
+		addLogins = append(addLogins, trimmedLogin)
 	}
+	for login := range state.originalSelectedLogins {
+		trimmedLogin := strings.TrimSpace(login)
+		if trimmedLogin == "" || state.selectedLogins[trimmedLogin] {
+			continue
+		}
+		removeLogins = append(removeLogins, trimmedLogin)
+	}
+	sort.Strings(addLogins)
+	sort.Strings(removeLogins)
 	return addLogins, removeLogins
 }
 

@@ -32,6 +32,7 @@ type PullRequestMutations interface {
 	RequestPullRequestReviewer(repository string, number int, reviewerLogin string) error
 	OpenPullRequestInBrowser(repository string, number int) error
 	ListAssignableUsers(repository string) ([]githubdomain.PullRequestAuthor, error)
+	SearchAssignableUsers(repository string, query string) ([]githubdomain.PullRequestAuthor, error)
 	UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error
 	EditPullRequestTitle(repository string, number int, title string) error
 	EditPullRequestDescription(repository string, number int, body string) error

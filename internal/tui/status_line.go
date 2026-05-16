@@ -130,11 +130,11 @@ func (program *Program) notificationsLoadingStatus() string {
 }
 
 func (program *Program) assigneePickerLoadingStatus() string {
-	if program.assigneePickerLoad == nil {
+	if !program.assigneePickerVisible() {
 		return ""
 	}
-	trimmedCommand := strings.TrimSpace(program.assigneePickerLoad.command)
-	if trimmedCommand == "" {
+	trimmedCommand := strings.TrimSpace(program.assigneePicker.searchCommand)
+	if !program.assigneePicker.searchLoading || trimmedCommand == "" {
 		return ""
 	}
 	return fmt.Sprintf("Running `%s`.", trimmedCommand)

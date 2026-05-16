@@ -19,10 +19,14 @@ type actionsPopupVisibleLine struct {
 	text        string
 	actionIndex int
 	selectable  bool
+	centered    bool
 }
 
 func (line actionsPopupVisibleLine) item(viewWidth int) Item {
 	if line.selectable {
+		return Item{Title: line.text}
+	}
+	if !line.centered {
 		return Item{Title: line.text}
 	}
 
@@ -57,7 +61,7 @@ func buildActionsPopupVisibleLines(actions []actionsPopupAction, filteredIndexes
 		action := actions[actionIndex]
 		group := strings.TrimSpace(action.group)
 		if group != "" && group != lastGroup {
-			visibleLines = append(visibleLines, actionsPopupVisibleLine{text: group, actionIndex: -1, selectable: false})
+			visibleLines = append(visibleLines, actionsPopupVisibleLine{text: group, actionIndex: -1, selectable: false, centered: true})
 			lastGroup = group
 		}
 		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: action.label(), actionIndex: actionIndex, selectable: true})
@@ -69,8 +73,21 @@ func (program *Program) currentActionsPopupVisibleLines() []actionsPopupVisibleL
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
+	if program.assigneePickerVisible() {
+		return program.currentAssigneePickerVisibleLines()
+	}
+
 	actions := program.currentActionsPopupActions()
 	return buildActionsPopupVisibleLines(actions, program.model.ActionsPopupFilteredActionIndexes())
+}
+
+func (program *Program) currentAssigneePickerVisibleLines() []actionsPopupVisibleLine {
+	actions := program.currentActionsPopupActions()
+	visibleLines := buildActionsPopupVisibleLines(actions, actionIndexes(len(actions)))
+	if program.assigneePickerLoading() {
+		visibleLines = append(visibleLines, actionsPopupVisibleLine{text: strings.TrimSpace(program.loadingSpinnerFrame())})
+	}
+	return visibleLines
 }
 
 func (program *Program) currentActionsPopupSelectedRenderedLine() int {

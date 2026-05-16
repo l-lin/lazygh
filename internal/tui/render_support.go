@@ -140,6 +140,10 @@ func (program *Program) currentConnectedUserLogin() string {
 	return strings.TrimSpace(program.connectedUserLogin)
 }
 
+func (program *Program) currentConnectedUserName() string {
+	return strings.TrimSpace(program.connectedUserName)
+}
+
 func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
 	identity := program.currentDetailIdentity()
 	if identity != program.lastDetailIdentity {

@@ -10,78 +10,41 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestAssigneePicker_GivenSelectedAssigneesAndCurrentUser_WhenOpening_ThenItPlacesAtMeFirstAndKeepsSelectedAssigneesAtTheTop(t *testing.T) {
+func TestAssigneePicker_GivenSelectedAssigneesAndCurrentUser_WhenOpeningAndWarmupFinishes_ThenItPlacesMeFirstAndKeepsOnlyThePinnedAssigneesVisible(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
-	loader.details["acme/widgets#42"] = githubcli.PullRequestDetail{
-		Title:       "First PR",
-		Number:      42,
-		Body:        "Body 42",
-		BaseRefName: "main",
-		HeadRefName: "feature/assignees",
-		State:       "OPEN",
-		Assignees: []githubcli.PullRequestAuthor{
-			{Login: "alice", Name: "Alice"},
-			{Login: "bob", Name: "Bob"},
-		},
-	}
+	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
 	popupView := given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
 
 	if popupView.Title != assigneePickerTitle {
 		t.Fatalf("expected popup title %q, actual %q", assigneePickerTitle, popupView.Title)
 	}
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[x] @me (Bob)",
+		"[ ] @me (Bob)",
 		"[x] @alice (Alice)",
-		"[ ] @charlie (Charlie)",
 	})
-	if !reflect.DeepEqual(loader.assignableUserCalls, []string{"acme/widgets"}) {
-		t.Fatalf("expected assignable user calls %v, actual %v", []string{"acme/widgets"}, loader.assignableUserCalls)
+	if !reflect.DeepEqual(loader.searchAssignableUserCalls, []string{"acme/widgets|"}) {
+		t.Fatalf("expected assignable user search calls %v, actual %v", []string{"acme/widgets|"}, loader.searchAssignableUserCalls)
 	}
 }
 
-func TestAssigneePicker_GivenManyCandidates_WhenOpening_ThenItUsesAHalfHeightPopup(t *testing.T) {
-	loader := given_pullRequestAssigneeLoader()
-	loader.assignableUsers["acme/widgets"] = []githubcli.PullRequestAuthor{
-		{Login: "alice", Name: "Alice"},
-		{Login: "bob", Name: "Bob"},
-		{Login: "charlie", Name: "Charlie"},
-		{Login: "dora", Name: "Dora"},
-		{Login: "eve", Name: "Eve"},
-		{Login: "frank", Name: "Frank"},
-		{Login: "gina", Name: "Gina"},
-		{Login: "henry", Name: "Henry"},
-	}
-	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	gui := given_headlessGui(t)
-	defer gui.Close()
-	subject.configureGUI(gui)
-
-	_, y0, _, y1, actualErr := gui.ViewPosition(viewActionsPopupName)
-	if actualErr == nil {
-		t.Fatal("expected the popup to be absent before opening the assignee picker")
-	}
-
-	_ = given_openAssigneePicker(t, gui, subject)
-	_, y0, _, y1, actualErr = gui.ViewPosition(viewActionsPopupName)
-	then_noError(t, actualErr)
-	if actual := y1 - y0 + 1; actual != 6 {
-		t.Fatalf("expected popup height %d, actual %d", 6, actual)
-	}
-}
-
-func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenLoadingAssignees_ThenItShowsASpinnerUntilTheAsyncLoadFinishes(t *testing.T) {
+func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenOpeningTheAssigneePicker_ThenItShowsAWarmupSpinnerFooterHintAndGraphQLStatusUntilTheWarmupFinishes(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
-	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -89,75 +52,46 @@ func TestActionsPopup_GivenDescriptionDetailAssignPRAction_WhenLoadingAssignees_
 	given_openAssignPullRequestAction(t, gui, subject)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued assignee load, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued assignee warmup search, actual %d", len(asyncRunner.runs))
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if popupView.Title != assigneePickerTitle {
-		t.Fatalf("expected popup title %q while loading, actual %q", assigneePickerTitle, popupView.Title)
-	}
-	if actual := strings.TrimSpace(popupView.Buffer()); actual != string(loadingSpinnerFrames[0]) {
-		t.Fatalf("expected popup buffer %q while loading, actual %q", string(loadingSpinnerFrames[0]), popupView.Buffer())
-	}
-	then_statusLineContains(t, gui, "Running `gh api repos/acme/widgets/assignees?per_page=100 --paginate --slurp`.")
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[ ] @me (Bob)",
+		"[x] @alice (Alice)",
+		string(loadingSpinnerFrames[0]),
+	})
+	then_actionsPopupFooterHintIsSet(t, gui, assigneePickerSearchFooterHint)
+	then_statusLineContains(t, gui, "Running `gh api graphql -F owner=acme -F name=widgets -F first=20`.")
 
 	asyncRunner.runs[0]()
 
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[ ] @me (Bob)",
 		"[x] @alice (Alice)",
-		"[ ] @bob (Bob)",
-		"[ ] @charlie (Charlie)",
 	})
+	if strings.Contains(popupView.Buffer(), "@charlie") {
+		t.Fatalf("expected the warmup search to keep hidden results like %q, actual %q", "@charlie", popupView.Buffer())
+	}
 }
 
-func TestActionsPopup_GivenCachedAssignableUsers_WhenOpeningTheAssigneePickerAgain_ThenItReusesTheCache(t *testing.T) {
+func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatchingAssigneeAndKeepsThePinnedOnesVisible(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
-	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	gui := given_headlessGui(t)
-	defer gui.Close()
-	subject.configureGUI(gui)
-
-	given_openAssignPullRequestAction(t, gui, subject)
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued assignee load, actual %d", len(asyncRunner.runs))
-	}
-	asyncRunner.runs[0]()
-
-	actualErr := subject.closeActionsPopup(gui, nil)
-	then_noError(t, actualErr)
-	given_openAssignPullRequestAction(t, gui, subject)
-
-	if !reflect.DeepEqual(loader.assignableUserCalls, []string{"acme/widgets"}) {
-		t.Fatalf("expected cached assignee list to avoid reloads, actual calls %v", loader.assignableUserCalls)
-	}
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected cached assignee list to avoid new async runs, actual %d", len(asyncRunner.runs))
-	}
-	popupView, actualErr := gui.View(viewActionsPopupName)
-	then_noError(t, actualErr)
-	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"[x] @alice (Alice)",
-		"[ ] @bob (Bob)",
-		"[ ] @charlie (Charlie)",
-	})
-}
-
-func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsOnlyTheMatchingAssignee(t *testing.T) {
-	loader := given_pullRequestAssigneeLoader()
-	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
 	_ = given_openAssigneePicker(t, gui, subject)
-	actualErr := subject.focusActionsPopupSearch(gui, nil)
-	then_noError(t, actualErr)
+	given_runQueuedAsync(t, asyncRunner, 0)
 
 	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
@@ -168,15 +102,20 @@ func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsOnlyTheMatchin
 		}
 	}
 
+	if len(asyncRunner.runs) < 2 {
+		t.Fatalf("expected a queued debounce search after typing, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[ ] @me (Bob)",
+		"[x] @alice (Alice)",
 		"[ ] @charlie (Charlie)",
 	})
-	for _, unexpected := range []string{"@alice", "@bob"} {
-		if strings.Contains(popupView.Buffer(), unexpected) {
-			t.Fatalf("expected the filtered assignee picker to hide %q, actual %q", unexpected, popupView.Buffer())
-		}
+	if strings.Contains(popupView.Buffer(), "@dora") {
+		t.Fatalf("expected the assignee picker to hide %q, actual %q", "@dora", popupView.Buffer())
 	}
 	matchLineIndex := -1
 	for lineIndex := 0; ; lineIndex++ {
@@ -195,26 +134,77 @@ func TestAssigneePicker_GivenSearchQuery_WhenFiltering_ThenItShowsOnlyTheMatchin
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewActionsPopupName, matchLineIndex, "char")
 }
 
-func TestAssignPullRequest_GivenChangedSelection_WhenTogglingWithEnterAndSubmittingWithAltEnter_ThenItAppliesTheAssigneeDiffAndRefreshesTheVisibleDetail(t *testing.T) {
+func TestAssigneePicker_GivenSearchResultSelected_WhenClearingTheQuery_ThenItKeepsTheToggledAssigneeVisible(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
-	popupView := given_openAssigneePicker(t, gui, subject)
-	moveDownHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, 'j')
-	enterHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyEnter)
-	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupName, gocui.KeyAltEnter)
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
 
-	actualErr := enterHandler(gui, popupView)
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	actualErr = moveDownHandler(gui, popupView)
+	for _, ch := range "char" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	then_noError(t, executeHandler(gui, searchView))
+	if !subject.editActionsPopupSearch(searchView, gocui.KeyCtrlU, 0, gocui.ModNone) {
+		t.Fatal("expected ctrl+u to clear the assignee picker query")
+	}
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	actualErr = enterHandler(gui, popupView)
+	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"[ ] @me (Bob)",
+		"[x] @alice (Alice)",
+		"[x] @charlie (Charlie)",
+	})
+}
+
+func TestAssignPullRequest_GivenChangedSelection_WhenSearchingAndSubmittingWithAltEnter_ThenItAppliesTheAssigneeDiffAndRefreshesTheVisibleDetail(t *testing.T) {
+	loader := given_pullRequestAssigneeLoader()
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.assigneePickerSearchDebounceDelay = 0
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	_ = given_openAssigneePicker(t, gui, subject)
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	searchView, actualErr := gui.View(viewActionsPopupSearchName)
 	then_noError(t, actualErr)
-	actualErr = submitHandler(gui, popupView)
-	then_noError(t, actualErr)
+	for _, ch := range "bob" {
+		actualHandled := subject.editActionsPopupSearch(searchView, 0, ch, gocui.ModNone)
+		if !actualHandled {
+			t.Fatalf("expected typing %q to be handled", string(ch))
+		}
+	}
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
+
+	executeHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyEnter)
+	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyAltEnter)
+	then_noError(t, executeHandler(gui, searchView))
+	then_noError(t, submitHandler(gui, searchView))
 	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if !reflect.DeepEqual(loader.updateAssigneeCalls, []string{"acme/widgets#42"}) {
@@ -223,8 +213,8 @@ func TestAssignPullRequest_GivenChangedSelection_WhenTogglingWithEnterAndSubmitt
 	if !reflect.DeepEqual(loader.updateAssigneeAdditions, [][]string{{"bob"}}) {
 		t.Fatalf("expected assignee additions %v, actual %v", [][]string{{"bob"}}, loader.updateAssigneeAdditions)
 	}
-	if !reflect.DeepEqual(loader.updateAssigneeRemovals, [][]string{{"alice"}}) {
-		t.Fatalf("expected assignee removals %v, actual %v", [][]string{{"alice"}}, loader.updateAssigneeRemovals)
+	if len(loader.updateAssigneeRemovals) != 1 || len(loader.updateAssigneeRemovals[0]) != 0 {
+		t.Fatalf("expected no assignee removals, actual %v", loader.updateAssigneeRemovals)
 	}
 
 	detailView, actualErr := gui.View(viewDetailName)
@@ -232,8 +222,8 @@ func TestAssignPullRequest_GivenChangedSelection_WhenTogglingWithEnterAndSubmitt
 	if !strings.Contains(detailView.Buffer(), "@bob") {
 		t.Fatalf("expected detail buffer to contain %q after assigning, actual %q", "@bob", detailView.Buffer())
 	}
-	if strings.Contains(detailView.Buffer(), "@alice") {
-		t.Fatalf("expected detail buffer to drop %q after assigning, actual %q", "@alice", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "@alice") {
+		t.Fatalf("expected detail buffer to keep %q after assigning, actual %q", "@alice", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, pullRequestAssigneesUpdatedSuccessMessage)
 }
@@ -241,6 +231,8 @@ func TestAssignPullRequest_GivenChangedSelection_WhenTogglingWithEnterAndSubmitt
 func TestAssignPullRequest_GivenPendingSelectionChanges_WhenCanceling_ThenItLeavesThePullRequestUntouched(t *testing.T) {
 	loader := given_pullRequestAssigneeLoader()
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.connectedUserLogin = "bob"
+	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -393,6 +385,25 @@ func given_openAssigneePicker(t *testing.T, gui *gocui.Gui, subject *Program) *g
 	return actual
 }
 
+func given_runQueuedAsync(t *testing.T, runner *capturingAsyncRunner, index int) {
+	t.Helper()
+
+	if index < 0 || index >= len(runner.runs) {
+		t.Fatalf("expected queued async run index %d, actual runs %d", index, len(runner.runs))
+	}
+	runner.runs[index]()
+}
+
+func then_actionsPopupFooterHintIsSet(t *testing.T, gui *gocui.Gui, expected string) {
+	t.Helper()
+
+	popupChromeView, actualErr := gui.View(viewActionsPopupChromeName)
+	then_noError(t, actualErr)
+	if popupChromeView.Footer != expected {
+		t.Fatalf("expected popup footer %q, actual %q", expected, popupChromeView.Footer)
+	}
+}
+
 func given_pullRequestAssigneeLoader() *fakePullRequestDetailLoader {
 	return &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
@@ -410,6 +421,21 @@ func given_pullRequestAssigneeLoader() *fakePullRequestDetailLoader {
 			"acme/widgets": {
 				{Login: "alice", Name: "Alice"},
 				{Login: "bob", Name: "Bob"},
+				{Login: "charlie", Name: "Charlie"},
+				{Login: "dora", Name: "Dora"},
+			},
+		},
+		searchAssignableUsers: map[string][]githubcli.PullRequestAuthor{
+			"acme/widgets|": {
+				{Login: "alice", Name: "Alice"},
+				{Login: "bob", Name: "Bob"},
+				{Login: "charlie", Name: "Charlie"},
+				{Login: "dora", Name: "Dora"},
+			},
+			"acme/widgets|bob": {
+				{Login: "bob", Name: "Bob"},
+			},
+			"acme/widgets|char": {
 				{Login: "charlie", Name: "Charlie"},
 			},
 		},

@@ -37,10 +37,10 @@ func (program *Program) layoutActionsPopupViews(gui *gocui.Gui) error {
 	program.configureActionsPopupView(popupView)
 	program.renderActionsPopupView(popupView)
 
-	if _, err = gui.SetViewOnTop(viewActionsPopupChromeName); err != nil && !isUnknownViewError(err) {
+	if _, err = gui.SetViewOnTop(viewActionsPopupName); err != nil && !isUnknownViewError(err) {
 		return err
 	}
-	_, err = gui.SetViewOnTop(viewActionsPopupName)
+	_, err = gui.SetViewOnTop(viewActionsPopupChromeName)
 	if isUnknownViewError(err) {
 		return nil
 	}
@@ -78,15 +78,13 @@ func (program *Program) actionsPopupSearchFrame(maxX int, maxY int) paneFrame {
 
 func (program *Program) actionsPopupListFrame(maxX int, maxY int) paneFrame {
 	popupFrame := program.actionsPopupFrame(maxX, maxY)
-	return paneFrame{x0: popupFrame.x0, y0: popupFrame.y0 + 1, x1: popupFrame.x1, y1: popupFrame.y1}
+	return paneFrame{x0: popupFrame.x0, y0: popupFrame.y0 + 1, x1: popupFrame.x1, y1: popupFrame.y1 - 1}
 }
 
 func (program *Program) actionsPopupHeight(contentMaxY int) int {
 	totalHeight := maxInt(actionsPopupMinHeight, program.currentActionsPopupRenderedLineCount()+3)
 	if program.assigneePickerVisible() {
 		totalHeight = maxInt(actionsPopupCompactMinHeight, actionsPopupCompactHeight(program.currentActionsPopupRenderedLineCount()))
-	} else if program.assigneePickerLoading() {
-		totalHeight = actionsPopupCompactMinHeight
 	}
 	if totalHeight > contentMaxY-2 {
 		totalHeight = maxInt(3, contentMaxY-2)
@@ -122,7 +120,7 @@ func (program *Program) renderActionsPopupChromeView(view *gocui.View) {
 func (program *Program) configureActionsPopupView(view *gocui.View) {
 	program.configureBottomPromptView(view, nil, false)
 	view.Title = program.actionsPopupTitle()
-	view.Footer = program.actionsPopupFooter()
+	view.Footer = ""
 	view.Highlight = true
 	view.HighlightInactive = true
 	if program.usesManualSelectedLineRendering(program.model.ActionsPopupSearchQuery()) {
@@ -140,12 +138,6 @@ func (program *Program) renderActionsPopupView(view *gocui.View) {
 	}
 
 	view.Clear()
-	if program.assigneePickerLoading() {
-		fmt.Fprintln(view, strings.TrimSpace(program.loadingSpinnerFrame()))
-		view.SetOrigin(0, 0)
-		view.SetCursor(0, 0)
-		return
-	}
 
 	query := program.model.ActionsPopupSearchQuery()
 	visibleLines := program.currentActionsPopupVisibleLines()
@@ -185,7 +177,7 @@ func (program *Program) renderActionsPopupSearchView(view *gocui.View) {
 
 func (program *Program) actionsPopupTitle() string {
 	title := "Actions"
-	if program.assigneePickerVisible() || program.assigneePickerLoading() {
+	if program.assigneePickerVisible() {
 		title = assigneePickerTitle
 	} else if program.themePickerVisible() {
 		title = themePickerTitle
@@ -204,11 +196,13 @@ func (program *Program) actionsPopupTitle() string {
 }
 
 func (program *Program) actionsPopupFooter() string {
+	if program.assigneePickerVisible() {
+		return assigneePickerSearchFooterHint
+	}
+
 	query := strings.TrimSpace(program.model.ActionsPopupSearchQuery())
 	itemLabel := "actions"
-	if program.assigneePickerVisible() || program.assigneePickerLoading() {
-		itemLabel = "assignees"
-	} else if program.themePickerVisible() {
+	if program.themePickerVisible() {
 		itemLabel = "themes"
 	} else if program.reactionPickerVisible() {
 		itemLabel = "reactions"
@@ -239,6 +233,9 @@ func (program *Program) currentActionsPopupSearchCursor() int {
 
 func (program *Program) emptyActionsPopupMessage() string {
 	if program.assigneePickerVisible() {
+		if strings.TrimSpace(program.model.ActionsPopupSearchQuery()) == "" {
+			return assigneePickerSearchFooterHint
+		}
 		return "No matching assignees."
 	}
 	return "No matching actions."

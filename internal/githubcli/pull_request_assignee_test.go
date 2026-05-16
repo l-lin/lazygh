@@ -23,6 +23,33 @@ func TestListAssignableUsers_GivenRepository_WhenListing_ThenItLoadsAndNormalize
 	}
 }
 
+func TestSearchAssignableUsers_GivenRepositoryAndQuery_WhenSearching_ThenItRunsGraphQLAndNormalizesTheAssignableUsers(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte(`{"data":{"repository":{"assignableUsers":{"nodes":[{"login":" bob ","name":" Bob ","is_bot":false},{"login":"alice","name":" Alice "},{"login":"bob","name":"Duplicate"}]}}}}`)}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actual, actualErr := subject.SearchAssignableUsers("acme/widgets", "bob")
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{
+		"api",
+		"graphql",
+		"-f",
+		"query=query($owner:String!,$name:String!,$first:Int!,$search:String){repository(owner:$owner,name:$name){assignableUsers(first:$first,query:$search){nodes{login name is_bot:isBot}}}}",
+		"-F",
+		"owner=acme",
+		"-F",
+		"name=widgets",
+		"-F",
+		"first=20",
+		"-F",
+		"search=bob",
+	})
+	expected := []PullRequestAuthor{{Login: "bob", Name: "Bob", IsBot: false}, {Login: "alice", Name: "Alice", IsBot: false}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected assignable user search results %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestUpdatePullRequestAssignees_GivenAddedLogins_WhenUpdating_ThenItRunsGhPrEditWithAddAssignee(t *testing.T) {
 	runner := &fakeRunner{}
 	subject := NewPullRequestMutationServiceWithRunner(runner)

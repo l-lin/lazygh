@@ -54,6 +54,22 @@ func formatAssignableUsersCommand(repository string) string {
 	return appconfig.FormatGHCommand([]string{"api", "repos/" + trimmedRepository + "/assignees?per_page=100", "--paginate", "--slurp"})
 }
 
+func formatAssigneeSearchCommand(repository string, query string) string {
+	trimmedRepository := strings.TrimSpace(repository)
+	owner, name, ok := strings.Cut(trimmedRepository, "/")
+	owner = strings.TrimSpace(owner)
+	name = strings.TrimSpace(name)
+	if !ok || owner == "" || name == "" {
+		return appconfig.FormatGHCommand([]string{"api", "graphql"})
+	}
+
+	args := []string{"api", "graphql", "-F", "owner=" + owner, "-F", "name=" + name, "-F", "first=" + strconv.Itoa(assigneePickerSearchResultLimit)}
+	if trimmedQuery := strings.TrimSpace(query); trimmedQuery != "" {
+		args = append(args, "-F", "search="+trimmedQuery)
+	}
+	return appconfig.FormatGHCommand(args)
+}
+
 func formatPullRequestBuildRunCommand(repository string, check githubdomain.PullRequestStatusCheck) string {
 	args, err := pullRequestBuildRunCommandArguments(repository, check)
 	if err != nil {

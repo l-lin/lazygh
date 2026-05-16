@@ -26,6 +26,15 @@ func TestFormatAssignableUsersCommand_GivenRepository_WhenFormatting_ThenItUsesT
 	}
 }
 
+func TestFormatAssigneeSearchCommand_GivenRepositoryAndQuery_WhenFormatting_ThenItUsesTheGraphQLDisplayCommand(t *testing.T) {
+	actual := formatAssigneeSearchCommand("acme/widgets", "bob")
+
+	expected := appconfig.FormatGHCommand([]string{"api", "graphql", "-F", "owner=acme", "-F", "name=widgets", "-F", "first=20", "-F", "search=bob"})
+	if actual != expected {
+		t.Fatalf("expected formatted command %q, actual %q", expected, actual)
+	}
+}
+
 func TestFormatPullRequestBuildRunCommand_GivenAttemptURL_WhenFormatting_ThenItIncludesTheAttemptFlag(t *testing.T) {
 	actual := formatPullRequestBuildRunCommand("acme/widgets", githubdomain.PullRequestStatusCheck{Link: "https://github.com/acme/widgets/actions/runs/42/attempts/3"})
 

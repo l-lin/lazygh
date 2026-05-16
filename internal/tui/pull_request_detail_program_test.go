@@ -1589,6 +1589,9 @@ type fakePullRequestDetailLoader struct {
 	assignableUsers                   map[string][]githubcli.PullRequestAuthor
 	assignableUserCalls               []string
 	assignableUserErr                 error
+	searchAssignableUsers             map[string][]githubcli.PullRequestAuthor
+	searchAssignableUserCalls         []string
+	searchAssignableUserErr           error
 	updateAssigneeCalls               []string
 	updateAssigneeAdditions           [][]string
 	updateAssigneeRemovals            [][]string
@@ -1982,6 +1985,26 @@ func (loader *fakePullRequestDetailLoader) ListAssignableUsers(repository string
 	loader.assignableUserCalls = append(loader.assignableUserCalls, trimmedRepository)
 	if loader.assignableUserErr != nil {
 		return nil, loader.assignableUserErr
+	}
+	if loader.assignableUsers != nil {
+		if actual, ok := loader.assignableUsers[trimmedRepository]; ok {
+			return githubcli.ToDomainPullRequestAuthors(append([]githubcli.PullRequestAuthor(nil), actual...)), nil
+		}
+	}
+	return nil, nil
+}
+
+func (loader *fakePullRequestDetailLoader) SearchAssignableUsers(repository string, query string) ([]githubdomain.PullRequestAuthor, error) {
+	trimmedRepository := strings.TrimSpace(repository)
+	trimmedQuery := strings.TrimSpace(query)
+	loader.searchAssignableUserCalls = append(loader.searchAssignableUserCalls, trimmedRepository+"|"+trimmedQuery)
+	if loader.searchAssignableUserErr != nil {
+		return nil, loader.searchAssignableUserErr
+	}
+	if loader.searchAssignableUsers != nil {
+		if actual, ok := loader.searchAssignableUsers[trimmedRepository+"|"+trimmedQuery]; ok {
+			return githubcli.ToDomainPullRequestAuthors(append([]githubcli.PullRequestAuthor(nil), actual...)), nil
+		}
 	}
 	if loader.assignableUsers != nil {
 		if actual, ok := loader.assignableUsers[trimmedRepository]; ok {

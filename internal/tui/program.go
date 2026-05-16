@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"time"
+
 	"github.com/jesseduffield/gocui"
 
 	clip "github.com/l-lin/lazygh/internal/clipboard"
@@ -63,6 +65,7 @@ type Program struct {
 	reactionPicker                          *reactionPickerState
 	themePicker                             *themePickerState
 	assigneePicker                          *assigneePickerState
+	assigneePickerSearchDebounceDelay       time.Duration
 	assigneePickerLoad                      *assigneePickerLoadState
 	reviewSession                           reviewSessionState
 	modalEditor                             *modalEditorState
@@ -112,41 +115,42 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	imageCoordinator := newImageLoadCoordinator(imageStore, &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}})
 
 	return &Program{
-		model:                         model,
-		sessionQueries:                resolvedDeps.SessionQueries,
-		pullRequestListQueries:        resolvedDeps.PullRequestList,
-		notificationQueries:           resolvedDeps.NotificationQueries,
-		detailQueries:                 resolvedDeps.DetailQueries,
-		pullRequestMutations:          resolvedDeps.PullRequestMutations,
-		reviewMutations:               resolvedDeps.ReviewMutations,
-		notificationMutations:         resolvedDeps.NotificationMutations,
-		reactionMutations:             resolvedDeps.ReactionMutations,
-		buildQueries:                  resolvedDeps.BuildQueries,
-		markdownHTMLRenderer:          resolvedDeps.MarkdownHTMLRenderer,
-		authTokenProvider:             resolvedDeps.AuthTokenProvider,
-		sessionStore:                  sessionState,
-		persistentCacheStore:          persistence,
-		pullRequestListStore:          newPullRequestListStore(persistence),
-		notificationStore:             newNotificationStore(persistence),
-		detailStore:                   detailState,
-		reviewStore:                   reviewState,
-		buildStore:                    newBuildStore(),
-		statusStore:                   newStatusStore(),
-		optimisticMutationCoordinator: newOptimisticMutationCoordinator(),
-		imageLoadCoordinator:          imageCoordinator,
-		externalEditor:                resolvedDeps.ExternalEditor,
-		linkOpener:                    resolvedDeps.LinkOpener,
-		markdownRenderer:              glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
-		storyGenerator:                commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
-		themePresetStore:              resolvedDeps.ThemePresetStore,
-		asyncRunner:                   goroutineAsyncRunner{},
-		uiUpdater:                     queuedUIUpdater{},
-		clipboardReader:               resolvedDeps.ClipboardReader,
-		clipboardWriter:               resolvedDeps.ClipboardWriter,
-		detailViewState:               newDetailViewState(),
-		detailWrapWidth:               defaultDetailWrapWidth,
-		pullRequestSearches:           appconfig.DefaultPullRequestSearches(),
-		pendingListViewportPlacements: map[string]viewportPlacement{},
+		model:                             model,
+		sessionQueries:                    resolvedDeps.SessionQueries,
+		pullRequestListQueries:            resolvedDeps.PullRequestList,
+		notificationQueries:               resolvedDeps.NotificationQueries,
+		detailQueries:                     resolvedDeps.DetailQueries,
+		pullRequestMutations:              resolvedDeps.PullRequestMutations,
+		reviewMutations:                   resolvedDeps.ReviewMutations,
+		notificationMutations:             resolvedDeps.NotificationMutations,
+		reactionMutations:                 resolvedDeps.ReactionMutations,
+		buildQueries:                      resolvedDeps.BuildQueries,
+		markdownHTMLRenderer:              resolvedDeps.MarkdownHTMLRenderer,
+		authTokenProvider:                 resolvedDeps.AuthTokenProvider,
+		sessionStore:                      sessionState,
+		persistentCacheStore:              persistence,
+		pullRequestListStore:              newPullRequestListStore(persistence),
+		notificationStore:                 newNotificationStore(persistence),
+		detailStore:                       detailState,
+		reviewStore:                       reviewState,
+		buildStore:                        newBuildStore(),
+		statusStore:                       newStatusStore(),
+		optimisticMutationCoordinator:     newOptimisticMutationCoordinator(),
+		imageLoadCoordinator:              imageCoordinator,
+		externalEditor:                    resolvedDeps.ExternalEditor,
+		linkOpener:                        resolvedDeps.LinkOpener,
+		markdownRenderer:                  glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
+		storyGenerator:                    commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
+		themePresetStore:                  resolvedDeps.ThemePresetStore,
+		asyncRunner:                       goroutineAsyncRunner{},
+		uiUpdater:                         queuedUIUpdater{},
+		clipboardReader:                   resolvedDeps.ClipboardReader,
+		clipboardWriter:                   resolvedDeps.ClipboardWriter,
+		detailViewState:                   newDetailViewState(),
+		detailWrapWidth:                   defaultDetailWrapWidth,
+		pullRequestSearches:               appconfig.DefaultPullRequestSearches(),
+		assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay,
+		pendingListViewportPlacements:     map[string]viewportPlacement{},
 	}
 }
 

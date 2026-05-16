@@ -9,7 +9,12 @@ import (
 
 var ErrInvalidAssignableUsersResponse = fmt.Errorf("invalid assignable users response")
 
-const assignableUsersPerPage = 100
+const (
+	assignableUsersPerPage         = 100
+	assignableUserSearchResultSize = 20
+)
+
+const searchAssignableUsersQuery = `query($owner:String!,$name:String!,$first:Int!,$search:String){repository(owner:$owner,name:$name){assignableUsers(first:$first,query:$search){nodes{login name is_bot:isBot}}}}`
 
 func (client *PullRequestMutationService) ListAssignableUsers(repository string) ([]PullRequestAuthor, error) {
 	trimmedRepository := strings.TrimSpace(repository)
@@ -23,6 +28,31 @@ func (client *PullRequestMutationService) ListAssignableUsers(repository string)
 	}
 
 	return parseAssignableUsers(result.Stdout)
+}
+
+func (client *PullRequestMutationService) SearchAssignableUsers(repository string, query string) ([]PullRequestAuthor, error) {
+	trimmedRepository := strings.TrimSpace(repository)
+	owner, name, err := splitRepositoryOwnerAndName(trimmedRepository)
+	if err != nil {
+		return nil, err
+	}
+
+	variables := []GraphQLVariable{
+		typedGraphQLVariable("owner", owner),
+		typedGraphQLVariable("name", name),
+		typedGraphQLVariable("first", assignableUserSearchResultSize),
+	}
+	trimmedQuery := strings.TrimSpace(query)
+	if trimmedQuery != "" {
+		variables = append(variables, typedGraphQLVariable("search", trimmedQuery))
+	}
+
+	result, err := client.queryGraphQL(GraphQLRequest{Query: searchAssignableUsersQuery, Variables: variables, DisplayArgs: searchAssignableUsersDisplayArgs(owner, name, trimmedQuery)})
+	if err != nil {
+		return nil, err
+	}
+
+	return parseAssignableUserSearchResults(result.Stdout)
 }
 
 func (client *PullRequestMutationService) UpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) error {
@@ -64,6 +94,23 @@ func parseAssignableUsers(stdout []byte) ([]PullRequestAuthor, error) {
 	return normalizeAssignableUsers(flatUsers), nil
 }
 
+func parseAssignableUserSearchResults(stdout []byte) ([]PullRequestAuthor, error) {
+	var response struct {
+		Repository *struct {
+			AssignableUsers struct {
+				Nodes []PullRequestAuthor `json:"nodes"`
+			} `json:"assignableUsers"`
+		} `json:"repository"`
+	}
+	if err := decodeEndpointGraphQLResponse(stdout, &response, ErrInvalidAssignableUsersResponse); err != nil {
+		return nil, err
+	}
+	if response.Repository == nil {
+		return nil, nil
+	}
+	return normalizeAssignableUserSearchResults(response.Repository.AssignableUsers.Nodes), nil
+}
+
 func normalizeAssignableUsers(users []PullRequestAuthor) []PullRequestAuthor {
 	normalizedUsers := make([]PullRequestAuthor, 0, len(users))
 	seenLogins := map[string]bool{}
@@ -81,12 +128,43 @@ func normalizeAssignableUsers(users []PullRequestAuthor) []PullRequestAuthor {
 	return normalizedUsers
 }
 
+func normalizeAssignableUserSearchResults(users []PullRequestAuthor) []PullRequestAuthor {
+	normalizedUsers := make([]PullRequestAuthor, 0, len(users))
+	seenLogins := map[string]bool{}
+	for _, user := range users {
+		normalizedUser := user.normalized()
+		if normalizedUser.Login == "" || seenLogins[normalizedUser.Login] {
+			continue
+		}
+		seenLogins[normalizedUser.Login] = true
+		normalizedUsers = append(normalizedUsers, normalizedUser)
+	}
+	return normalizedUsers
+}
+
 func FormatAssignableUsersCommand(repository string) string {
 	trimmedRepository := strings.TrimSpace(repository)
 	if trimmedRepository == "" || trimmedRepository == "-" {
 		return formatCommand("api")
 	}
 	return formatCommand("api", fmt.Sprintf("repos/%s/assignees?per_page=%d", trimmedRepository, assignableUsersPerPage), "--paginate", "--slurp")
+}
+
+func FormatSearchAssignableUsersCommand(repository string, query string) string {
+	trimmedRepository := strings.TrimSpace(repository)
+	owner, name, err := splitRepositoryOwnerAndName(trimmedRepository)
+	if err != nil {
+		return formatCommand("api", "graphql")
+	}
+	return formatCommandArguments(searchAssignableUsersDisplayArgs(owner, name, strings.TrimSpace(query)))
+}
+
+func searchAssignableUsersDisplayArgs(owner string, name string, query string) []string {
+	args := []string{"api", "graphql", "-F", "owner=" + strings.TrimSpace(owner), "-F", "name=" + strings.TrimSpace(name), "-F", "first=" + strconv.Itoa(assignableUserSearchResultSize)}
+	if strings.TrimSpace(query) != "" {
+		args = append(args, "-F", "search="+strings.TrimSpace(query))
+	}
+	return args
 }
 
 func normalizePullRequestAssigneeLogins(logins []string) []string {

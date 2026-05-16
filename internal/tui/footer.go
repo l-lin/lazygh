@@ -100,11 +100,6 @@ func (program *Program) actionsPopupSearchKeyHintsText() string {
 	if !program.shouldShowActionsPopupSearchStatusLineKeyHints() {
 		return ""
 	}
-	if program.assigneePickerLoading() {
-		return program.statusLineKeyHints(
-			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeSearch, action: "cancel"}}},
-		)
-	}
 	if program.assigneePickerVisible() {
 		return program.statusLineKeyHints(
 			statusLineHintSpec{label: "next", fallback: "Ctrl+N/↓"},
@@ -136,11 +131,6 @@ func (program *Program) shouldShowActionsPopupSearchStatusLineKeyHints() bool {
 func (program *Program) actionsPopupKeyHintsText() string {
 	if !program.shouldShowActionsPopupStatusLineKeyHints() {
 		return ""
-	}
-	if program.assigneePickerLoading() {
-		return program.statusLineKeyHints(
-			statusLineHintSpec{label: "cancel", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopeActionsPopup, action: "close"}}},
-		)
 	}
 	if program.assigneePickerVisible() {
 		return program.statusLineKeyHints(

@@ -35,14 +35,17 @@ func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		connectedUserLogin := ""
+		connectedUserName := ""
 		if err == nil {
 			connectedUserLogin = strings.TrimSpace(user.Login)
+			connectedUserName = strings.TrimSpace(user.Name)
 		}
 		if program.connectedUserLogin != connectedUserLogin {
 			program.connectedUserLogin = connectedUserLogin
 			program.invalidatePullRequestDetailDocumentCache()
 			program.invalidateReviewDiffRenderCache()
 		}
+		program.connectedUserName = connectedUserName
 		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
 		return program.refreshViews(gui)
 	})
