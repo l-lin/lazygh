@@ -1,6 +1,6 @@
 # lazygh
 
-`lazygh` is a Go CLI that aims to make GitHub pull request work less annoying with a lazygit-like TUI.
+`lazygh` is a Go CLI that aims to make GitHub pull request work less annoying with a lazygit-like TUI with vim-motion.
 
 ![PR list|500](./doc/pr_list.png)
 ![PR changes|500](./doc/pr_changes.png)
@@ -26,11 +26,10 @@ mise use -g go:github.com/l-lin/lazygh/cmd/lazygh@latest
 lazygh
 ```
 
-Run it once without a global install:
+Or run it once without a global install:
 
 ```sh
-mise exec go:github.com/l-lin/lazygh/cmd/lazygh@latest -- lazygh view https://github.com/acme/widgets/pull/42
-mise exec go:github.com/l-lin/lazygh/cmd/lazygh@latest -- lazygh review https://github.com/acme/widgets/pull/42
+mise exec go:github.com/l-lin/lazygh/cmd/lazygh@latest -- lazygh
 ```
 
 ### Directly from release page
@@ -76,7 +75,7 @@ lazygh story-review https://github.com/acme/awesome/pull/123
 
 ### Images
 
-`lazygh` renders markdown images and supported HTML `<img>` tags in detail views.
+`lazygh` renders markdown images and supported HTML `<img>` tags in detail views, only if your terminal support [kitty image protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/).
 
 It keeps small images at their natural size. It scales larger images down to fit the detail pane.
 
@@ -184,31 +183,17 @@ Story review powers `lazygh` story mode. It shells out to an external coding age
 
 Configure `story_review.agent_command` under `[story_review]`. `lazygh` writes the generated prompt to a temporary file and replaces `{{prompt_file}}` in the configured command. If your command does not include `{{prompt_file}}`, `lazygh` appends the prompt file path as the last argument.
 
-A direct `pi` example:
+Examples:
 
 ```toml
 [story_review]
 agent_command = ["pi", "--models", "anthropic/claude-sonnet-4-6", "--no-session", "-p", "@{{prompt_file}}"]
 ```
 
-If your agent wants prompt text instead of a prompt-file flag, wrap it with `bash -lc` and read the file inside the shell.
-
 ```toml
 # Claude Code
 [story_review]
-agent_command = ["bash", "-lc", "claude -p --output-format json \"$(<{{prompt_file}})\""]
-```
-
-```toml
-# Codex
-[story_review]
-agent_command = ["bash", "-lc", "codex exec \"$(<{{prompt_file}})\""]
-```
-
-```toml
-# OpenCode
-[story_review]
-agent_command = ["bash", "-lc", "opencode run \"$(<{{prompt_file}})\""]
+agent_command = ["claude", "-p", "@{{prompt_file}}"]
 ```
 
 By default, `lazygh` uses the prompt in [prompt.go](internal/story/prompt.go).
