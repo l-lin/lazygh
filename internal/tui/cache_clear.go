@@ -60,7 +60,7 @@ func (program *Program) clearCachedData() error {
 	program.notificationsLoadStarted = false
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""
-	program.pullRequestMutationLoadingMessage = ""
+	program.ghCommandLoadingMessage = ""
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestSearchState()

@@ -116,9 +116,9 @@ func newBuildStore() *buildStore {
 }
 
 type statusStore struct {
-	storyReviewLoading                bool
-	feedbackMessage                   string
-	pullRequestMutationLoadingMessage string
+	storyReviewLoading      bool
+	feedbackMessage         string
+	ghCommandLoadingMessage string
 }
 
 func newStatusStore() *statusStore {

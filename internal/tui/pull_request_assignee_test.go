@@ -519,6 +519,8 @@ func TestAssignPullRequest_GivenChangedSelection_WhenSearchingAndSubmittingWithA
 	submitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewActionsPopupSearchName, gocui.KeyAltEnter)
 	then_noError(t, executeHandler(gui, searchView))
 	then_noError(t, submitHandler(gui, searchView))
+	then_statusLineContains(t, gui, "Running `gh pr edit 42 -R acme/widgets --add-assignee bob`.")
+	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
 	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if !reflect.DeepEqual(loader.updateAssigneeCalls, []string{"acme/widgets#42"}) {

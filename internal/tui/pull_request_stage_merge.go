@@ -27,7 +27,7 @@ const (
 )
 
 func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupAction {
-	if !program.pullRequestStateMutationVisible() || program.pullRequestMutationLoading() {
+	if !program.pullRequestStateMutationVisible() {
 		return nil
 	}
 
@@ -136,9 +136,13 @@ func (program *Program) updatePullRequestBranchAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeMarkPullRequestReadyForReviewAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeMarkPullRequestReadyForReviewAction(gui *gocui.Gui) actionsPopupActionResult {
 	return program.executePullRequestLifecycleMutation(
+		gui,
 		"gh pr ready",
+		func(target pullRequestActionTarget) string {
+			return pullRequestReadyCommand(target.repository, target.number, false)
+		},
 		func(repository string, number int) error {
 			return program.pullRequestMutations.MarkPullRequestReadyForReview(repository, number)
 		},
@@ -148,9 +152,13 @@ func (program *Program) executeMarkPullRequestReadyForReviewAction(_ *gocui.Gui)
 	)
 }
 
-func (program *Program) executeConvertPullRequestToDraftAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeConvertPullRequestToDraftAction(gui *gocui.Gui) actionsPopupActionResult {
 	return program.executePullRequestLifecycleMutation(
+		gui,
 		"gh pr ready",
+		func(target pullRequestActionTarget) string {
+			return pullRequestReadyCommand(target.repository, target.number, true)
+		},
 		func(repository string, number int) error {
 			return program.pullRequestMutations.ConvertPullRequestToDraft(repository, number)
 		},
@@ -160,9 +168,13 @@ func (program *Program) executeConvertPullRequestToDraftAction(_ *gocui.Gui) act
 	)
 }
 
-func (program *Program) executeClosePullRequestAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeClosePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
 	return program.executePullRequestLifecycleMutation(
+		gui,
 		"gh pr close",
+		func(target pullRequestActionTarget) string {
+			return closePullRequestCommand(target.repository, target.number)
+		},
 		func(repository string, number int) error {
 			return program.pullRequestMutations.ClosePullRequest(repository, number)
 		},
@@ -172,9 +184,13 @@ func (program *Program) executeClosePullRequestAction(_ *gocui.Gui) actionsPopup
 	)
 }
 
-func (program *Program) executeReopenPullRequestAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeReopenPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
 	return program.executePullRequestLifecycleMutation(
+		gui,
 		"gh pr reopen",
+		func(target pullRequestActionTarget) string {
+			return reopenPullRequestCommand(target.repository, target.number)
+		},
 		func(repository string, number int) error {
 			return program.pullRequestMutations.ReopenPullRequest(repository, number)
 		},
@@ -195,25 +211,18 @@ func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) acti
 	return program.startSquashMergePullRequestMutation(gui)
 }
 
-func (program *Program) executeUpdatePullRequestBranchAction(_ *gocui.Gui) actionsPopupActionResult {
-	target, ok := program.selectedPullRequestActionTarget()
-	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
-	}
-	summary, ok := program.currentPullRequestSummary()
-	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
-	}
-	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
-	}
-	if err := program.pullRequestMutations.UpdatePullRequestBranch(target.repository, target.number); err != nil {
-		return actionsPopupActionResult{err: normalizedPullRequestMutationError(err, "gh pr update-branch")}
+func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) actionsPopupActionResult {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupActionResult{err: err}
 	}
 
-	program.applyVisiblePullRequestBranchUpdate(summary)
-	program.setFeedback(program.model.Focus(), pullRequestBranchUpdatedSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return program.startActionsPopupAsyncGHCommand(gui, updatePullRequestBranchCommand(target.repository, target.number), func() error {
+		return normalizedPullRequestMutationError(program.pullRequestMutations.UpdatePullRequestBranch(target.repository, target.number), "gh pr update-branch")
+	}, func() {
+		program.applyVisiblePullRequestBranchUpdate(summary)
+		program.setFeedback(program.model.Focus(), pullRequestBranchUpdatedSuccessMessage)
+	})
 }
 
 func (program *Program) currentPullRequestDraftState() bool {
@@ -238,48 +247,49 @@ func (program *Program) currentPullRequestCanUpdateBranch() bool {
 	return strings.EqualFold(strings.TrimSpace(summary.MergeStateStatus), "BEHIND")
 }
 
-func (program *Program) executePullRequestLifecycleMutation(commandName string, mutate func(string, int) error, state string, isDraft bool, successMessage string) actionsPopupActionResult {
+func (program *Program) selectedPullRequestMutationContext() (pullRequestActionTarget, githubdomain.PullRequest, error) {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return pullRequestActionTarget{}, githubdomain.PullRequest{}, errActionsPopupActionUnavailable
 	}
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return pullRequestActionTarget{}, githubdomain.PullRequest{}, errActionsPopupActionUnavailable
 	}
 	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return pullRequestActionTarget{}, githubdomain.PullRequest{}, errors.New("github loader is unavailable")
 	}
-	if err := mutate(target.repository, target.number); err != nil {
-		return actionsPopupActionResult{err: normalizedPullRequestMutationError(err, commandName)}
+	return target, summary, nil
+}
+
+func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, commandName string, command func(pullRequestActionTarget) string, mutate func(string, int) error, state string, isDraft bool, successMessage string) actionsPopupActionResult {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupActionResult{err: err}
 	}
 
-	program.applyVisiblePullRequestLifecycleMutation(summary, state, isDraft)
-	program.setFeedback(program.model.Focus(), successMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return program.startActionsPopupAsyncGHCommand(gui, command(target), func() error {
+		return normalizedPullRequestMutationError(mutate(target.repository, target.number), commandName)
+	}, func() {
+		program.applyVisiblePullRequestLifecycleMutation(summary, state, isDraft)
+		program.setFeedback(program.model.Focus(), successMessage)
+	})
 }
 
 func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) actionsPopupActionResult {
-	target, ok := program.selectedPullRequestActionTarget()
-	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
-	}
-	summary, ok := program.currentPullRequestSummary()
-	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
-	}
-	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupActionResult{err: err}
 	}
 
-	program.feedbackMessage = ""
-	program.pullRequestMutationLoadingMessage = fmt.Sprintf("Running `%s`.", squashMergePullRequestCommand(target.repository, target.number))
+	command := squashMergePullRequestCommand(target.repository, target.number)
+	program.startGHCommandLoading(command)
 	if gui == nil {
 		if err := program.runSquashMergePullRequestMutation(target); err != nil {
-			program.pullRequestMutationLoadingMessage = ""
+			program.clearGHCommandLoading()
 			return actionsPopupActionResult{err: err}
 		}
-		program.pullRequestMutationLoadingMessage = ""
+		program.clearGHCommandLoading()
 		program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
 		program.setFeedback(program.model.Focus(), pullRequestSquashMergedSuccessMessage)
 		return actionsPopupActionResult{closePopup: true}
@@ -288,7 +298,7 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 	program.asyncRunner.Go(func() {
 		err := program.runSquashMergePullRequestMutation(target)
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			program.pullRequestMutationLoadingMessage = ""
+			program.clearGHCommandLoading()
 			if err != nil {
 				program.setFeedback(program.model.Focus(), strings.TrimSpace(err.Error()))
 				return program.refreshViews(gui)
@@ -308,8 +318,28 @@ func (program *Program) runSquashMergePullRequestMutation(target pullRequestActi
 	return nil
 }
 
+func pullRequestReadyCommand(repository string, number int, undo bool) string {
+	command := formatStatusLineCommand("gh", "pr", "ready", fmt.Sprintf("%d", number), "-R", repository)
+	if undo {
+		return command + " --undo"
+	}
+	return command
+}
+
+func closePullRequestCommand(repository string, number int) string {
+	return formatStatusLineCommand("gh", "pr", "close", fmt.Sprintf("%d", number), "-R", repository)
+}
+
+func reopenPullRequestCommand(repository string, number int) string {
+	return formatStatusLineCommand("gh", "pr", "reopen", fmt.Sprintf("%d", number), "-R", repository)
+}
+
 func squashMergePullRequestCommand(repository string, number int) string {
-	return fmt.Sprintf("gh pr merge %d -R %s --squash", number, strings.TrimSpace(repository))
+	return formatStatusLineCommand("gh", "pr", "merge", fmt.Sprintf("%d", number), "-R", repository, "--squash")
+}
+
+func updatePullRequestBranchCommand(repository string, number int) string {
+	return formatStatusLineCommand("gh", "pr", "update-branch", fmt.Sprintf("%d", number), "-R", repository)
 }
 
 func (program *Program) applyVisiblePullRequestLifecycleMutation(summary githubdomain.PullRequest, state string, isDraft bool) {

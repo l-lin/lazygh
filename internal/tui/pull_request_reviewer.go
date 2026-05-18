@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -43,20 +44,24 @@ func reRequestPullRequestReviewActionTitle(reviewerLogin string) string {
 	return reRequestPullRequestReviewActionTitlePrefix + " " + label
 }
 
-func (program *Program) executeReRequestPullRequestReviewAction(_ *gocui.Gui, target pullRequestReviewerRequestTarget) actionsPopupActionResult {
+func (program *Program) executeReRequestPullRequestReviewAction(gui *gocui.Gui, target pullRequestReviewerRequestTarget) actionsPopupActionResult {
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.reviewerLogin) == "" {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.pullRequestMutations.RequestPullRequestReviewer(target.repository, target.number, target.reviewerLogin); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.setFeedback(program.model.Focus(), pullRequestReviewReRequestedSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return program.startActionsPopupAsyncGHCommand(gui, requestPullRequestReviewerCommand(target.repository, target.number, target.reviewerLogin), func() error {
+		return program.pullRequestMutations.RequestPullRequestReviewer(target.repository, target.number, target.reviewerLogin)
+	}, func() {
+		program.invalidatePullRequestDetail(target.repository, target.number)
+		program.setFeedback(program.model.Focus(), pullRequestReviewReRequestedSuccessMessage)
+	})
+}
+
+func requestPullRequestReviewerCommand(repository string, number int, reviewerLogin string) string {
+	return formatStatusLineCommand("gh", "pr", "edit", fmt.Sprintf("%d", number), "-R", repository, "--add-reviewer", reviewerLogin)
 }
 
 func (program *Program) currentPullRequestReviewerRequestTargetAtDetailCursor() (pullRequestReviewerRequestTarget, bool) {

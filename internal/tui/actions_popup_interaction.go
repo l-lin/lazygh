@@ -240,7 +240,7 @@ func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *goc
 
 func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
+	if !program.model.ActionsPopupVisible() || program.ghCommandLoading() {
 		return nil
 	}
 

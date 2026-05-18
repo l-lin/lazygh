@@ -152,6 +152,103 @@ func TestActionsPopup_GivenAClosedDraftPullRequestDescriptionDetail_WhenOpening_
 	}
 }
 
+func TestActionsPopup_GivenAReadyForReviewMutation_WhenExecuting_ThenItKeepsThePopupOpenShowsTheStatusLineSpinnerAndDelaysTheGitHubCall(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", true)
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": given_pullRequestLifecycleDetail("OPEN", true),
+		},
+	}
+	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", true))}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(markPullRequestReadyForReviewActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), markPullRequestReadyForReviewActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued ready-for-review mutation, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.markReadyForReviewCalls) != 0 {
+		t.Fatalf("expected the ready-for-review call to wait for the queued run, actual %v", loader.markReadyForReviewCalls)
+	}
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	_, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, "Running `gh pr ready 42 -R acme/widgets`.")
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "DRAFT") {
+		t.Fatalf("expected the detail buffer to keep %q while the mutation is in flight, actual %q", "DRAFT", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "PR marked ready for review") {
+		t.Fatalf("expected the detail buffer to avoid the success message while the mutation is in flight, actual %q", detailView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenAConvertToDraftMutation_WhenExecuting_ThenItKeepsThePopupOpenShowsTheStatusLineSpinnerAndDelaysTheGitHubCall(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", false)
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": given_pullRequestLifecycleDetail("OPEN", false),
+		},
+	}
+	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(convertPullRequestToDraftActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), convertPullRequestToDraftActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued convert-to-draft mutation, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.convertToDraftCalls) != 0 {
+		t.Fatalf("expected the convert-to-draft call to wait for the queued run, actual %v", loader.convertToDraftCalls)
+	}
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	_, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, "Running `gh pr ready 42 -R acme/widgets --undo`.")
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "OPEN") || strings.Contains(detailView.Buffer(), "DRAFT") {
+		t.Fatalf("expected the detail buffer to keep the open non-draft state while the mutation is in flight, actual %q", detailView.Buffer())
+	}
+}
+
 func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenStateFeedbackAndCacheInvalidationAreVisible(t *testing.T) {
 	summary := given_pullRequestLifecycleSummary("OPEN", true)
 	model := given_pullRequestLifecycleModel(summary)
@@ -183,6 +280,11 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued ready-for-review mutation, actual %d", len(asyncRunner.runs))
+	}
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.markReadyForReviewCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected ready-for-review calls %v, actual %v", []string{"acme/widgets#42"}, loader.markReadyForReviewCalls)
 	}
@@ -210,8 +312,8 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 	if len(subject.reviewDiffRenderCache) != 0 {
 		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
 	}
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued ready-for-review mutation plus one queued detail refresh, actual %d", len(asyncRunner.runs))
 	}
 }
 
@@ -246,6 +348,11 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued close mutation, actual %d", len(asyncRunner.runs))
+	}
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.closePullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected close pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.closePullRequestCalls)
 	}
@@ -270,8 +377,8 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 	if len(subject.reviewDiffRenderCache) != 0 {
 		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
 	}
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued close mutation plus one queued detail refresh, actual %d", len(asyncRunner.runs))
 	}
 }
 
@@ -306,6 +413,11 @@ func TestLayout_GivenAnUpdateBranchMutation_WhenRendering_ThenItRemovesTheOutOfD
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued update-branch mutation, actual %d", len(asyncRunner.runs))
+	}
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.updateBranchCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected update branch calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
 	}
@@ -332,8 +444,8 @@ func TestLayout_GivenAnUpdateBranchMutation_WhenRendering_ThenItRemovesTheOutOfD
 	if len(subject.reviewDiffRenderCache) != 0 {
 		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
 	}
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued update-branch mutation plus one queued detail refresh, actual %d", len(asyncRunner.runs))
 	}
 }
 
@@ -453,6 +565,11 @@ func TestLayout_GivenAReopenClosedDraftPullRequestMutation_WhenRendering_ThenThe
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued reopen mutation, actual %d", len(asyncRunner.runs))
+	}
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.reopenPullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
 	}
@@ -476,8 +593,8 @@ func TestLayout_GivenAReopenClosedDraftPullRequestMutation_WhenRendering_ThenThe
 	if len(subject.reviewDiffRenderCache) != 0 {
 		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
 	}
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued reopen mutation plus one queued detail refresh, actual %d", len(asyncRunner.runs))
 	}
 }
 

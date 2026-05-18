@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -533,7 +534,7 @@ func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.Pul
 	return actionsPopupActionResult{}
 }
 
-func (program *Program) executeSubmitAssigneePickerAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSubmitAssigneePickerAction(gui *gocui.Gui) actionsPopupActionResult {
 	if !program.assigneePickerVisible() {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
@@ -541,17 +542,30 @@ func (program *Program) executeSubmitAssigneePickerAction(_ *gocui.Gui) actionsP
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 
+	repository := program.assigneePicker.target.repository
+	number := program.assigneePicker.target.number
 	addLogins, removeLogins := program.assigneePicker.selectedDiff()
 	if len(addLogins) == 0 && len(removeLogins) == 0 {
 		return actionsPopupActionResult{closePopup: true}
 	}
-	if err := program.pullRequestMutations.UpdatePullRequestAssignees(program.assigneePicker.target.repository, program.assigneePicker.target.number, addLogins, removeLogins); err != nil {
-		return actionsPopupActionResult{err: normalizedAssigneePickerError(err)}
-	}
 
-	program.optimisticallyUpdatePullRequestAssignees(program.assigneePicker.target.repository, program.assigneePicker.target.number, addLogins, removeLogins)
-	program.setFeedback(program.model.Focus(), pullRequestAssigneesUpdatedSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return program.startActionsPopupAsyncGHCommand(gui, updatePullRequestAssigneesCommand(repository, number, addLogins, removeLogins), func() error {
+		return normalizedAssigneePickerError(program.pullRequestMutations.UpdatePullRequestAssignees(repository, number, addLogins, removeLogins))
+	}, func() {
+		program.optimisticallyUpdatePullRequestAssignees(repository, number, addLogins, removeLogins)
+		program.setFeedback(program.model.Focus(), pullRequestAssigneesUpdatedSuccessMessage)
+	})
+}
+
+func updatePullRequestAssigneesCommand(repository string, number int, addLogins []string, removeLogins []string) string {
+	arguments := []string{"gh", "pr", "edit", fmt.Sprintf("%d", number), "-R", repository}
+	if len(addLogins) > 0 {
+		arguments = append(arguments, "--add-assignee", strings.Join(addLogins, ","))
+	}
+	if len(removeLogins) > 0 {
+		arguments = append(arguments, "--remove-assignee", strings.Join(removeLogins, ","))
+	}
+	return formatStatusLineCommand(arguments...)
 }
 
 func (program *Program) optimisticallyUpdatePullRequestAssignees(repository string, number int, addLogins []string, removeLogins []string) {
