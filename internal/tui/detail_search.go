@@ -56,7 +56,12 @@ func detailSearchMatchRanges(matches []detailSearchMatch) map[int][]detailColumn
 }
 
 func (state *detailViewState) syncSearch(document detailDocument, query string) {
-	state.searchMatches = document.searchMatches(query)
+	trimmedQuery := strings.TrimSpace(query)
+	if state.searchCacheDocumentID != document.id || state.searchCacheQuery != trimmedQuery {
+		state.searchMatches = document.searchMatches(trimmedQuery)
+		state.searchCacheDocumentID = document.id
+		state.searchCacheQuery = trimmedQuery
+	}
 	state.currentSearchMatch = state.searchMatchIndexAtCursor(document)
 }
 

@@ -1,6 +1,11 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+	"sync/atomic"
+)
+
+var detailDocumentSequence atomic.Uint64
 
 func newDetailDocument(text string, width int) detailDocument {
 	return newDetailDocumentWithWrap(text, width, true)
@@ -18,6 +23,7 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 	}
 
 	document := detailDocument{
+		id:                   detailDocumentSequence.Add(1),
 		text:                 []rune(strings.Join(visibleLines, "\n")),
 		lines:                make([][]rune, 0, len(styledLines)),
 		lineStylePrefixes:    make([][]string, 0, len(styledLines)),

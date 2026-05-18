@@ -36,6 +36,7 @@ type detailWrappedRow struct {
 }
 
 type detailDocument struct {
+	id                   uint64
 	text                 []rune
 	lines                [][]rune
 	lineStylePrefixes    [][]string
@@ -57,6 +58,8 @@ type detailViewState struct {
 	pendingKeySequence        keySequenceState
 	searchMatches             []detailSearchMatch
 	currentSearchMatch        int
+	searchCacheDocumentID     uint64
+	searchCacheQuery          string
 	manualViewportScroll      bool
 	preserveViewportSyncCount int
 }
