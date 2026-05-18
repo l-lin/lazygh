@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestGlamourMarkdownRenderer_GivenALongParagraphAndDisabledWordWrap_WhenRendering_ThenItDoesNotInsertSoftWrapNewlines(t *testing.T) {
@@ -31,6 +32,47 @@ func TestGlamourMarkdownRenderer_GivenALongParagraphAndPositiveWidth_WhenRenderi
 	if actualDocument.lineCount() < 2 {
 		t.Fatalf("expected multiple visible paragraph lines, actual %d in %q", actualDocument.lineCount(), actual)
 	}
+}
+
+func TestGlamourMarkdownRenderer_GivenAFencedCodeBlockWithAnInteriorBlankLine_WhenRendering_ThenItKeepsExactlyOneBlankCodeLineInsideTheFence(t *testing.T) {
+	renderer := glamourMarkdownRenderer{}
+	markdown := strings.Join([]string{
+		"```",
+		"With spring.jpa.bootstrap-mode=default (Spring Boot's default), every",
+		"@Query is parsed at startup into",
+		"Hibernate's Semantic Query Model (SQM) and cached in",
+		"NamedQueryRepository/QueryPlanCache. Parsing involves:",
+		"",
+		"1. JPQL → SQM tree",
+		"2. SQM → SQL AST",
+		"3. SQL AST → SQL string",
+		"```",
+	}, "\n")
+
+	actual, actualErr := renderer.Render(markdown, disabledMarkdownWordWrap)
+
+	then_noError(t, actualErr)
+	actualDocument := newDetailDocumentWithWrap(actual, 200, false)
+	parsingLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "Parsing involves:")
+	firstListLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "1. JPQL → SQM tree")
+
+	actualBlankLineCount := 0
+	actualBlankLineIndex := -1
+	for lineIndex := parsingLineIndex + 1; lineIndex < firstListLineIndex; lineIndex++ {
+		if strings.TrimSpace(string(actualDocument.lines[lineIndex])) != "" {
+			continue
+		}
+		actualBlankLineCount++
+		actualBlankLineIndex = lineIndex
+	}
+	if actualBlankLineCount != 1 {
+		t.Fatalf("expected exactly one blank line inside the fenced code block, actual %d in %q", actualBlankLineCount, actualDocument.text)
+	}
+	if actualBlankLineIndex < 0 || len(actualDocument.lineStylePrefixes[actualBlankLineIndex]) == 0 {
+		t.Fatalf("expected the blank fenced-code line to keep its code-block styling, actual line=%d prefixes=%v in %q", actualBlankLineIndex, actualDocument.lineStylePrefixes, actualDocument.text)
+	}
+	then_detailDocumentLineRuneRangeHasBackgroundHex(t, actualDocument, actualBlankLineIndex, 0, len(actualDocument.lineStylePrefixes[actualBlankLineIndex]), theme.SelectedLineBackgroundHex, "fenced code blank line background")
+	then_detailDocumentLineRuneRangeHasBackgroundHex(t, actualDocument, firstListLineIndex, 0, len(actualDocument.lineStylePrefixes[firstListLineIndex]), theme.SelectedLineBackgroundHex, "fenced code numbered line background")
 }
 
 func TestLayout_GivenDescriptionTabWithALongMarkdownParagraph_WhenBuildingViewZeroDocument_ThenItWordWrapsTheDetailBody(t *testing.T) {

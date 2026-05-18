@@ -17,7 +17,9 @@ type styledTextLine struct {
 }
 
 func splitStyledTextLines(text string) []styledTextLine {
-	return addMarkdownCodeBlockPaddingLines(parseStyledTextLines(text))
+	parsedLines := parseStyledTextLines(text)
+	normalizedLines := normalizeMarkdownCodeBlockAdjacentBlankLines(parsedLines)
+	return addMarkdownCodeBlockPaddingLines(normalizedLines)
 }
 
 func parseStyledTextLines(text string) []styledTextLine {
@@ -141,9 +143,7 @@ func normalizeMarkdownCodeBlockAdjacentBlankLines(lines []styledTextLine) []styl
 		previousLineIsCodeBlock := index > 0 && styledLineUsesCommentBoxCodeBlockBackground(lines[index-1])
 		nextLineIsCodeBlock := index < len(lines)-1 && styledLineUsesCommentBoxCodeBlockBackground(lines[index+1])
 		switch {
-		case nextLineIsCodeBlock && !previousLineIsCodeBlock:
-			normalizedLines = append(normalizedLines, markedStyledPaddingLine(lines[index+1]))
-		case previousLineIsCodeBlock && !nextLineIsCodeBlock:
+		case previousLineIsCodeBlock && nextLineIsCodeBlock:
 			normalizedLines = append(normalizedLines, markedStyledPaddingLine(lines[index-1]))
 		default:
 			normalizedLines = append(normalizedLines, line)
