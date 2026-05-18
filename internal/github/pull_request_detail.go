@@ -16,6 +16,7 @@ type PullRequestDetail struct {
 	UpdatedAt            string                     `json:"updatedAt"`
 	Labels               []PullRequestLabel         `json:"labels"`
 	Assignees            []PullRequestAuthor        `json:"assignees"`
+	ReviewDecision       string                     `json:"reviewDecision"`
 	ReviewRequests       []PullRequestReviewRequest `json:"reviewRequests"`
 	BaseRefName          string                     `json:"baseRefName"`
 	HeadRefName          string                     `json:"headRefName"`

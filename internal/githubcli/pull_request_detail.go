@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
+const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewDecision,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
 	ErrInvalidPullRequestDetailResponse           = fmt.Errorf("invalid pull request detail response")
@@ -29,6 +29,7 @@ type PullRequestDetail struct {
 	UpdatedAt            string                     `json:"updatedAt"`
 	Labels               []PullRequestLabel         `json:"labels"`
 	Assignees            []PullRequestAuthor        `json:"assignees"`
+	ReviewDecision       string                     `json:"reviewDecision"`
 	ReviewRequests       []PullRequestReviewRequest `json:"reviewRequests"`
 	BaseRefName          string                     `json:"baseRefName"`
 	HeadRefName          string                     `json:"headRefName"`
@@ -232,6 +233,7 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 	detail.State = strings.TrimSpace(detail.State)
 	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
 	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
+	detail.ReviewDecision = strings.TrimSpace(detail.ReviewDecision)
 	detail.BaseRefName = strings.TrimSpace(detail.BaseRefName)
 	detail.HeadRefName = strings.TrimSpace(detail.HeadRefName)
 	detail.MergeStateStatus = strings.TrimSpace(detail.MergeStateStatus)

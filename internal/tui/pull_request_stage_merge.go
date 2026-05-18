@@ -379,21 +379,25 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullR
 	result, ok := program.pullRequestDetailCache[key]
 	if !ok || result.err != nil {
 		result = pullRequestDetailResult{detail: githubdomain.PullRequestDetail{
-			Title:   strings.TrimSpace(summary.Title),
-			Number:  summary.Number,
-			URL:     strings.TrimSpace(summary.URL),
-			Body:    strings.TrimSpace(summary.Body),
-			State:   state,
-			IsDraft: isDraft,
+			Title:          strings.TrimSpace(summary.Title),
+			Number:         summary.Number,
+			URL:            strings.TrimSpace(summary.URL),
+			Body:           strings.TrimSpace(summary.Body),
+			ReviewDecision: strings.TrimSpace(summary.ReviewDecision),
+			State:          state,
+			IsDraft:        isDraft,
 		}}
 	} else {
 		result.detail.Title = firstNonEmpty(result.detail.Title, strings.TrimSpace(summary.Title))
 		result.detail.URL = firstNonEmpty(result.detail.URL, strings.TrimSpace(summary.URL))
 		result.detail.Body = firstNonEmpty(result.detail.Body, strings.TrimSpace(summary.Body))
+		result.detail.ReviewDecision = firstNonEmpty(result.detail.ReviewDecision, strings.TrimSpace(summary.ReviewDecision))
 		result.detail.State = state
 		result.detail.IsDraft = isDraft
 	}
 	if strings.EqualFold(state, "MERGED") {
+		result.detail.ReviewDecision = ""
+		result.detail.ReviewRequests = nil
 		result.detail.Mergeable = ""
 		result.detail.MergeStateStatus = ""
 	}

@@ -25,7 +25,7 @@ func TestGetPullRequestDetail_GivenValidGhResponsesWithInlineComments_WhenFetchi
 
 	then_noError(t, actualErr)
 	then_commandsAre(t, runner, []fakeCommandCall{
-		{name: "gh", args: []string{"pr", "view", "42", "-R", "acme/widgets", "--json", "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"}},
+		{name: "gh", args: []string{"pr", "view", "42", "-R", "acme/widgets", "--json", pullRequestDetailJSONFields}},
 		{name: "gh", args: []string{"api", "repos/acme/widgets/compare/main...feature/detail"}},
 		{name: "gh", args: []string{"pr", "checks", "42", "-R", "acme/widgets", "--json", "bucket,completedAt,description,event,link,name,startedAt,state,workflow"}},
 		{name: "gh", args: []string{"api", "repos/acme/widgets/pulls/42/comments?per_page=100", "--paginate", "--slurp"}},
@@ -182,10 +182,10 @@ func TestGetPullRequestDetail_GivenMissingOptionalFields_WhenFetching_ThenItNorm
 	}
 }
 
-func TestGetPullRequestDetail_GivenApprovalReviews_WhenFetching_ThenItReturnsNormalizedReviews(t *testing.T) {
+func TestGetPullRequestDetail_GivenApprovalReviews_WhenFetching_ThenItReturnsNormalizedReviewsAndReviewDecision(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{
-			{stdout: []byte(`{"title":"Approvals","number":42,"body":"Body","state":"OPEN","reviews":[{"author":{"login":" reviewer-one "},"state":" APPROVED ","submittedAt":" 2026-04-21T10:00:00Z "},{"author":{"login":" reviewer-two "},"state":" COMMENTED ","submittedAt":" 2026-04-21T11:00:00Z "}]}`)},
+			{stdout: []byte(`{"title":"Approvals","number":42,"body":"Body","state":"OPEN","reviewDecision":" APPROVED ","reviews":[{"author":{"login":" reviewer-one "},"state":" APPROVED ","submittedAt":" 2026-04-21T10:00:00Z "},{"author":{"login":" reviewer-two "},"state":" COMMENTED ","submittedAt":" 2026-04-21T11:00:00Z "}]}`)},
 			{stdout: []byte(`[]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reactionGroups":[],"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
@@ -196,6 +196,9 @@ func TestGetPullRequestDetail_GivenApprovalReviews_WhenFetching_ThenItReturnsNor
 	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
 
 	then_noError(t, actualErr)
+	if actual.ReviewDecision != "APPROVED" {
+		t.Fatalf("expected review decision %q, actual %q", "APPROVED", actual.ReviewDecision)
+	}
 	if len(actual.Reviews) != 2 {
 		t.Fatalf("expected 2 normalized reviews, actual %d", len(actual.Reviews))
 	}

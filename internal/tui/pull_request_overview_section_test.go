@@ -215,6 +215,35 @@ func TestRenderPullRequestOverviewSection_GivenMultipleEntriesInTheSameBlock_Whe
 	}
 }
 
+func TestRenderPullRequestOverviewSection_GivenApprovedRequestedTeamReview_WhenFormatting_ThenTheMergeChecksReviewsEntryTurnsGreen(t *testing.T) {
+	detail := githubcli.PullRequestDetail{
+		ReviewDecision:    "APPROVED",
+		ReviewRequests:    []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "Team", Name: "Platform", Slug: "acme/platform", Organization: &githubcli.PullRequestReviewRequestOrganization{Login: "acme"}}}},
+		Reviews:           []githubcli.PullRequestReview{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"}},
+		Mergeable:         "MERGEABLE",
+		MergeStateStatus:  "CLEAN",
+		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", WorkflowName: "CI", Status: "COMPLETED", Conclusion: "SUCCESS"}},
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestOverviewSection(buildPullRequestOverviewSection(detail), 80), 80)
+	actualText := string(actualDocument.text)
+
+	if strings.Contains(actualText, "1 reviewer has not approved yet.") {
+		t.Fatalf("expected the merge checks review summary to drop the pending requested team message, actual %q", actualText)
+	}
+	for _, expected := range []string{pullRequestOverviewSuccessIcon + " Merge Checks", "1 reviewer has approved."} {
+		if !strings.Contains(actualText, expected) {
+			t.Fatalf("expected overview section to contain %q, actual %q", expected, actualText)
+		}
+	}
+
+	mergeChecksLineIndex, mergeChecksLine := given_detailDocumentLineContaining(t, actualDocument, pullRequestOverviewSuccessIcon+" Merge Checks")
+	mergeChecksIconIndex := given_runeIndexInString(t, mergeChecksLine, pullRequestOverviewSuccessIcon)
+	if actualStylePrefix := actualDocument.lineStylePrefixes[mergeChecksLineIndex][mergeChecksIconIndex]; actualStylePrefix != foregroundColorEscape(theme.SuccessHex) {
+		t.Fatalf("expected merge checks heading prefix %q, actual %q", foregroundColorEscape(theme.SuccessHex), actualStylePrefix)
+	}
+}
+
 func TestRenderPullRequestOverviewSection_GivenPartialMetadata_WhenFormatting_ThenItShowsKnownValuesAndKeepsPlaceholdersForMissingBlocks(t *testing.T) {
 	detail := githubcli.PullRequestDetail{
 		ReviewRequests:   []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}}},

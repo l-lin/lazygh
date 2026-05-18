@@ -46,6 +46,8 @@ type pullRequestReviewerOverview struct {
 	RequestedTeamNames    []string
 	ApprovedCount         int
 	PendingCount          int
+	PendingReviewerCount  int
+	PendingTeamCount      int
 	ChangesRequestedCount int
 	TotalCount            int
 }
@@ -228,6 +230,7 @@ func buildPullRequestReviewerOverview(detail githubdomain.PullRequestDetail) pul
 			reviewers.ChangesRequestedCount++
 		default:
 			reviewers.PendingCount++
+			reviewers.PendingReviewerCount++
 		}
 	}
 
@@ -240,6 +243,7 @@ func buildPullRequestReviewerOverview(detail githubdomain.PullRequestDetail) pul
 			seenRequestedTeamNames[requestedTeamName] = true
 			reviewers.RequestedTeamNames = append(reviewers.RequestedTeamNames, requestedTeamName)
 			reviewers.PendingCount++
+			reviewers.PendingTeamCount++
 			reviewers.TotalCount++
 			continue
 		}
@@ -255,6 +259,7 @@ func buildPullRequestReviewerOverview(detail githubdomain.PullRequestDetail) pul
 		}
 		entriesByLabel[label] = pullRequestOverviewEntry{Label: label, Status: pullRequestOverviewStatusPending, ShowIcon: true}
 		reviewers.PendingCount++
+		reviewers.PendingReviewerCount++
 		reviewers.TotalCount++
 	}
 
@@ -316,26 +321,43 @@ func latestPullRequestReviewsByLogin(reviews []githubdomain.PullRequestReview) m
 
 func buildPullRequestMergeChecksBlock(detail githubdomain.PullRequestDetail, reviewers pullRequestReviewerOverview) pullRequestOverviewBlock {
 	entries := []pullRequestOverviewEntry{
-		buildPullRequestReviewSummaryEntry(reviewers),
+		buildPullRequestReviewSummaryEntry(reviewers, detail.ReviewDecision),
 		buildPullRequestBuildSummaryEntry(detail.StatusCheckRollup),
 		buildPullRequestMergeabilityEntry(detail),
 	}
 	return pullRequestOverviewBlock{Title: "Merge Checks", Status: pullRequestOverviewBlockStatus(entries), Entries: entries}
 }
 
-func buildPullRequestReviewSummaryEntry(reviewers pullRequestReviewerOverview) pullRequestOverviewEntry {
+func buildPullRequestReviewSummaryEntry(reviewers pullRequestReviewerOverview, reviewDecision string) pullRequestOverviewEntry {
+	reviewDecisionStatus := pullRequestOverviewStatusForReviewDecision(reviewDecision)
+	effectivePendingCount := reviewers.PendingReviewerCount
+	if reviewDecisionStatus != pullRequestOverviewStatusSuccess {
+		effectivePendingCount += reviewers.PendingTeamCount
+	}
+
 	switch {
-	case reviewers.ChangesRequestedCount > 0:
+	case reviewers.ChangesRequestedCount > 0 || reviewDecisionStatus == pullRequestOverviewStatusFailure:
+		detail := fmt.Sprintf("%d %s requested changes.", reviewers.ChangesRequestedCount, pluralize(reviewers.ChangesRequestedCount, "reviewer has", "reviewers have"))
+		if reviewers.ChangesRequestedCount == 0 {
+			detail = "GitHub still reports changes requested."
+		}
 		return pullRequestOverviewEntry{
 			Label:    "Reviews",
-			Detail:   fmt.Sprintf("%d %s requested changes.", reviewers.ChangesRequestedCount, pluralize(reviewers.ChangesRequestedCount, "reviewer has", "reviewers have")),
+			Detail:   detail,
 			Status:   pullRequestOverviewStatusFailure,
 			ShowIcon: true,
 		}
-	case reviewers.PendingCount > 0:
+	case effectivePendingCount > 0:
 		return pullRequestOverviewEntry{
 			Label:    "Reviews",
-			Detail:   fmt.Sprintf("%d %s not approved yet.", reviewers.PendingCount, pluralize(reviewers.PendingCount, "reviewer has", "reviewers have")),
+			Detail:   fmt.Sprintf("%d %s not approved yet.", effectivePendingCount, pluralize(effectivePendingCount, "reviewer has", "reviewers have")),
+			Status:   pullRequestOverviewStatusPending,
+			ShowIcon: true,
+		}
+	case reviewDecisionStatus == pullRequestOverviewStatusPending:
+		return pullRequestOverviewEntry{
+			Label:    "Reviews",
+			Detail:   "GitHub still requires review approval.",
 			Status:   pullRequestOverviewStatusPending,
 			ShowIcon: true,
 		}
@@ -343,6 +365,13 @@ func buildPullRequestReviewSummaryEntry(reviewers pullRequestReviewerOverview) p
 		return pullRequestOverviewEntry{
 			Label:    "Reviews",
 			Detail:   fmt.Sprintf("%d %s approved.", reviewers.ApprovedCount, pluralize(reviewers.ApprovedCount, "reviewer has", "reviewers have")),
+			Status:   pullRequestOverviewStatusSuccess,
+			ShowIcon: true,
+		}
+	case reviewDecisionStatus == pullRequestOverviewStatusSuccess:
+		return pullRequestOverviewEntry{
+			Label:    "Reviews",
+			Detail:   "Required reviews approved.",
 			Status:   pullRequestOverviewStatusSuccess,
 			ShowIcon: true,
 		}
