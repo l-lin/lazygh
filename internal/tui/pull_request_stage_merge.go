@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -26,7 +27,7 @@ const (
 )
 
 func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupAction {
-	if !program.pullRequestStateMutationVisible() {
+	if !program.pullRequestStateMutationVisible() || program.pullRequestMutationLoading() {
 		return nil
 	}
 
@@ -183,7 +184,7 @@ func (program *Program) executeReopenPullRequestAction(_ *gocui.Gui) actionsPopu
 	)
 }
 
-func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
 	if strings.TrimSpace(program.actionsPopupPendingConfirmationActionID) != squashMergePullRequestActionTitle {
 		program.actionsPopupPendingConfirmationActionID = squashMergePullRequestActionTitle
 		program.actionsPopupErrorMessage = ""
@@ -191,20 +192,7 @@ func (program *Program) executeSquashMergePullRequestAction(_ *gocui.Gui) action
 	}
 
 	program.clearActionsPopupPendingConfirmation()
-	result := program.executePullRequestLifecycleMutation(
-		"gh pr merge",
-		func(repository string, number int) error {
-			return program.pullRequestMutations.SquashMergePullRequest(repository, number)
-		},
-		"MERGED",
-		false,
-		pullRequestSquashMergedSuccessMessage,
-	)
-	if result.err != nil {
-		result.feedbackMessage = strings.TrimSpace(result.err.Error())
-		result.feedbackTarget = program.model.Focus()
-	}
-	return result
+	return program.startSquashMergePullRequestMutation(gui)
 }
 
 func (program *Program) executeUpdatePullRequestBranchAction(_ *gocui.Gui) actionsPopupActionResult {
@@ -269,6 +257,59 @@ func (program *Program) executePullRequestLifecycleMutation(commandName string, 
 	program.applyVisiblePullRequestLifecycleMutation(summary, state, isDraft)
 	program.setFeedback(program.model.Focus(), successMessage)
 	return actionsPopupActionResult{closePopup: true}
+}
+
+func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) actionsPopupActionResult {
+	target, ok := program.selectedPullRequestActionTarget()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+	if !program.hasPullRequestMutations() {
+		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+	}
+
+	program.feedbackMessage = ""
+	program.pullRequestMutationLoadingMessage = fmt.Sprintf("Running `%s`.", squashMergePullRequestCommand(target.repository, target.number))
+	if gui == nil {
+		if err := program.runSquashMergePullRequestMutation(target); err != nil {
+			program.pullRequestMutationLoadingMessage = ""
+			return actionsPopupActionResult{err: err}
+		}
+		program.pullRequestMutationLoadingMessage = ""
+		program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
+		program.setFeedback(program.model.Focus(), pullRequestSquashMergedSuccessMessage)
+		return actionsPopupActionResult{closePopup: true}
+	}
+
+	program.asyncRunner.Go(func() {
+		err := program.runSquashMergePullRequestMutation(target)
+		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
+			program.pullRequestMutationLoadingMessage = ""
+			if err != nil {
+				program.setFeedback(program.model.Focus(), strings.TrimSpace(err.Error()))
+				return program.refreshViews(gui)
+			}
+			program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
+			program.setFeedback(program.model.Focus(), pullRequestSquashMergedSuccessMessage)
+			return program.refreshViews(gui)
+		})
+	})
+	return actionsPopupActionResult{closePopup: true}
+}
+
+func (program *Program) runSquashMergePullRequestMutation(target pullRequestActionTarget) error {
+	if err := program.pullRequestMutations.SquashMergePullRequest(target.repository, target.number); err != nil {
+		return normalizedPullRequestMutationError(err, "gh pr merge")
+	}
+	return nil
+}
+
+func squashMergePullRequestCommand(repository string, number int) string {
+	return fmt.Sprintf("gh pr merge %d -R %s --squash", number, strings.TrimSpace(repository))
 }
 
 func (program *Program) applyVisiblePullRequestLifecycleMutation(summary githubdomain.PullRequest, state string, isDraft bool) {

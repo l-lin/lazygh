@@ -68,6 +68,10 @@ func (program *Program) loadingStatusText() string {
 		return program.loadingSpinnerStatus(message)
 	}
 
+	if message := strings.TrimSpace(program.pullRequestMutationLoadingStatus()); message != "" {
+		return program.loadingSpinnerStatus(message)
+	}
+
 	if message := strings.TrimSpace(program.selectedPullRequestDetailLoadingStatus()); message != "" {
 		return program.loadingSpinnerStatus(message)
 	}
@@ -149,4 +153,8 @@ func (program *Program) pullRequestBuildRunLoadingStatus() string {
 		return ""
 	}
 	return fmt.Sprintf("Running `%s`.", trimmedCommand)
+}
+
+func (program *Program) pullRequestMutationLoadingStatus() string {
+	return strings.TrimSpace(program.pullRequestMutationLoadingMessage)
 }

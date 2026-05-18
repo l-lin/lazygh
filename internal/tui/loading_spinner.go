@@ -44,7 +44,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 }
 
 func (program *Program) shouldAnimateLoadingSpinner() bool {
-	return program.storyReviewLoading || program.assigneePickerLoading() || program.activePullRequestsLoading() || program.notificationsLoading || program.selectedPullRequestDetailLoading() || program.selectedNotificationDetailLoading() || program.pullRequestBuildRunLoading()
+	return program.storyReviewLoading || program.assigneePickerLoading() || program.activePullRequestsLoading() || program.notificationsLoading || program.selectedPullRequestDetailLoading() || program.selectedNotificationDetailLoading() || program.pullRequestBuildRunLoading() || program.pullRequestMutationLoading()
 }
 
 func (program *Program) activePullRequestsLoading() bool {
@@ -70,6 +70,10 @@ func (program *Program) selectedPullRequestDetailLoading() bool {
 
 func (program *Program) pullRequestBuildRunLoading() bool {
 	return program != nil && program.pullRequestBuildRunLoad != nil
+}
+
+func (program *Program) pullRequestMutationLoading() bool {
+	return program != nil && strings.TrimSpace(program.pullRequestMutationLoadingMessage) != ""
 }
 
 func (program *Program) loadingSpinnerFrame() string {

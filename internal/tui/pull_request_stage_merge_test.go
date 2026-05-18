@@ -554,6 +554,49 @@ func TestActionsPopup_GivenASquashMergeAction_WhenExecutingOnce_ThenItAsksForCon
 	}
 }
 
+func TestActionsPopup_GivenAConfirmedSquashMerge_WhenTheMutationIsQueued_ThenItClosesThePopupAndShowsTheLoadingSpinner(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", false)
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestLifecycleDetail("OPEN", false)}}
+	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("squash", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "squash"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewDetailName)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued squash-merge run, actual %d", len(asyncRunner.runs))
+	}
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, "Running `gh pr merge 42 -R acme/widgets --squash`.")
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "OPEN") {
+		t.Fatalf("expected the detail buffer to keep %q while the squash merge is in flight, actual %q", "OPEN", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "MERGED") {
+		t.Fatalf("expected the detail buffer to stay unmerged while the squash merge is in flight, actual %q", detailView.Buffer())
+	}
+}
+
 func TestLayout_GivenAConfirmedSquashMerge_WhenRendering_ThenTheMergedStateFeedbackAndCacheInvalidationAreVisible(t *testing.T) {
 	summary := given_pullRequestLifecycleSummary("OPEN", false)
 	model := given_pullRequestLifecycleModel(summary)
@@ -593,6 +636,15 @@ func TestLayout_GivenAConfirmedSquashMerge_WhenRendering_ThenTheMergedStateFeedb
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued squash-merge run, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.squashMergeCalls) != 0 {
+		t.Fatalf("expected the squash merge call to wait for the queued run, actual %v", loader.squashMergeCalls)
+	}
+
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.squashMergeCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected squash-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.squashMergeCalls)
 	}
@@ -615,9 +667,6 @@ func TestLayout_GivenAConfirmedSquashMerge_WhenRendering_ThenTheMergedStateFeedb
 	if len(subject.reviewDiffRenderCache) != 0 {
 		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
 	}
-	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued detail refresh, actual %d", len(asyncRunner.runs))
-	}
 }
 
 func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeepsTheUIStableAndShowsTheGitHubError(t *testing.T) {
@@ -625,6 +674,9 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
@@ -644,14 +696,18 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued squash-merge run, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.squashMergeCalls) != 0 {
+		t.Fatalf("expected the squash merge call to wait for the queued run, actual %v", loader.squashMergeCalls)
+	}
+
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.squashMergeCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected squash-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.squashMergeCalls)
-	}
-	popupView, actualErr := gui.View(viewActionsPopupName)
-	then_noError(t, actualErr)
-	if strings.Contains(popupView.Title, "GitHub rejected the squash merge") {
-		t.Fatalf("expected the popup title to hide %q, actual %q", "GitHub rejected the squash merge", popupView.Title)
 	}
 	then_statusLineContains(t, gui, "GitHub rejected the squash merge")
 	detailView, actualErr := gui.View(viewDetailName)
