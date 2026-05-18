@@ -81,7 +81,7 @@ func TestPullRequestTitleEditor_GivenOpenEditor_WhenHandlingLineEditingKeys_Then
 	}
 }
 
-func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefreshesTheSelectedPullRequestSummaryAndDetail(t *testing.T) {
+func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenPressingEnter_ThenItRefreshesTheSelectedPullRequestSummaryAndDetail(t *testing.T) {
 	model := given_pullRequestCommentModel()
 	model.OpenDetail()
 	loader := &fakePullRequestDetailLoader{
@@ -104,9 +104,11 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefresh
 	then_noError(t, actualErr)
 	subject.modalEditor.lineEditor.SetText("Renamed PR")
 
-	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
-	actualErr = actualHandler(gui, nil)
+	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
+	if actual := subject.editModalEditor(titleView, gocui.KeyEnter, 0, gocui.ModNone); !actual {
+		t.Fatal("expected Enter to submit the title editor")
+	}
 	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if !reflect.DeepEqual(loader.editTitleCalls, []string{"acme/widgets#42"}) {
@@ -134,7 +136,7 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefresh
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
-func TestEditPullRequestTitle_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisible(t *testing.T) {
+func TestEditPullRequestTitle_GivenSubmitFailure_WhenPressingEnter_ThenItKeepsTheDraftVisible(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{editTitleErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	gui := given_headlessGui(t)
@@ -152,13 +154,13 @@ func TestEditPullRequestTitle_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDr
 	then_noError(t, actualErr)
 	subject.modalEditor.lineEditor.SetText("Broken title")
 
-	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
-	actualErr = actualHandler(gui, nil)
-	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewModalEditorName)
-
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
+	if actual := subject.editModalEditor(titleView, gocui.KeyEnter, 0, gocui.ModNone); !actual {
+		t.Fatal("expected Enter to attempt title editor submission")
+	}
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
 	if !strings.Contains(titleView.Buffer(), "Broken title") {
 		t.Fatalf("expected title buffer to contain %q, actual %q", "Broken title", titleView.Buffer())
 	}

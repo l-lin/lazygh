@@ -9,7 +9,7 @@ import (
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func TestStatusLineKeyHints_GivenPullRequestTitleEditor_WhenRendering_ThenItShowsTheStandardGreySubmitEditorAndCancelHintsAndNoModalFooter(t *testing.T) {
+func TestStatusLineKeyHints_GivenPullRequestTitleEditor_WhenRendering_ThenItShowsEnterSubmitAndNoModalFooter(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -30,9 +30,9 @@ func TestStatusLineKeyHints_GivenPullRequestTitleEditor_WhenRendering_ThenItShow
 	if modalView.Footer != "" {
 		t.Fatalf("expected the modal footer to stay empty, actual %q", modalView.Footer)
 	}
-	then_statusLineKeyHintsAre(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "title editor key hints")
+	then_statusLineKeyHintsAre(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "title editor key hints")
 }
 
 func TestStatusLineKeyHints_GivenConfiguredModalEditorExternalEditorOverride_WhenRendering_ThenItUsesTheResolvedEditorKeyHint(t *testing.T) {
