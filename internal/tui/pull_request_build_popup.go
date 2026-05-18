@@ -112,7 +112,7 @@ func (program *Program) renderPullRequestBuildRunPopupView(view *gocui.View) {
 	document := program.currentPullRequestBuildRunPopupDocument(view)
 	program.pullRequestBuildRunPopup.viewState.syncSearch(document, program.pullRequestBuildRunPopup.searchQuery)
 	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
-	renderDetailDocumentView(view, document, program.pullRequestBuildRunPopup.viewState)
+	renderVisibleDetailDocumentView(view, document, program.pullRequestBuildRunPopup.viewState)
 }
 
 func (program *Program) currentPullRequestBuildRunPopupDocument(view *gocui.View) detailDocument {
