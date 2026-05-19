@@ -114,7 +114,7 @@ func copyKeymapOverrides(overrides appconfig.KeymapOverrides) appconfig.KeymapOv
 }
 
 func (program *Program) setKeybindings(gui *gocui.Gui) error {
-	for _, binding := range program.keybindingSpecs() {
+	for _, binding := range program.registeredKeybindingSpecs() {
 		if err := gui.SetKeybinding(binding.viewName, binding.key, gocui.ModNone, binding.handler); err != nil {
 			return err
 		}

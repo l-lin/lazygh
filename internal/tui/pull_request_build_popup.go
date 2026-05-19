@@ -99,8 +99,8 @@ func (program *Program) configurePullRequestBuildRunPopupView(view *gocui.View) 
 	}
 	configureFramedOverlayView(view, title, "")
 	view.Wrap = false
-	view.Editable = false
-	view.Editor = nil
+	view.Editable = true
+	view.Editor = gocui.EditorFunc(program.editPullRequestBuildRunPopup)
 	view.Highlight = false
 }
 

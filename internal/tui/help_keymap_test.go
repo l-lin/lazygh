@@ -95,6 +95,24 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXCtrlVAndSearch
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Search word under cursor", "*/#")
 }
 
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCharacterMotionBindings(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Find/till character", "f/F/t/T")
+}
+
 func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSharedFoldKeys(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)

@@ -51,8 +51,8 @@ func (program *Program) configureDetailView(view *gocui.View) {
 		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
 	}
 	view.Wrap = false
-	view.Editable = false
-	view.Editor = nil
+	view.Editable = true
+	view.Editor = gocui.EditorFunc(program.editDetailView)
 }
 
 func (program *Program) configureUserView(view *gocui.View) {
