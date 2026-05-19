@@ -58,6 +58,12 @@ var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"move_cursor_to_next_big_word":       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_next_big_word"),
 	"move_cursor_to_big_word_end":        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_big_word_end"),
 	"move_cursor_to_previous_big_word":   sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "move_cursor_to_previous_big_word"),
+	"find_character_forward":             sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(keymapScopeCursor, "find_character_forward", false),
+	"find_character_backward":            sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(keymapScopeCursor, "find_character_backward", false),
+	"till_character_forward":             sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(keymapScopeCursor, "till_character_forward", false),
+	"till_character_backward":            sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(keymapScopeCursor, "till_character_backward", false),
+	"repeat_character_motion_forward":    sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(keymapScopeCursor, "repeat_character_motion_forward", false),
+	"repeat_character_motion_backward":   sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(keymapScopeCursor, "repeat_character_motion_backward", false),
 	"enter_visual_mode":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "enter_visual_mode"),
 	"enter_line_visual_mode":             sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "enter_line_visual_mode"),
 	"recenter_cursor":                    sharedKeybindingDefinitionWithDefaultBindings(keymapScopeCursor, "recenter_cursor"),
@@ -84,8 +90,16 @@ func sharedKeybindingDefinitionWithBindings(scope string, bindings ...string) sh
 	return sharedKeybindingDefinition{scope: scope, bindings: append([]string(nil), bindings...), allowSequences: true}
 }
 
+func sharedKeybindingDefinitionWithBindingsAndSequencePolicy(scope string, allowSequences bool, bindings ...string) sharedKeybindingDefinition {
+	return sharedKeybindingDefinition{scope: scope, bindings: append([]string(nil), bindings...), allowSequences: allowSequences}
+}
+
 func sharedKeybindingDefinitionWithDefaultBindings(scope string, action string) sharedKeybindingDefinition {
 	return sharedKeybindingDefinitionWithBindings(scope, mustDefaultKeymapBindings(scope, action)...)
+}
+
+func sharedKeybindingDefinitionWithDefaultBindingsAndSequencePolicy(scope string, action string, allowSequences bool) sharedKeybindingDefinition {
+	return sharedKeybindingDefinitionWithBindingsAndSequencePolicy(scope, allowSequences, mustDefaultKeymapBindings(scope, action)...)
 }
 
 func sharedKeybindingDefinitionFor(action string) (sharedKeybindingDefinition, bool) {
@@ -131,6 +145,7 @@ func keybindingActionFor(scope string, action string, viewNames []string, handle
 		handler:         handler,
 		allowSequences:  true,
 		bindingSlice:    keybindingBindingSliceAll,
+		registerOnSetup: true,
 	}
 }
 
@@ -138,6 +153,11 @@ func fixedKeybindingActionFor(scope string, action string, viewNames []string, h
 	definition := keybindingActionFor(scope, action, viewNames, handler, bindings...)
 	definition.configurable = false
 	definition.configID = keybindingActionID{}
+	return definition
+}
+
+func keybindingActionWithoutSetup(definition keybindingAction) keybindingAction {
+	definition.registerOnSetup = false
 	return definition
 }
 
@@ -245,12 +265,12 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_next_big_word", []string{viewDetailName}, program.moveDetailCursorToNextBigWord),
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_big_word_end", []string{viewDetailName}, program.moveDetailCursorToBigWordEnd),
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_previous_big_word", []string{viewDetailName}, program.moveDetailCursorToPreviousBigWord),
-		fixedKeybindingActionFor(keymapScopeCursor, "find_character_forward", []string{viewDetailName}, program.startDetailCharacterFindForward, "f"),
-		fixedKeybindingActionFor(keymapScopeCursor, "find_character_backward", []string{viewDetailName}, program.startDetailCharacterFindBackward, "F"),
-		fixedKeybindingActionFor(keymapScopeCursor, "till_character_forward", []string{viewDetailName}, program.startDetailCharacterTillForward, "t"),
-		fixedKeybindingActionFor(keymapScopeCursor, "till_character_backward", []string{viewDetailName}, program.startDetailCharacterTillBackward, "T"),
-		fixedKeybindingActionFor(keymapScopeCursor, "repeat_character_motion_forward", []string{viewDetailName}, program.repeatDetailCharacterMotionForward, ";"),
-		fixedKeybindingActionFor(keymapScopeCursor, "repeat_character_motion_backward", []string{viewDetailName}, program.repeatDetailCharacterMotionBackward, ","),
+		sharedKeybindingActionFor(keymapScopeCursor, "find_character_forward", []string{viewDetailName}, program.startDetailCharacterFindForward),
+		sharedKeybindingActionFor(keymapScopeCursor, "find_character_backward", []string{viewDetailName}, program.startDetailCharacterFindBackward),
+		sharedKeybindingActionFor(keymapScopeCursor, "till_character_forward", []string{viewDetailName}, program.startDetailCharacterTillForward),
+		sharedKeybindingActionFor(keymapScopeCursor, "till_character_backward", []string{viewDetailName}, program.startDetailCharacterTillBackward),
+		keybindingActionWithoutSetup(sharedKeybindingActionFor(keymapScopeCursor, "repeat_character_motion_forward", []string{viewDetailName}, program.repeatDetailCharacterMotionForward)),
+		keybindingActionWithoutSetup(sharedKeybindingActionFor(keymapScopeCursor, "repeat_character_motion_backward", []string{viewDetailName}, program.repeatDetailCharacterMotionBackward)),
 		sharedKeybindingActionFor(keymapScopeSearch, "next_search_match", []string{viewDetailName}, program.nextDetailSearchMatch),
 		sharedKeybindingActionFor(keymapScopeSearch, "previous_search_match", []string{viewDetailName}, program.previousDetailSearchMatch),
 		sharedKeybindingActionFor(keymapScopeCursor, "enter_visual_mode", []string{viewDetailName}, program.enterDetailVisualMode),
@@ -317,12 +337,12 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_next_big_word", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToNextBigWord),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_big_word_end", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToBigWordEnd),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "move_cursor_to_previous_big_word", []string{viewPullRequestBuildInfoName}, program.movePullRequestBuildRunPopupCursorToPreviousBigWord),
-		fixedKeybindingActionFor(keymapScopePullRequestBuildInfo, "find_character_forward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterFindForward, "f"),
-		fixedKeybindingActionFor(keymapScopePullRequestBuildInfo, "find_character_backward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterFindBackward, "F"),
-		fixedKeybindingActionFor(keymapScopePullRequestBuildInfo, "till_character_forward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterTillForward, "t"),
-		fixedKeybindingActionFor(keymapScopePullRequestBuildInfo, "till_character_backward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterTillBackward, "T"),
-		fixedKeybindingActionFor(keymapScopePullRequestBuildInfo, "repeat_character_motion_forward", []string{viewPullRequestBuildInfoName}, program.repeatPullRequestBuildRunPopupCharacterMotionForward, ";"),
-		fixedKeybindingActionFor(keymapScopePullRequestBuildInfo, "repeat_character_motion_backward", []string{viewPullRequestBuildInfoName}, program.repeatPullRequestBuildRunPopupCharacterMotionBackward, ","),
+		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "find_character_forward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterFindForward),
+		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "find_character_backward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterFindBackward),
+		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "till_character_forward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterTillForward),
+		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "till_character_backward", []string{viewPullRequestBuildInfoName}, program.startPullRequestBuildRunPopupCharacterTillBackward),
+		keybindingActionWithoutSetup(sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "repeat_character_motion_forward", []string{viewPullRequestBuildInfoName}, program.repeatPullRequestBuildRunPopupCharacterMotionForward)),
+		keybindingActionWithoutSetup(sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "repeat_character_motion_backward", []string{viewPullRequestBuildInfoName}, program.repeatPullRequestBuildRunPopupCharacterMotionBackward)),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "next_search_match", []string{viewPullRequestBuildInfoName}, program.nextPullRequestBuildRunPopupSearchMatch),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "previous_search_match", []string{viewPullRequestBuildInfoName}, program.previousPullRequestBuildRunPopupSearchMatch),
 		sharedKeybindingActionFor(keymapScopePullRequestBuildInfo, "enter_visual_mode", []string{viewPullRequestBuildInfoName}, program.enterPullRequestBuildRunPopupVisualMode),

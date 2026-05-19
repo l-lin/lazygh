@@ -39,6 +39,12 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 		{name: "place selection at viewport bottom", action: "place_selection_at_viewport_bottom", expectedScope: keymapScopeSelection, expectedBindings: []string{"zb"}, expectedAllowSequences: true},
 		{name: "move cursor left", action: "move_cursor_left", expectedScope: keymapScopeCursor, expectedBindings: []string{"h", "left"}, expectedAllowSequences: true},
 		{name: "move cursor right", action: "move_cursor_right", expectedScope: keymapScopeCursor, expectedBindings: []string{"l", "right"}, expectedAllowSequences: true},
+		{name: "find character forward", action: "find_character_forward", expectedScope: keymapScopeCursor, expectedBindings: []string{"f"}, expectedAllowSequences: false},
+		{name: "find character backward", action: "find_character_backward", expectedScope: keymapScopeCursor, expectedBindings: []string{"F"}, expectedAllowSequences: false},
+		{name: "till character forward", action: "till_character_forward", expectedScope: keymapScopeCursor, expectedBindings: []string{"t"}, expectedAllowSequences: false},
+		{name: "till character backward", action: "till_character_backward", expectedScope: keymapScopeCursor, expectedBindings: []string{"T"}, expectedAllowSequences: false},
+		{name: "repeat character motion forward", action: "repeat_character_motion_forward", expectedScope: keymapScopeCursor, expectedBindings: []string{";"}, expectedAllowSequences: false},
+		{name: "repeat character motion backward", action: "repeat_character_motion_backward", expectedScope: keymapScopeCursor, expectedBindings: []string{","}, expectedAllowSequences: false},
 	}
 
 	for _, testCase := range testCases {

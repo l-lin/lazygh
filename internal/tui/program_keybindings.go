@@ -53,6 +53,7 @@ type keybindingAction struct {
 	handler         func(*gocui.Gui, *gocui.View) error
 	allowSequences  bool
 	bindingSlice    keybindingBindingSlice
+	registerOnSetup bool
 }
 
 type resolvedKeybindingAction struct {
@@ -177,6 +178,9 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 	}
 
 	for _, action := range actions {
+		if !action.action.registerOnSetup {
+			continue
+		}
 		for _, binding := range action.bindings {
 			for _, viewName := range bindingViewNames(action.action, binding) {
 				if len(binding.keys) == 0 {
@@ -282,6 +286,16 @@ func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {
 	return resolved
 }
 
+func (program *Program) resolvedBindingsForActionID(actionID keybindingActionID) []configuredKeySequence {
+	for _, action := range program.resolvedKeybindingActions() {
+		if action.action.id != actionID {
+			continue
+		}
+		return copyConfiguredKeySequences(action.bindings)
+	}
+	return nil
+}
+
 func copyConfiguredKeySequences(bindings []configuredKeySequence) []configuredKeySequence {
 	if len(bindings) == 0 {
 		return nil
@@ -344,6 +358,9 @@ func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool
 	}
 
 	for actionIndex, action := range actions {
+		if !action.action.registerOnSetup {
+			continue
+		}
 		for _, binding := range action.bindings {
 			for _, viewName := range bindingViewNames(action.action, binding) {
 				switch len(binding.keys) {

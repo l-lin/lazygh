@@ -114,6 +114,34 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCharacterMotionB
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Repeat character motion", ";/,")
 }
 
+func TestHelpPopup_GivenCharacterMotionOverrides_WhenTogglingHelp_ThenItShowsTheConfiguredCharacterMotionBindings(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := given_programWithKeymapOverrides(model, appconfig.KeymapOverrides{
+		"cursor": {
+			"find_character_forward":           {"s"},
+			"find_character_backward":          {"S"},
+			"till_character_forward":           {"x"},
+			"till_character_backward":          {"X"},
+			"repeat_character_motion_forward":  {"r"},
+			"repeat_character_motion_backward": {"R"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Find/till character", "s/S/x/X")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Repeat character motion", "r/R")
+}
+
 func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSharedFoldKeys(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)

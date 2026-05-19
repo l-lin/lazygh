@@ -15,6 +15,8 @@ const (
 func (program *Program) registeredKeybindingSpecs() []keybindingSpec {
 	specs := program.activeDetailCharacterMotionTargetBindingSpecs()
 	specs = append(specs, program.activePullRequestBuildRunPopupCharacterMotionTargetBindingSpecs()...)
+	specs = append(specs, program.activeDetailCharacterMotionRepeatBindingSpecs()...)
+	specs = append(specs, program.activePullRequestBuildRunPopupCharacterMotionRepeatBindingSpecs()...)
 	specs = append(specs, program.keybindingSpecs()...)
 	return specs
 }
@@ -56,6 +58,51 @@ func (program *Program) activePullRequestBuildRunPopupCharacterMotionTargetBindi
 	specs := make([]keybindingSpec, 0, len(bindings))
 	for _, target := range bindings {
 		specs = append(specs, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: target, handler: program.pullRequestBuildRunPopupCharacterMotionTargetHandler(target)})
+	}
+	return specs
+}
+
+func (program *Program) activeDetailCharacterMotionRepeatBindingSpecs() []keybindingSpec {
+	if !program.detailViewState.hasLastCharacterMotion {
+		return nil
+	}
+
+	return program.characterMotionRepeatBindingSpecs(
+		viewDetailName,
+		keybindingActionID{scope: keymapScopeCursor, action: "repeat_character_motion_forward"},
+		keybindingActionID{scope: keymapScopeCursor, action: "repeat_character_motion_backward"},
+		program.repeatDetailCharacterMotionForward,
+		program.repeatDetailCharacterMotionBackward,
+	)
+}
+
+func (program *Program) activePullRequestBuildRunPopupCharacterMotionRepeatBindingSpecs() []keybindingSpec {
+	if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasLastCharacterMotion {
+		return nil
+	}
+
+	return program.characterMotionRepeatBindingSpecs(
+		viewPullRequestBuildInfoName,
+		keybindingActionID{scope: keymapScopePullRequestBuildInfo, action: "repeat_character_motion_forward"},
+		keybindingActionID{scope: keymapScopePullRequestBuildInfo, action: "repeat_character_motion_backward"},
+		program.repeatPullRequestBuildRunPopupCharacterMotionForward,
+		program.repeatPullRequestBuildRunPopupCharacterMotionBackward,
+	)
+}
+
+func (program *Program) characterMotionRepeatBindingSpecs(viewName string, forwardActionID keybindingActionID, backwardActionID keybindingActionID, forwardHandler func(*gocui.Gui, *gocui.View) error, backwardHandler func(*gocui.Gui, *gocui.View) error) []keybindingSpec {
+	specs := make([]keybindingSpec, 0, 2)
+	for _, binding := range program.resolvedBindingsForActionID(forwardActionID) {
+		if len(binding.keys) != 1 {
+			continue
+		}
+		specs = append(specs, keybindingSpec{viewName: viewName, key: binding.keys[0].value, handler: forwardHandler})
+	}
+	for _, binding := range program.resolvedBindingsForActionID(backwardActionID) {
+		if len(binding.keys) != 1 {
+			continue
+		}
+		specs = append(specs, keybindingSpec{viewName: viewName, key: binding.keys[0].value, handler: backwardHandler})
 	}
 	return specs
 }
@@ -150,9 +197,12 @@ func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.
 	if !program.detailViewState.hasLastCharacterMotion {
 		return nil
 	}
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+	if actualErr := program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.repeatCharacterMotion(document, viewportHeight, reverse)
-	})
+	}); actualErr != nil {
+		return actualErr
+	}
+	return program.reloadRegisteredKeybindings(gui)
 }
 
 func (program *Program) startPullRequestBuildRunPopupCharacterFindForward(gui *gocui.Gui, view *gocui.View) error {
@@ -192,7 +242,10 @@ func (program *Program) repeatPullRequestBuildRunPopupCharacterMotion(gui *gocui
 	if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasLastCharacterMotion {
 		return nil
 	}
-	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+	if actualErr := program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
 		state.repeatCharacterMotion(document, viewportHeight, reverse)
-	})
+	}); actualErr != nil {
+		return actualErr
+	}
+	return program.reloadRegisteredKeybindings(gui)
 }

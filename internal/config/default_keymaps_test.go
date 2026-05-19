@@ -16,6 +16,12 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 		"cursor": {
 			"search_word_under_cursor_forward":  {"*"},
 			"search_word_under_cursor_backward": {"#"},
+			"find_character_forward":            {"f"},
+			"find_character_backward":           {"F"},
+			"till_character_forward":            {"t"},
+			"till_character_backward":           {"T"},
+			"repeat_character_motion_forward":   {";"},
+			"repeat_character_motion_backward":  {","},
 		},
 		"modal_editor": {
 			"cancel":               {"esc"},

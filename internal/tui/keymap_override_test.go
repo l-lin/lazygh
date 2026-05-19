@@ -325,6 +325,62 @@ func TestKeybindingSpecs_GivenFoldToggleOverride_WhenListingBindings_ThenItAppli
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'a', handler: subject.openActionsPopup})
 }
 
+func TestKeybindingSpecs_GivenCharacterMotionOverrides_WhenListingBindings_ThenItUsesTheConfiguredTriggerBindingsButKeepsRepeatBindingsDynamic(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"cursor": {
+			"find_character_forward":           {"s"},
+			"find_character_backward":          {"S"},
+			"till_character_forward":           {"x"},
+			"till_character_backward":          {"X"},
+			"repeat_character_motion_forward":  {"("},
+			"repeat_character_motion_backward": {")"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	for _, viewName := range []string{viewDetailName, viewPullRequestBuildInfoName} {
+		for _, key := range []rune{'s', 'S', 'x', 'X'} {
+			then_bindingKeyExists(t, actual, viewName, key)
+		}
+		for _, key := range []rune{'f', 'F', ';', ',', '(', ')'} {
+			then_bindingDoesNotExist(t, actual, viewName, key)
+		}
+	}
+}
+
+func TestRegisteredKeybindingSpecs_GivenCharacterMotionRepeatOverridesAndNoSearchHistory_WhenListingBindings_ThenRepeatBindingsStayAbsent(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"cursor": {
+			"repeat_character_motion_forward":  {"("},
+			"repeat_character_motion_backward": {")"},
+		},
+	})
+
+	actual := subject.registeredKeybindingSpecs()
+
+	for _, viewName := range []string{viewDetailName, viewPullRequestBuildInfoName} {
+		then_bindingDoesNotExist(t, actual, viewName, '(')
+		then_bindingDoesNotExist(t, actual, viewName, ')')
+	}
+}
+
+func TestRegisteredKeybindingSpecs_GivenCharacterMotionRepeatOverridesAndSearchHistory_WhenListingBindings_ThenItRegistersTheConfiguredRepeatBindings(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"cursor": {
+			"repeat_character_motion_forward":  {"("},
+			"repeat_character_motion_backward": {")"},
+		},
+	})
+	subject.detailViewState.lastCharacterMotion = detailCharacterMotion{target: 'a', direction: detailCharacterMotionDirectionForward, mode: detailCharacterMotionMatch}
+	subject.detailViewState.hasLastCharacterMotion = true
+
+	actual := subject.registeredKeybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: '(', handler: subject.repeatDetailCharacterMotionForward})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: ')', handler: subject.repeatDetailCharacterMotionBackward})
+}
+
 func TestResolvedKeyLabels_GivenTwoStepTabOverrides_WhenResolving_ThenItKeepsTheConfiguredSequences(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {

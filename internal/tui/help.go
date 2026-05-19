@@ -432,11 +432,19 @@ func (program *Program) wordMotionHelpKeys(scope string) string {
 }
 
 func (program *Program) characterMotionHelpEntry() helpEntry {
-	return helpEntry{Key: "f/F/t/T", Description: "Find/till character"}
+	return helpEntry{Key: strings.Join([]string{
+		program.helpKeysOrFallback("f", keybindingActionID{scope: keymapScopeCursor, action: "find_character_forward"}),
+		program.helpKeysOrFallback("F", keybindingActionID{scope: keymapScopeCursor, action: "find_character_backward"}),
+		program.helpKeysOrFallback("t", keybindingActionID{scope: keymapScopeCursor, action: "till_character_forward"}),
+		program.helpKeysOrFallback("T", keybindingActionID{scope: keymapScopeCursor, action: "till_character_backward"}),
+	}, "/"), Description: "Find/till character"}
 }
 
 func (program *Program) repeatCharacterMotionHelpEntry() helpEntry {
-	return helpEntry{Key: ";/,", Description: "Repeat character motion"}
+	return helpEntry{Key: strings.Join([]string{
+		program.helpKeysOrFallback(";", keybindingActionID{scope: keymapScopeCursor, action: "repeat_character_motion_forward"}),
+		program.helpKeysOrFallback(",", keybindingActionID{scope: keymapScopeCursor, action: "repeat_character_motion_backward"}),
+	}, "/"), Description: "Repeat character motion"}
 }
 
 func (program *Program) searchWordUnderCursorHelpEntry() helpEntry {

@@ -362,13 +362,17 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingSemicolonAndComma_The
 	}
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingCharacterMotionBindings_ThenDetailAndBuildPopupExposeTheVimFindAndRepeatKeys(t *testing.T) {
+func TestKeybindingSpecs_GivenProgram_WhenListingCharacterMotionBindings_ThenDetailAndBuildPopupExposeTheVimFindPrefixes(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
-	for _, key := range []rune{'f', 'F', 't', 'T', ';', ','} {
+	for _, key := range []rune{'f', 'F', 't', 'T'} {
 		then_bindingKeyExists(t, actual, viewDetailName, key)
 		then_bindingKeyExists(t, actual, viewPullRequestBuildInfoName, key)
+	}
+	for _, key := range []rune{';', ','} {
+		then_bindingDoesNotExist(t, actual, viewDetailName, key)
+		then_bindingDoesNotExist(t, actual, viewPullRequestBuildInfoName, key)
 	}
 }
