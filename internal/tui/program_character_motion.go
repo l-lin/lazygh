@@ -1,79 +1,116 @@
 package tui
 
-import "github.com/jesseduffield/gocui"
+import (
+	"sort"
+	"unicode"
+
+	"github.com/jesseduffield/gocui"
+)
+
+const (
+	detailCharacterMotionPrintableASCIIFirst = ' '
+	detailCharacterMotionPrintableASCIILast  = '~'
+)
 
 func (program *Program) registeredKeybindingSpecs() []keybindingSpec {
-	specs := append([]keybindingSpec(nil), program.keybindingSpecs()...)
-	for index, spec := range specs {
-		viewName := spec.viewName
-		keyRune, ok := spec.key.(rune)
-		if !ok || !detailCharacterMotionEnabledView(viewName) {
-			continue
-		}
+	specs := program.activeDetailCharacterMotionTargetBindingSpecs()
+	specs = append(specs, program.activePullRequestBuildRunPopupCharacterMotionTargetBindingSpecs()...)
+	specs = append(specs, program.keybindingSpecs()...)
+	return specs
+}
 
-		originalHandler := spec.handler
-		specs[index].handler = func(gui *gocui.Gui, view *gocui.View) error {
-			handled, actualErr := program.consumeRegisteredCharacterMotion(gui, viewName, view, keyRune)
-			if handled {
-				return actualErr
-			}
-			return originalHandler(gui, view)
-		}
+func (program *Program) activeDetailCharacterMotionTargetBindingSpecs() []keybindingSpec {
+	if !program.detailViewState.hasPendingCharacterMotion() {
+		return nil
+	}
+
+	actualView := program.resolveView(program.gui, nil, viewDetailName)
+	document := program.currentDetailDocument(actualView)
+	program.syncDetailViewState(document, viewPageSize(actualView))
+	bindings := characterMotionTargetRunes(detailDocumentLineAt(document, program.detailViewState.cursor.line))
+	if len(bindings) == 0 {
+		return nil
+	}
+
+	specs := make([]keybindingSpec, 0, len(bindings))
+	for _, target := range bindings {
+		specs = append(specs, keybindingSpec{viewName: viewDetailName, key: target, handler: program.detailCharacterMotionTargetHandler(target)})
 	}
 	return specs
 }
 
-func detailCharacterMotionEnabledView(viewName string) bool {
-	return viewName == viewDetailName || viewName == viewPullRequestBuildInfoName
+func (program *Program) activePullRequestBuildRunPopupCharacterMotionTargetBindingSpecs() []keybindingSpec {
+	popup := program.pullRequestBuildRunPopup
+	if popup == nil || !popup.viewState.hasPendingCharacterMotion() {
+		return nil
+	}
+
+	actualView := program.resolveView(program.gui, nil, viewPullRequestBuildInfoName)
+	document := program.currentPullRequestBuildRunPopupDocument(actualView)
+	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(actualView))
+	bindings := characterMotionTargetRunes(detailDocumentLineAt(document, popup.viewState.cursor.line))
+	if len(bindings) == 0 {
+		return nil
+	}
+
+	specs := make([]keybindingSpec, 0, len(bindings))
+	for _, target := range bindings {
+		specs = append(specs, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: target, handler: program.pullRequestBuildRunPopupCharacterMotionTargetHandler(target)})
+	}
+	return specs
 }
 
-func (program *Program) consumeRegisteredCharacterMotion(gui *gocui.Gui, viewName string, view *gocui.View, target rune) (bool, error) {
-	switch viewName {
-	case viewDetailName:
-		if !program.detailViewState.hasPendingCharacterMotion() {
-			return false, nil
+func detailDocumentLineAt(document detailDocument, lineIndex int) []rune {
+	if lineIndex < 0 || lineIndex >= len(document.lines) {
+		return nil
+	}
+	return document.lines[lineIndex]
+}
+
+func characterMotionTargetRunes(line []rune) []rune {
+	seen := map[rune]struct{}{}
+	runes := make([]rune, 0, int(detailCharacterMotionPrintableASCIILast-detailCharacterMotionPrintableASCIIFirst)+1+len(line))
+	for target := detailCharacterMotionPrintableASCIIFirst; target <= detailCharacterMotionPrintableASCIILast; target++ {
+		seen[target] = struct{}{}
+		runes = append(runes, target)
+	}
+	for _, target := range line {
+		if unicode.IsControl(target) {
+			continue
 		}
-		return true, program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		if _, ok := seen[target]; ok {
+			continue
+		}
+		seen[target] = struct{}{}
+		runes = append(runes, target)
+	}
+	sort.Slice(runes[int(detailCharacterMotionPrintableASCIILast-detailCharacterMotionPrintableASCIIFirst)+1:], func(left int, right int) bool {
+		asciiCount := int(detailCharacterMotionPrintableASCIILast-detailCharacterMotionPrintableASCIIFirst) + 1
+		return runes[asciiCount+left] < runes[asciiCount+right]
+	})
+	return runes
+}
+
+func (program *Program) detailCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
+	return func(gui *gocui.Gui, view *gocui.View) error {
+		if actualErr := program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 			program.detailViewState.consumePendingCharacterMotion(document, viewportHeight, target)
-		})
-	case viewPullRequestBuildInfoName:
-		if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasPendingCharacterMotion() {
-			return false, nil
+		}); actualErr != nil {
+			return actualErr
 		}
-		return true, program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+		return program.reloadRegisteredKeybindings(gui)
+	}
+}
+
+func (program *Program) pullRequestBuildRunPopupCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
+	return func(gui *gocui.Gui, view *gocui.View) error {
+		if actualErr := program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
 			state.consumePendingCharacterMotion(document, viewportHeight, target)
-		})
-	default:
-		return false, nil
+		}); actualErr != nil {
+			return actualErr
+		}
+		return program.reloadRegisteredKeybindings(gui)
 	}
-}
-
-func (program *Program) editDetailView(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	if view == nil || mod != gocui.ModNone || ch == 0 || !program.detailViewState.hasPendingCharacterMotion() {
-		return false
-	}
-
-	document := program.currentDetailDocument(view)
-	program.syncDetailViewState(document, viewPageSize(view))
-	if !program.detailViewState.consumePendingCharacterMotion(document, viewPageSize(view), ch) {
-		return false
-	}
-	program.renderDetailView(view)
-	return true
-}
-
-func (program *Program) editPullRequestBuildRunPopup(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	if view == nil || mod != gocui.ModNone || ch == 0 || program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasPendingCharacterMotion() {
-		return false
-	}
-
-	document := program.currentPullRequestBuildRunPopupDocument(view)
-	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
-	if !program.pullRequestBuildRunPopup.viewState.consumePendingCharacterMotion(document, viewPageSize(view), ch) {
-		return false
-	}
-	program.renderPullRequestBuildRunPopupView(view)
-	return true
 }
 
 func (program *Program) startDetailCharacterFindForward(gui *gocui.Gui, view *gocui.View) error {
@@ -101,9 +138,12 @@ func (program *Program) repeatDetailCharacterMotionBackward(gui *gocui.Gui, view
 }
 
 func (program *Program) armDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+	if actualErr := program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.armCharacterMotion(direction, mode)
-	})
+	}); actualErr != nil {
+		return actualErr
+	}
+	return program.reloadRegisteredKeybindings(gui)
 }
 
 func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
@@ -140,9 +180,12 @@ func (program *Program) repeatPullRequestBuildRunPopupCharacterMotionBackward(gu
 }
 
 func (program *Program) armPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
-	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+	if actualErr := program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
 		state.armCharacterMotion(direction, mode)
-	})
+	}); actualErr != nil {
+		return actualErr
+	}
+	return program.reloadRegisteredKeybindings(gui)
 }
 
 func (program *Program) repeatPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {

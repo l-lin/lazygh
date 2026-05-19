@@ -114,13 +114,50 @@ func copyKeymapOverrides(overrides appconfig.KeymapOverrides) appconfig.KeymapOv
 }
 
 func (program *Program) setKeybindings(gui *gocui.Gui) error {
-	for _, binding := range program.registeredKeybindingSpecs() {
+	specs := program.registeredKeybindingSpecs()
+	for _, binding := range specs {
 		if err := gui.SetKeybinding(binding.viewName, binding.key, gocui.ModNone, binding.handler); err != nil {
 			return err
 		}
 	}
-
+	program.registeredKeybindingFingerprint = fingerprintKeybindingSpecs(specs)
 	return nil
+}
+
+func (program *Program) reloadRegisteredKeybindings(gui *gocui.Gui) error {
+	if gui == nil {
+		return nil
+	}
+
+	specs := program.registeredKeybindingSpecs()
+	fingerprint := fingerprintKeybindingSpecs(specs)
+	if fingerprint == program.registeredKeybindingFingerprint {
+		return nil
+	}
+
+	gui.DeleteAllKeybindings()
+	for _, binding := range specs {
+		if err := gui.SetKeybinding(binding.viewName, binding.key, gocui.ModNone, binding.handler); err != nil {
+			return err
+		}
+	}
+	program.registeredKeybindingFingerprint = fingerprint
+	return nil
+}
+
+func fingerprintKeybindingSpecs(specs []keybindingSpec) string {
+	if len(specs) == 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+	for _, spec := range specs {
+		builder.WriteString(spec.viewName)
+		builder.WriteRune(':')
+		builder.WriteString(keybindingValueID(spec.key))
+		builder.WriteRune('|')
+	}
+	return builder.String()
 }
 
 func (program *Program) keybindingSpecs() []keybindingSpec {

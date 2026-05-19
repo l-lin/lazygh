@@ -84,6 +84,7 @@ type Program struct {
 	openedPullRequestTab                    PullRequestTab
 	pendingSelectionKeySequence             keySequenceState
 	pendingListViewportPlacements           map[string]viewportPlacement
+	registeredKeybindingFingerprint         string
 }
 
 func NewProgram() *Program {

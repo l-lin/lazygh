@@ -3,8 +3,6 @@ package tui
 import (
 	"testing"
 
-	"github.com/jesseduffield/gocui"
-
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -91,6 +89,7 @@ func TestDetailCharacterMotion_GivenDetailVisualMode_WhenPressingVFA_ThenItKeeps
 	then_noError(t, actualErr)
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
 	then_noError(t, actualErr)
+	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'a')(gui, detailView)
 	then_noError(t, actualErr)
 
@@ -151,7 +150,6 @@ func TestDetailCharacterMotion_GivenBrowserDetailTabs_WhenPressingForwardFindWit
 		{name: "changes", tab: ChangesDetailTab, startSegment: "Change.zeta", targetSegment: "zeta"},
 	}
 
-	registeredBindings := subject.registeredKeybindingSpecs()
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			subject.activeDetailTab = testCase.tab
@@ -163,11 +161,12 @@ func TestDetailCharacterMotion_GivenBrowserDetailTabs_WhenPressingForwardFindWit
 			detailView, actualErr := gui.View(viewDetailName)
 			then_noError(t, actualErr)
 
+			registeredBindings := subject.registeredKeybindingSpecs()
 			actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
 			then_noError(t, actualErr)
-			if !subject.editDetailView(detailView, 0, 'z', gocui.ModNone) {
-				t.Fatal("expected pending character motion to consume the unbound target rune")
-			}
+			registeredBindings = subject.registeredKeybindingSpecs()
+			actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'z')(gui, detailView)
+			then_noError(t, actualErr)
 
 			then_detailCursorIs(t, subject.detailViewState, expected)
 		})
@@ -208,9 +207,9 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingForwardFindWi
 	registeredBindings := subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
 	then_noError(t, actualErr)
-	if !subject.editDetailView(detailView, 0, '.', gocui.ModNone) {
-		t.Fatal("expected pending character motion to consume the review target rune")
-	}
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, '.')(gui, detailView)
+	then_noError(t, actualErr)
 
 	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: expectedColumn})
 }
@@ -236,11 +235,12 @@ func TestDetailCharacterMotion_GivenBrowserDetailFocus_WhenPressingSemicolonAndC
 
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
 	then_noError(t, actualErr)
-	if !subject.editDetailView(detailView, 0, 'z', gocui.ModNone) {
-		t.Fatal("expected pending character motion to consume the initial browser target")
-	}
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'z')(gui, detailView)
+	then_noError(t, actualErr)
 	then_detailCursorIs(t, subject.detailViewState, firstMatch)
 
+	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ';')(gui, detailView)
 	then_noError(t, actualErr)
 	then_detailCursorIs(t, subject.detailViewState, secondMatch)
@@ -285,10 +285,12 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingFCommaSemicol
 
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
 	then_noError(t, actualErr)
+	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
 	then_noError(t, actualErr)
 	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: firstComma})
 
+	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ';')(gui, detailView)
 	then_noError(t, actualErr)
 	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: secondComma})
@@ -314,9 +316,9 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingForwardFindWithAnUnbo
 	registeredBindings := subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'f')(gui, popupView)
 	then_noError(t, actualErr)
-	if !subject.editPullRequestBuildRunPopup(popupView, 0, 'z', gocui.ModNone) {
-		t.Fatal("expected pending popup character motion to consume the target rune")
-	}
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'z')(gui, popupView)
+	then_noError(t, actualErr)
 
 	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 6}) {
 		t.Fatalf("expected popup cursor %+v, actual %+v", detailPosition{line: 0, column: 6}, actual)
@@ -339,13 +341,14 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingSemicolonAndComma_The
 	registeredBindings := subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'f')(gui, popupView)
 	then_noError(t, actualErr)
-	if !subject.editPullRequestBuildRunPopup(popupView, 0, 'z', gocui.ModNone) {
-		t.Fatal("expected pending popup character motion to consume the initial target")
-	}
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'z')(gui, popupView)
+	then_noError(t, actualErr)
 	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 6}) {
 		t.Fatalf("expected popup cursor %+v after the initial find, actual %+v", detailPosition{line: 0, column: 6}, actual)
 	}
 
+	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, ';')(gui, popupView)
 	then_noError(t, actualErr)
 	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 11}) {

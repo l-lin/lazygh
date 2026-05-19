@@ -173,6 +173,9 @@ func (program *Program) refreshDetailView(gui *gocui.Gui) error {
 	if gui == nil {
 		return nil
 	}
+	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
+		return actualErr
+	}
 	if actualErr := program.refreshExistingView(gui, viewDetailName, program.configureDetailView, program.renderDetailView); actualErr != nil {
 		return actualErr
 	}

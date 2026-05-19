@@ -30,6 +30,9 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	program.maybeLoadSelectedPullRequestDiff(gui)
 	program.maybeLoadCurrentDetailImageHTML(gui)
 	program.maybeLoadCurrentDetailImages(gui)
+	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
+		return actualErr
+	}
 
 	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
 }
@@ -51,8 +54,8 @@ func (program *Program) configureDetailView(view *gocui.View) {
 		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
 	}
 	view.Wrap = false
-	view.Editable = true
-	view.Editor = gocui.EditorFunc(program.editDetailView)
+	view.Editable = false
+	view.Editor = nil
 }
 
 func (program *Program) configureUserView(view *gocui.View) {

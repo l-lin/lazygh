@@ -16,6 +16,9 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		program.syncActionsPopupSearch()
 	}
 
+	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
+		return actualErr
+	}
 	maxX, maxY := gui.Size()
 	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
 }
