@@ -148,6 +148,31 @@ func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRender
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `fmt.Println("`, backgroundColorEscape(theme.SelectedLineBackgroundHex), "suggestion addition base background")
 }
 
+func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItUsesDiffForegroundColorsInsteadOfTreeSitterSyntaxColors(t *testing.T) {
+	comment := githubcli.PullRequestInlineComment{
+		Body:         "```suggestion\nfmt.Println(\"bonjour\")\n```",
+		Path:         "internal/tui/render.go",
+		Line:         43,
+		OriginalLine: 43,
+		Side:         "RIGHT",
+		DiffHunk:     "@@ -43,1 +43,1 @@\n-fmt.Println(\"goodbye\")\n+fmt.Println(\"hello\")",
+	}
+
+	actualDocument := newDetailDocument(renderRoundedCommentBox(renderInlineCommentBodyForInlineComment(comment, glamourMarkdownRenderer{}, 72), 72), 72)
+	deletionLineIndex, deletionLine := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("hello")`)
+	additionLineIndex, additionLine := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("bonjour")`)
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, "Println", foregroundColorEscape(theme.DiffDeletionHex), "suggestion deletion diff foreground")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, "Println", foregroundColorEscape(theme.SyntaxFunctionHex), "suggestion deletion syntax function foreground")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, `"hello"`, foregroundColorEscape(theme.DiffDeletionHex), "suggestion deletion string diff foreground")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[deletionLineIndex], deletionLine, `"hello"`, foregroundColorEscape(theme.SyntaxStringHex), "suggestion deletion syntax string foreground")
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, "Println", foregroundColorEscape(theme.DiffAdditionHex), "suggestion addition diff foreground")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, "Println", foregroundColorEscape(theme.SyntaxFunctionHex), "suggestion addition syntax function foreground")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `"bonjour"`, foregroundColorEscape(theme.DiffAdditionHex), "suggestion addition string diff foreground")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionLine, `"bonjour"`, foregroundColorEscape(theme.SyntaxStringHex), "suggestion addition syntax string foreground")
+}
+
 func TestRenderInlineCommentBodyForInlineComment_GivenSuggestionFence_WhenRendering_ThenItKeepsNoVisibleBlankLineBeforeTheDiff(t *testing.T) {
 	comment := githubcli.PullRequestInlineComment{
 		Body:         "```suggestion\nfmt.Println(\"bonjour\")\n```",

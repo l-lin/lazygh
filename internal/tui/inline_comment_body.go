@@ -209,9 +209,9 @@ func inlineCommentSuggestionChangedStyleRanges(originalLines []string, suggestio
 	return deletionRanges, additionRanges
 }
 
-func renderInlineCommentSuggestionLine(path string, sign rune, text string, foregroundHex string, changedRanges []styledRuneRange) string {
+func renderInlineCommentSuggestionLine(_ string, sign rune, text string, foregroundHex string, changedRanges []styledRuneRange) string {
 	basePrefix := foregroundColorEscape(foregroundHex) + backgroundColorEscape(theme.SelectedLineBackgroundHex)
-	return string(inlineCommentSuggestionLineSentinelRune) + styleText(string(sign), basePrefix) + renderSyntaxHighlightedCode(path, text, basePrefix, changedRanges)
+	return string(inlineCommentSuggestionLineSentinelRune) + styleText(string(sign), basePrefix) + renderTextWithStyleRanges(text, basePrefix, changedRanges)
 }
 
 func renderInlineCommentSuggestionLabelLine() string {
