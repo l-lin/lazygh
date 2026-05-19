@@ -72,12 +72,14 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedReview
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
 		actionsPopupLabel(actionsPopupOpenPullRequestByURLIcon, "Open PR from URL"),
 		actionsPopupLabel(actionsPopupCustomSearchIcon, "Custom search"),
-		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
+		"Cache",
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestRefreshActionTitle),
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestListRefreshActionTitle),
 	})
 	if strings.Contains(popupView.Buffer(), "Review PR from URL") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Review PR from URL", popupView.Buffer())
@@ -164,6 +166,7 @@ func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalA
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestListRefreshActionTitle),
 		actionsPopupLabel(iconDelete, "Clear cache"),
 	})
 	then_viewExists(t, gui, viewActionsPopupSearchName)
@@ -222,13 +225,13 @@ func TestActionsPopup_GivenOpenPopup_WhenStartingSearchAndTyping_ThenItShowsABor
 
 	popupView, actualErr = gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if strings.Contains(popupView.Buffer(), "1 of 14 actions") {
-		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 14 actions", popupView.Buffer())
+	if strings.Contains(popupView.Buffer(), "1 of 15 actions") {
+		t.Fatalf("expected popup buffer to hide %q, actual %q", "1 of 15 actions", popupView.Buffer())
 	}
 	popupChromeView, actualErr := gui.View(viewActionsPopupChromeName)
 	then_noError(t, actualErr)
-	if popupChromeView.Footer != "1 of 14 actions" {
-		t.Fatalf("expected popup footer %q, actual %q", "1 of 14 actions", popupChromeView.Footer)
+	if popupChromeView.Footer != "1 of 15 actions" {
+		t.Fatalf("expected popup footer %q, actual %q", "1 of 15 actions", popupChromeView.Footer)
 	}
 	if !strings.Contains(popupView.Buffer(), "Yank URL to clipboard") {
 		t.Fatalf("expected popup buffer to keep %q visible, actual %q", "Yank URL to clipboard", popupView.Buffer())

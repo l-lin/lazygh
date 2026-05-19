@@ -28,6 +28,7 @@ func TestActionsPopup_GivenUserView_WhenOpening_ThenItShowsTheGlobalGroupedActio
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestListRefreshActionTitle),
 		actionsPopupLabel(iconDelete, "Clear cache"),
 	})
 	_, actualCursorY := popupView.Cursor()
@@ -131,6 +132,9 @@ func TestActionsPopup_GivenNoPersistentCache_WhenOpening_ThenItHidesTheClearCach
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), pullRequestListRefreshActionTitle) {
+		t.Fatalf("expected popup buffer to contain %q, actual %q", pullRequestListRefreshActionTitle, popupView.Buffer())
+	}
 	if strings.Contains(popupView.Buffer(), "Clear cache") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Clear cache", popupView.Buffer())
 	}

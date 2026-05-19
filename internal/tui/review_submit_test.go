@@ -36,9 +36,11 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 		"Pull request",
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
-		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, "Refresh current PR information"),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
+		"Cache",
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestRefreshActionTitle),
+		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestListRefreshActionTitle),
 	})
 	if strings.Contains(popupView.Buffer(), "Start review") {
 		t.Fatalf("expected popup buffer to hide %q, actual %q", "Start review", popupView.Buffer())

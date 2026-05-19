@@ -27,8 +27,21 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 
 func (program *Program) currentGlobalActionsPopupActions() []actionsPopupAction {
 	actions := actionsPopupGrouped(actionsPopupGroupTheme, program.changeThemeActionsPopupAction())
+	cacheActions := program.currentCacheActionsPopupActions(program.actionContext())
+	if len(cacheActions) > 0 {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupCache, cacheActions...)...)
+	}
+	return actions
+}
+
+func (program *Program) currentCacheActionsPopupActions(actionContext ActionContext) []actionsPopupAction {
+	actions := make([]actionsPopupAction, 0, 3)
+	if actionContext.IsPullRequestContext() {
+		actions = append(actions, program.refreshPullRequestAction())
+	}
+	actions = append(actions, program.refreshPullRequestListAction())
 	if program.pullRequestCache != nil {
-		actions = append(actions, actionsPopupGrouped(actionsPopupGroupCache, program.clearCacheActionsPopupAction())...)
+		actions = append(actions, program.clearCacheActionsPopupAction())
 	}
 	return actions
 }
@@ -101,7 +114,6 @@ func (program *Program) currentPullRequestActionsPopupGroupActions(actionContext
 		pullRequestActions = append(pullRequestActions,
 			program.yankPullRequestURLActionsPopupAction(),
 			program.openPullRequestInBrowserActionsPopupAction(),
-			program.refreshPullRequestAction(),
 		)
 		if assignAction, ok := program.currentAssignPullRequestAction(); ok {
 			pullRequestActions = append(pullRequestActions, assignAction)
@@ -134,7 +146,6 @@ func (program *Program) currentPullRequestActionsPopupGroupActions(actionContext
 		pullRequestActions = append(pullRequestActions, program.pullRequestCustomSearchActionsPopupAction())
 	}
 	pullRequestActions = append(pullRequestActions,
-		program.refreshPullRequestAction(),
 		program.commendOnPrAction(),
 	)
 	if assignAction, ok := program.currentAssignPullRequestAction(); ok {
@@ -242,6 +253,8 @@ func actionsPopupDefaultKeywords(action actionsPopupAction) []string {
 		return []string{"story mode", "narrative"}
 	case action.id == "refresh-current-pull-request-information":
 		return []string{"reload", "sync"}
+	case action.id == "refresh-pull-request-list":
+		return []string{"reload", "sync", "list"}
 	case action.id == "edit-pull-request-title":
 		return []string{"rename", "headline"}
 	case action.id == "edit-pull-request-description":

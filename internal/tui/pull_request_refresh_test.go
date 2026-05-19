@@ -89,6 +89,57 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 	then_statusLineContains(t, gui, "Pull request refreshed")
 }
 
+func TestActionsPopup_GivenRefreshPullRequestListAction_WhenExecuting_ThenItReloadsTheActivePullRequestList(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{
+		Title:      "Refreshed list PR",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		URL:        "https://github.com/acme/widgets/pull/42",
+		State:      "OPEN",
+	}}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.Buffer(), "First PR") {
+		t.Fatalf("expected pull requests buffer to contain %q before refreshing, actual %q", "First PR", pullRequestsView.Buffer())
+	}
+	loader.detailCalls = nil
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestListRefreshActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestListRefreshActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+
+	if len(loader.listPullRequestCommands) != 1 {
+		t.Fatalf("expected one pull request list refresh call, actual %d", len(loader.listPullRequestCommands))
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string(nil)) {
+		t.Fatalf("expected no detail refresh calls, actual %v", loader.detailCalls)
+	}
+
+	pullRequestsView, actualErr = gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(pullRequestsView.Buffer(), "Refreshed list PR") {
+		t.Fatalf("expected pull requests buffer to contain %q after refreshing, actual %q", "Refreshed list PR", pullRequestsView.Buffer())
+	}
+	if strings.Contains(pullRequestsView.Buffer(), "First PR") {
+		t.Fatalf("expected pull requests buffer to drop %q after refreshing, actual %q", "First PR", pullRequestsView.Buffer())
+	}
+	then_statusLineContains(t, gui, pullRequestListRefreshSuccessMessage)
+}
+
 func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMode_WhenExecuting_ThenItReloadsTheActivePullRequestDetailAndDiff(t *testing.T) {
 	staleDiff := given_reviewSessionPullRequestDiff()
 	loader := &fakePullRequestDetailLoader{
