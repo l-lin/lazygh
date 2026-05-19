@@ -92,9 +92,26 @@ func (program *Program) startDetailCharacterTillBackward(gui *gocui.Gui, view *g
 	return program.armDetailCharacterMotion(gui, view, detailCharacterMotionDirectionBackward, detailCharacterMotionAfterMatch)
 }
 
+func (program *Program) repeatDetailCharacterMotionForward(gui *gocui.Gui, view *gocui.View) error {
+	return program.repeatDetailCharacterMotion(gui, view, false)
+}
+
+func (program *Program) repeatDetailCharacterMotionBackward(gui *gocui.Gui, view *gocui.View) error {
+	return program.repeatDetailCharacterMotion(gui, view, true)
+}
+
 func (program *Program) armDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.armCharacterMotion(direction, mode)
+	})
+}
+
+func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
+	if !program.detailViewState.hasLastCharacterMotion {
+		return nil
+	}
+	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		program.detailViewState.repeatCharacterMotion(document, viewportHeight, reverse)
 	})
 }
 
@@ -114,8 +131,25 @@ func (program *Program) startPullRequestBuildRunPopupCharacterTillBackward(gui *
 	return program.armPullRequestBuildRunPopupCharacterMotion(gui, view, detailCharacterMotionDirectionBackward, detailCharacterMotionAfterMatch)
 }
 
+func (program *Program) repeatPullRequestBuildRunPopupCharacterMotionForward(gui *gocui.Gui, view *gocui.View) error {
+	return program.repeatPullRequestBuildRunPopupCharacterMotion(gui, view, false)
+}
+
+func (program *Program) repeatPullRequestBuildRunPopupCharacterMotionBackward(gui *gocui.Gui, view *gocui.View) error {
+	return program.repeatPullRequestBuildRunPopupCharacterMotion(gui, view, true)
+}
+
 func (program *Program) armPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
 	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
 		state.armCharacterMotion(direction, mode)
+	})
+}
+
+func (program *Program) repeatPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
+	if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasLastCharacterMotion {
+		return nil
+	}
+	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+		state.repeatCharacterMotion(document, viewportHeight, reverse)
 	})
 }

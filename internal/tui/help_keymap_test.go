@@ -111,6 +111,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCharacterMotionB
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Find/till character", "f/F/t/T")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Repeat character motion", ";/,")
 }
 
 func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSharedFoldKeys(t *testing.T) {

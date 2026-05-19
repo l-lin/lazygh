@@ -39,6 +39,38 @@ func TestDetailViewState_GivenRenderedDetailText_WhenUsingCharacterMotions_ThenI
 	then_detailCursorIs(t, subject, detailPosition{line: 0, column: 2})
 }
 
+func TestDetailViewState_GivenCharacterMotionHistory_WhenRepeating_ThenSemicolonKeepsTheDirectionAndCommaReversesIt(t *testing.T) {
+	document := newDetailDocument("ab,cd,ef", 40)
+
+	find := newDetailViewState()
+	find.armCharacterMotion(detailCharacterMotionDirectionForward, detailCharacterMotionMatch)
+	if !find.consumePendingCharacterMotion(document, 3, ',') {
+		t.Fatal("expected the initial find motion to be consumed")
+	}
+	if !find.repeatCharacterMotion(document, 3, false) {
+		t.Fatal("expected semicolon to repeat the last find motion")
+	}
+	then_detailCursorIs(t, find, detailPosition{line: 0, column: 5})
+	if !find.repeatCharacterMotion(document, 3, true) {
+		t.Fatal("expected comma to repeat the last find motion in reverse")
+	}
+	then_detailCursorIs(t, find, detailPosition{line: 0, column: 2})
+
+	till := newDetailViewState()
+	till.armCharacterMotion(detailCharacterMotionDirectionForward, detailCharacterMotionBeforeMatch)
+	if !till.consumePendingCharacterMotion(document, 3, ',') {
+		t.Fatal("expected the initial till motion to be consumed")
+	}
+	if !till.repeatCharacterMotion(document, 3, false) {
+		t.Fatal("expected semicolon to repeat the last till motion")
+	}
+	then_detailCursorIs(t, till, detailPosition{line: 0, column: 4})
+	if !till.repeatCharacterMotion(document, 3, true) {
+		t.Fatal("expected comma to reverse the last till motion")
+	}
+	then_detailCursorIs(t, till, detailPosition{line: 0, column: 3})
+}
+
 func TestDetailCharacterMotion_GivenDetailVisualMode_WhenPressingVFA_ThenItKeepsVisualModeAndExtendsTheSelectionToTheNextA(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "banana"}}})
 	model.OpenDetail()
@@ -183,6 +215,89 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingForwardFindWi
 	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: expectedColumn})
 }
 
+func TestDetailCharacterMotion_GivenBrowserDetailFocus_WhenPressingSemicolonAndComma_ThenItRepeatsTheLastCharacterMotion(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Description.zeta.zulu": "Description.zeta.zulu"}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Description.zeta.zulu", State: "OPEN"})}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	given_detailCursorOnSegment(t, gui, subject, "Description.zeta.zulu")
+	firstMatch := given_detailPositionOfSegmentOccurrence(t, gui, subject, "zeta", 0)
+	secondMatch := given_detailPositionOfSegmentOccurrence(t, gui, subject, "zulu", 0)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	registeredBindings := subject.registeredKeybindingSpecs()
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
+	then_noError(t, actualErr)
+	if !subject.editDetailView(detailView, 0, 'z', gocui.ModNone) {
+		t.Fatal("expected pending character motion to consume the initial browser target")
+	}
+	then_detailCursorIs(t, subject.detailViewState, firstMatch)
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ';')(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, secondMatch)
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, firstMatch)
+}
+
+func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingFCommaSemicolonAndComma_ThenTheTargetAndRepeatsStayInTheDiff(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, document, "@@ -1,2 +1,3 @@")
+	startColumn := given_runeIndexInString(t, visibleLine, "@@ -1,2 +1,3 @@")
+	firstComma := startColumn + given_runeIndexInString(t, "@@ -1,2 +1,3 @@", ",")
+	secondComma := firstComma + 5
+	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: startColumn}
+	subject.detailViewState.preferredColumn = startColumn
+	subject.syncDetailViewState(document, detailView.InnerHeight())
+	actualErr = subject.refreshDetailView(gui)
+	then_noError(t, actualErr)
+	registeredBindings := subject.registeredKeybindingSpecs()
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: firstComma})
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ';')(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: secondComma})
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
+	then_noError(t, actualErr)
+	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: firstComma})
+}
+
 func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingForwardFindWithAnUnboundTarget_ThenItMovesThePopupCursor(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	gui := given_headlessGui(t)
@@ -208,12 +323,48 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingForwardFindWithAnUnbo
 	}
 }
 
-func TestKeybindingSpecs_GivenProgram_WhenListingCharacterMotionBindings_ThenDetailAndBuildPopupExposeTheVimFindPrefixes(t *testing.T) {
+func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingSemicolonAndComma_ThenItRepeatsTheLastCharacterMotion(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "Build.zeta.zulu"})
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+	registeredBindings := subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'f')(gui, popupView)
+	then_noError(t, actualErr)
+	if !subject.editPullRequestBuildRunPopup(popupView, 0, 'z', gocui.ModNone) {
+		t.Fatal("expected pending popup character motion to consume the initial target")
+	}
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 6}) {
+		t.Fatalf("expected popup cursor %+v after the initial find, actual %+v", detailPosition{line: 0, column: 6}, actual)
+	}
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, ';')(gui, popupView)
+	then_noError(t, actualErr)
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 11}) {
+		t.Fatalf("expected popup cursor %+v after semicolon, actual %+v", detailPosition{line: 0, column: 11}, actual)
+	}
+
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, ',')(gui, popupView)
+	then_noError(t, actualErr)
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 6}) {
+		t.Fatalf("expected popup cursor %+v after comma, actual %+v", detailPosition{line: 0, column: 6}, actual)
+	}
+}
+
+func TestKeybindingSpecs_GivenProgram_WhenListingCharacterMotionBindings_ThenDetailAndBuildPopupExposeTheVimFindAndRepeatKeys(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
 	actual := subject.keybindingSpecs()
 
-	for _, key := range []rune{'f', 'F', 't', 'T'} {
+	for _, key := range []rune{'f', 'F', 't', 'T', ';', ','} {
 		then_bindingKeyExists(t, actual, viewDetailName, key)
 		then_bindingKeyExists(t, actual, viewPullRequestBuildInfoName, key)
 	}

@@ -63,6 +63,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeCursor, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
 				{Key: program.wordMotionHelpKeys(keymapScopeCursor), Description: "Next/end/previous word/WORD"},
 				program.characterMotionHelpEntry(),
+				program.repeatCharacterMotionHelpEntry(),
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				program.reviewInlineCommentHelpEntry(),
@@ -128,6 +129,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeCursor, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
 			{Key: program.wordMotionHelpKeys(keymapScopeCursor), Description: "Next/end/previous word/WORD"},
 			program.characterMotionHelpEntry(),
+			program.repeatCharacterMotionHelpEntry(),
 			{Key: "n/N", Description: "Next/previous match"},
 			{Key: "v/V", Description: "Start char/line visual selection"},
 			{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
@@ -431,6 +433,10 @@ func (program *Program) wordMotionHelpKeys(scope string) string {
 
 func (program *Program) characterMotionHelpEntry() helpEntry {
 	return helpEntry{Key: "f/F/t/T", Description: "Find/till character"}
+}
+
+func (program *Program) repeatCharacterMotionHelpEntry() helpEntry {
+	return helpEntry{Key: ";/,", Description: "Repeat character motion"}
 }
 
 func (program *Program) searchWordUnderCursorHelpEntry() helpEntry {
