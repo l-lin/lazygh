@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
@@ -192,6 +193,132 @@ func TestRunWithIO_GivenVersionFlag_WhenStartingTheProgram_ThenItPrintsTheVersio
 	}
 	if runner.runCalled {
 		t.Fatal("expected version output to skip the runner")
+	}
+}
+
+func TestRunWithIO_GivenTopLevelHelpFlags_WhenStartingTheProgram_ThenItPrintsUsageAndSkipsStartup(t *testing.T) {
+	t.Parallel()
+
+	for _, args := range [][]string{{"--help"}, {"-h"}} {
+		args := args
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			t.Parallel()
+
+			runner := &fakeConfigurableRunner{}
+			configLoaded := false
+			stdout := &bytes.Buffer{}
+
+			actualErr := runWithIO(
+				args,
+				stdout,
+				"v1.2.3",
+				func() (appconfig.Config, error) {
+					configLoaded = true
+					return appconfig.Config{}, nil
+				},
+				func() configurableRunner {
+					return runner
+				},
+			)
+
+			then_noError(t, actualErr)
+			actual := stdout.String()
+			for _, expectedSegment := range []string{"Usage:", "lazygh review <pull-request-url>", "lazygh story-review <pull-request-url>", "-h, --help", "--version"} {
+				if !strings.Contains(actual, expectedSegment) {
+					t.Fatalf("expected help output to contain %q, actual %q", expectedSegment, actual)
+				}
+			}
+			if configLoaded {
+				t.Fatal("expected help output to skip config loading")
+			}
+			if runner.runCalled {
+				t.Fatal("expected help output to skip the runner")
+			}
+		})
+	}
+}
+
+func TestRunWithIO_GivenReviewHelpFlags_WhenStartingTheProgram_ThenItPrintsUsageAndSkipsStartup(t *testing.T) {
+	t.Parallel()
+
+	for _, args := range [][]string{{"review", "--help"}, {"review", "-h"}} {
+		args := args
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			t.Parallel()
+
+			runner := &fakeConfigurableRunner{}
+			configLoaded := false
+			stdout := &bytes.Buffer{}
+
+			actualErr := runWithIO(
+				args,
+				stdout,
+				"v1.2.3",
+				func() (appconfig.Config, error) {
+					configLoaded = true
+					return appconfig.Config{}, nil
+				},
+				func() configurableRunner {
+					return runner
+				},
+			)
+
+			then_noError(t, actualErr)
+			actual := stdout.String()
+			for _, expectedSegment := range []string{"Usage:", "lazygh review <pull-request-url>", "Start review mode"} {
+				if !strings.Contains(actual, expectedSegment) {
+					t.Fatalf("expected review help output to contain %q, actual %q", expectedSegment, actual)
+				}
+			}
+			if configLoaded {
+				t.Fatal("expected review help output to skip config loading")
+			}
+			if runner.runCalled {
+				t.Fatal("expected review help output to skip the runner")
+			}
+		})
+	}
+}
+
+func TestRunWithIO_GivenStoryReviewHelpFlags_WhenStartingTheProgram_ThenItPrintsUsageAndSkipsStartup(t *testing.T) {
+	t.Parallel()
+
+	for _, args := range [][]string{{"story-review", "--help"}, {"story-review", "-h"}} {
+		args := args
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			t.Parallel()
+
+			runner := &fakeConfigurableRunner{}
+			configLoaded := false
+			stdout := &bytes.Buffer{}
+
+			actualErr := runWithIO(
+				args,
+				stdout,
+				"v1.2.3",
+				func() (appconfig.Config, error) {
+					configLoaded = true
+					return appconfig.Config{}, nil
+				},
+				func() configurableRunner {
+					return runner
+				},
+			)
+
+			then_noError(t, actualErr)
+			actual := stdout.String()
+			for _, expectedSegment := range []string{"Usage:", "lazygh story-review <pull-request-url>", "Start story review mode"} {
+				if !strings.Contains(actual, expectedSegment) {
+					t.Fatalf("expected story review help output to contain %q, actual %q", expectedSegment, actual)
+				}
+			}
+			if configLoaded {
+				t.Fatal("expected story review help output to skip config loading")
+			}
+			if runner.runCalled {
+				t.Fatal("expected story review help output to skip the runner")
+			}
+		})
 	}
 }
 

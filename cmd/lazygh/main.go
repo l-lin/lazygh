@@ -121,8 +121,13 @@ type startupOptions struct {
 }
 
 func parseStartupCommand(args []string, version string) (startupOptions, error) {
-	if len(args) == 1 && args[0] == versionFlag {
-		return startupOptions{exitAfterOutput: true, output: formatVersionOutput(version)}, nil
+	if len(args) == 1 {
+		switch args[0] {
+		case versionFlag:
+			return startupOptions{exitAfterOutput: true, output: formatVersionOutput(version)}, nil
+		case shortHelpFlag, longHelpFlag:
+			return startupOptions{exitAfterOutput: true, output: topLevelHelpOutput()}, nil
+		}
 	}
 	return parseStartupOptions(args)
 }
@@ -134,16 +139,25 @@ func parseStartupOptions(args []string) (startupOptions, error) {
 
 	switch args[0] {
 	case "review":
+		if len(args) == 2 && isHelpFlag(args[1]) {
+			return startupOptions{exitAfterOutput: true, output: subcommandHelpOutput("review")}, nil
+		}
 		if len(args) != 2 {
 			return startupOptions{}, fmt.Errorf("review expects exactly one pull request URL")
 		}
 		return startupOptions{reviewURL: args[1]}, nil
 	case "view":
+		if len(args) == 2 && isHelpFlag(args[1]) {
+			return startupOptions{exitAfterOutput: true, output: subcommandHelpOutput("view")}, nil
+		}
 		if len(args) != 2 {
 			return startupOptions{}, fmt.Errorf("view expects exactly one pull request URL")
 		}
 		return startupOptions{viewURL: args[1]}, nil
 	case "story-review":
+		if len(args) == 2 && isHelpFlag(args[1]) {
+			return startupOptions{exitAfterOutput: true, output: subcommandHelpOutput("story-review")}, nil
+		}
 		if len(args) != 2 {
 			return startupOptions{}, fmt.Errorf("story-review expects exactly one pull request URL")
 		}

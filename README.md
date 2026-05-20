@@ -64,10 +64,15 @@ Use `mise run release-snapshot` to build the release artifacts locally without p
 ```bash
 # Show the installed version.
 lazygh --version
+# Show the CLI help.
+lazygh --help
 # Open TUI.
 lazygh
 # Directly view the PR details.
 lazygh view https://github.com/acme/awesome/pull/123
+# Show command-specific help.
+lazygh review --help
+lazygh story-review --help
 # Directly start reviewing a PR.
 lazygh review https://github.com/acme/awesome/pull/123
 # Directly start a story review a PR.

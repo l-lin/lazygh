@@ -59,5 +59,5 @@ func formatVersionOutput(version string) string {
 	if resolved == "" {
 		resolved = defaultVersion
 	}
-	return fmt.Sprintf("lazygh %s", resolved)
+	return fmt.Sprintf("%s %s", cliName, resolved)
 }
