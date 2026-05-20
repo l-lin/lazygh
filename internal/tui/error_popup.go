@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultTransientErrorPopupDuration = 2 * time.Second
+	defaultTransientErrorPopupDuration = 5 * time.Second
 	transientErrorPopupTitle           = iconWarning + " Error"
 	transientErrorPopupMinWidth        = 30
 	transientErrorPopupFallbackWidth   = 50
