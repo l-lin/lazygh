@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -23,7 +24,7 @@ func (program *Program) reviewApproveAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeApprovePullRequestAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeApprovePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
@@ -31,14 +32,18 @@ func (program *Program) executeApprovePullRequestAction(_ *gocui.Gui) actionsPop
 	if !program.hasReviewMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.reviewMutations.ApprovePullRequest(target.repository, target.number); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
-	program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return program.startActionsPopupAsyncGHCommand(gui, approvePullRequestCommand(target.repository, target.number), func() error {
+		return program.reviewMutations.ApprovePullRequest(target.repository, target.number)
+	}, func() {
+		program.invalidatePullRequestDetail(target.repository, target.number)
+		program.invalidatePullRequestDiff(target.repository, target.number)
+		program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
+	})
+}
+
+func approvePullRequestCommand(repository string, number int) string {
+	return formatStatusLineCommand("gh", "pr", "review", fmt.Sprintf("%d", number), "-R", repository, "--approve")
 }
 
 func (program *Program) reviewCommentAction() actionsPopupAction {

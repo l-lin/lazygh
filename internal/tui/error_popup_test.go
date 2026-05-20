@@ -7,12 +7,16 @@ import (
 	"time"
 
 	"github.com/jesseduffield/gocui"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestActionsPopup_GivenApprovePullRequestFailure_WhenRendering_ThenItShowsATransientErrorPopupAtTheBottomRight(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{approveErr: errors.New("GitHub rejected the approval because a reviewer cannot approve their own pull request")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.asyncRunner = &capturingAsyncRunner{}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
 	gui := given_headlessGuiWithSize(t, 120, 30)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -23,6 +27,7 @@ func TestActionsPopup_GivenApprovePullRequestFailure_WhenRendering_ThenItShowsAT
 	then_noError(t, subject.refreshViews(gui))
 
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
+	given_runQueuedAsync(t, asyncRunner, 0)
 
 	toastView, actualErr := gui.View(viewTransientErrorPopupName)
 	then_noError(t, actualErr)

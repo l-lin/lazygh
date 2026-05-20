@@ -92,6 +92,40 @@ func TestActionsPopup_GivenDetailCursorOutsideAReRequestableReviewer_WhenOpening
 	}
 }
 
+func TestReRequestPullRequestReview_GivenSelectedReviewer_WhenExecuting_ThenItKeepsThePopupOpenShowsTheStatusLineSpinnerAndDelaysTheGitHubCall(t *testing.T) {
+	loader := given_pullRequestReviewerLoader()
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_openPullRequestReviewerOverview(t, gui, subject, "@reviewer-approved")
+	actualErr := subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("re-request review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "re-request review"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued reviewer re-request mutation, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.requestReviewerCalls) != 0 {
+		t.Fatalf("expected the reviewer request to wait for the queued run, actual %v", loader.requestReviewerCalls)
+	}
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	_, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, formatRunningCommandStatus(requestPullRequestReviewerCommand("acme/widgets", 42, "reviewer-approved")))
+}
+
 func TestReRequestPullRequestReview_GivenSelectedReviewer_WhenExecuting_ThenItRequestsTheReviewerAgainAndRefreshesTheVisibleDetail(t *testing.T) {
 	loader := given_pullRequestReviewerLoader()
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)

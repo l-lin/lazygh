@@ -11,9 +11,47 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
+func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItKeepsThePopupOpenShowsTheStatusLineSpinnerAndDelaysTheGitHubCall(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"}}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.pullRequestDiffCache = map[string]pullRequestDiffResult{"acme/widgets#42": {}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestReviewApprovalTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestReviewApprovalTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued approve mutation, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.approveCalls) != 0 {
+		t.Fatalf("expected the approve call to wait for the queued run, actual %v", loader.approveCalls)
+	}
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	_, actualErr = gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, formatRunningCommandStatus(approvePullRequestCommand("acme/widgets", 42)))
+}
+
 func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesTheReviewHandlerRefreshesTheDetailAndShowsFeedback(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"}}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDiffCache = map[string]pullRequestDiffResult{"acme/widgets#42": {}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
