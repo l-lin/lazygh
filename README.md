@@ -238,8 +238,6 @@ In view `2`, press `:` or choose `Custom search` from the actions popup. Submitt
 Press `Ctrl+V` to read a GitHub pull request URL from the clipboard and open it directly in fullscreen view `0`.
 Choose `Open PR from URL` from the actions popup when you want to type or paste the URL manually.
 
-In detail and build-log panes, press `y` followed by a motion like `e`, `E`, `b`, `B`, `0`, `$`, `j`, `gg`, or `f.` to copy text like Vim. Use `Alt+Y` when you want the pull request or build URL instead.
-
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.
