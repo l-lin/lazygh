@@ -419,7 +419,7 @@ func (program *Program) finishNotificationMutation(gui *gocui.Gui, snapshot noti
 	program.notificationsLoadingDetailMessage = ""
 	if err != nil {
 		program.restoreNotificationMutationSnapshot(snapshot)
-		program.setFeedback(program.model.Focus(), strings.TrimSpace(err.Error()))
+		program.reportError(gui, strings.TrimSpace(err.Error()))
 		return program.refreshViewsIfGUI(gui)
 	}
 
@@ -429,26 +429,5 @@ func (program *Program) finishNotificationMutation(gui *gocui.Gui, snapshot noti
 }
 
 func normalizedNotificationMutationError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	message := strings.TrimSpace(err.Error())
-	if message == "" {
-		return err
-	}
-	if strings.HasPrefix(message, "run `") {
-		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
-			message = strings.TrimSpace(message[separatorIndex+1:])
-		}
-	}
-	if strings.HasPrefix(message, "exit status ") {
-		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
-			message = strings.TrimSpace(message[separatorIndex+1:])
-		}
-	}
-	if message == "" {
-		return err
-	}
-	return errors.New(message)
+	return normalizeGHCommandError(err)
 }

@@ -50,7 +50,7 @@ func (program *Program) executeRemoveReactionAction(target pullRequestReactionRe
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 	if err := program.reactionMutations.RemoveReaction(target.subjectID, target.content); err != nil {
-		return actionsPopupActionResult{err: err}
+		return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
 	}
 
 	program.optimisticallyRemoveReaction(target)

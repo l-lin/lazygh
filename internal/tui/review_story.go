@@ -69,6 +69,10 @@ func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubdomain.Pul
 	if actualErr != nil {
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 			program.storyReviewLoading = false
+			if message, ok := transientErrorPopupActionMessage(actualErr); ok {
+				program.reportError(gui, message)
+				return program.refreshViewsIfGUI(gui)
+			}
 			program.setFeedback(program.model.Focus(), strings.TrimSpace(actualErr.Error()))
 			return program.refreshViewsIfGUI(gui)
 		})
@@ -105,7 +109,7 @@ func (program *Program) prepareStoryReview(summary githubdomain.PullRequest) (pr
 	detail, detailOK := program.storyReviewDetail(summary)
 	rawDiff, actualErr := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
 	if actualErr != nil {
-		return preparedStoryReview{}, actualErr
+		return preparedStoryReview{}, newTransientErrorPopupActionError(actualErr)
 	}
 
 	generatedStory, actualErr := program.storyGenerator.Generate(program.storyReviewConfig, story.Request{
@@ -119,7 +123,7 @@ func (program *Program) prepareStoryReview(summary githubdomain.PullRequest) (pr
 
 	pendingReviewID, actualErr := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
 	if actualErr != nil {
-		return preparedStoryReview{}, actualErr
+		return preparedStoryReview{}, newTransientErrorPopupActionError(actualErr)
 	}
 
 	diffData := buildReviewDiffData(rawDiff)

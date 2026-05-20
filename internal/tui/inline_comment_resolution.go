@@ -74,7 +74,7 @@ func (program *Program) executeInlineCommentResolutionAction(resolved bool) acti
 		feedbackMessage = inlineCommentUnresolvedSuccessMessage
 	}
 	if err != nil {
-		return actionsPopupActionResult{err: err}
+		return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
 	}
 
 	program.optimisticallySetReviewThreadResolved(target, resolved)

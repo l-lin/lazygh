@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -416,6 +417,50 @@ func TestAddReaction_GivenPullRequestReactionPickerSelection_WhenSubmitting_Then
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
+}
+
+func TestAddReaction_GivenGitHubRejectsTheReaction_WhenSubmitting_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		addReactionErr: errors.New("reaction refused"),
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {ID: "PR_kwDOA", Title: "First PR", Number: 42, Body: "Body 42", State: "OPEN"},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("add reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.addReactionSubjectIDs, []string{"PR_kwDOA"}) {
+		t.Fatalf("expected reaction subject ids %v, actual %v", []string{"PR_kwDOA"}, loader.addReactionSubjectIDs)
+	}
+	if !reflect.DeepEqual(loader.addReactionContents, []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}) {
+		t.Fatalf("expected reaction contents %v, actual %v", []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}, loader.addReactionContents)
+	}
+	if subject.actionsPopupErrorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	}
+	then_transientErrorPopupContains(t, gui, "reaction refused")
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Title, reactionPickerTitle) {
+		t.Fatalf("expected popup title to stay on %q, actual %q", reactionPickerTitle, popupView.Title)
+	}
 }
 
 func TestAddReaction_GivenPullRequestNotificationDetailFocus_WhenSubmitting_ThenItUsesTheNotificationPullRequestIdentity(t *testing.T) {

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -68,6 +69,48 @@ func TestReviewStoryMode_GivenTheAgentIsStillRunning_WhenStartingStoryReview_The
 	then_statusLineIs(t, gui, string(loadingSpinnerFrames[0]))
 	if subject.reviewSession.active {
 		t.Fatal("expected story review mode to stay inactive until the async load finishes")
+	}
+}
+
+func TestActionsPopup_GivenStoryReviewAction_WhenGitHubRefusesToStartThePendingReview_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewErr: errors.New("story review refused"),
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	asyncRunner := &capturingAsyncRunner{}
+	storyGenerator := &fakeStoryGenerator{review: story.Review{Summary: "A calmer way to review the pull request."}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42})}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.storyGenerator = storyGenerator
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("story", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "story"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued story review load, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	then_statusLineDoesNotContain(t, gui, "story review refused")
+	then_transientErrorPopupContains(t, gui, "story review refused")
+	if subject.reviewSession.active {
+		t.Fatal("expected review mode to stay inactive after the GitHub error")
 	}
 }
 

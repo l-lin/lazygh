@@ -487,6 +487,45 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenI
 	then_statusLineContains(t, gui, "Pending review canceled")
 }
 
+func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenGitHubRejectsCancel_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{deletePullRequestReviewErr: errors.New("cancel refused")}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pendingPullRequestReviewCache["acme/widgets#42"] = pendingPullRequestReviewState{id: "PRR_pending"}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"})}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("cancel pending review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "cancel pending review"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	if !reflect.DeepEqual(loader.deletePullRequestReviewIDs, []string{"PRR_pending"}) {
+		t.Fatalf("expected deleted pending review ids %v, actual %v", []string{"PRR_pending"}, loader.deletePullRequestReviewIDs)
+	}
+	if subject.actionsPopupErrorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	}
+	then_transientErrorPopupContains(t, gui, "cancel refused")
+	if _, ok := subject.pullRequestDetailCache["acme/widgets#42"]; !ok {
+		t.Fatal("expected the cached pull request detail to stay available after the failure")
+	}
+	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; !ok {
+		t.Fatal("expected the cached pull request diff to stay available after the failure")
+	}
+}
+
 func TestActionsPopup_GivenCancelPendingReviewActionSelectedFromRequestedPullRequestList_WhenExecuting_ThenItReloadsTheActivePullRequestList(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{reviewKeyByPendingID: map[string]string{"PRR_pending": "acme/widgets#42"}}
 	model := given_model()
@@ -1130,6 +1169,56 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenExec
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Resolved") || strings.Contains(detailView.Buffer(), "@reviewer-inline  2026-04-18 10:30 UTC  Resolved") {
 		t.Fatalf("expected the detail buffer to refresh with the resolved state on the header, actual %q", detailView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenGitHubRejectsTheResolution_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		resolveReviewThreadErr: errors.New("resolve refused"),
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"General feedback":   "Rendered general feedback",
+		"Inline thread body": "Rendered inline thread body",
+	}}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("mark inline comment as resolved", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark inline comment as resolved"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-1"}) {
+		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
+	}
+	if subject.actionsPopupErrorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	}
+	then_transientErrorPopupContains(t, gui, "resolve refused")
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected the detail buffer to keep the thread unresolved after the failure, actual %q", detailView.Buffer())
 	}
 }
 

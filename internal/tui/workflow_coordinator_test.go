@@ -334,7 +334,8 @@ func TestNotificationStore_GivenAFailedNotificationMutation_WhenFinishingTheAsyn
 	if actualRows[0].Notification == nil || !actualRows[0].Notification.Unread {
 		t.Fatalf("expected the notification mutation rollback to restore the unread state, actual %+v", actualRows)
 	}
-	then_statusLineContains(t, gui, "boom")
+	then_statusLineDoesNotContain(t, gui, "boom")
+	then_transientErrorPopupContains(t, gui, "boom")
 }
 
 func given_workflowProgram(summary githubcli.PullRequest, loader *fakePullRequestDetailLoader) *Program {

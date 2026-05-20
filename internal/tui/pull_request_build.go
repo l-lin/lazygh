@@ -82,20 +82,27 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository string, target pullRequestBuildRunTarget) {
 	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, target.check)
 	jobs := []githubdomain.PullRequestBuildRunJob(nil)
+	jobsErr := error(nil)
 	if err == nil {
-		jobs, _ = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
+		jobs, jobsErr = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
 	}
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {
-			program.setFeedback(program.model.Focus(), pullRequestBuildRunUnavailableMessage)
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
 			return program.refreshViews(gui)
 		}
 
 		target.popupContent.body = rawRunOutput
 		target.popupContent.jobs = jobs
-		return program.openPullRequestBuildRunPopup(gui, target.popupContent)
+		if actualErr := program.openPullRequestBuildRunPopup(gui, target.popupContent); actualErr != nil {
+			return actualErr
+		}
+		if jobsErr != nil {
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(jobsErr).Error()))
+		}
+		return program.refreshViews(gui)
 	})
 }
 
@@ -122,18 +129,21 @@ func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {
-			program.setFeedback(program.model.Focus(), pullRequestBuildLogsUnavailableMessage)
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
 			return program.refreshViews(gui)
 		}
 
-		return program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
+		if actualErr := program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
 			title:         pullRequestBuildRunLogsPopupTitle(job.Name),
 			runURL:        strings.TrimSpace(job.URL),
 			repository:    repository,
 			body:          sanitizePullRequestBuildRunLog(rawLogOutput),
 			widthPercent:  pullRequestBuildLogsPopupWidthPercent,
 			heightPercent: pullRequestBuildLogsPopupHeightPercent,
-		})
+		}); actualErr != nil {
+			return actualErr
+		}
+		return program.refreshViews(gui)
 	})
 }
 

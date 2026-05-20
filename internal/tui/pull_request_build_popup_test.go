@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -567,6 +568,60 @@ func TestActionsPopup_GivenBuildRunActionSelected_WhenExecuting_ThenItClosesTheP
 	}
 }
 
+func TestActionsPopup_GivenBuildRunActionSelected_WhenTheGhQueryFails_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		buildRunErr: errors.New("build run refused"),
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/build-run-action",
+				State:       "OPEN",
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+					Name:         "test",
+					WorkflowName: "CI",
+					Status:       "COMPLETED",
+					Conclusion:   "FAILURE",
+					Link:         "https://github.com/acme/widgets/actions/runs/42",
+				}},
+			},
+		},
+	}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "CI / test (Failed)")
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("build run", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "build run"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued build run load, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	then_viewDoesNotExist(t, gui, viewPullRequestBuildInfoName)
+	then_statusLineDoesNotContain(t, gui, pullRequestBuildRunUnavailableMessage)
+	then_transientErrorPopupContains(t, gui, "build run refused")
+}
+
 func TestSanitizePullRequestBuildRunLog_GivenPrefixedGitHubActionsLogLines_WhenSanitizing_ThenItKeepsOnlyTheLogTextAfterUnknownStep(t *testing.T) {
 	actual := sanitizePullRequestBuildRunLog(strings.Join([]string{
 		"Test / (RW) (GP) (Back) Test    UNKNOWN STEP    2026-04-24T17:36:05.0135694Z ##[endgroup]",
@@ -713,6 +768,65 @@ func TestActionsPopup_GivenViewJobLogsActionSelectedFromTheBuildOverview_WhenExe
 	}
 	then_viewOccupiesAtLeastPercentOfScreen(t, gui, viewPullRequestBuildInfoName, 90, 90)
 	then_currentViewNameIs(t, gui, viewPullRequestBuildInfoName)
+}
+
+func TestActionsPopup_GivenViewJobLogsActionSelected_WhenTheGhQueryFails_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		buildRunJobs: map[string][]githubcli.PullRequestBuildRunJob{
+			"https://github.com/acme/widgets/actions/runs/42": {
+				{DatabaseID: 1234, Name: "test", URL: "https://github.com/acme/widgets/actions/runs/42/job/1234"},
+			},
+		},
+		buildLogErr: errors.New("build log refused"),
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/build-run-action",
+				State:       "OPEN",
+				StatusCheckRollup: []githubcli.PullRequestStatusCheck{{
+					Name:         "test",
+					WorkflowName: "CI",
+					Status:       "COMPLETED",
+					Conclusion:   "FAILURE",
+					Link:         "https://github.com/acme/widgets/actions/runs/42",
+				}},
+			},
+		},
+	}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "CI / test (Failed)")
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("job logs", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "job logs"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued job logs load, actual %d", len(asyncRunner.runs))
+	}
+
+	asyncRunner.runs[0]()
+
+	then_viewDoesNotExist(t, gui, viewPullRequestBuildInfoName)
+	then_statusLineDoesNotContain(t, gui, pullRequestBuildLogsUnavailableMessage)
+	then_transientErrorPopupContains(t, gui, "build log refused")
 }
 
 func given_pullRequestBuildRunPopupCursorOnLineContaining(t *testing.T, gui *gocui.Gui, subject *Program, segment string) {
