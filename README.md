@@ -62,6 +62,8 @@ Use `mise run release-snapshot` to build the release artifacts locally without p
 ## Usage
 
 ```bash
+# Show the installed version.
+lazygh --version
 # Open TUI.
 lazygh
 # Directly view the PR details.

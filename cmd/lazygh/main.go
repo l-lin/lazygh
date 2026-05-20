@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/l-lin/lazygh/internal/app"
@@ -58,8 +59,16 @@ func newAppDepsWithRunner(runner githubcli.Runner) tui.AppDeps {
 }
 
 func run(args []string, loadConfig func() (appconfig.Config, error), newRunner func() configurableRunner) error {
-	startupOptions, actualErr := parseStartupOptions(args)
+	return runWithIO(args, os.Stdout, resolvedVersion(), loadConfig, newRunner)
+}
+
+func runWithIO(args []string, stdout io.Writer, version string, loadConfig func() (appconfig.Config, error), newRunner func() configurableRunner) error {
+	startupCommand, actualErr := parseStartupCommand(args, version)
 	if actualErr != nil {
+		return actualErr
+	}
+	if startupCommand.exitAfterOutput {
+		_, actualErr = fmt.Fprintln(stdout, startupCommand.output)
 		return actualErr
 	}
 
@@ -83,28 +92,39 @@ func run(args []string, loadConfig func() (appconfig.Config, error), newRunner f
 	if actualErr := runner.ApplyCacheConfig(resolvedCache); actualErr != nil {
 		return actualErr
 	}
-	if startupOptions.reviewURL != "" {
-		if actualErr := runner.OpenReviewByURL(startupOptions.reviewURL); actualErr != nil {
+	if startupCommand.reviewURL != "" {
+		if actualErr := runner.OpenReviewByURL(startupCommand.reviewURL); actualErr != nil {
 			return actualErr
 		}
 	}
-	if startupOptions.viewURL != "" {
-		if actualErr := runner.OpenPullRequestByURL(startupOptions.viewURL); actualErr != nil {
+	if startupCommand.viewURL != "" {
+		if actualErr := runner.OpenPullRequestByURL(startupCommand.viewURL); actualErr != nil {
 			return actualErr
 		}
 	}
-	if startupOptions.storyReviewURL != "" {
-		if actualErr := runner.OpenStoryReviewByURL(startupOptions.storyReviewURL); actualErr != nil {
+	if startupCommand.storyReviewURL != "" {
+		if actualErr := runner.OpenStoryReviewByURL(startupCommand.storyReviewURL); actualErr != nil {
 			return actualErr
 		}
 	}
 	return app.New(runner).Run()
 }
 
+const versionFlag = "--version"
+
 type startupOptions struct {
-	reviewURL      string
-	viewURL        string
-	storyReviewURL string
+	reviewURL       string
+	viewURL         string
+	storyReviewURL  string
+	exitAfterOutput bool
+	output          string
+}
+
+func parseStartupCommand(args []string, version string) (startupOptions, error) {
+	if len(args) == 1 && args[0] == versionFlag {
+		return startupOptions{exitAfterOutput: true, output: formatVersionOutput(version)}, nil
+	}
+	return parseStartupOptions(args)
 }
 
 func parseStartupOptions(args []string) (startupOptions, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"testing"
@@ -161,6 +162,36 @@ func TestRun_GivenLoadedCacheConfig_WhenStartingTheProgram_ThenItAppliesItBefore
 	}
 	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}) {
 		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	}
+}
+
+func TestRunWithIO_GivenVersionFlag_WhenStartingTheProgram_ThenItPrintsTheVersionAndSkipsStartup(t *testing.T) {
+	runner := &fakeConfigurableRunner{}
+	configLoaded := false
+	stdout := &bytes.Buffer{}
+
+	actualErr := runWithIO(
+		[]string{"--version"},
+		stdout,
+		"v1.2.3",
+		func() (appconfig.Config, error) {
+			configLoaded = true
+			return appconfig.Config{}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	if actual := stdout.String(); actual != "lazygh v1.2.3\n" {
+		t.Fatalf("expected version output %q, actual %q", "lazygh v1.2.3\n", actual)
+	}
+	if configLoaded {
+		t.Fatal("expected version output to skip config loading")
+	}
+	if runner.runCalled {
+		t.Fatal("expected version output to skip the runner")
 	}
 }
 
