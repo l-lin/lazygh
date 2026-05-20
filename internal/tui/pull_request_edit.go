@@ -84,7 +84,7 @@ func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarge
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.pullRequestMutations.EditPullRequestTitle(target.repository, target.number, title); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyUpdatePullRequestTitle(target.repository, target.number, title)
@@ -100,7 +100,7 @@ func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActio
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.pullRequestMutations.EditPullRequestDescription(target.repository, target.number, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyUpdatePullRequestDescription(target.repository, target.number, body)

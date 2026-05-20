@@ -64,7 +64,7 @@ func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadR
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.reviewMutations.AddPullRequestReviewThreadReply(target.pendingReview, target.threadID, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyAppendInlineCommentReply(target, body)

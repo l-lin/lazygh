@@ -181,6 +181,8 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisibleAndShowsTheError(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{commentErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -200,9 +202,10 @@ func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	if !strings.Contains(composerView.Buffer(), "Line one\nLine two") {
 		t.Fatalf("expected composer buffer to contain the draft, actual %q", composerView.Buffer())
 	}
-	if !strings.Contains(composerView.Title, "boom") {
-		t.Fatalf("expected composer title to contain %q, actual %q", "boom", composerView.Title)
+	if strings.Contains(composerView.Title, "boom") {
+		t.Fatalf("expected composer title to hide %q, actual %q", "boom", composerView.Title)
 	}
+	then_transientErrorPopupContains(t, gui, "boom")
 }
 
 func TestPullRequestCommentComposer_GivenCommentsTabSubmit_WhenPostingComment_ThenItKeepsTheRenderedCommentsVisibleWhileQueueingABackgroundRefresh(t *testing.T) {

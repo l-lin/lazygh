@@ -80,7 +80,7 @@ func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommen
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.reviewMutations.UpdatePullRequestReviewComment(target.commentID, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyUpdateReviewComment(target, body)
@@ -96,7 +96,7 @@ func (program *Program) deleteInlineComment(target pullRequestReviewCommentActio
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.reviewMutations.DeletePullRequestReviewComment(target.commentID); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyDeleteReviewComment(target)

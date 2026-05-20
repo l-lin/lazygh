@@ -128,6 +128,8 @@ func TestActionsPopup_GivenReviewCommentActionSelected_WhenExecuting_ThenItOpens
 func TestActionsPopup_GivenRequestChangesActionSelected_WhenSubmittingFails_ThenItKeepsTheDraftVisibleAndUsesTheRequestChangesHandler(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{requestChangesErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -160,7 +162,8 @@ func TestActionsPopup_GivenRequestChangesActionSelected_WhenSubmittingFails_Then
 	if !strings.Contains(composerView.Buffer(), "Needs tests") {
 		t.Fatalf("expected composer buffer to contain %q, actual %q", "Needs tests", composerView.Buffer())
 	}
-	if !strings.Contains(composerView.Title, "boom") {
-		t.Fatalf("expected composer title to contain %q, actual %q", "boom", composerView.Title)
+	if strings.Contains(composerView.Title, "boom") {
+		t.Fatalf("expected composer title to hide %q, actual %q", "boom", composerView.Title)
 	}
+	then_transientErrorPopupContains(t, gui, "boom")
 }

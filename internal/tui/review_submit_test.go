@@ -185,6 +185,8 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubmittingFails_ThenItKeepsTheDraftAndPendingReviewVisible(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", submitReviewErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -231,5 +233,6 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 	if strings.Contains(composerView.Title, "boom") {
 		t.Fatalf("expected composer title to hide %q, actual %q", "boom", composerView.Title)
 	}
-	then_statusLineContains(t, gui, "boom")
+	then_statusLineDoesNotContain(t, gui, "boom")
+	then_transientErrorPopupContains(t, gui, "boom")
 }

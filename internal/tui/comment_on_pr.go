@@ -63,7 +63,7 @@ func (program *Program) submitPullRequestComment(target pullRequestCommentTarget
 	}
 
 	if err := program.pullRequestMutations.CommentOnPullRequest(target.repository, target.number, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyAppendPullRequestComment(target, body)

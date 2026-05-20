@@ -65,6 +65,14 @@ func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 
 	program.modalEditor.errorMessage = ""
 	if err := program.modalEditor.submit(program.modalEditor.Text()); err != nil {
+		if message, ok := transientErrorPopupActionMessage(err); ok {
+			program.modalEditor.errorMessage = ""
+			program.reportError(gui, message)
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
+		}
 		var feedbackErr modalEditorStatusLineError
 		if errors.As(err, &feedbackErr) {
 			program.setFeedback(feedbackErr.feedbackTarget, err.Error())

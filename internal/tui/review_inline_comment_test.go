@@ -339,6 +339,8 @@ func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeep
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
 	subject.modalEditor.editor.SetText("Draft inline comment")
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -350,9 +352,10 @@ func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeep
 	if !strings.Contains(composerView.Buffer(), "Draft inline comment") {
 		t.Fatalf("expected composer buffer to contain %q, actual %q", "Draft inline comment", composerView.Buffer())
 	}
-	if !strings.Contains(composerView.Title, "line must be part of the diff") {
-		t.Fatalf("expected composer title to contain %q, actual %q", "line must be part of the diff", composerView.Title)
+	if strings.Contains(composerView.Title, "line must be part of the diff") {
+		t.Fatalf("expected composer title to hide %q, actual %q", "line must be part of the diff", composerView.Title)
 	}
+	then_transientErrorPopupContains(t, gui, "line must be part of the diff")
 }
 
 func given_reviewModeDetailCursorOnLineContaining(t *testing.T, gui *gocui.Gui, subject *Program, segment string) {

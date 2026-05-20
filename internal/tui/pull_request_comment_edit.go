@@ -78,7 +78,7 @@ func (program *Program) submitPullRequestCommentUpdate(target pullRequestComment
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.pullRequestMutations.UpdatePullRequestComment(target.commentID, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyUpdatePullRequestComment(target, body)
@@ -94,7 +94,7 @@ func (program *Program) deletePullRequestComment(target pullRequestCommentEditAc
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.pullRequestMutations.DeletePullRequestComment(target.commentID); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyDeletePullRequestComment(target)

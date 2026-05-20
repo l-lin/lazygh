@@ -98,7 +98,7 @@ func (program *Program) submitPullRequestReviewComment(target pullRequestActionT
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.reviewMutations.ReviewPullRequestWithComment(target.repository, target.number, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
@@ -115,7 +115,7 @@ func (program *Program) submitPullRequestRequestChanges(target pullRequestAction
 		return errors.New("github loader is unavailable")
 	}
 	if err := program.reviewMutations.RequestChangesOnPullRequest(target.repository, target.number, body); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.invalidatePullRequestDetail(target.repository, target.number)

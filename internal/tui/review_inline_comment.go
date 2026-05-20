@@ -200,7 +200,7 @@ func (program *Program) submitPullRequestInlineComment(target pullRequestInlineC
 		return err
 	}
 	if err := program.reviewMutations.AddPullRequestReviewThread(pendingReviewID, body, target.threadTarget); err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	target.pendingReview = pendingReviewID
@@ -223,7 +223,7 @@ func (program *Program) pendingReviewIDForInlineComment(target pullRequestInline
 
 	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(target.repository, target.number)
 	if err != nil {
-		return "", err
+		return "", newTransientErrorPopupActionError(err)
 	}
 	pendingReviewID = strings.TrimSpace(pendingReviewID)
 	if pendingReviewID == "" {
