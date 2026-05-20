@@ -26,7 +26,11 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 }
 
 func (program *Program) currentGlobalActionsPopupActions() []actionsPopupAction {
-	actions := actionsPopupGrouped(actionsPopupGroupTheme, program.changeThemeActionsPopupAction())
+	actions := []actionsPopupAction{}
+	if action, ok := program.currentRecentErrorsActionsPopupAction(); ok {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupErrors, action)...)
+	}
+	actions = append(actions, actionsPopupGrouped(actionsPopupGroupTheme, program.changeThemeActionsPopupAction())...)
 	cacheActions := program.currentCacheActionsPopupActions(program.actionContext())
 	if len(cacheActions) > 0 {
 		actions = append(actions, actionsPopupGrouped(actionsPopupGroupCache, cacheActions...)...)
@@ -303,6 +307,8 @@ func actionsPopupDefaultKeywords(action actionsPopupAction) []string {
 		return []string{"checks", "workflow", "ci"}
 	case action.id == "view-build-run-job-logs":
 		return []string{"logs", "output", "ci"}
+	case action.id == "view-recent-errors":
+		return []string{"history", "failures", "logs"}
 	case action.id == "add-reaction":
 		return []string{"emoji", "react"}
 	case strings.HasPrefix(action.id, "remove-reaction-"):

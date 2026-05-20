@@ -11,6 +11,7 @@ const (
 	actionsPopupGroupReview        = "Review"
 	actionsPopupGroupNavigation    = "Navigation"
 	actionsPopupGroupNotifications = "Notifications"
+	actionsPopupGroupErrors        = "Errors"
 	actionsPopupGroupTheme         = "Theme"
 	actionsPopupGroupCache         = "Cache"
 )

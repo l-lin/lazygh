@@ -136,6 +136,7 @@ const (
 	actionsPopupResolveInlineCommentIcon     = iconChecks
 	actionsPopupBuildRunIcon                 = iconBuild
 	actionsPopupBuildRunLogsIcon             = iconBuild
+	actionsPopupRecentErrorsIcon             = iconWarning
 	actionsPopupAddReactionIcon              = iconAddReaction
 	actionsPopupRemoveReactionIcon           = iconDelete
 	actionsPopupChangeThemeIcon              = iconTheme

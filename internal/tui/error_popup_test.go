@@ -83,6 +83,53 @@ func TestScreenLayout_GivenATransientErrorPopup_WhenPlanningOverlays_ThenItPinsT
 	}
 }
 
+func TestActionsPopup_GivenRecordedErrors_WhenOpening_ThenItShowsTheRecentErrorsAction(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.reportError(nil, "First error")
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openActionsPopup(gui, nil))
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), recentErrorsActionTitle) {
+		t.Fatalf("expected the actions popup to contain %q, actual %q", recentErrorsActionTitle, popupView.Buffer())
+	}
+}
+
+func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_ThenItOpensTheHistoryPopupWithNewestErrorsFirst(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.reportError(nil, "First error")
+	subject.reportError(nil, "Second error")
+	gui := given_headlessGuiWithSize(t, 120, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openActionsPopup(gui, nil))
+	subject.model.UpdateActionsPopupSearch(recentErrorsActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), recentErrorsActionTitle))
+	then_noError(t, subject.refreshViews(gui))
+
+	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
+
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Title, recentErrorsPopupTitle) {
+		t.Fatalf("expected the popup title to contain %q, actual %q", recentErrorsPopupTitle, popupView.Title)
+	}
+	if strings.Index(popupView.Buffer(), "Second error") < 0 || strings.Index(popupView.Buffer(), "First error") < 0 {
+		t.Fatalf("expected the popup buffer to contain both recorded errors, actual %q", popupView.Buffer())
+	}
+	if strings.Index(popupView.Buffer(), "Second error") > strings.Index(popupView.Buffer(), "First error") {
+		t.Fatalf("expected the newest error to render first, actual %q", popupView.Buffer())
+	}
+	then_viewOccupiesAtLeastPercentOfScreen(t, gui, viewPullRequestBuildInfoName, 90, 90)
+}
+
 func then_transientErrorPopupIsBottomRightAboveStatusLine(t *testing.T, gui *gocui.Gui) {
 	t.Helper()
 

@@ -14,6 +14,10 @@ const (
 	transientErrorPopupFallbackWidth   = 50
 	transientErrorPopupReservedRows    = 2
 	maxRecordedErrorMessages           = 100
+	recentErrorsActionTitle            = "View recent errors"
+	recentErrorsPopupTitle             = "Recent errors"
+	recentErrorsPopupWidthPercent      = 90
+	recentErrorsPopupHeightPercent     = 90
 )
 
 type transientErrorPopupState struct {
@@ -46,6 +50,52 @@ func (program *Program) appendRecordedErrorMessage(message string) {
 		return
 	}
 	program.errorMessages = append([]string(nil), program.errorMessages[len(program.errorMessages)-maxRecordedErrorMessages:]...)
+}
+
+func (program *Program) hasRecordedErrors() bool {
+	return program != nil && len(program.errorMessages) > 0
+}
+
+func (program *Program) currentRecentErrorsActionsPopupAction() (actionsPopupAction, bool) {
+	if !program.hasRecordedErrors() {
+		return actionsPopupAction{}, false
+	}
+	return program.recentErrorsActionsPopupAction(), true
+}
+
+func (program *Program) recentErrorsActionsPopupAction() actionsPopupAction {
+	return actionsPopupAction{
+		id:      "view-recent-errors",
+		title:   recentErrorsActionTitle,
+		icon:    actionsPopupRecentErrorsIcon,
+		execute: program.executeRecentErrorsAction,
+	}
+}
+
+func (program *Program) executeRecentErrorsAction(gui *gocui.Gui) actionsPopupActionResult {
+	if !program.hasRecordedErrors() {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+	if err := program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
+		title:         recentErrorsPopupTitle,
+		body:          program.renderRecentErrorsPopupBody(),
+		widthPercent:  recentErrorsPopupWidthPercent,
+		heightPercent: recentErrorsPopupHeightPercent,
+	}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{closePopup: true}
+}
+
+func (program *Program) renderRecentErrorsPopupBody() string {
+	if !program.hasRecordedErrors() {
+		return "No recent errors recorded."
+	}
+	messages := make([]string, 0, len(program.errorMessages))
+	for index := len(program.errorMessages) - 1; index >= 0; index-- {
+		messages = append(messages, program.errorMessages[index])
+	}
+	return strings.Join(messages, "\n\n")
 }
 
 func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) {
