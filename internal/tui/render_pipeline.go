@@ -141,6 +141,8 @@ func (renderer OverlayRenderer) Renderer(viewName string) (ViewRenderer, bool) {
 		return viewRendererFuncs{configure: renderer.program.configureModalEditorView, render: renderer.program.renderModalEditorView}, true
 	case viewPullRequestBuildInfoName:
 		return viewRendererFuncs{configure: renderer.program.configurePullRequestBuildRunPopupView, render: renderer.program.renderPullRequestBuildRunPopupView}, true
+	case viewTransientErrorPopupName:
+		return viewRendererFuncs{configure: renderer.program.configureTransientErrorPopupView, render: renderer.program.renderTransientErrorPopupView}, true
 	case viewActionsPopupChromeName:
 		return viewRendererFuncs{configure: renderer.program.configureActionsPopupChromeView, render: renderer.program.renderActionsPopupChromeView}, true
 	case viewActionsPopupName:
@@ -200,6 +202,11 @@ func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) scree
 			}
 		}
 		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
+	case viewTransientErrorPopupName:
+		if !renderer.program.transientErrorPopupVisible() {
+			return screenViewFrame{ViewName: viewName}
+		}
+		return screenViewFrame{ViewName: viewName, Frame: renderer.program.transientErrorPopupFrame(maxX, maxY), Visible: true, OnTop: true}
 	case viewActionsPopupChromeName:
 		if !renderer.program.model.ActionsPopupVisible() {
 			return screenViewFrame{ViewName: viewName}
@@ -318,7 +325,7 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 	}
 
 	overlayRenderer := program.overlayRenderer()
-	for _, overlayViewName := range []string{viewHelpName, viewSearchName, viewModalEditorName, viewPullRequestBuildInfoName, viewActionsPopupChromeName, viewActionsPopupName, viewActionsPopupSearchName} {
+	for _, overlayViewName := range []string{viewHelpName, viewSearchName, viewModalEditorName, viewPullRequestBuildInfoName, viewActionsPopupChromeName, viewActionsPopupName, viewActionsPopupSearchName, viewTransientErrorPopupName} {
 		layout.OverlayFrames = append(layout.OverlayFrames, overlayRenderer.Frame(overlayViewName, maxX, maxY))
 	}
 

@@ -498,6 +498,9 @@ func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUISta
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestOutOfDateLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
@@ -514,6 +517,7 @@ func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUISta
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
+	given_runQueuedAsync(t, asyncRunner, 0)
 
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.updateBranchCalls, []string{"acme/widgets#42"}) {
@@ -523,6 +527,12 @@ func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUISta
 	then_noError(t, actualErr)
 	if !strings.Contains(popupView.Title, "GitHub rejected the branch update") {
 		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the branch update", popupView.Title)
+	}
+	toastView, actualErr := gui.View(viewTransientErrorPopupName)
+	then_noError(t, actualErr)
+	toastText := strings.Join(toastView.BufferLines(), "")
+	if !strings.Contains(toastText, "GitHub rejected the branch update") {
+		t.Fatalf("expected the transient error popup to contain %q, actual %q", "GitHub rejected the branch update", toastText)
 	}
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)

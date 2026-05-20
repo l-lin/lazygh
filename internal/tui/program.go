@@ -23,6 +23,7 @@ const (
 	viewActionsPopupChromeName   = "actions-popup-chrome"
 	viewActionsPopupName         = "actions-popup"
 	viewActionsPopupSearchName   = "actions-popup-search"
+	viewTransientErrorPopupName  = "transient-error-popup"
 	viewPullRequestBuildInfoName = "pull-request-build-info"
 
 	defaultYankHighlightDuration = 240 * time.Millisecond
@@ -64,6 +65,8 @@ type Program struct {
 	actionsPopupSearchEditor                *lineEditor
 	actionsPopupErrorMessage                string
 	actionsPopupPendingConfirmationActionID string
+	transientErrorPopup                     transientErrorPopupState
+	errorMessages                           []string
 	reactionPicker                          *reactionPickerState
 	themePicker                             *themePickerState
 	assigneePicker                          *assigneePickerState
@@ -88,7 +91,9 @@ type Program struct {
 	pendingListViewportPlacements           map[string]viewportPlacement
 	registeredKeybindingFingerprint         string
 	now                                     func() time.Time
+	after                                   func(time.Duration) <-chan time.Time
 	yankHighlightDuration                   time.Duration
+	transientErrorPopupDuration             time.Duration
 }
 
 func NewProgram() *Program {
@@ -157,7 +162,9 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 		assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay,
 		pendingListViewportPlacements:     map[string]viewportPlacement{},
 		now:                               time.Now,
+		after:                             time.After,
 		yankHighlightDuration:             defaultYankHighlightDuration,
+		transientErrorPopupDuration:       defaultTransientErrorPopupDuration,
 	}
 }
 

@@ -8,6 +8,7 @@ type viewRenderer func(*gocui.View)
 func (program *Program) refreshViews(gui *gocui.Gui) error {
 	program.gui = gui
 	program.clearExpiredYankHighlights()
+	program.clearExpiredTransientErrorPopup(program.currentTime())
 	if !program.reviewModeActive() {
 		program.maybeLoadSelectedNotificationDetail(gui)
 	}

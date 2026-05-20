@@ -239,6 +239,7 @@ func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID in
 		if err != nil {
 			program.assigneePicker.searchResults = nil
 			program.actionsPopupErrorMessage = strings.TrimSpace(normalizedAssigneePickerError(err).Error())
+			program.reportError(gui, program.actionsPopupErrorMessage)
 			program.syncActionsPopupSearch()
 			return program.refreshViews(gui)
 		}

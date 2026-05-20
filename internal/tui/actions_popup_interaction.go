@@ -281,6 +281,7 @@ func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result ac
 			return program.refreshViews(gui)
 		}
 		program.actionsPopupErrorMessage = strings.TrimSpace(result.err.Error())
+		program.reportError(gui, program.actionsPopupErrorMessage)
 		if gui == nil {
 			return nil
 		}

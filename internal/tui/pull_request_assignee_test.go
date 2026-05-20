@@ -249,6 +249,15 @@ func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_
 	if !strings.Contains(popupView.Title, "Field 'isBot' doesn't exist on type 'User'") {
 		t.Fatalf("expected popup title to contain the stripped error, actual %q", popupView.Title)
 	}
+	toastView, actualErr := gui.View(viewTransientErrorPopupName)
+	then_noError(t, actualErr)
+	toastText := strings.ReplaceAll(strings.Join(toastView.BufferLines(), ""), "\n", "")
+	if strings.Contains(toastText, "gh api graphql") {
+		t.Fatalf("expected transient error popup to hide the gh command, actual %q", toastText)
+	}
+	if !strings.Contains(toastText, "Field 'isBot' doesn't exist on type 'User'") {
+		t.Fatalf("expected transient error popup to contain the stripped error, actual %q", toastText)
+	}
 }
 
 func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStringMatches_WhenMovingToOneAndPressingEnter_ThenItTogglesThatAssignee(t *testing.T) {
