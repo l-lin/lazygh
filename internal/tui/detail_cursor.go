@@ -64,6 +64,7 @@ type detailViewState struct {
 	currentSearchMatch        int
 	searchCacheDocumentID     uint64
 	searchCacheQuery          string
+	yankHighlight             detailYankHighlightState
 	manualViewportScroll      bool
 	preserveViewportSyncCount int
 }

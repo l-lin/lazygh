@@ -26,7 +26,14 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 		rowRunes = line[row.startColumn : row.endColumn+1]
 	}
 	paddingPrefix := markdownFullWidthLinePaddingPrefix(document.width, lineStylePrefixes, row.startColumn, row.endColumn)
-	if len(rowImages) == 0 && len(lineMatchRanges) == 0 && !state.mode.isVisual() && !detailLineHasStylePrefixes(lineStylePrefixes, row.startColumn, row.endColumn) && paddingPrefix == "" {
+	hasYankHighlight := false
+	for column := row.startColumn; column <= row.endColumn; column++ {
+		if state.isPositionYankHighlighted(document, detailPosition{line: row.line, column: column}) {
+			hasYankHighlight = true
+			break
+		}
+	}
+	if len(rowImages) == 0 && len(lineMatchRanges) == 0 && !hasYankHighlight && !state.mode.isVisual() && !detailLineHasStylePrefixes(lineStylePrefixes, row.startColumn, row.endColumn) && paddingPrefix == "" {
 		return row.text
 	}
 
@@ -47,10 +54,12 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 	currentPrefix := ""
 	for offset := 0; offset < visibleWidth; offset++ {
 		column := row.startColumn + offset
+		position := detailPosition{line: row.line, column: column}
+		searchHighlighted := detailColumnInRanges(column, lineMatchRanges) || state.isPositionYankHighlighted(document, position)
 		if imageCell, ok := detailImageCellAt(document.images, row.line, column); ok {
 			prefix := detailCellStylePrefix(detailCellStyle{
-				selected: state.isPositionSelected(document, detailPosition{line: row.line, column: column}),
-				search:   detailColumnInRanges(column, lineMatchRanges),
+				selected: state.isPositionSelected(document, position),
+				search:   searchHighlighted,
 			}, foregroundColorEscape(protocol.PlaceholderForegroundHex(imageCell.imageID)))
 			if prefix != currentPrefix {
 				if currentPrefix != "" {
@@ -66,8 +75,8 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 		}
 		if offset < len(rowRunes) {
 			prefix := detailCellStylePrefix(detailCellStyle{
-				selected: state.isPositionSelected(document, detailPosition{line: row.line, column: column}),
-				search:   detailColumnInRanges(column, lineMatchRanges),
+				selected: state.isPositionSelected(document, position),
+				search:   searchHighlighted,
 			}, detailLineStylePrefix(lineStylePrefixes, column))
 			if prefix != currentPrefix {
 				if currentPrefix != "" {

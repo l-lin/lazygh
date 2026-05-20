@@ -24,6 +24,8 @@ const (
 	viewActionsPopupName         = "actions-popup"
 	viewActionsPopupSearchName   = "actions-popup-search"
 	viewPullRequestBuildInfoName = "pull-request-build-info"
+
+	defaultYankHighlightDuration = 240 * time.Millisecond
 )
 
 type Program struct {
@@ -85,6 +87,8 @@ type Program struct {
 	pendingSelectionKeySequence             keySequenceState
 	pendingListViewportPlacements           map[string]viewportPlacement
 	registeredKeybindingFingerprint         string
+	now                                     func() time.Time
+	yankHighlightDuration                   time.Duration
 }
 
 func NewProgram() *Program {
@@ -152,6 +156,8 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 		pullRequestSearches:               appconfig.DefaultPullRequestSearches(),
 		assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay,
 		pendingListViewportPlacements:     map[string]viewportPlacement{},
+		now:                               time.Now,
+		yankHighlightDuration:             defaultYankHighlightDuration,
 	}
 }
 

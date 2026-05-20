@@ -75,9 +75,11 @@ func (program *Program) startPullRequestBuildRunPopupYank(gui *gocui.Gui, view *
 }
 
 func (program *Program) copySelectedText(state *detailViewState, document detailDocument) {
+	selection, _ := detailSelectionForCurrentMode(*state, document)
 	err := program.writeTextToClipboard(state.selectedText(document))
 	state.exitVisualMode()
 	if err == nil {
+		program.activateYankHighlight(state, selection)
 		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
 	} else {
 		program.setFeedback(program.model.Focus(), detailYankFailureMessage)
@@ -143,13 +145,14 @@ func (program *Program) mutatePullRequestBuildRunPopupViewStateForYankMotion(gui
 }
 
 func (program *Program) finishPendingYank(document detailDocument, state *detailViewState, snapshot detailYankSnapshot, selectionKind detailYankMotionSelectionKind) {
-	selectedText, ok := detailYankText(document, snapshot.cursor, state.cursor, selectionKind)
+	selection, ok := detailSelectionForYankMotion(document, snapshot.cursor, state.cursor, selectionKind)
 	state.restoreYankSnapshot(snapshot)
 	state.pendingYank = false
 	if !ok {
 		return
 	}
-	if err := program.writeTextToClipboard(selectedText); err == nil {
+	if err := program.writeTextToClipboard(selection.text(document)); err == nil {
+		program.activateYankHighlight(state, selection)
 		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
 	} else {
 		program.setFeedback(program.model.Focus(), detailYankFailureMessage)
@@ -157,38 +160,9 @@ func (program *Program) finishPendingYank(document detailDocument, state *detail
 }
 
 func detailYankText(document detailDocument, anchor detailPosition, target detailPosition, selectionKind detailYankMotionSelectionKind) (string, bool) {
-	anchor = document.clampPosition(anchor)
-	target = document.clampPosition(target)
-
-	switch selectionKind {
-	case detailYankMotionLinewise:
-		startRow := document.rowIndexForPosition(anchor)
-		endRow := document.rowIndexForPosition(target)
-		if startRow > endRow {
-			startRow, endRow = endRow, startRow
-		}
-		return document.rowSelectionText(startRow, endRow), true
-	case detailYankMotionCharacterExclusive:
-		if document.comparePositions(anchor, target) == 0 {
-			return "", false
-		}
-		start, end := anchor, target
-		if document.comparePositions(start, end) > 0 {
-			start, end = end, start
-		}
-		end = document.moveLeft(end)
-		if document.comparePositions(start, end) > 0 {
-			return "", false
-		}
-		return document.selectionText(start, end), true
-	default:
-		if document.comparePositions(anchor, target) == 0 {
-			return "", false
-		}
-		start, end := anchor, target
-		if document.comparePositions(start, end) > 0 {
-			start, end = end, start
-		}
-		return document.selectionText(start, end), true
+	selection, ok := detailSelectionForYankMotion(document, anchor, target, selectionKind)
+	if !ok {
+		return "", false
 	}
+	return selection.text(document), true
 }
