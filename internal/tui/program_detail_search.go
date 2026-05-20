@@ -36,17 +36,9 @@ func (program *Program) repeatDetailSearch(gui *gocui.Gui, view *gocui.View, rep
 		return nil
 	}
 
-	actualMoved := false
-	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, view, func(document detailDocument, viewportHeight int) {
-		actualMoved = repeat(document, viewportHeight)
-	}); actualErr != nil {
-		return actualErr
-	}
-	if !actualMoved {
-		return nil
-	}
-
-	return program.refreshDetailView(gui)
+	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
+		repeat(document, viewportHeight)
+	})
 }
 
 func (program *Program) followSubmittedDetailSearch(gui *gocui.Gui) error {

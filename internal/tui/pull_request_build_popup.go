@@ -83,6 +83,10 @@ func (program *Program) closePullRequestBuildRunPopup(gui *gocui.Gui, _ *gocui.V
 		popup.viewState.exitVisualMode()
 		return program.refreshViewsIfGUI(gui)
 	}
+	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.viewState.hasPendingYank() {
+		popup.viewState.clearPendingPrefix()
+		return program.refreshViewsIfGUI(gui)
+	}
 	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.previousPopup != nil {
 		program.pullRequestBuildRunPopup = popup.previousPopup
 		return program.refreshViewsIfGUI(gui)

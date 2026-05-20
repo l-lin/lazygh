@@ -62,6 +62,7 @@ func (state *detailViewState) scroll(document detailDocument, viewportHeight int
 func (state *detailViewState) clearPendingPrefix() {
 	state.pendingKeySequence.clear()
 	state.pendingCharacterMotion = detailPendingCharacterMotion{}
+	state.pendingYank = false
 }
 
 func (state *detailViewState) enterVisualMode() {

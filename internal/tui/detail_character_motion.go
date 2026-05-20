@@ -56,7 +56,7 @@ func (state *detailViewState) hasPendingCharacterMotion() bool {
 }
 
 func (state *detailViewState) armCharacterMotion(direction detailCharacterMotionDirection, mode detailCharacterMotionMode) {
-	state.clearPendingPrefix()
+	state.pendingKeySequence.clear()
 	state.pendingCharacterMotion = detailPendingCharacterMotion{active: true, direction: direction, mode: mode}
 }
 

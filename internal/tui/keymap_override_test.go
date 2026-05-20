@@ -277,7 +277,7 @@ func TestKeybindingSpecs_GivenPullRequestsCopyOverride_WhenListingBindings_ThenI
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'u', handler: subject.copyPullRequestURL})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'u', handler: subject.copyPullRequestURL})
 	then_bindingDoesNotExist(t, actual, viewUserName, 'y')
-	then_bindingDoesNotExist(t, actual, viewDetailName, 'y')
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'y', handler: subject.startDetailYank})
 }
 
 func TestKeybindingSpecs_GivenFocusViewOverrides_WhenListingBindings_ThenTheNumericShortcutsStayFixed(t *testing.T) {

@@ -22,6 +22,7 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"till_character_backward":           {"T"},
 			"repeat_character_motion_forward":   {";"},
 			"repeat_character_motion_backward":  {","},
+			"start_yank":                        {"y"},
 		},
 		"modal_editor": {
 			"cancel":               {"esc"},

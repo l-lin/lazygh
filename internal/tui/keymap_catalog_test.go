@@ -45,6 +45,7 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 		{name: "till character backward", action: "till_character_backward", expectedScope: keymapScopeCursor, expectedBindings: []string{"T"}, expectedAllowSequences: false},
 		{name: "repeat character motion forward", action: "repeat_character_motion_forward", expectedScope: keymapScopeCursor, expectedBindings: []string{";"}, expectedAllowSequences: false},
 		{name: "repeat character motion backward", action: "repeat_character_motion_backward", expectedScope: keymapScopeCursor, expectedBindings: []string{","}, expectedAllowSequences: false},
+		{name: "start yank", action: "start_yank", expectedScope: keymapScopeCursor, expectedBindings: []string{"y"}, expectedAllowSequences: true},
 	}
 
 	for _, testCase := range testCases {

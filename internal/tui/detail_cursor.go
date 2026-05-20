@@ -57,6 +57,7 @@ type detailViewState struct {
 	visualAnchor              detailPosition
 	pendingKeySequence        keySequenceState
 	pendingCharacterMotion    detailPendingCharacterMotion
+	pendingYank               bool
 	lastCharacterMotion       detailCharacterMotion
 	hasLastCharacterMotion    bool
 	searchMatches             []detailSearchMatch

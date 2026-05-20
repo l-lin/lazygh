@@ -55,23 +55,7 @@ func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View)
 
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewPageSize(actualView))
-	selectedText := program.detailViewState.selectedText(detailDocument)
-
-	var err error
-	switch program.clipboardWriter {
-	case nil:
-		err = ErrClipboardUnavailable
-	default:
-		err = program.clipboardWriter.WriteText(selectedText)
-	}
-
-	program.detailViewState.exitVisualMode()
-	switch err {
-	case nil:
-		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
-	default:
-		program.setFeedback(program.model.Focus(), detailYankFailureMessage)
-	}
+	program.copySelectedText(&program.detailViewState, detailDocument)
 
 	if gui == nil {
 		return nil
@@ -85,11 +69,7 @@ func (program *Program) copySelectedPullRequestURL() error {
 	if !ok {
 		return ErrNoPullRequestURL
 	}
-	if program.clipboardWriter == nil {
-		return ErrClipboardUnavailable
-	}
-
-	return program.clipboardWriter.WriteText(url)
+	return program.writeTextToClipboard(url)
 }
 
 func (program *Program) selectedPullRequestURL() (string, bool) {

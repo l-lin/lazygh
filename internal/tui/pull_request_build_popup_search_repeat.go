@@ -27,15 +27,7 @@ func (program *Program) repeatPullRequestBuildRunPopupSearch(gui *gocui.Gui, vie
 		return nil
 	}
 
-	actualMoved := false
-	if err := program.mutatePullRequestBuildRunPopupViewStateWithoutRefresh(gui, view, func(_ *detailViewState, document detailDocument, viewportHeight int) {
-		actualMoved = repeat(document, viewportHeight)
-	}); err != nil {
-		return err
-	}
-	if !actualMoved {
-		return nil
-	}
-
-	return program.refreshViewsIfGUI(gui)
+	return program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(_ *detailViewState, document detailDocument, viewportHeight int) {
+		repeat(document, viewportHeight)
+	})
 }

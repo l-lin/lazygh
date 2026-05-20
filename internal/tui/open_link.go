@@ -22,6 +22,7 @@ const (
 )
 
 func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {
+	program.detailViewState.clearPendingPrefix()
 	err := program.openCurrentLink(program.resolveView(gui, view, viewDetailName))
 	switch {
 	case err == nil:

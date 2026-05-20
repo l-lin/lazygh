@@ -208,6 +208,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailNavigationBindings_ThenDe
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'W', handler: subject.moveDetailCursorToNextBigWord})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'E', handler: subject.moveDetailCursorToBigWordEnd})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'B', handler: subject.moveDetailCursorToPreviousBigWord})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'y', handler: subject.startDetailYank})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'V', handler: subject.enterDetailLineVisualMode})
 }
 

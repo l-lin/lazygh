@@ -140,7 +140,7 @@ func characterMotionTargetRunes(line []rune) []rune {
 
 func (program *Program) detailCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		if actualErr := program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+		if actualErr := program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
 			program.detailViewState.consumePendingCharacterMotion(document, viewportHeight, target)
 		}); actualErr != nil {
 			return actualErr
@@ -151,7 +151,7 @@ func (program *Program) detailCharacterMotionTargetHandler(target rune) func(*go
 
 func (program *Program) pullRequestBuildRunPopupCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		if actualErr := program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+		if actualErr := program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(state *detailViewState, document detailDocument, viewportHeight int) {
 			state.consumePendingCharacterMotion(document, viewportHeight, target)
 		}); actualErr != nil {
 			return actualErr
@@ -197,7 +197,7 @@ func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.
 	if !program.detailViewState.hasLastCharacterMotion {
 		return nil
 	}
-	if actualErr := program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+	if actualErr := program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
 		program.detailViewState.repeatCharacterMotion(document, viewportHeight, reverse)
 	}); actualErr != nil {
 		return actualErr
@@ -242,7 +242,7 @@ func (program *Program) repeatPullRequestBuildRunPopupCharacterMotion(gui *gocui
 	if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasLastCharacterMotion {
 		return nil
 	}
-	if actualErr := program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
+	if actualErr := program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(state *detailViewState, document detailDocument, viewportHeight int) {
 		state.repeatCharacterMotion(document, viewportHeight, reverse)
 	}); actualErr != nil {
 		return actualErr

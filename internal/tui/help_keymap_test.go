@@ -76,7 +76,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacemen
 	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "Ctrl+B/PageUp")
 }
 
-func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXCtrlVAndSearchWordBindings(t *testing.T) {
+func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsYankLinkClipboardAndSearchWordBindings(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -91,6 +91,8 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsGXCtrlVAndSearch
 
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Start yank with motion", "y")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Y")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Search word under cursor", "*/#")

@@ -8,7 +8,7 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewState(gui, view, mutateDetail)
+		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, mutateDetail)
 	}
 	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
@@ -28,7 +28,7 @@ func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideC
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewState(gui, view, mutateDetail)
+		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, mutateDetail)
 	}
 	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {

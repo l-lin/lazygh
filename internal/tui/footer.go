@@ -186,6 +186,7 @@ func (program *Program) pullRequestBuildRunPopupKeyHintsText() string {
 
 	return program.statusLineKeyHints(
 		statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "open_search"}}},
+		statusLineHintSpec{label: "yank", fallback: "y", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "start_yank"}}},
 		statusLineHintSpec{label: "copy", fallback: "Alt+Y", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "copy_content"}}},
 		statusLineHintSpec{label: "back", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "close"}}},
 	)
