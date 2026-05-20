@@ -72,7 +72,7 @@ previous_comment = "[c"
 next_comment = "]c"
 
 [keymaps.pull_requests]
-copy_pull_request_url = "y"
+copy_pull_request_url = "alt+y"
 comment_on_pull_request = "c"
 custom_search = ":"
 open_pull_request_by_url = "ctrl+v"
@@ -98,4 +98,4 @@ open_external_editor = "ctrl+g"
 cancel = "esc"
 
 [keymaps.pull_request_build_info]
-copy_content = "y"
+copy_content = "alt+y"

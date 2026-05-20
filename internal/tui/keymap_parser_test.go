@@ -12,22 +12,24 @@ func TestParseConfiguredKey_GivenSupportedKeyStrings_WhenParsing_ThenItReturnsBi
 		name          string
 		value         string
 		expectedKey   any
+		expectedMod   gocui.Modifier
 		expectedLabel string
 	}{
-		{name: "single rune", value: "o", expectedKey: 'o', expectedLabel: "o"},
-		{name: "uppercase rune", value: "G", expectedKey: 'G', expectedLabel: "G"},
-		{name: "enter", value: "enter", expectedKey: gocui.KeyEnter, expectedLabel: "<enter>"},
-		{name: "escape", value: "esc", expectedKey: gocui.KeyEsc, expectedLabel: "<esc>"},
-		{name: "control bracket", value: "ctrl+[", expectedKey: gocui.KeyCtrlLsqBracket, expectedLabel: "<c-[>"},
-		{name: "control b", value: "ctrl+b", expectedKey: gocui.KeyCtrlB, expectedLabel: "<c-b>"},
-		{name: "control f", value: "ctrl+f", expectedKey: gocui.KeyCtrlF, expectedLabel: "<c-f>"},
-		{name: "tab", value: "tab", expectedKey: gocui.KeyTab, expectedLabel: "tab"},
-		{name: "shift tab", value: "shift+tab", expectedKey: gocui.KeyBacktab, expectedLabel: "shift+tab"},
-		{name: "down", value: "down", expectedKey: gocui.KeyArrowDown, expectedLabel: "<down>"},
-		{name: "pageup", value: "pageup", expectedKey: gocui.KeyPgup, expectedLabel: "pageup"},
-		{name: "pagedown", value: "pagedown", expectedKey: gocui.KeyPgdn, expectedLabel: "pagedown"},
-		{name: "alt enter", value: "alt+enter", expectedKey: gocui.KeyAltEnter, expectedLabel: "alt+enter"},
-		{name: "space", value: "space", expectedKey: ' ', expectedLabel: "space"},
+		{name: "single rune", value: "o", expectedKey: 'o', expectedMod: gocui.ModNone, expectedLabel: "o"},
+		{name: "uppercase rune", value: "G", expectedKey: 'G', expectedMod: gocui.ModNone, expectedLabel: "G"},
+		{name: "enter", value: "enter", expectedKey: gocui.KeyEnter, expectedMod: gocui.ModNone, expectedLabel: "<enter>"},
+		{name: "escape", value: "esc", expectedKey: gocui.KeyEsc, expectedMod: gocui.ModNone, expectedLabel: "<esc>"},
+		{name: "control bracket", value: "ctrl+[", expectedKey: gocui.KeyCtrlLsqBracket, expectedMod: gocui.ModNone, expectedLabel: "<c-[>"},
+		{name: "control b", value: "ctrl+b", expectedKey: gocui.KeyCtrlB, expectedMod: gocui.ModNone, expectedLabel: "<c-b>"},
+		{name: "control f", value: "ctrl+f", expectedKey: gocui.KeyCtrlF, expectedMod: gocui.ModNone, expectedLabel: "<c-f>"},
+		{name: "tab", value: "tab", expectedKey: gocui.KeyTab, expectedMod: gocui.ModNone, expectedLabel: "tab"},
+		{name: "shift tab", value: "shift+tab", expectedKey: gocui.KeyBacktab, expectedMod: gocui.ModNone, expectedLabel: "shift+tab"},
+		{name: "down", value: "down", expectedKey: gocui.KeyArrowDown, expectedMod: gocui.ModNone, expectedLabel: "<down>"},
+		{name: "pageup", value: "pageup", expectedKey: gocui.KeyPgup, expectedMod: gocui.ModNone, expectedLabel: "pageup"},
+		{name: "pagedown", value: "pagedown", expectedKey: gocui.KeyPgdn, expectedMod: gocui.ModNone, expectedLabel: "pagedown"},
+		{name: "alt enter", value: "alt+enter", expectedKey: gocui.KeyAltEnter, expectedMod: gocui.ModNone, expectedLabel: "alt+enter"},
+		{name: "alt y", value: "alt+y", expectedKey: 'y', expectedMod: gocui.ModAlt, expectedLabel: "alt+y"},
+		{name: "space", value: "space", expectedKey: ' ', expectedMod: gocui.ModNone, expectedLabel: "space"},
 	}
 
 	for _, testCase := range testCases {
@@ -38,6 +40,9 @@ func TestParseConfiguredKey_GivenSupportedKeyStrings_WhenParsing_ThenItReturnsBi
 			}
 			if !reflect.DeepEqual(actual.value, testCase.expectedKey) {
 				t.Fatalf("expected key %v, actual %v", testCase.expectedKey, actual.value)
+			}
+			if actual.mod != testCase.expectedMod {
+				t.Fatalf("expected modifier %v, actual %v", testCase.expectedMod, actual.mod)
 			}
 			if actual.label != testCase.expectedLabel {
 				t.Fatalf("expected label %q, actual %q", testCase.expectedLabel, actual.label)

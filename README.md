@@ -242,6 +242,6 @@ Choose `Open PR from URL` from the actions popup when you want to type or paste 
 
 Use scoped tables under `[keymaps]`.
 
-A keymap value can be a single key like `"q"` or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
+A keymap value can be a single key like `"q"`, a modified key like `"alt+y"`, or a two-key sequence like `"za"`. Arrays still let you keep multiple alternatives.
 
 You can find the default keymaps in [default_keymaps.toml](internal/config/default_keymaps.toml)

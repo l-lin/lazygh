@@ -252,7 +252,7 @@ func then_bindingExists(t *testing.T, specs []keybindingSpec, expected keybindin
 	t.Helper()
 
 	for _, actual := range specs {
-		if actual.viewName == expected.viewName && reflect.DeepEqual(actual.key, expected.key) && sameHandler(actual.handler, expected.handler) {
+		if actual.viewName == expected.viewName && reflect.DeepEqual(actual.key, expected.key) && actual.mod == expected.mod && sameHandler(actual.handler, expected.handler) {
 			return
 		}
 	}
@@ -264,7 +264,7 @@ func then_bindingKeyExists(t *testing.T, specs []keybindingSpec, expectedView st
 	t.Helper()
 
 	for _, actual := range specs {
-		if actual.viewName == expectedView && reflect.DeepEqual(actual.key, expectedKey) {
+		if actual.viewName == expectedView && reflect.DeepEqual(actual.key, expectedKey) && actual.mod == gocui.ModNone {
 			return
 		}
 	}

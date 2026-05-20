@@ -70,7 +70,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse conversation"},
 				{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
 				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"},
-				{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
+				{Key: program.helpKeysOrFallback("alt+y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
 				{Key: program.helpKeysOrFallback("<c-f>/pagedown", keybindingActionID{scope: keymapScopeMain, action: "full_page_down"}), Description: "Full-page down"},
@@ -132,7 +132,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			program.repeatCharacterMotionHelpEntry(),
 			{Key: "n/N", Description: "Next/previous match"},
 			{Key: "v/V", Description: "Start char/line visual selection"},
-			{Key: program.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
+			{Key: program.helpKeysOrFallback("alt+y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Yank selection / PR URL"},
 			{Key: program.helpKeysOrFallback("<c-v>", keybindingActionID{scope: keymapScopePullRequests, action: "open_pull_request_by_url"}), Description: "Open PR from clipboard"},
 			{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 			{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
@@ -398,8 +398,18 @@ func formatKeySequenceLabelForDisplay(label string) string {
 		}
 		return "Ctrl+" + suffix
 	}
+	if after, ok := strings.CutPrefix(normalizedLabel, "alt+"); ok {
+		return "Alt+" + formattedModifiedKeySuffix(after)
+	}
 
 	return trimmedLabel
+}
+
+func formattedModifiedKeySuffix(label string) string {
+	if utf8.RuneCountInString(label) == 1 {
+		return strings.ToUpper(label)
+	}
+	return formatKeySequenceLabelForDisplay(label)
 }
 
 func (program *Program) helpViewportPlacementKeysOrFallback(topFallback string, centerFallback string, bottomFallback string, topActionID keybindingActionID, centerActionID keybindingActionID, bottomActionID keybindingActionID) string {

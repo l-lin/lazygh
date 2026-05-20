@@ -38,7 +38,7 @@ func TestKeybindingSpecs_GivenProgram_WhenListingBuildRunPopupBindings_ThenItUse
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: '/', handler: subject.openSearch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'n', handler: subject.nextPullRequestBuildRunPopupSearchMatch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'N', handler: subject.previousPullRequestBuildRunPopupSearchMatch})
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'y', handler: subject.copyPullRequestBuildRunPopupContent})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'y', mod: gocui.ModAlt, handler: subject.copyPullRequestBuildRunPopupContent})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: gocui.KeyCtrlD, handler: subject.pagePullRequestBuildRunPopupDown})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: gocui.KeyCtrlU, handler: subject.pagePullRequestBuildRunPopupUp})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: gocui.KeyCtrlF, handler: subject.fullPagePullRequestBuildRunPopupDown})
@@ -253,7 +253,7 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenSearching_ThenItUsesTheStatus
 	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != expectedLineIndex {
 		t.Fatalf("expected popup cursor line %d after search, actual %d", expectedLineIndex, actual)
 	}
-	then_statusLineKeyHintsAre(t, gui, "/: search, y: copy, Escape: back")
+	then_statusLineKeyHintsAre(t, gui, "/: search, Alt+Y: copy, Escape: back")
 }
 
 func TestPullRequestBuildRunPopup_GivenSubmittedSearch_WhenPressingNAndN_ThenItMovesToTheNextAndPreviousMatch(t *testing.T) {
@@ -349,7 +349,7 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenYankingAVisualSelection_ThenI
 		actualErr = rightHandler(gui, popupView)
 		then_noError(t, actualErr)
 	}
-	yankHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, 'y')
+	yankHandler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, 'y', gocui.ModAlt)
 	actualErr = yankHandler(gui, popupView)
 	then_noError(t, actualErr)
 

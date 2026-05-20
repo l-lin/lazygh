@@ -13,16 +13,19 @@ import (
 type keybindingSpec struct {
 	viewName string
 	key      any
+	mod      gocui.Modifier
 	handler  func(*gocui.Gui, *gocui.View) error
 }
 
 type keybindingDefinition struct {
 	key     any
+	mod     gocui.Modifier
 	handler func(*gocui.Gui, *gocui.View) error
 }
 
 type configuredKeybinding struct {
 	value any
+	mod   gocui.Modifier
 	label string
 }
 
@@ -69,9 +72,11 @@ type keybindingDispatchEntry struct {
 }
 
 type keybindingSequenceTarget struct {
-	viewName string
-	first    any
-	second   any
+	viewName  string
+	first     any
+	firstMod  gocui.Modifier
+	second    any
+	secondMod gocui.Modifier
 }
 
 func bindingsForView(viewName string, definitions ...keybindingDefinition) []keybindingSpec {
@@ -85,6 +90,7 @@ func bindingsForViews(viewNames []string, definitions ...keybindingDefinition) [
 			specs = append(specs, keybindingSpec{
 				viewName: viewName,
 				key:      definition.key,
+				mod:      definition.mod,
 				handler:  definition.handler,
 			})
 		}
@@ -117,7 +123,7 @@ func copyKeymapOverrides(overrides appconfig.KeymapOverrides) appconfig.KeymapOv
 func (program *Program) setKeybindings(gui *gocui.Gui) error {
 	specs := program.registeredKeybindingSpecs()
 	for _, binding := range specs {
-		if err := gui.SetKeybinding(binding.viewName, binding.key, gocui.ModNone, binding.handler); err != nil {
+		if err := gui.SetKeybinding(binding.viewName, binding.key, binding.mod, binding.handler); err != nil {
 			return err
 		}
 	}
@@ -138,7 +144,7 @@ func (program *Program) reloadRegisteredKeybindings(gui *gocui.Gui) error {
 
 	gui.DeleteAllKeybindings()
 	for _, binding := range specs {
-		if err := gui.SetKeybinding(binding.viewName, binding.key, gocui.ModNone, binding.handler); err != nil {
+		if err := gui.SetKeybinding(binding.viewName, binding.key, binding.mod, binding.handler); err != nil {
 			return err
 		}
 	}
@@ -155,7 +161,7 @@ func fingerprintKeybindingSpecs(specs []keybindingSpec) string {
 	for _, spec := range specs {
 		builder.WriteString(spec.viewName)
 		builder.WriteRune(':')
-		builder.WriteString(keybindingValueID(spec.key))
+		builder.WriteString(keybindingValueID(spec.key, spec.mod))
 		builder.WriteRune('|')
 	}
 	return builder.String()
@@ -166,8 +172,8 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 	dispatches := map[keybindingTarget]*keybindingDispatchEntry{}
 	orderedTargets := make([]keybindingTarget, 0)
 
-	ensureDispatch := func(viewName string, key any) *keybindingDispatchEntry {
-		target := keybindingTarget{viewName: viewName, key: key}
+	ensureDispatch := func(viewName string, key any, mod gocui.Modifier) *keybindingDispatchEntry {
+		target := keybindingTarget{viewName: viewName, key: key, mod: mod}
 		if entry, ok := dispatches[target]; ok {
 			return entry
 		}
@@ -187,13 +193,13 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 					continue
 				}
 				if len(binding.keys) == 1 {
-					ensureDispatch(viewName, binding.keys[0].value).directHandler = action.action.handler
+					ensureDispatch(viewName, binding.keys[0].value, binding.keys[0].mod).directHandler = action.action.handler
 					continue
 				}
 
-				prefixTarget := keySequencePrefixTarget(viewName, binding.keys[0].value)
-				ensureDispatch(viewName, binding.keys[0].value).prefixTarget = prefixTarget
-				ensureDispatch(viewName, binding.keys[1].value).continuationHandlers[prefixTarget] = action.action.handler
+				prefixTarget := keySequencePrefixTarget(viewName, binding.keys[0])
+				ensureDispatch(viewName, binding.keys[0].value, binding.keys[0].mod).prefixTarget = prefixTarget
+				ensureDispatch(viewName, binding.keys[1].value, binding.keys[1].mod).continuationHandlers[prefixTarget] = action.action.handler
 			}
 		}
 	}
@@ -205,7 +211,7 @@ func (program *Program) keybindingSpecs() []keybindingSpec {
 		if entry.hasDispatchLogic() {
 			handler = program.dispatchingKeybindingHandler(target.viewName, target.key, *entry)
 		}
-		specs = append(specs, keybindingSpec{viewName: target.viewName, key: target.key, handler: handler})
+		specs = append(specs, keybindingSpec{viewName: target.viewName, key: target.key, mod: target.mod, handler: handler})
 	}
 
 	return specs
@@ -367,7 +373,7 @@ func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool
 				case 0:
 					continue
 				case 1:
-					target := keybindingTarget{viewName: viewName, key: binding.keys[0].value}
+					target := keybindingTarget{viewName: viewName, key: binding.keys[0].value, mod: binding.keys[0].mod}
 					if previousActionIndex, alreadySeen := seenTargets[target]; alreadySeen {
 						markConflict(actionIndex, previousActionIndex)
 					}
@@ -376,11 +382,11 @@ func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool
 					}
 					seenTargets[target] = actionIndex
 				case 2:
-					prefix := keybindingTarget{viewName: viewName, key: binding.keys[0].value}
+					prefix := keybindingTarget{viewName: viewName, key: binding.keys[0].value, mod: binding.keys[0].mod}
 					if previousActionIndex, alreadySeen := seenTargets[prefix]; alreadySeen {
 						markConflict(actionIndex, previousActionIndex)
 					}
-					sequence := keybindingSequenceTarget{viewName: viewName, first: binding.keys[0].value, second: binding.keys[1].value}
+					sequence := keybindingSequenceTarget{viewName: viewName, first: binding.keys[0].value, firstMod: binding.keys[0].mod, second: binding.keys[1].value, secondMod: binding.keys[1].mod}
 					if previousActionIndex, alreadySeen := seenSequences[sequence]; alreadySeen {
 						markConflict(actionIndex, previousActionIndex)
 					}
@@ -403,6 +409,7 @@ func conflictingOverrideIndexes(actions []resolvedKeybindingAction) map[int]bool
 type keybindingTarget struct {
 	viewName string
 	key      any
+	mod      gocui.Modifier
 }
 
 func (program *Program) overrideBindings(action keybindingAction) ([]configuredKeySequence, bool) {
@@ -510,6 +517,10 @@ func parseConfiguredKey(value string) (configuredKeybinding, bool) {
 		return configuredKeybinding{}, false
 	}
 
+	if binding, ok := parseConfiguredAltKey(trimmedValue); ok {
+		return binding, true
+	}
+
 	if utf8.RuneCountInString(trimmedValue) == 1 {
 		runeValue, _ := utf8.DecodeRuneInString(trimmedValue)
 		return runeBinding(runeValue), true
@@ -538,8 +549,6 @@ func parseConfiguredKey(value string) (configuredKeybinding, bool) {
 		return namedBinding(gocui.KeyPgdn, "pagedown"), true
 	case "space", "<space>":
 		return runeBinding(' '), true
-	case "alt+enter", "alt-enter", "<alt+enter>":
-		return namedBinding(gocui.KeyAltEnter, "alt+enter"), true
 	}
 
 	binding, ok := parseConfiguredControlKey(trimmedValue)
@@ -548,6 +557,31 @@ func parseConfiguredKey(value string) (configuredKeybinding, bool) {
 	}
 
 	return binding, true
+}
+
+func parseConfiguredAltKey(value string) (configuredKeybinding, bool) {
+	normalizedValue := strings.ToLower(strings.TrimSpace(value))
+	normalizedValue = strings.TrimPrefix(normalizedValue, "<")
+	normalizedValue = strings.TrimSuffix(normalizedValue, ">")
+	normalizedValue = strings.ReplaceAll(normalizedValue, "alt-", "alt+")
+	if !strings.HasPrefix(normalizedValue, "alt+") {
+		return configuredKeybinding{}, false
+	}
+
+	keyName := strings.TrimPrefix(normalizedValue, "alt+")
+	switch keyName {
+	case "":
+		return configuredKeybinding{}, false
+	case "enter":
+		return namedBinding(gocui.KeyAltEnter, "alt+enter"), true
+	}
+
+	binding, ok := parseConfiguredKey(keyName)
+	if !ok || binding.mod != gocui.ModNone {
+		return configuredKeybinding{}, false
+	}
+
+	return modifiedBinding(binding.value, gocui.ModAlt, "alt+"+configuredKeyLabelForModifier(binding.label)), true
 }
 
 func parseConfiguredControlKey(value string) (configuredKeybinding, bool) {
@@ -618,11 +652,22 @@ func runeBinding(value rune) configuredKeybinding {
 		label = "space"
 	}
 
-	return configuredKeybinding{value: value, label: label}
+	return configuredKeybinding{value: value, mod: gocui.ModNone, label: label}
 }
 
 func namedBinding(value any, label string) configuredKeybinding {
-	return configuredKeybinding{value: value, label: label}
+	return configuredKeybinding{value: value, mod: gocui.ModNone, label: label}
+}
+
+func modifiedBinding(value any, mod gocui.Modifier, label string) configuredKeybinding {
+	return configuredKeybinding{value: value, mod: mod, label: label}
+}
+
+func configuredKeyLabelForModifier(label string) string {
+	trimmedLabel := strings.TrimSpace(label)
+	trimmedLabel = strings.TrimPrefix(trimmedLabel, "<")
+	trimmedLabel = strings.TrimSuffix(trimmedLabel, ">")
+	return trimmedLabel
 }
 
 func keySequenceBinding(keys ...configuredKeybinding) configuredKeySequence {
@@ -642,13 +687,13 @@ func mustConfiguredKeySequences(values ...string) []configuredKeySequence {
 	return bindings
 }
 
-func keySequencePrefixTarget(viewName string, key any) keySequenceTarget {
+func keySequencePrefixTarget(viewName string, key configuredKeybinding) keySequenceTarget {
 	return keySequenceTarget{
 		viewName: viewName,
-		actionID: keybindingActionID{scope: keymapScopePrefix, action: keybindingValueID(key)},
+		actionID: keybindingActionID{scope: keymapScopePrefix, action: keybindingValueID(key.value, key.mod)},
 	}
 }
 
-func keybindingValueID(value any) string {
-	return fmt.Sprintf("%T:%v", value, value)
+func keybindingValueID(value any, mod gocui.Modifier) string {
+	return fmt.Sprintf("%T:%v:%d", value, value, mod)
 }

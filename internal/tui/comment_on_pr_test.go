@@ -392,7 +392,7 @@ func then_bindingDoesNotExist(t *testing.T, specs []keybindingSpec, expectedView
 	t.Helper()
 
 	for _, actual := range specs {
-		if actual.viewName == expectedViewName && reflect.DeepEqual(actual.key, expectedKey) {
+		if actual.viewName == expectedViewName && reflect.DeepEqual(actual.key, expectedKey) && actual.mod == gocui.ModNone {
 			t.Fatalf("expected binding %q %v to be absent, actual %+v", expectedViewName, expectedKey, actual)
 		}
 	}

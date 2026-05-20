@@ -96,13 +96,13 @@ func (program *Program) characterMotionRepeatBindingSpecs(viewName string, forwa
 		if len(binding.keys) != 1 {
 			continue
 		}
-		specs = append(specs, keybindingSpec{viewName: viewName, key: binding.keys[0].value, handler: forwardHandler})
+		specs = append(specs, keybindingSpec{viewName: viewName, key: binding.keys[0].value, mod: binding.keys[0].mod, handler: forwardHandler})
 	}
 	for _, binding := range program.resolvedBindingsForActionID(backwardActionID) {
 		if len(binding.keys) != 1 {
 			continue
 		}
-		specs = append(specs, keybindingSpec{viewName: viewName, key: binding.keys[0].value, handler: backwardHandler})
+		specs = append(specs, keybindingSpec{viewName: viewName, key: binding.keys[0].value, mod: binding.keys[0].mod, handler: backwardHandler})
 	}
 	return specs
 }

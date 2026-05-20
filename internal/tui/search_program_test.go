@@ -291,14 +291,18 @@ func TestSearchPrompt_GivenOpenSearch_WhenSubmittingWithControlS_ThenItClosesThe
 }
 
 func given_handlerForBinding(t *testing.T, specs []keybindingSpec, expectedView string, expectedKey any) func(*gocui.Gui, *gocui.View) error {
+	return given_handlerForBindingWithModifier(t, specs, expectedView, expectedKey, gocui.ModNone)
+}
+
+func given_handlerForBindingWithModifier(t *testing.T, specs []keybindingSpec, expectedView string, expectedKey any, expectedMod gocui.Modifier) func(*gocui.Gui, *gocui.View) error {
 	t.Helper()
 
 	for _, spec := range specs {
-		if spec.viewName == expectedView && spec.key == expectedKey {
+		if spec.viewName == expectedView && spec.key == expectedKey && spec.mod == expectedMod {
 			return spec.handler
 		}
 	}
 
-	t.Fatalf("expected binding for view %q and key %v", expectedView, expectedKey)
+	t.Fatalf("expected binding for view %q and key %v with modifier %v", expectedView, expectedKey, expectedMod)
 	return nil
 }

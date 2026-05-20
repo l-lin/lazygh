@@ -33,7 +33,7 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_helpEntryUsesKey(t, actualBuffer, "Quit", "Ctrl+X")
 }
 
-func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomSearchAndOpenPRFromURLShortcuts(t *testing.T) {
+func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomSearchOpenPRFromURLAndCopyPRURLShortcuts(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModel(model)
@@ -50,6 +50,7 @@ func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomS
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Custom search", ":")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Y")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {

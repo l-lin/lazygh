@@ -28,9 +28,13 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"open_external_editor": {"ctrl+g"},
 		},
 		"pull_requests": {
+			"copy_pull_request_url":    {"alt+y"},
 			"custom_search":            {":"},
 			"open_pull_request_by_url": {"ctrl+v"},
 			"reply_to_inline_comment":  {"r"},
+		},
+		"pull_request_build_info": {
+			"copy_content": {"alt+y"},
 		},
 	}
 	for scope, expectedActions := range expected {
