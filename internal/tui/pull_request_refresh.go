@@ -28,8 +28,9 @@ func (program *Program) refreshPullRequestListAction() actionsPopupAction {
 }
 
 func (program *Program) executeRefreshPullRequestListAction(gui *gocui.Gui) actionsPopupActionResult {
-	program.reloadActivePullRequestsTab(gui)
+	program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab())
 	program.setFeedback(program.model.Focus(), pullRequestListRefreshSuccessMessage)
+	program.reloadActivePullRequestsTab(gui)
 	return actionsPopupActionResult{closePopup: true}
 }
 
@@ -38,13 +39,21 @@ func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) actionsP
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
 
-	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.markManualPullRequestDetailRefresh(summary)
+	program.setFeedback(program.model.Focus(), pullRequestRefreshSuccessMessage)
+	program.markPullRequestDetailNeedsRefresh(summary)
 	if program.reviewModeActive() {
-		program.invalidatePullRequestDiff(target.repository, target.number)
+		program.markManualPullRequestDiffRefresh(summary)
+		program.markPullRequestDiffNeedsRefresh(summary)
 	} else {
+		program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab())
 		program.reloadActivePullRequestsTab(gui)
 	}
-	program.setFeedback(program.model.Focus(), pullRequestRefreshSuccessMessage)
+	program.invalidatePersistentPullRequest(target.repository, target.number)
 	return actionsPopupActionResult{closePopup: true}
 }

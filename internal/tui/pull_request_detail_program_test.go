@@ -1509,6 +1509,7 @@ type fakePullRequestDetailLoader struct {
 	detailErrors                      map[string]error
 	detailCalls                       []string
 	listPullRequestCommands           [][]string
+	listPullRequestsErr               error
 	diffs                             map[string]githubcli.PullRequestDiff
 	diffErrors                        map[string]error
 	diffCalls                         []string
@@ -1645,6 +1646,9 @@ func (loader *fakePullRequestDetailLoader) GetConnectedUser() (githubdomain.Conn
 
 func (loader *fakePullRequestDetailLoader) ListPullRequests(commandArguments []string) ([]githubdomain.PullRequestSummary, error) {
 	loader.listPullRequestCommands = append(loader.listPullRequestCommands, append([]string(nil), commandArguments...))
+	if loader.listPullRequestsErr != nil {
+		return nil, loader.listPullRequestsErr
+	}
 	if slices.Contains(commandArguments, "--review-requested") {
 		return githubcli.ToDomainPullRequests(append([]githubcli.PullRequest(nil), loader.requestedPullRequests...)), nil
 	}

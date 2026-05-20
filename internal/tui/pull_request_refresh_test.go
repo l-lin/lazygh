@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -216,4 +217,114 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMod
 		t.Fatalf("expected detail buffer to contain %q after refreshing, actual %q", "fresh line", detailView.Buffer())
 	}
 	then_statusLineContains(t, gui, "Pull request refreshed")
+}
+
+func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideReviewMode_WhenTheDetailReloadFails_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		myPullRequests: []githubcli.PullRequest{{
+			Title:      "Refreshed PR",
+			Number:     42,
+			Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+			URL:        "https://github.com/acme/widgets/pull/42",
+			State:      "OPEN",
+		}},
+		detailErrors: map[string]error{"acme/widgets#42": errors.New("detail refresh refused")},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.transientErrorPopupDuration = 0
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
+		Title:       "Old PR",
+		Number:      42,
+		Body:        "Old body",
+		BaseRefName: "main",
+		HeadRefName: "old-branch",
+		State:       "OPEN",
+	})}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("refresh current", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "refresh current"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+	then_transientErrorPopupContains(t, gui, "detail refresh refused")
+}
+
+func TestActionsPopup_GivenRefreshPullRequestListAction_WhenTheReloadFails_ThenItShowsATransientErrorPopup(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{listPullRequestsErr: errors.New("list refresh refused")}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.transientErrorPopupDuration = 0
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestListRefreshActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestListRefreshActionTitle))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineDoesNotContain(t, gui, pullRequestListRefreshSuccessMessage)
+	then_transientErrorPopupContains(t, gui, "list refresh refused")
+}
+
+func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMode_WhenTheDiffReloadFails_ThenItShowsATransientErrorPopup(t *testing.T) {
+	staleDiff := given_reviewSessionPullRequestDiff()
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "Stale PR",
+				Number:      42,
+				Body:        "Stale body",
+				BaseRefName: "main",
+				HeadRefName: "feature-old",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": staleDiff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.transientErrorPopupDuration = 0
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	loader.diffErrors = map[string]error{"acme/widgets#42": errors.New("diff refresh refused")}
+
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("refresh current", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "refresh current"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+	then_transientErrorPopupContains(t, gui, "diff refresh refused")
 }

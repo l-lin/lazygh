@@ -40,11 +40,16 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDiffLoadInFlight, key)
+		manualRefresh := program.consumeManualPullRequestDiffRefresh(key)
 		if err == nil || !program.canKeepPullRequestDiffOnRefreshError(key) {
 			program.pullRequestDiffCache[key] = result
 			program.invalidateReviewDiffRenderCache()
 			program.invalidatePullRequestDetailDocumentCache()
 			program.clampReviewSessionSelection()
+			if manualRefresh && err != nil {
+				program.feedbackMessage = ""
+				program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			}
 			return program.refreshViews(gui)
 		}
 
@@ -54,6 +59,10 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 		cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.shouldLoadPullRequestDiffTeamOwners()
 		program.pullRequestDiffCache[key] = cachedResult
 		program.invalidatePullRequestDetailDocumentCache()
+		if manualRefresh {
+			program.feedbackMessage = ""
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+		}
 		return program.refreshViews(gui)
 	})
 }

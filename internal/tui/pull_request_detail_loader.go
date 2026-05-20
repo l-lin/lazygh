@@ -37,12 +37,17 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.pullRequestDetailLoadInFlight, key)
+		manualRefresh := program.consumeManualPullRequestDetailRefresh(key)
 		if pendingReviewStateKnown {
 			program.pendingPullRequestReviewCache[key] = pendingReviewState
 		}
 		if err == nil || !program.canKeepPullRequestDetailOnRefreshError(key) {
 			program.pullRequestDetailCache[key] = result
 			program.invalidatePullRequestDetailDocumentCache()
+			if manualRefresh && err != nil {
+				program.feedbackMessage = ""
+				program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			}
 			return program.refreshViews(gui)
 		}
 
@@ -50,6 +55,10 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
 		cachedResult.needsRefresh = false
 		program.pullRequestDetailCache[key] = cachedResult
+		if manualRefresh {
+			program.feedbackMessage = ""
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+		}
 		return program.refreshViews(gui)
 	})
 }

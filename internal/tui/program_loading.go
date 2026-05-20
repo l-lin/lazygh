@@ -59,6 +59,7 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		program.setPullRequestsLoading(tab, false)
+		manualRefresh := program.consumeManualPullRequestListRefresh(tab)
 		if err == nil {
 			rows := program.pullRequestRowsForTab(tab, pullRequests, nil)
 			program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
@@ -67,6 +68,10 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 			return program.refreshViews(gui)
 		}
 
+		if manualRefresh {
+			program.feedbackMessage = ""
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+		}
 		if !program.shouldPreservePullRequestRowsOnRefreshError(tab) {
 			program.setPullRequestsCount(tab, 0, false)
 			program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, nil, err))
