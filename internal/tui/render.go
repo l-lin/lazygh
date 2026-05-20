@@ -124,8 +124,8 @@ func (program *Program) renderUserView(view *gocui.View) {
 	program.renderSelectableListView(view, selectableListViewState{
 		focus:               FocusUserView,
 		query:               program.model.UserSearchQuery(),
-		items:               program.model.VisibleUsers(),
-		selectedVisibleLine: program.model.SelectedVisibleUserIndex(),
+		items:               program.model.Users(),
+		selectedVisibleLine: program.model.SelectedUserIndex(),
 	})
 }
 
@@ -159,8 +159,8 @@ func (program *Program) renderNotificationsView(view *gocui.View) {
 	program.renderSelectableListView(view, selectableListViewState{
 		focus:               FocusNotificationsView,
 		query:               program.model.NotificationSearchQuery(),
-		items:               program.model.VisibleNotifications(),
-		selectedVisibleLine: program.model.SelectedVisibleNotificationIndex(),
+		items:               program.model.Notifications(),
+		selectedVisibleLine: program.model.SelectedNotificationIndex(),
 		renderSelectedLine:  true,
 	})
 }

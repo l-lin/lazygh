@@ -17,10 +17,8 @@ func TestKeybindingSpecs_GivenProgram_WhenListingDetailSearchFollowBindings_Then
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'N', handler: subject.previousDetailSearchMatch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'n', handler: subject.nextPullRequestsSearchMatch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'N', handler: subject.previousPullRequestsSearchMatch})
-	for _, viewName := range []string{viewUserName, viewSearchName} {
-		then_bindingDoesNotExist(t, actual, viewName, 'n')
-		then_bindingDoesNotExist(t, actual, viewName, 'N')
-	}
+	then_bindingDoesNotExist(t, actual, viewSearchName, 'n')
+	then_bindingDoesNotExist(t, actual, viewSearchName, 'N')
 }
 
 func TestSubmitSearch_GivenDetailSearchMatchAfterTheCurrentCursor_WhenSubmitting_ThenItMovesTheCursorAndViewportToTheMatch(t *testing.T) {

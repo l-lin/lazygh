@@ -20,7 +20,7 @@ func TestHighlightSearchMatches_GivenDetailQuery_WhenRendering_ThenMatchesUseThe
 	}
 }
 
-func TestLayout_GivenSubmittedUserSearchWithNoMatches_WhenRendering_ThenTheUserViewShowsTheNoMatchesMessage(t *testing.T) {
+func TestLayout_GivenSubmittedUserSearchWithNoMatches_WhenRendering_ThenTheUserViewKeepsTheRowsVisibleAndShowsZeroMatchesInTheFooter(t *testing.T) {
 	model := given_model()
 	model.StartSearch()
 	model.UpdateSearchDraft("nope")
@@ -35,12 +35,13 @@ func TestLayout_GivenSubmittedUserSearchWithNoMatches_WhenRendering_ThenTheUserV
 
 	userView, actualErr := gui.View(viewUserName)
 	then_noError(t, actualErr)
-	if !strings.Contains(userView.Buffer(), `No matches for "nope".`) {
-		t.Fatalf("expected user view to show the no matches message, actual %q", userView.Buffer())
+	if !strings.Contains(userView.Buffer(), "dummy-user-1") || !strings.Contains(userView.Buffer(), "dummy-user-2") {
+		t.Fatalf("expected user rows to stay visible after a no-match search, actual %q", userView.Buffer())
 	}
+	then_footerTextIs(t, gui, viewUserFooterName, "/nope (0 matches)")
 }
 
-func TestLayout_GivenSubmittedUserSearchOnTheSelectedRow_WhenRendering_ThenTheUserViewKeepsSearchBackgroundOnTheMatchAndSelectionBackgroundElsewhere(t *testing.T) {
+func TestLayout_GivenSubmittedUserSearchOnTheSelectedRow_WhenRendering_ThenTheUserViewKeepsTheOtherRowsVisibleAndHighlightsTheMatch(t *testing.T) {
 	model := given_model()
 	model.MoveSelectionDown()
 	model.StartSearch()
@@ -54,11 +55,46 @@ func TestLayout_GivenSubmittedUserSearchOnTheSelectedRow_WhenRendering_ThenTheUs
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
+	userView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	if !strings.Contains(userView.Buffer(), "dummy-user-1") {
+		t.Fatalf("expected the non-matching user row to stay visible, actual %q", userView.Buffer())
+	}
+
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewUserName, 0, "dummy-user-")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewUserName, 0, "2")
 	then_viewLineSegmentIsNotUnderlined(t, gui, viewUserName, 0, "2")
 	then_viewLineSegmentIsBold(t, gui, viewUserName, 0, "dummy-user-")
 	then_viewLineSegmentIsBold(t, gui, viewUserName, 0, "2")
+}
+
+func TestLayout_GivenSubmittedNotificationsSearchOnTheSelectedRow_WhenRendering_ThenTheNotificationsViewKeepsTheOtherRowsVisibleAndHighlightsTheMatch(t *testing.T) {
+	model := given_model()
+	model.FocusNotificationsView()
+	model.MoveSelectionDown()
+	model.StartSearch()
+	model.UpdateSearchDraft("2")
+	model.SubmitSearch()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	notificationsView, actualErr := gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(notificationsView.Buffer(), "notification-1") {
+		t.Fatalf("expected the non-matching notification row to stay visible, actual %q", notificationsView.Buffer())
+	}
+
+	selectedLineIndex := given_viewLineIndexContaining(t, notificationsView, "notification-2")
+	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewNotificationsName, selectedLineIndex, "notification-")
+	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewNotificationsName, selectedLineIndex, "2")
+	then_viewLineSegmentIsNotUnderlined(t, gui, viewNotificationsName, selectedLineIndex, "2")
+	then_viewLineSegmentIsBold(t, gui, viewNotificationsName, selectedLineIndex, "notification-")
+	then_viewLineSegmentIsBold(t, gui, viewNotificationsName, selectedLineIndex, "2")
 }
 
 func TestLayout_GivenSubmittedPullRequestsSearchOnTheSelectedRow_WhenRendering_ThenThePullRequestsViewKeepsTheOtherRowsVisibleAndHighlightsTheMatch(t *testing.T) {

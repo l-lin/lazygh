@@ -193,6 +193,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Resize panes"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search notifications"},
+			{Key: program.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopeNotifications, action: "next_search_match"}) + "/" + program.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopeNotifications, action: "previous_search_match"}), Description: "Next/previous match"},
 			{Key: program.helpKeysOrFallback("r", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_read"}), Description: "Mark notification as read"},
 			{Key: program.helpKeysOrFallback("d", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_done"}), Description: "Mark notification as done"},
 			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeNotifications, action: "open_actions_popup"}), Description: "Actions"},
@@ -210,6 +211,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Resize panes"},
 			{Key: program.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search users"},
+			{Key: program.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopeUser, action: "next_search_match"}) + "/" + program.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopeUser, action: "previous_search_match"}), Description: "Next/previous match"},
 			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}), Description: "Actions"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeUser, action: "open_detail"}), Description: "Open detail"},
 		}

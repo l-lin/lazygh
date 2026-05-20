@@ -365,46 +365,34 @@ func (model *Model) CloseDetail() {
 }
 
 func (model *Model) MoveSelectionDown() {
-	switch model.focus {
-	case FocusUserView:
-		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), 1)
-	case FocusPullRequestsView:
-		model.adjustPullRequestSelection(1)
-	case FocusNotificationsView:
-		model.adjustNotificationSelection(1)
-	}
+	model.adjustSelectionBy(1)
 }
 
 func (model *Model) MoveSelectionUp() {
-	switch model.focus {
-	case FocusUserView:
-		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), -1)
-	case FocusPullRequestsView:
-		model.adjustPullRequestSelection(-1)
-	case FocusNotificationsView:
-		model.adjustNotificationSelection(-1)
-	}
+	model.adjustSelectionBy(-1)
 }
 
 func (model *Model) MoveSelectionToTop() {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = firstVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
+		model.selectedUserIndex = firstSelectionIndex(model.selectedUserIndex, len(model.users))
 	case FocusPullRequestsView:
-		model.selectedPullRequestIndexes[model.activePullRequestTab] = firstVisibleIndex(model.selectedPullRequestIndexes[model.activePullRequestTab], model.visiblePullRequestIndexes(model.activePullRequestTab))
+		tab := model.ActivePullRequestTab()
+		model.selectedPullRequestIndexes[tab] = firstSelectionIndex(model.selectedPullRequestIndexes[tab], len(model.pullRequestRows(tab)))
 	case FocusNotificationsView:
-		model.selectedNotificationIndex = firstVisibleIndex(model.selectedNotificationIndex, model.visibleNotificationIndexes())
+		model.selectedNotificationIndex = firstSelectionIndex(model.selectedNotificationIndex, len(model.notifications))
 	}
 }
 
 func (model *Model) MoveSelectionToBottom() {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = lastVisibleIndex(model.selectedUserIndex, model.visibleUserIndexes())
+		model.selectedUserIndex = lastSelectionIndex(model.selectedUserIndex, len(model.users))
 	case FocusPullRequestsView:
-		model.selectedPullRequestIndexes[model.activePullRequestTab] = lastVisibleIndex(model.selectedPullRequestIndexes[model.activePullRequestTab], model.visiblePullRequestIndexes(model.activePullRequestTab))
+		tab := model.ActivePullRequestTab()
+		model.selectedPullRequestIndexes[tab] = lastSelectionIndex(model.selectedPullRequestIndexes[tab], len(model.pullRequestRows(tab)))
 	case FocusNotificationsView:
-		model.selectedNotificationIndex = lastVisibleIndex(model.selectedNotificationIndex, model.visibleNotificationIndexes())
+		model.selectedNotificationIndex = lastSelectionIndex(model.selectedNotificationIndex, len(model.notifications))
 	}
 }
 

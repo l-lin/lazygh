@@ -226,6 +226,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeUser, "open_detail", []string{viewUserName}, program.openDetail),
 		sharedKeybindingActionFor(keymapScopeUser, "copy_pull_request_url", []string{viewUserName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopeUser, "open_actions_popup", []string{viewUserName}, program.openActionsPopup),
+		sharedKeybindingActionFor(keymapScopeUser, "next_search_match", []string{viewUserName}, program.nextUserSearchMatch),
+		sharedKeybindingActionFor(keymapScopeUser, "previous_search_match", []string{viewUserName}, program.previousUserSearchMatch),
 
 		sharedKeybindingActionFor(keymapScopeGlobal, "previous_tab", []string{viewPullRequestsName}, program.previousPullRequestTab),
 		sharedKeybindingActionFor(keymapScopeGlobal, "next_tab", []string{viewPullRequestsName}, program.nextPullRequestTab),
@@ -245,6 +247,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead),
 		configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone),
 		sharedKeybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup),
+		sharedKeybindingActionFor(keymapScopeNotifications, "next_search_match", []string{viewNotificationsName}, program.nextNotificationsSearchMatch),
+		sharedKeybindingActionFor(keymapScopeNotifications, "previous_search_match", []string{viewNotificationsName}, program.previousNotificationsSearchMatch),
 
 		configuredKeybindingActionFor(keymapScopeReview, "previous_file", reviewPaneViewNames, program.previousReviewFile),
 		configuredKeybindingActionFor(keymapScopeReview, "next_file", reviewPaneViewNames, program.nextReviewFile),

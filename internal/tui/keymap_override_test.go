@@ -285,13 +285,13 @@ func TestKeybindingSpecs_GivenFocusViewOverrides_WhenListingBindings_ThenTheNume
 		"global": {
 			"focus_user_view":          {"u"},
 			"focus_pull_requests_view": {"p"},
-			"focus_notifications_view": {"n"},
+			"focus_notifications_view": {"m"},
 			"focus_detail_view":        {"d"},
 		},
 		"main": {
 			"focus_user_view":          {"u"},
 			"focus_pull_requests_view": {"p"},
-			"focus_notifications_view": {"n"},
+			"focus_notifications_view": {"m"},
 		},
 		"side": {
 			"focus_detail_view": {"d"},
@@ -306,7 +306,7 @@ func TestKeybindingSpecs_GivenFocusViewOverrides_WhenListingBindings_ThenTheNume
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: '0', handler: subject.focusDetailView})
 	then_bindingDoesNotExist(t, actual, viewUserName, 'u')
 	then_bindingDoesNotExist(t, actual, viewPullRequestsName, 'p')
-	then_bindingDoesNotExist(t, actual, viewNotificationsName, 'n')
+	then_bindingDoesNotExist(t, actual, viewNotificationsName, 'm')
 	then_bindingDoesNotExist(t, actual, viewUserName, 'd')
 }
 

@@ -38,7 +38,7 @@ func (model *Model) setSideFocus(focus Focus) {
 func (model *Model) adjustSelectionBy(change int) {
 	switch model.focus {
 	case FocusUserView:
-		model.selectedUserIndex = adjustVisibleSelection(model.selectedUserIndex, model.visibleUserIndexes(), change)
+		model.selectedUserIndex = adjustSelection(model.selectedUserIndex, len(model.users), change)
 	case FocusPullRequestsView:
 		model.adjustPullRequestSelection(change)
 	case FocusNotificationsView:
@@ -48,13 +48,11 @@ func (model *Model) adjustSelectionBy(change int) {
 
 func (model *Model) adjustPullRequestSelection(change int) {
 	tab := model.ActivePullRequestTab()
-	selectedIndex := model.selectedPullRequestIndexes[tab]
-	visibleIndexes := model.visiblePullRequestIndexes(tab)
-	model.selectedPullRequestIndexes[tab] = adjustVisibleSelection(selectedIndex, visibleIndexes, change)
+	model.selectedPullRequestIndexes[tab] = adjustSelection(model.selectedPullRequestIndexes[tab], len(model.pullRequestRows(tab)), change)
 }
 
 func (model *Model) adjustNotificationSelection(change int) {
-	model.selectedNotificationIndex = adjustVisibleSelection(model.selectedNotificationIndex, model.visibleNotificationIndexes(), change)
+	model.selectedNotificationIndex = adjustSelection(model.selectedNotificationIndex, len(model.notifications), change)
 }
 
 func adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int) int {
@@ -66,6 +64,13 @@ func adjustVisibleSelection(selectedIndex int, visibleIndexes []int, change int)
 
 	visibleSelectionIndex = clampIndex(visibleSelectionIndex+change, len(visibleIndexes))
 	return visibleIndexes[visibleSelectionIndex]
+}
+
+func adjustSelection(selectedIndex int, itemCount int, change int) int {
+	if itemCount == 0 {
+		return selectedIndex
+	}
+	return clampIndex(selectedIndex+change, itemCount)
 }
 
 func firstVisibleIndex(selectedIndex int, visibleIndexes []int) int {
@@ -82,6 +87,20 @@ func lastVisibleIndex(selectedIndex int, visibleIndexes []int) int {
 	}
 
 	return visibleIndexes[len(visibleIndexes)-1]
+}
+
+func firstSelectionIndex(selectedIndex int, itemCount int) int {
+	if itemCount == 0 {
+		return selectedIndex
+	}
+	return 0
+}
+
+func lastSelectionIndex(selectedIndex int, itemCount int) int {
+	if itemCount == 0 {
+		return selectedIndex
+	}
+	return itemCount - 1
 }
 
 func (tab PullRequestTab) Label() string {
