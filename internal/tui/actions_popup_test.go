@@ -335,9 +335,11 @@ func TestActionsPopup_GivenSearchQuery_WhenRendering_ThenTheMatchUsesAReadableTh
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewActionsPopupName, matchLineIndex, "theme", given_themeColorHex(t, theme.SearchHighlightHex), "search match background")
 }
 
-func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenThePendingReview_ThenItKeepsThePopupOpenAndShowsTheFailure(t *testing.T) {
+func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenThePendingReview_ThenItKeepsThePopupOpenAndShowsATransientErrorPopup(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{startReviewErr: errors.New("review refused")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -346,7 +348,7 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 	then_noError(t, actualErr)
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("start review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "start review"))
+	subject.model.UpdateActionsPopupSearch("review mode", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "review mode"))
 	actualErr = subject.refreshViews(gui)
 	then_noError(t, actualErr)
 
@@ -354,11 +356,16 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 	then_noError(t, actualErr)
 
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
-	popupView, actualErr := gui.View(viewActionsPopupName)
-	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "review refused") {
-		t.Fatalf("expected popup title to contain %q, actual %q", "review refused", popupView.Title)
+	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected start review calls %v, actual %v", []string{"acme/widgets#42"}, loader.startReviewCalls)
 	}
+	if subject.actionsPopupErrorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	}
+	if !subject.transientErrorPopupVisible() {
+		t.Fatal("expected the transient error popup state to stay visible")
+	}
+	then_transientErrorPopupContains(t, gui, "review refused")
 	if subject.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the error")
 	}

@@ -287,7 +287,7 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 	if gui == nil {
 		if err := program.runSquashMergePullRequestMutation(target); err != nil {
 			program.clearGHCommandLoading()
-			return actionsPopupActionResult{err: err}
+			return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
 		}
 		program.clearGHCommandLoading()
 		program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
@@ -300,7 +300,7 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 			program.clearGHCommandLoading()
 			if err != nil {
-				program.setFeedback(program.model.Focus(), strings.TrimSpace(err.Error()))
+				program.reportError(gui, strings.TrimSpace(err.Error()))
 				return program.refreshViews(gui)
 			}
 			program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
@@ -474,21 +474,6 @@ func (program *Program) invalidatePullRequestMutationCaches(summary githubdomain
 	program.invalidatePersistentPullRequest(pullRequestRepositoryName(summary.Repository), summary.Number)
 }
 
-func normalizedPullRequestMutationError(err error, commandName string) error {
-	if err == nil {
-		return nil
-	}
-
-	message := strings.TrimSpace(err.Error())
-	prefix := "run `" + strings.TrimSpace(commandName) + "`:"
-	message = strings.TrimSpace(strings.TrimPrefix(message, prefix))
-	if strings.HasPrefix(message, "exit status ") {
-		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
-			message = strings.TrimSpace(message[separatorIndex+1:])
-		}
-	}
-	if message == "" {
-		return err
-	}
-	return errors.New(message)
+func normalizedPullRequestMutationError(err error, _ string) error {
+	return normalizeGHCommandError(err)
 }

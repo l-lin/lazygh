@@ -238,8 +238,8 @@ func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID in
 		program.assigneePicker.searchQuery = trimmedQuery
 		if err != nil {
 			program.assigneePicker.searchResults = nil
-			program.actionsPopupErrorMessage = strings.TrimSpace(normalizedAssigneePickerError(err).Error())
-			program.reportError(gui, program.actionsPopupErrorMessage)
+			program.actionsPopupErrorMessage = ""
+			program.reportError(gui, strings.TrimSpace(normalizedAssigneePickerError(err).Error()))
 			program.syncActionsPopupSearch()
 			return program.refreshViews(gui)
 		}
@@ -663,23 +663,5 @@ func normalizedAssigneePickerCandidate(candidate githubdomain.PullRequestAuthor)
 }
 
 func normalizedAssigneePickerError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	message := strings.TrimSpace(err.Error())
-	if strings.HasPrefix(message, "run `") {
-		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
-			message = strings.TrimSpace(message[separatorIndex+1:])
-		}
-	}
-	if strings.HasPrefix(message, "exit status ") {
-		if separatorIndex := strings.Index(message, ":"); separatorIndex >= 0 {
-			message = strings.TrimSpace(message[separatorIndex+1:])
-		}
-	}
-	if message == "" {
-		return err
-	}
-	return errors.New(message)
+	return normalizeGHCommandError(err)
 }

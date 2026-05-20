@@ -272,6 +272,14 @@ func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocu
 
 func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result actionsPopupActionResult) error {
 	if result.err != nil {
+		if message, ok := transientErrorPopupActionMessage(result.err); ok {
+			program.actionsPopupErrorMessage = ""
+			program.reportError(gui, message)
+			if gui == nil {
+				return nil
+			}
+			return program.refreshViews(gui)
+		}
 		if message := strings.TrimSpace(result.feedbackMessage); message != "" {
 			program.actionsPopupErrorMessage = ""
 			program.setFeedback(result.feedbackTarget, message)

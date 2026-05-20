@@ -68,13 +68,7 @@ func (program *Program) startActionsPopupAsyncGHCommand(gui *gocui.Gui, command 
 func (program *Program) finishActionsPopupAsyncGHCommand(gui *gocui.Gui, err error, onSuccess func()) error {
 	program.clearGHCommandLoading()
 	if err != nil {
-		message := strings.TrimSpace(err.Error())
-		program.reportError(gui, message)
-		if program != nil && program.model != nil && program.model.ActionsPopupVisible() {
-			program.actionsPopupErrorMessage = message
-		} else if message != "" {
-			program.setFeedback(program.model.Focus(), message)
-		}
+		program.reportError(gui, strings.TrimSpace(err.Error()))
 		return program.refreshViewsIfGUI(gui)
 	}
 

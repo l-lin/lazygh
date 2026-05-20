@@ -37,6 +37,17 @@ func TestActionsPopup_GivenApprovePullRequestFailure_WhenRendering_ThenItShowsAT
 	then_transientErrorPopupIsBottomRightAboveStatusLine(t, gui)
 }
 
+func TestTransientErrorPopupActionError_GivenAWrappedError_WhenResolvingItsMessage_ThenItReturnsTheNormalizedPopupMessage(t *testing.T) {
+	message, ok := transientErrorPopupActionMessage(newTransientErrorPopupActionError(errors.New("run `gh pr merge 42 -R acme/widgets --squash`: exit status 1: boom")))
+
+	if !ok {
+		t.Fatal("expected the wrapped error to report a popup message")
+	}
+	if message != "boom" {
+		t.Fatalf("expected popup message %q, actual %q", "boom", message)
+	}
+}
+
 func TestTransientErrorPopup_GivenAVisibleError_WhenItsLifetimeExpires_ThenItDisappearsAfterTheScheduledRefresh(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	asyncRunner := &capturingAsyncRunner{}
@@ -153,5 +164,26 @@ func then_transientErrorPopupIsBottomRightAboveStatusLine(t *testing.T, gui *goc
 	}
 	if popupY0 < 0 {
 		t.Fatalf("expected transient error popup top edge >= 0, actual %d", popupY0)
+	}
+}
+
+func then_transientErrorPopupContains(t *testing.T, gui *gocui.Gui, expected string) {
+	t.Helper()
+
+	toastView, actualErr := gui.View(viewTransientErrorPopupName)
+	then_noError(t, actualErr)
+	toastText := strings.ReplaceAll(strings.Join(toastView.BufferLines(), ""), "\n", "")
+	if !strings.Contains(toastText, expected) {
+		t.Fatalf("expected the transient error popup to contain %q, actual %q", expected, toastText)
+	}
+}
+
+func then_statusLineDoesNotContain(t *testing.T, gui *gocui.Gui, unexpected string) {
+	t.Helper()
+
+	statusView, actualErr := gui.View(viewStatusLineName)
+	then_noError(t, actualErr)
+	if strings.Contains(statusView.Buffer(), unexpected) {
+		t.Fatalf("expected status line to hide %q, actual %q", unexpected, statusView.Buffer())
 	}
 }

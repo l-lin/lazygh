@@ -31,7 +31,7 @@ func (program *Program) openPullRequestReview(summary githubdomain.PullRequest) 
 
 	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
 	if err != nil {
-		return err
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.startReviewSession(summary, pendingReviewID)

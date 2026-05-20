@@ -454,6 +454,9 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("OPEN", false))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("OPEN", false))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
@@ -470,16 +473,16 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
+	given_runQueuedAsync(t, asyncRunner, 0)
 
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.closePullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected close pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.closePullRequestCalls)
 	}
-	popupView, actualErr := gui.View(viewActionsPopupName)
-	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "GitHub rejected the close") {
-		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the close", popupView.Title)
+	if subject.actionsPopupErrorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
 	}
+	then_transientErrorPopupContains(t, gui, "GitHub rejected the close")
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "OPEN") {
@@ -525,15 +528,10 @@ func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUISta
 	}
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "GitHub rejected the branch update") {
-		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the branch update", popupView.Title)
+	if strings.Contains(popupView.Title, "GitHub rejected the branch update") {
+		t.Fatalf("expected the popup title to hide %q, actual %q", "GitHub rejected the branch update", popupView.Title)
 	}
-	toastView, actualErr := gui.View(viewTransientErrorPopupName)
-	then_noError(t, actualErr)
-	toastText := strings.Join(toastView.BufferLines(), "")
-	if !strings.Contains(toastText, "GitHub rejected the branch update") {
-		t.Fatalf("expected the transient error popup to contain %q, actual %q", "GitHub rejected the branch update", toastText)
-	}
+	then_transientErrorPopupContains(t, gui, "GitHub rejected the branch update")
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Out of date with base branch") {
@@ -613,6 +611,9 @@ func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsThe
 	model := given_pullRequestLifecycleModel(given_pullRequestLifecycleSummary("CLOSED", true))
 	model.OpenDetail()
 	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestLifecycleDetail("CLOSED", true))}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	gui := given_headlessGui(t)
@@ -629,16 +630,16 @@ func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsThe
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
+	given_runQueuedAsync(t, asyncRunner, 0)
 
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	if !reflect.DeepEqual(loader.reopenPullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
 	}
-	popupView, actualErr := gui.View(viewActionsPopupName)
-	then_noError(t, actualErr)
-	if !strings.Contains(popupView.Title, "GitHub rejected the reopen") {
-		t.Fatalf("expected the popup title to contain %q, actual %q", "GitHub rejected the reopen", popupView.Title)
+	if subject.actionsPopupErrorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
 	}
+	then_transientErrorPopupContains(t, gui, "GitHub rejected the reopen")
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "CLOSED") {
@@ -836,7 +837,8 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	if !reflect.DeepEqual(loader.squashMergeCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected squash-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.squashMergeCalls)
 	}
-	then_statusLineContains(t, gui, "GitHub rejected the squash merge")
+	then_statusLineDoesNotContain(t, gui, "GitHub rejected the squash merge")
+	then_transientErrorPopupContains(t, gui, "GitHub rejected the squash merge")
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "OPEN") {
