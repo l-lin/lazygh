@@ -106,9 +106,9 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenPressingEnter_ThenItRefr
 
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	if actual := subject.editModalEditor(titleView, gocui.KeyEnter, 0, gocui.ModNone); !actual {
-		t.Fatal("expected Enter to submit the title editor")
-	}
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)
+	actualErr = actualHandler(gui, titleView)
+	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if !reflect.DeepEqual(loader.editTitleCalls, []string{"acme/widgets#42"}) {
@@ -158,9 +158,9 @@ func TestEditPullRequestTitle_GivenSubmitFailure_WhenPressingEnter_ThenItKeepsTh
 
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	if actual := subject.editModalEditor(titleView, gocui.KeyEnter, 0, gocui.ModNone); !actual {
-		t.Fatal("expected Enter to attempt title editor submission")
-	}
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)
+	actualErr = actualHandler(gui, titleView)
+	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	if !strings.Contains(titleView.Buffer(), "Broken title") {

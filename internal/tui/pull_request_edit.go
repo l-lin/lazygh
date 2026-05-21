@@ -37,7 +37,6 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 			return err
 		}
 		if program.modalEditor != nil {
-			program.modalEditor.submitOnEnter = true
 			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
 				program.reloadActivePullRequestsTab(gui)
 			}

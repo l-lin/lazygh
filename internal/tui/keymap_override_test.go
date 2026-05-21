@@ -157,6 +157,36 @@ func TestKeybindingSpecs_GivenModalEditorExternalEditorOverride_WhenListingBindi
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
 }
 
+func TestKeybindingSpecs_GivenModalEditorSingleLineSubmitOverride_WhenListingBindings_ThenItAppliesOnlyToSingleLineEditors(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"submit_line": {"X"},
+		},
+	})
+	then_noError(t, subject.openLineModalEditor(nil, "Prompt", "", nil))
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: 'X', handler: subject.submitModalEditor})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyEnter)
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyAltEnter)
+}
+
+func TestKeybindingSpecs_GivenModalEditorSingleLineSubmitOverride_WhenListingMultilineBindings_ThenItKeepsTheMultilineSubmitKeys(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"submit_line": {"X"},
+		},
+	})
+	then_noError(t, subject.openModalEditor(nil, "Prompt", "", nil))
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyAltEnter, handler: subject.submitModalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlS, handler: subject.submitModalEditor})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, 'X')
+}
+
 func TestKeybindingSpecs_GivenSearchCancelOverride_WhenListingBindings_ThenItAppliesToBothSearchPrompts(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"search": {

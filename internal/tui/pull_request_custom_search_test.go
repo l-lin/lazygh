@@ -81,6 +81,7 @@ func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefill
 	if actual := subject.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
 		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --state open --sort updated --order desc", actual)
 	}
+	then_statusLineKeyHintsAre(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
 	_, y0, _, y1, actualErr := gui.ViewPosition(viewModalEditorName)
 	then_noError(t, actualErr)
 	if actual := y1 - y0 + 1; actual != 3 {
@@ -106,7 +107,7 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ':')(gui, nil)
 	then_noError(t, actualErr)
 	subject.modalEditor.lineEditor.SetText("--author @me --state open --label bug")
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)(gui, nil)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)(gui, nil)
 	then_noError(t, actualErr)
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
@@ -129,7 +130,7 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 		t.Fatalf("expected the active custom search criteria %q, actual %q", "--author @me --state open --label bug", actual)
 	}
 	subject.modalEditor.lineEditor.SetText("--author @me --state closed")
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)(gui, nil)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)(gui, nil)
 	then_noError(t, actualErr)
 
 	pullRequestsView, actualErr = gui.View(viewPullRequestsName)

@@ -41,9 +41,6 @@ func (program *Program) openPullRequestByURLEditor(gui *gocui.Gui) error {
 	if err := program.openLineModalEditorWithHeight(gui, openPullRequestByURLActionTitle, "", program.OpenPullRequestByURL, openPullRequestByURLEditorHeight); err != nil {
 		return err
 	}
-	if program.modalEditor != nil {
-		program.modalEditor.submitOnEnter = true
-	}
 	return program.refreshViewsIfGUI(gui)
 }
 

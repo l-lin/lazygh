@@ -38,10 +38,6 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 	if program.modalEditor == nil {
 		return false
 	}
-	if key == gocui.KeyEnter && mod == gocui.ModNone && program.modalEditor.submitOnEnter {
-		_ = program.submitModalEditor(program.gui, nil)
-		return true
-	}
 	if !program.modalEditor.HandleKey(key, ch, mod) {
 		return false
 	}

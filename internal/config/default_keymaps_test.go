@@ -25,6 +25,8 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"start_yank":                        {"y"},
 		},
 		"modal_editor": {
+			"submit":               {"alt+enter", "ctrl+s"},
+			"submit_line":          {"enter", "ctrl+s"},
 			"cancel":               {"esc"},
 			"open_external_editor": {"ctrl+g"},
 		},

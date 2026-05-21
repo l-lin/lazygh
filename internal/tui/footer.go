@@ -74,10 +74,13 @@ func (program *Program) modalEditorKeyHintsText() string {
 		return ""
 	}
 
-	submitHint := statusLineHintSpec{label: "submit", fallback: "Alt+Enter", actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: "submit"}}}
-	if program.modalEditor != nil && program.modalEditor.submitOnEnter {
-		submitHint = statusLineHintSpec{label: "submit", fallback: "Enter"}
+	submitAction := modalEditorSubmitAction
+	submitFallback := "Alt+Enter"
+	if program.modalEditor != nil {
+		submitAction = program.modalEditor.submitAction()
+		submitFallback = program.modalEditor.submitHintFallback()
 	}
+	submitHint := statusLineHintSpec{label: "submit", fallback: submitFallback, actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: submitAction}}}
 
 	return program.statusLineKeyHints(
 		submitHint,

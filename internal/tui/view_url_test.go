@@ -199,9 +199,9 @@ func TestOpenPullRequestByURL_GivenTheURLInputPopup_WhenPressingEnter_ThenItSubm
 		t.Fatal("expected the PR URL prompt to use the single-line editor")
 	}
 	subject.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/pull/13")
-	if actual := subject.editModalEditor(modalView, gocui.KeyEnter, 0, gocui.ModNone); !actual {
-		t.Fatal("expected Enter to submit the PR URL prompt")
-	}
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)
+	actualErr = actualHandler(gui, modalView)
+	then_noError(t, actualErr)
 
 	then_currentViewNameIs(t, gui, viewDetailName)
 	if subject.model.Focus() != FocusDetailView {

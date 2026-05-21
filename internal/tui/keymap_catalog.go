@@ -191,6 +191,14 @@ func closeKeybindingActionFor(scope string, viewNames []string, handler func(*go
 	return keybindingActionWithConfigID(keybindingActionFor(scope, "close", viewNames, handler, mustDefaultKeymapBindings(keymapScopeGlobal, "close")...), keymapScopeGlobal, "close")
 }
 
+func (program *Program) modalEditorSubmitKeybindingAction() keybindingAction {
+	action := modalEditorSubmitAction
+	if program.modalEditor != nil {
+		action = program.modalEditor.submitAction()
+	}
+	return configuredKeybindingActionFor(keymapScopeModalEditor, action, []string{viewModalEditorName}, program.submitModalEditor)
+}
+
 func (program *Program) keybindingActions() []keybindingAction {
 	return []keybindingAction{
 		configuredKeybindingActionFor(keymapScopeGlobal, "quit", []string{""}, program.quit),
@@ -324,7 +332,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		configuredKeybindingActionFor(keymapScopeActionsPopup, "submit_selected_picker", []string{viewActionsPopupSearchName}, program.submitSelectedActionsPopupAction),
 		configuredKeybindingActionFor(keymapScopeSearch, "cancel", []string{viewActionsPopupSearchName}, program.closeActionsPopup),
 
-		configuredKeybindingActionFor(keymapScopeModalEditor, "submit", []string{viewModalEditorName}, program.submitModalEditor),
+		program.modalEditorSubmitKeybindingAction(),
 		configuredKeybindingActionFor(keymapScopeModalEditor, "open_external_editor", []string{viewModalEditorName}, program.openModalEditorInExternalEditor),
 		configuredKeybindingActionFor(keymapScopeModalEditor, "cancel", []string{viewModalEditorName}, program.closeModalEditor),
 

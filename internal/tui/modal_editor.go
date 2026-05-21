@@ -7,22 +7,23 @@ import (
 )
 
 const (
-	viewModalEditorName        = "modal-editor"
-	modalEditorTotalHeight     = 7
-	lineModalEditorTotalHeight = 3
-	modalEditorFallbackWidth   = 60
-	modalEditorMinWidth        = 40
+	viewModalEditorName         = "modal-editor"
+	modalEditorTotalHeight      = 7
+	lineModalEditorTotalHeight  = 3
+	modalEditorFallbackWidth    = 60
+	modalEditorMinWidth         = 40
+	modalEditorSubmitAction     = "submit"
+	modalEditorSubmitLineAction = "submit_line"
 )
 
 type modalEditorState struct {
-	title         string
-	editor        *multilineEditor
-	lineEditor    *lineEditor
-	errorMessage  string
-	submit        func(string) error
-	afterSubmit   func(*gocui.Gui)
-	totalHeight   int
-	submitOnEnter bool
+	title        string
+	editor       *multilineEditor
+	lineEditor   *lineEditor
+	errorMessage string
+	submit       func(string) error
+	afterSubmit  func(*gocui.Gui)
+	totalHeight  int
 }
 
 func newModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
@@ -119,4 +120,18 @@ func (state *modalEditorState) Height() int {
 		return modalEditorTotalHeight
 	}
 	return state.totalHeight
+}
+
+func (state *modalEditorState) submitAction() string {
+	if state != nil && state.lineEditor != nil {
+		return modalEditorSubmitLineAction
+	}
+	return modalEditorSubmitAction
+}
+
+func (state *modalEditorState) submitHintFallback() string {
+	if state != nil && state.lineEditor != nil {
+		return "Enter"
+	}
+	return "Alt+Enter"
 }
