@@ -799,6 +799,117 @@ func TestBrowserMode_GivenALongPullRequestCommentCodeBlockLineWithErrorTokens_Wh
 	}
 }
 
+func TestBrowserMode_GivenAnInlineCommentCodeFence_WhenRenderingComments_ThenItDoesNotAddExtraPaddingLinesInsideTheCommentBox(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/conversations",
+				State:       "OPEN",
+				InlineComments: []githubcli.PullRequestInlineComment{{
+					Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"},
+					Body:         "```go\nfunc render(value int) string {\n\treturn fmt.Sprintf(\"%d\", value + 42)\n}\n```",
+					CreatedAt:    "2026-04-18T10:00:00Z",
+					Path:         "internal/tui/render.go",
+					Line:         43,
+					OriginalLine: 43,
+					Side:         "RIGHT",
+					DiffHunk:     "@@ -42,1 +43,3 @@\n+func render(value int) string {\n+\treturn fmt.Sprintf(\"%d\", value + 42)\n+}",
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	metadataLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "@reviewer-inline")
+	codeStartLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "func render")
+	codeEndLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "}")
+	if metadataLineIndex+1 != codeStartLineIndex {
+		t.Fatalf("expected the code fence to start immediately after the metadata line, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.BufferLines()[codeEndLineIndex+1], "╰") {
+		t.Fatalf("expected the code fence to end immediately before the bottom border, actual %q", detailView.Buffer())
+	}
+}
+
+func TestBrowserMode_GivenInlineThreadReplyCodeFence_WhenRenderingChanges_ThenItDoesNotAddExtraPaddingLinesInsideTheReplyCommentBox(t *testing.T) {
+	diff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/internal/tui/render.go b/internal/tui/render.go\nindex 0000000..1111111 100644\n--- a/internal/tui/render.go\n+++ b/internal/tui/render.go\n@@ -42,0 +43,3 @@\n+func render(value int) string {\n+\treturn fmt.Sprintf(\"%d\", value + 42)\n+}\n"}
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     45,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+				Body:      "Root comment",
+				CreatedAt: "2026-04-18T10:00:00Z",
+				DiffHunk:  "@@ -42,0 +43,3 @@\n+func render(value int) string {\n+\treturn fmt.Sprintf(\"%d\", value + 42)\n+}",
+			},
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+				Body:      "```go\nfunc render(value int) string {\n\treturn fmt.Sprintf(\"%d\", value + 42)\n}\n```",
+				CreatedAt: "2026-04-18T10:30:00Z",
+			},
+		},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	metadataLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "@octocat")
+	codeStartLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "func render")
+	codeEndLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "}")
+	if metadataLineIndex+1 != codeStartLineIndex {
+		t.Fatalf("expected the reply code fence to start immediately after the metadata line, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.BufferLines()[codeEndLineIndex+1], "╰") {
+		t.Fatalf("expected the reply code fence to end immediately before the bottom border, actual %q", detailView.Buffer())
+	}
+}
+
 func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapsesResolvedThreadsKeepsSectionsTightAndShowsTheDiffPreview(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

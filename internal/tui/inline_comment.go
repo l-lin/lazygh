@@ -29,7 +29,7 @@ func renderPullRequestInlineCommentSectionForViewer(comment githubdomain.PullReq
 	if diffPreview != "" {
 		lines = append(lines, diffPreview)
 	}
-	lines = append(lines, renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width, connectedUserLogin))
+	lines = append(lines, renderCompactCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width, connectedUserLogin))
 	return strings.Join(lines, "\n")
 }
 
@@ -155,7 +155,7 @@ func renderInlineThreadCommentBoxForViewer(comment githubdomain.PullRequestComme
 	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
 	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
 	body := renderInlineCommentBodyForThreadComment(comment, suggestionContext, renderer, commentBodyWidth)
-	return renderCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
+	return renderCompactCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
 }
 
 func renderInlineThreadReplyBlock(renderedCommentBox string, hasFollowingReplies bool) string {

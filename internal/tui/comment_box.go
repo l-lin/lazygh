@@ -31,7 +31,19 @@ func renderCommentBoxWithMetadataForViewer(author *githubdomain.PullRequestComme
 	return renderCommentBoxWithMetadataBadgesForViewer(author, createdAt, nil, reactionGroups, body, width, connectedUserLogin)
 }
 
+func renderCompactCommentBoxWithMetadataForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string) string {
+	return renderCommentBoxWithMetadataBadgesAndCodeBlockPaddingForViewer(author, createdAt, nil, reactionGroups, body, width, connectedUserLogin, false)
+}
+
 func renderCommentBoxWithMetadataBadgesForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string) string {
+	return renderCommentBoxWithMetadataBadgesAndCodeBlockPaddingForViewer(author, createdAt, badges, reactionGroups, body, width, connectedUserLogin, true)
+}
+
+func renderCompactCommentBoxWithMetadataBadgesForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string) string {
+	return renderCommentBoxWithMetadataBadgesAndCodeBlockPaddingForViewer(author, createdAt, badges, reactionGroups, body, width, connectedUserLogin, false)
+}
+
+func renderCommentBoxWithMetadataBadgesAndCodeBlockPaddingForViewer(author *githubdomain.PullRequestCommentAuthor, createdAt string, badges []commentMetadataBadge, reactionGroups []githubdomain.ReactionGroup, body string, width int, connectedUserLogin string, addCodeBlockEdgePadding bool) string {
 	metadataLine := renderCommentBoxMetadataLineForViewer(author, createdAt, badges, reactionGroups, connectedUserLogin)
 
 	contentLines := make([]string, 0, 2)
@@ -44,7 +56,7 @@ func renderCommentBoxWithMetadataBadgesForViewer(author *githubdomain.PullReques
 	if len(contentLines) == 0 {
 		contentLines = append(contentLines, "")
 	}
-	return renderRoundedCommentBoxWithInnerWidth(strings.Join(contentLines, "\n"), commentBoxInnerWidth(width))
+	return renderRoundedCommentBoxWithInnerWidthAndCodeBlockPadding(strings.Join(contentLines, "\n"), commentBoxInnerWidth(width), addCodeBlockEdgePadding)
 }
 
 func renderRoundedCommentBox(text string, width int) string {
@@ -52,11 +64,15 @@ func renderRoundedCommentBox(text string, width int) string {
 }
 
 func renderRoundedCommentBoxWithInnerWidth(text string, innerWidth int) string {
+	return renderRoundedCommentBoxWithInnerWidthAndCodeBlockPadding(text, innerWidth, true)
+}
+
+func renderRoundedCommentBoxWithInnerWidthAndCodeBlockPadding(text string, innerWidth int, addCodeBlockEdgePadding bool) string {
 	if innerWidth < 1 {
 		innerWidth = 1
 	}
 
-	styledLines := wrapCommentBoxStyledLines(splitStyledTextLines(text), innerWidth)
+	styledLines := wrapCommentBoxStyledLines(splitStyledTextLinesWithCodeBlockEdgePadding(text, addCodeBlockEdgePadding), innerWidth)
 	innerWidth = maxInt(innerWidth, maxStyledTextLineWidthFromLines(styledLines))
 	boxLines := make([]string, 0, len(styledLines)+2)
 	boxLines = append(boxLines, styleCommentBorder("╭"+strings.Repeat("─", innerWidth+(commentBoxHorizontalPadding*2))+"╮"))

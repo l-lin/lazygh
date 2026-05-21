@@ -17,9 +17,13 @@ type styledTextLine struct {
 }
 
 func splitStyledTextLines(text string) []styledTextLine {
+	return splitStyledTextLinesWithCodeBlockEdgePadding(text, true)
+}
+
+func splitStyledTextLinesWithCodeBlockEdgePadding(text string, addCodeBlockEdgePadding bool) []styledTextLine {
 	parsedLines := parseStyledTextLines(text)
 	normalizedLines := normalizeMarkdownCodeBlockAdjacentBlankLines(parsedLines)
-	return addMarkdownCodeBlockPaddingLines(normalizedLines)
+	return addMarkdownCodeBlockPaddingLines(normalizedLines, addCodeBlockEdgePadding)
 }
 
 func parseStyledTextLines(text string) []styledTextLine {
@@ -94,7 +98,7 @@ func trimTrailingStyledSpaces(line styledTextLine) styledTextLine {
 	return line
 }
 
-func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
+func addMarkdownCodeBlockPaddingLines(lines []styledTextLine, addCodeBlockEdgePadding bool) []styledTextLine {
 	if len(lines) == 0 {
 		return lines
 	}
@@ -112,7 +116,7 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 		nextLineIsCodeBlock := index < len(lines)-1 && styledLineUsesCommentBoxCodeBlockBackground(stripMarkdownCodeBlockPaddingSentinel(lines[index+1]))
 		previousLineIsBlank := index > 0 && styledLineIsBlank(stripMarkdownCodeBlockPaddingSentinel(lines[index-1]))
 		nextLineIsBlank := index < len(lines)-1 && styledLineIsBlank(stripMarkdownCodeBlockPaddingSentinel(lines[index+1]))
-		if isCodeBlockLine && !previousLineIsCodeBlock {
+		if addCodeBlockEdgePadding && isCodeBlockLine && !previousLineIsCodeBlock {
 			if !previousLineIsBlank {
 				paddedLines = append(paddedLines, styledTextLine{})
 			}
@@ -121,7 +125,7 @@ func addMarkdownCodeBlockPaddingLines(lines []styledTextLine) []styledTextLine {
 
 		paddedLines = append(paddedLines, line)
 
-		if isCodeBlockLine && !nextLineIsCodeBlock {
+		if addCodeBlockEdgePadding && isCodeBlockLine && !nextLineIsCodeBlock {
 			paddedLines = append(paddedLines, styledPaddingLine(line))
 			if !nextLineIsBlank {
 				paddedLines = append(paddedLines, styledTextLine{})

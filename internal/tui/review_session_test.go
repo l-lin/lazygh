@@ -469,7 +469,7 @@ func TestReviewMode_GivenPendingOutdatedInlineConversation_WhenRendering_ThenItS
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, metadataLineIndex, "Pending", given_themeColorHex(t, theme.PendingBackgroundHex), "review thread pending comment background")
 }
 
-func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxColorsAndFillsTheCommentBoxInterior(t *testing.T) {
+func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxColorsWithoutExtraPaddingLinesInsideTheCommentBox(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:       "thread-1",
@@ -495,18 +495,17 @@ func TestReviewMode_GivenInlineCommentCodeFence_WhenRendering_ThenItKeepsSyntaxC
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
+	metadataLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "@reviewer-one")
 	codeStartLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "func render")
 	codeLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, `return fmt.Sprintf("%d", value + 42)`)
 	codeEndLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "}")
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[codeStartLineIndex-1])); actualInnerText != "" {
-		t.Fatalf("expected the review inline comment code block top padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	if metadataLineIndex+1 != codeStartLineIndex {
+		t.Fatalf("expected the review inline comment code fence to start immediately after the metadata line, actual %q", detailView.Buffer())
 	}
-	if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[codeEndLineIndex+1])); actualInnerText != "" {
-		t.Fatalf("expected the review inline comment code block bottom padding line to stay blank inside the comment box, actual %q", actualInnerText)
+	if !strings.Contains(detailView.BufferLines()[codeEndLineIndex+1], "╰") {
+		t.Fatalf("expected the review inline comment code fence to end immediately before the bottom border, actual %q", detailView.Buffer())
 	}
 	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeStartLineIndex-1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block top padding background")
-	then_viewCommentBoxInteriorHasBackgroundColor(t, gui, viewDetailName, codeEndLineIndex+1, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block bottom padding background")
 	then_viewCommentBoxBorderDoesNotHaveBackgroundColor(t, gui, viewDetailName, codeLineIndex, given_themeColorHex(t, theme.SelectedLineBackgroundHex), "review inline comment code block border background")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "return", given_themeColorHex(t, theme.SyntaxKeywordHex), "review inline comment code keyword")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, codeLineIndex, "Sprintf", given_themeColorHex(t, theme.SyntaxFunctionHex), "review inline comment code function")
