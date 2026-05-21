@@ -24,6 +24,7 @@
 - Keep user-facing icons in `internal/tui/icons.go`.
 - Prefer the standard library and small dependencies.
 - Default TUI choice is `github.com/jesseduffield/gocui` because it stays close to lazygit.
+- Use the "Functional core, imperative shell" paradigm.
 
 ## TUI verification
 - For rendering, theme, popup, cursor, markdown, image, search-highlight, status-line, or layout changes, headless tests are required but not sufficient.
@@ -40,3 +41,4 @@
 ## AI guidance
 - Update this file before adding repo-specific agent skills.
 - Add a dedicated skill only if the rule is repeated often enough that `AGENTS.md` stops being precise.
+- The directory `.sandbox` is not versioned. It's on purpose, it's only for local todos and experimentations.
