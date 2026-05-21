@@ -173,6 +173,51 @@ func TestDetailCharacterMotion_GivenBrowserDetailTabs_WhenPressingForwardFindWit
 	}
 }
 
+func TestDetailCharacterMotion_GivenReviewModeDescription_WhenPressingForwardFindWithAnUnboundTarget_ThenItNavigatesTheRenderedDescription(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body.zeta",
+				BaseRefName: "main",
+				HeadRefName: "feature/review",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body.zeta": "Body.zeta"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+
+	given_detailCursorOnSegment(t, gui, subject, "Body.zeta")
+	expected := given_detailPositionOfSegmentOccurrence(t, gui, subject, "zeta", 0)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+
+	registeredBindings := subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
+	then_noError(t, actualErr)
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'z')(gui, detailView)
+	then_noError(t, actualErr)
+
+	then_detailCursorIs(t, subject.detailViewState, expected)
+}
+
 func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingForwardFindWithAnUnboundTarget_ThenItNavigatesTheRenderedDiff(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",

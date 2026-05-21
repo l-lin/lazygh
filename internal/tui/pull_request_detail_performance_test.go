@@ -166,6 +166,49 @@ func TestCurrentActionsPopupActions_GivenCommentsTabDocumentAlreadyBuilt_WhenRes
 	}
 }
 
+func TestCurrentDetailDocument_GivenReviewModeDescriptionAlreadyBuilt_WhenBuildingItTwice_ThenItReusesTheCachedDocumentWithoutRenderingMarkdownAgain(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Body 42": "Rendered body 42",
+	}}
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/review",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = renderer
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, given_startingReviewMode(t, gui, subject))
+	then_noError(t, subject.focusUserView(gui, nil))
+	if actualErr := subject.refreshDetailView(gui); actualErr != nil {
+		t.Fatalf("expected no error, actual %v", actualErr)
+	}
+	renderer.callCount = 0
+
+	firstDocument := subject.currentDetailDocument(nil)
+	secondDocument := subject.currentDetailDocument(nil)
+
+	if string(firstDocument.text) != string(secondDocument.text) {
+		t.Fatalf("expected cached review description document %q, actual %q", string(firstDocument.text), string(secondDocument.text))
+	}
+	if renderer.callCount != 0 {
+		t.Fatalf("expected the cached review description lookup to avoid markdown rendering, actual %d", renderer.callCount)
+	}
+}
+
 func TestCurrentActionsPopupActions_GivenChangesTabDiffAlreadyRendered_WhenResolvingTwice_ThenItReusesCachedRenderedRowsWithoutRenderingMarkdownAgain(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
 		"Original inline body": "Rendered original inline body",

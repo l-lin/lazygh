@@ -1,5 +1,7 @@
 package tui
 
+import githubdomain "github.com/l-lin/lazygh/internal/github"
+
 type pullRequestDetailDocumentCacheKey struct {
 	pullRequestKey string
 	tab            DetailTab
@@ -7,13 +9,28 @@ type pullRequestDetailDocumentCacheKey struct {
 }
 
 func (program *Program) currentPullRequestDetailDocumentCacheKey(width int) (pullRequestDetailDocumentCacheKey, bool) {
-	if program.reviewModeActive() || width < 1 {
+	if width < 1 {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
 
-	summary, ok := program.selectedPullRequestSummaryForDetail()
-	if !ok {
-		return pullRequestDetailDocumentCacheKey{}, false
+	var (
+		summary githubdomain.PullRequest
+		tab     DetailTab
+	)
+	switch {
+	case program.reviewModeActive():
+		if !program.reviewSessionShowsDescription() {
+			return pullRequestDetailDocumentCacheKey{}, false
+		}
+		summary = program.reviewSession.summary
+		tab = DescriptionDetailTab
+	default:
+		selectedSummary, ok := program.selectedPullRequestSummaryForDetail()
+		if !ok {
+			return pullRequestDetailDocumentCacheKey{}, false
+		}
+		summary = selectedSummary
+		tab = program.activeDetailTab
 	}
 	if result, ok := program.pullRequestDetailForSummary(summary); !ok || result.err != nil {
 		return pullRequestDetailDocumentCacheKey{}, false
@@ -21,7 +38,7 @@ func (program *Program) currentPullRequestDetailDocumentCacheKey(width int) (pul
 
 	return pullRequestDetailDocumentCacheKey{
 		pullRequestKey: pullRequestDetailKey(summary.Repository, summary.Number),
-		tab:            program.activeDetailTab,
+		tab:            tab,
 		width:          width,
 	}, true
 }
