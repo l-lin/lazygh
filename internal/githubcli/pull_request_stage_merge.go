@@ -66,6 +66,32 @@ func (client *PullRequestMutationService) SquashMergePullRequest(repository stri
 	return nil
 }
 
+func (client *PullRequestMutationService) EnablePullRequestAutoMerge(repository string, number int) error {
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.execute(rawCommand("pr", "merge", strconv.Itoa(number), "-R", trimmedRepository, "--auto", "--squash")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (client *PullRequestMutationService) DisablePullRequestAutoMerge(repository string, number int) error {
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.execute(rawCommand("pr", "merge", strconv.Itoa(number), "-R", trimmedRepository, "--disable-auto")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *PullRequestMutationService) UpdatePullRequestBranch(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {

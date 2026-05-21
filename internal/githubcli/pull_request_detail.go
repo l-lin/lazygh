@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewDecision,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
+const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewDecision,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,autoMergeRequest,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
 	ErrInvalidPullRequestDetailResponse           = fmt.Errorf("invalid pull request detail response")
@@ -16,36 +16,37 @@ var (
 )
 
 type PullRequestDetail struct {
-	ID                   string                     `json:"id,omitempty"`
-	Title                string                     `json:"title"`
-	Number               int                        `json:"number"`
-	URL                  string                     `json:"url"`
-	Body                 string                     `json:"body"`
-	BodyHTML             string                     `json:"bodyHTML,omitempty"`
-	Author               *PullRequestAuthor         `json:"author"`
-	State                string                     `json:"state"`
-	IsDraft              bool                       `json:"isDraft"`
-	CreatedAt            string                     `json:"createdAt"`
-	UpdatedAt            string                     `json:"updatedAt"`
-	Labels               []PullRequestLabel         `json:"labels"`
-	Assignees            []PullRequestAuthor        `json:"assignees"`
-	ReviewDecision       string                     `json:"reviewDecision"`
-	ReviewRequests       []PullRequestReviewRequest `json:"reviewRequests"`
-	BaseRefName          string                     `json:"baseRefName"`
-	HeadRefName          string                     `json:"headRefName"`
-	MergeStateStatus     string                     `json:"mergeStateStatus"`
-	Mergeable            string                     `json:"mergeable"`
-	OutOfDateWithBase    bool                       `json:"outOfDateWithBase,omitempty"`
-	ReactionGroups       []ReactionGroup            `json:"reactionGroups,omitempty"`
-	Comments             []PullRequestComment       `json:"comments"`
-	Commits              []PullRequestCommit        `json:"commits"`
-	Reviews              []PullRequestReview        `json:"reviews"`
-	InlineComments       []PullRequestInlineComment `json:"-"`
-	InlineCommentThreads []PullRequestReviewThread  `json:"-"`
-	Additions            int                        `json:"additions"`
-	Deletions            int                        `json:"deletions"`
-	ChangedFiles         int                        `json:"changedFiles"`
-	StatusCheckRollup    []PullRequestStatusCheck   `json:"statusCheckRollup"`
+	ID                   string                       `json:"id,omitempty"`
+	Title                string                       `json:"title"`
+	Number               int                          `json:"number"`
+	URL                  string                       `json:"url"`
+	Body                 string                       `json:"body"`
+	BodyHTML             string                       `json:"bodyHTML,omitempty"`
+	Author               *PullRequestAuthor           `json:"author"`
+	State                string                       `json:"state"`
+	IsDraft              bool                         `json:"isDraft"`
+	CreatedAt            string                       `json:"createdAt"`
+	UpdatedAt            string                       `json:"updatedAt"`
+	Labels               []PullRequestLabel           `json:"labels"`
+	Assignees            []PullRequestAuthor          `json:"assignees"`
+	ReviewDecision       string                       `json:"reviewDecision"`
+	ReviewRequests       []PullRequestReviewRequest   `json:"reviewRequests"`
+	BaseRefName          string                       `json:"baseRefName"`
+	HeadRefName          string                       `json:"headRefName"`
+	MergeStateStatus     string                       `json:"mergeStateStatus"`
+	Mergeable            string                       `json:"mergeable"`
+	AutoMergeRequest     *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	OutOfDateWithBase    bool                         `json:"outOfDateWithBase,omitempty"`
+	ReactionGroups       []ReactionGroup              `json:"reactionGroups,omitempty"`
+	Comments             []PullRequestComment         `json:"comments"`
+	Commits              []PullRequestCommit          `json:"commits"`
+	Reviews              []PullRequestReview          `json:"reviews"`
+	InlineComments       []PullRequestInlineComment   `json:"-"`
+	InlineCommentThreads []PullRequestReviewThread    `json:"-"`
+	Additions            int                          `json:"additions"`
+	Deletions            int                          `json:"deletions"`
+	ChangedFiles         int                          `json:"changedFiles"`
+	StatusCheckRollup    []PullRequestStatusCheck     `json:"statusCheckRollup"`
 }
 
 type PullRequestAuthor struct {
@@ -238,6 +239,10 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 	detail.HeadRefName = strings.TrimSpace(detail.HeadRefName)
 	detail.MergeStateStatus = strings.TrimSpace(detail.MergeStateStatus)
 	detail.Mergeable = strings.TrimSpace(detail.Mergeable)
+	if detail.AutoMergeRequest != nil {
+		normalizedRequest := detail.AutoMergeRequest.normalized()
+		detail.AutoMergeRequest = &normalizedRequest
+	}
 	if detail.Author != nil {
 		normalizedAuthor := detail.Author.normalized()
 		detail.Author = &normalizedAuthor

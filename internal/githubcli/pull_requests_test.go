@@ -105,6 +105,29 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheRequ
 	}
 }
 
+func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheAutoMergeState(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Queued merge","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
+		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","autoMergeRequest":{"enabledAt":"2026-05-20T10:00:00Z"}}]}}`)},
+	}}
+	subject := NewPullRequestListServiceWithRunner(runner)
+
+	actual, actualErr := subject.ListPullRequests([]string{"search", "prs", "--author", "@me", "--state", "open"})
+
+	then_noError(t, actualErr)
+	expected := []PullRequest{{
+		ID:               "PR_kwDOA",
+		Title:            "Queued merge",
+		Number:           42,
+		Repository:       Repository{NameWithOwner: "acme/widgets"},
+		State:            "OPEN",
+		AutoMergeRequest: &PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"},
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected pull requests %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestListPullRequests_GivenReviewMetadataHydrationFailure_WhenFetching_ThenItReturnsTheSearchResultsWithoutFailing(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeCommandResponse{
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Ship it","number":42,"repository":{"nameWithOwner":"acme/widgets"},"url":"https://github.com/acme/widgets/pull/42","state":"OPEN"}]`)},

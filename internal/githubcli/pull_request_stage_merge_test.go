@@ -56,6 +56,26 @@ func TestSquashMergePullRequest_GivenRepositoryAndNumber_WhenSubmitting_ThenItRu
 	then_commandIs(t, runner, "gh", []string{"pr", "merge", "42", "-R", "acme/widgets", "--squash"})
 }
 
+func TestEnablePullRequestAutoMerge_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrMergeAutoSquash(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.EnablePullRequestAutoMerge("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"pr", "merge", "42", "-R", "acme/widgets", "--auto", "--squash"})
+}
+
+func TestDisablePullRequestAutoMerge_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrMergeDisableAuto(t *testing.T) {
+	runner := &fakeRunner{}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.DisablePullRequestAutoMerge("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"pr", "merge", "42", "-R", "acme/widgets", "--disable-auto"})
+}
+
 func TestUpdatePullRequestBranch_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrUpdateBranch(t *testing.T) {
 	runner := &fakeRunner{}
 	subject := NewPullRequestMutationServiceWithRunner(runner)
@@ -104,6 +124,28 @@ func TestSquashMergePullRequest_GivenCommandFailure_WhenSubmitting_ThenItReturns
 	subject := NewPullRequestMutationServiceWithRunner(runner)
 
 	actualErr := subject.SquashMergePullRequest("acme/widgets", 42)
+
+	if !strings.Contains(actualErr.Error(), "gh pr merge") {
+		t.Fatalf("expected error to mention %q, actual %v", "gh pr merge", actualErr)
+	}
+}
+
+func TestEnablePullRequestAutoMerge_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrMergeError(t *testing.T) {
+	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.EnablePullRequestAutoMerge("acme/widgets", 42)
+
+	if !strings.Contains(actualErr.Error(), "gh pr merge") {
+		t.Fatalf("expected error to mention %q, actual %v", "gh pr merge", actualErr)
+	}
+}
+
+func TestDisablePullRequestAutoMerge_GivenCommandFailure_WhenSubmitting_ThenItReturnsTheGhPrMergeError(t *testing.T) {
+	runner := &fakeRunner{stderr: []byte("boom"), err: errors.New("exit status 1")}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.DisablePullRequestAutoMerge("acme/widgets", 42)
 
 	if !strings.Contains(actualErr.Error(), "gh pr merge") {
 		t.Fatalf("expected error to mention %q, actual %v", "gh pr merge", actualErr)

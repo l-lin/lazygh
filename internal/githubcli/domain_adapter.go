@@ -41,6 +41,7 @@ func ToDomainPullRequestSummary(pullRequest PullRequest) githubdomain.PullReques
 		ReviewRequests:         toDomainReviewRequests(pullRequest.ReviewRequests),
 		MergeStateStatus:       pullRequest.MergeStateStatus,
 		Mergeable:              pullRequest.Mergeable,
+		AutoMergeRequest:       toDomainPullRequestAutoMergeRequest(pullRequest.AutoMergeRequest),
 		StatusCheckRollupState: pullRequest.StatusCheckRollupState,
 	}
 }
@@ -60,6 +61,7 @@ func PullRequestSummaryFromDomain(pullRequest githubdomain.PullRequestSummary) P
 		ReviewRequests:         reviewRequestsFromDomain(pullRequest.ReviewRequests),
 		MergeStateStatus:       pullRequest.MergeStateStatus,
 		Mergeable:              pullRequest.Mergeable,
+		AutoMergeRequest:       pullRequestAutoMergeRequestFromDomain(pullRequest.AutoMergeRequest),
 		StatusCheckRollupState: pullRequest.StatusCheckRollupState,
 	}
 }
@@ -70,6 +72,22 @@ func ToDomainRepository(repository Repository) githubdomain.RepositoryRef {
 
 func RepositoryFromDomain(repository githubdomain.RepositoryRef) Repository {
 	return Repository{Name: repository.Name, NameWithOwner: repository.NameWithOwner}
+}
+
+func toDomainPullRequestAutoMergeRequest(request *PullRequestAutoMergeRequest) *githubdomain.PullRequestAutoMergeRequest {
+	if request == nil {
+		return nil
+	}
+	actual := githubdomain.PullRequestAutoMergeRequest{EnabledAt: request.EnabledAt}
+	return &actual
+}
+
+func pullRequestAutoMergeRequestFromDomain(request *githubdomain.PullRequestAutoMergeRequest) *PullRequestAutoMergeRequest {
+	if request == nil {
+		return nil
+	}
+	actual := PullRequestAutoMergeRequest{EnabledAt: request.EnabledAt}
+	return &actual
 }
 
 func toDomainReviewRequests(reviewRequests []PullRequestReviewRequest) []githubdomain.PullRequestReviewRequest {
@@ -132,6 +150,7 @@ func ToDomainPullRequestDetail(detail PullRequestDetail) githubdomain.PullReques
 		HeadRefName:          detail.HeadRefName,
 		MergeStateStatus:     detail.MergeStateStatus,
 		Mergeable:            detail.Mergeable,
+		AutoMergeRequest:     toDomainPullRequestAutoMergeRequest(detail.AutoMergeRequest),
 		OutOfDateWithBase:    detail.OutOfDateWithBase,
 		ReactionGroups:       toDomainReactionGroups(detail.ReactionGroups),
 		Comments:             toDomainPullRequestComments(detail.Comments),
@@ -171,6 +190,7 @@ func PullRequestDetailFromDomain(detail githubdomain.PullRequestDetail) PullRequ
 		HeadRefName:          detail.HeadRefName,
 		MergeStateStatus:     detail.MergeStateStatus,
 		Mergeable:            detail.Mergeable,
+		AutoMergeRequest:     pullRequestAutoMergeRequestFromDomain(detail.AutoMergeRequest),
 		OutOfDateWithBase:    detail.OutOfDateWithBase,
 		ReactionGroups:       reactionGroupsFromDomain(detail.ReactionGroups),
 		Comments:             pullRequestCommentsFromDomain(detail.Comments),

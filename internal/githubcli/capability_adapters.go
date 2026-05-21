@@ -246,6 +246,14 @@ func (adapter *PullRequestMutationAdapter) SquashMergePullRequest(repository str
 	return adapter.service.SquashMergePullRequest(repository, number)
 }
 
+func (adapter *PullRequestMutationAdapter) EnablePullRequestAutoMerge(repository string, number int) error {
+	return adapter.service.EnablePullRequestAutoMerge(repository, number)
+}
+
+func (adapter *PullRequestMutationAdapter) DisablePullRequestAutoMerge(repository string, number int) error {
+	return adapter.service.DisablePullRequestAutoMerge(repository, number)
+}
+
 func (adapter *PullRequestMutationAdapter) UpdatePullRequestBranch(repository string, number int) error {
 	return adapter.service.UpdatePullRequestBranch(repository, number)
 }

@@ -7,6 +7,7 @@ func clonePullRequestDetail(detail githubdomain.PullRequestDetail) githubdomain.
 	detail.Labels = append([]githubdomain.PullRequestLabel(nil), detail.Labels...)
 	detail.Assignees = clonePullRequestAuthors(detail.Assignees)
 	detail.ReviewRequests = append([]githubdomain.PullRequestReviewRequest(nil), detail.ReviewRequests...)
+	detail.AutoMergeRequest = clonePullRequestAutoMergeRequest(detail.AutoMergeRequest)
 	detail.ReactionGroups = append([]githubdomain.ReactionGroup(nil), detail.ReactionGroups...)
 	detail.Comments = clonePullRequestComments(detail.Comments)
 	detail.Commits = clonePullRequestCommits(detail.Commits)
@@ -15,6 +16,14 @@ func clonePullRequestDetail(detail githubdomain.PullRequestDetail) githubdomain.
 	detail.InlineCommentThreads = clonePullRequestReviewThreads(detail.InlineCommentThreads)
 	detail.StatusCheckRollup = append([]githubdomain.PullRequestStatusCheck(nil), detail.StatusCheckRollup...)
 	return detail
+}
+
+func clonePullRequestAutoMergeRequest(request *githubdomain.PullRequestAutoMergeRequest) *githubdomain.PullRequestAutoMergeRequest {
+	if request == nil {
+		return nil
+	}
+	copy := *request
+	return &copy
 }
 
 func clonePullRequestAuthor(author *githubdomain.PullRequestAuthor) *githubdomain.PullRequestAuthor {

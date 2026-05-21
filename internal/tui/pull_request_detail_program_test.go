@@ -1616,6 +1616,10 @@ type fakePullRequestDetailLoader struct {
 	reopenPullRequestErr              error
 	squashMergeCalls                  []string
 	squashMergeErr                    error
+	enableAutoMergeCalls              []string
+	enableAutoMergeErr                error
+	disableAutoMergeCalls             []string
+	disableAutoMergeErr               error
 	updateBranchCalls                 []string
 	updateBranchErr                   error
 	startReviewCalls                  []string
@@ -2204,6 +2208,7 @@ func (loader *fakePullRequestDetailLoader) SquashMergePullRequest(repository str
 		pullRequest.ReviewRequests = nil
 		pullRequest.Mergeable = ""
 		pullRequest.MergeStateStatus = ""
+		pullRequest.AutoMergeRequest = nil
 		pullRequest.StatusCheckRollupState = ""
 	})
 	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
@@ -2211,6 +2216,37 @@ func (loader *fakePullRequestDetailLoader) SquashMergePullRequest(repository str
 		detail.IsDraft = false
 		detail.Mergeable = ""
 		detail.MergeStateStatus = ""
+		detail.AutoMergeRequest = nil
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) EnablePullRequestAutoMerge(repository string, number int) error {
+	loader.enableAutoMergeCalls = append(loader.enableAutoMergeCalls, repository+"#"+strconv.Itoa(number))
+	if loader.enableAutoMergeErr != nil {
+		return loader.enableAutoMergeErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.AutoMergeRequest = &githubcli.PullRequestAutoMergeRequest{}
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.AutoMergeRequest = &githubcli.PullRequestAutoMergeRequest{}
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) DisablePullRequestAutoMerge(repository string, number int) error {
+	loader.disableAutoMergeCalls = append(loader.disableAutoMergeCalls, repository+"#"+strconv.Itoa(number))
+	if loader.disableAutoMergeErr != nil {
+		return loader.disableAutoMergeErr
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.AutoMergeRequest = nil
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.AutoMergeRequest = nil
 	})
 	return nil
 }

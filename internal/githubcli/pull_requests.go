@@ -26,6 +26,9 @@ query($ids:[ID!]!) {
       reviewDecision
       mergeable
       mergeStateStatus
+      autoMergeRequest {
+        enabledAt
+      }
       reviewRequests(first:100) {
         nodes {
           requestedReviewer {
@@ -81,20 +84,21 @@ func (repository *Repository) UnmarshalJSON(data []byte) error {
 }
 
 type PullRequest struct {
-	ID                     string                     `json:"id"`
-	Title                  string                     `json:"title"`
-	Number                 int                        `json:"number"`
-	Repository             Repository                 `json:"repository"`
-	URL                    string                     `json:"url"`
-	Body                   string                     `json:"body"`
-	State                  string                     `json:"state"`
-	IsDraft                bool                       `json:"isDraft"`
-	UpdatedAt              string                     `json:"updatedAt"`
-	ReviewDecision         string                     `json:"reviewDecision"`
-	ReviewRequests         []PullRequestReviewRequest `json:"reviewRequests"`
-	MergeStateStatus       string                     `json:"mergeStateStatus"`
-	Mergeable              string                     `json:"mergeable"`
-	StatusCheckRollupState string                     `json:"statusCheckRollupState"`
+	ID                     string                       `json:"id"`
+	Title                  string                       `json:"title"`
+	Number                 int                          `json:"number"`
+	Repository             Repository                   `json:"repository"`
+	URL                    string                       `json:"url"`
+	Body                   string                       `json:"body"`
+	State                  string                       `json:"state"`
+	IsDraft                bool                         `json:"isDraft"`
+	UpdatedAt              string                       `json:"updatedAt"`
+	ReviewDecision         string                       `json:"reviewDecision"`
+	ReviewRequests         []PullRequestReviewRequest   `json:"reviewRequests"`
+	MergeStateStatus       string                       `json:"mergeStateStatus"`
+	Mergeable              string                       `json:"mergeable"`
+	AutoMergeRequest       *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	StatusCheckRollupState string                       `json:"statusCheckRollupState"`
 }
 
 type pullRequestListReviewMetadata struct {
@@ -102,6 +106,7 @@ type pullRequestListReviewMetadata struct {
 	ReviewRequests         []PullRequestReviewRequest
 	MergeStateStatus       string
 	Mergeable              string
+	AutoMergeRequest       *PullRequestAutoMergeRequest
 	StatusCheckRollupState string
 }
 
@@ -128,6 +133,12 @@ func (client *PullRequestListService) ListPullRequests(commandArguments []string
 			pullRequests[index].ReviewRequests = append([]PullRequestReviewRequest(nil), reviewMetadata.ReviewRequests...)
 			pullRequests[index].MergeStateStatus = reviewMetadata.MergeStateStatus
 			pullRequests[index].Mergeable = reviewMetadata.Mergeable
+			if reviewMetadata.AutoMergeRequest != nil {
+				normalizedRequest := reviewMetadata.AutoMergeRequest.normalized()
+				pullRequests[index].AutoMergeRequest = &normalizedRequest
+			} else {
+				pullRequests[index].AutoMergeRequest = nil
+			}
 			pullRequests[index].StatusCheckRollupState = reviewMetadata.StatusCheckRollupState
 		}
 		pullRequests[index] = pullRequests[index].normalized()
@@ -201,10 +212,11 @@ func uniquePullRequestIDs(pullRequests []PullRequest) []string {
 func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestListReviewMetadata, error) {
 	var response struct {
 		Nodes []*struct {
-			ID               string `json:"id"`
-			ReviewDecision   string `json:"reviewDecision"`
-			MergeStateStatus string `json:"mergeStateStatus"`
-			Mergeable        string `json:"mergeable"`
+			ID               string                       `json:"id"`
+			ReviewDecision   string                       `json:"reviewDecision"`
+			MergeStateStatus string                       `json:"mergeStateStatus"`
+			Mergeable        string                       `json:"mergeable"`
+			AutoMergeRequest *PullRequestAutoMergeRequest `json:"autoMergeRequest"`
 			ReviewRequests   struct {
 				Nodes []PullRequestReviewRequest `json:"nodes"`
 			} `json:"reviewRequests"`
@@ -226,10 +238,11 @@ func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestLi
 }
 
 func mapPullRequestListReviewMetadataResponse(nodes []*struct {
-	ID               string `json:"id"`
-	ReviewDecision   string `json:"reviewDecision"`
-	MergeStateStatus string `json:"mergeStateStatus"`
-	Mergeable        string `json:"mergeable"`
+	ID               string                       `json:"id"`
+	ReviewDecision   string                       `json:"reviewDecision"`
+	MergeStateStatus string                       `json:"mergeStateStatus"`
+	Mergeable        string                       `json:"mergeable"`
+	AutoMergeRequest *PullRequestAutoMergeRequest `json:"autoMergeRequest"`
 	ReviewRequests   struct {
 		Nodes []PullRequestReviewRequest `json:"nodes"`
 	} `json:"reviewRequests"`
@@ -261,6 +274,10 @@ func mapPullRequestListReviewMetadataResponse(nodes []*struct {
 			MergeStateStatus:       strings.TrimSpace(node.MergeStateStatus),
 			Mergeable:              strings.TrimSpace(node.Mergeable),
 			StatusCheckRollupState: pullRequestListStatusCheckRollupState(node.HeadRefStatusCheckRollup.Nodes),
+		}
+		if node.AutoMergeRequest != nil {
+			normalizedRequest := node.AutoMergeRequest.normalized()
+			reviewMetadata.AutoMergeRequest = &normalizedRequest
 		}
 		if len(node.ReviewRequests.Nodes) > 0 {
 			reviewRequests := make([]PullRequestReviewRequest, 0, len(node.ReviewRequests.Nodes))
@@ -329,6 +346,10 @@ func (pullRequest PullRequest) normalized() PullRequest {
 	pullRequest.ReviewDecision = strings.TrimSpace(pullRequest.ReviewDecision)
 	pullRequest.MergeStateStatus = strings.TrimSpace(pullRequest.MergeStateStatus)
 	pullRequest.Mergeable = strings.TrimSpace(pullRequest.Mergeable)
+	if pullRequest.AutoMergeRequest != nil {
+		normalizedRequest := pullRequest.AutoMergeRequest.normalized()
+		pullRequest.AutoMergeRequest = &normalizedRequest
+	}
 	pullRequest.StatusCheckRollupState = strings.TrimSpace(pullRequest.StatusCheckRollupState)
 	if len(pullRequest.ReviewRequests) > 0 {
 		normalizedReviewRequests := make([]PullRequestReviewRequest, 0, len(pullRequest.ReviewRequests))
