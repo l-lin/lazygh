@@ -54,13 +54,16 @@ func (program *Program) selectedPullRequestReactionActionTarget() (pullRequestRe
 		if !ok {
 			return pullRequestReactionActionTarget{}, false
 		}
-		if program.activeDetailTab == CommentsDetailTab {
+		switch program.activeDetailTab {
+		case CommentsDetailTab:
 			return program.selectedBrowserCommentReactionActionTarget(summary)
-		}
-		if program.activeDetailTab != DescriptionDetailTab {
+		case ChangesDetailTab:
+			return program.selectedBrowserChangesReactionActionTarget(summary)
+		case DescriptionDetailTab:
+			return program.selectedPullRequestReactionTargetFromSummary(summary)
+		default:
 			return pullRequestReactionActionTarget{}, false
 		}
-		return program.selectedPullRequestReactionTargetFromSummary(summary)
 	case FocusPullRequestsView:
 		if program.activeDetailTab != DescriptionDetailTab {
 			return pullRequestReactionActionTarget{}, false
@@ -146,6 +149,37 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
+	return pullRequestReactionActionTarget{
+		repository:     repository,
+		number:         summary.Number,
+		subjectID:      strings.TrimSpace(comment.ID),
+		reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
+		invalidateDiff: true,
+	}, true
+}
+
+func (program *Program) selectedBrowserChangesReactionActionTarget(summary githubdomain.PullRequest) (pullRequestReactionActionTarget, bool) {
+	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != ChangesDetailTab {
+		return pullRequestReactionActionTarget{}, false
+	}
+
+	result, ok := program.pullRequestDiffForSummary(summary)
+	if !ok || result.err != nil {
+		return pullRequestReactionActionTarget{}, false
+	}
+
+	detailDocument := program.currentDetailDocument(nil)
+	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
+	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailViewState)
+	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
+		return pullRequestReactionActionTarget{}, false
+	}
+
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || summary.Number <= 0 {
+		return pullRequestReactionActionTarget{}, false
+	}
+
 	return pullRequestReactionActionTarget{
 		repository:     repository,
 		number:         summary.Number,

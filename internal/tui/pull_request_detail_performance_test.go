@@ -233,7 +233,7 @@ func TestCurrentActionsPopupActions_GivenChangesTabDiffAlreadyRendered_WhenResol
 	firstActions := subject.currentActionsPopupActions()
 	secondActions := subject.currentActionsPopupActions()
 
-	for _, expectedTitle := range []string{pullRequestInlineCommentReplyEditorTitle, inlineCommentUpdateEditorTitle, inlineCommentDeleteActionTitle, "Mark inline comment as resolved"} {
+	for _, expectedTitle := range []string{reactionPickerTitle, pullRequestInlineCommentReplyEditorTitle, inlineCommentUpdateEditorTitle, inlineCommentDeleteActionTitle, "Mark inline comment as resolved"} {
 		if !given_hasActionTitle(firstActions, expectedTitle) {
 			t.Fatalf("expected actions to contain %q, actual %v", expectedTitle, given_actionTitles(firstActions))
 		}

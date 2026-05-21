@@ -84,6 +84,30 @@ func TestSelectedPullRequestReactionActionTarget_GivenCommentsTabCursorOnPullReq
 	}
 }
 
+func TestActionsPopup_GivenBrowserChangesCursorOnInlineComment_WhenOpening_ThenItShowsAddReaction(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline thread body": "Rendered inline thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	actualErr := subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), reactionPickerTitle) {
+		t.Fatalf("expected the popup to contain %q, actual %q", reactionPickerTitle, popupView.Buffer())
+	}
+}
+
 func TestSelectedPullRequestReactionActionTarget_GivenReviewModeCursorOnInlineComment_WhenResolving_ThenItUsesTheInlineCommentID(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
@@ -664,6 +688,56 @@ func TestAddReaction_GivenCommentsTabCommentReaction_WhenSubmittingOptimisticall
 	if strings.Contains(detailView.Buffer(), string(loadingSpinnerFrames[0])) {
 		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
 	}
+}
+
+func TestAddReaction_GivenBrowserChangesInlineCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingBackgroundRefreshes(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionDiffWithInlineThreadForReplyTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline thread body": "Rendered inline thread body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	actualErr := subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("add reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add reaction"))
+	actualErr = subject.refreshViews(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected two queued background refreshes, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager detail refresh before the queued runs, actual %v", loader.detailCalls)
+	}
+	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager diff refresh before the queued runs, actual %v", loader.diffCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected detail buffer to keep the rendered thread body, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to contain the optimistic reaction pill, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
+		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
+	}
+	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
 }
 
 func TestAddReaction_GivenReviewModeInlineCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
