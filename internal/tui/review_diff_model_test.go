@@ -439,16 +439,19 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreadReplies_WhenRendering_ThenI
 	}
 
 	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
-	_, middleReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "├─ Reply")
-	_, lastReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "╰─ Reply")
-	_, firstReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-two")
-	_, lastReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-three")
+	firstReplyMetadataIndex, firstReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-two")
+	lastReplyMetadataIndex, lastReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-three")
+	firstReplyTopBorderLine := string(actualDocument.lines[firstReplyMetadataIndex-1])
+	lastReplyTopBorderLine := string(actualDocument.lines[lastReplyMetadataIndex-1])
 
-	if middleReplyConnectorLine != "├─ Reply" {
-		t.Fatalf("expected the first reply connector line %q, actual %q", "├─ Reply", middleReplyConnectorLine)
+	if strings.Contains(string(actualDocument.text), "Reply") {
+		t.Fatalf("expected review diff replies to omit the standalone reply label, actual %q", string(actualDocument.text))
 	}
-	if lastReplyConnectorLine != "╰─ Reply" {
-		t.Fatalf("expected the last reply connector line %q, actual %q", "╰─ Reply", lastReplyConnectorLine)
+	if !strings.HasPrefix(firstReplyTopBorderLine, "├─╭") {
+		t.Fatalf("expected the first reply top border to merge with the connector, actual %q", firstReplyTopBorderLine)
+	}
+	if !strings.HasPrefix(lastReplyTopBorderLine, "╰─╭") {
+		t.Fatalf("expected the last reply top border to merge with the closing connector, actual %q", lastReplyTopBorderLine)
 	}
 	if !strings.HasPrefix(firstReplyMetadataLine, "│ │ ") {
 		t.Fatalf("expected the first reply metadata line to stay attached to the thread rail, actual %q", firstReplyMetadataLine)

@@ -910,6 +910,81 @@ func TestBrowserMode_GivenInlineThreadReplyCodeFence_WhenRenderingChanges_ThenIt
 	}
 }
 
+func TestBrowserMode_GivenInlineThreadReplies_WhenRenderingChanges_ThenItOmitsTheReplySpacerAndLabel(t *testing.T) {
+	diff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/internal/tui/render.go b/internal/tui/render.go\nindex 0000000..1111111 100644\n--- a/internal/tui/render.go\n+++ b/internal/tui/render.go\n@@ -42,1 +43,1 @@\n-context line\n+new line\n"}
+	diff.Threads = []githubcli.PullRequestReviewThread{{
+		ID:       "thread-1",
+		Path:     "internal/tui/render.go",
+		Line:     43,
+		DiffSide: "RIGHT",
+		Comments: []githubcli.PullRequestComment{
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+				Body:      "Root comment",
+				CreatedAt: "2026-04-18T10:00:00Z",
+				DiffHunk:  "@@ -42,1 +43,1 @@\n-context line\n+new line",
+			},
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "octocat"},
+				Body:      "First reply",
+				CreatedAt: "2026-04-18T10:30:00Z",
+			},
+			{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "maintainer"},
+				Body:      "Last reply",
+				CreatedAt: "2026-04-18T10:45:00Z",
+			},
+		},
+	}}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": diff},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
+		"Root comment": "Rendered root comment",
+		"First reply":  "Rendered first reply",
+		"Last reply":   "Rendered last reply",
+	}}
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Reply") {
+		t.Fatalf("expected changes-tab inline replies to omit the standalone reply label, actual %q", detailView.Buffer())
+	}
+	firstReplyMetadataLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "@octocat")
+	lastReplyMetadataLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "@maintainer")
+	if !strings.HasPrefix(detailView.BufferLines()[firstReplyMetadataLineIndex-1], "├─╭") {
+		t.Fatalf("expected the first reply to start on the connector line, actual %q", detailView.Buffer())
+	}
+	if !strings.HasPrefix(detailView.BufferLines()[lastReplyMetadataLineIndex-1], "╰─╭") {
+		t.Fatalf("expected the last reply to start on the closing connector line, actual %q", detailView.Buffer())
+	}
+}
+
 func TestBrowserMode_GivenInlineThreadConversations_WhenRendering_ThenItCollapsesResolvedThreadsKeepsSectionsTightAndShowsTheDiffPreview(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

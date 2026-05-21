@@ -603,16 +603,19 @@ func TestRenderPullRequestCommentsTab_GivenInlineThreadReplies_WhenFormatting_Th
 	}}
 
 	actualDocument := newDetailDocument(renderPullRequestCommentsTab(nil, inlineThreads, nil, renderer, 120), 120)
-	_, middleReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "├─ Reply")
-	_, lastReplyConnectorLine := given_detailDocumentLineContaining(t, actualDocument, "╰─ Reply")
-	_, firstReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@octocat")
-	_, secondReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@maintainer")
+	firstReplyMetadataIndex, firstReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@octocat")
+	secondReplyMetadataIndex, secondReplyMetadataLine := given_detailDocumentLineContaining(t, actualDocument, "@maintainer")
+	firstReplyTopBorderLine := string(actualDocument.lines[firstReplyMetadataIndex-1])
+	secondReplyTopBorderLine := string(actualDocument.lines[secondReplyMetadataIndex-1])
 
-	if middleReplyConnectorLine != "├─ Reply" {
-		t.Fatalf("expected the first reply connector line %q, actual %q", "├─ Reply", middleReplyConnectorLine)
+	if strings.Contains(string(actualDocument.text), "Reply") {
+		t.Fatalf("expected inline thread replies to omit the standalone reply label, actual %q", string(actualDocument.text))
 	}
-	if lastReplyConnectorLine != "╰─ Reply" {
-		t.Fatalf("expected the last reply connector line %q, actual %q", "╰─ Reply", lastReplyConnectorLine)
+	if !strings.HasPrefix(firstReplyTopBorderLine, "├─╭") {
+		t.Fatalf("expected the first reply top border to merge with the connector, actual %q", firstReplyTopBorderLine)
+	}
+	if !strings.HasPrefix(secondReplyTopBorderLine, "╰─╭") {
+		t.Fatalf("expected the last reply top border to merge with the closing connector, actual %q", secondReplyTopBorderLine)
 	}
 	if !strings.HasPrefix(firstReplyMetadataLine, "│ │ ") {
 		t.Fatalf("expected the first reply metadata line to stay attached to the thread rail, actual %q", firstReplyMetadataLine)

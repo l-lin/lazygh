@@ -10,9 +10,8 @@ import (
 
 const (
 	inlineThreadConversationMinimumDiffLines = 5
-	inlineThreadReplyLabel                   = "Reply"
-	inlineThreadReplyMiddlePrefix            = "├─ "
-	inlineThreadReplyLastPrefix              = "╰─ "
+	inlineThreadReplyMiddlePrefix            = "├─"
+	inlineThreadReplyLastPrefix              = "╰─"
 	inlineThreadReplyContinuationPrefix      = "│ "
 	inlineThreadReplyIndentPrefix            = "  "
 	inlineThreadReplyBoxPrefixWidth          = 2
@@ -159,12 +158,17 @@ func renderInlineThreadCommentBoxForViewer(comment githubdomain.PullRequestComme
 }
 
 func renderInlineThreadReplyBlock(renderedCommentBox string, hasFollowingReplies bool) string {
-	lines := []string{styleCommentBorder("│"), styleCommentBorder(inlineThreadReplyLabelPrefix(hasFollowingReplies) + inlineThreadReplyLabel)}
-	lines = append(lines, prefixInlineThreadReplyBoxLines(strings.Split(renderedCommentBox, "\n"), hasFollowingReplies)...)
-	return strings.Join(lines, "\n")
+	lines := strings.Split(renderedCommentBox, "\n")
+	if len(lines) == 0 {
+		return ""
+	}
+
+	prefixedLines := []string{styleCommentBorder(inlineThreadReplyTopPrefix(hasFollowingReplies)) + lines[0]}
+	prefixedLines = append(prefixedLines, prefixInlineThreadReplyBoxLines(lines[1:], hasFollowingReplies)...)
+	return strings.Join(prefixedLines, "\n")
 }
 
-func inlineThreadReplyLabelPrefix(hasFollowingReplies bool) string {
+func inlineThreadReplyTopPrefix(hasFollowingReplies bool) string {
 	if hasFollowingReplies {
 		return inlineThreadReplyMiddlePrefix
 	}
