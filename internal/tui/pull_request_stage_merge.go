@@ -49,7 +49,7 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 		return append(actions, program.closePullRequestAction())
 	case "OPEN":
 		actions := []actionsPopupAction{program.convertPullRequestToDraftAction()}
-		if program.currentPullRequestHasOngoingBuilds() {
+		if program.currentPullRequestShouldOfferAutoMerge() {
 			actions = append(actions, program.currentPullRequestAutoMergeAction())
 		} else {
 			actions = append(actions, program.squashMergePullRequestAction())
@@ -298,15 +298,62 @@ func (program *Program) currentPullRequestDraftState() bool {
 	return summary.IsDraft
 }
 
-func (program *Program) currentPullRequestHasOngoingBuilds() bool {
-	summary, ok := program.currentPullRequestSummary()
-	if !ok {
+func (program *Program) currentPullRequestShouldOfferAutoMerge() bool {
+	if program.currentPullRequestMergeabilityStatus() == pullRequestOverviewStatusFailure {
 		return false
 	}
-	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil && len(result.detail.StatusCheckRollup) > 0 {
-		return pullRequestHasOngoingBuilds(result.detail.StatusCheckRollup)
+	return program.currentPullRequestHasUnmetMergeRequirements()
+}
+
+func (program *Program) currentPullRequestHasUnmetMergeRequirements() bool {
+	for _, status := range []pullRequestOverviewStatus{
+		program.currentPullRequestReviewDecisionStatus(),
+		program.currentPullRequestStatusCheckStatus(),
+		program.currentPullRequestMergeabilityStatus(),
+	} {
+		switch status {
+		case pullRequestOverviewStatusPending, pullRequestOverviewStatusFailure:
+			return true
+		}
 	}
-	return pullRequestStatusCheckRollupStateIsOngoing(summary.StatusCheckRollupState)
+	return false
+}
+
+func (program *Program) currentPullRequestHasOngoingBuilds() bool {
+	return program.currentPullRequestStatusCheckStatus() == pullRequestOverviewStatusPending
+}
+
+func (program *Program) currentPullRequestReviewDecisionStatus() pullRequestOverviewStatus {
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return pullRequestOverviewStatusMuted
+	}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+		return pullRequestOverviewStatusForReviewDecision(firstNonEmpty(result.detail.ReviewDecision, summary.ReviewDecision))
+	}
+	return pullRequestOverviewStatusForReviewDecision(summary.ReviewDecision)
+}
+
+func (program *Program) currentPullRequestStatusCheckStatus() pullRequestOverviewStatus {
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return pullRequestOverviewStatusMuted
+	}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil && len(result.detail.StatusCheckRollup) > 0 {
+		return pullRequestOverviewStatusForChecks(result.detail.StatusCheckRollup)
+	}
+	return pullRequestOverviewStatusForStatusCheckRollupState(summary.StatusCheckRollupState)
+}
+
+func (program *Program) currentPullRequestMergeabilityStatus() pullRequestOverviewStatus {
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return pullRequestOverviewStatusMuted
+	}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+		return pullRequestOverviewStatusForMergeability(firstNonEmpty(result.detail.Mergeable, summary.Mergeable), firstNonEmpty(result.detail.MergeStateStatus, summary.MergeStateStatus))
+	}
+	return pullRequestOverviewStatusForMergeability(summary.Mergeable, summary.MergeStateStatus)
 }
 
 func (program *Program) currentPullRequestAutoMergeEnabled() bool {

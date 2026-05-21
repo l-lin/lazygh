@@ -115,6 +115,65 @@ func TestActionsPopup_GivenAnOpenPullRequestDescriptionDetailWithAnOngoingBuildA
 	}
 }
 
+func TestActionsPopup_GivenAnOpenPullRequestDescriptionDetailWaitingForRequiredReview_WhenOpening_ThenItShowsEnableAutoMergeAndHidesSquashMerge(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", false)
+	summary.ReviewDecision = "REVIEW_REQUIRED"
+	summary.Mergeable = "MERGEABLE"
+	summary.MergeStateStatus = "CLEAN"
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), enablePullRequestAutoMergeActionTitle) {
+		t.Fatalf("expected the popup to contain %q, actual %q", enablePullRequestAutoMergeActionTitle, popupView.Buffer())
+	}
+	for _, unexpected := range []string{disablePullRequestAutoMergeActionTitle, squashMergePullRequestActionTitle} {
+		if strings.Contains(popupView.Buffer(), unexpected) {
+			t.Fatalf("expected the popup to hide %q, actual %q", unexpected, popupView.Buffer())
+		}
+	}
+}
+
+func TestActionsPopup_GivenAnOpenPullRequestDescriptionDetailWaitingForRequiredReviewWithAutoMergeEnabled_WhenOpening_ThenItShowsDisableAutoMergeAndHidesSquashMerge(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", false)
+	summary.ReviewDecision = "REVIEW_REQUIRED"
+	summary.Mergeable = "MERGEABLE"
+	summary.MergeStateStatus = "CLEAN"
+	summary.AutoMergeRequest = &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"}
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewActionsPopupName)
+	then_noError(t, actualErr)
+	if !strings.Contains(popupView.Buffer(), disablePullRequestAutoMergeActionTitle) {
+		t.Fatalf("expected the popup to contain %q, actual %q", disablePullRequestAutoMergeActionTitle, popupView.Buffer())
+	}
+	for _, unexpected := range []string{enablePullRequestAutoMergeActionTitle, squashMergePullRequestActionTitle} {
+		if strings.Contains(popupView.Buffer(), unexpected) {
+			t.Fatalf("expected the popup to hide %q, actual %q", unexpected, popupView.Buffer())
+		}
+	}
+}
+
 func TestActionsPopup_GivenALoadedDetailWithoutAutoMerge_WhenOpening_ThenItUsesTheLoadedStateInsteadOfTheStaleSummary(t *testing.T) {
 	summary := given_pullRequestLifecycleSummary("OPEN", false)
 	summary.StatusCheckRollupState = "PENDING"
