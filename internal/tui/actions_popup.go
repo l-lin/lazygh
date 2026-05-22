@@ -21,11 +21,6 @@ func (action actionsPopupAction) withGroup(group string) actionsPopupAction {
 	return action
 }
 
-func (action actionsPopupAction) withKeywords(keywords ...string) actionsPopupAction {
-	action.keywords = append([]string(nil), keywords...)
-	return action
-}
-
 func (action actionsPopupAction) label() string {
 	if strings.TrimSpace(action.icon) == "" {
 		return action.title
