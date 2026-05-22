@@ -171,6 +171,13 @@ func renderPullRequestAssigneesLine(assignees []githubdomain.PullRequestAuthor) 
 	return stylePullRequestTitleText("Assigned to ") + strings.Join(entries, " ")
 }
 
+func renderPullRequestAutoMergeLine(detail githubdomain.PullRequestDetail) string {
+	if detail.AutoMergeRequest == nil {
+		return ""
+	}
+	return renderRoundedPill("Auto-merge enabled", theme.PendingHex, theme.PendingBackgroundHex)
+}
+
 func renderPullRequestActorBadge(login string) string {
 	trimmedLogin := strings.TrimSpace(login)
 	if trimmedLogin == "" || trimmedLogin == "-" {

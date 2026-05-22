@@ -676,6 +676,11 @@ func TestLayout_GivenAnEnableAutoMergeMutation_WhenRendering_ThenItTogglesTheOpt
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
+		t.Fatalf("expected the detail buffer to omit %q before enabling auto-merge, actual %q", "Auto-merge enabled", detailView.Buffer())
+	}
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(enablePullRequestAutoMergeActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), enablePullRequestAutoMergeActionTitle))
@@ -695,6 +700,11 @@ func TestLayout_GivenAnEnableAutoMergeMutation_WhenRendering_ThenItTogglesTheOpt
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_statusLineContains(t, gui, pullRequestAutoMergeEnabledSuccessMessage)
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
+		t.Fatalf("expected the detail buffer to contain %q after enabling auto-merge, actual %q", "Auto-merge enabled", detailView.Buffer())
+	}
 
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
 	if !ok || selectedSummary.AutoMergeRequest == nil {
@@ -732,6 +742,11 @@ func TestLayout_GivenADisableAutoMergeMutation_WhenRendering_ThenItClearsTheOpti
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
+		t.Fatalf("expected the detail buffer to contain %q before disabling auto-merge, actual %q", "Auto-merge enabled", detailView.Buffer())
+	}
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(disablePullRequestAutoMergeActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), disablePullRequestAutoMergeActionTitle))
@@ -751,6 +766,11 @@ func TestLayout_GivenADisableAutoMergeMutation_WhenRendering_ThenItClearsTheOpti
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_statusLineContains(t, gui, pullRequestAutoMergeDisabledSuccessMessage)
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
+		t.Fatalf("expected the detail buffer to omit %q after disabling auto-merge, actual %q", "Auto-merge enabled", detailView.Buffer())
+	}
 
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
 	if !ok || selectedSummary.AutoMergeRequest != nil {

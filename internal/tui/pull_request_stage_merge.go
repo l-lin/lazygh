@@ -637,9 +637,12 @@ func (program *Program) applyVisiblePullRequestAutoMergeMutation(summary githubd
 	if result, ok := program.pullRequestDetailCache[key]; ok && result.err == nil {
 		result.detail.AutoMergeRequest = clonePullRequestAutoMergeRequest(autoMergeRequest)
 		result.sourceUpdatedAt = ""
+		result.needsRefresh = true
 		program.pullRequestDetailCache[key] = result
 		delete(program.pullRequestDetailLoadInFlight, key)
 	}
+	program.invalidatePullRequestDetailDocumentCache()
+	program.invalidatePersistentPullRequest(pullRequestRepositoryName(summary.Repository), summary.Number)
 }
 
 func (program *Program) applyVisiblePullRequestBranchUpdate(summary githubdomain.PullRequest) {

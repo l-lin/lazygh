@@ -40,6 +40,7 @@ func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_T
 		BaseRefName:       "main",
 		HeadRefName:       "feature/overview",
 		Assignees:         []githubcli.PullRequestAuthor{{Login: "assignee-one"}},
+		AutoMergeRequest:  &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"},
 		ReviewRequests:    []githubcli.PullRequestReviewRequest{{RequestedReviewer: githubcli.PullRequestRequestedReviewer{TypeName: "User", Login: "reviewer-requested"}}},
 		Reviews:           []githubcli.PullRequestReview{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-approved"}, State: "APPROVED", SubmittedAt: "2026-04-21T10:00:00Z"}},
 		StatusCheckRollup: []githubcli.PullRequestStatusCheck{{Name: "lint", Status: "COMPLETED", Conclusion: "SUCCESS"}},
@@ -48,7 +49,7 @@ func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_T
 	actualDocument := newDetailDocument(renderPullRequestBrowserHeader(summary, detail), 120)
 	actualText := string(actualDocument.text)
 
-	for _, expected := range []string{"acme/widgets#42 Overview PR", "Created by", "@octocat", "Assigned to", "@assignee-one", "main ← feature/overview", detailStatusIcon + " OPEN"} {
+	for _, expected := range []string{"acme/widgets#42 Overview PR", "Created by", "@octocat", "Assigned to", "@assignee-one", "main ← feature/overview", detailStatusIcon + " OPEN", "Auto-merge enabled"} {
 		if !strings.Contains(actualText, expected) {
 			t.Fatalf("expected browser header to contain %q, actual %q", expected, actualText)
 		}
