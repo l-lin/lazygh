@@ -240,7 +240,7 @@ func TestRenderPullRequestCommentsTab_GivenComments_WhenFormatting_ThenItKeepsUs
 	}
 }
 
-func TestRenderPullRequestCommitsTab_GivenCommits_WhenFormatting_ThenItShowsTheShortShaHeadlineAuthorsAndTimestamps(t *testing.T) {
+func TestRenderPullRequestCommitsTab_GivenCommits_WhenFormatting_ThenItShowsATimelineWithTheShortShaHeadlineAuthorsAndTimestamps(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{outputs: map[string]string{"this commit adds gh pr back": "Rendered commit body"}}
 	commits := []githubcli.PullRequestCommit{{
 		OID:             "e9a3253762e768badaa1d4a5b3d267416d1e42f4",
@@ -255,15 +255,81 @@ func TestRenderPullRequestCommitsTab_GivenCommits_WhenFormatting_ThenItShowsTheS
 		}},
 	}}
 
-	actual := renderPullRequestCommitsTab(commits, renderer, 72)
+	actualDocument := newDetailDocument(renderPullRequestCommitsTab(commits, renderer, 72), 72)
+	headerLineIndex, headerLine := given_detailDocumentLineContaining(t, actualDocument, "reintroduce interactive gh pr")
+	authorsLineIndex, authorsLine := given_detailDocumentLineContaining(t, actualDocument, "Authors: nate smith")
+	timestampsLineIndex, timestampsLine := given_detailDocumentLineContaining(t, actualDocument, "Authored 2019-10-04 15:23 UTC")
+	bodyLineIndex, bodyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered commit body")
+	expectedWidth := effectiveMarkdownWidth(72) - 2
 
-	for _, expected := range []string{"e9a3253", "reintroduce interactive gh pr", "Authors: nate smith", "Authored 2019-10-04 15:23 UTC", "Committed 2019-10-04 15:57 UTC", "Rendered commit body"} {
-		if !strings.Contains(actual, expected) {
-			t.Fatalf("expected commits tab to contain %q, actual %q", expected, actual)
-		}
+	if headerLine != "● e9a3253 reintroduce interactive gh pr" {
+		t.Fatalf("expected timeline header %q, actual %q", "● e9a3253 reintroduce interactive gh pr", headerLine)
 	}
-	if renderer.lastWidth != commentBoxInnerWidth(72) {
-		t.Fatalf("expected commit render width %d, actual %d", commentBoxInnerWidth(72), renderer.lastWidth)
+	if authorsLine != "│ Authors: nate smith" {
+		t.Fatalf("expected authors line %q, actual %q", "│ Authors: nate smith", authorsLine)
+	}
+	if timestampsLine != "│ Authored 2019-10-04 15:23 UTC  Committed 2019-10-04 15:57 UTC" {
+		t.Fatalf("expected timestamps line %q, actual %q", "│ Authored 2019-10-04 15:23 UTC  Committed 2019-10-04 15:57 UTC", timestampsLine)
+	}
+	if bodyLine != "│ Rendered commit body" {
+		t.Fatalf("expected body line %q, actual %q", "│ Rendered commit body", bodyLine)
+	}
+	if authorsLineIndex != headerLineIndex+1 || timestampsLineIndex != authorsLineIndex+1 {
+		t.Fatalf("expected the timeline metadata lines to follow the header, actual %q", actualDocument.text)
+	}
+	if string(actualDocument.lines[bodyLineIndex-1]) != "│" {
+		t.Fatalf("expected a vertical rail line before the commit body, actual %q", string(actualDocument.lines[bodyLineIndex-1]))
+	}
+	if strings.Contains(string(actualDocument.text), "╭") || strings.Contains(string(actualDocument.text), "╰") {
+		t.Fatalf("expected the commit timeline to avoid rounded boxes, actual %q", actualDocument.text)
+	}
+	if renderer.lastWidth != expectedWidth {
+		t.Fatalf("expected commit render width %d, actual %d", expectedWidth, renderer.lastWidth)
+	}
+}
+
+func TestRenderPullRequestCommitsTab_GivenMultipleCommits_WhenFormatting_ThenItOrdersMoreRecentCommitsFirstOnATimeline(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
+		"Older body": "Rendered older body",
+		"Newer body": "Rendered newer body",
+	}}
+	commits := []githubcli.PullRequestCommit{
+		{
+			OID:             "1111111aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			MessageHeadline: "older commit",
+			MessageBody:     "Older body",
+			CommittedDate:   "2026-05-19T10:00:00Z",
+			Authors:         []githubcli.PullRequestCommitAuthor{{Name: "Older Dev"}},
+		},
+		{
+			OID:             "2222222bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			MessageHeadline: "newer commit",
+			MessageBody:     "Newer body",
+			CommittedDate:   "2026-05-20T10:00:00Z",
+			Authors:         []githubcli.PullRequestCommitAuthor{{Name: "Newer Dev"}},
+		},
+	}
+
+	actualDocument := newDetailDocument(renderPullRequestCommitsTab(commits, renderer, 72), 72)
+	newerHeaderLineIndex, newerHeaderLine := given_detailDocumentLineContaining(t, actualDocument, "newer commit")
+	olderHeaderLineIndex, olderHeaderLine := given_detailDocumentLineContaining(t, actualDocument, "older commit")
+	_, newerBodyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered newer body")
+	_, olderBodyLine := given_detailDocumentLineContaining(t, actualDocument, "Rendered older body")
+
+	if newerHeaderLine != "● 2222222 newer commit" {
+		t.Fatalf("expected newer header line %q, actual %q", "● 2222222 newer commit", newerHeaderLine)
+	}
+	if olderHeaderLine != "● 1111111 older commit" {
+		t.Fatalf("expected older header line %q, actual %q", "● 1111111 older commit", olderHeaderLine)
+	}
+	if newerHeaderLineIndex >= olderHeaderLineIndex {
+		t.Fatalf("expected the newer commit to render before the older commit, actual %q", actualDocument.text)
+	}
+	if string(actualDocument.lines[olderHeaderLineIndex-1]) != "│" {
+		t.Fatalf("expected the timeline to keep the vertical rail between commits, actual %q", string(actualDocument.lines[olderHeaderLineIndex-1]))
+	}
+	if newerBodyLine != "│ Rendered newer body" || olderBodyLine != "│ Rendered older body" {
+		t.Fatalf("expected the commit bodies to stay on the timeline rail, actual %q", actualDocument.text)
 	}
 }
 

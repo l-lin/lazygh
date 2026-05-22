@@ -203,24 +203,30 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 					Body:      "Comment body",
 					CreatedAt: "2026-04-18T10:00:00Z",
 				}},
-				Commits: []githubcli.PullRequestCommit{{
-					OID:             "e9a3253762e768badaa1d4a5b3d267416d1e42f4",
-					MessageHeadline: "reintroduce interactive gh pr",
-					MessageBody:     "this commit adds gh pr back",
-					AuthoredDate:    "2019-10-04T15:23:39Z",
-					CommittedDate:   "2019-10-04T15:57:48Z",
-					Authors: []githubcli.PullRequestCommitAuthor{{
-						Name:  "nate smith",
-						Login: "vilmibm",
-					}},
-				}},
+				Commits: []githubcli.PullRequestCommit{
+					{
+						OID:             "1111111aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+						MessageHeadline: "older commit",
+						MessageBody:     "Older body",
+						CommittedDate:   "2026-05-19T10:00:00Z",
+						Authors:         []githubcli.PullRequestCommitAuthor{{Name: "Older Dev"}},
+					},
+					{
+						OID:             "2222222bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+						MessageHeadline: "newer commit",
+						MessageBody:     "Newer body",
+						CommittedDate:   "2026-05-20T10:00:00Z",
+						Authors:         []githubcli.PullRequestCommitAuthor{{Name: "Newer Dev"}},
+					},
+				},
 			},
 		},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
-		"Body 42":                     "Rendered body 42",
-		"this commit adds gh pr back": "Rendered commit body",
+		"Body 42":    "Rendered body 42",
+		"Older body": "Rendered older body",
+		"Newer body": "Rendered newer body",
 	}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -231,7 +237,7 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (1)", ChangesDetailTab.Label()}, 0)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label()}, 0)
 
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
@@ -245,10 +251,21 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 	if subject.activeDetailTab != CommitsDetailTab {
 		t.Fatalf("expected active detail tab %v, actual %v", CommitsDetailTab, subject.activeDetailTab)
 	}
-	for _, expected := range []string{"e9a3253", "reintroduce interactive gh pr", "Authors: nate smith", "Authored 2019-10-04 15:23 UTC", "Committed 2019-10-04 15:57 UTC", "Rendered commit body"} {
+	for _, expected := range []string{"● 2222222 newer commit", "│ Authors: Newer Dev", "│ Rendered newer body", "● 1111111 older commit", "│ Authors: Older Dev", "│ Rendered older body"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the commits tab to contain %q, actual %q", expected, detailView.Buffer())
 		}
+	}
+	if strings.Contains(detailView.Buffer(), "╭") || strings.Contains(detailView.Buffer(), "╰") {
+		t.Fatalf("expected the commits tab to avoid rounded boxes, actual %q", detailView.Buffer())
+	}
+	newerHeaderLineIndex := given_viewLineIndexContaining(t, detailView, "● 2222222 newer commit")
+	olderHeaderLineIndex := given_viewLineIndexContaining(t, detailView, "● 1111111 older commit")
+	if newerHeaderLineIndex >= olderHeaderLineIndex {
+		t.Fatalf("expected the newer commit to render before the older commit, actual %q", detailView.Buffer())
+	}
+	if detailView.BufferLines()[olderHeaderLineIndex-1] != "│" {
+		t.Fatalf("expected the commits timeline to keep the vertical rail between commits, actual %q", detailView.BufferLines()[olderHeaderLineIndex-1])
 	}
 
 	actualErr = subject.previousDetailTab(gui, nil)

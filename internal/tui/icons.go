@@ -42,6 +42,7 @@ const (
 	iconStatusFailure      = ""
 	iconStatusPending      = "󰦖"
 	iconStatusMuted        = "•"
+	iconTimelineNode       = "●"
 	iconChevronExpanded    = ""
 	iconChevronCollapsed   = ""
 	iconWarning            = "󰅚"
@@ -95,6 +96,7 @@ const (
 	detailChecksIcon                = iconChecks
 	detailApprovalIcon              = iconApproval
 	detailInlineCommentLocationIcon = iconFileLocation
+	detailCommitTimelineDot         = iconTimelineNode
 
 	reviewDiffHeaderPathIcon    = iconFileLocation
 	reviewDiffDirectoryIcon     = iconDirectory

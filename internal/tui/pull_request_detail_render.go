@@ -2,9 +2,12 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const shortPullRequestCommitOIDLength = 7
@@ -84,7 +87,7 @@ func renderPullRequestCommentsTab(comments any, inlineThreads any, inlineComment
 }
 
 func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width int) string {
-	commitValues := toDomainPullRequestCommits(commits)
+	commitValues := sortedPullRequestCommitsDescending(toDomainPullRequestCommits(commits))
 	if len(commitValues) == 0 {
 		return "No commits yet."
 	}
@@ -93,7 +96,7 @@ func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width i
 	for _, commit := range commitValues {
 		sections = append(sections, renderPullRequestCommitSection(commit, renderer, width))
 	}
-	return strings.Join(sections, "\n\n")
+	return strings.Join(sections, "\n"+renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), "")+"\n")
 }
 
 func renderPullRequestChangesTabError(err error) string {
@@ -105,18 +108,18 @@ func renderPullRequestChangesTabError(err error) string {
 }
 
 func renderPullRequestCommitSection(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int) string {
-	sectionParts := []string{renderPullRequestCommitHeader(commit)}
-	metadataLines := filterEmptyStrings([]string{
+	sectionLines := []string{renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineDotPrefix(), renderPullRequestCommitHeader(commit))}
+	for _, metadataLine := range filterEmptyStrings([]string{
 		renderPullRequestCommitAuthorsLine(commit.Authors),
 		renderPullRequestCommitTimestampsLine(commit),
-	})
-	if len(metadataLines) > 0 {
-		sectionParts = append(sectionParts, strings.Join(metadataLines, "\n"))
+	}) {
+		sectionLines = append(sectionLines, renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), metadataLine))
 	}
-	if body := strings.TrimSpace(renderMarkdownWithFallback(prepareMarkdownForImageRendering(commit.MessageBody, commit.MessageBodyHTML), renderer, commentBoxInnerWidth(width), "")); body != "" {
-		sectionParts = append(sectionParts, body)
+	if body := strings.TrimSpace(renderMarkdownWithFallback(prepareMarkdownForImageRendering(commit.MessageBody, commit.MessageBodyHTML), renderer, pullRequestCommitTimelineBodyWidth(width), "")); body != "" {
+		sectionLines = append(sectionLines, renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), ""))
+		sectionLines = append(sectionLines, renderPullRequestCommitTimelineText(renderPullRequestCommitTimelineRailPrefix(), body))
 	}
-	return renderRoundedCommentBox(strings.Join(sectionParts, "\n\n"), width)
+	return strings.Join(sectionLines, "\n")
 }
 
 func renderPullRequestCommitHeader(commit githubdomain.PullRequestCommit) string {
@@ -180,6 +183,95 @@ func pullRequestCommitAuthorLabel(author githubdomain.PullRequestCommitAuthor) s
 		return login
 	}
 	return strings.TrimSpace(author.Email)
+}
+
+func sortedPullRequestCommitsDescending(commits []githubdomain.PullRequestCommit) []githubdomain.PullRequestCommit {
+	if len(commits) == 0 {
+		return nil
+	}
+
+	type orderedPullRequestCommit struct {
+		commit      githubdomain.PullRequestCommit
+		index       int
+		sortTime    time.Time
+		hasSortTime bool
+	}
+
+	orderedCommits := make([]orderedPullRequestCommit, 0, len(commits))
+	for index, commit := range commits {
+		sortTime, hasSortTime := pullRequestCommitSortTime(commit)
+		orderedCommits = append(orderedCommits, orderedPullRequestCommit{commit: commit, index: index, sortTime: sortTime, hasSortTime: hasSortTime})
+	}
+
+	sort.SliceStable(orderedCommits, func(i int, j int) bool {
+		left := orderedCommits[i]
+		right := orderedCommits[j]
+		switch {
+		case left.hasSortTime && right.hasSortTime:
+			if left.sortTime.After(right.sortTime) {
+				return true
+			}
+			if left.sortTime.Before(right.sortTime) {
+				return false
+			}
+		case left.hasSortTime != right.hasSortTime:
+			return left.hasSortTime
+		}
+		return left.index > right.index
+	})
+
+	sortedCommits := make([]githubdomain.PullRequestCommit, 0, len(orderedCommits))
+	for _, orderedCommit := range orderedCommits {
+		sortedCommits = append(sortedCommits, orderedCommit.commit)
+	}
+	return sortedCommits
+}
+
+func pullRequestCommitSortTime(commit githubdomain.PullRequestCommit) (time.Time, bool) {
+	if committedAt, ok := parsePullRequestCommitTimestamp(commit.CommittedDate); ok {
+		return committedAt, true
+	}
+	return parsePullRequestCommitTimestamp(commit.AuthoredDate)
+}
+
+func parsePullRequestCommitTimestamp(value string) (time.Time, bool) {
+	parsedTime, err := time.Parse(time.RFC3339, strings.TrimSpace(value))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return parsedTime, true
+}
+
+func renderPullRequestCommitTimelineDotPrefix() string {
+	return styleText(detailCommitTimelineDot, foregroundColorEscape(theme.PullRequestReferenceHex))
+}
+
+func renderPullRequestCommitTimelineRailPrefix() string {
+	return styleCommentBorder("│")
+}
+
+func renderPullRequestCommitTimelineLine(prefix string, text string) string {
+	if strings.TrimSpace(text) == "" {
+		return prefix
+	}
+	return prefix + " " + strings.TrimRight(text, "\n")
+}
+
+func renderPullRequestCommitTimelineText(prefix string, text string) string {
+	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+	renderedLines := make([]string, 0, len(lines))
+	for _, line := range lines {
+		renderedLines = append(renderedLines, renderPullRequestCommitTimelineLine(prefix, line))
+	}
+	return strings.Join(renderedLines, "\n")
+}
+
+func pullRequestCommitTimelineBodyWidth(width int) int {
+	bodyWidth := effectiveMarkdownWidth(width) - 2
+	if bodyWidth < 1 {
+		return 1
+	}
+	return bodyWidth
 }
 
 func shortPullRequestCommitOID(oid string) string {
