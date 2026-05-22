@@ -12,6 +12,7 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 		"global": {
 			"next_side_view":     {"tab", "l"},
 			"previous_side_view": {"shift+tab", "h"},
+			"refresh":            {"alt+r"},
 		},
 		"cursor": {
 			"search_word_under_cursor_forward":  {"*"},

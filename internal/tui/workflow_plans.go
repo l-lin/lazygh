@@ -69,6 +69,24 @@ func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []wor
 	})}
 }
 
+func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []workflowCommand {
+	if store == nil || program == nil || gui == nil || program.reviewModeActive() {
+		return nil
+	}
+
+	program.hydrateNotificationsFromCache()
+	if !program.hasNotificationQueries() {
+		return nil
+	}
+
+	store.notificationsLoadStarted = true
+	store.notificationsLoading = true
+	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
+	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
+		program.loadNotifications(gui)
+	})}
+}
+
 func (store *detailStore) planSelectedPullRequestDetailLoad(program *Program, gui *gocui.Gui) []workflowCommand {
 	if store == nil || program == nil || gui == nil {
 		return nil

@@ -30,6 +30,15 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 	_ = program.refreshViews(gui)
 }
 
+func (program *Program) reloadNotifications(gui *gocui.Gui) {
+	if gui == nil {
+		return
+	}
+
+	program.executeWorkflowCommands(gui, program.notificationStore.planReload(program, gui))
+	_ = program.refreshViews(gui)
+}
+
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 	user, err := program.sessionQueries.GetConnectedUser()
 

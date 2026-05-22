@@ -13,6 +13,7 @@ full_page_up = ["ctrl+b", "pageup"]
 grow_focused_pane = "+"
 shrink_focused_pane = "-"
 open_actions_popup = "a"
+refresh = "alt+r"
 previous_tab = "["
 next_tab = "]"
 close = ["esc", "q"]

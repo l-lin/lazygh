@@ -97,6 +97,7 @@ type Program struct {
 	manualPullRequestListRefreshErrors      map[PullRequestTab]bool
 	manualPullRequestDetailRefreshErrors    map[string]bool
 	manualPullRequestDiffRefreshErrors      map[string]bool
+	manualNotificationRefreshError          bool
 }
 
 func NewProgram() *Program {

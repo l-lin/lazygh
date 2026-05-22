@@ -71,6 +71,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 				{Key: program.inlineConversationToggleHelpKeys(), Description: "Expand/collapse conversation"},
 				{Key: program.bulkFoldHelpKeys(), Description: "Close/open all folds"},
 				{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"},
+				program.refreshHelpEntry("Refresh PR"),
 				{Key: program.helpKeysOrFallback("alt+y", keybindingActionID{scope: keymapScopePullRequests, action: "copy_pull_request_url"}), Description: "Copy PR URL"},
 				{Key: program.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
 				{Key: program.helpKeysOrFallback("<c-u>", keybindingActionID{scope: keymapScopeMain, action: "page_up"}), Description: "Half-page up + recenter"},
@@ -146,6 +147,9 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: "<esc>/q", Description: "Exit visual / return"},
 		}
 		entries = append(entries, helpEntry{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"})
+		if actionContext.IsPullRequestContext() {
+			entries = append(entries, program.refreshHelpEntry("Refresh PR"))
+		}
 		if program.shouldShowPullRequestDetailTabs() {
 			entries = append(entries, program.detailPullRequestCommentHelpEntry())
 			if program.inlineCommentReplyShortcutAvailable() {
@@ -177,6 +181,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			program.pullRequestYankHelpEntry(keymapScopePullRequests),
 			program.pullRequestCommentHelpEntry(keymapScopePullRequests),
 			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},
+			program.refreshHelpEntry("Refresh PR list"),
 			{Key: program.helpKeysOrFallback("[", keybindingActionID{scope: keymapScopeGlobal, action: "previous_tab"}), Description: "Previous tab"},
 			{Key: program.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeGlobal, action: "next_tab"}), Description: "Next tab"},
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open detail"},
@@ -197,6 +202,7 @@ func (program *Program) localHelpEntries() []helpEntry {
 			{Key: program.helpKeysOrFallback("r", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_read"}), Description: "Mark notification as read"},
 			{Key: program.helpKeysOrFallback("d", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_done"}), Description: "Mark notification as done"},
 			{Key: program.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeNotifications, action: "open_actions_popup"}), Description: "Actions"},
+			program.refreshHelpEntry("Refresh notifications"),
 			{Key: program.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopeNotifications, action: "open_detail"}), Description: "Open detail"},
 		}
 	default:
@@ -463,6 +469,10 @@ func (program *Program) repeatCharacterMotionHelpEntry() helpEntry {
 
 func (program *Program) searchWordUnderCursorHelpEntry() helpEntry {
 	return helpEntry{Key: program.helpKeysOrFallback("*/#", keybindingActionID{scope: keymapScopeCursor, action: "search_word_under_cursor_forward"}, keybindingActionID{scope: keymapScopeCursor, action: "search_word_under_cursor_backward"}), Description: "Search word under cursor"}
+}
+
+func (program *Program) refreshHelpEntry(description string) helpEntry {
+	return helpEntry{Key: program.helpKeysOrFallback("alt+r", keybindingActionID{scope: keymapScopeMain, action: "refresh"}), Description: description}
 }
 
 func (program *Program) inlineConversationToggleHelpKeys() string {
