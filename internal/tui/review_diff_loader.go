@@ -46,9 +46,8 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 			program.invalidateReviewDiffRenderCache()
 			program.invalidatePullRequestDetailDocumentCache()
 			program.clampReviewSessionSelection()
-			if manualRefresh && err != nil {
-				program.feedbackMessage = ""
-				program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			if manualRefresh {
+				program.completeManualRefreshOperation(gui, err)
 			}
 			return program.refreshViews(gui)
 		}
@@ -60,8 +59,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 		program.pullRequestDiffCache[key] = cachedResult
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
-			program.feedbackMessage = ""
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			program.completeManualRefreshOperation(gui, err)
 		}
 		return program.refreshViews(gui)
 	})

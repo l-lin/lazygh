@@ -94,10 +94,11 @@ type Program struct {
 	after                                   func(time.Duration) <-chan time.Time
 	yankHighlightDuration                   time.Duration
 	transientErrorPopupDuration             time.Duration
-	manualPullRequestListRefreshErrors      map[PullRequestTab]bool
-	manualPullRequestDetailRefreshErrors    map[string]bool
-	manualPullRequestDiffRefreshErrors      map[string]bool
-	manualNotificationRefreshError          bool
+	manualPullRequestListRefreshPending     map[PullRequestTab]bool
+	manualPullRequestDetailRefreshPending   map[string]bool
+	manualPullRequestDiffRefreshPending     map[string]bool
+	manualNotificationRefreshPending        bool
+	manualRefreshFeedback                   *manualRefreshFeedbackState
 }
 
 func NewProgram() *Program {
@@ -129,49 +130,49 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	imageCoordinator := newImageLoadCoordinator(imageStore, &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}})
 
 	return &Program{
-		model:                                model,
-		sessionQueries:                       resolvedDeps.SessionQueries,
-		pullRequestListQueries:               resolvedDeps.PullRequestList,
-		notificationQueries:                  resolvedDeps.NotificationQueries,
-		detailQueries:                        resolvedDeps.DetailQueries,
-		pullRequestMutations:                 resolvedDeps.PullRequestMutations,
-		reviewMutations:                      resolvedDeps.ReviewMutations,
-		notificationMutations:                resolvedDeps.NotificationMutations,
-		reactionMutations:                    resolvedDeps.ReactionMutations,
-		buildQueries:                         resolvedDeps.BuildQueries,
-		markdownHTMLRenderer:                 resolvedDeps.MarkdownHTMLRenderer,
-		authTokenProvider:                    resolvedDeps.AuthTokenProvider,
-		sessionStore:                         sessionState,
-		persistentCacheStore:                 persistence,
-		pullRequestListStore:                 newPullRequestListStore(persistence),
-		notificationStore:                    newNotificationStore(persistence),
-		detailStore:                          detailState,
-		reviewStore:                          reviewState,
-		buildStore:                           newBuildStore(),
-		statusStore:                          newStatusStore(),
-		optimisticMutationCoordinator:        newOptimisticMutationCoordinator(),
-		imageLoadCoordinator:                 imageCoordinator,
-		externalEditor:                       resolvedDeps.ExternalEditor,
-		linkOpener:                           resolvedDeps.LinkOpener,
-		markdownRenderer:                     glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
-		storyGenerator:                       commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
-		themePresetStore:                     resolvedDeps.ThemePresetStore,
-		asyncRunner:                          goroutineAsyncRunner{},
-		uiUpdater:                            queuedUIUpdater{},
-		clipboardReader:                      resolvedDeps.ClipboardReader,
-		clipboardWriter:                      resolvedDeps.ClipboardWriter,
-		detailViewState:                      newDetailViewState(),
-		detailWrapWidth:                      defaultDetailWrapWidth,
-		pullRequestSearches:                  appconfig.DefaultPullRequestSearches(),
-		assigneePickerSearchDebounceDelay:    defaultAssigneePickerSearchDebounceDelay,
-		pendingListViewportPlacements:        map[string]viewportPlacement{},
-		now:                                  time.Now,
-		after:                                time.After,
-		yankHighlightDuration:                defaultYankHighlightDuration,
-		transientErrorPopupDuration:          defaultTransientErrorPopupDuration,
-		manualPullRequestListRefreshErrors:   map[PullRequestTab]bool{},
-		manualPullRequestDetailRefreshErrors: map[string]bool{},
-		manualPullRequestDiffRefreshErrors:   map[string]bool{},
+		model:                                 model,
+		sessionQueries:                        resolvedDeps.SessionQueries,
+		pullRequestListQueries:                resolvedDeps.PullRequestList,
+		notificationQueries:                   resolvedDeps.NotificationQueries,
+		detailQueries:                         resolvedDeps.DetailQueries,
+		pullRequestMutations:                  resolvedDeps.PullRequestMutations,
+		reviewMutations:                       resolvedDeps.ReviewMutations,
+		notificationMutations:                 resolvedDeps.NotificationMutations,
+		reactionMutations:                     resolvedDeps.ReactionMutations,
+		buildQueries:                          resolvedDeps.BuildQueries,
+		markdownHTMLRenderer:                  resolvedDeps.MarkdownHTMLRenderer,
+		authTokenProvider:                     resolvedDeps.AuthTokenProvider,
+		sessionStore:                          sessionState,
+		persistentCacheStore:                  persistence,
+		pullRequestListStore:                  newPullRequestListStore(persistence),
+		notificationStore:                     newNotificationStore(persistence),
+		detailStore:                           detailState,
+		reviewStore:                           reviewState,
+		buildStore:                            newBuildStore(),
+		statusStore:                           newStatusStore(),
+		optimisticMutationCoordinator:         newOptimisticMutationCoordinator(),
+		imageLoadCoordinator:                  imageCoordinator,
+		externalEditor:                        resolvedDeps.ExternalEditor,
+		linkOpener:                            resolvedDeps.LinkOpener,
+		markdownRenderer:                      glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
+		storyGenerator:                        commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
+		themePresetStore:                      resolvedDeps.ThemePresetStore,
+		asyncRunner:                           goroutineAsyncRunner{},
+		uiUpdater:                             queuedUIUpdater{},
+		clipboardReader:                       resolvedDeps.ClipboardReader,
+		clipboardWriter:                       resolvedDeps.ClipboardWriter,
+		detailViewState:                       newDetailViewState(),
+		detailWrapWidth:                       defaultDetailWrapWidth,
+		pullRequestSearches:                   appconfig.DefaultPullRequestSearches(),
+		assigneePickerSearchDebounceDelay:     defaultAssigneePickerSearchDebounceDelay,
+		pendingListViewportPlacements:         map[string]viewportPlacement{},
+		now:                                   time.Now,
+		after:                                 time.After,
+		yankHighlightDuration:                 defaultYankHighlightDuration,
+		transientErrorPopupDuration:           defaultTransientErrorPopupDuration,
+		manualPullRequestListRefreshPending:   map[PullRequestTab]bool{},
+		manualPullRequestDetailRefreshPending: map[string]bool{},
+		manualPullRequestDiffRefreshPending:   map[string]bool{},
 	}
 }
 

@@ -29,24 +29,28 @@ func (program *Program) refreshActiveView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) executeRefreshNotificationsAction(gui *gocui.Gui) actionsPopupActionResult {
-	program.markManualNotificationRefresh()
-	program.setFeedback(program.model.Focus(), notificationsRefreshSuccessMessage)
+	pendingOperations := 0
+	if gui != nil && !program.reviewModeActive() && program.hasNotificationQueries() && program.markManualNotificationRefresh() {
+		pendingOperations++
+	}
+	program.beginManualRefresh(notificationsRefreshSuccessMessage, pendingOperations)
 	program.reloadNotifications(gui)
 	return actionsPopupActionResult{closePopup: true}
 }
 
-func (program *Program) markManualNotificationRefresh() {
+func (program *Program) markManualNotificationRefresh() bool {
 	if program == nil {
-		return
+		return false
 	}
-	program.manualNotificationRefreshError = true
+	program.manualNotificationRefreshPending = true
+	return true
 }
 
 func (program *Program) consumeManualNotificationRefresh() bool {
 	if program == nil {
 		return false
 	}
-	pending := program.manualNotificationRefreshError
-	program.manualNotificationRefreshError = false
+	pending := program.manualNotificationRefreshPending
+	program.manualNotificationRefreshPending = false
 	return pending
 }

@@ -76,6 +76,10 @@ func (program *Program) loadingStatusText() string {
 		return program.loadingSpinnerStatus(message)
 	}
 
+	if message := strings.TrimSpace(program.selectedPullRequestDiffLoadingStatus()); message != "" {
+		return program.loadingSpinnerStatus(message)
+	}
+
 	if message := strings.TrimSpace(program.selectedNotificationDetailLoadingStatus()); message != "" {
 		return program.loadingSpinnerStatus(message)
 	}
@@ -121,6 +125,18 @@ func (program *Program) selectedPullRequestDetailLoadingStatus() string {
 	}
 
 	return fmt.Sprintf("Running `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository))
+}
+
+func (program *Program) selectedPullRequestDiffLoadingStatus() string {
+	summary, ok := program.selectedPullRequestSummaryForDiff()
+	if !ok {
+		return ""
+	}
+	if !program.pullRequestDiffLoadInFlight[pullRequestDetailKey(summary.Repository, summary.Number)] {
+		return ""
+	}
+
+	return fmt.Sprintf("Running `gh api repos/%s/pulls/%d -H 'Accept: application/vnd.github.v3.diff'`.", pullRequestRepositoryName(summary.Repository), summary.Number)
 }
 
 func (program *Program) notificationsLoadingStatus() string {

@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"github.com/jesseduffield/gocui"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -25,11 +23,13 @@ func (program *Program) loadNotifications(gui *gocui.Gui) {
 		manualRefresh := program.consumeManualNotificationRefresh()
 		if err == nil {
 			program.model.SetNotificationRows(notificationRows(notifications))
+			if manualRefresh {
+				program.completeManualRefreshOperation(gui, nil)
+			}
 			return program.refreshViews(gui)
 		}
 		if manualRefresh {
-			program.feedbackMessage = ""
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			program.completeManualRefreshOperation(gui, err)
 		}
 		if !program.shouldPreserveNotificationRowsOnRefreshError() {
 			program.model.SetNotificationRows(notificationsStateRows(nil, err))

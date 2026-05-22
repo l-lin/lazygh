@@ -44,9 +44,8 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 		if err == nil || !program.canKeepPullRequestDetailOnRefreshError(key) {
 			program.pullRequestDetailCache[key] = result
 			program.invalidatePullRequestDetailDocumentCache()
-			if manualRefresh && err != nil {
-				program.feedbackMessage = ""
-				program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			if manualRefresh {
+				program.completeManualRefreshOperation(gui, err)
 			}
 			return program.refreshViews(gui)
 		}
@@ -56,8 +55,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 		cachedResult.needsRefresh = false
 		program.pullRequestDetailCache[key] = cachedResult
 		if manualRefresh {
-			program.feedbackMessage = ""
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			program.completeManualRefreshOperation(gui, err)
 		}
 		return program.refreshViews(gui)
 	})

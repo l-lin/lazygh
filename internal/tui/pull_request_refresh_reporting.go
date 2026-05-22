@@ -1,65 +1,119 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	"strings"
 
-func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) {
-	if program == nil {
+	"github.com/jesseduffield/gocui"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
+
+type manualRefreshFeedbackState struct {
+	successMessage    string
+	pendingOperations int
+	failed            bool
+}
+
+func (program *Program) beginManualRefresh(successMessage string, pendingOperations int) {
+	if program == nil || pendingOperations <= 0 {
 		return
 	}
-	if program.manualPullRequestListRefreshErrors == nil {
-		program.manualPullRequestListRefreshErrors = map[PullRequestTab]bool{}
+
+	program.feedbackMessage = ""
+	program.manualRefreshFeedback = &manualRefreshFeedbackState{
+		successMessage:    strings.TrimSpace(successMessage),
+		pendingOperations: pendingOperations,
 	}
-	program.manualPullRequestListRefreshErrors[tab] = true
+}
+
+func (program *Program) completeManualRefreshOperation(gui *gocui.Gui, err error) {
+	if program == nil || program.manualRefreshFeedback == nil {
+		return
+	}
+
+	state := program.manualRefreshFeedback
+	if err != nil {
+		if !state.failed {
+			program.feedbackMessage = ""
+			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+		}
+		state.failed = true
+	}
+	if state.pendingOperations > 0 {
+		state.pendingOperations--
+	}
+	if state.pendingOperations > 0 {
+		return
+	}
+	if !state.failed && state.successMessage != "" {
+		program.setFeedback(FocusDetailView, state.successMessage)
+	}
+	program.manualRefreshFeedback = nil
+}
+
+func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) bool {
+	if program == nil {
+		return false
+	}
+	if program.manualPullRequestListRefreshPending == nil {
+		program.manualPullRequestListRefreshPending = map[PullRequestTab]bool{}
+	}
+	program.manualPullRequestListRefreshPending[tab] = true
+	return true
 }
 
 func (program *Program) consumeManualPullRequestListRefresh(tab PullRequestTab) bool {
-	if program == nil || program.manualPullRequestListRefreshErrors == nil {
+	if program == nil || program.manualPullRequestListRefreshPending == nil {
 		return false
 	}
-	pending := program.manualPullRequestListRefreshErrors[tab]
-	delete(program.manualPullRequestListRefreshErrors, tab)
+	pending := program.manualPullRequestListRefreshPending[tab]
+	delete(program.manualPullRequestListRefreshPending, tab)
 	return pending
 }
 
-func (program *Program) markManualPullRequestDetailRefresh(summary githubdomain.PullRequest) {
+func (program *Program) markManualPullRequestDetailRefresh(summary githubdomain.PullRequest) bool {
 	if program == nil {
-		return
+		return false
 	}
-	if program.manualPullRequestDetailRefreshErrors == nil {
-		program.manualPullRequestDetailRefreshErrors = map[string]bool{}
+	if program.manualPullRequestDetailRefreshPending == nil {
+		program.manualPullRequestDetailRefreshPending = map[string]bool{}
 	}
 	if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-		program.manualPullRequestDetailRefreshErrors[key] = true
+		program.manualPullRequestDetailRefreshPending[key] = true
+		return true
 	}
+	return false
 }
 
 func (program *Program) consumeManualPullRequestDetailRefresh(key string) bool {
-	if program == nil || program.manualPullRequestDetailRefreshErrors == nil || key == "" {
+	if program == nil || program.manualPullRequestDetailRefreshPending == nil || key == "" {
 		return false
 	}
-	pending := program.manualPullRequestDetailRefreshErrors[key]
-	delete(program.manualPullRequestDetailRefreshErrors, key)
+	pending := program.manualPullRequestDetailRefreshPending[key]
+	delete(program.manualPullRequestDetailRefreshPending, key)
 	return pending
 }
 
-func (program *Program) markManualPullRequestDiffRefresh(summary githubdomain.PullRequest) {
+func (program *Program) markManualPullRequestDiffRefresh(summary githubdomain.PullRequest) bool {
 	if program == nil {
-		return
+		return false
 	}
-	if program.manualPullRequestDiffRefreshErrors == nil {
-		program.manualPullRequestDiffRefreshErrors = map[string]bool{}
+	if program.manualPullRequestDiffRefreshPending == nil {
+		program.manualPullRequestDiffRefreshPending = map[string]bool{}
 	}
 	if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-		program.manualPullRequestDiffRefreshErrors[key] = true
+		program.manualPullRequestDiffRefreshPending[key] = true
+		return true
 	}
+	return false
 }
 
 func (program *Program) consumeManualPullRequestDiffRefresh(key string) bool {
-	if program == nil || program.manualPullRequestDiffRefreshErrors == nil || key == "" {
+	if program == nil || program.manualPullRequestDiffRefreshPending == nil || key == "" {
 		return false
 	}
-	pending := program.manualPullRequestDiffRefreshErrors[key]
-	delete(program.manualPullRequestDiffRefreshErrors, key)
+	pending := program.manualPullRequestDiffRefreshPending[key]
+	delete(program.manualPullRequestDiffRefreshPending, key)
 	return pending
 }
 

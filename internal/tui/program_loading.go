@@ -74,12 +74,14 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 			program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
 			program.model.SetPullRequestRows(tab, rows)
 			program.selectOpenedPullRequestRow(tab)
+			if manualRefresh {
+				program.completeManualRefreshOperation(gui, nil)
+			}
 			return program.refreshViews(gui)
 		}
 
 		if manualRefresh {
-			program.feedbackMessage = ""
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			program.completeManualRefreshOperation(gui, err)
 		}
 		if !program.shouldPreservePullRequestRowsOnRefreshError(tab) {
 			program.setPullRequestsCount(tab, 0, false)

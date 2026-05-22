@@ -305,6 +305,227 @@ func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltR_ThenItReloadsTh
 	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
 }
 
+func TestRefreshActiveView_GivenPullRequestsFocus_WhenPressingAltRAndTheListReloadIsAsync_ThenItShowsTheCommandUntilTheReloadFinishes(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{
+		Title:      "Refreshed list PR",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		URL:        "https://github.com/acme/widgets/pull/42",
+		State:      "OPEN",
+	}}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"})}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewPullRequestsName, 'r', gocui.ModAlt)
+	actualErr = handler(gui, pullRequestsView)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued pull request list refresh, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.listPullRequestCommands) != 0 {
+		t.Fatalf("expected the pull request list command to wait for the queued run, actual %v", loader.listPullRequestCommands)
+	}
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, myPullRequestsLoadingDetail)
+	then_statusLineDoesNotContain(t, gui, pullRequestListRefreshSuccessMessage)
+
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	if len(loader.listPullRequestCommands) != 1 {
+		t.Fatalf("expected one pull request list refresh call after running the queue, actual %d", len(loader.listPullRequestCommands))
+	}
+	then_statusLineContains(t, gui, pullRequestListRefreshSuccessMessage)
+}
+
+func TestRefreshActiveView_GivenNotificationsFocus_WhenPressingAltRAndTheReloadIsAsync_ThenItShowsTheCommandUntilTheReloadFinishes(t *testing.T) {
+	initialNotifications := []githubcli.Notification{given_notificationValue(t, given_pullRequestNotificationRow())}
+	loader := &fakePullRequestDetailLoader{notifications: append([]githubcli.Notification(nil), initialNotifications...)}
+	subject := given_notificationActionProgram(loader.notifications, loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Add notifications", Number: 42, Body: "Cached body", State: "OPEN"})}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	notificationsView, actualErr := gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
+	loader.notifications = []githubcli.Notification{given_notificationValue(t, given_issueNotificationRow())}
+	handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewNotificationsName, 'r', gocui.ModAlt)
+	actualErr = handler(gui, notificationsView)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued notification refresh, actual %d", len(asyncRunner.runs))
+	}
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, notificationsLoadingDetail)
+	then_statusLineDoesNotContain(t, gui, notificationsRefreshSuccessMessage)
+
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	then_statusLineContains(t, gui, notificationsRefreshSuccessMessage)
+}
+
+func TestRefreshActiveView_GivenPullRequestDetailFocus_WhenPressingAltRAndTheRefreshIsAsync_ThenItKeepsShowingCommandsUntilTheListAndDetailReloadFinish(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		myPullRequests: []githubcli.PullRequest{{
+			Title:      "Refreshed PR",
+			Number:     42,
+			Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+			URL:        "https://github.com/acme/widgets/pull/42",
+			Body:       "Refreshed summary body",
+			State:      "OPEN",
+		}},
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "Refreshed PR",
+				Number:      42,
+				Body:        "Refreshed body",
+				BaseRefName: "main",
+				HeadRefName: "refresh-branch",
+				State:       "OPEN",
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
+		Title:       "Old PR",
+		Number:      42,
+		Body:        "Old body",
+		BaseRefName: "main",
+		HeadRefName: "old-branch",
+		State:       "OPEN",
+	})}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewDetailName, 'r', gocui.ModAlt)
+	actualErr = handler(gui, detailView)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued list refresh and one queued detail refresh, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.listPullRequestCommands) != 0 {
+		t.Fatalf("expected the pull request list command to wait for the queued run, actual %v", loader.listPullRequestCommands)
+	}
+	if len(loader.detailCalls) != 0 {
+		t.Fatalf("expected the pull request detail call to wait for the queued run, actual %v", loader.detailCalls)
+	}
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, subject.selectedPullRequestDetailLoadingStatus())
+	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, "Running `gh")
+	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+
+	given_runQueuedAsync(t, asyncRunner, 1)
+
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42"}, loader.detailCalls)
+	}
+	if len(loader.listPullRequestCommands) != 1 {
+		t.Fatalf("expected one pull request list refresh call, actual %d", len(loader.listPullRequestCommands))
+	}
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
+}
+
+func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltRAndTheRefreshIsAsync_ThenItShowsTheDiffCommandUntilTheRefreshFinishes(t *testing.T) {
+	staleDiff := given_reviewSessionPullRequestDiff()
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "Stale PR",
+				Number:      42,
+				Body:        "Stale body",
+				BaseRefName: "main",
+				HeadRefName: "feature-old",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": staleDiff,
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+
+	loader.details["acme/widgets#42"] = githubcli.PullRequestDetail{
+		Title:       "Refreshed PR",
+		Number:      42,
+		Body:        "Refreshed body",
+		BaseRefName: "main",
+		HeadRefName: "feature-refresh",
+		State:       "OPEN",
+	}
+	refreshedDiff := staleDiff
+	refreshedDiff.UnifiedDiff = strings.ReplaceAll(refreshedDiff.UnifiedDiff, "+new line", "+fresh line")
+	loader.diffs["acme/widgets#42"] = refreshedDiff
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewDetailName, 'r', gocui.ModAlt)
+	actualErr = handler(gui, detailView)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued detail refresh and one queued diff refresh, actual %d", len(asyncRunner.runs))
+	}
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, subject.selectedPullRequestDetailLoadingStatus())
+	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+
+	given_runQueuedAsync(t, asyncRunner, 0)
+
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, "Running `gh api repos/acme/widgets/pulls/42 -H 'Accept: application/vnd.github.v3.diff'`.")
+	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+
+	given_runQueuedAsync(t, asyncRunner, 1)
+
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
+}
+
 func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheRefreshShortcut(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)

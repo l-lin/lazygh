@@ -28,8 +28,11 @@ func (program *Program) refreshPullRequestListAction() actionsPopupAction {
 }
 
 func (program *Program) executeRefreshPullRequestListAction(gui *gocui.Gui) actionsPopupActionResult {
-	program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab())
-	program.setFeedback(program.model.Focus(), pullRequestListRefreshSuccessMessage)
+	pendingOperations := 0
+	if gui != nil && program.hasPullRequestListQueries() && program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab()) {
+		pendingOperations++
+	}
+	program.beginManualRefresh(pullRequestListRefreshSuccessMessage, pendingOperations)
 	program.reloadActivePullRequestsTab(gui)
 	return actionsPopupActionResult{closePopup: true}
 }
@@ -44,14 +47,27 @@ func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) actionsP
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	program.markManualPullRequestDetailRefresh(summary)
-	program.setFeedback(program.model.Focus(), pullRequestRefreshSuccessMessage)
-	program.markPullRequestDetailNeedsRefresh(summary)
+	pendingOperations := 0
+	if program.hasDetailQueries() {
+		if program.markManualPullRequestDetailRefresh(summary) {
+			pendingOperations++
+		}
+		program.markPullRequestDetailNeedsRefresh(summary)
+	}
 	if program.reviewModeActive() {
-		program.markManualPullRequestDiffRefresh(summary)
-		program.markPullRequestDiffNeedsRefresh(summary)
+		if program.hasDetailQueries() {
+			if program.markManualPullRequestDiffRefresh(summary) {
+				pendingOperations++
+			}
+			program.markPullRequestDiffNeedsRefresh(summary)
+		}
 	} else {
-		program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab())
+		if gui != nil && program.hasPullRequestListQueries() && program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab()) {
+			pendingOperations++
+		}
+	}
+	program.beginManualRefresh(pullRequestRefreshSuccessMessage, pendingOperations)
+	if !program.reviewModeActive() {
 		program.reloadActivePullRequestsTab(gui)
 	}
 	program.invalidatePersistentPullRequest(target.repository, target.number)
