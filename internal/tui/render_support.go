@@ -124,11 +124,22 @@ func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
 			return document
 		}
 
-		document := newDetailDocumentWithWrap(program.detailViewContent(), width, program.detailViewWraps())
+		document := program.buildCurrentDetailDocument(width)
 		program.cachePullRequestDetailDocument(cacheKey, document)
 		return document
 	}
 
+	return program.buildCurrentDetailDocument(width)
+}
+
+func (program *Program) buildCurrentDetailDocument(width int) detailDocument {
+	if !program.reviewModeActive() && program.activeDetailTab == ChangesDetailTab {
+		if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
+			if result, ok := program.pullRequestDiffForSummary(summary); ok && result.err == nil {
+				return newReviewDiffDetailDocument(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, width), width)
+			}
+		}
+	}
 	return newDetailDocumentWithWrap(program.detailViewContent(), width, program.detailViewWraps())
 }
 

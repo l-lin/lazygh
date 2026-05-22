@@ -7,46 +7,63 @@ import (
 
 var detailDocumentSequence atomic.Uint64
 
+type detailDocumentLine struct {
+	prefix styledTextLine
+	body   styledTextLine
+}
+
 func newDetailDocument(text string, width int) detailDocument {
 	return newDetailDocumentWithWrap(text, width, true)
 }
 
 func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument {
+	styledLines := splitStyledTextLines(text)
+	lines := make([]detailDocumentLine, 0, len(styledLines))
+	for _, styledLine := range styledLines {
+		lines = append(lines, detailDocumentLine{body: cloneStyledTextLine(styledLine)})
+	}
+	return newDetailDocumentFromLines(lines, width, wrap)
+}
+
+func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool) detailDocument {
 	if width < 1 {
 		width = 1
 	}
 
-	styledLines := splitStyledTextLines(text)
-	visibleLines := make([]string, 0, len(styledLines))
-	for _, styledLine := range styledLines {
-		visibleLines = append(visibleLines, string(styledLine.runes))
+	visibleLines := make([]string, 0, len(lines))
+	for _, line := range lines {
+		visibleLines = append(visibleLines, string(line.body.runes))
 	}
 
 	document := detailDocument{
 		id:                   detailDocumentSequence.Add(1),
 		text:                 []rune(strings.Join(visibleLines, "\n")),
-		lines:                make([][]rune, 0, len(styledLines)),
-		lineStylePrefixes:    make([][]string, 0, len(styledLines)),
-		lineHyperlinkTargets: make([][]string, 0, len(styledLines)),
+		prefixLines:          make([]styledTextLine, 0, len(lines)),
+		lines:                make([][]rune, 0, len(lines)),
+		lineStylePrefixes:    make([][]string, 0, len(lines)),
+		lineHyperlinkTargets: make([][]string, 0, len(lines)),
 		images:               make([]detailImagePlacement, 0),
 		width:                width,
 		wrap:                 wrap,
-		lineStartOffsets:     make([]int, 0, len(styledLines)),
-		lineStartRows:        make([]int, 0, len(styledLines)),
+		lineStartOffsets:     make([]int, 0, len(lines)),
+		lineStartRows:        make([]int, 0, len(lines)),
 	}
 
 	offset := 0
 	rowIndex := 0
-	for lineIndex, styledLine := range styledLines {
-		lineRunes := append([]rune(nil), styledLine.runes...)
-		lineStylePrefixes := append([]string(nil), styledLine.stylePrefixes...)
-		lineHyperlinkTargets := append([]string(nil), styledLine.hyperlinkTargets...)
+	for lineIndex, line := range lines {
+		prefixLine := cloneStyledTextLine(line.prefix)
+		bodyLine := cloneStyledTextLine(line.body)
+		lineRunes := append([]rune(nil), bodyLine.runes...)
+		lineStylePrefixes := append([]string(nil), bodyLine.stylePrefixes...)
+		lineHyperlinkTargets := append([]string(nil), bodyLine.hyperlinkTargets...)
+		document.prefixLines = append(document.prefixLines, prefixLine)
 		document.lines = append(document.lines, lineRunes)
 		document.lineStylePrefixes = append(document.lineStylePrefixes, lineStylePrefixes)
 		document.lineHyperlinkTargets = append(document.lineHyperlinkTargets, lineHyperlinkTargets)
 		document.lineStartOffsets = append(document.lineStartOffsets, offset)
 		document.lineStartRows = append(document.lineStartRows, rowIndex)
-		for _, control := range styledLine.controls {
+		for _, control := range bodyLine.controls {
 			if control.image == nil {
 				continue
 			}
@@ -73,7 +90,7 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 		}
 
 		offset += len(lineRunes)
-		if lineIndex < len(styledLines)-1 {
+		if lineIndex < len(lines)-1 {
 			offset++
 		}
 	}
@@ -83,6 +100,19 @@ func newDetailDocumentWithWrap(text string, width int, wrap bool) detailDocument
 	}
 
 	return document
+}
+
+func cloneStyledTextLine(line styledTextLine) styledTextLine {
+	clonedLine := styledTextLine{
+		runes:            append([]rune(nil), line.runes...),
+		stylePrefixes:    append([]string(nil), line.stylePrefixes...),
+		hyperlinkTargets: append([]string(nil), line.hyperlinkTargets...),
+		controls:         make([]styledTextControl, 0, len(line.controls)),
+	}
+	for _, control := range line.controls {
+		clonedLine.controls = append(clonedLine.controls, styledTextControl{column: control.column, image: control.image})
+	}
+	return clonedLine
 }
 
 func (document detailDocument) lineCount() int {
@@ -95,6 +125,13 @@ func (document detailDocument) lineLength(line int) int {
 	}
 
 	return len(document.lines[line])
+}
+
+func (document detailDocument) prefixWidthForLine(line int) int {
+	if line < 0 || line >= len(document.prefixLines) {
+		return 0
+	}
+	return len(document.prefixLines[line].runes)
 }
 
 func (document detailDocument) rowCount() int {
@@ -163,6 +200,11 @@ func (document detailDocument) screenColumnForPosition(position detailPosition) 
 	}
 
 	return position.column % document.width
+}
+
+func (document detailDocument) visualScreenColumnForPosition(position detailPosition) int {
+	position = document.clampPosition(position)
+	return document.prefixWidthForLine(position.line) + document.screenColumnForPosition(position)
 }
 
 func (document detailDocument) positionForRow(rowIndex int, desiredColumn int) detailPosition {

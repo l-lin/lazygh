@@ -288,5 +288,5 @@ func (state detailViewState) isPositionSelected(document detailDocument, positio
 }
 
 func (state detailViewState) screenPosition(document detailDocument) (int, int) {
-	return document.rowIndexForPosition(state.cursor), document.screenColumnForPosition(state.cursor)
+	return document.rowIndexForPosition(state.cursor), document.visualScreenColumnForPosition(state.cursor)
 }

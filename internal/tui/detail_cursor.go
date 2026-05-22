@@ -38,6 +38,7 @@ type detailWrappedRow struct {
 type detailDocument struct {
 	id                   uint64
 	text                 []rune
+	prefixLines          []styledTextLine
 	lines                [][]rune
 	lineStylePrefixes    [][]string
 	lineHyperlinkTargets [][]string

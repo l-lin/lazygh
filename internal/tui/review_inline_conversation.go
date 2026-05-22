@@ -28,11 +28,7 @@ func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int
 	}
 
 	rows := program.currentReviewDiffRenderedRows(file, width)
-	lines := make([]string, 0, len(rows))
-	for _, row := range rows {
-		lines = append(lines, row.Text)
-	}
-	document := newDetailDocumentWithWrap(strings.Join(lines, "\n"), width, false)
+	document := newReviewDiffDetailDocument(rows, width)
 	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
 	entry.document = document
 	program.storeReviewDiffRenderEntry(cacheKey, entry)
