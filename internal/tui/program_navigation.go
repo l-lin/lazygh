@@ -7,35 +7,31 @@ func (program *Program) quit(_ *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) nextSideView(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	if program.sideViewCyclingBlocked() {
-		return nil
-	}
-
-	return program.applyModeScreenState(gui, program.screenState().NextSideView())
+	return program.dispatch(gui, MsgNextSideView{})
 }
 
 func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	if program.sideViewCyclingBlocked() {
-		return nil
-	}
-
-	return program.applyModeScreenState(gui, program.screenState().PreviousSideView())
+	return program.dispatch(gui, MsgPreviousSideView{})
 }
 
 func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.handleSelectionChange(gui, view, 1, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveDown(document, viewportHeight)
-	})
+	if program.model.Focus() == FocusDetailView || program.actionContext().IsReviewContext() {
+		return program.handleSelectionChange(gui, view, 1, func(document detailDocument, viewportHeight int) {
+			program.detailViewState.moveDown(document, viewportHeight)
+		})
+	}
+
+	return program.dispatch(gui, MsgMoveSideSelection{Delta: 1})
 }
 
 func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.handleSelectionChange(gui, view, -1, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveUp(document, viewportHeight)
-	})
+	if program.model.Focus() == FocusDetailView || program.actionContext().IsReviewContext() {
+		return program.handleSelectionChange(gui, view, -1, func(document detailDocument, viewportHeight int) {
+			program.detailViewState.moveUp(document, viewportHeight)
+		})
+	}
+
+	return program.dispatch(gui, MsgMoveSideSelection{Delta: -1})
 }
 
 func (program *Program) moveDetailViewDown(gui *gocui.Gui, _ *gocui.View) error {
@@ -139,11 +135,11 @@ func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *g
 }
 
 func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() {
-		return nil
-	}
 	if program.actionContext().IsReviewContext() {
+		program.clearPendingSelectionPrefix()
+		if program.selectionChangeBlocked() {
+			return nil
+		}
 		if program.model.Focus() != FocusPullRequestsView {
 			return nil
 		}
@@ -151,16 +147,15 @@ func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) er
 		return program.refreshViewsIfGUI(gui)
 	}
 
-	program.model.MoveSelectionToTop()
-	return nil
+	return program.dispatch(gui, MsgMoveSideSelectionToTop{})
 }
 
 func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() {
-		return nil
-	}
 	if program.actionContext().IsReviewContext() {
+		program.clearPendingSelectionPrefix()
+		if program.selectionChangeBlocked() {
+			return nil
+		}
 		if program.model.Focus() != FocusPullRequestsView {
 			return nil
 		}
@@ -168,8 +163,7 @@ func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View)
 		return program.refreshViewsIfGUI(gui)
 	}
 
-	program.model.MoveSelectionToBottom()
-	return nil
+	return program.dispatch(gui, MsgMoveSideSelectionToBottom{})
 }
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
@@ -289,43 +283,19 @@ func (program *Program) previousPullRequestTab(gui *gocui.Gui, view *gocui.View)
 }
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	if program.mainPaneActionBlocked() {
-		return nil
-	}
-
-	return program.focusPanelViewNumber(gui, mainPanelViewNumber)
+	return program.dispatch(gui, MsgFocusPanelView{Number: mainPanelViewNumber})
 }
 
 func (program *Program) focusUserView(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.mainPaneActionBlocked() {
-		return nil
-	}
-
-	program.detailViewState.clearPendingPrefix()
-	return program.focusPanelViewNumber(gui, sidePanelUserViewNumber)
+	return program.dispatch(gui, MsgFocusPanelView{Number: sidePanelUserViewNumber})
 }
 
 func (program *Program) focusPullRequestsView(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.mainPaneActionBlocked() {
-		return nil
-	}
-
-	program.detailViewState.clearPendingPrefix()
-	return program.focusPanelViewNumber(gui, sidePanelPullRequestsViewNumber)
+	return program.dispatch(gui, MsgFocusPanelView{Number: sidePanelPullRequestsViewNumber})
 }
 
 func (program *Program) focusNotificationsView(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.mainPaneActionBlocked() {
-		return nil
-	}
-
-	program.detailViewState.clearPendingPrefix()
-	return program.focusPanelViewNumber(gui, sidePanelNotificationsViewNumber)
+	return program.dispatch(gui, MsgFocusPanelView{Number: sidePanelNotificationsViewNumber})
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
@@ -359,7 +329,7 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.openSearchWithInitialQuery(gui, "")
+	return program.dispatch(gui, MsgOpenSearch{Query: ""})
 }
 
 func (program *Program) searchWordUnderCursorForward(gui *gocui.Gui, view *gocui.View) error {
@@ -408,78 +378,19 @@ func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, 
 }
 
 func (program *Program) openSearchWithInitialQuery(gui *gocui.Gui, query string) error {
-	program.clearPendingSelectionPrefix()
-	if program.pullRequestBuildRunPopupVisible() {
-		program.startPullRequestBuildRunPopupSearch()
-		program.searchEditor = newLineEditor(query)
-		return program.layout(gui)
-	}
-	inputContext := program.inputContext()
-	if program.mainPaneActionBlocked() || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
-		return nil
-	}
-
-	program.detailViewState.clearPendingPrefix()
-	if inputContext.SearchUsesReviewTree {
-		program.startReviewFileTreeSearch()
-	} else {
-		if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-			program.reviewSession.fileTreeSearchQuery = ""
-		}
-		program.model.StartSearch()
-	}
-	program.updateActiveSearchDraft(query)
-	program.searchEditor = newLineEditor(query)
-	return program.layout(gui)
+	return program.dispatch(gui, MsgOpenSearch{Query: query})
 }
 
 func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
-	if program.pullRequestBuildRunPopupSearchActive() {
-		return program.submitPullRequestBuildRunPopupSearch(gui)
-	}
-	if program.activeSearchIsReviewFileTreeSearch() {
-		program.submitReviewFileTreeSearch()
-		program.searchEditor = nil
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	target := program.model.SearchTarget()
-	targetPullRequestTab := program.model.SearchTargetPullRequestTab()
-	targetPullRequestIndex := program.model.SelectedPullRequestIndex(targetPullRequestTab)
-	program.model.SubmitSearch()
-	if target == FocusDetailView {
-		program.detailSearchReversed = false
-	}
-	program.searchEditor = nil
-
-	if target == FocusDetailView {
-		if actualErr := program.followSubmittedDetailSearch(gui); actualErr != nil {
-			return actualErr
-		}
-	}
-	if target == FocusPullRequestsView {
-		program.followSubmittedPullRequestSearch(targetPullRequestTab, targetPullRequestIndex)
-	}
-
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgSubmitSearch{})
 }
 
 func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
-	if program.pullRequestBuildRunPopupSearchActive() {
-		return program.cancelPullRequestBuildRunPopupSearch(gui)
-	}
-	if program.activeSearchIsReviewFileTreeSearch() {
-		program.cancelReviewFileTreeSearch()
-		return program.closeSearch(gui)
-	}
-
-	program.model.CancelSearch()
-	return program.closeSearch(gui)
+	return program.dispatch(gui, MsgCancelSearch{})
 }
 
 func (program *Program) closeSearch(gui *gocui.Gui) error {
-	program.searchEditor = nil
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgCloseSearch{})
 }
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {

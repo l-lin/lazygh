@@ -76,7 +76,7 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 		return false
 	}
 
-	program.updateActiveSearchDraft(program.searchEditor.Text())
+	Update(program, MsgSearchDraftChanged{Query: program.searchEditor.Text()})
 	program.configureSearchView(view)
 	program.renderSearchView(view)
 	return true

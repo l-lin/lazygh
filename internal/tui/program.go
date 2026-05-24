@@ -99,6 +99,7 @@ type Program struct {
 	manualPullRequestDiffRefreshPending     map[string]bool
 	manualNotificationRefreshPending        bool
 	manualRefreshFeedback                   *manualRefreshFeedbackState
+	appStarted                              bool
 }
 
 func NewProgram() *Program {

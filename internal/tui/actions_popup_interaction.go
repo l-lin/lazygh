@@ -11,113 +11,28 @@ func (program *Program) actionsPopupSelectionLineState() (int, int) {
 }
 
 func (program *Program) openActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	program.clearActionsPopupPendingConfirmation()
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
-		return nil
-	}
-
 	actions := program.currentActionsPopupActions()
-	if len(actions) == 0 {
-		return nil
-	}
-
-	program.reactionPicker = nil
-	program.themePicker = nil
-	program.assigneePicker = nil
-	program.assigneePickerLoad = nil
-	program.model.OpenActionsPopup(len(actions))
-	program.actionsPopupSearchEditor = nil
-	program.actionsPopupErrorMessage = ""
-	if gui == nil {
-		return nil
-	}
-
-	return program.layout(gui)
+	return program.dispatch(gui, MsgOpenActionsPopup{ActionCount: len(actions)})
 }
 
 func (program *Program) closeActionsPopup(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.model.CloseActionsPopup()
-	program.actionsPopupSearchEditor = nil
-	program.clearActionsPopupPendingConfirmation()
-	program.actionsPopupErrorMessage = ""
-	program.reactionPicker = nil
-	program.themePicker = nil
-	program.assigneePicker = nil
-	program.assigneePickerLoad = nil
-	if gui == nil {
-		return nil
-	}
-
-	return program.layout(gui)
+	return program.dispatch(gui, MsgCloseActionsPopup{})
 }
 
 func (program *Program) focusActionsPopupSearch(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	program.model.ClearPaneSearchQueries()
-	program.clearActionsPopupPendingConfirmation()
-	program.actionsPopupSearchEditor = newLineEditor("")
-	program.updateActionsPopupSearch("")
-	program.model.FocusActionsPopupSearch()
-	program.actionsPopupErrorMessage = ""
-	if gui == nil {
-		return nil
-	}
-
-	return program.layout(gui)
+	return program.dispatch(gui, MsgFocusActionsPopupSearch{})
 }
 
 func (program *Program) focusActionsPopupList(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	program.model.BlurActionsPopupSearch()
-	if gui == nil {
-		return nil
-	}
-
-	return program.refreshViews(gui)
+	return program.dispatch(gui, MsgFocusActionsPopupList{})
 }
 
 func (program *Program) moveActionsPopupSelectionDown(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	program.model.MoveActionsPopupSelectionDown()
-	program.actionsPopupErrorMessage = ""
-	if gui == nil {
-		return nil
-	}
-
-	return program.refreshViews(gui)
+	return program.dispatch(gui, MsgMoveActionsPopupSelection{Delta: 1})
 }
 
 func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	program.model.MoveActionsPopupSelectionUp()
-	program.actionsPopupErrorMessage = ""
-	if gui == nil {
-		return nil
-	}
-
-	return program.refreshViews(gui)
+	return program.dispatch(gui, MsgMoveActionsPopupSelection{Delta: -1})
 }
 
 func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
@@ -207,35 +122,11 @@ func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	program.model.MoveActionsPopupSelectionToTop()
-	program.actionsPopupErrorMessage = ""
-	if gui == nil {
-		return nil
-	}
-
-	return program.refreshViews(gui)
+	return program.dispatch(gui, MsgMoveActionsPopupSelectionToTop{})
 }
 
 func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	program.model.MoveActionsPopupSelectionToBottom()
-	program.actionsPopupErrorMessage = ""
-	if gui == nil {
-		return nil
-	}
-
-	return program.refreshViews(gui)
+	return program.dispatch(gui, MsgMoveActionsPopupSelectionToBottom{})
 }
 
 func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
