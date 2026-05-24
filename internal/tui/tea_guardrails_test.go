@@ -1,0 +1,115 @@
+package tui
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
+	"testing"
+)
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesWriteProgramModelFields(t *testing.T) {
+	assignmentPattern := regexp.MustCompile(`program\.model\.[A-Za-z0-9_]+(?:\[[^\]]+\])?\s*=\s*[^=]`)
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", assignmentPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if strings.HasPrefix(base, "model") || strings.HasPrefix(base, "update") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected reducer/model transitions to own all program.model writes, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenRenderLayerFiles_WhenScanning_ThenTheyDoNotTriggerShellEffects(t *testing.T) {
+	forbiddenPatterns := []*regexp.Regexp{
+		regexp.MustCompile(`maybeLoad`),
+		regexp.MustCompile(`uiUpdater\.Apply\(`),
+		regexp.MustCompile(`detailImageManager\.Sync\(`),
+		regexp.MustCompile(`WriteGraphicsCommand\(`),
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		forbiddenPatterns[0].String(),
+		forbiddenPatterns[1].String(),
+		forbiddenPatterns[2].String(),
+		forbiddenPatterns[3].String(),
+	}, "|")), given_isRenderLayerFile)
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected render-layer files to stay free of shell effects, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenRenderLayerFiles_WhenScanning_ThenTheyDoNotMutateSelectorCachesOrConsumeOneShotState(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.(?:cache|invalidate)[A-Za-z0-9_]+\(`,
+		`program\.(?:pullRequestDetailDocumentForKey|pullRequestConversationDocumentForKey|pullRequestChangesRenderedRowsForKey|cachedReviewDiffRenderEntry|storeReviewDiffRenderEntry|consumePendingListViewportPlacement)\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, given_isRenderLayerFile)
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected render-layer files to stay free of selector-cache mutation and one-shot consumption, actual %v", actualMatches)
+	}
+}
+
+func given_isRenderLayerFile(path string) bool {
+	base := filepath.Base(path)
+	if !strings.HasSuffix(base, ".go") || strings.HasSuffix(base, "_test.go") {
+		return false
+	}
+	return strings.HasPrefix(base, "render") || strings.HasSuffix(base, "_view.go")
+}
+
+func given_regexpLineMatchesInGoFiles(t *testing.T, root string, pattern *regexp.Regexp, include func(string) bool) []string {
+	t.Helper()
+
+	packageRoot := given_guardPackageRoot(t)
+	scanRoot := given_guardScanRoot(t, root)
+	actualMatches := make([]string, 0)
+	actualErr := filepath.WalkDir(scanRoot, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			name := entry.Name()
+			if name == ".git" || name == "testdata" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if include != nil && !include(path) {
+			return nil
+		}
+
+		contents, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		relativePath, relErr := filepath.Rel(packageRoot, path)
+		if relErr != nil {
+			return relErr
+		}
+		for lineIndex, line := range strings.Split(string(contents), "\n") {
+			if !pattern.MatchString(line) {
+				continue
+			}
+			actualMatches = append(actualMatches, fmt.Sprintf("%s:%d contains %q", filepath.ToSlash(relativePath), lineIndex+1, strings.TrimSpace(line)))
+		}
+		return nil
+	})
+	if actualErr != nil {
+		t.Fatalf("walk go files: %v", actualErr)
+	}
+
+	slices.Sort(actualMatches)
+	return actualMatches
+}

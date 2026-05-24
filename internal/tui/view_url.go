@@ -27,9 +27,9 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 
 	summary.Repository.NameWithOwner = repository
 	program.pinOpenedPullRequestSummary(MyPullRequestsTab, summary)
-	program.model.activePullRequestTab = MyPullRequestsTab
+	program.model.SetActivePullRequestTab(MyPullRequestsTab)
 	program.model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	program.model.selectedPullRequestIndexes[MyPullRequestsTab] = 0
+	program.model.SelectPullRequestIndex(MyPullRequestsTab, 0)
 	program.setPullRequestsLoadStarted(MyPullRequestsTab, true)
 	program.setPullRequestsLoading(MyPullRequestsTab, false)
 	program.setPullRequestsCount(MyPullRequestsTab, 1, true)
@@ -49,15 +49,7 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 }
 
 func (program *Program) showOpenedPullRequestInDetailFullscreen() {
-	returnSize := program.model.paneLayoutSize
-	if returnSize == PaneLayoutFullscreen {
-		returnSize = PaneLayoutDefault
-	}
-	program.model.detailFullscreenReturnSize = returnSize
-	program.model.paneLayoutSize = PaneLayoutFullscreen
-	program.model.fullscreenPane = FocusDetailView
-	program.model.lastSideFocus = FocusPullRequestsView
-	program.model.focus = FocusDetailView
+	program.model.FocusDetailFullscreenFromSideFocus(FocusPullRequestsView)
 }
 
 func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {
@@ -103,7 +95,7 @@ func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
 		if row.Summary == nil || !samePullRequestIdentity(*row.Summary, openedSummary) {
 			continue
 		}
-		program.model.selectedPullRequestIndexes[tab] = index
+		program.model.SelectPullRequestIndex(tab, index)
 		return
 	}
 }

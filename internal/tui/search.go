@@ -19,12 +19,7 @@ func (model *Model) SearchDraft() string {
 }
 
 func (model *Model) StartSearch() {
-	model.searchActive = true
-	model.searchTarget = model.Focus()
-	model.searchTargetPullRequestTab = model.ActivePullRequestTab()
-	model.clearAppliedSearchQueriesForOtherViews(model.searchTarget)
-	model.searchDraft = ""
-	model.clampSearchSelectionForTarget(model.searchTarget, model.searchDraft)
+	model.StartSearchForTarget(model.Focus(), model.ActivePullRequestTab())
 }
 
 func (model *Model) UpdateSearchDraft(query string) {

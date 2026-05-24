@@ -100,8 +100,7 @@ func (program *Program) captureNotificationMutationSnapshot() notificationMutati
 
 func (program *Program) restoreNotificationMutationSnapshot(snapshot notificationMutationSnapshot) {
 	program.model.SetNotificationRows(snapshot.rows)
-	program.model.selectedNotificationIndex = clampIndex(snapshot.selectedIndex, len(program.model.notifications))
-	program.model.clampSearchSelectionForNotificationsView()
+	program.model.SelectNotificationIndex(snapshot.selectedIndex)
 }
 
 func markNotificationReadState(notifications []githubdomain.Notification, threadID string, unread bool) bool {

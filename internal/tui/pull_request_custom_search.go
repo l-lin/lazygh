@@ -90,7 +90,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 		program.model.SetPullRequestRows(tab, rows)
 	}
 	program.model.SetPullRequestRows(customTab, []PullRequestRow{{Item: program.pullRequestLoadingItem(customTab)}})
-	program.model.pullRequestSearchQueries[customTab] = ""
+	program.model.ClearPullRequestSearchQuery(customTab)
 	program.setPullRequestsLoadStarted(customTab, false)
 	program.setPullRequestsLoading(customTab, false)
 	program.setPullRequestsCount(customTab, 0, false)

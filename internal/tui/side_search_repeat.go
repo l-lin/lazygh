@@ -53,8 +53,8 @@ func (program *Program) sideSearchState(focus Focus) (string, []int, int) {
 func (program *Program) setSideSearchSelection(focus Focus, index int) {
 	switch focus {
 	case FocusNotificationsView:
-		program.model.selectedNotificationIndex = index
+		program.model.SelectNotificationIndex(index)
 	default:
-		program.model.selectedUserIndex = index
+		program.model.SelectUserIndex(index)
 	}
 }

@@ -56,15 +56,7 @@ func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 }
 
 func (program *Program) applyProjectedScreenState(state ScreenState) {
-	program.model.focus = state.ActiveView().Focus
-	program.model.lastSideFocus = state.ActiveSideView().Focus
-
-	if state.Mode != ScreenModeBrowser {
-		return
-	}
-	if pullRequestView, ok := state.ViewByNumber(sidePanelPullRequestsViewNumber); ok {
-		program.model.activePullRequestTab = PullRequestTab(clampScreenTabIndex(pullRequestView.ActiveTab, len(pullRequestView.Tabs)))
-	}
+	program.model.ApplyProjectedScreenState(state)
 	if mainView, ok := state.ViewByNumber(mainPanelViewNumber); ok && len(mainView.Tabs) > 0 {
 		program.activeDetailTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
 	}

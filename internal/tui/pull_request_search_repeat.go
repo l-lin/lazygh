@@ -37,7 +37,7 @@ func (program *Program) repeatPullRequestSearch(gui *gocui.Gui, choose searchMat
 		return nil
 	}
 
-	program.model.selectedPullRequestIndexes[tab] = matchIndexes[matchIndex]
+	program.model.SelectPullRequestIndex(tab, matchIndexes[matchIndex])
 	return program.refreshViewsIfGUI(gui)
 }
 
@@ -57,5 +57,5 @@ func (program *Program) followSubmittedPullRequestSearch(tab PullRequestTab, sta
 		return
 	}
 
-	program.model.selectedPullRequestIndexes[tab] = matchIndexes[matchIndex]
+	program.model.SelectPullRequestIndex(tab, matchIndexes[matchIndex])
 }

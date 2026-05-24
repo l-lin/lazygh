@@ -100,7 +100,7 @@ func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequ
 		program.setPendingPullRequestReviewState(summary, trimmedPendingReviewID)
 	}
 	program.invalidateReviewDiffRenderCache()
-	program.model.paneLayoutSize = program.reviewModePaneLayoutSize()
+	program.model.SetPaneLayoutSize(program.reviewModePaneLayoutSize())
 	program.model.FocusPullRequestsView()
 }
 
@@ -136,14 +136,13 @@ func (program *Program) restorePullRequestBrowserFromReviewMode() {
 	program.invalidateReviewDiffRenderCache()
 	program.activeDetailTab = sourceDetailTab
 	program.detailViewState.clearPendingPrefix()
-	program.model.paneLayoutSize = sourcePaneLayoutSize
-	program.model.fullscreenPane = sourceFullscreenPane
-	program.model.detailFullscreenReturnSize = sourceDetailFullscreenReturn
+	program.model.SetPaneLayoutSize(sourcePaneLayoutSize)
+	program.model.SetFullscreenPane(sourceFullscreenPane)
+	program.model.SetDetailFullscreenReturnSize(sourceDetailFullscreenReturn)
 
 	switch sourceFocus {
 	case FocusDetailView:
-		program.model.lastSideFocus = FocusPullRequestsView
-		program.model.focus = FocusDetailView
+		program.model.FocusDetailView()
 	default:
 		program.model.FocusPullRequestsView()
 	}

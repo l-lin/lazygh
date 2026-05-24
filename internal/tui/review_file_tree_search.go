@@ -7,11 +7,7 @@ import (
 )
 
 func (program *Program) startReviewFileTreeSearch() {
-	program.model.searchActive = true
-	program.model.searchTarget = FocusPullRequestsView
-	program.model.searchTargetPullRequestTab = program.model.ActivePullRequestTab()
-	program.model.clearAppliedSearchQueriesForOtherViews(FocusPullRequestsView)
-	program.model.searchDraft = ""
+	program.model.StartSearchForTarget(FocusPullRequestsView, program.model.ActivePullRequestTab())
 }
 
 func (program *Program) activeSearchIsReviewFileTreeSearch() bool {
@@ -20,7 +16,7 @@ func (program *Program) activeSearchIsReviewFileTreeSearch() bool {
 
 func (program *Program) updateActiveSearchDraft(query string) {
 	if program.activeSearchIsReviewFileTreeSearch() {
-		program.model.searchDraft = query
+		program.model.UpdateSearchDraft(query)
 		return
 	}
 
@@ -36,16 +32,14 @@ func (program *Program) reviewFileTreeSearchQuery() string {
 }
 
 func (program *Program) submitReviewFileTreeSearch() {
-	query := program.model.searchDraft
+	query := program.model.SearchDraft()
 	program.reviewSession.fileTreeSearchQuery = query
-	program.model.searchActive = false
-	program.model.searchDraft = ""
+	program.model.CloseSearchPrompt()
 	program.followSubmittedReviewFileTreeSearch(query)
 }
 
 func (program *Program) cancelReviewFileTreeSearch() {
-	program.model.searchActive = false
-	program.model.searchDraft = ""
+	program.model.CloseSearchPrompt()
 }
 
 func (program *Program) nextReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
