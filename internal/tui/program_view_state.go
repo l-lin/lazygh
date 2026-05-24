@@ -5,19 +5,29 @@ import "github.com/jesseduffield/gocui"
 type viewConfigurator func(*gocui.View)
 type viewRenderer func(*gocui.View)
 
-func (program *Program) refreshViews(gui *gocui.Gui) error {
+func (program *Program) afterStateChange(gui *gocui.Gui) error {
+	if gui == nil {
+		return nil
+	}
+
 	program.gui = gui
 	program.clearExpiredYankHighlights()
 	program.clearExpiredTransientErrorPopup(program.currentTime())
-	if !program.reviewModeActive() {
-		program.maybeLoadSelectedNotificationDetail(gui)
-	}
-	program.maybeLoadSelectedPullRequestDetail(gui)
-	program.maybeLoadSelectedPullRequestDiff(gui)
 	if program.model.ActionsPopupVisible() {
 		program.syncActionsPopupSearch()
 	}
+	if program.appStarted {
+		program.executeCmds(gui, program.plannedCommands(gui))
+	}
+	return program.refreshViews(gui)
+}
 
+func (program *Program) refreshViews(gui *gocui.Gui) error {
+	if gui == nil {
+		return nil
+	}
+
+	program.gui = gui
 	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
 		return actualErr
 	}
@@ -60,7 +70,6 @@ func (program *Program) refreshActionsPopupViews(gui *gocui.Gui) error {
 		return deleteViewsIfPresent(gui, viewActionsPopupSearchName, viewActionsPopupName, viewActionsPopupChromeName)
 	}
 
-	program.syncActionsPopupSearch()
 	if err := program.layoutActionsPopupViews(gui); err != nil {
 		return err
 	}

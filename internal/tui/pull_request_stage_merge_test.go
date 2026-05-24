@@ -346,7 +346,7 @@ func TestActionsPopup_GivenAReadyForReviewMutation_WhenExecuting_ThenItKeepsTheP
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(markPullRequestReadyForReviewActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), markPullRequestReadyForReviewActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -396,7 +396,7 @@ func TestActionsPopup_GivenAConvertToDraftMutation_WhenExecuting_ThenItKeepsTheP
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(convertPullRequestToDraftActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), convertPullRequestToDraftActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -445,7 +445,7 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(markPullRequestReadyForReviewActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), markPullRequestReadyForReviewActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -513,7 +513,7 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(closePullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), closePullRequestActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -578,7 +578,7 @@ func TestLayout_GivenAnUpdateBranchMutation_WhenRendering_ThenItRemovesTheOutOfD
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(updatePullRequestBranchActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), updatePullRequestBranchActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -640,7 +640,7 @@ func TestActionsPopup_GivenAnEnableAutoMergeMutation_WhenExecuting_ThenItKeepsTh
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(enablePullRequestAutoMergeActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), enablePullRequestAutoMergeActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -684,7 +684,7 @@ func TestLayout_GivenAnEnableAutoMergeMutation_WhenRendering_ThenItTogglesTheOpt
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(enablePullRequestAutoMergeActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), enablePullRequestAutoMergeActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -750,7 +750,7 @@ func TestLayout_GivenADisableAutoMergeMutation_WhenRendering_ThenItClearsTheOpti
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(disablePullRequestAutoMergeActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), disablePullRequestAutoMergeActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -809,7 +809,7 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(closePullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), closePullRequestActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -856,7 +856,7 @@ func TestActionsPopup_GivenUpdateBranchFailure_WhenExecuting_ThenItKeepsTheUISta
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(updatePullRequestBranchActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), updatePullRequestBranchActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -908,7 +908,7 @@ func TestLayout_GivenAReopenClosedDraftPullRequestMutation_WhenRendering_ThenThe
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(reopenPullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), reopenPullRequestActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -966,7 +966,7 @@ func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsThe
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(reopenPullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), reopenPullRequestActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -1006,7 +1006,7 @@ func TestActionsPopup_GivenASquashMergeAction_WhenExecutingOnce_ThenItAsksForCon
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("squash", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "squash"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -1042,7 +1042,7 @@ func TestActionsPopup_GivenAConfirmedSquashMerge_WhenTheMutationIsQueued_ThenItC
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("squash", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "squash"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
@@ -1097,7 +1097,7 @@ func TestLayout_GivenAConfirmedSquashMerge_WhenRendering_ThenTheMergedStateFeedb
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("squash", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "squash"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
@@ -1157,7 +1157,7 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("squash", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "squash"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)

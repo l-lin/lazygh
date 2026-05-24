@@ -50,7 +50,7 @@ func TestManualVisual_BrowserChangesInlineCommentResolutionActionsPopup(t *testi
 		t.Fatalf("expected no error, actual %v", actualErr)
 	}
 	subject.activeDetailTab = ChangesDetailTab
-	if actualErr = subject.refreshViews(gui); actualErr != nil {
+	if actualErr = subject.afterStateChange(gui); actualErr != nil {
 		t.Fatalf("expected no error, actual %v", actualErr)
 	}
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")

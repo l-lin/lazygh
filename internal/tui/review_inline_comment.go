@@ -49,7 +49,7 @@ func (program *Program) handleInlineCommentSelectionError(gui *gocui.Gui, err er
 	if gui == nil {
 		return nil
 	}
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, selection pullRequestInlineCommentSelection) error {

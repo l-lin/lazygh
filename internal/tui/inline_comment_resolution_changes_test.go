@@ -22,7 +22,7 @@ func TestActionsPopup_GivenBrowserChangesTabCursorOnAnInlineThread_WhenOpening_T
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
 	subject.activeDetailTab = ChangesDetailTab
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 
 	then_noError(t, subject.openActionsPopup(gui, nil))
@@ -48,7 +48,7 @@ func TestActionsPopup_GivenBrowserChangesTabCursorOnAResolvedInlineThread_WhenOp
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
 	subject.activeDetailTab = ChangesDetailTab
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:43")
 
 	then_noError(t, subject.openActionsPopup(gui, nil))
@@ -74,12 +74,12 @@ func TestActionsPopup_GivenBrowserChangesTabResolveInlineCommentAction_WhenExecu
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
 	subject.activeDetailTab = ChangesDetailTab
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 
 	then_noError(t, subject.openActionsPopup(gui, nil))
 	subject.model.UpdateActionsPopupSearch("mark inline comment as resolved", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark inline comment as resolved"))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 
 	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-1"}) {

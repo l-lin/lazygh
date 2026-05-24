@@ -226,7 +226,7 @@ func TestCurrentActionsPopupActions_GivenChangesTabDiffAlreadyRendered_WhenResol
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
 	subject.activeDetailTab = ChangesDetailTab
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 	renderer.callCount = 0
 
@@ -263,7 +263,7 @@ func TestMoveActionsPopupSelection_GivenChangesTabPopupAlreadyOpen_WhenNavigatin
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
 	subject.activeDetailTab = ChangesDetailTab
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 	then_noError(t, subject.openActionsPopup(gui, nil))
 	renderer.callCount = 0

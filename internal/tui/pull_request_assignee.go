@@ -196,7 +196,7 @@ func (program *Program) queueAssigneePickerSearch(gui *gocui.Gui, requestID int,
 				return nil
 			}
 			program.markAssigneePickerSearchLoading(trimmedQuery)
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		})
 		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
 			return
@@ -241,14 +241,14 @@ func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID in
 			program.actionsPopupErrorMessage = ""
 			program.reportError(gui, strings.TrimSpace(normalizedAssigneePickerError(err).Error()))
 			program.syncActionsPopupSearch()
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 
 		program.assigneePicker.rememberCandidates(results)
 		program.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), results...)
 		program.actionsPopupErrorMessage = ""
 		program.syncActionsPopupSearch()
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

@@ -341,7 +341,7 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenYankingAVisualSelection_ThenI
 	subject.pullRequestBuildRunPopup.viewState.cursor = detailPosition{line: lineIndex, column: 0}
 	subject.pullRequestBuildRunPopup.viewState.preferredColumn = 0
 	subject.syncPullRequestBuildRunPopupViewState(document, popupView.InnerHeight())
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	visualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, 'v')
 	actualErr = visualHandler(gui, popupView)
@@ -547,7 +547,7 @@ func TestActionsPopup_GivenBuildRunActionSelected_WhenExecuting_ThenItClosesTheP
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("build run", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "build run"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -606,7 +606,7 @@ func TestActionsPopup_GivenBuildRunActionSelected_WhenTheGhQueryFails_ThenItShow
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("build run", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "build run"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -734,7 +734,7 @@ func TestActionsPopup_GivenViewJobLogsActionSelectedFromTheBuildOverview_WhenExe
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("job logs", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "job logs"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -813,7 +813,7 @@ func TestActionsPopup_GivenViewJobLogsActionSelected_WhenTheGhQueryFails_ThenItS
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("job logs", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "job logs"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -839,7 +839,7 @@ func given_pullRequestBuildRunPopupCursorOnLineContaining(t *testing.T, gui *goc
 	subject.pullRequestBuildRunPopup.viewState.cursor = detailPosition{line: lineIndex, column: 0}
 	subject.pullRequestBuildRunPopup.viewState.preferredColumn = 0
 	subject.syncPullRequestBuildRunPopupViewState(document, popupView.InnerHeight())
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 }
 

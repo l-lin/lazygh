@@ -91,7 +91,7 @@ func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository strin
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {
 			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 
 		target.popupContent.body = rawRunOutput
@@ -102,7 +102,7 @@ func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository strin
 		if jobsErr != nil {
 			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(jobsErr).Error()))
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 
@@ -130,7 +130,7 @@ func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository
 		program.pullRequestBuildRunLoad = nil
 		if err != nil {
 			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 
 		if actualErr := program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
@@ -143,7 +143,7 @@ func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository
 		}); actualErr != nil {
 			return actualErr
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

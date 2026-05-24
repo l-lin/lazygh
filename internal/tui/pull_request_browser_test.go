@@ -23,7 +23,7 @@ func TestActionsPopup_GivenOpenBrowserActionSelected_WhenExecuting_ThenItKeepsTh
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("browser", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "browser"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -53,7 +53,7 @@ func TestActionsPopup_GivenOpenBrowserActionSelected_WhenExecuting_ThenItUsesThe
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("browser", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "browser"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

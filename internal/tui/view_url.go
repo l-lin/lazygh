@@ -43,7 +43,7 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 	program.showOpenedPullRequestInDetailFullscreen()
 
 	if program.gui != nil {
-		return program.refreshViews(program.gui)
+		return program.afterStateChange(program.gui)
 	}
 	return nil
 }

@@ -48,7 +48,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpen
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("custom search", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "custom search"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)

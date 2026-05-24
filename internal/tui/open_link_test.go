@@ -49,7 +49,7 @@ func TestActionsPopup_GivenDetailCursorOnMarkdownHyperlink_WhenOpening_ThenItSho
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	given_cursorOnDetailText(t, subject, detailView, "Docs")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openActionsPopup(gui, nil)
@@ -74,7 +74,7 @@ func TestActionsPopup_GivenDetailCursorOnVisibleURL_WhenOpening_ThenItShowsOpenL
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	given_cursorOnDetailText(t, subject, detailView, "https://example.com/docs")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openActionsPopup(gui, nil)
@@ -99,7 +99,7 @@ func TestActionsPopup_GivenDetailCursorOnPlainText_WhenOpening_ThenItHidesOpenLi
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	given_cursorOnDetailText(t, subject, detailView, "Plain")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openActionsPopup(gui, nil)
@@ -124,13 +124,13 @@ func TestActionsPopup_GivenSearchForOpenLinkUnderCursor_WhenDetailCursorMovesToP
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	given_cursorOnDetailText(t, subject, detailView, "https://example.com/docs")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("link under cursor", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "link under cursor"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
@@ -141,7 +141,7 @@ func TestActionsPopup_GivenSearchForOpenLinkUnderCursor_WhenDetailCursorMovesToP
 
 	actualErr = when_detailCursorMovesToText(t, subject, gui, detailView, "plain")
 	then_noError(t, actualErr)
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	if strings.Contains(popupView.Buffer(), "Open link under cursor") {
@@ -193,7 +193,7 @@ func TestOpenLinkUnderCursor_GivenGXOnADetailLink_WhenOpening_ThenItUsesTheConfi
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	given_cursorOnDetailLink(t, subject, detailView, "https://example.com/docs")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	goHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'g')
@@ -308,7 +308,7 @@ func TestActionsPopup_GivenDetailFocusWithALinkUnderCursor_WhenExecutingOpenLink
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	given_cursorOnDetailLink(t, subject, detailView, "https://example.com/docs")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.openActionsPopup(gui, nil)
@@ -321,7 +321,7 @@ func TestActionsPopup_GivenDetailFocusWithALinkUnderCursor_WhenExecutingOpenLink
 	}
 
 	subject.model.UpdateActionsPopupSearch("link under cursor", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "link under cursor"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

@@ -1,36 +1,114 @@
 package tui
 
-import "github.com/jesseduffield/gocui"
+import (
+	"github.com/jesseduffield/gocui"
 
-type workflowCommand interface {
-	execute(*Program, *gocui.Gui)
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
+
+type loadConnectedUserCmd struct{}
+
+type loadPullRequestsCmd struct {
+	tab PullRequestTab
 }
 
-type asyncWorkflowCommand struct {
-	run func(*Program, *gocui.Gui)
+type loadNotificationsCmd struct{}
+
+type loadPullRequestDetailCmd struct {
+	summary githubdomain.PullRequest
 }
 
-func (command asyncWorkflowCommand) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || command.run == nil {
-		return
-	}
-	program.asyncRunner.Go(func() {
-		command.run(program, gui)
+type loadPullRequestDiffCmd struct {
+	summary githubdomain.PullRequest
+}
+
+type loadIssueDetailCmd struct {
+	repository string
+	number     int
+}
+
+type loadReleaseDetailCmd struct {
+	repository string
+	id         int
+}
+
+type loadCurrentDetailImageHTMLCmd struct {
+	source detailImageHTMLSource
+}
+
+type loadCurrentDetailImageCmd struct {
+	imageURL string
+}
+
+func (loadConnectedUserCmd) execute(program *Program, gui *gocui.Gui) {
+	program.runAsync(func() {
+		program.loadConnectedUser(gui)
 	})
 }
 
-func newAsyncWorkflowCommand(run func(*Program, *gocui.Gui)) workflowCommand {
-	return asyncWorkflowCommand{run: run}
+func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
+	program.runAsync(func() {
+		program.loadPullRequests(gui, command.tab)
+	})
 }
 
-func (program *Program) executeWorkflowCommands(gui *gocui.Gui, commands []workflowCommand) {
-	if program == nil || len(commands) == 0 {
+func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
+	program.runAsync(func() {
+		program.loadNotifications(gui)
+	})
+}
+
+func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	summary := command.summary
+	program.runAsync(func() {
+		program.loadPullRequestDetail(gui, summary)
+	})
+}
+
+func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {
+	summary := command.summary
+	program.runAsync(func() {
+		program.loadPullRequestDiff(gui, summary)
+	})
+}
+
+func (command loadIssueDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	repository := command.repository
+	number := command.number
+	program.runAsync(func() {
+		program.loadIssueDetail(gui, repository, number)
+	})
+}
+
+func (command loadReleaseDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	repository := command.repository
+	id := command.id
+	program.runAsync(func() {
+		program.loadReleaseDetail(gui, repository, id)
+	})
+}
+
+func (command loadCurrentDetailImageHTMLCmd) execute(program *Program, gui *gocui.Gui) {
+	source := command.source
+	program.runAsync(func() {
+		program.loadCurrentDetailImageHTML(gui, source)
+	})
+}
+
+func (command loadCurrentDetailImageCmd) execute(program *Program, gui *gocui.Gui) {
+	imageURL := command.imageURL
+	program.runAsync(func() {
+		program.loadCurrentDetailImage(gui, imageURL)
+	})
+}
+
+func (program *Program) runAsync(run func()) {
+	if program == nil || run == nil {
 		return
 	}
-	for _, command := range commands {
-		if command == nil {
-			continue
-		}
-		command.execute(program, gui)
+	if program.asyncRunner == nil {
+		run()
+		return
 	}
+	program.asyncRunner.Go(run)
 }

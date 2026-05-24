@@ -1624,7 +1624,7 @@ func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_
 	then_noError(t, actualErr)
 
 	subject.invalidatePullRequestDetail("acme/widgets", 301)
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	if len(asyncRunner.runs) != 1 {

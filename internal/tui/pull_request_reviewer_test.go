@@ -107,7 +107,7 @@ func TestReRequestPullRequestReview_GivenSelectedReviewer_WhenExecuting_ThenItKe
 	actualErr := subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("re-request review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "re-request review"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -139,7 +139,7 @@ func TestReRequestPullRequestReview_GivenSelectedReviewer_WhenExecuting_ThenItRe
 	actualErr := subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("re-request review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "re-request review"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

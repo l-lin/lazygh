@@ -1634,7 +1634,7 @@ func given_startingReviewMode(t *testing.T, gui *gocui.Gui, subject *Program) er
 		return actualErr
 	}
 	subject.model.UpdateActionsPopupSearch("start review", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "start review"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	if actualErr != nil {
 		return actualErr
 	}

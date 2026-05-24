@@ -56,7 +56,7 @@ func TestPanelViewContracts_GivenOverlayTransitions_WhenRendering_ThenBottomRigh
 	then_statusLineKeyHintsAreRightAligned(t, gui, "Ctrl+N/↓: next, Ctrl+P/↑: previous, Enter: execute, Escape: cancel")
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
@@ -90,7 +90,7 @@ func TestPanelViewContracts_GivenActionsAndTextEditing_WhenOpeningOverlays_ThenA
 	}
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupChromeName)

@@ -91,7 +91,7 @@ func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui,
 	if gui == nil {
 		return nil
 	}
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
@@ -134,7 +134,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 		if gui == nil {
 			return nil
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	}
 
 	return program.toggleOverviewSectionVisibility(gui, view, summary, result.detail)
@@ -162,7 +162,7 @@ func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *go
 	if gui == nil {
 		return nil
 	}
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) setReviewThreadCollapsed(threadID string, collapsed bool) {

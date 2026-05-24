@@ -64,7 +64,7 @@ func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenItClear
 
 	now = now.Add(subject.yankHighlightDuration + time.Millisecond)
 	subject.clearExpiredYankHighlights()
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 
 	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewDetailName, lineIndex, 0, given_searchHighlightColorHex(t), "expired yank highlight")
 }

@@ -200,7 +200,7 @@ func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.Vi
 		if gui == nil {
 			return nil
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	}
 
 	return program.openInlineCommentReplyComposer(gui, target)

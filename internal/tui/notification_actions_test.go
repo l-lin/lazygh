@@ -348,7 +348,7 @@ func TestActionsPopup_GivenNotificationReadAction_WhenExecuting_ThenItRefreshesT
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("mark notification as read", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark notification as read"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -380,7 +380,7 @@ func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksA
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("mark all notifications as read", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark all notifications as read"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -417,7 +417,7 @@ func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksA
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("mark all notifications as read", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark all notifications as read"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -457,7 +457,7 @@ func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemove
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("mark all notifications as done", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark all notifications as done"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -492,7 +492,7 @@ func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemove
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("mark all notifications as done", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "mark all notifications as done"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -522,7 +522,7 @@ func TestActionsPopup_GivenNotificationOpenBrowserAction_WhenExecuting_ThenItUse
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("open notification in browser", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "open notification in browser"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

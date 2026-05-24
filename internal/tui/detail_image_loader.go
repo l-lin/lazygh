@@ -20,7 +20,7 @@ type detailImageHTMLSource struct {
 }
 
 func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.imageLoadCoordinator.planCurrentDetailImageHTMLLoads(program, gui))
+	program.executeCmds(gui, program.imageLoadCoordinator.planCurrentDetailImageHTMLLoads(program, gui))
 }
 
 func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detailImageHTMLSource) {
@@ -36,12 +36,12 @@ func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detail
 		source.applyRenderedHTML(program, renderedHTML)
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 
 func (program *Program) maybeLoadCurrentDetailImages(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.imageLoadCoordinator.planCurrentDetailImageLoads(program, gui))
+	program.executeCmds(gui, program.imageLoadCoordinator.planCurrentDetailImageLoads(program, gui))
 }
 
 func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) {
@@ -61,7 +61,7 @@ func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) 
 		program.detailImageStore.Store(imageURL, loadedImage)
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

@@ -23,7 +23,7 @@ func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("story", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "story"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -57,7 +57,7 @@ func TestReviewStoryMode_GivenTheAgentIsStillRunning_WhenStartingStoryReview_The
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("story", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "story"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -96,7 +96,7 @@ func TestActionsPopup_GivenStoryReviewAction_WhenGitHubRefusesToStartThePendingR
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("story", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "story"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -430,7 +430,7 @@ func given_startingStoryReviewMode(t *testing.T, gui *gocui.Gui, subject *Progra
 		return actualErr
 	}
 	subject.model.UpdateActionsPopupSearch("story", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "story"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	if actualErr != nil {
 		return actualErr
 	}

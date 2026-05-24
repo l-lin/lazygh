@@ -52,7 +52,7 @@ func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 		return nil
 	}
 
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) applyProjectedScreenState(state ScreenState) {

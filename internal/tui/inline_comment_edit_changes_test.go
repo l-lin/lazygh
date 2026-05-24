@@ -26,7 +26,7 @@ func TestActionsPopup_GivenBrowserChangesTabCursorOnAnOwnedInlineComment_WhenOpe
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	subject.activeDetailTab = ChangesDetailTab
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 
@@ -62,7 +62,7 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	subject.activeDetailTab = ChangesDetailTab
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 
@@ -71,7 +71,7 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("edit inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "edit inline comment"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
@@ -128,7 +128,7 @@ func TestDeleteInlineComment_GivenBrowserChangesTabAction_WhenSubmittingOptimist
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	subject.activeDetailTab = ChangesDetailTab
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 
@@ -137,7 +137,7 @@ func TestDeleteInlineComment_GivenBrowserChangesTabAction_WhenSubmittingOptimist
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("delete inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "delete inline comment"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)

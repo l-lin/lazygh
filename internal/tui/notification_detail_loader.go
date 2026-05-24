@@ -20,7 +20,7 @@ type releaseDetailResult struct {
 }
 
 func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.detailStore.planSelectedNotificationDetailLoad(program, gui))
+	program.executeCmds(gui, program.detailStore.planSelectedNotificationDetailLoad(program, gui))
 }
 
 func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, number int) {
@@ -31,7 +31,7 @@ func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, numbe
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.issueDetailLoadInFlight, key)
 		program.issueDetailCache[key] = result
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 
@@ -43,7 +43,7 @@ func (program *Program) loadReleaseDetail(gui *gocui.Gui, repository string, id 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		delete(program.releaseDetailLoadInFlight, key)
 		program.releaseDetailCache[key] = result
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

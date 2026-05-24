@@ -9,7 +9,7 @@ import (
 )
 
 func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.sessionStore.planLoad(program, gui))
+	program.executeCmds(gui, program.sessionStore.planLoad(program, gui))
 }
 
 func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
@@ -17,7 +17,7 @@ func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
 }
 
 func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
-	program.executeWorkflowCommands(gui, program.pullRequestListStore.planLoad(program, gui, tab))
+	program.executeCmds(gui, program.pullRequestListStore.planLoad(program, gui, tab))
 }
 
 func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
@@ -26,8 +26,8 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 	}
 
 	tab := program.model.ActivePullRequestTab()
-	program.executeWorkflowCommands(gui, program.pullRequestListStore.planReload(program, gui, tab))
-	_ = program.refreshViews(gui)
+	program.executeCmds(gui, program.pullRequestListStore.planReload(program, gui, tab))
+	_ = program.afterStateChange(gui)
 }
 
 func (program *Program) reloadNotifications(gui *gocui.Gui) {
@@ -35,8 +35,8 @@ func (program *Program) reloadNotifications(gui *gocui.Gui) {
 		return
 	}
 
-	program.executeWorkflowCommands(gui, program.notificationStore.planReload(program, gui))
-	_ = program.refreshViews(gui)
+	program.executeCmds(gui, program.notificationStore.planReload(program, gui))
+	_ = program.afterStateChange(gui)
 }
 
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
@@ -56,7 +56,7 @@ func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 		}
 		program.connectedUserName = connectedUserName
 		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 
@@ -77,7 +77,7 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 			if manualRefresh {
 				program.completeManualRefreshOperation(gui, nil)
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 
 		if manualRefresh {
@@ -87,7 +87,7 @@ func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 			program.setPullRequestsCount(tab, 0, false)
 			program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, nil, err))
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

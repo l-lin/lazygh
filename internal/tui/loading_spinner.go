@@ -32,7 +32,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 					}
 
 					program.advanceLoadingSpinnerFrame()
-					return program.refreshViews(gui)
+					return program.afterStateChange(gui)
 				})
 			}
 		}

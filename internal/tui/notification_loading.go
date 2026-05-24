@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.notificationStore.planLoad(program, gui))
+	program.executeCmds(gui, program.notificationStore.planLoad(program, gui))
 }
 
 func (program *Program) loadNotifications(gui *gocui.Gui) {
@@ -26,7 +26,7 @@ func (program *Program) loadNotifications(gui *gocui.Gui) {
 			if manualRefresh {
 				program.completeManualRefreshOperation(gui, nil)
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 		if manualRefresh {
 			program.completeManualRefreshOperation(gui, err)
@@ -34,7 +34,7 @@ func (program *Program) loadNotifications(gui *gocui.Gui) {
 		if !program.shouldPreserveNotificationRowsOnRefreshError() {
 			program.model.SetNotificationRows(notificationsStateRows(nil, err))
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

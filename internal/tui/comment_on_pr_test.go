@@ -280,7 +280,7 @@ func TestPullRequestCommentComposer_GivenChangesTabSubmit_WhenPostingComment_The
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	subject.activeDetailTab = ChangesDetailTab
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	asyncRunner := &capturingAsyncRunner{}

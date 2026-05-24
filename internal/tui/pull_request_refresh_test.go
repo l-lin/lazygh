@@ -62,7 +62,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 		t.Fatalf("expected actions popup to contain %q, actual %q", "Refresh current PR information", popupView.Buffer())
 	}
 	subject.model.UpdateActionsPopupSearch("refresh", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "refresh"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -116,7 +116,7 @@ func TestActionsPopup_GivenRefreshPullRequestListAction_WhenExecuting_ThenItRelo
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(pullRequestListRefreshActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestListRefreshActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -197,7 +197,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMod
 		t.Fatalf("expected actions popup to contain %q, actual %q", "Refresh current PR information", popupView.Buffer())
 	}
 	subject.model.UpdateActionsPopupSearch("refresh", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "refresh"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -251,7 +251,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("refresh current", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "refresh current"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -274,7 +274,7 @@ func TestActionsPopup_GivenRefreshPullRequestListAction_WhenTheReloadFails_ThenI
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch(pullRequestListRefreshActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestListRefreshActionTitle))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
@@ -319,7 +319,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMod
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("refresh current", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "refresh current"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)

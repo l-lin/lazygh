@@ -65,7 +65,7 @@ func TestScreenStateShell_GivenOverlayTransitions_WhenHandlingActionsAndModalEdi
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	if actual := subject.screenState().KeyHintContext(); actual != KeyHintContextModalEditor {

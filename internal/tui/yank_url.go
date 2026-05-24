@@ -42,7 +42,7 @@ func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) err
 		return nil
 	}
 
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View) error {
@@ -61,7 +61,7 @@ func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View)
 		return nil
 	}
 
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) copySelectedPullRequestURL() error {

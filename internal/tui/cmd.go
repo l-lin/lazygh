@@ -17,3 +17,7 @@ func (program *Program) executeCmds(gui *gocui.Gui, cmds []Cmd) {
 		cmd.execute(program, gui)
 	}
 }
+
+func (program *Program) executeWorkflowCommands(gui *gocui.Gui, commands []Cmd) {
+	program.executeCmds(gui, commands)
+}

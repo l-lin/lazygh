@@ -446,11 +446,11 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 			program.clearGHCommandLoading()
 			if err != nil {
 				program.reportError(gui, strings.TrimSpace(err.Error()))
-				return program.refreshViews(gui)
+				return program.afterStateChange(gui)
 			}
 			program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
 			program.setFeedback(program.model.Focus(), pullRequestSquashMergedSuccessMessage)
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		})
 	})
 	return actionsPopupActionResult{closePopup: true}

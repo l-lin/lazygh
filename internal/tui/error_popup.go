@@ -130,7 +130,7 @@ func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) 
 			if !program.clearExpiredTransientErrorPopup(program.currentTime()) {
 				return nil
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		})
 	})
 }

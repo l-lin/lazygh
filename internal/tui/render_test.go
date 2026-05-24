@@ -557,7 +557,7 @@ func TestRefreshViews_GivenALoadingPullRequestsSpinner_WhenAdvancingTheFrame_The
 	then_noError(t, actualErr)
 
 	subject.advanceLoadingSpinnerFrame()
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)

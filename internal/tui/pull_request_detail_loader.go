@@ -10,7 +10,7 @@ import (
 )
 
 func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.detailStore.planSelectedPullRequestDetailLoad(program, gui))
+	program.executeCmds(gui, program.detailStore.planSelectedPullRequestDetailLoad(program, gui))
 }
 
 func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdomain.PullRequest) {
@@ -47,7 +47,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 			if manualRefresh {
 				program.completeManualRefreshOperation(gui, err)
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 
 		cachedResult := program.pullRequestDetailCache[key]
@@ -57,7 +57,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 		if manualRefresh {
 			program.completeManualRefreshOperation(gui, err)
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

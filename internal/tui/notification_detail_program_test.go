@@ -75,7 +75,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	then_noError(t, actualErr)
 	actualErr = subject.moveSelectionDown(gui, notificationsView)
 	then_noError(t, actualErr)
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	detailView = given_notificationDetailView(t, gui)
@@ -91,7 +91,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 
 	actualErr = subject.moveSelectionDown(gui, notificationsView)
 	then_noError(t, actualErr)
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	detailView = given_notificationDetailView(t, gui)

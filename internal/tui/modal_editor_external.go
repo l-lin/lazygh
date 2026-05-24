@@ -28,7 +28,7 @@ func (program *Program) openModalEditorInExternalEditor(gui *gocui.Gui, view *go
 
 func (program *Program) refreshModalEditorAfterExternalEdit(gui *gocui.Gui, view *gocui.View) error {
 	if gui != nil {
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	}
 	if view != nil {
 		program.configureModalEditorView(view)

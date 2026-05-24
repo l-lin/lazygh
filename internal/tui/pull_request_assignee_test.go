@@ -693,7 +693,7 @@ func given_openAssignPullRequestAction(t *testing.T, gui *gocui.Gui, subject *Pr
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("assign", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "assign"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)

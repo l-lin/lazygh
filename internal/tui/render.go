@@ -17,19 +17,16 @@ const (
 var roundFrameRunes = []rune{'─', '│', '╭', '╮', '╰', '╯'}
 
 func (program *Program) layout(gui *gocui.Gui) error {
-	program.gui = gui
-	maxX, maxY := gui.Size()
-
-	program.maybeLoadConnectedUser(gui)
-	program.maybeLoadActivePullRequests(gui)
-	if !program.reviewModeActive() {
-		program.maybeLoadNotifications(gui)
-		program.maybeLoadSelectedNotificationDetail(gui)
+	if gui == nil {
+		return nil
 	}
-	program.maybeLoadSelectedPullRequestDetail(gui)
-	program.maybeLoadSelectedPullRequestDiff(gui)
-	program.maybeLoadCurrentDetailImageHTML(gui)
-	program.maybeLoadCurrentDetailImages(gui)
+
+	program.gui = gui
+	if !program.appStarted {
+		return program.dispatch(gui, MsgAppStarted{})
+	}
+
+	maxX, maxY := gui.Size()
 	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
 		return actualErr
 	}

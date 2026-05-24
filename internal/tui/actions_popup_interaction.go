@@ -169,7 +169,7 @@ func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result ac
 			if gui == nil {
 				return nil
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 		if message := strings.TrimSpace(result.feedbackMessage); message != "" {
 			program.actionsPopupErrorMessage = ""
@@ -177,14 +177,14 @@ func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result ac
 			if gui == nil {
 				return nil
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 		program.actionsPopupErrorMessage = strings.TrimSpace(result.err.Error())
 		program.reportError(gui, program.actionsPopupErrorMessage)
 		if gui == nil {
 			return nil
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	}
 
 	if result.closePopup {
@@ -194,7 +194,7 @@ func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result ac
 		return nil
 	}
 
-	return program.refreshViews(gui)
+	return program.afterStateChange(gui)
 }
 
 func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
@@ -220,7 +220,7 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 	}
 	program.actionsPopupErrorMessage = ""
 	if program.gui != nil {
-		_ = program.refreshViews(program.gui)
+		_ = program.afterStateChange(program.gui)
 		return true
 	}
 

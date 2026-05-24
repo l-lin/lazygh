@@ -18,7 +18,7 @@ type pullRequestDiffResult struct {
 }
 
 func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
-	program.executeWorkflowCommands(gui, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui))
+	program.executeCmds(gui, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui))
 }
 
 func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
@@ -49,7 +49,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 			if manualRefresh {
 				program.completeManualRefreshOperation(gui, err)
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 
 		cachedResult := program.pullRequestDiffCache[key]
@@ -61,7 +61,7 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 		if manualRefresh {
 			program.completeManualRefreshOperation(gui, err)
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	})
 }
 

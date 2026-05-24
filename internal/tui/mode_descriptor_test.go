@@ -182,13 +182,13 @@ func TestInputContext_GivenBrowserDescriptionBrowserChangesAndReviewDiff_WhenRes
 
 	then_noError(t, browser.layout(browserGUI))
 	then_noError(t, browser.openDetail(browserGUI, nil))
-	then_noError(t, browser.refreshViews(browserGUI))
+	then_noError(t, browser.afterStateChange(browserGUI))
 	if actual := browser.inputContext().DetailInputMode; actual != DetailInputModePullRequestComment {
 		t.Fatalf("expected input mode %v, actual %v", DetailInputModePullRequestComment, actual)
 	}
 
 	browser.activeDetailTab = ChangesDetailTab
-	then_noError(t, browser.refreshViews(browserGUI))
+	then_noError(t, browser.afterStateChange(browserGUI))
 	if actual := browser.inputContext().DetailInputMode; actual != DetailInputModeBrowserChangesInlineComment {
 		t.Fatalf("expected input mode %v, actual %v", DetailInputModeBrowserChangesInlineComment, actual)
 	}

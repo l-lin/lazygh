@@ -163,7 +163,7 @@ func prepareManualVisualBrowserChangesGutterState(_ *testing.T, gui *gocui.Gui, 
 		return actualErr
 	}
 	subject.activeDetailTab = ChangesDetailTab
-	if actualErr := subject.refreshViews(gui); actualErr != nil {
+	if actualErr := subject.afterStateChange(gui); actualErr != nil {
 		return actualErr
 	}
 	if actualErr := subject.focusDetailView(gui, nil); actualErr != nil {
@@ -185,7 +185,7 @@ func prepareManualVisualBrowserChangesGutterState(_ *testing.T, gui *gocui.Gui, 
 func prepareManualVisualReviewDiffGutterState(_ *testing.T, gui *gocui.Gui, subject *Program, summary githubdomain.PullRequest) error {
 	manualVisualLogf("preparing review diff state")
 	subject.startReviewSession(summary, "PRR_pending")
-	if actualErr := subject.refreshViews(gui); actualErr != nil {
+	if actualErr := subject.afterStateChange(gui); actualErr != nil {
 		return actualErr
 	}
 	if actualErr := subject.focusDetailView(gui, nil); actualErr != nil {

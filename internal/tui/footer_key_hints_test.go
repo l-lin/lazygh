@@ -177,7 +177,7 @@ func TestStatusLineKeyHints_GivenGlobalActionOverride_WhenRenderingBrowserModePu
 
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, p: action")
 }

@@ -6,18 +6,16 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func (store *sessionStore) planLoad(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *sessionStore) planLoad(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil || !program.hasSessionQueries() || store.connectedUserLoadStarted {
 		return nil
 	}
 
 	store.connectedUserLoadStarted = true
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadConnectedUser(gui)
-	})}
+	return []Cmd{loadConnectedUserCmd{}}
 }
 
-func (store *pullRequestListStore) planLoad(program *Program, gui *gocui.Gui, tab PullRequestTab) []workflowCommand {
+func (store *pullRequestListStore) planLoad(program *Program, gui *gocui.Gui, tab PullRequestTab) []Cmd {
 	if store == nil || program == nil || gui == nil || store.pullRequestsLoadStarted(tab) || program.model.ActivePullRequestTab() != tab {
 		return nil
 	}
@@ -29,12 +27,10 @@ func (store *pullRequestListStore) planLoad(program *Program, gui *gocui.Gui, ta
 
 	store.setPullRequestsLoadStarted(tab, true)
 	store.setPullRequestsLoading(tab, true)
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadPullRequests(gui, tab)
-	})}
+	return []Cmd{loadPullRequestsCmd{tab: tab}}
 }
 
-func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, tab PullRequestTab) []workflowCommand {
+func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, tab PullRequestTab) []Cmd {
 	if store == nil || program == nil || gui == nil {
 		return nil
 	}
@@ -46,12 +42,10 @@ func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, 
 
 	store.setPullRequestsLoadStarted(tab, true)
 	store.setPullRequestsLoading(tab, true)
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadPullRequests(gui, tab)
-	})}
+	return []Cmd{loadPullRequestsCmd{tab: tab}}
 }
 
-func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil || program.reviewModeActive() || store.notificationsLoadStarted {
 		return nil
 	}
@@ -64,12 +58,10 @@ func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []wor
 	store.notificationsLoadStarted = true
 	store.notificationsLoading = true
 	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadNotifications(gui)
-	})}
+	return []Cmd{loadNotificationsCmd{}}
 }
 
-func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil || program.reviewModeActive() {
 		return nil
 	}
@@ -82,12 +74,10 @@ func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []w
 	store.notificationsLoadStarted = true
 	store.notificationsLoading = true
 	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadNotifications(gui)
-	})}
+	return []Cmd{loadNotificationsCmd{}}
 }
 
-func (store *detailStore) planSelectedPullRequestDetailLoad(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *detailStore) planSelectedPullRequestDetailLoad(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil {
 		return nil
 	}
@@ -109,12 +99,10 @@ func (store *detailStore) planSelectedPullRequestDetailLoad(program *Program, gu
 	}
 
 	store.pullRequestDetailLoadInFlight[key] = true
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadPullRequestDetail(gui, summary)
-	})}
+	return []Cmd{loadPullRequestDetailCmd{summary: summary}}
 }
 
-func (store *reviewStore) planSelectedPullRequestDiffLoad(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *reviewStore) planSelectedPullRequestDiffLoad(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil {
 		return nil
 	}
@@ -136,12 +124,10 @@ func (store *reviewStore) planSelectedPullRequestDiffLoad(program *Program, gui 
 	}
 
 	store.pullRequestDiffLoadInFlight[key] = true
-	return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-		program.loadPullRequestDiff(gui, summary)
-	})}
+	return []Cmd{loadPullRequestDiffCmd{summary: summary}}
 }
 
-func (store *detailStore) planSelectedNotificationDetailLoad(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *detailStore) planSelectedNotificationDetailLoad(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil || program.reviewModeActive() || program.model.currentSideFocus() != FocusNotificationsView {
 		return nil
 	}
@@ -160,9 +146,7 @@ func (store *detailStore) planSelectedNotificationDetailLoad(program *Program, g
 			return nil
 		}
 		store.issueDetailLoadInFlight[key] = true
-		return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-			program.loadIssueDetail(gui, repository, number)
-		})}
+		return []Cmd{loadIssueDetailCmd{repository: repository, number: number}}
 	}
 
 	if repository, id, ok := notification.ReleaseIdentity(); ok {
@@ -171,20 +155,18 @@ func (store *detailStore) planSelectedNotificationDetailLoad(program *Program, g
 			return nil
 		}
 		store.releaseDetailLoadInFlight[key] = true
-		return []workflowCommand{newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-			program.loadReleaseDetail(gui, repository, id)
-		})}
+		return []Cmd{loadReleaseDetailCmd{repository: repository, id: id}}
 	}
 
 	return nil
 }
 
-func (store *imageLoadCoordinator) planCurrentDetailImageHTMLLoads(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *imageLoadCoordinator) planCurrentDetailImageHTMLLoads(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil || !program.hasMarkdownHTMLRenderer() {
 		return nil
 	}
 
-	commands := make([]workflowCommand, 0)
+	commands := make([]Cmd, 0)
 	for _, source := range program.currentDetailImageHTMLSources() {
 		if !source.canLoadRenderedHTML() {
 			continue
@@ -195,19 +177,17 @@ func (store *imageLoadCoordinator) planCurrentDetailImageHTMLLoads(program *Prog
 
 		sourceCopy := source
 		store.detailImageHTMLLoadInFlight[source.key] = true
-		commands = append(commands, newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-			program.loadCurrentDetailImageHTML(gui, sourceCopy)
-		}))
+		commands = append(commands, loadCurrentDetailImageHTMLCmd{source: sourceCopy})
 	}
 	return commands
 }
 
-func (store *imageLoadCoordinator) planCurrentDetailImageLoads(program *Program, gui *gocui.Gui) []workflowCommand {
+func (store *imageLoadCoordinator) planCurrentDetailImageLoads(program *Program, gui *gocui.Gui) []Cmd {
 	if store == nil || program == nil || gui == nil || program.detailImageStore == nil {
 		return nil
 	}
 
-	commands := make([]workflowCommand, 0)
+	commands := make([]Cmd, 0)
 	for _, source := range program.currentDetailImageHTMLSources() {
 		preparedMarkdown := prepareMarkdownForImageRendering(source.markdown, source.renderedHTML)
 		for _, occurrence := range collectMarkdownImageOccurrences(preparedMarkdown) {
@@ -224,9 +204,7 @@ func (store *imageLoadCoordinator) planCurrentDetailImageLoads(program *Program,
 
 			imageURLCopy := imageURL
 			store.detailImageLoadInFlight[imageURLCopy] = true
-			commands = append(commands, newAsyncWorkflowCommand(func(program *Program, gui *gocui.Gui) {
-				program.loadCurrentDetailImage(gui, imageURLCopy)
-			}))
+			commands = append(commands, loadCurrentDetailImageCmd{imageURL: imageURLCopy})
 		}
 	}
 	return commands

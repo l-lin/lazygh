@@ -203,7 +203,7 @@ func given_browserChangesDetailFocusForInlineComment(t *testing.T, gui *gocui.Gu
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
 	subject.activeDetailTab = ChangesDetailTab
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)

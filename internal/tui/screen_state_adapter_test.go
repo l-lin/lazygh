@@ -118,7 +118,7 @@ func TestScreenStateAdapter_GivenVisibleOverlays_WhenProjectingTheProgram_ThenTh
 	}
 
 	subject.model.UpdateActionsPopupSearch("comment on pr", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "comment on pr"))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	if actual := subject.screenState().KeyHintContext(); actual != KeyHintContextModalEditor {
 		t.Fatalf("expected key hint context %v, actual %v", KeyHintContextModalEditor, actual)

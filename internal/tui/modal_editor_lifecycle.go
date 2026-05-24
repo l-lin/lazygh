@@ -71,7 +71,7 @@ func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 			if gui == nil {
 				return nil
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 		var feedbackErr modalEditorStatusLineError
 		if errors.As(err, &feedbackErr) {
@@ -79,13 +79,13 @@ func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 			if gui == nil {
 				return nil
 			}
-			return program.refreshViews(gui)
+			return program.afterStateChange(gui)
 		}
 		program.modalEditor.errorMessage = strings.TrimSpace(err.Error())
 		if gui == nil {
 			return nil
 		}
-		return program.refreshViews(gui)
+		return program.afterStateChange(gui)
 	}
 	if program.modalEditor.afterSubmit != nil {
 		program.modalEditor.afterSubmit(gui)

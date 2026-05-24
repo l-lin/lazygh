@@ -99,7 +99,7 @@ func TestActionsPopup_GivenReviewModeDiffLine_WhenExecutingAddInlineComment_Then
 	actualErr := subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("add inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add inline comment"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
@@ -129,7 +129,7 @@ func TestActionsPopup_GivenReviewModeLinewiseSelectionAcrossAddedLines_WhenExecu
 	actualErr := subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("add inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add inline comment"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
@@ -159,7 +159,7 @@ func TestActionsPopup_GivenSearchForAddInlineComment_WhenReviewCursorMovesToAnIn
 	actualErr := subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
 	subject.model.UpdateActionsPopupSearch("add inline comment", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add inline comment"))
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
@@ -169,7 +169,7 @@ func TestActionsPopup_GivenSearchForAddInlineComment_WhenReviewCursorMovesToAnIn
 	}
 
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered thread body")
-	actualErr = subject.refreshViews(gui)
+	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
 	if strings.Contains(popupView.Buffer(), "Add inline comment") {

@@ -24,7 +24,7 @@ func TestActionsPopup_GivenApprovePullRequestFailure_WhenRendering_ThenItShowsAT
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openActionsPopup(gui, nil))
 	subject.model.UpdateActionsPopupSearch(pullRequestReviewApprovalTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestReviewApprovalTitle))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	given_runQueuedAsync(t, asyncRunner, 0)
@@ -63,7 +63,7 @@ func TestTransientErrorPopup_GivenAVisibleError_WhenItsLifetimeExpires_ThenItDis
 
 	then_noError(t, subject.layout(gui))
 	subject.reportError(gui, "boom")
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 
 	if len(asyncRunner.runs) != 1 {
 		t.Fatalf("expected one scheduled transient popup cleanup, actual %d", len(asyncRunner.runs))
@@ -127,7 +127,7 @@ func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_The
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openActionsPopup(gui, nil))
 	subject.model.UpdateActionsPopupSearch(recentErrorsActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), recentErrorsActionTitle))
-	then_noError(t, subject.refreshViews(gui))
+	then_noError(t, subject.afterStateChange(gui))
 
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 
