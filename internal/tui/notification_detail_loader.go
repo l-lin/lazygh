@@ -25,26 +25,12 @@ func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
 
 func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, number int) {
 	detail, err := program.notificationQueries.GetIssueDetail(repository, number)
-	key := notificationDetailKey(repository, number)
-	result := issueDetailResult{detail: detail, err: err}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		delete(program.issueDetailLoadInFlight, key)
-		program.issueDetailCache[key] = result
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgIssueDetailLoaded{Repository: repository, Number: number, Detail: detail, Err: err})
 }
 
 func (program *Program) loadReleaseDetail(gui *gocui.Gui, repository string, id int) {
 	detail, err := program.notificationQueries.GetReleaseDetail(repository, id)
-	key := notificationDetailKey(repository, id)
-	result := releaseDetailResult{detail: detail, err: err}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		delete(program.releaseDetailLoadInFlight, key)
-		program.releaseDetailCache[key] = result
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgReleaseDetailLoaded{Repository: repository, ID: id, Detail: detail, Err: err})
 }
 
 func (program *Program) issueDetailLoaded(key string) bool {

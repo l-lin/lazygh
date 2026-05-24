@@ -119,6 +119,28 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.searchEditor = nil
 	case MsgCloseSearch:
 		program.searchEditor = nil
+	case MsgConnectedUserLoaded:
+		program.applyConnectedUserLoaded(actual)
+	case MsgPullRequestsLoaded:
+		program.applyPullRequestsLoaded(actual)
+	case MsgNotificationsLoaded:
+		program.applyNotificationsLoaded(actual)
+	case MsgPullRequestDetailLoaded:
+		program.applyPullRequestDetailLoaded(actual)
+	case MsgPullRequestDiffLoaded:
+		program.applyPullRequestDiffLoaded(actual)
+	case MsgIssueDetailLoaded:
+		program.applyIssueDetailLoaded(actual)
+	case MsgReleaseDetailLoaded:
+		program.applyReleaseDetailLoaded(actual)
+	case MsgCurrentDetailImageHTMLLoaded:
+		program.applyCurrentDetailImageHTMLLoaded(actual)
+	case MsgCurrentDetailImageLoaded:
+		program.applyCurrentDetailImageLoaded(actual)
+	case MsgLoadingSpinnerTick:
+		program.applyLoadingSpinnerTick()
+	case MsgTransientErrorPopupExpired:
+		program.applyTransientErrorPopupExpired(actual)
 	case MsgOpenActionsPopup:
 		program.clearPendingSelectionPrefix()
 		program.detailViewState.clearPendingPrefix()

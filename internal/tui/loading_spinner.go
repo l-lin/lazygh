@@ -26,14 +26,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 			case <-done:
 				return
 			case <-ticker.C:
-				program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-					if !program.shouldAnimateLoadingSpinner() {
-						return nil
-					}
-
-					program.advanceLoadingSpinnerFrame()
-					return program.afterStateChange(gui)
-				})
+				program.dispatchAsync(gui, MsgLoadingSpinnerTick{})
 			}
 		}
 	}()

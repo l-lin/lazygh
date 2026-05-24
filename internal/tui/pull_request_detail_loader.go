@@ -26,38 +26,12 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 			}
 		}
 	}
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	result := pullRequestDetailResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summary)}
-	if err == nil {
-		clonedDetail := clonePullRequestDetail(detail)
-		result.detail = clonedDetail
-		result.needsRefresh = false
-		program.cachePullRequestDetail(summary, clonedDetail)
-	}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		delete(program.pullRequestDetailLoadInFlight, key)
-		manualRefresh := program.consumeManualPullRequestDetailRefresh(key)
-		if pendingReviewStateKnown {
-			program.pendingPullRequestReviewCache[key] = pendingReviewState
-		}
-		if err == nil || !program.canKeepPullRequestDetailOnRefreshError(key) {
-			program.pullRequestDetailCache[key] = result
-			program.invalidatePullRequestDetailDocumentCache()
-			if manualRefresh {
-				program.completeManualRefreshOperation(gui, err)
-			}
-			return program.afterStateChange(gui)
-		}
-
-		cachedResult := program.pullRequestDetailCache[key]
-		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summary)
-		cachedResult.needsRefresh = false
-		program.pullRequestDetailCache[key] = cachedResult
-		if manualRefresh {
-			program.completeManualRefreshOperation(gui, err)
-		}
-		return program.afterStateChange(gui)
+	program.dispatchAsync(gui, MsgPullRequestDetailLoaded{
+		Summary:                 summary,
+		Detail:                  detail,
+		Err:                     err,
+		PendingReviewState:      pendingReviewState,
+		PendingReviewStateKnown: pendingReviewStateKnown,
 	})
 }
 

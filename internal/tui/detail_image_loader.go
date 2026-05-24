@@ -25,19 +25,7 @@ func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
 
 func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detailImageHTMLSource) {
 	renderedHTML, err := program.markdownHTMLRenderer.RenderMarkdownHTML(source.repository, source.markdown)
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		delete(program.detailImageHTMLLoadInFlight, source.key)
-		if err != nil || strings.TrimSpace(renderedHTML) == "" {
-			program.detailImageHTMLLoadFailed[source.key] = true
-			return nil
-		}
-
-		source.applyRenderedHTML(program, renderedHTML)
-		program.invalidateReviewDiffRenderCache()
-		program.invalidatePullRequestDetailDocumentCache()
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgCurrentDetailImageHTMLLoaded{Source: source, RenderedHTML: renderedHTML, Err: err})
 }
 
 func (program *Program) maybeLoadCurrentDetailImages(gui *gocui.Gui) {
@@ -50,19 +38,7 @@ func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) 
 		githubToken = program.detailImageAuthToken()
 	}
 	loadedImage, err := loadDetailImage(imageURL, program.imageHTTPClient, githubToken)
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		delete(program.detailImageLoadInFlight, imageURL)
-		if err != nil {
-			program.detailImageLoadFailed[imageURL] = true
-			return nil
-		}
-
-		program.detailImageStore.Store(imageURL, loadedImage)
-		program.invalidateReviewDiffRenderCache()
-		program.invalidatePullRequestDetailDocumentCache()
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgCurrentDetailImageLoaded{ImageURL: imageURL, Image: loadedImage, Err: err})
 }
 
 func (program *Program) detailImageAuthToken() string {

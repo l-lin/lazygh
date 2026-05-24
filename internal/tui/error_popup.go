@@ -123,15 +123,7 @@ func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) 
 		if delay != nil {
 			<-delay
 		}
-		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			if program.transientErrorPopup.generation != generation {
-				return nil
-			}
-			if !program.clearExpiredTransientErrorPopup(program.currentTime()) {
-				return nil
-			}
-			return program.afterStateChange(gui)
-		})
+		program.dispatchAsync(gui, MsgTransientErrorPopupExpired{Generation: generation})
 	})
 }
 

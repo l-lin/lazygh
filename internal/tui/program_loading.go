@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"github.com/jesseduffield/gocui"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -41,54 +39,12 @@ func (program *Program) reloadNotifications(gui *gocui.Gui) {
 
 func (program *Program) loadConnectedUser(gui *gocui.Gui) {
 	user, err := program.sessionQueries.GetConnectedUser()
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		connectedUserLogin := ""
-		connectedUserName := ""
-		if err == nil {
-			connectedUserLogin = strings.TrimSpace(user.Login)
-			connectedUserName = strings.TrimSpace(user.Name)
-		}
-		if program.connectedUserLogin != connectedUserLogin {
-			program.connectedUserLogin = connectedUserLogin
-			program.invalidatePullRequestDetailDocumentCache()
-			program.invalidateReviewDiffRenderCache()
-		}
-		program.connectedUserName = connectedUserName
-		program.model.SetUsers([]Item{connectedUserStateItem(user, err)})
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgConnectedUserLoaded{User: user, Err: err})
 }
 
 func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
 	pullRequests, err := program.listPullRequests(tab)
-	if err == nil {
-		program.cachePullRequests(tab, pullRequests)
-	}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		program.setPullRequestsLoading(tab, false)
-		manualRefresh := program.consumeManualPullRequestListRefresh(tab)
-		if err == nil {
-			rows := program.pullRequestRowsForTab(tab, pullRequests, nil)
-			program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
-			program.model.SetPullRequestRows(tab, rows)
-			program.selectOpenedPullRequestRow(tab)
-			if manualRefresh {
-				program.completeManualRefreshOperation(gui, nil)
-			}
-			return program.afterStateChange(gui)
-		}
-
-		if manualRefresh {
-			program.completeManualRefreshOperation(gui, err)
-		}
-		if !program.shouldPreservePullRequestRowsOnRefreshError(tab) {
-			program.setPullRequestsCount(tab, 0, false)
-			program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, nil, err))
-		}
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgPullRequestsLoaded{Tab: tab, PullRequests: pullRequests, Err: err})
 }
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubdomain.PullRequest, error) {

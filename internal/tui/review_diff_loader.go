@@ -28,41 +28,10 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 	}
 	repository := pullRequestRepositoryName(summaryValue.Repository)
 	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summaryValue.Number)
-	key := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
-	result := pullRequestDiffResult{err: err, sourceUpdatedAt: pullRequestSummaryVersion(summaryValue)}
 	if err == nil {
 		rawDiff = program.withPullRequestDiffFileTeamOwners(repository, summaryValue.Number, rawDiff)
-		result.data = buildReviewDiffData(rawDiff)
-		result.needsRefresh = false
-		result.fileTeamOwnersAttempted = rawDiff.FileTeamOwnersAttempted
-		program.cachePullRequestDiff(summaryValue, rawDiff)
 	}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		delete(program.pullRequestDiffLoadInFlight, key)
-		manualRefresh := program.consumeManualPullRequestDiffRefresh(key)
-		if err == nil || !program.canKeepPullRequestDiffOnRefreshError(key) {
-			program.pullRequestDiffCache[key] = result
-			program.invalidateReviewDiffRenderCache()
-			program.invalidatePullRequestDetailDocumentCache()
-			program.clampReviewSessionSelection()
-			if manualRefresh {
-				program.completeManualRefreshOperation(gui, err)
-			}
-			return program.afterStateChange(gui)
-		}
-
-		cachedResult := program.pullRequestDiffCache[key]
-		cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(summaryValue)
-		cachedResult.needsRefresh = false
-		cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.shouldLoadPullRequestDiffTeamOwners()
-		program.pullRequestDiffCache[key] = cachedResult
-		program.invalidatePullRequestDetailDocumentCache()
-		if manualRefresh {
-			program.completeManualRefreshOperation(gui, err)
-		}
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgPullRequestDiffLoaded{Summary: summaryValue, RawDiff: rawDiff, Err: err})
 }
 
 func (program *Program) selectedPullRequestSummaryForDiff() (githubdomain.PullRequest, bool) {
