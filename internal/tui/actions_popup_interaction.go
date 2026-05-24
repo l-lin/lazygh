@@ -208,23 +208,5 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 		return false
 	}
 
-	program.clearActionsPopupPendingConfirmation()
-	query := program.actionsPopupWidget.searchEditor.Text()
-	requestID := 0
-	if program.assigneePickerVisible() {
-		requestID = program.resetAssigneePickerSearch(query)
-	}
-	program.updateActionsPopupSearch(query)
-	if program.assigneePickerVisible() {
-		program.queueAssigneePickerSearch(program.gui, requestID, query)
-	}
-	program.actionsPopupWidget.errorMessage = ""
-	if program.gui != nil {
-		_ = program.afterStateChange(program.gui)
-		return true
-	}
-
-	program.configureActionsPopupSearchView(view)
-	program.renderActionsPopupSearchView(view)
-	return true
+	return program.dispatchEditorMessage(MsgActionsPopupSearchEdited{Query: program.actionsPopupWidget.searchEditor.Text()})
 }

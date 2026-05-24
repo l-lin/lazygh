@@ -1,5 +1,7 @@
 package tui
 
+import "strings"
+
 func Update(program *Program, msg Msg) []Cmd {
 	if program == nil || msg == nil {
 		return nil
@@ -119,6 +121,20 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.searchWidget.editor = nil
 	case MsgCloseSearch:
 		program.searchWidget.editor = nil
+	case MsgActionsPopupSearchEdited:
+		if !program.model.ActionsPopupVisible() {
+			return nil
+		}
+		program.clearActionsPopupPendingConfirmation()
+		requestID := 0
+		if program.assigneePickerVisible() {
+			requestID = program.resetAssigneePickerSearch(actual.Query)
+		}
+		program.updateActionsPopupSearch(actual.Query)
+		program.actionsPopupWidget.errorMessage = ""
+		if program.assigneePickerVisible() && requestID > 0 && strings.TrimSpace(actual.Query) != "" {
+			return []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: actual.Query, Delay: program.actionsPopupWidget.assigneePickerSearchDebounceDelay, DispatchLoading: true}}
+		}
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 	case MsgPullRequestsLoaded:
@@ -219,6 +235,11 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToBottom()
 		program.actionsPopupWidget.errorMessage = ""
+	case MsgModalEditorEdited:
+		if program.modalEditor == nil {
+			return nil
+		}
+		program.modalEditor.errorMessage = ""
 	}
 
 	return nil

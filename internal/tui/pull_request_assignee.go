@@ -153,9 +153,7 @@ func (program *Program) startAssigneePickerWarmup(gui *gocui.Gui) {
 
 	requestID := program.resetAssigneePickerSearch("")
 	program.markAssigneePickerSearchLoading("")
-	program.runAsync(func() {
-		program.performAssigneePickerSearch(gui, requestID, "")
-	})
+	program.executeCmds(gui, []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: "", DispatchLoading: false}})
 	_ = program.refreshViewsIfGUI(gui)
 }
 
@@ -171,32 +169,6 @@ func (program *Program) resetAssigneePickerSearch(query string) int {
 	program.actionsPopupWidget.assigneePicker.searchLoading = false
 	program.actionsPopupWidget.assigneePicker.searchCommand = ""
 	return program.actionsPopupWidget.assigneePicker.searchRequestID
-}
-
-func (program *Program) queueAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
-	if !program.assigneePickerVisible() || !program.hasPullRequestMutations() {
-		return
-	}
-
-	trimmedQuery := strings.TrimSpace(query)
-	if requestID <= 0 || trimmedQuery == "" {
-		return
-	}
-
-	delay := program.actionsPopupWidget.assigneePickerSearchDebounceDelay
-	program.runAsync(func() {
-		if delay > 0 {
-			timer := time.NewTimer(delay)
-			defer timer.Stop()
-			<-timer.C
-		}
-
-		program.dispatchAsync(gui, MsgAssigneePickerSearchLoadingStarted{RequestID: requestID, Query: trimmedQuery})
-		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
-			return
-		}
-		program.performAssigneePickerSearch(gui, requestID, trimmedQuery)
-	})
 }
 
 func (program *Program) markAssigneePickerSearchLoading(query string) {
@@ -216,12 +188,6 @@ func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query 
 		return false
 	}
 	return strings.TrimSpace(program.model.ActionsPopupSearchQuery()) == strings.TrimSpace(query)
-}
-
-func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
-	trimmedQuery := strings.TrimSpace(query)
-	results, err := program.pullRequestMutations.SearchAssignableUsers(program.actionsPopupWidget.assigneePicker.target.repository, trimmedQuery)
-	program.dispatchAsync(gui, MsgAssigneePickerSearchLoaded{RequestID: requestID, Query: trimmedQuery, Results: results, Err: err})
 }
 
 func (state *assigneePickerState) rememberCandidates(candidates []githubdomain.PullRequestAuthor) {

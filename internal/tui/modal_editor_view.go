@@ -42,10 +42,7 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 		return false
 	}
 
-	program.modalEditor.errorMessage = ""
-	program.configureModalEditorView(view)
-	program.renderModalEditorView(view)
-	return true
+	return program.dispatchEditorMessage(MsgModalEditorEdited{})
 }
 
 func (program *Program) modalEditorTitle() string {

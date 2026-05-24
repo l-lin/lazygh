@@ -76,10 +76,7 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 		return false
 	}
 
-	Update(program, MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
-	program.configureSearchView(view)
-	program.renderSearchView(view)
-	return true
+	return program.dispatchEditorMessage(MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
 }
 
 func (program *Program) userViewTitle() string {

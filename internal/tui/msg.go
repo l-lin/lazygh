@@ -36,6 +36,10 @@ type MsgCancelSearch struct{}
 
 type MsgCloseSearch struct{}
 
+type MsgActionsPopupSearchEdited struct {
+	Query string
+}
+
 type MsgOpenActionsPopup struct {
 	ActionCount int
 }
@@ -54,6 +58,8 @@ type MsgMoveActionsPopupSelectionToTop struct{}
 
 type MsgMoveActionsPopupSelectionToBottom struct{}
 
+type MsgModalEditorEdited struct{}
+
 func (MsgAppStarted) isMsg()                        {}
 func (MsgNextSideView) isMsg()                      {}
 func (MsgPreviousSideView) isMsg()                  {}
@@ -66,6 +72,7 @@ func (MsgSearchDraftChanged) isMsg()                {}
 func (MsgSubmitSearch) isMsg()                      {}
 func (MsgCancelSearch) isMsg()                      {}
 func (MsgCloseSearch) isMsg()                       {}
+func (MsgActionsPopupSearchEdited) isMsg()          {}
 func (MsgOpenActionsPopup) isMsg()                  {}
 func (MsgCloseActionsPopup) isMsg()                 {}
 func (MsgFocusActionsPopupSearch) isMsg()           {}
@@ -73,3 +80,4 @@ func (MsgFocusActionsPopupList) isMsg()             {}
 func (MsgMoveActionsPopupSelection) isMsg()         {}
 func (MsgMoveActionsPopupSelectionToTop) isMsg()    {}
 func (MsgMoveActionsPopupSelectionToBottom) isMsg() {}
+func (MsgModalEditorEdited) isMsg()                 {}
