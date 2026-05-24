@@ -42,7 +42,6 @@ func (program *Program) sidebarTopPaneHeight() int {
 }
 
 func (program *Program) configureDetailView(view *gocui.View) {
-	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	program.applyViewStyle(view, FocusDetailView, program.detailViewTitle(), false)
 	if program.shouldShowPullRequestDetailTabs() {
 		view.TitlePrefix = "[0]"
@@ -163,8 +162,5 @@ func (program *Program) renderNotificationsView(view *gocui.View) {
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
-	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
-	detailDocument := program.currentDetailDocument(view)
-	program.syncDetailViewState(detailDocument, view.InnerHeight())
-	renderDetailDocumentView(view, detailDocument, program.detailViewState)
+	renderDetailDocumentView(view, program.currentDetailDocument(view), program.detailViewState)
 }

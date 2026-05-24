@@ -387,6 +387,7 @@ func (program *Program) applyScreenComposition(gui *gocui.Gui, composition scree
 		if view != nil {
 			if renderer, ok := composition.Renderers[frame.ViewName]; ok {
 				renderer.Configure(view)
+				program.prepareViewRenderState(frame.ViewName, view)
 				renderer.Render(view)
 			}
 		}
