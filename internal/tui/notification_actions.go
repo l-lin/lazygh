@@ -395,36 +395,19 @@ func (program *Program) startNotificationMutation(gui *gocui.Gui, loadingMessage
 	}
 
 	snapshot := program.captureNotificationMutationSnapshot()
-	program.model.SetNotificationRows(optimisticRows)
-	program.feedbackMessage = ""
-	program.notificationsLoading = true
-	program.notificationsLoadingDetailMessage = strings.TrimSpace(loadingMessage)
+	if actualErr := program.dispatch(gui, MsgNotificationMutationStarted{OptimisticRows: optimisticRows, LoadingMessage: loadingMessage}); actualErr != nil {
+		return actualErr
+	}
 	if gui == nil {
 		err := work()
-		return program.finishNotificationMutation(gui, snapshot, successFeedbackMessage, err)
+		return program.dispatch(gui, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: successFeedbackMessage, Err: err})
 	}
 
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		err := work()
-		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			return program.finishNotificationMutation(gui, snapshot, successFeedbackMessage, err)
-		})
+		program.dispatchAsync(gui, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: successFeedbackMessage, Err: err})
 	})
-	return program.refreshViewsIfGUI(gui)
-}
-
-func (program *Program) finishNotificationMutation(gui *gocui.Gui, snapshot notificationMutationSnapshot, successFeedbackMessage string, err error) error {
-	program.notificationsLoading = false
-	program.notificationsLoadingDetailMessage = ""
-	if err != nil {
-		program.restoreNotificationMutationSnapshot(snapshot)
-		program.reportError(gui, strings.TrimSpace(err.Error()))
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	program.cacheNotifications(program.loadedNotifications())
-	program.setFeedback(program.model.Focus(), successFeedbackMessage)
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func normalizedNotificationMutationError(err error) error {

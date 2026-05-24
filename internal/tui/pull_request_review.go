@@ -35,10 +35,11 @@ func (program *Program) executeApprovePullRequestAction(gui *gocui.Gui) actionsP
 
 	return program.startActionsPopupAsyncGHCommand(gui, approvePullRequestCommand(target.repository, target.number), func() error {
 		return program.reviewMutations.ApprovePullRequest(target.repository, target.number)
-	}, func() {
-		program.invalidatePullRequestDetail(target.repository, target.number)
-		program.invalidatePullRequestDiff(target.repository, target.number)
-		program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
+	}, actionsPopupAsyncInvalidatePullRequestSuccess{
+		Repository:     target.repository,
+		Number:         target.number,
+		InvalidateDiff: true,
+		Message:        pullRequestReviewSuccessMessage,
 	})
 }
 

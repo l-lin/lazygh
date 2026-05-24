@@ -281,9 +281,9 @@ func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) act
 
 	return program.startActionsPopupAsyncGHCommand(gui, updatePullRequestBranchCommand(target.repository, target.number), func() error {
 		return normalizedPullRequestMutationError(program.pullRequestMutations.UpdatePullRequestBranch(target.repository, target.number), "gh pr update-branch")
-	}, func() {
-		program.applyVisiblePullRequestBranchUpdate(summary)
-		program.setFeedback(program.model.Focus(), pullRequestBranchUpdatedSuccessMessage)
+	}, actionsPopupAsyncPullRequestBranchUpdateSuccess{
+		Summary: summary,
+		Message: pullRequestBranchUpdatedSuccessMessage,
 	})
 }
 
@@ -401,9 +401,11 @@ func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, comm
 
 	return program.startActionsPopupAsyncGHCommand(gui, command(target), func() error {
 		return normalizedPullRequestMutationError(mutate(target.repository, target.number), commandName)
-	}, func() {
-		program.applyVisiblePullRequestLifecycleMutation(summary, state, isDraft)
-		program.setFeedback(program.model.Focus(), successMessage)
+	}, actionsPopupAsyncPullRequestLifecycleSuccess{
+		Summary: summary,
+		State:   state,
+		IsDraft: isDraft,
+		Message: successMessage,
 	})
 }
 
@@ -415,9 +417,10 @@ func (program *Program) executePullRequestAutoMergeMutation(gui *gocui.Gui, comm
 
 	return program.startActionsPopupAsyncGHCommand(gui, command(target), func() error {
 		return normalizedPullRequestMutationError(mutate(target.repository, target.number), "gh pr merge")
-	}, func() {
-		program.applyVisiblePullRequestAutoMergeMutation(summary, enabled)
-		program.setFeedback(program.model.Focus(), successMessage)
+	}, actionsPopupAsyncPullRequestAutoMergeSuccess{
+		Summary: summary,
+		Enabled: enabled,
+		Message: successMessage,
 	})
 }
 
@@ -440,17 +443,16 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 		return actionsPopupActionResult{closePopup: true}
 	}
 
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		err := program.runSquashMergePullRequestMutation(target)
-		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			program.clearGHCommandLoading()
-			if err != nil {
-				program.reportError(gui, strings.TrimSpace(err.Error()))
-				return program.afterStateChange(gui)
-			}
-			program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
-			program.setFeedback(program.model.Focus(), pullRequestSquashMergedSuccessMessage)
-			return program.afterStateChange(gui)
+		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{
+			Err: err,
+			Success: actionsPopupAsyncPullRequestLifecycleSuccess{
+				Summary: summary,
+				State:   "MERGED",
+				IsDraft: false,
+				Message: pullRequestSquashMergedSuccessMessage,
+			},
 		})
 	})
 	return actionsPopupActionResult{closePopup: true}

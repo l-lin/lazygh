@@ -43,40 +43,22 @@ func (program *Program) clearGHCommandLoading() {
 	program.ghCommandLoadingMessage = ""
 }
 
-func (program *Program) startActionsPopupAsyncGHCommand(gui *gocui.Gui, command string, work func() error, onSuccess func()) actionsPopupActionResult {
+func (program *Program) startActionsPopupAsyncGHCommand(gui *gocui.Gui, command string, work func() error, success actionsPopupAsyncSuccess) actionsPopupActionResult {
 	if gui == nil {
 		if err := work(); err != nil {
 			return actionsPopupActionResult{err: err}
 		}
-		if onSuccess != nil {
-			onSuccess()
+		if success != nil {
+			success.apply(program)
 		}
 		return actionsPopupActionResult{closePopup: true}
 	}
 
 	program.actionsPopupWidget.errorMessage = ""
 	program.startGHCommandLoading(command)
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		err := work()
-		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			return program.finishActionsPopupAsyncGHCommand(gui, err, onSuccess)
-		})
+		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 	})
 	return actionsPopupActionResult{}
-}
-
-func (program *Program) finishActionsPopupAsyncGHCommand(gui *gocui.Gui, err error, onSuccess func()) error {
-	program.clearGHCommandLoading()
-	if err != nil {
-		program.reportError(gui, strings.TrimSpace(err.Error()))
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	if onSuccess != nil {
-		onSuccess()
-	}
-	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
-		return program.refreshViewsIfGUI(gui)
-	}
-	return program.closeActionsPopup(gui, nil)
 }

@@ -20,9 +20,7 @@ func (program *Program) executeOpenPullRequestInBrowserAction(gui *gocui.Gui) ac
 
 	return program.startActionsPopupAsyncGHCommand(gui, openPullRequestInBrowserCommand(target.repository, target.number), func() error {
 		return program.pullRequestMutations.OpenPullRequestInBrowser(target.repository, target.number)
-	}, func() {
-		program.setFeedback(program.model.Focus(), pullRequestBrowserOpenSuccessMessage)
-	})
+	}, actionsPopupAsyncFeedbackSuccess{Message: pullRequestBrowserOpenSuccessMessage})
 }
 
 func openPullRequestInBrowserCommand(repository string, number int) string {

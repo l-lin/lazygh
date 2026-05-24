@@ -141,6 +141,22 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyLoadingSpinnerTick()
 	case MsgTransientErrorPopupExpired:
 		program.applyTransientErrorPopupExpired(actual)
+	case MsgActionsPopupAsyncGHCommandFinished:
+		program.applyActionsPopupAsyncGHCommandFinished(actual)
+	case MsgNotificationMutationStarted:
+		program.applyNotificationMutationStarted(actual)
+	case MsgNotificationMutationFinished:
+		program.applyNotificationMutationFinished(actual)
+	case MsgStoryReviewPrepared:
+		program.applyStoryReviewPrepared(actual)
+	case MsgAssigneePickerSearchLoadingStarted:
+		program.applyAssigneePickerSearchLoadingStarted(actual)
+	case MsgAssigneePickerSearchLoaded:
+		program.applyAssigneePickerSearchLoaded(actual)
+	case MsgPullRequestBuildRunLoaded:
+		program.applyPullRequestBuildRunLoaded(actual)
+	case MsgPullRequestBuildRunJobLogLoaded:
+		program.applyPullRequestBuildRunJobLogLoaded(actual)
 	case MsgOpenActionsPopup:
 		program.clearPendingSelectionPrefix()
 		program.detailViewState.clearPendingPrefix()
@@ -160,14 +176,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.actionsPopupWidget.errorMessage = ""
 	case MsgCloseActionsPopup:
 		program.clearPendingSelectionPrefix()
-		program.model.CloseActionsPopup()
-		program.actionsPopupWidget.searchEditor = nil
-		program.clearActionsPopupPendingConfirmation()
-		program.actionsPopupWidget.errorMessage = ""
-		program.actionsPopupWidget.reactionPicker = nil
-		program.actionsPopupWidget.themePicker = nil
-		program.actionsPopupWidget.assigneePicker = nil
-		program.actionsPopupWidget.assigneePickerLoad = nil
+		program.closeActionsPopupState()
 	case MsgFocusActionsPopupSearch:
 		program.clearPendingSelectionPrefix()
 		if !program.model.ActionsPopupVisible() {

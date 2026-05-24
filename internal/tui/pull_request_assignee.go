@@ -153,7 +153,7 @@ func (program *Program) startAssigneePickerWarmup(gui *gocui.Gui) {
 
 	requestID := program.resetAssigneePickerSearch("")
 	program.markAssigneePickerSearchLoading("")
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		program.performAssigneePickerSearch(gui, requestID, "")
 	})
 	_ = program.refreshViewsIfGUI(gui)
@@ -184,20 +184,14 @@ func (program *Program) queueAssigneePickerSearch(gui *gocui.Gui, requestID int,
 	}
 
 	delay := program.actionsPopupWidget.assigneePickerSearchDebounceDelay
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		if delay > 0 {
 			timer := time.NewTimer(delay)
 			defer timer.Stop()
 			<-timer.C
 		}
 
-		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
-				return nil
-			}
-			program.markAssigneePickerSearchLoading(trimmedQuery)
-			return program.afterStateChange(gui)
-		})
+		program.dispatchAsync(gui, MsgAssigneePickerSearchLoadingStarted{RequestID: requestID, Query: trimmedQuery})
 		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
 			return
 		}
@@ -227,29 +221,7 @@ func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query 
 func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
 	trimmedQuery := strings.TrimSpace(query)
 	results, err := program.pullRequestMutations.SearchAssignableUsers(program.actionsPopupWidget.assigneePicker.target.repository, trimmedQuery)
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
-			return nil
-		}
-
-		program.actionsPopupWidget.assigneePicker.searchLoading = false
-		program.actionsPopupWidget.assigneePicker.searchCommand = ""
-		program.actionsPopupWidget.assigneePicker.searchQuery = trimmedQuery
-		if err != nil {
-			program.actionsPopupWidget.assigneePicker.searchResults = nil
-			program.actionsPopupWidget.errorMessage = ""
-			program.reportError(gui, strings.TrimSpace(normalizedAssigneePickerError(err).Error()))
-			program.syncActionsPopupSearch()
-			return program.afterStateChange(gui)
-		}
-
-		program.actionsPopupWidget.assigneePicker.rememberCandidates(results)
-		program.actionsPopupWidget.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), results...)
-		program.actionsPopupWidget.errorMessage = ""
-		program.syncActionsPopupSearch()
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgAssigneePickerSearchLoaded{RequestID: requestID, Query: trimmedQuery, Results: results, Err: err})
 }
 
 func (state *assigneePickerState) rememberCandidates(candidates []githubdomain.PullRequestAuthor) {
@@ -552,9 +524,12 @@ func (program *Program) executeSubmitAssigneePickerAction(gui *gocui.Gui) action
 
 	return program.startActionsPopupAsyncGHCommand(gui, updatePullRequestAssigneesCommand(repository, number, addLogins, removeLogins), func() error {
 		return normalizedAssigneePickerError(program.pullRequestMutations.UpdatePullRequestAssignees(repository, number, addLogins, removeLogins))
-	}, func() {
-		program.optimisticallyUpdatePullRequestAssignees(repository, number, addLogins, removeLogins)
-		program.setFeedback(program.model.Focus(), pullRequestAssigneesUpdatedSuccessMessage)
+	}, actionsPopupAsyncPullRequestAssigneesUpdatedSuccess{
+		Repository:   repository,
+		Number:       number,
+		AddLogins:    addLogins,
+		RemoveLogins: removeLogins,
+		Message:      pullRequestAssigneesUpdatedSuccessMessage,
 	})
 }
 

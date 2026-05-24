@@ -54,9 +54,10 @@ func (program *Program) executeReRequestPullRequestReviewAction(gui *gocui.Gui, 
 
 	return program.startActionsPopupAsyncGHCommand(gui, requestPullRequestReviewerCommand(target.repository, target.number, target.reviewerLogin), func() error {
 		return program.pullRequestMutations.RequestPullRequestReviewer(target.repository, target.number, target.reviewerLogin)
-	}, func() {
-		program.invalidatePullRequestDetail(target.repository, target.number)
-		program.setFeedback(program.model.Focus(), pullRequestReviewReRequestedSuccessMessage)
+	}, actionsPopupAsyncInvalidatePullRequestSuccess{
+		Repository: target.repository,
+		Number:     target.number,
+		Message:    pullRequestReviewReRequestedSuccessMessage,
 	})
 }
 

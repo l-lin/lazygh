@@ -58,7 +58,7 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 
 	program.feedbackMessage = ""
 	program.storyReviewLoading = true
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		program.loadStoryReview(gui, summary)
 	})
 	return actionsPopupActionResult{closePopup: true}
@@ -66,28 +66,7 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 
 func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubdomain.PullRequest) {
 	prepared, actualErr := program.prepareStoryReview(summary)
-	if actualErr != nil {
-		program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-			program.storyReviewLoading = false
-			if message, ok := transientErrorPopupActionMessage(actualErr); ok {
-				program.reportError(gui, message)
-				return program.refreshViewsIfGUI(gui)
-			}
-			program.setFeedback(program.model.Focus(), strings.TrimSpace(actualErr.Error()))
-			return program.refreshViewsIfGUI(gui)
-		})
-		return
-	}
-
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		program.storyReviewLoading = false
-		program.feedbackMessage = ""
-		program.applyPreparedStoryReview(prepared)
-		if gui == nil {
-			return nil
-		}
-		return program.layout(gui)
-	})
+	program.dispatchAsync(gui, MsgStoryReviewPrepared{Prepared: prepared, Err: actualErr})
 }
 
 func (program *Program) validateStoryReviewAvailability() error {

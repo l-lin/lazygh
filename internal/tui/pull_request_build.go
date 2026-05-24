@@ -73,7 +73,7 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 	program.feedbackMessage = ""
 	program.pullRequestBuildRunPopup = nil
 	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunCommand(repository, check)}
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		program.loadPullRequestBuildRun(gui, repository, target)
 	})
 	return program.refreshViewsIfGUI(gui)
@@ -87,23 +87,7 @@ func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository strin
 		jobs, jobsErr = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
 	}
 
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		program.pullRequestBuildRunLoad = nil
-		if err != nil {
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
-			return program.afterStateChange(gui)
-		}
-
-		target.popupContent.body = rawRunOutput
-		target.popupContent.jobs = jobs
-		if actualErr := program.openPullRequestBuildRunPopup(gui, target.popupContent); actualErr != nil {
-			return actualErr
-		}
-		if jobsErr != nil {
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(jobsErr).Error()))
-		}
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgPullRequestBuildRunLoaded{Target: target, RawRunOutput: rawRunOutput, Jobs: jobs, JobsErr: jobsErr, Err: err})
 }
 
 func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubdomain.PullRequest, check githubdomain.PullRequestStatusCheck) error {
@@ -118,7 +102,7 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 
 	program.feedbackMessage = ""
 	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunJobsCommand(repository, check)}
-	program.asyncRunner.Go(func() {
+	program.runAsync(func() {
 		program.loadPullRequestBuildRunJobLog(gui, repository, check)
 	})
 	return program.refreshViewsIfGUI(gui)
@@ -126,25 +110,7 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 
 func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubdomain.PullRequestStatusCheck) {
 	job, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, check)
-	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
-		program.pullRequestBuildRunLoad = nil
-		if err != nil {
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
-			return program.afterStateChange(gui)
-		}
-
-		if actualErr := program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
-			title:         pullRequestBuildRunLogsPopupTitle(job.Name),
-			runURL:        strings.TrimSpace(job.URL),
-			repository:    repository,
-			body:          sanitizePullRequestBuildRunLog(rawLogOutput),
-			widthPercent:  pullRequestBuildLogsPopupWidthPercent,
-			heightPercent: pullRequestBuildLogsPopupHeightPercent,
-		}); actualErr != nil {
-			return actualErr
-		}
-		return program.afterStateChange(gui)
-	})
+	program.dispatchAsync(gui, MsgPullRequestBuildRunJobLogLoaded{Repository: repository, Job: job, RawLogOutput: rawLogOutput, Err: err})
 }
 
 func (program *Program) pullRequestBuildRunActionsPopupAction() actionsPopupAction {
