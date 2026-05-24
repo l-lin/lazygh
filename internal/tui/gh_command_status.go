@@ -54,7 +54,7 @@ func (program *Program) startActionsPopupAsyncGHCommand(gui *gocui.Gui, command 
 		return actionsPopupActionResult{closePopup: true}
 	}
 
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	program.startGHCommandLoading(command)
 	program.asyncRunner.Go(func() {
 		err := work()

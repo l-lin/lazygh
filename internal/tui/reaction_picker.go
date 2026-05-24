@@ -16,7 +16,7 @@ const (
 )
 
 func (program *Program) reactionPickerVisible() bool {
-	return program.reactionPicker != nil
+	return program.actionsPopupWidget.reactionPicker != nil
 }
 
 func (program *Program) currentReactionAction() (actionsPopupAction, bool) {
@@ -41,9 +41,9 @@ func (program *Program) executeOpenReactionPickerAction(_ *gocui.Gui) actionsPop
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	program.reactionPicker = &reactionPickerState{target: target}
-	program.actionsPopupSearchEditor = nil
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.reactionPicker = &reactionPickerState{target: target}
+	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
 	return actionsPopupActionResult{}
 }
@@ -99,7 +99,7 @@ func (program *Program) executeReactionPickerAction(content githubdomain.Reactio
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	target := program.reactionPicker.target
+	target := program.actionsPopupWidget.reactionPicker.target
 	if reactionGroupViewerHasReacted(target.reactionGroups, content) {
 		program.setFeedback(program.model.Focus(), pullRequestReactionAlreadyAddedMessage)
 		return actionsPopupActionResult{closePopup: true}

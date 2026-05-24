@@ -274,16 +274,16 @@ func TestSearchPrompt_GivenControlBAndControlF_WhenEditing_ThenTheyMoveTheCursor
 	if !actualHandled {
 		t.Fatal("expected ctrl-b to be handled by the search editor")
 	}
-	if subject.searchEditor.Cursor() != 2 {
-		t.Fatalf("expected search cursor 2 after ctrl-b, actual %d", subject.searchEditor.Cursor())
+	if subject.searchWidget.editor.Cursor() != 2 {
+		t.Fatalf("expected search cursor 2 after ctrl-b, actual %d", subject.searchWidget.editor.Cursor())
 	}
 
 	actualHandled = subject.editSearch(searchView, gocui.KeyCtrlF, 0, gocui.ModNone)
 	if !actualHandled {
 		t.Fatal("expected ctrl-f to be handled by the search editor")
 	}
-	if subject.searchEditor.Cursor() != 3 {
-		t.Fatalf("expected search cursor 3 after ctrl-f, actual %d", subject.searchEditor.Cursor())
+	if subject.searchWidget.editor.Cursor() != 3 {
+		t.Fatalf("expected search cursor 3 after ctrl-f, actual %d", subject.searchWidget.editor.Cursor())
 	}
 }
 
@@ -316,16 +316,16 @@ func TestActionsPopupSearch_GivenControlBAndControlF_WhenEditing_ThenTheyMoveThe
 	if !actualHandled {
 		t.Fatal("expected ctrl-b to be handled by the actions popup search editor")
 	}
-	if subject.actionsPopupSearchEditor.Cursor() != 2 {
-		t.Fatalf("expected actions popup search cursor 2 after ctrl-b, actual %d", subject.actionsPopupSearchEditor.Cursor())
+	if subject.actionsPopupWidget.searchEditor.Cursor() != 2 {
+		t.Fatalf("expected actions popup search cursor 2 after ctrl-b, actual %d", subject.actionsPopupWidget.searchEditor.Cursor())
 	}
 
 	actualHandled = subject.editActionsPopupSearch(searchView, gocui.KeyCtrlF, 0, gocui.ModNone)
 	if !actualHandled {
 		t.Fatal("expected ctrl-f to be handled by the actions popup search editor")
 	}
-	if subject.actionsPopupSearchEditor.Cursor() != 3 {
-		t.Fatalf("expected actions popup search cursor 3 after ctrl-f, actual %d", subject.actionsPopupSearchEditor.Cursor())
+	if subject.actionsPopupWidget.searchEditor.Cursor() != 3 {
+		t.Fatalf("expected actions popup search cursor 3 after ctrl-f, actual %d", subject.actionsPopupWidget.searchEditor.Cursor())
 	}
 }
 

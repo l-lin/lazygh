@@ -59,7 +59,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.clearPendingSelectionPrefix()
 		if program.pullRequestBuildRunPopupVisible() {
 			program.startPullRequestBuildRunPopupSearch()
-			program.searchEditor = newLineEditor(actual.Query)
+			program.searchWidget.editor = newLineEditor(actual.Query)
 			return nil
 		}
 		inputContext := program.inputContext()
@@ -76,7 +76,7 @@ func Update(program *Program, msg Msg) []Cmd {
 			program.model.StartSearch()
 		}
 		program.updateActiveSearchDraft(actual.Query)
-		program.searchEditor = newLineEditor(actual.Query)
+		program.searchWidget.editor = newLineEditor(actual.Query)
 	case MsgSearchDraftChanged:
 		program.updateActiveSearchDraft(actual.Query)
 	case MsgSubmitSearch:
@@ -86,7 +86,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
 			program.submitReviewFileTreeSearch()
-			program.searchEditor = nil
+			program.searchWidget.editor = nil
 			return nil
 		}
 
@@ -95,9 +95,9 @@ func Update(program *Program, msg Msg) []Cmd {
 		targetPullRequestIndex := program.model.SelectedPullRequestIndex(targetPullRequestTab)
 		program.model.SubmitSearch()
 		if target == FocusDetailView {
-			program.detailSearchReversed = false
+			program.searchWidget.detailReversed = false
 		}
-		program.searchEditor = nil
+		program.searchWidget.editor = nil
 
 		if target == FocusDetailView {
 			_ = program.followSubmittedDetailSearch(nil)
@@ -112,13 +112,13 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
 			program.cancelReviewFileTreeSearch()
-			program.searchEditor = nil
+			program.searchWidget.editor = nil
 			return nil
 		}
 		program.model.CancelSearch()
-		program.searchEditor = nil
+		program.searchWidget.editor = nil
 	case MsgCloseSearch:
-		program.searchEditor = nil
+		program.searchWidget.editor = nil
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 	case MsgPullRequestsLoaded:
@@ -151,23 +151,23 @@ func Update(program *Program, msg Msg) []Cmd {
 		if actual.ActionCount <= 0 {
 			return nil
 		}
-		program.reactionPicker = nil
-		program.themePicker = nil
-		program.assigneePicker = nil
-		program.assigneePickerLoad = nil
+		program.actionsPopupWidget.reactionPicker = nil
+		program.actionsPopupWidget.themePicker = nil
+		program.actionsPopupWidget.assigneePicker = nil
+		program.actionsPopupWidget.assigneePickerLoad = nil
 		program.model.OpenActionsPopup(actual.ActionCount)
-		program.actionsPopupSearchEditor = nil
-		program.actionsPopupErrorMessage = ""
+		program.actionsPopupWidget.searchEditor = nil
+		program.actionsPopupWidget.errorMessage = ""
 	case MsgCloseActionsPopup:
 		program.clearPendingSelectionPrefix()
 		program.model.CloseActionsPopup()
-		program.actionsPopupSearchEditor = nil
+		program.actionsPopupWidget.searchEditor = nil
 		program.clearActionsPopupPendingConfirmation()
-		program.actionsPopupErrorMessage = ""
-		program.reactionPicker = nil
-		program.themePicker = nil
-		program.assigneePicker = nil
-		program.assigneePickerLoad = nil
+		program.actionsPopupWidget.errorMessage = ""
+		program.actionsPopupWidget.reactionPicker = nil
+		program.actionsPopupWidget.themePicker = nil
+		program.actionsPopupWidget.assigneePicker = nil
+		program.actionsPopupWidget.assigneePickerLoad = nil
 	case MsgFocusActionsPopupSearch:
 		program.clearPendingSelectionPrefix()
 		if !program.model.ActionsPopupVisible() {
@@ -175,10 +175,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.model.ClearPaneSearchQueries()
 		program.clearActionsPopupPendingConfirmation()
-		program.actionsPopupSearchEditor = newLineEditor("")
+		program.actionsPopupWidget.searchEditor = newLineEditor("")
 		program.updateActionsPopupSearch("")
 		program.model.FocusActionsPopupSearch()
-		program.actionsPopupErrorMessage = ""
+		program.actionsPopupWidget.errorMessage = ""
 	case MsgFocusActionsPopupList:
 		program.clearPendingSelectionPrefix()
 		if !program.model.ActionsPopupVisible() {
@@ -193,7 +193,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.clearActionsPopupPendingConfirmation()
 		program.moveActionsPopupSelection(actual.Delta)
-		program.actionsPopupErrorMessage = ""
+		program.actionsPopupWidget.errorMessage = ""
 	case MsgMoveActionsPopupSelectionToTop:
 		program.clearPendingSelectionPrefix()
 		if !program.model.ActionsPopupVisible() {
@@ -201,7 +201,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToTop()
-		program.actionsPopupErrorMessage = ""
+		program.actionsPopupWidget.errorMessage = ""
 	case MsgMoveActionsPopupSelectionToBottom:
 		program.clearPendingSelectionPrefix()
 		if !program.model.ActionsPopupVisible() {
@@ -209,7 +209,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToBottom()
-		program.actionsPopupErrorMessage = ""
+		program.actionsPopupWidget.errorMessage = ""
 	}
 
 	return nil

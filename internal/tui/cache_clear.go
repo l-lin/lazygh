@@ -26,9 +26,9 @@ func (program *Program) executeClearCacheAction(_ *gocui.Gui) actionsPopupAction
 	if program.pullRequestCache == nil {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if strings.TrimSpace(program.actionsPopupPendingConfirmationActionID) != clearCacheActionTitle {
-		program.actionsPopupPendingConfirmationActionID = clearCacheActionTitle
-		program.actionsPopupErrorMessage = ""
+	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != clearCacheActionTitle {
+		program.actionsPopupWidget.pendingConfirmationActionID = clearCacheActionTitle
+		program.actionsPopupWidget.errorMessage = ""
 		return actionsPopupActionResult{}
 	}
 
@@ -70,11 +70,11 @@ func (program *Program) clearCachedData() error {
 }
 
 func (program *Program) clearActionsPopupPendingConfirmation() {
-	program.actionsPopupPendingConfirmationActionID = ""
+	program.actionsPopupWidget.pendingConfirmationActionID = ""
 }
 
 func (program *Program) actionsPopupConfirmationMessage() string {
-	switch strings.TrimSpace(program.actionsPopupPendingConfirmationActionID) {
+	switch strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) {
 	case clearCacheActionTitle:
 		return clearCacheConfirmationPromptMessage
 	case squashMergePullRequestActionTitle:

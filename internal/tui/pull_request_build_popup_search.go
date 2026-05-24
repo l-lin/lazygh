@@ -26,7 +26,7 @@ func (program *Program) submitPullRequestBuildRunPopupSearch(gui *gocui.Gui) err
 		popup.searchActive = false
 		popup.searchQuery = program.currentSearchText()
 	}
-	program.searchEditor = nil
+	program.searchWidget.editor = nil
 	if err := program.followSubmittedPullRequestBuildRunPopupSearch(gui); err != nil {
 		return err
 	}

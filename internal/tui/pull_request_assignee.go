@@ -58,11 +58,11 @@ func (sections assigneePickerCandidateSections) visibleCandidates() []githubdoma
 }
 
 func (program *Program) assigneePickerVisible() bool {
-	return program.assigneePicker != nil
+	return program.actionsPopupWidget.assigneePicker != nil
 }
 
 func (program *Program) assigneePickerLoading() bool {
-	return program != nil && program.assigneePicker != nil && program.assigneePicker.searchLoading
+	return program != nil && program.actionsPopupWidget.assigneePicker != nil && program.actionsPopupWidget.assigneePicker.searchLoading
 }
 
 func (program *Program) currentAssignPullRequestAction() (actionsPopupAction, bool) {
@@ -96,9 +96,9 @@ func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) actionsP
 }
 
 func (program *Program) openAssigneePicker(target pullRequestAssigneePickerTarget) {
-	program.assigneePicker = newAssigneePickerState(target, program.currentConnectedUserLogin(), program.currentConnectedUserName())
-	program.actionsPopupSearchEditor = nil
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.assigneePicker = newAssigneePickerState(target, program.currentConnectedUserLogin(), program.currentConnectedUserName())
+	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(program.currentAssigneePickerActionCount())
 	program.updateActionsPopupSearch("")
 }
@@ -165,12 +165,12 @@ func (program *Program) resetAssigneePickerSearch(query string) int {
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
-	program.assigneePicker.searchRequestID++
-	program.assigneePicker.searchQuery = trimmedQuery
-	program.assigneePicker.searchResults = nil
-	program.assigneePicker.searchLoading = false
-	program.assigneePicker.searchCommand = ""
-	return program.assigneePicker.searchRequestID
+	program.actionsPopupWidget.assigneePicker.searchRequestID++
+	program.actionsPopupWidget.assigneePicker.searchQuery = trimmedQuery
+	program.actionsPopupWidget.assigneePicker.searchResults = nil
+	program.actionsPopupWidget.assigneePicker.searchLoading = false
+	program.actionsPopupWidget.assigneePicker.searchCommand = ""
+	return program.actionsPopupWidget.assigneePicker.searchRequestID
 }
 
 func (program *Program) queueAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
@@ -183,7 +183,7 @@ func (program *Program) queueAssigneePickerSearch(gui *gocui.Gui, requestID int,
 		return
 	}
 
-	delay := program.assigneePickerSearchDebounceDelay
+	delay := program.actionsPopupWidget.assigneePickerSearchDebounceDelay
 	program.asyncRunner.Go(func() {
 		if delay > 0 {
 			timer := time.NewTimer(delay)
@@ -210,15 +210,15 @@ func (program *Program) markAssigneePickerSearchLoading(query string) {
 		return
 	}
 
-	program.assigneePicker.searchLoading = true
-	program.assigneePicker.searchCommand = formatAssigneeSearchCommand(program.assigneePicker.target.repository, query)
+	program.actionsPopupWidget.assigneePicker.searchLoading = true
+	program.actionsPopupWidget.assigneePicker.searchCommand = formatAssigneeSearchCommand(program.actionsPopupWidget.assigneePicker.target.repository, query)
 }
 
 func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query string) bool {
 	if !program.assigneePickerVisible() {
 		return false
 	}
-	if program.assigneePicker.searchRequestID != requestID {
+	if program.actionsPopupWidget.assigneePicker.searchRequestID != requestID {
 		return false
 	}
 	return strings.TrimSpace(program.model.ActionsPopupSearchQuery()) == strings.TrimSpace(query)
@@ -226,27 +226,27 @@ func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query 
 
 func (program *Program) performAssigneePickerSearch(gui *gocui.Gui, requestID int, query string) {
 	trimmedQuery := strings.TrimSpace(query)
-	results, err := program.pullRequestMutations.SearchAssignableUsers(program.assigneePicker.target.repository, trimmedQuery)
+	results, err := program.pullRequestMutations.SearchAssignableUsers(program.actionsPopupWidget.assigneePicker.target.repository, trimmedQuery)
 
 	program.uiUpdater.Apply(gui, func(gui *gocui.Gui) error {
 		if !program.assigneePickerSearchRequestCurrent(requestID, trimmedQuery) {
 			return nil
 		}
 
-		program.assigneePicker.searchLoading = false
-		program.assigneePicker.searchCommand = ""
-		program.assigneePicker.searchQuery = trimmedQuery
+		program.actionsPopupWidget.assigneePicker.searchLoading = false
+		program.actionsPopupWidget.assigneePicker.searchCommand = ""
+		program.actionsPopupWidget.assigneePicker.searchQuery = trimmedQuery
 		if err != nil {
-			program.assigneePicker.searchResults = nil
-			program.actionsPopupErrorMessage = ""
+			program.actionsPopupWidget.assigneePicker.searchResults = nil
+			program.actionsPopupWidget.errorMessage = ""
 			program.reportError(gui, strings.TrimSpace(normalizedAssigneePickerError(err).Error()))
 			program.syncActionsPopupSearch()
 			return program.afterStateChange(gui)
 		}
 
-		program.assigneePicker.rememberCandidates(results)
-		program.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), results...)
-		program.actionsPopupErrorMessage = ""
+		program.actionsPopupWidget.assigneePicker.rememberCandidates(results)
+		program.actionsPopupWidget.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), results...)
+		program.actionsPopupWidget.errorMessage = ""
 		program.syncActionsPopupSearch()
 		return program.afterStateChange(gui)
 	})
@@ -361,7 +361,7 @@ func (program *Program) currentAssigneePickerCandidateSections(query string) ass
 	pinnedCandidates := program.currentPinnedAssigneePickerCandidates()
 	return assigneePickerCandidateSections{
 		pinned:        pinnedCandidates,
-		searchResults: program.assigneePicker.searchResultCandidatesForQuery(query, pinnedCandidates),
+		searchResults: program.actionsPopupWidget.assigneePicker.searchResultCandidatesForQuery(query, pinnedCandidates),
 	}
 }
 
@@ -405,15 +405,15 @@ func (program *Program) currentPinnedAssigneePickerCandidates() []githubdomain.P
 		return nil
 	}
 
-	logins := make([]string, 0, len(program.assigneePicker.selectedLogins)+1)
-	for login := range program.assigneePicker.selectedLogins {
+	logins := make([]string, 0, len(program.actionsPopupWidget.assigneePicker.selectedLogins)+1)
+	for login := range program.actionsPopupWidget.assigneePicker.selectedLogins {
 		trimmedLogin := strings.TrimSpace(login)
 		if trimmedLogin == "" {
 			continue
 		}
 		logins = append(logins, trimmedLogin)
 	}
-	if viewerLogin := strings.TrimSpace(program.assigneePicker.viewerLogin); viewerLogin != "" && !program.assigneePicker.selectedLogins[viewerLogin] {
+	if viewerLogin := strings.TrimSpace(program.actionsPopupWidget.assigneePicker.viewerLogin); viewerLogin != "" && !program.actionsPopupWidget.assigneePicker.selectedLogins[viewerLogin] {
 		logins = append(logins, viewerLogin)
 	}
 	if len(logins) == 0 {
@@ -428,9 +428,9 @@ func (program *Program) currentPinnedAssigneePickerCandidates() []githubdomain.P
 			continue
 		}
 		seenLogins[trimmedLogin] = true
-		candidates = append(candidates, program.assigneePicker.candidateForLogin(trimmedLogin))
+		candidates = append(candidates, program.actionsPopupWidget.assigneePicker.candidateForLogin(trimmedLogin))
 	}
-	sortAssigneePickerCandidates(candidates, program.assigneePicker.selectedLogins, program.assigneePicker.viewerLogin)
+	sortAssigneePickerCandidates(candidates, program.actionsPopupWidget.assigneePicker.selectedLogins, program.actionsPopupWidget.assigneePicker.viewerLogin)
 	return candidates
 }
 
@@ -480,7 +480,7 @@ func (program *Program) assigneePickerSearchKeywords(candidate githubdomain.Pull
 	trimmedLogin := strings.TrimSpace(candidate.Login)
 	trimmedName := strings.TrimSpace(candidate.Name)
 	keywords := filterEmptyStrings([]string{trimmedLogin, "@" + trimmedLogin, trimmedName})
-	if trimmedLogin != "" && trimmedLogin == program.assigneePicker.viewerLogin {
+	if trimmedLogin != "" && trimmedLogin == program.actionsPopupWidget.assigneePicker.viewerLogin {
 		keywords = append(keywords, "@me")
 	}
 	return keywords
@@ -493,19 +493,19 @@ func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAu
 
 	checkbox := iconCheckboxUnchecked
 	trimmedLogin := strings.TrimSpace(candidate.Login)
-	if program.assigneePicker.selectedLogins[trimmedLogin] {
+	if program.actionsPopupWidget.assigneePicker.selectedLogins[trimmedLogin] {
 		checkbox = iconCheckboxChecked
 	}
 
 	identityLabel := "@" + trimmedLogin
-	if trimmedLogin != "" && trimmedLogin == program.assigneePicker.viewerLogin {
+	if trimmedLogin != "" && trimmedLogin == program.actionsPopupWidget.assigneePicker.viewerLogin {
 		identityLabel = "@me"
 	}
 	trimmedName := strings.TrimSpace(candidate.Name)
-	if trimmedName == "" && trimmedLogin == program.assigneePicker.viewerLogin {
-		trimmedName = strings.TrimSpace(program.assigneePicker.viewerName)
+	if trimmedName == "" && trimmedLogin == program.actionsPopupWidget.assigneePicker.viewerLogin {
+		trimmedName = strings.TrimSpace(program.actionsPopupWidget.assigneePicker.viewerName)
 	}
-	if trimmedName == "" && trimmedLogin == program.assigneePicker.viewerLogin {
+	if trimmedName == "" && trimmedLogin == program.actionsPopupWidget.assigneePicker.viewerLogin {
 		trimmedName = trimmedLogin
 	}
 	if trimmedName == "" || trimmedName == trimmedLogin {
@@ -526,12 +526,12 @@ func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.Pul
 	if trimmedLogin == "" {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if program.assigneePicker.selectedLogins[trimmedLogin] {
-		delete(program.assigneePicker.selectedLogins, trimmedLogin)
+	if program.actionsPopupWidget.assigneePicker.selectedLogins[trimmedLogin] {
+		delete(program.actionsPopupWidget.assigneePicker.selectedLogins, trimmedLogin)
 	} else {
-		program.assigneePicker.selectedLogins[trimmedLogin] = true
+		program.actionsPopupWidget.assigneePicker.selectedLogins[trimmedLogin] = true
 	}
-	program.assigneePicker.rememberCandidates([]githubdomain.PullRequestAuthor{candidate})
+	program.actionsPopupWidget.assigneePicker.rememberCandidates([]githubdomain.PullRequestAuthor{candidate})
 	return actionsPopupActionResult{}
 }
 
@@ -543,9 +543,9 @@ func (program *Program) executeSubmitAssigneePickerAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
 
-	repository := program.assigneePicker.target.repository
-	number := program.assigneePicker.target.number
-	addLogins, removeLogins := program.assigneePicker.selectedDiff()
+	repository := program.actionsPopupWidget.assigneePicker.target.repository
+	number := program.actionsPopupWidget.assigneePicker.target.number
+	addLogins, removeLogins := program.actionsPopupWidget.assigneePicker.selectedDiff()
 	if len(addLogins) == 0 && len(removeLogins) == 0 {
 		return actionsPopupActionResult{closePopup: true}
 	}
@@ -617,7 +617,7 @@ func (program *Program) optimisticallyUpdatePullRequestAssignees(repository stri
 		}
 		candidate := githubdomain.PullRequestAuthor{Login: trimmedLogin}
 		if program.assigneePickerVisible() {
-			candidate = program.assigneePicker.candidateForLogin(trimmedLogin)
+			candidate = program.actionsPopupWidget.assigneePicker.candidateForLogin(trimmedLogin)
 		}
 		updatedAssignees = append(updatedAssignees, normalizedAssigneePickerCandidate(candidate))
 	}

@@ -476,8 +476,8 @@ func TestAddReaction_GivenGitHubRejectsTheReaction_WhenSubmitting_ThenItShowsATr
 	if !reflect.DeepEqual(loader.addReactionContents, []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}) {
 		t.Fatalf("expected reaction contents %v, actual %v", []githubcli.ReactionContent{githubcli.ReactionContentThumbsUp}, loader.addReactionContents)
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
 	then_transientErrorPopupContains(t, gui, "reaction refused")
 	popupView, actualErr := gui.View(viewActionsPopupName)

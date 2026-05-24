@@ -43,6 +43,6 @@ func (program *Program) repeatActionsPopupSearch(gui *gocui.Gui, choose searchMa
 		return nil
 	}
 
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	return program.refreshViewsIfGUI(gui)
 }

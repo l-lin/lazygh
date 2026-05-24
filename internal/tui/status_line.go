@@ -153,8 +153,8 @@ func (program *Program) assigneePickerLoadingStatus() string {
 	if !program.assigneePickerVisible() {
 		return ""
 	}
-	trimmedCommand := strings.TrimSpace(program.assigneePicker.searchCommand)
-	if !program.assigneePicker.searchLoading || trimmedCommand == "" {
+	trimmedCommand := strings.TrimSpace(program.actionsPopupWidget.assigneePicker.searchCommand)
+	if !program.actionsPopupWidget.assigneePicker.searchLoading || trimmedCommand == "" {
 		return ""
 	}
 	return fmt.Sprintf("Running `%s`.", trimmedCommand)

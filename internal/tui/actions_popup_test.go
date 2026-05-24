@@ -359,8 +359,8 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected start review calls %v, actual %v", []string{"acme/widgets#42"}, loader.startReviewCalls)
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
 	if !subject.transientErrorPopupVisible() {
 		t.Fatal("expected the transient error popup state to stay visible")
@@ -514,8 +514,8 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenGitHubRejectsCa
 	if !reflect.DeepEqual(loader.deletePullRequestReviewIDs, []string{"PRR_pending"}) {
 		t.Fatalf("expected deleted pending review ids %v, actual %v", []string{"PRR_pending"}, loader.deletePullRequestReviewIDs)
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
 	then_transientErrorPopupContains(t, gui, "cancel refused")
 	if _, ok := subject.pullRequestDetailCache["acme/widgets#42"]; !ok {
@@ -1211,8 +1211,8 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenGitH
 	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-1"}) {
 		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
 	then_transientErrorPopupContains(t, gui, "resolve refused")
 	detailView, actualErr := gui.View(viewDetailName)

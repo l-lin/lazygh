@@ -820,8 +820,8 @@ func TestActionsPopup_GivenClosePullRequestFailure_WhenExecuting_ThenItKeepsTheU
 	if !reflect.DeepEqual(loader.closePullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected close pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.closePullRequestCalls)
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
 	then_transientErrorPopupContains(t, gui, "GitHub rejected the close")
 	detailView, actualErr := gui.View(viewDetailName)
@@ -977,8 +977,8 @@ func TestActionsPopup_GivenReopenPullRequestFailure_WhenExecuting_ThenItKeepsThe
 	if !reflect.DeepEqual(loader.reopenPullRequestCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
 	then_transientErrorPopupContains(t, gui, "GitHub rejected the reopen")
 	detailView, actualErr := gui.View(viewDetailName)

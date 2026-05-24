@@ -44,7 +44,7 @@ func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) e
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
 	program.clearActionsPopupPendingConfirmation()
 	program.model.PageActionsPopupDown(viewPageSize(actualView))
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	selectedLine, lineCount := program.actionsPopupSelectionLineState()
 	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
@@ -58,7 +58,7 @@ func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) err
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
 	program.clearActionsPopupPendingConfirmation()
 	program.model.PageActionsPopupUp(viewPageSize(actualView))
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	selectedLine, lineCount := program.actionsPopupSelectionLineState()
 	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
@@ -72,7 +72,7 @@ func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.Vie
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
 	program.clearActionsPopupPendingConfirmation()
 	program.model.FullPageActionsPopupDown(viewPageSize(actualView))
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	selectedLine, lineCount := program.actionsPopupSelectionLineState()
 	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
@@ -86,7 +86,7 @@ func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View)
 	actualView := program.resolveView(gui, view, viewActionsPopupName)
 	program.clearActionsPopupPendingConfirmation()
 	program.model.FullPageActionsPopupUp(viewPageSize(actualView))
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	selectedLine, lineCount := program.actionsPopupSelectionLineState()
 	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
 }
@@ -164,7 +164,7 @@ func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocu
 func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result actionsPopupActionResult) error {
 	if result.err != nil {
 		if message, ok := transientErrorPopupActionMessage(result.err); ok {
-			program.actionsPopupErrorMessage = ""
+			program.actionsPopupWidget.errorMessage = ""
 			program.reportError(gui, message)
 			if gui == nil {
 				return nil
@@ -172,15 +172,15 @@ func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result ac
 			return program.afterStateChange(gui)
 		}
 		if message := strings.TrimSpace(result.feedbackMessage); message != "" {
-			program.actionsPopupErrorMessage = ""
+			program.actionsPopupWidget.errorMessage = ""
 			program.setFeedback(result.feedbackTarget, message)
 			if gui == nil {
 				return nil
 			}
 			return program.afterStateChange(gui)
 		}
-		program.actionsPopupErrorMessage = strings.TrimSpace(result.err.Error())
-		program.reportError(gui, program.actionsPopupErrorMessage)
+		program.actionsPopupWidget.errorMessage = strings.TrimSpace(result.err.Error())
+		program.reportError(gui, program.actionsPopupWidget.errorMessage)
 		if gui == nil {
 			return nil
 		}
@@ -201,15 +201,15 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 	if key == gocui.KeyEnter || key == gocui.KeyEsc {
 		return false
 	}
-	if program.actionsPopupSearchEditor == nil {
-		program.actionsPopupSearchEditor = newLineEditor(program.model.ActionsPopupSearchQuery())
+	if program.actionsPopupWidget.searchEditor == nil {
+		program.actionsPopupWidget.searchEditor = newLineEditor(program.model.ActionsPopupSearchQuery())
 	}
-	if !program.actionsPopupSearchEditor.HandleKey(key, ch, mod) {
+	if !program.actionsPopupWidget.searchEditor.HandleKey(key, ch, mod) {
 		return false
 	}
 
 	program.clearActionsPopupPendingConfirmation()
-	query := program.actionsPopupSearchEditor.Text()
+	query := program.actionsPopupWidget.searchEditor.Text()
 	requestID := 0
 	if program.assigneePickerVisible() {
 		requestID = program.resetAssigneePickerSearch(query)
@@ -218,7 +218,7 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 	if program.assigneePickerVisible() {
 		program.queueAssigneePickerSearch(program.gui, requestID, query)
 	}
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	if program.gui != nil {
 		_ = program.afterStateChange(program.gui)
 		return true

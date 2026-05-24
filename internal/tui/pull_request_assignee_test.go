@@ -84,7 +84,7 @@ func TestAssigneePicker_GivenSearchQuery_WhenSearchingLazily_ThenItShowsTheMatch
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -148,7 +148,7 @@ func TestAssigneePicker_GivenPinnedAndSearchResultAssignees_WhenRendering_ThenIt
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -187,7 +187,7 @@ func TestAssigneePicker_GivenPinnedAndSearchResultAssignees_WhenRendering_ThenTh
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGuiWithSize(t, 120, 40)
@@ -221,7 +221,7 @@ func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -270,7 +270,7 @@ func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStr
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -322,7 +322,7 @@ func TestAssigneePicker_GivenSearchQueryDoesNotMatchViewer_WhenPressingEnterImme
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -359,7 +359,7 @@ func TestAssigneePicker_GivenSelectedSearchResult_WhenSearchingForAnotherAssigne
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -422,7 +422,7 @@ func TestAssigneePicker_GivenViewerMatchedOnlyByItsHiddenLogin_WhenPressingEnter
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "l-lin"
 	subject.connectedUserName = "Louis Lin"
 	gui := given_headlessGui(t)
@@ -458,7 +458,7 @@ func TestAssigneePicker_GivenSearchResultSelected_WhenClearingTheQuery_ThenItKee
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -502,7 +502,7 @@ func TestAssignPullRequest_GivenChangedSelection_WhenSearchingAndSubmittingWithA
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)

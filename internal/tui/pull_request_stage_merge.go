@@ -235,9 +235,9 @@ func (program *Program) executeReopenPullRequestAction(gui *gocui.Gui) actionsPo
 }
 
 func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
-	if strings.TrimSpace(program.actionsPopupPendingConfirmationActionID) != squashMergePullRequestActionTitle {
-		program.actionsPopupPendingConfirmationActionID = squashMergePullRequestActionTitle
-		program.actionsPopupErrorMessage = ""
+	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != squashMergePullRequestActionTitle {
+		program.actionsPopupWidget.pendingConfirmationActionID = squashMergePullRequestActionTitle
+		program.actionsPopupWidget.errorMessage = ""
 		return actionsPopupActionResult{}
 	}
 

@@ -32,7 +32,7 @@ func (store *defaultThemePresetStore) SaveThemePreset(preset string) error {
 }
 
 func (program *Program) themePickerVisible() bool {
-	return program.themePicker != nil
+	return program.actionsPopupWidget.themePicker != nil
 }
 
 func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
@@ -45,9 +45,9 @@ func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
 }
 
 func (program *Program) executeOpenThemePickerAction(_ *gocui.Gui) actionsPopupActionResult {
-	program.themePicker = &themePickerState{}
-	program.actionsPopupSearchEditor = nil
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.themePicker = &themePickerState{}
+	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
 	return actionsPopupActionResult{}
 }
@@ -96,7 +96,7 @@ func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset th
 	program.restylePullRequestRows()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
-	program.actionsPopupErrorMessage = ""
+	program.actionsPopupWidget.errorMessage = ""
 	program.setFeedback(program.model.Focus(), fmt.Sprintf("Theme changed to %s", strings.TrimSpace(preset.Label)))
 	if gui != nil {
 		program.configureGUI(gui)

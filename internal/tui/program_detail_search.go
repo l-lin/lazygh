@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) nextDetailSearchMatch(gui *gocui.Gui, view *gocui.View) error {
-	if program.detailSearchReversed {
+	if program.searchWidget.detailReversed {
 		return program.repeatDetailSearch(gui, view, func(document detailDocument, viewportHeight int) bool {
 			return program.detailViewState.followPreviousSearchMatch(document, program.model.DetailSearchQuery(), viewportHeight)
 		})
@@ -18,7 +18,7 @@ func (program *Program) nextDetailSearchMatch(gui *gocui.Gui, view *gocui.View) 
 }
 
 func (program *Program) previousDetailSearchMatch(gui *gocui.Gui, view *gocui.View) error {
-	if program.detailSearchReversed {
+	if program.searchWidget.detailReversed {
 		return program.repeatDetailSearch(gui, view, func(document detailDocument, viewportHeight int) bool {
 			return program.detailViewState.followNextSearchMatch(document, program.model.DetailSearchQuery(), viewportHeight)
 		})

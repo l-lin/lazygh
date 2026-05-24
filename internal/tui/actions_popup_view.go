@@ -182,7 +182,7 @@ func (program *Program) actionsPopupTitle() string {
 		title = reactionPickerTitle
 	}
 
-	message := strings.TrimSpace(program.actionsPopupErrorMessage)
+	message := strings.TrimSpace(program.actionsPopupWidget.errorMessage)
 	if message == "" {
 		message = strings.TrimSpace(program.actionsPopupConfirmationMessage())
 	}
@@ -215,15 +215,15 @@ func (program *Program) actionsPopupFooter() string {
 }
 
 func (program *Program) currentActionsPopupSearchText() string {
-	if program.actionsPopupSearchEditor != nil {
-		return program.actionsPopupSearchEditor.Text()
+	if program.actionsPopupWidget.searchEditor != nil {
+		return program.actionsPopupWidget.searchEditor.Text()
 	}
 	return program.model.ActionsPopupSearchQuery()
 }
 
 func (program *Program) currentActionsPopupSearchCursor() int {
-	if program.actionsPopupSearchEditor != nil {
-		return program.actionsPopupSearchEditor.Cursor()
+	if program.actionsPopupWidget.searchEditor != nil {
+		return program.actionsPopupWidget.searchEditor.Cursor()
 	}
 	return utf8.RuneCountInString(program.model.ActionsPopupSearchQuery())
 }

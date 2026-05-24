@@ -38,19 +38,19 @@ func TestUpdate_GivenSearchLifecycleMessages_WhenApplying_ThenItFlowsThroughTheC
 	if actual := subject.model.UserSearchQuery(); actual != "1" {
 		t.Fatalf("expected the applied user search query %q, actual %q", "1", actual)
 	}
-	if subject.searchEditor != nil {
+	if subject.searchWidget.editor != nil {
 		t.Fatal("expected the search editor to be cleared after submit")
 	}
 }
 
 func TestUpdate_GivenActionsPopupLifecycleMessages_WhenApplying_ThenItResetsEphemeralPopupState(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
-	subject.actionsPopupSearchEditor = newLineEditor("stale")
-	subject.actionsPopupErrorMessage = "boom"
-	subject.reactionPicker = &reactionPickerState{}
-	subject.themePicker = &themePickerState{}
-	subject.assigneePicker = &assigneePickerState{}
-	subject.assigneePickerLoad = &assigneePickerLoadState{}
+	subject.actionsPopupWidget.searchEditor = newLineEditor("stale")
+	subject.actionsPopupWidget.errorMessage = "boom"
+	subject.actionsPopupWidget.reactionPicker = &reactionPickerState{}
+	subject.actionsPopupWidget.themePicker = &themePickerState{}
+	subject.actionsPopupWidget.assigneePicker = &assigneePickerState{}
+	subject.actionsPopupWidget.assigneePickerLoad = &assigneePickerLoadState{}
 
 	Update(subject, MsgOpenActionsPopup{ActionCount: 3})
 	Update(subject, MsgMoveActionsPopupSelection{Delta: 1})
@@ -62,13 +62,13 @@ func TestUpdate_GivenActionsPopupLifecycleMessages_WhenApplying_ThenItResetsEphe
 	if actual := subject.model.ActionsPopupSelectedActionIndex(); actual != 0 {
 		t.Fatalf("expected the popup selection to reset after close, actual %d", actual)
 	}
-	if subject.actionsPopupSearchEditor != nil {
+	if subject.actionsPopupWidget.searchEditor != nil {
 		t.Fatal("expected the popup search editor to be cleared")
 	}
-	if subject.actionsPopupErrorMessage != "" {
-		t.Fatalf("expected the popup error message to be cleared, actual %q", subject.actionsPopupErrorMessage)
+	if subject.actionsPopupWidget.errorMessage != "" {
+		t.Fatalf("expected the popup error message to be cleared, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
-	if subject.reactionPicker != nil || subject.themePicker != nil || subject.assigneePicker != nil || subject.assigneePickerLoad != nil {
+	if subject.actionsPopupWidget.reactionPicker != nil || subject.actionsPopupWidget.themePicker != nil || subject.actionsPopupWidget.assigneePicker != nil || subject.actionsPopupWidget.assigneePickerLoad != nil {
 		t.Fatal("expected popup-only picker state to be cleared")
 	}
 }

@@ -52,54 +52,46 @@ type Program struct {
 	*statusStore
 	*optimisticMutationCoordinator
 	*imageLoadCoordinator
-	loadingSpinnerFrameIndex                int
-	detailWrapWidth                         int
-	activeDetailTab                         DetailTab
-	lastDetailIdentity                      string
-	detailViewState                         detailViewState
-	clipboardReader                         ClipboardReader
-	clipboardWriter                         ClipboardWriter
-	helpVisible                             bool
-	detailSearchReversed                    bool
-	searchEditor                            *lineEditor
-	actionsPopupSearchEditor                *lineEditor
-	actionsPopupErrorMessage                string
-	actionsPopupPendingConfirmationActionID string
-	transientErrorPopup                     transientErrorPopupState
-	errorMessages                           []string
-	reactionPicker                          *reactionPickerState
-	themePicker                             *themePickerState
-	assigneePicker                          *assigneePickerState
-	assigneePickerSearchDebounceDelay       time.Duration
-	assigneePickerLoad                      *assigneePickerLoadState
-	reviewSession                           reviewSessionState
-	modalEditor                             *modalEditorState
-	externalEditor                          ExternalEditor
-	linkOpener                              LinkOpener
-	markdownRenderer                        MarkdownRenderer
-	storyGenerator                          reviewStoryGenerator
-	asyncRunner                             asyncRunner
-	uiUpdater                               uiUpdater
-	gui                                     *gocui.Gui
-	keymapOverrides                         appconfig.KeymapOverrides
-	pullRequestSearches                     []appconfig.PullRequestSearch
-	storyReviewConfig                       story.Config
-	themePresetStore                        ThemePresetStore
-	openedPullRequestSummary                *githubdomain.PullRequest
-	openedPullRequestTab                    PullRequestTab
-	pendingSelectionKeySequence             keySequenceState
-	pendingListViewportPlacements           map[string]viewportPlacement
-	registeredKeybindingFingerprint         string
-	now                                     func() time.Time
-	after                                   func(time.Duration) <-chan time.Time
-	yankHighlightDuration                   time.Duration
-	transientErrorPopupDuration             time.Duration
-	manualPullRequestListRefreshPending     map[PullRequestTab]bool
-	manualPullRequestDetailRefreshPending   map[string]bool
-	manualPullRequestDiffRefreshPending     map[string]bool
-	manualNotificationRefreshPending        bool
-	manualRefreshFeedback                   *manualRefreshFeedbackState
-	appStarted                              bool
+	loadingSpinnerFrameIndex              int
+	detailWrapWidth                       int
+	activeDetailTab                       DetailTab
+	lastDetailIdentity                    string
+	detailViewState                       detailViewState
+	clipboardReader                       ClipboardReader
+	clipboardWriter                       ClipboardWriter
+	helpVisible                           bool
+	searchWidget                          searchWidgetState
+	actionsPopupWidget                    actionsPopupWidgetState
+	transientErrorPopup                   transientErrorPopupState
+	errorMessages                         []string
+	reviewSession                         reviewSessionState
+	modalEditor                           *modalEditorState
+	externalEditor                        ExternalEditor
+	linkOpener                            LinkOpener
+	markdownRenderer                      MarkdownRenderer
+	storyGenerator                        reviewStoryGenerator
+	asyncRunner                           asyncRunner
+	uiUpdater                             uiUpdater
+	gui                                   *gocui.Gui
+	keymapOverrides                       appconfig.KeymapOverrides
+	pullRequestSearches                   []appconfig.PullRequestSearch
+	storyReviewConfig                     story.Config
+	themePresetStore                      ThemePresetStore
+	openedPullRequestSummary              *githubdomain.PullRequest
+	openedPullRequestTab                  PullRequestTab
+	pendingSelectionKeySequence           keySequenceState
+	pendingListViewportPlacements         map[string]viewportPlacement
+	registeredKeybindingFingerprint       string
+	now                                   func() time.Time
+	after                                 func(time.Duration) <-chan time.Time
+	yankHighlightDuration                 time.Duration
+	transientErrorPopupDuration           time.Duration
+	manualPullRequestListRefreshPending   map[PullRequestTab]bool
+	manualPullRequestDetailRefreshPending map[string]bool
+	manualPullRequestDiffRefreshPending   map[string]bool
+	manualNotificationRefreshPending      bool
+	manualRefreshFeedback                 *manualRefreshFeedbackState
+	appStarted                            bool
 }
 
 func NewProgram() *Program {
@@ -165,7 +157,7 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 		detailViewState:                       newDetailViewState(),
 		detailWrapWidth:                       defaultDetailWrapWidth,
 		pullRequestSearches:                   appconfig.DefaultPullRequestSearches(),
-		assigneePickerSearchDebounceDelay:     defaultAssigneePickerSearchDebounceDelay,
+		actionsPopupWidget:                    actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
 		pendingListViewportPlacements:         map[string]viewportPlacement{},
 		now:                                   time.Now,
 		after:                                 time.After,

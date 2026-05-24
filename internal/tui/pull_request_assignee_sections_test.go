@@ -16,7 +16,7 @@ func TestAssigneePickerCandidateSections_GivenSearchResults_WhenCollectingSectio
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)
@@ -52,7 +52,7 @@ func TestAssigneePickerCandidateSections_GivenSelectedSearchResultAndANewQuery_W
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.asyncRunner = asyncRunner
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.assigneePickerSearchDebounceDelay = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
 	subject.connectedUserLogin = "bob"
 	subject.connectedUserName = "Bob"
 	gui := given_headlessGui(t)

@@ -69,14 +69,14 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 	if key == gocui.KeyEnter || key == gocui.KeyCtrlJ || key == gocui.KeyEsc {
 		return false
 	}
-	if program.searchEditor == nil {
-		program.searchEditor = newLineEditor(program.model.SearchDraft())
+	if program.searchWidget.editor == nil {
+		program.searchWidget.editor = newLineEditor(program.model.SearchDraft())
 	}
-	if !program.searchEditor.HandleKey(key, ch, mod) {
+	if !program.searchWidget.editor.HandleKey(key, ch, mod) {
 		return false
 	}
 
-	Update(program, MsgSearchDraftChanged{Query: program.searchEditor.Text()})
+	Update(program, MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
 	program.configureSearchView(view)
 	program.renderSearchView(view)
 	return true
@@ -178,16 +178,16 @@ func (program *Program) setInputCursor(view *gocui.View, value string, cursorInd
 }
 
 func (program *Program) currentSearchText() string {
-	if program.searchEditor != nil {
-		return program.searchEditor.Text()
+	if program.searchWidget.editor != nil {
+		return program.searchWidget.editor.Text()
 	}
 
 	return program.model.SearchDraft()
 }
 
 func (program *Program) currentSearchCursor() int {
-	if program.searchEditor != nil {
-		return program.searchEditor.Cursor()
+	if program.searchWidget.editor != nil {
+		return program.searchWidget.editor.Cursor()
 	}
 
 	return utf8.RuneCountInString(program.model.SearchDraft())

@@ -362,8 +362,8 @@ func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, 
 	program.model.StartSearch()
 	program.updateActiveSearchDraft(query)
 	program.model.SubmitSearch()
-	program.detailSearchReversed = reverse
-	program.searchEditor = nil
+	program.searchWidget.detailReversed = reverse
+	program.searchWidget.editor = nil
 
 	if reverse {
 		if actualErr := program.followReverseDetailSearch(gui); actualErr != nil {
