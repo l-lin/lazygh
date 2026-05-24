@@ -397,7 +397,13 @@ func (program *Program) applyScreenComposition(gui *gocui.Gui, composition scree
 		}
 	}
 
-	return program.syncCurrentView(gui)
+	if actualErr := program.syncCurrentView(gui); actualErr != nil {
+		return actualErr
+	}
+
+	program.clearVisibleListViewportPlacements(composition.Layout)
+	program.syncRenderedDetailImages(gui)
+	return nil
 }
 
 func setScreenView(gui *gocui.Gui, frame screenViewFrame) (*gocui.View, error) {

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -102,34 +100,6 @@ func (program *Program) detailHeader(item Item) string {
 	}
 
 	return fmt.Sprintf("%s\n%s", source, program.displayItemTitle(item))
-}
-
-func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
-	width := program.detailWrapWidth
-	if view != nil && view.InnerWidth() > 0 {
-		width = view.InnerWidth()
-	}
-	if width < 1 {
-		width = 1
-	}
-
-	if program.reviewModeActive() && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter() {
-		if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
-			return program.currentReviewDiffDocument(selectedFile, width)
-		}
-	}
-
-	if cacheKey, ok := program.currentPullRequestDetailDocumentCacheKey(width); ok {
-		if document, ok := program.pullRequestDetailDocumentForKey(cacheKey); ok {
-			return document
-		}
-
-		document := program.buildCurrentDetailDocument(width)
-		program.cachePullRequestDetailDocument(cacheKey, document)
-		return document
-	}
-
-	return program.buildCurrentDetailDocument(width)
 }
 
 func (program *Program) buildCurrentDetailDocument(width int) detailDocument {

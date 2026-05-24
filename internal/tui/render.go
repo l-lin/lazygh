@@ -167,7 +167,4 @@ func (program *Program) renderDetailView(view *gocui.View) {
 	detailDocument := program.currentDetailDocument(view)
 	program.syncDetailViewState(detailDocument, view.InnerHeight())
 	renderDetailDocumentView(view, detailDocument, program.detailViewState)
-	if program.detailImageManager != nil {
-		program.detailImageManager.Sync(detailDocument.images)
-	}
 }

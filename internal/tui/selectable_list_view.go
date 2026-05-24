@@ -187,7 +187,7 @@ func (program *Program) selectListLine(view *gocui.View, selectedIndex int, line
 		return
 	}
 
-	if placement, ok := program.consumePendingListViewportPlacement(view.Name()); ok {
+	if placement, ok := program.pendingListViewportPlacement(view.Name()); ok {
 		originY, cursorY := placedListLinePosition(selectedIndex, view.InnerHeight(), lineCount, placement)
 		view.SetOrigin(0, originY)
 		view.SetCursor(0, cursorY)
@@ -217,29 +217,6 @@ func (program *Program) placeListLine(view *gocui.View, selectedIndex int, lineC
 	originY, cursorY := placedListLinePosition(selectedIndex, view.InnerHeight(), lineCount, placement)
 	view.SetOrigin(0, originY)
 	view.SetCursor(0, cursorY)
-}
-
-func (program *Program) setPendingListViewportPlacement(viewName string, placement viewportPlacement) {
-	if viewName == "" {
-		return
-	}
-	if program.pendingListViewportPlacements == nil {
-		program.pendingListViewportPlacements = map[string]viewportPlacement{}
-	}
-	program.pendingListViewportPlacements[viewName] = placement
-}
-
-func (program *Program) consumePendingListViewportPlacement(viewName string) (viewportPlacement, bool) {
-	if viewName == "" || len(program.pendingListViewportPlacements) == 0 {
-		return 0, false
-	}
-
-	placement, ok := program.pendingListViewportPlacements[viewName]
-	if !ok {
-		return 0, false
-	}
-	delete(program.pendingListViewportPlacements, viewName)
-	return placement, true
 }
 
 func visibleListLinePosition(selectedIndex int, currentOriginY int, visibleHeight int, lineCount int) (int, int) {

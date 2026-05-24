@@ -83,20 +83,6 @@ func (program *Program) browserCollapsedChangesThreadIDs(summary githubdomain.Pu
 	return collapsedThreadIDs
 }
 
-func (program *Program) currentPullRequestChangesRenderedRows(summary githubdomain.PullRequest, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
-	if cacheKey, ok := pullRequestChangesRenderedRowsCacheKey(summary, width); ok {
-		if rows, ok := program.pullRequestChangesRenderedRowsForKey(cacheKey); ok {
-			return rows
-		}
-
-		rows := buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
-		program.cachePullRequestChangesRenderedRows(cacheKey, rows)
-		return rows
-	}
-
-	return buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
-}
-
 func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, detailDocument detailDocument) error {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok || result.err != nil {

@@ -8,33 +8,6 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {
-	cacheKey := program.reviewDiffRenderKey(file, width)
-	if entry, ok := program.cachedReviewDiffRenderEntry(cacheKey); ok && len(entry.rows) > 0 {
-		return entry.rows
-	}
-
-	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
-	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
-	entry.rows = rows
-	program.storeReviewDiffRenderEntry(cacheKey, entry)
-	return rows
-}
-
-func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int) detailDocument {
-	cacheKey := program.reviewDiffRenderKey(file, width)
-	if entry, ok := program.cachedReviewDiffRenderEntry(cacheKey); ok && len(entry.document.rows) > 0 {
-		return entry.document
-	}
-
-	rows := program.currentReviewDiffRenderedRows(file, width)
-	document := newReviewDiffDetailDocument(rows, width)
-	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
-	entry.document = document
-	program.storeReviewDiffRenderEntry(cacheKey, entry)
-	return document
-}
-
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
 	program.detailViewState.clearPendingPrefix()
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
