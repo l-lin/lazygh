@@ -25,6 +25,7 @@
 - Prefer the standard library and small dependencies.
 - Default TUI choice is `github.com/jesseduffield/gocui` because it stays close to lazygit.
 - Use the "Functional core, imperative shell" paradigm.
+- Use The Elm Architecture approach for the TUI.
 
 ## TUI verification
 - For rendering, theme, popup, cursor, markdown, image, search-highlight, status-line, or layout changes, headless tests are required but not sufficient.
