@@ -7,8 +7,8 @@ func (program *Program) start(gui *gocui.Gui) error {
 		return nil
 	}
 
-	program.configureGUI(gui)
 	gui.SetManagerFunc(program.layout)
+	program.configureGUI(gui)
 	if err := program.setKeybindings(gui); err != nil {
 		return err
 	}

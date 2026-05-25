@@ -3,6 +3,7 @@ package tui
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -58,5 +59,23 @@ func TestProgramStart_GivenFreshProgram_WhenStarting_ThenItMarksStartedAndSyncsT
 	if actual := subject.navigationState.registeredKeybindingFingerprint; actual == "" {
 		t.Fatal("expected startup to register the initial keybindings")
 	}
+	expected := len(subject.registeredKeybindingSpecs())
+	if actual := given_guiKeybindingCount(t, gui); actual != expected {
+		t.Fatalf("expected the gui to keep %d registered keybindings after startup, actual %d", expected, actual)
+	}
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
+}
+
+func given_guiKeybindingCount(t *testing.T, gui any) int {
+	t.Helper()
+
+	value := reflect.ValueOf(gui)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		t.Fatalf("expected a non-nil gui pointer, actual %T", gui)
+	}
+	field := value.Elem().FieldByName("keybindings")
+	if !field.IsValid() {
+		t.Fatal("expected gocui.Gui to expose a keybindings field")
+	}
+	return field.Len()
 }
