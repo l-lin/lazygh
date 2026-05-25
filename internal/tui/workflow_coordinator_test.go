@@ -82,6 +82,7 @@ func TestPullRequestListStore_GivenCachedRowsAndALiveReload_WhenPlanningTheLoad_
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.notificationsLoadStarted = true
+	subject.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -120,6 +121,7 @@ func TestExecuteWorkflowCommands_GivenASelectedPullRequestDetailLoadPlan_WhenRun
 	subject.requestedPullRequestsLoadStarted = true
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
+	subject.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -191,6 +193,7 @@ func TestReviewStore_GivenACachedDiffWithoutTeamOwners_WhenPlanningTheSelectedLo
 	subject.activeDetailTab = ChangesDetailTab
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
+	subject.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

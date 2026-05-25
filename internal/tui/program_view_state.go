@@ -28,11 +28,11 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 	}
 
 	program.gui = gui
-	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
+	maxX, maxY := gui.Size()
+	if actualErr := program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY)); actualErr != nil {
 		return actualErr
 	}
-	maxX, maxY := gui.Size()
-	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
+	return program.syncShellState(gui)
 }
 
 func (program *Program) refreshExistingView(gui *gocui.Gui, viewName string, configure viewConfigurator, render viewRenderer) error {

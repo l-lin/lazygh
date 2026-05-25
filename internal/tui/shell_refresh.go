@@ -14,20 +14,6 @@ func (program *Program) refreshShell(gui *gocui.Gui) error {
 	return program.refreshViewsIfGUI(gui)
 }
 
-func (program *Program) layoutShell(gui *gocui.Gui) error {
-	if gui == nil {
-		return nil
-	}
-	return program.layout(gui)
-}
-
-func (program *Program) stateChangedShell(gui *gocui.Gui) error {
-	if gui == nil {
-		return nil
-	}
-	return program.afterStateChange(gui)
-}
-
 func (program *Program) recenterListSelection(gui *gocui.Gui, view *gocui.View, fallbackName string, selectedVisibleLine int, lineCount int) error {
 	return program.placeListSelection(gui, view, fallbackName, selectedVisibleLine, lineCount, viewportPlacementCenter)
 }

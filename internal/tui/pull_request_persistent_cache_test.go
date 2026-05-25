@@ -22,7 +22,6 @@ func TestPullRequestDetailMissingBrowserTabData_GivenCompletedBuildWithoutLink_W
 		t.Fatal("expected completed builds without links to require a refresh")
 	}
 }
-
 func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBackgroundRefreshFinishes(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}}
@@ -52,7 +51,6 @@ func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBa
 		t.Fatalf("expected one queued pull request refresh, actual %d", len(asyncRunner.runs))
 	}
 }
-
 func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering_ThenItKeepsTheCachedRowsVisible(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{}, listErr: errors.New("boom")}
@@ -80,7 +78,6 @@ func TestLayout_GivenCachedPullRequestsAndBackgroundRefreshFailure_WhenRendering
 		t.Fatalf("expected cached pull requests to stay visible instead of %q, actual %q", myPullRequestsGenericErrorTitle, pullRequestsView.Buffer())
 	}
 }
-
 func TestLayout_GivenPersistentPullRequestInvalidationAndANewSession_WhenRendering_ThenItStillShowsTheCachedRowsBeforeRefreshing(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
 	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): cachedPullRequests}}
@@ -114,7 +111,6 @@ func TestLayout_GivenPersistentPullRequestInvalidationAndANewSession_WhenRenderi
 		t.Fatalf("expected one queued pull request refresh, actual %d", len(asyncRunner.runs))
 	}
 }
-
 func TestLayout_GivenCachedPullRequestsAndLiveResultsInSearchOrder_WhenRendering_ThenItKeepsTheLiveRowOrder(t *testing.T) {
 	cachedPullRequests := []githubcli.PullRequest{
 		{Title: "Cached older", Number: 41, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/41", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T09:00:00Z"},
@@ -150,7 +146,6 @@ func TestLayout_GivenCachedPullRequestsAndLiveResultsInSearchOrder_WhenRendering
 		t.Fatalf("expected the live rows to keep their search order, actual %q", actualBuffer)
 	}
 }
-
 func TestLoadPullRequests_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	expected := []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: expected}}
@@ -170,7 +165,6 @@ func TestLoadPullRequests_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResul
 		t.Fatalf("expected cached pull requests %+v, actual %+v", expected, actual)
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSummaryVersion_WhenCheckingTheSelection_ThenItUsesTheCachedDetailWithoutTriggeringAGhRefresh(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN", Commits: []githubcli.PullRequestCommit{{OID: "cached123", MessageHeadline: "Cached commit"}}}
@@ -188,6 +182,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSumma
 	subject.asyncRunner = asyncRunner
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -206,7 +201,6 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSumma
 		t.Fatalf("expected no queued detail refresh, actual %d", len(asyncRunner.runs))
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_WhenCheckingTheSelection_ThenItRefreshesItInBackground(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
@@ -226,6 +220,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -253,7 +248,6 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42"}, loader.detailCalls)
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryVersion_WhenCheckingTheSelection_ThenItShowsTheCachedDetailAndRefreshesItInBackground(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
@@ -273,6 +267,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryV
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -303,7 +298,6 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryV
 		t.Fatalf("expected saved cached detail to use body %q and version %q, actual %+v", "Fresh body", summary.UpdatedAt, actual)
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure_WhenCheckingTheSelection_ThenItKeepsTheCachedDetailVisible(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
 	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
@@ -322,6 +316,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -342,7 +337,6 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure
 		t.Fatalf("expected cached detail body %q after refresh failure, actual %q", "Cached body", actual.detail.Body)
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVersion_WhenCheckingTheReviewSession_ThenItUsesTheCachedDiffWithoutTriggeringAGhRefresh(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
@@ -355,6 +349,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 	subject.startReviewSession(summary, "PRR_cache")
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDiff(gui)
@@ -373,7 +368,6 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 		t.Fatalf("expected no queued diff refresh, actual %d", len(asyncRunner.runs))
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWithoutAttemptedTeamOwnershipLookup_WhenCheckingTheSelection_ThenItRefreshesInBackground(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}}
@@ -397,6 +391,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWi
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDiff(gui)
@@ -434,7 +429,6 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWi
 		t.Fatalf("expected saved cached diff %+v with version %q, actual %+v", expectedSavedDiff, summary.UpdatedAt, actual)
 	}
 }
-
 func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedDiff_WhenCheckingTheSelection_ThenItShowsTheCachedDiffAndRefreshesItInBackground(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:05:00Z"}
 	cachedDiff := githubcli.PullRequestDiff{
@@ -479,6 +473,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
+	subject.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDiff(gui)
@@ -509,7 +504,6 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 		t.Fatalf("expected saved cached diff %+v with version %q, actual %+v", freshDiff, summary.UpdatedAt, actual)
 	}
 }
-
 func TestLoadPullRequestDiff_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
@@ -529,7 +523,6 @@ func TestLoadPullRequestDiff_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheRe
 		t.Fatalf("expected saved diff %+v with version %q, actual %+v", expected, summary.UpdatedAt, actual)
 	}
 }
-
 func TestInvalidatePullRequestDetail_GivenAPersistentCache_WhenInvalidating_ThenItInvalidatesTheStoredPullRequest(t *testing.T) {
 	subject := NewProgram()
 	cache := &fakePersistentPullRequestCache{}
@@ -584,7 +577,6 @@ func (cache *fakePersistentPullRequestCache) PullRequests(search appconfig.PullR
 	}
 	return githubcli.ToDomainPullRequests(pullRequests), true, nil
 }
-
 func (cache *fakePersistentPullRequestCache) SavePullRequests(search appconfig.PullRequestSearch, pullRequests []githubdomain.PullRequestSummary) error {
 	if cache.savedPullRequestsBySearchKey == nil {
 		cache.savedPullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
@@ -592,24 +584,20 @@ func (cache *fakePersistentPullRequestCache) SavePullRequests(search appconfig.P
 	cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(search)] = githubcli.PullRequestsFromDomain(pullRequests)
 	return nil
 }
-
 func (cache *fakePersistentPullRequestCache) Notifications() ([]githubdomain.Notification, bool, error) {
 	if cache.notifications == nil {
 		return nil, false, nil
 	}
 	return githubcli.ToDomainNotifications(cache.notifications), true, nil
 }
-
 func (cache *fakePersistentPullRequestCache) SaveNotifications(notifications []githubdomain.Notification) error {
 	cache.savedNotifications = githubcli.NotificationsFromDomain(notifications)
 	return nil
 }
-
 func (cache *fakePersistentPullRequestCache) PullRequestDetail(repository string, number int) (persistcache.CachedPullRequestDetail, bool, error) {
 	detail, ok := cache.details[strings.TrimSpace(repository)+"#"+itoa(number)]
 	return detail, ok, nil
 }
-
 func (cache *fakePersistentPullRequestCache) SavePullRequestDetail(summary githubdomain.PullRequestSummary, detail githubdomain.PullRequestDetail) error {
 	if cache.savedDetails == nil {
 		cache.savedDetails = map[string]fakeSavedPullRequestDetail{}
@@ -617,12 +605,10 @@ func (cache *fakePersistentPullRequestCache) SavePullRequestDetail(summary githu
 	cache.savedDetails[pullRequestDetailKey(githubcli.RepositoryFromDomain(summary.Repository), summary.Number)] = fakeSavedPullRequestDetail{Detail: githubcli.PullRequestDetailFromDomain(detail), SourceUpdatedAt: summary.UpdatedAt}
 	return nil
 }
-
 func (cache *fakePersistentPullRequestCache) PullRequestDiff(repository string, number int) (persistcache.CachedPullRequestDiff, bool, error) {
 	diff, ok := cache.diffs[strings.TrimSpace(repository)+"#"+itoa(number)]
 	return diff, ok, nil
 }
-
 func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubdomain.PullRequestSummary, diff githubdomain.PullRequestDiff) error {
 	if cache.savedDiffs == nil {
 		cache.savedDiffs = map[string]fakeSavedPullRequestDiff{}
@@ -630,7 +616,6 @@ func (cache *fakePersistentPullRequestCache) SavePullRequestDiff(summary githubd
 	cache.savedDiffs[pullRequestDetailKey(githubcli.RepositoryFromDomain(summary.Repository), summary.Number)] = fakeSavedPullRequestDiff{Diff: githubcli.PullRequestDiffFromDomain(diff), SourceUpdatedAt: summary.UpdatedAt}
 	return nil
 }
-
 func (cache *fakePersistentPullRequestCache) InvalidatePullRequest(repository string, number int) error {
 	key := strings.TrimSpace(repository) + "#" + itoa(number)
 	cache.invalidatedPullRequests = append(cache.invalidatedPullRequests, key)
@@ -638,7 +623,6 @@ func (cache *fakePersistentPullRequestCache) InvalidatePullRequest(repository st
 	delete(cache.diffs, key)
 	return nil
 }
-
 func (cache *fakePersistentPullRequestCache) Clear() error {
 	cache.clearCalls++
 	cache.pullRequestsBySearchKey = map[string][]githubcli.PullRequest{}
@@ -647,19 +631,15 @@ func (cache *fakePersistentPullRequestCache) Clear() error {
 	cache.diffs = map[string]persistcache.CachedPullRequestDiff{}
 	return nil
 }
-
 func (cache *fakePersistentPullRequestCache) Close() error {
 	return nil
 }
-
 func fakePersistentPullRequestSearchKey(search appconfig.PullRequestSearch) string {
 	return strings.TrimSpace(search.Label) + "|" + strings.Join(search.Command, "\x00")
 }
-
 func given_cachedPersistentPullRequestDetail(detail githubcli.PullRequestDetail, sourceUpdatedAt string) persistcache.CachedPullRequestDetail {
 	return persistcache.CachedPullRequestDetail{Detail: githubcli.ToDomainPullRequestDetail(detail), SourceUpdatedAt: sourceUpdatedAt}
 }
-
 func given_cachedPersistentPullRequestDiff(diff githubcli.PullRequestDiff, sourceUpdatedAt string) persistcache.CachedPullRequestDiff {
 	return persistcache.CachedPullRequestDiff{Diff: githubcli.ToDomainPullRequestDiff(diff), SourceUpdatedAt: sourceUpdatedAt}
 }

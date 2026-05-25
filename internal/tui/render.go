@@ -22,15 +22,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 	}
 
 	program.gui = gui
-	if !program.appStarted {
-		return program.dispatch(gui, MsgAppStarted{})
-	}
-
 	maxX, maxY := gui.Size()
-	if actualErr := program.reloadRegisteredKeybindings(gui); actualErr != nil {
-		return actualErr
-	}
-
 	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
 }
 

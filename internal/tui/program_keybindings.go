@@ -121,13 +121,23 @@ func copyKeymapOverrides(overrides appconfig.KeymapOverrides) appconfig.KeymapOv
 }
 
 func (program *Program) setKeybindings(gui *gocui.Gui) error {
+	if gui == nil {
+		return nil
+	}
+
 	specs := program.registeredKeybindingSpecs()
+	fingerprint := fingerprintKeybindingSpecs(specs)
+	if fingerprint == program.registeredKeybindingFingerprint {
+		return nil
+	}
+
+	gui.DeleteAllKeybindings()
 	for _, binding := range specs {
 		if err := gui.SetKeybinding(binding.viewName, binding.key, binding.mod, binding.handler); err != nil {
 			return err
 		}
 	}
-	program.registeredKeybindingFingerprint = fingerprintKeybindingSpecs(specs)
+	program.registeredKeybindingFingerprint = fingerprint
 	return nil
 }
 

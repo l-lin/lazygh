@@ -201,12 +201,9 @@ func (program *Program) Run() error {
 	}
 	defer gui.Close()
 
-	program.configureGUI(gui)
 	stopLoadingSpinner := program.startLoadingSpinner(gui)
 	defer stopLoadingSpinner()
-	gui.SetManagerFunc(program.layout)
-
-	if err := program.setKeybindings(gui); err != nil {
+	if err := program.start(gui); err != nil {
 		return err
 	}
 
@@ -228,4 +225,8 @@ func (program *Program) configureGUI(gui *gocui.Gui) {
 	gui.SelBgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	gui.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	gui.SelFrameColor = gocui.GetColor(theme.ActiveBorderHex)
+	program.gui = gui
+	if !program.appStarted {
+		_ = program.dispatch(gui, MsgAppStarted{})
+	}
 }

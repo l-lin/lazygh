@@ -55,11 +55,8 @@ func TestLoadConnectedUser_GivenSessionQueriesOnly_WhenLoading_ThenItUsesTheSess
 	loader := &fakeSessionQueries{user: githubdomain.ConnectedUser{Login: "octocat"}}
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{SessionQueries: loader})
 	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
-	defer gui.Close()
-	subject.configureGUI(gui)
 
-	subject.loadConnectedUser(gui)
+	subject.loadConnectedUser(nil)
 
 	if loader.calls != 1 {
 		t.Fatalf("expected one session query call, actual %d", loader.calls)
@@ -75,11 +72,8 @@ func TestLoadPullRequests_GivenPullRequestListQueriesOnly_WhenLoading_ThenItUses
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModelAndDeps(model, AppDeps{PullRequestList: loader})
 	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
-	defer gui.Close()
-	subject.configureGUI(gui)
 
-	subject.loadPullRequests(gui, MyPullRequestsTab)
+	subject.loadPullRequests(nil, MyPullRequestsTab)
 
 	if loader.calls != 1 {
 		t.Fatalf("expected one pull request list call, actual %d", loader.calls)
@@ -94,6 +88,7 @@ func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_Th
 	renderer := &fakeMarkdownHTMLRenderer{renderedHTML: "<p>resolved</p>"}
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{MarkdownHTMLRenderer: renderer})
 	subject.uiUpdater = immediateUIUpdater{}
+	subject.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
