@@ -1,8 +1,8 @@
 package tui
 
-func (program *Program) reviewInlineCommentHelpEntry() helpEntry {
+func reviewInlineCommentHelpEntry(resolver keybindingLabelResolver) helpEntry {
 	return helpEntry{
-		Key:         program.helpKeysOrFallback("c", keybindingActionID{scope: keymapScopePullRequests, action: "comment_on_pull_request"}),
+		Key:         resolver.helpKeysOrFallback("c", keybindingActionID{scope: keymapScopePullRequests, action: "comment_on_pull_request"}),
 		Description: "Add inline comment",
 	}
 }

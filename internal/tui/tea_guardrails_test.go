@@ -482,6 +482,23 @@ func TestRefactorGuard_GivenFooterFile_WhenScanning_ThenOnlyViewGlueStillDepends
 	}
 }
 
+func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenOnlyViewGlueStillDependsOnProgram(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
+		return filepath.Base(path) == "help.go"
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "configureHelpView(") || strings.Contains(match, "renderHelpView(") || strings.Contains(match, "fullPageHelpDown(") || strings.Contains(match, "fullPageHelpUp(") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected help overlay helpers to stay on snapshot presenters instead of full Program coupling, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenDetailAndReviewChildReducerFiles_WhenScanning_ThenTheyStayOnValueReceiverTransitions(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
 		`func \(program \*Program\)`,
