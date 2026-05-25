@@ -48,9 +48,10 @@ func (program *Program) clearPendingSelectionPrefix() {
 }
 
 func (program *Program) applyProjectedScreenState(state ScreenState) {
+	application := projectScreenStateApplication(state)
 	program.model.ApplyProjectedScreenState(state)
-	if mainView, ok := state.ViewByNumber(mainPanelViewNumber); ok && len(mainView.Tabs) > 0 {
-		program.detailState.activeTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
+	if application.hasDetailTab {
+		program.detailState.activeTab = application.activeDetailTab
 	}
 }
 

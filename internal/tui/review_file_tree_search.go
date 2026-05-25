@@ -7,11 +7,11 @@ import (
 )
 
 func (program *Program) startReviewFileTreeSearch() {
-	program.model.StartSearchForTarget(FocusPullRequestsView, program.model.ActivePullRequestTab())
+	program.model.StartSearchForReviewTree(program.model.ActivePullRequestTab())
 }
 
 func (program *Program) activeSearchIsReviewFileTreeSearch() bool {
-	return program.reviewModeActive() && program.model.SearchActive() && program.model.SearchTarget() == FocusPullRequestsView
+	return program.reviewModeActive() && program.model.SearchActive() && program.model.SearchTargetKind() == SearchTargetReviewTree
 }
 
 func (program *Program) updateActiveSearchDraft(query string) {
@@ -24,22 +24,16 @@ func (program *Program) updateActiveSearchDraft(query string) {
 }
 
 func (program *Program) reviewFileTreeSearchQuery() string {
-	if program.activeSearchIsReviewFileTreeSearch() {
-		return program.model.SearchDraft()
-	}
-
-	return program.navigationState.reviewSession.fileTreeSearchQuery
+	return program.model.ReviewTreeSearchQuery()
 }
 
 func (program *Program) submitReviewFileTreeSearch() {
-	query := program.model.SearchDraft()
-	program.navigationState.reviewSession.fileTreeSearchQuery = query
-	program.model.CloseSearchPrompt()
-	program.followSubmittedReviewFileTreeSearch(query)
+	program.model.SubmitSearch()
+	program.followSubmittedReviewFileTreeSearch(program.model.ReviewTreeSearchQuery())
 }
 
 func (program *Program) cancelReviewFileTreeSearch() {
-	program.model.CloseSearchPrompt()
+	program.model.CancelSearch()
 }
 
 func (program *Program) nextReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
@@ -55,7 +49,7 @@ func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose search
 		return nil
 	}
 
-	query := program.navigationState.reviewSession.fileTreeSearchQuery
+	query := program.model.ReviewTreeSearchQuery()
 	if strings.TrimSpace(query) == "" {
 		return nil
 	}

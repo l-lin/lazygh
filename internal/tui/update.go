@@ -73,7 +73,7 @@ func Update(program *Program, msg Msg) []Cmd {
 			program.startReviewFileTreeSearch()
 		} else {
 			if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-				program.navigationState.reviewSession.fileTreeSearchQuery = ""
+				program.model.ClearReviewTreeSearchQuery()
 			}
 			program.model.StartSearch()
 		}

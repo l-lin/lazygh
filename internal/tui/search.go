@@ -2,12 +2,26 @@ package tui
 
 import "strings"
 
+type SearchTargetKind int
+
+const (
+	SearchTargetUser SearchTargetKind = iota
+	SearchTargetPullRequests
+	SearchTargetReviewTree
+	SearchTargetNotifications
+	SearchTargetDetail
+)
+
 func (model *Model) SearchActive() bool {
 	return model.searchActive
 }
 
 func (model *Model) SearchTarget() Focus {
-	return model.searchTarget
+	return searchTargetFocus(model.searchTargetKind)
+}
+
+func (model *Model) SearchTargetKind() SearchTargetKind {
+	return model.searchTargetKind
 }
 
 func (model *Model) SearchTargetPullRequestTab() PullRequestTab {
@@ -18,8 +32,23 @@ func (model *Model) SearchDraft() string {
 	return model.searchDraft
 }
 
+func (model *Model) ReviewTreeSearchQuery() string {
+	if model.searchActive && model.searchTargetKind == SearchTargetReviewTree {
+		return model.searchDraft
+	}
+	return model.reviewTreeSearchQuery
+}
+
 func (model *Model) StartSearch() {
 	model.StartSearchForTarget(model.Focus(), model.ActivePullRequestTab())
+}
+
+func (model *Model) StartSearchForTarget(target Focus, pullRequestTab PullRequestTab) {
+	model.startSearch(searchTargetKindForFocus(target), pullRequestTab)
+}
+
+func (model *Model) StartSearchForReviewTree(pullRequestTab PullRequestTab) {
+	model.startSearch(SearchTargetReviewTree, pullRequestTab)
 }
 
 func (model *Model) UpdateSearchDraft(query string) {
@@ -28,7 +57,7 @@ func (model *Model) UpdateSearchDraft(query string) {
 	}
 
 	model.searchDraft = query
-	model.clampSearchSelectionForTarget(model.searchTarget, query)
+	model.clampSearchSelectionForTarget(model.SearchTarget(), query)
 }
 
 func (model *Model) SubmitSearch() {
@@ -36,16 +65,19 @@ func (model *Model) SubmitSearch() {
 		return
 	}
 
-	target := model.searchTarget
+	targetKind := model.searchTargetKind
+	targetFocus := searchTargetFocus(targetKind)
 	tab := model.searchTargetPullRequestTab
 	selectedPullRequestIndex := model.selectedPullRequestIndexes[tab]
 
-	switch target {
-	case FocusPullRequestsView:
+	switch targetKind {
+	case SearchTargetPullRequests:
 		model.pullRequestSearchQueries[tab] = model.searchDraft
-	case FocusDetailView:
+	case SearchTargetReviewTree:
+		model.reviewTreeSearchQuery = model.searchDraft
+	case SearchTargetDetail:
 		model.detailSearchQuery = model.searchDraft
-	case FocusNotificationsView:
+	case SearchTargetNotifications:
 		model.notificationSearchQuery = model.searchDraft
 	default:
 		model.userSearchQuery = model.searchDraft
@@ -53,11 +85,11 @@ func (model *Model) SubmitSearch() {
 
 	model.searchActive = false
 	model.searchDraft = ""
-	if target == FocusPullRequestsView {
+	if targetKind == SearchTargetPullRequests {
 		model.followSubmittedPullRequestSearch(tab, selectedPullRequestIndex)
 		return
 	}
-	model.clampSearchSelectionForTarget(target, model.appliedSearchQuery(target, tab))
+	model.clampSearchSelectionForTarget(targetFocus, model.appliedSearchQuery(targetKind, tab))
 }
 
 func (model *Model) CancelSearch() {
@@ -65,13 +97,14 @@ func (model *Model) CancelSearch() {
 		return
 	}
 
-	target := model.searchTarget
+	targetKind := model.searchTargetKind
+	targetFocus := searchTargetFocus(targetKind)
 	tab := model.searchTargetPullRequestTab
-	query := model.appliedSearchQuery(target, tab)
+	query := model.appliedSearchQuery(targetKind, tab)
 
 	model.searchActive = false
 	model.searchDraft = ""
-	model.clampSearchSelectionForTarget(target, query)
+	model.clampSearchSelectionForTarget(targetFocus, query)
 }
 
 func (model *Model) VisibleUsers() []Item {
@@ -192,30 +225,77 @@ func (model *Model) selectedVisibleIndex(selectedIndex int, visibleIndexes []int
 }
 
 func (model *Model) effectiveSearchQuery(target Focus, tab PullRequestTab) string {
-	if model.searchActive && model.searchTarget == target {
+	if model.searchActive && model.SearchTarget() == target {
 		if target != FocusPullRequestsView || model.searchTargetPullRequestTab == tab {
 			return model.searchDraft
 		}
 	}
 
-	return model.appliedSearchQuery(target, tab)
+	return model.appliedSearchQuery(searchTargetKindForFocus(target), tab)
 }
 
-func (model *Model) appliedSearchQuery(target Focus, tab PullRequestTab) string {
-	switch target {
-	case FocusPullRequestsView:
+func (model *Model) appliedSearchQuery(targetKind SearchTargetKind, tab PullRequestTab) string {
+	switch targetKind {
+	case SearchTargetPullRequests:
 		return model.pullRequestSearchQueries[tab]
-	case FocusDetailView:
+	case SearchTargetReviewTree:
+		return model.reviewTreeSearchQuery
+	case SearchTargetDetail:
 		return model.detailSearchQuery
-	case FocusNotificationsView:
+	case SearchTargetNotifications:
 		return model.notificationSearchQuery
 	default:
 		return model.userSearchQuery
 	}
 }
 
+func searchTargetKindForFocus(focus Focus) SearchTargetKind {
+	switch focus {
+	case FocusPullRequestsView:
+		return SearchTargetPullRequests
+	case FocusDetailView:
+		return SearchTargetDetail
+	case FocusNotificationsView:
+		return SearchTargetNotifications
+	default:
+		return SearchTargetUser
+	}
+}
+
+func searchTargetFocus(kind SearchTargetKind) Focus {
+	switch kind {
+	case SearchTargetPullRequests, SearchTargetReviewTree:
+		return FocusPullRequestsView
+	case SearchTargetDetail:
+		return FocusDetailView
+	case SearchTargetNotifications:
+		return FocusNotificationsView
+	default:
+		return FocusUserView
+	}
+}
+
+func (model *Model) startSearch(targetKind SearchTargetKind, pullRequestTab PullRequestTab) {
+	model.searchActive = true
+	model.searchTargetKind = targetKind
+	if len(model.pullRequestTabs) > 0 {
+		model.searchTargetPullRequestTab = PullRequestTab(clampIndex(int(pullRequestTab), len(model.pullRequestTabs)))
+	} else {
+		model.searchTargetPullRequestTab = 0
+	}
+	targetFocus := searchTargetFocus(targetKind)
+	model.clearAppliedSearchQueriesForOtherViews(targetFocus)
+	model.searchDraft = ""
+	model.clampSearchSelectionForTarget(targetFocus, model.searchDraft)
+}
+
+func (model *Model) ClearReviewTreeSearchQuery() {
+	model.reviewTreeSearchQuery = ""
+}
+
 func (model *Model) ClearPaneSearchQueries() {
 	model.userSearchQuery = ""
+	model.reviewTreeSearchQuery = ""
 	model.detailSearchQuery = ""
 	model.notificationSearchQuery = ""
 	for tab := range model.pullRequestSearchQueries {
@@ -232,18 +312,21 @@ func (model *Model) clearAppliedSearchQueriesForOtherViews(target Focus) {
 	case FocusDetailView:
 		model.userSearchQuery = ""
 		model.notificationSearchQuery = ""
+		model.reviewTreeSearchQuery = ""
 		for tab := range model.pullRequestSearchQueries {
 			model.pullRequestSearchQueries[tab] = ""
 		}
 	case FocusNotificationsView:
 		model.userSearchQuery = ""
 		model.detailSearchQuery = ""
+		model.reviewTreeSearchQuery = ""
 		for tab := range model.pullRequestSearchQueries {
 			model.pullRequestSearchQueries[tab] = ""
 		}
 	default:
 		model.detailSearchQuery = ""
 		model.notificationSearchQuery = ""
+		model.reviewTreeSearchQuery = ""
 		for tab := range model.pullRequestSearchQueries {
 			model.pullRequestSearchQueries[tab] = ""
 		}

@@ -1,13 +1,11 @@
 package tui
 
 func (model *Model) ApplyProjectedScreenState(state ScreenState) {
-	model.focus = state.ActiveView().Focus
-	model.lastSideFocus = state.ActiveSideView().Focus
-	if state.Mode != ScreenModeBrowser {
-		return
-	}
-	if pullRequestView, ok := state.ViewByNumber(sidePanelPullRequestsViewNumber); ok {
-		model.activePullRequestTab = PullRequestTab(clampScreenTabIndex(pullRequestView.ActiveTab, len(pullRequestView.Tabs)))
+	application := projectScreenStateApplication(state)
+	model.focus = application.focus
+	model.lastSideFocus = application.lastSideFocus
+	if application.hasPullRequestTab {
+		model.activePullRequestTab = application.activePullRequestTab
 	}
 }
 
@@ -51,19 +49,6 @@ func (model *Model) SetPullRequestSearchQuery(tab PullRequestTab, query string) 
 
 func (model *Model) ClearPullRequestSearchQuery(tab PullRequestTab) {
 	model.SetPullRequestSearchQuery(tab, "")
-}
-
-func (model *Model) StartSearchForTarget(target Focus, pullRequestTab PullRequestTab) {
-	model.searchActive = true
-	model.searchTarget = target
-	if len(model.pullRequestTabs) > 0 {
-		model.searchTargetPullRequestTab = PullRequestTab(clampIndex(int(pullRequestTab), len(model.pullRequestTabs)))
-	} else {
-		model.searchTargetPullRequestTab = 0
-	}
-	model.clearAppliedSearchQueriesForOtherViews(target)
-	model.searchDraft = ""
-	model.clampSearchSelectionForTarget(target, model.searchDraft)
 }
 
 func (model *Model) CloseSearchPrompt() {

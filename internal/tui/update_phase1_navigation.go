@@ -126,7 +126,7 @@ func (program *Program) applyRepeatReviewFileTreeSearch(message MsgRepeatReviewF
 	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView {
 		return
 	}
-	query := program.navigationState.reviewSession.fileTreeSearchQuery
+	query := program.model.ReviewTreeSearchQuery()
 	if strings.TrimSpace(query) == "" {
 		return
 	}
@@ -174,7 +174,7 @@ func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCur
 	inputContext := program.inputContext()
 	program.detailState.viewState.clearPendingPrefix()
 	if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-		program.navigationState.reviewSession.fileTreeSearchQuery = ""
+		program.model.ClearReviewTreeSearchQuery()
 	}
 	program.model.StartSearch()
 	program.updateActiveSearchDraft(query)

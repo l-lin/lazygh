@@ -36,7 +36,6 @@ type reviewSessionState struct {
 	summary                      githubdomain.PullRequest
 	pendingReviewID              string
 	selectedFileTreeRow          int
-	fileTreeSearchQuery          string
 	collapsedTreeRowIDs          map[string]bool
 	collapsedThreadIDs           map[string]bool
 	story                        reviewStoryData

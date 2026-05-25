@@ -75,10 +75,11 @@ type Model struct {
 	fullscreenPane             Focus
 	detailFullscreenReturnSize PaneLayoutSize
 	searchActive               bool
-	searchTarget               Focus
+	searchTargetKind           SearchTargetKind
 	searchTargetPullRequestTab PullRequestTab
 	searchDraft                string
 	userSearchQuery            string
+	reviewTreeSearchQuery      string
 	detailSearchQuery          string
 	notificationSearchQuery    string
 	pullRequestSearchQueries   map[PullRequestTab]string

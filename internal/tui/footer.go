@@ -287,7 +287,7 @@ func (program *Program) appliedSearchFooterText(focus Focus) string {
 			query := program.reviewFileTreeSearchQuery()
 			return searchSummaryText(query, program.reviewFileTreeSearchMatchCount(query))
 		case FocusDetailView:
-			query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
+			query := program.model.appliedSearchQuery(SearchTargetDetail, MyPullRequestsTab)
 			return searchSummaryText(query, program.detailSearchMatchCount(query))
 		default:
 			return ""
@@ -296,16 +296,16 @@ func (program *Program) appliedSearchFooterText(focus Focus) string {
 
 	switch focus {
 	case FocusPullRequestsView:
-		query := program.model.appliedSearchQuery(FocusPullRequestsView, program.model.ActivePullRequestTab())
+		query := program.model.appliedSearchQuery(SearchTargetPullRequests, program.model.ActivePullRequestTab())
 		return searchSummaryText(query, len(program.model.VisiblePullRequests()))
 	case FocusNotificationsView:
-		query := program.model.appliedSearchQuery(FocusNotificationsView, MyPullRequestsTab)
+		query := program.model.appliedSearchQuery(SearchTargetNotifications, MyPullRequestsTab)
 		return searchSummaryText(query, len(program.model.VisibleNotifications()))
 	case FocusDetailView:
-		query := program.model.appliedSearchQuery(FocusDetailView, MyPullRequestsTab)
+		query := program.model.appliedSearchQuery(SearchTargetDetail, MyPullRequestsTab)
 		return searchSummaryText(query, program.detailSearchMatchCount(query))
 	default:
-		query := program.model.appliedSearchQuery(FocusUserView, MyPullRequestsTab)
+		query := program.model.appliedSearchQuery(SearchTargetUser, MyPullRequestsTab)
 		return searchSummaryText(query, len(program.model.VisibleUsers()))
 	}
 }
