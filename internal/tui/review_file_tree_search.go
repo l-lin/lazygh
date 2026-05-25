@@ -6,34 +6,12 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func (program *Program) startReviewFileTreeSearch() {
-	program.model.StartSearchForReviewTree(program.model.ActivePullRequestTab())
-}
-
 func (program *Program) activeSearchIsReviewFileTreeSearch() bool {
 	return program.reviewModeActive() && program.model.SearchActive() && program.model.SearchTargetKind() == SearchTargetReviewTree
 }
 
-func (program *Program) updateActiveSearchDraft(query string) {
-	if program.activeSearchIsReviewFileTreeSearch() {
-		program.model.UpdateSearchDraft(query)
-		return
-	}
-
-	program.model.UpdateSearchDraft(query)
-}
-
 func (program *Program) reviewFileTreeSearchQuery() string {
 	return program.model.ReviewTreeSearchQuery()
-}
-
-func (program *Program) submitReviewFileTreeSearch() {
-	program.model.SubmitSearch()
-	program.followSubmittedReviewFileTreeSearch(program.model.ReviewTreeSearchQuery())
-}
-
-func (program *Program) cancelReviewFileTreeSearch() {
-	program.model.CancelSearch()
 }
 
 func (program *Program) nextReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {

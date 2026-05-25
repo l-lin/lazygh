@@ -40,23 +40,11 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.applyProjectedScreenState(state.FocusViewNumber(actual.Number))
 	case MsgMoveSideSelection:
-		program.clearPendingSelectionPrefix()
-		if program.selectionChangeBlocked() {
-			return nil
-		}
-		program.model.adjustSelectionBy(actual.Delta)
+		program.applyMoveSideSelection(actual)
 	case MsgMoveSideSelectionToTop:
-		program.clearPendingSelectionPrefix()
-		if program.selectionChangeBlocked() {
-			return nil
-		}
-		program.model.MoveSelectionToTop()
+		program.applyMoveSideSelectionToTop()
 	case MsgMoveSideSelectionToBottom:
-		program.clearPendingSelectionPrefix()
-		if program.selectionChangeBlocked() {
-			return nil
-		}
-		program.model.MoveSelectionToBottom()
+		program.applyMoveSideSelectionToBottom()
 	case MsgOpenSearch:
 		program.clearPendingSelectionPrefix()
 		if program.pullRequestBuildRunPopupVisible() {
@@ -65,22 +53,22 @@ func Update(program *Program, msg Msg) []Cmd {
 			return nil
 		}
 		inputContext := program.inputContext()
+		if inputContext.SearchUsesReviewTree {
+			program.applyStartReviewFileTreeSearch(MsgStartReviewFileTreeSearch{Query: actual.Query})
+			return nil
+		}
 		if program.mainPaneActionBlocked() || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
 			return nil
 		}
 		program.detailState.viewState.clearPendingPrefix()
-		if inputContext.SearchUsesReviewTree {
-			program.startReviewFileTreeSearch()
-		} else {
-			if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-				program.model.ClearReviewTreeSearchQuery()
-			}
-			program.model.StartSearch()
+		if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
+			program.model.ClearReviewTreeSearchQuery()
 		}
-		program.updateActiveSearchDraft(actual.Query)
+		program.model.StartSearch()
+		program.applySearchDraftChanged(MsgSearchDraftChanged{Query: actual.Query})
 		program.searchWidget.editor = newLineEditor(actual.Query)
 	case MsgSearchDraftChanged:
-		program.updateActiveSearchDraft(actual.Query)
+		program.applySearchDraftChanged(actual)
 	case MsgFeedbackSet:
 		program.applyFeedbackSet(actual)
 	case MsgActionsPopupActionResultHandled:
@@ -107,6 +95,22 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyPullRequestBuildRunPopupClosed()
 	case MsgAdvanceDetailTab:
 		program.applyAdvanceDetailTab(actual)
+	case MsgAdvancePullRequestTab:
+		return program.applyAdvancePullRequestTab(actual)
+	case MsgOpenDetailRequested:
+		program.applyOpenDetailRequested()
+	case MsgCloseDetailRequested:
+		program.applyCloseDetailRequested()
+	case MsgStartReviewFileTreeSearch:
+		program.applyStartReviewFileTreeSearch(actual)
+	case MsgSubmitReviewFileTreeSearch:
+		program.applySubmitReviewFileTreeSearch()
+	case MsgCancelReviewFileTreeSearch:
+		program.applyCancelReviewFileTreeSearch()
+	case MsgOpenPullRequestInBrowserView:
+		program.applyOpenPullRequestInBrowserView(actual)
+	case MsgOpenPullRequestInDetailFullscreen:
+		program.applyOpenPullRequestInDetailFullscreen(actual)
 	case MsgExitReviewMode:
 		program.applyExitReviewMode()
 	case MsgToggleHelp:
@@ -171,8 +175,7 @@ func Update(program *Program, msg Msg) []Cmd {
 			return nil
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
-			program.submitReviewFileTreeSearch()
-			program.searchWidget.editor = nil
+			program.applySubmitReviewFileTreeSearch()
 			return nil
 		}
 
@@ -197,8 +200,7 @@ func Update(program *Program, msg Msg) []Cmd {
 			return nil
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
-			program.cancelReviewFileTreeSearch()
-			program.searchWidget.editor = nil
+			program.applyCancelReviewFileTreeSearch()
 			return nil
 		}
 		program.model.CancelSearch()

@@ -42,6 +42,22 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) {
 	}
 }
 
+func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
+	openedSummary, ok := program.openedPullRequestSummaryForTab(tab)
+	if !ok {
+		return
+	}
+
+	rows := program.model.PullRequestRows(tab)
+	for index, row := range rows {
+		if row.Summary == nil || !samePullRequestIdentity(*row.Summary, openedSummary) {
+			continue
+		}
+		program.model.SelectPullRequestIndex(tab, index)
+		return
+	}
+}
+
 func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded) {
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""

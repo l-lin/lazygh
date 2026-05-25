@@ -236,34 +236,12 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 	})
 }
 
-func (program *Program) nextPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
-	if program.modeDescriptor().Mode() != ScreenModeBrowser {
-		return nil
-	}
-
-	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-
-	program.model.NextPullRequestTab()
-	program.reloadActivePullRequestsTab(gui)
-	return nil
+func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+	return program.dispatch(gui, MsgAdvancePullRequestTab{Delta: 1})
 }
 
-func (program *Program) previousPullRequestTab(gui *gocui.Gui, view *gocui.View) error {
-	if program.modeDescriptor().Mode() != ScreenModeBrowser {
-		return nil
-	}
-
-	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-
-	program.model.PreviousPullRequestTab()
-	program.reloadActivePullRequestsTab(gui)
-	return nil
+func (program *Program) previousPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
+	return program.dispatch(gui, MsgAdvancePullRequestTab{Delta: -1})
 }
 
 func (program *Program) focusDetailView(gui *gocui.Gui, _ *gocui.View) error {
@@ -283,37 +261,15 @@ func (program *Program) focusNotificationsView(gui *gocui.Gui, _ *gocui.View) er
 }
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
-	if program.detailTransitionBlocked() {
-		return nil
-	}
-
-	program.model.OpenDetail()
-	return program.syncCurrentView(gui)
+	return program.dispatch(gui, MsgOpenDetailRequested{})
 }
 
 func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.detailTransitionBlocked() {
-		return nil
-	}
-	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
-		program.detailState.viewState.exitVisualMode()
-		return program.refreshDetailView(gui)
-	}
-	if program.model.Focus() == FocusDetailView && program.detailState.viewState.hasPendingYank() {
-		program.detailState.viewState.clearPendingPrefix()
-		return program.refreshDetailView(gui)
-	}
-
-	program.detailState.viewState.clearPendingPrefix()
-	program.model.CloseDetail()
-	return program.syncCurrentView(gui)
+	return program.dispatch(gui, MsgCloseDetailRequested{})
 }
 
 func (program *Program) openSearch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.dispatch(gui, MsgOpenSearch{Query: ""})
+	return program.openSearchWithInitialQuery(gui, "")
 }
 
 func (program *Program) searchWordUnderCursorForward(gui *gocui.Gui, view *gocui.View) error {
@@ -329,14 +285,23 @@ func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, 
 }
 
 func (program *Program) openSearchWithInitialQuery(gui *gocui.Gui, query string) error {
+	if program.inputContext().SearchUsesReviewTree {
+		return program.dispatch(gui, MsgStartReviewFileTreeSearch{Query: query})
+	}
 	return program.dispatch(gui, MsgOpenSearch{Query: query})
 }
 
 func (program *Program) submitSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.activeSearchIsReviewFileTreeSearch() {
+		return program.dispatch(gui, MsgSubmitReviewFileTreeSearch{})
+	}
 	return program.dispatch(gui, MsgSubmitSearch{})
 }
 
 func (program *Program) cancelSearch(gui *gocui.Gui, _ *gocui.View) error {
+	if program.activeSearchIsReviewFileTreeSearch() {
+		return program.dispatch(gui, MsgCancelReviewFileTreeSearch{})
+	}
 	return program.dispatch(gui, MsgCancelSearch{})
 }
 

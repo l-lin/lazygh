@@ -69,6 +69,30 @@ type MsgAdvanceDetailTab struct {
 	Delta int
 }
 
+type MsgAdvancePullRequestTab struct {
+	Delta int
+}
+
+type MsgOpenDetailRequested struct{}
+
+type MsgCloseDetailRequested struct{}
+
+type MsgStartReviewFileTreeSearch struct {
+	Query string
+}
+
+type MsgSubmitReviewFileTreeSearch struct{}
+
+type MsgCancelReviewFileTreeSearch struct{}
+
+type MsgOpenPullRequestInBrowserView struct {
+	Summary githubdomain.PullRequest
+}
+
+type MsgOpenPullRequestInDetailFullscreen struct {
+	SideFocus Focus
+}
+
 type MsgExitReviewMode struct{}
 
 type MsgToggleHelp struct{}
@@ -197,6 +221,14 @@ func (MsgPullRequestBuildRunJobLogLoadRequested) isMsg()       {}
 func (MsgPullRequestBuildRunPopupOpened) isMsg()               {}
 func (MsgPullRequestBuildRunPopupClosed) isMsg()               {}
 func (MsgAdvanceDetailTab) isMsg()                             {}
+func (MsgAdvancePullRequestTab) isMsg()                        {}
+func (MsgOpenDetailRequested) isMsg()                          {}
+func (MsgCloseDetailRequested) isMsg()                         {}
+func (MsgStartReviewFileTreeSearch) isMsg()                    {}
+func (MsgSubmitReviewFileTreeSearch) isMsg()                   {}
+func (MsgCancelReviewFileTreeSearch) isMsg()                   {}
+func (MsgOpenPullRequestInBrowserView) isMsg()                 {}
+func (MsgOpenPullRequestInDetailFullscreen) isMsg()            {}
 func (MsgExitReviewMode) isMsg()                               {}
 func (MsgToggleHelp) isMsg()                                   {}
 func (MsgCloseHelp) isMsg()                                    {}

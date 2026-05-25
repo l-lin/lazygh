@@ -26,26 +26,8 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 	}
 
 	summary.Repository.NameWithOwner = repository
-	program.pinOpenedPullRequestSummary(MyPullRequestsTab, summary)
-	program.model.SetActivePullRequestTab(MyPullRequestsTab)
-	program.model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
-	program.model.SelectPullRequestIndex(MyPullRequestsTab, 0)
-	program.setPullRequestsLoadStarted(MyPullRequestsTab, true)
-	program.setPullRequestsLoading(MyPullRequestsTab, false)
-	program.setPullRequestsCount(MyPullRequestsTab, 1, true)
-	program.navigationState.reviewSession = reviewSessionState{}
-	program.invalidateReviewDiffRenderCache()
-	program.detailState.activeTab = DescriptionDetailTab
-	program.detailState.viewState.reset()
-	program.detailState.viewState.clearPendingPrefix()
-	program.clearPendingSelectionPrefix()
-	program.invalidatePullRequestDetailDocumentCache()
-	program.showOpenedPullRequestInDetailFullscreen()
+	Update(program, MsgOpenPullRequestInBrowserView{Summary: summary})
 	return nil
-}
-
-func (program *Program) showOpenedPullRequestInDetailFullscreen() {
-	program.model.FocusDetailFullscreenFromSideFocus(FocusPullRequestsView)
 }
 
 func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {
@@ -78,22 +60,6 @@ func (program *Program) pullRequestsWithOpenedPullRequestSummary(tab PullRequest
 	}
 
 	return append([]githubdomain.PullRequest{openedSummary}, updatedPullRequests...)
-}
-
-func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
-	openedSummary, ok := program.openedPullRequestSummaryForTab(tab)
-	if !ok {
-		return
-	}
-
-	rows := program.model.PullRequestRows(tab)
-	for index, row := range rows {
-		if row.Summary == nil || !samePullRequestIdentity(*row.Summary, openedSummary) {
-			continue
-		}
-		program.model.SelectPullRequestIndex(tab, index)
-		return
-	}
 }
 
 func pullRequestSummaryRowCount(rows []PullRequestRow) int {

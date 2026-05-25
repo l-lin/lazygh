@@ -18,7 +18,7 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 		return program.refreshShell(gui)
 	}
 
-	program.model.adjustSelectionBy(sideChange)
+	program.applyMoveSideSelection(MsgMoveSideSelection{Delta: sideChange})
 	return nil
 }
 
@@ -36,7 +36,7 @@ func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideC
 		}
 		program.adjustReviewSessionSelection(sideChange)
 	} else {
-		program.model.adjustSelectionBy(sideChange)
+		program.applyMoveSideSelection(MsgMoveSideSelection{Delta: sideChange})
 	}
 
 	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
@@ -45,14 +45,6 @@ func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideC
 
 func (program *Program) clearPendingSelectionPrefix() {
 	program.navigationState.pendingSelectionKeySequence.clear()
-}
-
-func (program *Program) applyProjectedScreenState(state ScreenState) {
-	application := projectScreenStateApplication(state)
-	program.model.ApplyProjectedScreenState(state)
-	if application.hasDetailTab {
-		program.detailState.activeTab = application.activeDetailTab
-	}
 }
 
 func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackName string) *gocui.View {
@@ -90,43 +82,6 @@ func (program *Program) currentSideListState() (string, int, int) {
 	default:
 		return "", 0, 0
 	}
-}
-
-func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
-	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, view, mutate); actualErr != nil {
-		return actualErr
-	}
-
-	return program.refreshDetailView(gui)
-}
-
-func (program *Program) mutateDetailViewStateWithoutRefresh(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
-	program.clearPendingSelectionPrefix()
-	actualView := view
-	if actualView == nil && gui != nil {
-		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {
-			actualView = detailView
-		}
-	}
-
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-	mutate(detailDocument, viewportHeight)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-	program.syncActionsPopupSearch()
-	return nil
-}
-
-func (program *Program) refreshDetailView(gui *gocui.Gui) error {
-	if gui == nil {
-		return nil
-	}
-	if actualErr := program.refreshExistingView(gui, viewDetailName, program.configureDetailView, program.renderDetailView); actualErr != nil {
-		return actualErr
-	}
-
-	return program.syncShellState(gui)
 }
 
 func (program *Program) sideViewCyclingBlocked() bool {

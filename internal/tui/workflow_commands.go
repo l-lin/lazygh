@@ -12,6 +12,10 @@ type loadPullRequestsCmd struct {
 	tab PullRequestTab
 }
 
+type reloadPullRequestsTabCmd struct {
+	tab PullRequestTab
+}
+
 type loadNotificationsCmd struct{}
 
 type loadPullRequestDetailCmd struct {
@@ -50,6 +54,13 @@ func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
 	program.runAsync(func() {
 		program.loadPullRequests(gui, command.tab)
 	})
+}
+
+func (command reloadPullRequestsTabCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil {
+		return
+	}
+	program.executeCmds(gui, program.pullRequestListStore.planReload(program, gui, command.tab))
 }
 
 func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {

@@ -9,6 +9,139 @@ func searchMatchChooserForDirection(direction searchRepeatDirection) searchMatch
 	return searchMatchIndexAfter
 }
 
+func (program *Program) applyProjectedScreenState(state ScreenState) {
+	application := projectScreenStateApplication(state)
+	program.model.ApplyProjectedScreenState(state)
+	if application.hasDetailTab {
+		program.detailState.activeTab = application.activeDetailTab
+	}
+}
+
+func (program *Program) applyMoveSideSelection(message MsgMoveSideSelection) {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return
+	}
+	program.model.adjustSelectionBy(message.Delta)
+}
+
+func (program *Program) applyMoveSideSelectionToTop() {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return
+	}
+	program.model.MoveSelectionToTop()
+}
+
+func (program *Program) applyMoveSideSelectionToBottom() {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return
+	}
+	program.model.MoveSelectionToBottom()
+}
+
+func (program *Program) applyAdvancePullRequestTab(message MsgAdvancePullRequestTab) []Cmd {
+	if program.modeDescriptor().Mode() != ScreenModeBrowser {
+		return nil
+	}
+
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() || message.Delta == 0 {
+		return nil
+	}
+
+	if message.Delta > 0 {
+		program.model.NextPullRequestTab()
+	} else {
+		program.model.PreviousPullRequestTab()
+	}
+	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
+}
+
+func (program *Program) applyOpenDetailRequested() {
+	program.clearPendingSelectionPrefix()
+	program.detailState.viewState.clearPendingPrefix()
+	if program.detailTransitionBlocked() {
+		return
+	}
+	program.model.OpenDetail()
+}
+
+func (program *Program) applyCloseDetailRequested() {
+	program.clearPendingSelectionPrefix()
+	if program.detailTransitionBlocked() {
+		return
+	}
+	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
+		program.detailState.viewState.exitVisualMode()
+		return
+	}
+	if program.model.Focus() == FocusDetailView && program.detailState.viewState.hasPendingYank() {
+		program.detailState.viewState.clearPendingPrefix()
+		return
+	}
+
+	program.detailState.viewState.clearPendingPrefix()
+	program.model.CloseDetail()
+}
+
+func (program *Program) applySearchDraftChanged(message MsgSearchDraftChanged) {
+	program.model.UpdateSearchDraft(message.Query)
+}
+
+func (program *Program) applyStartReviewFileTreeSearch(message MsgStartReviewFileTreeSearch) {
+	inputContext := program.inputContext()
+	if program.mainPaneActionBlocked() || !inputContext.SearchUsesReviewTree || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
+		return
+	}
+	program.clearPendingSelectionPrefix()
+	program.detailState.viewState.clearPendingPrefix()
+	program.model.StartSearchForReviewTree(program.model.ActivePullRequestTab())
+	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: message.Query})
+	program.searchWidget.editor = newLineEditor(message.Query)
+}
+
+func (program *Program) applySubmitReviewFileTreeSearch() {
+	if !program.activeSearchIsReviewFileTreeSearch() {
+		return
+	}
+	program.model.SubmitSearch()
+	program.followSubmittedReviewFileTreeSearch(program.model.ReviewTreeSearchQuery())
+	program.searchWidget.editor = nil
+}
+
+func (program *Program) applyCancelReviewFileTreeSearch() {
+	if !program.activeSearchIsReviewFileTreeSearch() {
+		return
+	}
+	program.model.CancelSearch()
+	program.searchWidget.editor = nil
+}
+
+func (program *Program) applyOpenPullRequestInBrowserView(message MsgOpenPullRequestInBrowserView) {
+	summary := message.Summary
+	program.pinOpenedPullRequestSummary(MyPullRequestsTab, summary)
+	program.model.SetActivePullRequestTab(MyPullRequestsTab)
+	program.model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(summary)})
+	program.model.SelectPullRequestIndex(MyPullRequestsTab, 0)
+	program.setPullRequestsLoadStarted(MyPullRequestsTab, true)
+	program.setPullRequestsLoading(MyPullRequestsTab, false)
+	program.setPullRequestsCount(MyPullRequestsTab, 1, true)
+	program.navigationState.reviewSession = reviewSessionState{}
+	program.invalidateReviewDiffRenderCache()
+	program.detailState.activeTab = DescriptionDetailTab
+	program.detailState.viewState.reset()
+	program.detailState.viewState.clearPendingPrefix()
+	program.clearPendingSelectionPrefix()
+	program.invalidatePullRequestDetailDocumentCache()
+	Update(program, MsgOpenPullRequestInDetailFullscreen{SideFocus: FocusPullRequestsView})
+}
+
+func (program *Program) applyOpenPullRequestInDetailFullscreen(message MsgOpenPullRequestInDetailFullscreen) {
+	program.model.FocusDetailFullscreenFromSideFocus(message.SideFocus)
+}
+
 func (program *Program) applyFeedbackSet(message MsgFeedbackSet) {
 	program.setFeedback(message.Target, strings.TrimSpace(message.Message))
 }
@@ -177,7 +310,7 @@ func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCur
 		program.model.ClearReviewTreeSearchQuery()
 	}
 	program.model.StartSearch()
-	program.updateActiveSearchDraft(query)
+	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: query})
 	program.model.SubmitSearch()
 	program.searchWidget.detailReversed = message.Reverse
 	program.searchWidget.editor = nil

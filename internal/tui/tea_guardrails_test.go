@@ -84,6 +84,29 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDispatchUsesUiU
 	}
 }
 
+func TestRefactorGuard_GivenPhase1NavigationFiles_WhenScanning_ThenTheyDoNotMutateProgramModelOrCallDirectShellRefreshHelpers(t *testing.T) {
+	phase1Files := map[string]bool{
+		"program_navigation.go":         true,
+		"program_navigation_support.go": true,
+		"review_file_tree_search.go":    true,
+		"view_url.go":                   true,
+	}
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,
+		`program\.model\.adjustSelectionBy\(`,
+		`syncCurrentView\(`,
+		`refreshDetailView\(`,
+		`reloadActivePullRequestsTab\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return phase1Files[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected phase 1 navigation surfaces to route transitions through reducer-owned helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenTUIPackageGoFiles_WhenScanning_ThenNoPhaseMigrationFileNamesRemain(t *testing.T) {
 	packageRoot := given_guardPackageRoot(t)
 	actualMatches := make([]string, 0)
