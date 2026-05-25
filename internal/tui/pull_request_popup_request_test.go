@@ -15,18 +15,19 @@ func TestUpdate_GivenMsgOpenPullRequestInBrowserRequested_WhenApplying_ThenItQue
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(actionsPopupAsyncWorkCmd)
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(openPullRequestInBrowserPopupRequest)
 	if !ok {
-		t.Fatalf("expected an actionsPopupAsyncWorkCmd, actual %T", actual[0])
+		t.Fatalf("expected an openPullRequestInBrowserPopupRequest, actual %T", command.request)
 	}
-	if !command.Async {
+	if !request.asyncRequested() {
 		t.Fatal("expected the browser mutation command to run asynchronously")
 	}
-	if actualCommand := command.Command; actualCommand != openPullRequestInBrowserCommand("acme/widgets", 42) {
+	if actualCommand := request.statusCommand(); actualCommand != openPullRequestInBrowserCommand("acme/widgets", 42) {
 		t.Fatalf("expected browser command %q, actual %q", openPullRequestInBrowserCommand("acme/widgets", 42), actualCommand)
 	}
 
-	actualSuccess, actualErr := command.Work(subject)
+	actualSuccess, actualErr := request.run(subject)
 	then_noError(t, actualErr)
 	if len(loader.openBrowserCalls) != 1 || loader.openBrowserCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected open browser calls %v, actual %v", []string{"acme/widgets#42"}, loader.openBrowserCalls)
@@ -49,18 +50,19 @@ func TestUpdate_GivenMsgApprovePullRequestRequested_WhenApplying_ThenItQueuesAnA
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(actionsPopupAsyncWorkCmd)
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(approvePullRequestPopupRequest)
 	if !ok {
-		t.Fatalf("expected an actionsPopupAsyncWorkCmd, actual %T", actual[0])
+		t.Fatalf("expected an approvePullRequestPopupRequest, actual %T", command.request)
 	}
-	if !command.Async {
+	if !request.asyncRequested() {
 		t.Fatal("expected the review approval command to run asynchronously")
 	}
-	if actualCommand := command.Command; actualCommand != approvePullRequestCommand("acme/widgets", 42) {
+	if actualCommand := request.statusCommand(); actualCommand != approvePullRequestCommand("acme/widgets", 42) {
 		t.Fatalf("expected approve command %q, actual %q", approvePullRequestCommand("acme/widgets", 42), actualCommand)
 	}
 
-	actualSuccess, actualErr := command.Work(subject)
+	actualSuccess, actualErr := request.run(subject)
 	then_noError(t, actualErr)
 	if len(loader.approveCalls) != 1 || loader.approveCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected approve calls %v, actual %v", []string{"acme/widgets#42"}, loader.approveCalls)
@@ -83,18 +85,19 @@ func TestUpdate_GivenMsgReRequestPullRequestReviewRequested_WhenApplying_ThenItQ
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(actionsPopupAsyncWorkCmd)
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(reRequestPullRequestReviewPopupRequest)
 	if !ok {
-		t.Fatalf("expected an actionsPopupAsyncWorkCmd, actual %T", actual[0])
+		t.Fatalf("expected a reRequestPullRequestReviewPopupRequest, actual %T", command.request)
 	}
-	if !command.Async {
+	if !request.asyncRequested() {
 		t.Fatal("expected the reviewer re-request command to run asynchronously")
 	}
-	if actualCommand := command.Command; actualCommand != requestPullRequestReviewerCommand("acme/widgets", 42, "reviewer-approved") {
+	if actualCommand := request.statusCommand(); actualCommand != requestPullRequestReviewerCommand("acme/widgets", 42, "reviewer-approved") {
 		t.Fatalf("expected reviewer command %q, actual %q", requestPullRequestReviewerCommand("acme/widgets", 42, "reviewer-approved"), actualCommand)
 	}
 
-	actualSuccess, actualErr := command.Work(subject)
+	actualSuccess, actualErr := request.run(subject)
 	then_noError(t, actualErr)
 	if len(loader.requestReviewerCalls) != 1 || loader.requestReviewerCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected reviewer request calls %v, actual %v", []string{"acme/widgets#42"}, loader.requestReviewerCalls)
@@ -128,18 +131,19 @@ func TestUpdate_GivenMsgPullRequestLifecycleMutationRequested_WhenApplyingMarkRe
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(actionsPopupAsyncWorkCmd)
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(pullRequestLifecycleMutationPopupRequest)
 	if !ok {
-		t.Fatalf("expected an actionsPopupAsyncWorkCmd, actual %T", actual[0])
+		t.Fatalf("expected a pullRequestLifecycleMutationPopupRequest, actual %T", command.request)
 	}
-	if !command.Async {
+	if !request.asyncRequested() {
 		t.Fatal("expected the lifecycle mutation command to run asynchronously")
 	}
-	if actualCommand := command.Command; actualCommand != pullRequestReadyCommand("acme/widgets", 42, false) {
+	if actualCommand := request.statusCommand(); actualCommand != pullRequestReadyCommand("acme/widgets", 42, false) {
 		t.Fatalf("expected lifecycle command %q, actual %q", pullRequestReadyCommand("acme/widgets", 42, false), actualCommand)
 	}
 
-	actualSuccess, actualErr := command.Work(subject)
+	actualSuccess, actualErr := request.run(subject)
 	then_noError(t, actualErr)
 	if len(loader.markReadyForReviewCalls) != 1 || loader.markReadyForReviewCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected ready-for-review calls %v, actual %v", []string{"acme/widgets#42"}, loader.markReadyForReviewCalls)
@@ -169,18 +173,19 @@ func TestUpdate_GivenMsgPullRequestAutoMergeMutationRequested_WhenApplyingEnable
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(actionsPopupAsyncWorkCmd)
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(pullRequestAutoMergeMutationPopupRequest)
 	if !ok {
-		t.Fatalf("expected an actionsPopupAsyncWorkCmd, actual %T", actual[0])
+		t.Fatalf("expected a pullRequestAutoMergeMutationPopupRequest, actual %T", command.request)
 	}
-	if !command.Async {
+	if !request.asyncRequested() {
 		t.Fatal("expected the auto-merge mutation command to run asynchronously")
 	}
-	if actualCommand := command.Command; actualCommand != enablePullRequestAutoMergeCommand("acme/widgets", 42) {
+	if actualCommand := request.statusCommand(); actualCommand != enablePullRequestAutoMergeCommand("acme/widgets", 42) {
 		t.Fatalf("expected auto-merge command %q, actual %q", enablePullRequestAutoMergeCommand("acme/widgets", 42), actualCommand)
 	}
 
-	actualSuccess, actualErr := command.Work(subject)
+	actualSuccess, actualErr := request.run(subject)
 	then_noError(t, actualErr)
 	if len(loader.enableAutoMergeCalls) != 1 || loader.enableAutoMergeCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected enable auto-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.enableAutoMergeCalls)
@@ -204,18 +209,19 @@ func TestUpdate_GivenMsgPullRequestBranchUpdateRequested_WhenApplying_ThenItQueu
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(actionsPopupAsyncWorkCmd)
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(pullRequestBranchUpdatePopupRequest)
 	if !ok {
-		t.Fatalf("expected an actionsPopupAsyncWorkCmd, actual %T", actual[0])
+		t.Fatalf("expected a pullRequestBranchUpdatePopupRequest, actual %T", command.request)
 	}
-	if !command.Async {
+	if !request.asyncRequested() {
 		t.Fatal("expected the branch update command to run asynchronously")
 	}
-	if actualCommand := command.Command; actualCommand != updatePullRequestBranchCommand("acme/widgets", 42) {
+	if actualCommand := request.statusCommand(); actualCommand != updatePullRequestBranchCommand("acme/widgets", 42) {
 		t.Fatalf("expected branch update command %q, actual %q", updatePullRequestBranchCommand("acme/widgets", 42), actualCommand)
 	}
 
-	actualSuccess, actualErr := command.Work(subject)
+	actualSuccess, actualErr := request.run(subject)
 	then_noError(t, actualErr)
 	if len(loader.updateBranchCalls) != 1 || loader.updateBranchCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected branch update calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
@@ -227,6 +233,23 @@ func TestUpdate_GivenMsgPullRequestBranchUpdateRequested_WhenApplying_ThenItQueu
 	if !samePullRequestIdentity(branchSuccess.Summary, summary) || branchSuccess.Message != pullRequestBranchUpdatedSuccessMessage {
 		t.Fatalf("expected branch update success for %v with %q, actual %+v", summary, pullRequestBranchUpdatedSuccessMessage, branchSuccess)
 	}
+}
+
+func given_actionsPopupAsyncCommand(t *testing.T, commands []Cmd) actionsPopupAsyncCmd {
+	t.Helper()
+
+	if len(commands) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(commands))
+	}
+
+	command, ok := commands[0].(actionsPopupAsyncCmd)
+	if !ok {
+		t.Fatalf("expected an actionsPopupAsyncCmd, actual %T", commands[0])
+	}
+	if command.request == nil {
+		t.Fatal("expected the actions popup async command to include a typed request")
+	}
+	return command
 }
 
 func given_pullRequestMutationSummary(state string, isDraft bool) githubdomain.PullRequest {

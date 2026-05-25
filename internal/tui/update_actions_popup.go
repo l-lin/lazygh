@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -76,27 +75,7 @@ func (program *Program) applyStartPullRequestReviewRequested(message MsgStartPul
 		return nil
 	}
 
-	command := formatStatusLineCommand("start", "review", repository, fmt.Sprintf("#%d", summary.Number))
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		pendingReviewID, err := program.startPendingPullRequestReview(summary)
-		if err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncStartReviewSuccess{Summary: summary, PendingReviewID: pendingReviewID}, nil
-	}}}
-}
-
-func (program *Program) startPendingPullRequestReview(summary githubdomain.PullRequest) (string, error) {
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return "", errors.New("missing pull request identity")
-	}
-
-	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
-	if err != nil {
-		return "", newTransientErrorPopupActionError(err)
-	}
-	return pendingReviewID, nil
+	return []Cmd{actionsPopupAsyncCmd{request: startPullRequestReviewPopupRequest{summary: summary}}}
 }
 
 func (program *Program) startReviewSession(summary any, pendingReviewID string) {
@@ -265,20 +244,7 @@ func (program *Program) applySubmitAssigneePickerRequested(message MsgSubmitAssi
 	number := message.Number
 	addLogins := append([]string(nil), message.AddLogins...)
 	removeLogins := append([]string(nil), message.RemoveLogins...)
-	command := updatePullRequestAssigneesCommand(repository, number, addLogins, removeLogins)
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		err := normalizedAssigneePickerError(program.pullRequestMutations.UpdatePullRequestAssignees(repository, number, addLogins, removeLogins))
-		if err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncPullRequestAssigneesUpdatedSuccess{
-			Repository:   repository,
-			Number:       number,
-			AddLogins:    addLogins,
-			RemoveLogins: removeLogins,
-			Message:      pullRequestAssigneesUpdatedSuccessMessage,
-		}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: updatePullRequestAssigneesPopupRequest{repository: repository, number: number, addLogins: addLogins, removeLogins: removeLogins}}}
 }
 
 func (program *Program) applyOpenReactionPickerRequested(message MsgOpenReactionPickerRequested) {
@@ -295,15 +261,7 @@ func (program *Program) applyAddReactionRequested(message MsgAddReactionRequeste
 		return nil
 	}
 
-	content := message.Content
-	target := message.Target
-	command := formatStatusLineCommand("add", "reaction", strings.TrimSpace(string(content)))
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.reactionMutations.AddReaction(target.subjectID, content); err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncReactionAddedSuccess{Target: target, Content: content}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: addReactionPopupRequest{target: message.Target, content: message.Content}}}
 }
 
 func (program *Program) applyOpenThemePickerRequested() {
@@ -448,12 +406,5 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 }
 
 func (program *Program) applyCancelPendingPullRequestReviewRequested(message MsgCancelPendingPullRequestReviewRequested) []Cmd {
-	target := message.Target
-	command := formatStatusLineCommand("cancel", "pending", "review", target.repository, fmt.Sprintf("#%d", target.number))
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.reviewMutations.DeletePullRequestReview(target.pendingReviewID); err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncPendingReviewCanceledSuccess{Target: target}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: cancelPendingPullRequestReviewPopupRequest{target: message.Target}}}
 }

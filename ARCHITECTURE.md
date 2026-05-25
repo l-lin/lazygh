@@ -90,7 +90,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 `dispatchAsync()` is the only production path that still talks to `uiUpdater.Apply(...)` directly. Worker goroutines use it to hop back onto the UI thread with typed result messages.
 
-Popup and modal-editor feature files now stop at typed request messages. Update-owned command builders own the GitHub-facing work. The workflow command surface also owns pull-request detail, diff, and file-team-owner fetches, so the loader helper files stay on selection and identity logic instead of becoming a second transport layer.
+Popup and modal-editor feature files now stop at typed request messages. Actions-popup async mutations run through typed request descriptors in `cmd_actions_popup_async_requests.go` instead of embedded `func(*Program)` work closures, while the remaining modal-editor submit flow still uses update-owned command builders. The workflow command surface also owns pull-request detail, diff, and file-team-owner fetches, so the loader helper files stay on selection and identity logic instead of becoming a second transport layer.
 
 ### Screen derivation
 

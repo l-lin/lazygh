@@ -157,12 +157,7 @@ func (program *Program) applyPullRequestCommentDeleteRequested(message MsgPullRe
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.pullRequestMutations.DeletePullRequestComment(message.Target.commentID); err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncPullRequestCommentDeletedSuccess{Target: message.Target}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: deletePullRequestCommentPopupRequest{target: message.Target}}}
 }
 
 func (program *Program) applyInlineCommentUpdateRequested(message MsgInlineCommentUpdateRequested) []Cmd {
@@ -198,12 +193,7 @@ func (program *Program) applyInlineCommentDeleteRequested(message MsgInlineComme
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.reviewMutations.DeletePullRequestReviewComment(message.Target.commentID); err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncInlineCommentDeletedSuccess{Target: message.Target}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: deleteInlineCommentPopupRequest{target: message.Target}}}
 }
 
 func (program *Program) applyInlineCommentReplySubmitRequested(message MsgInlineCommentReplySubmitRequested) []Cmd {
@@ -242,18 +232,7 @@ func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineC
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		var err error
-		if message.Resolved {
-			err = program.reviewMutations.ResolvePullRequestReviewThread(message.Target.threadID)
-		} else {
-			err = program.reviewMutations.UnresolvePullRequestReviewThread(message.Target.threadID)
-		}
-		if err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncInlineCommentResolutionSuccess{Target: message.Target, Resolved: message.Resolved}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: inlineCommentResolutionPopupRequest{target: message.Target, resolved: message.Resolved}}}
 }
 
 func (program *Program) applyReviewInlineCommentSubmitRequested(message MsgReviewInlineCommentSubmitRequested) []Cmd {
@@ -352,12 +331,7 @@ func (program *Program) applyReactionRemovalRequested(message MsgReactionRemoval
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.reactionMutations.RemoveReaction(message.Target.subjectID, message.Target.content); err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncReactionRemovedSuccess{Target: message.Target}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: removeReactionPopupRequest{target: message.Target}}}
 }
 
 func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequestSquashMergeRequested) []Cmd {
@@ -373,15 +347,5 @@ func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequ
 
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: squashMergePullRequestCommand(repository, number), Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := normalizedPullRequestMutationError(program.pullRequestMutations.SquashMergePullRequest(repository, number), "gh pr merge"); err != nil {
-			return nil, newTransientErrorPopupActionError(err)
-		}
-		return actionsPopupAsyncPullRequestLifecycleSuccess{
-			Summary: message.Summary,
-			State:   "MERGED",
-			IsDraft: false,
-			Message: pullRequestSquashMergedSuccessMessage,
-		}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: pullRequestSquashMergePopupRequest{repository: repository, number: number, summary: message.Summary}}}
 }

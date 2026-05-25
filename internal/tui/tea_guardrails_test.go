@@ -214,6 +214,16 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyAsyncPopupB
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyActionsPopupAsyncWorkCommandRemains(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`actionsPopupAsyncWorkCmd|Work\s+func\(\*Program\)\s*\(actionsPopupAsyncSuccess, error\)`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected popup async work closures to be replaced by typed requests, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenRemainingPopupActionFiles_WhenScanning_ThenTheyDoNotReturnLegacyClosePopupState(t *testing.T) {
 	remainingPopupFiles := map[string]bool{
 		"error_popup.go":            true,
@@ -325,6 +335,7 @@ func TestRefactorGuard_GivenPhase2PopupFeatureFiles_WhenScanning_ThenTheyDoNotCa
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplicitCommandFilesCallGitHubPortsDirectly(t *testing.T) {
 	allowedFiles := map[string]bool{
 		"assignee_picker_search_cmd.go":          true,
+		"cmd_actions_popup_async_requests.go":    true,
 		"cmd_interaction.go":                     true,
 		"update_actions_popup.go":                true,
 		"update_popup_editor_mutations.go":       true,

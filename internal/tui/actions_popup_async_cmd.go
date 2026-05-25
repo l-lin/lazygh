@@ -7,10 +7,8 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-type actionsPopupAsyncWorkCmd struct {
-	Command string
-	Async   bool
-	Work    func(*Program) (actionsPopupAsyncSuccess, error)
+type actionsPopupAsyncCmd struct {
+	request actionsPopupAsyncRequest
 }
 
 type saveThemePresetCmd struct {
@@ -18,24 +16,24 @@ type saveThemePresetCmd struct {
 	Label          string
 }
 
-func (command actionsPopupAsyncWorkCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || command.Work == nil {
+func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil || command.request == nil {
 		return
 	}
 
 	program.actionsPopupWidget.errorMessage = ""
-	if strings.TrimSpace(command.Command) != "" {
-		program.startGHCommandLoading(command.Command)
+	if statusCommand := strings.TrimSpace(command.request.statusCommand()); statusCommand != "" {
+		program.startGHCommandLoading(statusCommand)
 	}
 	run := func() {
-		success, err := command.Work(program)
-		if command.Async {
+		success, err := command.request.run(program)
+		if command.request.asyncRequested() {
 			program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 			return
 		}
 		program.executeCmds(gui, Update(program, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success}))
 	}
-	if command.Async {
+	if command.request.asyncRequested() {
 		program.runAsync(run)
 		return
 	}

@@ -13,12 +13,7 @@ func (program *Program) applyOpenPullRequestInBrowserRequested(message MsgOpenPu
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: openPullRequestInBrowserCommand(repository, number), Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.pullRequestMutations.OpenPullRequestInBrowser(repository, number); err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncFeedbackSuccess{Message: pullRequestBrowserOpenSuccessMessage}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: openPullRequestInBrowserPopupRequest{repository: repository, number: number}}}
 }
 
 func (program *Program) applyApprovePullRequestRequested(message MsgApprovePullRequestRequested) []Cmd {
@@ -28,17 +23,7 @@ func (program *Program) applyApprovePullRequestRequested(message MsgApprovePullR
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: approvePullRequestCommand(repository, number), Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.reviewMutations.ApprovePullRequest(repository, number); err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncInvalidatePullRequestSuccess{
-			Repository:     repository,
-			Number:         number,
-			InvalidateDiff: true,
-			Message:        pullRequestReviewSuccessMessage,
-		}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: approvePullRequestPopupRequest{repository: repository, number: number}}}
 }
 
 func (program *Program) applyReRequestPullRequestReviewRequested(message MsgReRequestPullRequestReviewRequested) []Cmd {
@@ -48,16 +33,7 @@ func (program *Program) applyReRequestPullRequestReviewRequested(message MsgReRe
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: requestPullRequestReviewerCommand(repository, number, reviewerLogin), Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.pullRequestMutations.RequestPullRequestReviewer(repository, number, reviewerLogin); err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncInvalidatePullRequestSuccess{
-			Repository: repository,
-			Number:     number,
-			Message:    pullRequestReviewReRequestedSuccessMessage,
-		}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: reRequestPullRequestReviewPopupRequest{repository: repository, number: number, reviewerLogin: reviewerLogin}}}
 }
 
 func (program *Program) applyPullRequestLifecycleMutationRequested(message MsgPullRequestLifecycleMutationRequested) []Cmd {
@@ -73,17 +49,7 @@ func (program *Program) applyPullRequestLifecycleMutationRequested(message MsgPu
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.runPullRequestLifecycleMutation(message.Kind, repository, number); err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncPullRequestLifecycleSuccess{
-			Summary: message.Summary,
-			State:   message.State,
-			IsDraft: message.IsDraft,
-			Message: message.SuccessMessage,
-		}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: pullRequestLifecycleMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, state: message.State, isDraft: message.IsDraft, successMessage: message.SuccessMessage}}}
 }
 
 func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPullRequestAutoMergeMutationRequested) []Cmd {
@@ -99,16 +65,7 @@ func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPu
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := program.runPullRequestAutoMergeMutation(message.Kind, repository, number); err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncPullRequestAutoMergeSuccess{
-			Summary: message.Summary,
-			Enabled: message.Enabled,
-			Message: message.SuccessMessage,
-		}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: pullRequestAutoMergeMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, enabled: message.Enabled, successMessage: message.SuccessMessage}}}
 }
 
 func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullRequestBranchUpdateRequested) []Cmd {
@@ -118,12 +75,7 @@ func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullReq
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncWorkCmd{Command: updatePullRequestBranchCommand(repository, number), Async: true, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		if err := normalizedPullRequestMutationError(program.pullRequestMutations.UpdatePullRequestBranch(repository, number), "gh pr update-branch"); err != nil {
-			return nil, err
-		}
-		return actionsPopupAsyncPullRequestBranchUpdateSuccess{Summary: message.Summary, Message: pullRequestBranchUpdatedSuccessMessage}, nil
-	}}}
+	return []Cmd{actionsPopupAsyncCmd{request: pullRequestBranchUpdatePopupRequest{repository: repository, number: number, summary: message.Summary}}}
 }
 
 func (program *Program) applyPendingPullRequestReviewSubmitted(message MsgPendingPullRequestReviewSubmitted) {
@@ -171,21 +123,6 @@ func pullRequestLifecycleMutationCommand(kind pullRequestLifecycleMutationKind, 
 	}
 }
 
-func (program *Program) runPullRequestLifecycleMutation(kind pullRequestLifecycleMutationKind, repository string, number int) error {
-	switch kind {
-	case pullRequestLifecycleMutationReadyForReview:
-		return normalizedPullRequestMutationError(program.pullRequestMutations.MarkPullRequestReadyForReview(repository, number), "gh pr ready")
-	case pullRequestLifecycleMutationConvertToDraft:
-		return normalizedPullRequestMutationError(program.pullRequestMutations.ConvertPullRequestToDraft(repository, number), "gh pr ready")
-	case pullRequestLifecycleMutationClose:
-		return normalizedPullRequestMutationError(program.pullRequestMutations.ClosePullRequest(repository, number), "gh pr close")
-	case pullRequestLifecycleMutationReopen:
-		return normalizedPullRequestMutationError(program.pullRequestMutations.ReopenPullRequest(repository, number), "gh pr reopen")
-	default:
-		return errActionsPopupActionUnavailable
-	}
-}
-
 func pullRequestAutoMergeMutationCommand(kind pullRequestAutoMergeMutationKind, repository string, number int) string {
 	switch kind {
 	case pullRequestAutoMergeMutationEnable:
@@ -194,16 +131,5 @@ func pullRequestAutoMergeMutationCommand(kind pullRequestAutoMergeMutationKind, 
 		return disablePullRequestAutoMergeCommand(repository, number)
 	default:
 		return ""
-	}
-}
-
-func (program *Program) runPullRequestAutoMergeMutation(kind pullRequestAutoMergeMutationKind, repository string, number int) error {
-	switch kind {
-	case pullRequestAutoMergeMutationEnable:
-		return normalizedPullRequestMutationError(program.pullRequestMutations.EnablePullRequestAutoMerge(repository, number), "gh pr merge")
-	case pullRequestAutoMergeMutationDisable:
-		return normalizedPullRequestMutationError(program.pullRequestMutations.DisablePullRequestAutoMerge(repository, number), "gh pr merge")
-	default:
-		return errActionsPopupActionUnavailable
 	}
 }

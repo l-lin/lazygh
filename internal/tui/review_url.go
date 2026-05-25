@@ -23,7 +23,7 @@ func (program *Program) openPullRequestReview(summary githubdomain.PullRequest) 
 		return errors.New("github loader is unavailable")
 	}
 
-	pendingReviewID, err := program.startPendingPullRequestReview(summary)
+	pendingReviewID, err := startPendingPullRequestReview(program, summary)
 	if err != nil {
 		return err
 	}
