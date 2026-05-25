@@ -206,6 +206,25 @@ func (program *Program) applyAdjustFocusedPane(message MsgAdjustFocusedPane) {
 	}
 }
 
+func (program *Program) applyLineNavigationRequested(message MsgLineNavigationRequested) []Cmd {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() || message.Delta == 0 {
+		return nil
+	}
+	if program.model.Focus() == FocusDetailView {
+		return []Cmd{detailLineNavigationCmd{View: message.View, Delta: message.Delta}}
+	}
+	if program.actionContext().IsReviewContext() {
+		if program.model.Focus() != FocusPullRequestsView {
+			return nil
+		}
+		program.adjustReviewSessionSelection(message.Delta)
+		return nil
+	}
+	program.model.adjustSelectionBy(message.Delta)
+	return nil
+}
+
 func (program *Program) applyPageNavigationRequested(message MsgPageNavigationRequested) []Cmd {
 	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() {

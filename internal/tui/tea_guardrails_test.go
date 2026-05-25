@@ -648,6 +648,15 @@ func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenPageHandlersD
 	}
 }
 
+func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenLineHandlersDispatchInsteadOfCallingSelectionShellHelpers(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`handleSelectionChange\(`), func(path string) bool {
+		return filepath.Base(path) == "program_navigation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected program_navigation.go line handlers to dispatch typed update paths instead of calling selection shell helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,

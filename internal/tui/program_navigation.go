@@ -15,23 +15,11 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
-	if program.model.Focus() == FocusDetailView || program.actionContext().IsReviewContext() {
-		return program.handleSelectionChange(gui, view, 1, func(document detailDocument, viewportHeight int) {
-			program.detailState.viewState.moveDown(document, viewportHeight)
-		})
-	}
-
-	return program.dispatch(gui, MsgMoveSideSelection{Delta: 1})
+	return program.dispatch(gui, MsgLineNavigationRequested{View: view, Delta: 1})
 }
 
 func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error {
-	if program.model.Focus() == FocusDetailView || program.actionContext().IsReviewContext() {
-		return program.handleSelectionChange(gui, view, -1, func(document detailDocument, viewportHeight int) {
-			program.detailState.viewState.moveUp(document, viewportHeight)
-		})
-	}
-
-	return program.dispatch(gui, MsgMoveSideSelection{Delta: -1})
+	return program.dispatch(gui, MsgLineNavigationRequested{View: view, Delta: -1})
 }
 
 func (program *Program) moveDetailViewDown(gui *gocui.Gui, _ *gocui.View) error {

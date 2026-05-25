@@ -103,6 +103,11 @@ type MsgAdjustFocusedPane struct {
 	Delta int
 }
 
+type MsgLineNavigationRequested struct {
+	View  *gocui.View
+	Delta int
+}
+
 type pageNavigationKind int
 
 const (
@@ -256,6 +261,7 @@ func (MsgExitReviewMode) isMsg()                               {}
 func (MsgToggleHelp) isMsg()                                   {}
 func (MsgCloseHelp) isMsg()                                    {}
 func (MsgAdjustFocusedPane) isMsg()                            {}
+func (MsgLineNavigationRequested) isMsg()                      {}
 func (MsgPageNavigationRequested) isMsg()                      {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}

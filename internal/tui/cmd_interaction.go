@@ -36,6 +36,7 @@ type interactionCommandRuntime struct {
 	beginManualRefresh                  func(string, int)
 	reviewModeActive                    func() bool
 	activePullRequestTab                func() PullRequestTab
+	handleDetailLineNavigation          func(*gocui.Gui, *gocui.View, int)
 	handlePageNavigation                func(*gocui.Gui, *gocui.View, pageNavigationKind)
 	focusDetailRenderedLine             func(*gocui.Gui, *gocui.View, int)
 	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
@@ -82,6 +83,22 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		beginManualRefresh:                  program.beginManualRefresh,
 		reviewModeActive:                    program.reviewModeActive,
 		activePullRequestTab:                program.model.ActivePullRequestTab,
+		handleDetailLineNavigation: func(gui *gocui.Gui, view *gocui.View, delta int) {
+			actualView := program.resolveView(gui, view, viewDetailName)
+			steps := delta
+			if steps < 0 {
+				steps = -steps
+			}
+			_ = program.mutateDetailViewStateForYankMotion(gui, actualView, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
+				for range steps {
+					if delta > 0 {
+						program.detailState.viewState.moveDown(document, viewportHeight)
+						continue
+					}
+					program.detailState.viewState.moveUp(document, viewportHeight)
+				}
+			})
+		},
 		handlePageNavigation: func(gui *gocui.Gui, view *gocui.View, kind pageNavigationKind) {
 			actualView := program.resolveView(gui, view, program.currentViewName())
 			pageSize := viewPageSize(actualView)
@@ -276,6 +293,22 @@ func executeFocusReviewCommentCommand(runtime interactionCommandRuntime, gui *go
 	}
 	actualView := runtime.resolveView(gui, nil, viewDetailName)
 	runtime.focusDetailRenderedLine(gui, actualView, command.RenderedLine)
+}
+
+type detailLineNavigationCmd struct {
+	View  *gocui.View
+	Delta int
+}
+
+func (command detailLineNavigationCmd) execute(program *Program, gui *gocui.Gui) {
+	executeDetailLineNavigationCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeDetailLineNavigationCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command detailLineNavigationCmd) {
+	if runtime.handleDetailLineNavigation == nil {
+		return
+	}
+	runtime.handleDetailLineNavigation(gui, command.View, command.Delta)
 }
 
 type pageNavigationCmd struct {
