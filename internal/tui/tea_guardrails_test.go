@@ -381,16 +381,9 @@ func TestRefactorGuard_GivenPhase2PopupFeatureFiles_WhenScanning_ThenTheyDoNotCa
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplicitCommandFilesCallGitHubPortsDirectly(t *testing.T) {
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyWorkflowCommandsCallGitHubPortsDirectly(t *testing.T) {
 	allowedFiles := map[string]bool{
-		"assignee_picker_search_cmd.go":          true,
-		"cmd_actions_popup_async_requests.go":    true,
-		"cmd_interaction.go":                     true,
-		"cmd_modal_editor_submit_requests.go":    true,
-		"cmd_popup_feature_request_requests.go":  true,
-		"update_actions_popup.go":                true,
-		"update_pull_request_popup_mutations.go": true,
-		"workflow_commands.go":                   true,
+		"workflow_commands.go": true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestMutations|reviewMutations|reactionMutations|notificationMutations|detailQueries|buildQueries)\.[A-Za-z0-9_]+\(`), func(path string) bool {
@@ -500,6 +493,34 @@ func TestRefactorGuard_GivenDetailAndReviewChildReducerFiles_WhenScanning_ThenTh
 	})
 	if len(actualMatches) != 0 {
 		t.Fatalf("expected detail/review child reducer files to stay on child-model value transitions, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
+	commandExecutorFiles := map[string]bool{
+		"actions_popup_async_cmd.go":            true,
+		"assignee_picker_search_cmd.go":         true,
+		"cmd_actions_popup_async_requests.go":   true,
+		"cmd_interaction.go":                    true,
+		"cmd_modal_editor_submit_requests.go":   true,
+		"cmd_popup_feature_request_requests.go": true,
+		"cmd_popup_feature_requests.go":         true,
+		"workflow_commands.go":                  true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`\*Program`), func(path string) bool {
+		return commandExecutorFiles[filepath.Base(path)]
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "execute(program *Program,") || strings.Contains(match, "Deps(program *Program") || strings.Contains(match, "Runtime(program *Program") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected command executor files to depend on focused bundles instead of the full Program, actual %v", remainingMatches)
 	}
 }
 

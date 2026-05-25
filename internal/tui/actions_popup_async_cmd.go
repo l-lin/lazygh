@@ -25,8 +25,9 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 	if statusCommand := strings.TrimSpace(command.request.statusCommand()); statusCommand != "" {
 		program.startGHCommandLoading(statusCommand)
 	}
+	deps := newActionsPopupAsyncCommandDeps(program)
 	run := func() {
-		success, err := command.request.run(program)
+		success, err := command.request.run(deps)
 		if command.request.asyncRequested() {
 			program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 			return

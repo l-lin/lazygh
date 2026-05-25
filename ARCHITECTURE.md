@@ -90,7 +90,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 `dispatchAsync()` is the only production path that still talks to `uiUpdater.Apply(...)` directly. Worker goroutines use it to hop back onto the UI thread with typed result messages.
 
-Popup and modal-editor feature files now stop at typed request messages. Actions-popup async mutations run through typed request descriptors in `cmd_actions_popup_async_requests.go`, modal-editor submits run through `cmd_modal_editor_submit_requests.go`, and notification/story popup requests run through `cmd_popup_feature_request_requests.go` instead of embedded `func(*Program)` work closures. The workflow command surface also owns pull-request detail, diff, and file-team-owner fetches, so the loader helper files stay on selection and identity logic instead of becoming a second transport layer.
+Popup and modal-editor feature files now stop at typed request messages. Actions-popup async mutations run through typed request descriptors in `cmd_actions_popup_async_requests.go`, modal-editor submits run through `cmd_modal_editor_submit_requests.go`, and notification/story popup requests run through `cmd_popup_feature_request_requests.go` instead of embedded `func(*Program)` work closures. Those executors now build focused command dependency bundles at the `Cmd.execute(...)` boundary, so the request/helper logic no longer receives the full `*Program` shell bag. The workflow command surface also owns pull-request detail, diff, and file-team-owner fetches, and its helper logic likewise reads from focused command deps instead of the whole runtime shell, so the loader helper files stay on selection and identity logic instead of becoming a second transport layer.
 
 ### Screen derivation
 
@@ -185,7 +185,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because many helpers still depend on the full `*Program`—although the footer/key-hint family now reads from snapshot presenters instead of the whole shell—and the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `cmd_popup_feature_request_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup builders.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because many helpers still depend on the full `*Program`—although the footer/key-hint family now reads from snapshot presenters instead of the whole shell—and the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `cmd_popup_feature_request_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup builders. The remaining command compromise is now transport ownership itself, not whole-program executor coupling: the command helpers run on focused dependency bundles even though the explicit command files still sit in the shell layer.
 
 If you want to understand the project quickly, start with these files:
 

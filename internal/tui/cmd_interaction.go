@@ -8,6 +8,18 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
+type interactionCommandRuntime struct {
+	linkOpener      LinkOpener
+	clipboardWriter ClipboardWriter
+	clipboardReader ClipboardReader
+	externalEditor  ExternalEditor
+	buildQueries    BuildQueries
+	submitDeps      modalEditorSubmitCommandDeps
+	runAsync        func(func())
+	dispatch        func(*gocui.Gui, Msg) error
+	dispatchAsync   func(*gocui.Gui, Msg)
+}
+
 type openBrowserURLCmd struct {
 	URL            string
 	SuccessMessage string
@@ -15,16 +27,35 @@ type openBrowserURLCmd struct {
 	Target         Focus
 }
 
-func (command openBrowserURLCmd) execute(program *Program, gui *gocui.Gui) {
+func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 	if program == nil {
-		return
+		return interactionCommandRuntime{}
 	}
+	return interactionCommandRuntime{
+		linkOpener:      program.linkOpener,
+		clipboardWriter: program.clipboardWriter,
+		clipboardReader: program.clipboardReader,
+		externalEditor:  program.externalEditor,
+		buildQueries:    program.buildQueries,
+		submitDeps:      newModalEditorSubmitCommandDeps(program),
+		runAsync:        program.runAsync,
+		dispatch:        program.dispatch,
+		dispatchAsync:   program.dispatchAsync,
+	}
+}
 
+func (command openBrowserURLCmd) execute(program *Program, gui *gocui.Gui) {
+	executeOpenBrowserURLCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeOpenBrowserURLCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command openBrowserURLCmd) {
 	err := ErrLinkOpenerUnavailable
-	if program.linkOpener != nil {
-		err = program.linkOpener.Open(command.URL)
+	if runtime.linkOpener != nil {
+		err = runtime.linkOpener.Open(command.URL)
 	}
-	_ = program.dispatch(gui, MsgOpenBrowserURLFinished{SuccessMessage: command.SuccessMessage, FailureMessage: command.FailureMessage, Target: command.Target, Err: err})
+	if runtime.dispatch != nil {
+		_ = runtime.dispatch(gui, MsgOpenBrowserURLFinished{SuccessMessage: command.SuccessMessage, FailureMessage: command.FailureMessage, Target: command.Target, Err: err})
+	}
 }
 
 type writeClipboardCmd struct {
@@ -37,38 +68,43 @@ type writeClipboardCmd struct {
 }
 
 func (command writeClipboardCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
-		return
-	}
+	executeWriteClipboardCommand(newInteractionCommandRuntime(program), gui, command)
+}
 
+func executeWriteClipboardCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command writeClipboardCmd) {
 	err := ErrClipboardUnavailable
-	if program.clipboardWriter != nil {
-		err = program.clipboardWriter.WriteText(command.Text)
+	if runtime.clipboardWriter != nil {
+		err = runtime.clipboardWriter.WriteText(command.Text)
 	}
-	_ = program.dispatch(gui, MsgClipboardWriteFinished{
-		SuccessMessage:  command.SuccessMessage,
-		FailureMessage:  command.FailureMessage,
-		Target:          command.Target,
-		Err:             err,
-		Selection:       command.Selection,
-		SelectionTarget: command.SelectionTarget,
-	})
+	if runtime.dispatch != nil {
+		_ = runtime.dispatch(gui, MsgClipboardWriteFinished{
+			SuccessMessage:  command.SuccessMessage,
+			FailureMessage:  command.FailureMessage,
+			Target:          command.Target,
+			Err:             err,
+			Selection:       command.Selection,
+			SelectionTarget: command.SelectionTarget,
+		})
+	}
 }
 
 type readPullRequestURLFromClipboardCmd struct{}
 
 func (readPullRequestURLFromClipboardCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	executeReadPullRequestURLFromClipboardCommand(newInteractionCommandRuntime(program), gui)
+}
+
+func executeReadPullRequestURLFromClipboardCommand(runtime interactionCommandRuntime, gui *gocui.Gui) {
+	if runtime.dispatch == nil {
+		return
+	}
+	if runtime.clipboardReader == nil {
+		_ = runtime.dispatch(gui, MsgPullRequestURLReadFromClipboard{Err: ErrClipboardUnavailable})
 		return
 	}
 
-	if program.clipboardReader == nil {
-		_ = program.dispatch(gui, MsgPullRequestURLReadFromClipboard{Err: ErrClipboardUnavailable})
-		return
-	}
-
-	url, err := program.clipboardReader.ReadText()
-	_ = program.dispatch(gui, MsgPullRequestURLReadFromClipboard{URL: url, Err: err})
+	url, err := runtime.clipboardReader.ReadText()
+	_ = runtime.dispatch(gui, MsgPullRequestURLReadFromClipboard{URL: url, Err: err})
 }
 
 type modalEditorExternalEditCmd struct {
@@ -76,17 +112,20 @@ type modalEditorExternalEditCmd struct {
 }
 
 func (command modalEditorExternalEditCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	executeModalEditorExternalEditCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeModalEditorExternalEditCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command modalEditorExternalEditCmd) {
+	if runtime.dispatch == nil {
+		return
+	}
+	if runtime.externalEditor == nil {
+		_ = runtime.dispatch(gui, MsgModalEditorExternalEditFinished{Err: errors.New("external editor is unavailable")})
 		return
 	}
 
-	if program.externalEditor == nil {
-		_ = program.dispatch(gui, MsgModalEditorExternalEditFinished{Err: errors.New("external editor is unavailable")})
-		return
-	}
-
-	editedText, err := program.externalEditor.Edit(gui, command.Text)
-	_ = program.dispatch(gui, MsgModalEditorExternalEditFinished{Text: editedText, Err: err})
+	editedText, err := runtime.externalEditor.Edit(gui, command.Text)
+	_ = runtime.dispatch(gui, MsgModalEditorExternalEditFinished{Text: editedText, Err: err})
 }
 
 type modalEditorSubmitCmd struct {
@@ -94,12 +133,16 @@ type modalEditorSubmitCmd struct {
 }
 
 func (command modalEditorSubmitCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || command.request == nil {
+	executeModalEditorSubmitCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeModalEditorSubmitCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command modalEditorSubmitCmd) {
+	if command.request == nil || runtime.dispatch == nil {
 		return
 	}
 
-	success, err := command.request.run(program)
-	_ = program.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, Success: success})
+	success, err := command.request.run(runtime.submitDeps)
+	_ = runtime.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, Success: success})
 }
 
 type pullRequestBuildRunLoadCmd struct {
@@ -108,19 +151,28 @@ type pullRequestBuildRunLoadCmd struct {
 }
 
 func (command pullRequestBuildRunLoadCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	executePullRequestBuildRunLoadCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executePullRequestBuildRunLoadCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command pullRequestBuildRunLoadCmd) {
+	if runtime.buildQueries == nil || runtime.dispatchAsync == nil {
 		return
 	}
 
-	program.runAsync(func() {
-		rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(command.Repository, command.Target.check)
+	run := func() {
+		rawRunOutput, err := runtime.buildQueries.GetPullRequestBuildRun(command.Repository, command.Target.check)
 		jobs := []githubdomain.PullRequestBuildRunJob(nil)
 		jobsErr := error(nil)
 		if err == nil {
-			jobs, jobsErr = program.buildQueries.GetPullRequestBuildRunJobs(command.Repository, command.Target.check)
+			jobs, jobsErr = runtime.buildQueries.GetPullRequestBuildRunJobs(command.Repository, command.Target.check)
 		}
-		program.dispatchAsync(gui, MsgPullRequestBuildRunLoaded{Target: command.Target, RawRunOutput: rawRunOutput, Jobs: jobs, JobsErr: jobsErr, Err: err})
-	})
+		runtime.dispatchAsync(gui, MsgPullRequestBuildRunLoaded{Target: command.Target, RawRunOutput: rawRunOutput, Jobs: jobs, JobsErr: jobsErr, Err: err})
+	}
+	if runtime.runAsync != nil {
+		runtime.runAsync(run)
+		return
+	}
+	run()
 }
 
 type pullRequestBuildRunJobLogLoadCmd struct {
@@ -129,12 +181,21 @@ type pullRequestBuildRunJobLogLoadCmd struct {
 }
 
 func (command pullRequestBuildRunJobLogLoadCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	executePullRequestBuildRunJobLogLoadCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executePullRequestBuildRunJobLogLoadCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command pullRequestBuildRunJobLogLoadCmd) {
+	if runtime.buildQueries == nil || runtime.dispatchAsync == nil {
 		return
 	}
 
-	program.runAsync(func() {
-		job, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(command.Repository, command.Check)
-		program.dispatchAsync(gui, MsgPullRequestBuildRunJobLogLoaded{Repository: command.Repository, Job: job, RawLogOutput: rawLogOutput, Err: err})
-	})
+	run := func() {
+		job, rawLogOutput, err := runtime.buildQueries.GetPullRequestBuildRunJobLogForCheck(command.Repository, command.Check)
+		runtime.dispatchAsync(gui, MsgPullRequestBuildRunJobLogLoaded{Repository: command.Repository, Job: job, RawLogOutput: rawLogOutput, Err: err})
+	}
+	if runtime.runAsync != nil {
+		runtime.runAsync(run)
+		return
+	}
+	run()
 }

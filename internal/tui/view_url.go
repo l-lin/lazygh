@@ -5,7 +5,7 @@ import (
 )
 
 func (program *Program) OpenPullRequestByURL(rawURL string) error {
-	summary, err := pullRequestSummaryForURL(program, rawURL)
+	summary, err := pullRequestSummaryForURL(newModalEditorSubmitCommandDeps(program), rawURL)
 	if err != nil {
 		return err
 	}

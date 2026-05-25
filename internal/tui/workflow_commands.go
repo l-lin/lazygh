@@ -8,6 +8,32 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
+type workflowCommandDeps struct {
+	runAsync                             func(func())
+	dispatchAsync                        func(*gocui.Gui, Msg)
+	executeUpdate                        func(*gocui.Gui, Msg)
+	executeWorkflowPlan                  func(*gocui.Gui, workflowPlan)
+	pullRequestListReloadPlan            func(PullRequestTab) workflowPlan
+	pullRequestsFromCache                func(PullRequestTab) ([]githubdomain.PullRequest, bool)
+	notificationsFromCache               func() ([]githubdomain.Notification, bool)
+	pullRequestDetailFromPersistentCache func(githubdomain.PullRequest) (pullRequestDetailResult, bool)
+	pullRequestDiffFromPersistentCache   func(githubdomain.PullRequest) (pullRequestDiffResult, bool)
+	pullRequestDetailCached              func(githubdomain.PullRequest) bool
+	pullRequestDiffCached                func(githubdomain.PullRequest) bool
+	getConnectedUser                     func() (githubdomain.ConnectedUser, error)
+	listPullRequests                     func(PullRequestTab) ([]githubdomain.PullRequest, error)
+	listNotifications                    func() ([]githubdomain.Notification, error)
+	getPullRequestDetail                 func(githubdomain.PullRequest) (githubdomain.PullRequestDetail, error)
+	getPendingPullRequestReviewState     func(githubdomain.PullRequest) (pendingPullRequestReviewState, bool)
+	getPullRequestDiff                   func(githubdomain.PullRequest) (githubdomain.PullRequestDiff, error)
+	shouldLoadPullRequestDiffTeamOwners  bool
+	getPullRequestFileTeamOwners         func(string, int, []string) (map[string][]string, error)
+	getIssueDetail                       func(string, int) (githubdomain.IssueDetail, error)
+	getReleaseDetail                     func(string, int) (githubdomain.ReleaseDetail, error)
+	renderMarkdownHTML                   func(string, string) (string, error)
+	loadDetailImage                      func(string) (loadedDetailImage, error)
+}
+
 type loadConnectedUserCmd struct{}
 
 type loadPullRequestsCmd struct {
@@ -60,83 +86,180 @@ type loadCurrentDetailImageCmd struct {
 
 type hydrateNotificationsFromCacheCmd struct{}
 
+func newWorkflowCommandDeps(program *Program) workflowCommandDeps {
+	if program == nil {
+		return workflowCommandDeps{}
+	}
+
+	deps := workflowCommandDeps{
+		runAsync:      program.runAsync,
+		dispatchAsync: program.dispatchAsync,
+		executeUpdate: func(gui *gocui.Gui, msg Msg) {
+			program.executeCmds(gui, Update(program, msg))
+		},
+		executeWorkflowPlan:                  program.executeWorkflowPlan,
+		pullRequestListReloadPlan:            program.pullRequestListReloadPlan,
+		pullRequestsFromCache:                program.pullRequestsFromCache,
+		notificationsFromCache:               program.notificationsFromCache,
+		pullRequestDetailFromPersistentCache: program.pullRequestDetailFromPersistentCache,
+		pullRequestDiffFromPersistentCache:   program.pullRequestDiffFromPersistentCache,
+		pullRequestDetailCached: func(summary githubdomain.PullRequest) bool {
+			key := pullRequestDetailKey(summary.Repository, summary.Number)
+			if key == "" {
+				return false
+			}
+			_, ok := program.pullRequestDetailCache[key]
+			return ok
+		},
+		pullRequestDiffCached: func(summary githubdomain.PullRequest) bool {
+			key := pullRequestDetailKey(summary.Repository, summary.Number)
+			if key == "" {
+				return false
+			}
+			_, ok := program.pullRequestDiffCache[key]
+			return ok
+		},
+	}
+	if program.sessionQueries != nil {
+		deps.getConnectedUser = program.sessionQueries.GetConnectedUser
+	}
+	if program.pullRequestListQueries != nil {
+		deps.listPullRequests = program.listPullRequests
+	}
+	if program.notificationQueries != nil {
+		deps.listNotifications = program.notificationQueries.ListNotifications
+		deps.getIssueDetail = program.notificationQueries.GetIssueDetail
+		deps.getReleaseDetail = program.notificationQueries.GetReleaseDetail
+	}
+	if program.detailQueries != nil {
+		deps.getPullRequestDetail = func(summary githubdomain.PullRequest) (githubdomain.PullRequestDetail, error) {
+			repository := pullRequestRepositoryName(summary.Repository)
+			return program.detailQueries.GetPullRequestDetail(repository, summary.Number)
+		}
+		deps.shouldLoadPullRequestDiffTeamOwners = program.shouldLoadPullRequestDiffTeamOwners()
+		deps.getPullRequestFileTeamOwners = program.detailQueries.GetPullRequestFileTeamOwners
+		deps.getPullRequestDiff = func(summary githubdomain.PullRequest) (githubdomain.PullRequestDiff, error) {
+			repository := pullRequestRepositoryName(summary.Repository)
+			rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
+			if err == nil {
+				rawDiff = loadPullRequestDiffFileTeamOwners(deps, repository, summary.Number, rawDiff)
+			}
+			return rawDiff, err
+		}
+	}
+	if program.reviewMutations != nil {
+		deps.getPendingPullRequestReviewState = func(summary githubdomain.PullRequest) (pendingPullRequestReviewState, bool) {
+			repository := pullRequestRepositoryName(summary.Repository)
+			pendingReviewID, found, err := program.reviewMutations.GetPendingPullRequestReviewID(repository, summary.Number)
+			if err != nil {
+				return pendingPullRequestReviewState{}, false
+			}
+			state := pendingPullRequestReviewState{}
+			if found {
+				state.id = strings.TrimSpace(pendingReviewID)
+			}
+			return state, true
+		}
+	}
+	if program.markdownHTMLRenderer != nil {
+		deps.renderMarkdownHTML = program.markdownHTMLRenderer.RenderMarkdownHTML
+	}
+	deps.loadDetailImage = func(imageURL string) (loadedDetailImage, error) {
+		githubToken := ""
+		if isGitHubImageSource(imageURL) {
+			githubToken = program.detailImageAuthToken()
+		}
+		return loadDetailImage(imageURL, program.imageHTTPClient, githubToken)
+	}
+	return deps
+}
+
 func (loadConnectedUserCmd) execute(program *Program, gui *gocui.Gui) {
-	program.runAsync(func() {
-		program.loadConnectedUser(gui)
+	deps := newWorkflowCommandDeps(program)
+	if deps.getConnectedUser == nil || deps.dispatchAsync == nil {
+		return
+	}
+	runWorkflowCommandAsync(deps, func() {
+		user, err := deps.getConnectedUser()
+		deps.dispatchAsync(gui, MsgConnectedUserLoaded{User: user, Err: err})
 	})
 }
 
 func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
-	program.runAsync(func() {
-		program.loadPullRequests(gui, command.tab)
+	deps := newWorkflowCommandDeps(program)
+	if deps.listPullRequests == nil || deps.dispatchAsync == nil {
+		return
+	}
+	runWorkflowCommandAsync(deps, func() {
+		pullRequests, err := deps.listPullRequests(command.tab)
+		deps.dispatchAsync(gui, MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err})
 	})
 }
 
 func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	deps := newWorkflowCommandDeps(program)
+	if deps.pullRequestsFromCache == nil || deps.executeUpdate == nil {
 		return
 	}
-	pullRequests, ok := program.pullRequestsFromCache(command.tab)
+	pullRequests, ok := deps.pullRequestsFromCache(command.tab)
 	if !ok {
 		return
 	}
-	program.executeCmds(gui, Update(program, MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests}))
+	deps.executeUpdate(gui, MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests})
 }
 
 func (command reloadPullRequestsTabCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	deps := newWorkflowCommandDeps(program)
+	if deps.executeWorkflowPlan == nil || deps.pullRequestListReloadPlan == nil {
 		return
 	}
-	program.executeWorkflowPlan(gui, program.pullRequestListReloadPlan(command.tab))
+	deps.executeWorkflowPlan(gui, deps.pullRequestListReloadPlan(command.tab))
 }
 
 func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
-	program.runAsync(func() {
-		program.loadNotifications(gui)
+	deps := newWorkflowCommandDeps(program)
+	if deps.listNotifications == nil || deps.dispatchAsync == nil {
+		return
+	}
+	runWorkflowCommandAsync(deps, func() {
+		notifications, err := deps.listNotifications()
+		deps.dispatchAsync(gui, MsgNotificationsLoaded{Notifications: notifications, Err: err})
 	})
 }
 
 func (command hydratePullRequestDetailFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	deps := newWorkflowCommandDeps(program)
+	if deps.pullRequestDetailCached == nil || deps.pullRequestDetailFromPersistentCache == nil || deps.executeUpdate == nil {
 		return
 	}
-	key := pullRequestDetailKey(command.summary.Repository, command.summary.Number)
-	if key == "" {
+	if deps.pullRequestDetailCached(command.summary) {
 		return
 	}
-	if _, ok := program.pullRequestDetailCache[key]; ok {
-		return
-	}
-	result, ok := program.pullRequestDetailFromPersistentCache(command.summary)
+	result, ok := deps.pullRequestDetailFromPersistentCache(command.summary)
 	if !ok {
 		return
 	}
-	program.executeCmds(gui, Update(program, MsgPullRequestDetailCacheHydrated{Summary: command.summary, Result: result}))
+	deps.executeUpdate(gui, MsgPullRequestDetailCacheHydrated{Summary: command.summary, Result: result})
 }
 
 func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || !program.hasDetailQueries() {
+	deps := newWorkflowCommandDeps(program)
+	if deps.getPullRequestDetail == nil || deps.dispatchAsync == nil {
 		return
 	}
 
 	summary := command.summary
-	program.runAsync(func() {
-		program.dispatchAsync(gui, loadPullRequestDetailResult(program, summary))
+	runWorkflowCommandAsync(deps, func() {
+		deps.dispatchAsync(gui, loadPullRequestDetailResult(deps, summary))
 	})
 }
 
-func loadPullRequestDetailResult(program *Program, summary githubdomain.PullRequest) MsgPullRequestDetailLoaded {
-	repository := pullRequestRepositoryName(summary.Repository)
-	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
+func loadPullRequestDetailResult(deps workflowCommandDeps, summary githubdomain.PullRequest) MsgPullRequestDetailLoaded {
+	detail, err := deps.getPullRequestDetail(summary)
 	pendingReviewState := pendingPullRequestReviewState{}
 	pendingReviewStateKnown := false
-	if program.hasReviewMutations() {
-		if pendingReviewID, found, pendingReviewErr := program.reviewMutations.GetPendingPullRequestReviewID(repository, summary.Number); pendingReviewErr == nil {
-			pendingReviewStateKnown = true
-			if found {
-				pendingReviewState.id = strings.TrimSpace(pendingReviewID)
-			}
-		}
+	if deps.getPendingPullRequestReviewState != nil {
+		pendingReviewState, pendingReviewStateKnown = deps.getPendingPullRequestReviewState(summary)
 	}
 	return MsgPullRequestDetailLoaded{
 		Summary:                 summary,
@@ -148,45 +271,39 @@ func loadPullRequestDetailResult(program *Program, summary githubdomain.PullRequ
 }
 
 func (command hydratePullRequestDiffFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	deps := newWorkflowCommandDeps(program)
+	if deps.pullRequestDiffCached == nil || deps.pullRequestDiffFromPersistentCache == nil || deps.executeUpdate == nil {
 		return
 	}
-	key := pullRequestDetailKey(command.summary.Repository, command.summary.Number)
-	if key == "" {
+	if deps.pullRequestDiffCached(command.summary) {
 		return
 	}
-	if _, ok := program.pullRequestDiffCache[key]; ok {
-		return
-	}
-	result, ok := program.pullRequestDiffFromPersistentCache(command.summary)
+	result, ok := deps.pullRequestDiffFromPersistentCache(command.summary)
 	if !ok {
 		return
 	}
-	program.executeCmds(gui, Update(program, MsgPullRequestDiffCacheHydrated{Summary: command.summary, Result: result}))
+	deps.executeUpdate(gui, MsgPullRequestDiffCacheHydrated{Summary: command.summary, Result: result})
 }
 
 func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || !program.hasDetailQueries() {
+	deps := newWorkflowCommandDeps(program)
+	if deps.getPullRequestDiff == nil || deps.dispatchAsync == nil {
 		return
 	}
 
 	summary := command.summary
-	program.runAsync(func() {
-		program.dispatchAsync(gui, loadPullRequestDiffResult(program, summary))
+	runWorkflowCommandAsync(deps, func() {
+		deps.dispatchAsync(gui, loadPullRequestDiffResult(deps, summary))
 	})
 }
 
-func loadPullRequestDiffResult(program *Program, summary githubdomain.PullRequest) MsgPullRequestDiffLoaded {
-	repository := pullRequestRepositoryName(summary.Repository)
-	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
-	if err == nil {
-		rawDiff = loadPullRequestDiffFileTeamOwners(program, repository, summary.Number, rawDiff)
-	}
+func loadPullRequestDiffResult(deps workflowCommandDeps, summary githubdomain.PullRequest) MsgPullRequestDiffLoaded {
+	rawDiff, err := deps.getPullRequestDiff(summary)
 	return MsgPullRequestDiffLoaded{Summary: summary, RawDiff: rawDiff, Err: err}
 }
 
-func loadPullRequestDiffFileTeamOwners(program *Program, repository string, number int, rawDiff githubdomain.PullRequestDiff) githubdomain.PullRequestDiff {
-	if program == nil || rawDiff.FileTeamOwnersAttempted || !program.hasDetailQueries() || !program.shouldLoadPullRequestDiffTeamOwners() {
+func loadPullRequestDiffFileTeamOwners(deps workflowCommandDeps, repository string, number int, rawDiff githubdomain.PullRequestDiff) githubdomain.PullRequestDiff {
+	if rawDiff.FileTeamOwnersAttempted || !deps.shouldLoadPullRequestDiffTeamOwners || deps.getPullRequestFileTeamOwners == nil {
 		return rawDiff
 	}
 
@@ -196,7 +313,7 @@ func loadPullRequestDiffFileTeamOwners(program *Program, repository string, numb
 		return rawDiff
 	}
 
-	teamOwnersByPath, err := program.detailQueries.GetPullRequestFileTeamOwners(repository, number, filePaths)
+	teamOwnersByPath, err := deps.getPullRequestFileTeamOwners(repository, number, filePaths)
 	if err != nil || len(teamOwnersByPath) == 0 {
 		return rawDiff
 	}
@@ -206,53 +323,74 @@ func loadPullRequestDiffFileTeamOwners(program *Program, repository string, numb
 }
 
 func (command loadIssueDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	deps := newWorkflowCommandDeps(program)
+	if deps.getIssueDetail == nil || deps.dispatchAsync == nil {
+		return
+	}
 	repository := command.repository
 	number := command.number
-	program.runAsync(func() {
-		program.loadIssueDetail(gui, repository, number)
+	runWorkflowCommandAsync(deps, func() {
+		detail, err := deps.getIssueDetail(repository, number)
+		deps.dispatchAsync(gui, MsgIssueDetailLoaded{Repository: repository, Number: number, Detail: detail, Err: err})
 	})
 }
 
 func (command loadReleaseDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	deps := newWorkflowCommandDeps(program)
+	if deps.getReleaseDetail == nil || deps.dispatchAsync == nil {
+		return
+	}
 	repository := command.repository
 	id := command.id
-	program.runAsync(func() {
-		program.loadReleaseDetail(gui, repository, id)
+	runWorkflowCommandAsync(deps, func() {
+		detail, err := deps.getReleaseDetail(repository, id)
+		deps.dispatchAsync(gui, MsgReleaseDetailLoaded{Repository: repository, ID: id, Detail: detail, Err: err})
 	})
 }
 
 func (command loadCurrentDetailImageHTMLCmd) execute(program *Program, gui *gocui.Gui) {
+	deps := newWorkflowCommandDeps(program)
+	if deps.renderMarkdownHTML == nil || deps.dispatchAsync == nil {
+		return
+	}
 	source := command.source
-	program.runAsync(func() {
-		program.loadCurrentDetailImageHTML(gui, source)
+	runWorkflowCommandAsync(deps, func() {
+		renderedHTML, err := deps.renderMarkdownHTML(source.repository, source.markdown)
+		deps.dispatchAsync(gui, MsgCurrentDetailImageHTMLLoaded{Source: source, RenderedHTML: renderedHTML, Err: err})
 	})
 }
 
 func (command loadCurrentDetailImageCmd) execute(program *Program, gui *gocui.Gui) {
+	deps := newWorkflowCommandDeps(program)
+	if deps.loadDetailImage == nil || deps.dispatchAsync == nil {
+		return
+	}
 	imageURL := command.imageURL
-	program.runAsync(func() {
-		program.loadCurrentDetailImage(gui, imageURL)
+	runWorkflowCommandAsync(deps, func() {
+		loadedImage, err := deps.loadDetailImage(imageURL)
+		deps.dispatchAsync(gui, MsgCurrentDetailImageLoaded{ImageURL: imageURL, Image: loadedImage, Err: err})
 	})
 }
 
 func (hydrateNotificationsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	deps := newWorkflowCommandDeps(program)
+	if deps.notificationsFromCache == nil || deps.executeUpdate == nil {
 		return
 	}
-	notifications, ok := program.notificationsFromCache()
+	notifications, ok := deps.notificationsFromCache()
 	if !ok {
 		return
 	}
-	program.executeCmds(gui, Update(program, MsgNotificationsCacheHydrated{Notifications: notifications}))
+	deps.executeUpdate(gui, MsgNotificationsCacheHydrated{Notifications: notifications})
 }
 
-func (program *Program) runAsync(run func()) {
-	if program == nil || run == nil {
+func runWorkflowCommandAsync(deps workflowCommandDeps, run func()) {
+	if run == nil {
 		return
 	}
-	if program.asyncRunner == nil {
-		run()
+	if deps.runAsync != nil {
+		deps.runAsync(run)
 		return
 	}
-	program.asyncRunner.Go(run)
+	run()
 }

@@ -8,12 +8,28 @@ import (
 	"github.com/l-lin/lazygh/internal/story"
 )
 
+type notificationMutationCommandDeps struct {
+	notificationMutations           NotificationMutations
+	hideDoneNotificationsBestEffort func([]githubdomain.Notification)
+}
+
+type storyReviewPrepareCommandDeps struct {
+	detailQueries               DetailQueries
+	reviewMutations             ReviewMutations
+	storyGenerator              reviewStoryGenerator
+	storyReviewConfig           story.Config
+	pullRequestDetailForSummary func(githubdomain.PullRequest) (pullRequestDetailResult, bool)
+}
+
 type notificationReadMutationRequest struct {
 	threadID string
 }
 
-func (request notificationReadMutationRequest) run(program *Program) error {
-	return normalizedNotificationMutationError(program.notificationMutations.MarkNotificationRead(request.threadID))
+func (request notificationReadMutationRequest) run(deps notificationMutationCommandDeps) error {
+	if deps.notificationMutations == nil {
+		return normalizedNotificationMutationError(errors.New("github loader is unavailable"))
+	}
+	return normalizedNotificationMutationError(deps.notificationMutations.MarkNotificationRead(request.threadID))
 }
 
 type notificationDoneMutationRequest struct {
@@ -21,18 +37,26 @@ type notificationDoneMutationRequest struct {
 	notification githubdomain.Notification
 }
 
-func (request notificationDoneMutationRequest) run(program *Program) error {
-	if err := normalizedNotificationMutationError(program.notificationMutations.MarkNotificationDone(request.threadID)); err != nil {
+func (request notificationDoneMutationRequest) run(deps notificationMutationCommandDeps) error {
+	if deps.notificationMutations == nil {
+		return normalizedNotificationMutationError(errors.New("github loader is unavailable"))
+	}
+	if err := normalizedNotificationMutationError(deps.notificationMutations.MarkNotificationDone(request.threadID)); err != nil {
 		return err
 	}
-	program.hideDoneNotificationsBestEffort([]githubdomain.Notification{request.notification})
+	if deps.hideDoneNotificationsBestEffort != nil {
+		deps.hideDoneNotificationsBestEffort([]githubdomain.Notification{request.notification})
+	}
 	return nil
 }
 
 type allNotificationsReadMutationRequest struct{}
 
-func (allNotificationsReadMutationRequest) run(program *Program) error {
-	_, err := program.notificationMutations.MarkAllNotificationsRead()
+func (allNotificationsReadMutationRequest) run(deps notificationMutationCommandDeps) error {
+	if deps.notificationMutations == nil {
+		return normalizedNotificationMutationError(errors.New("github loader is unavailable"))
+	}
+	_, err := deps.notificationMutations.MarkAllNotificationsRead()
 	return normalizedNotificationMutationError(err)
 }
 
@@ -40,12 +64,17 @@ type allNotificationsDoneMutationRequest struct {
 	notifications []githubdomain.Notification
 }
 
-func (request allNotificationsDoneMutationRequest) run(program *Program) error {
-	_, err := program.notificationMutations.MarkAllNotificationsDone(request.notifications)
+func (request allNotificationsDoneMutationRequest) run(deps notificationMutationCommandDeps) error {
+	if deps.notificationMutations == nil {
+		return normalizedNotificationMutationError(errors.New("github loader is unavailable"))
+	}
+	_, err := deps.notificationMutations.MarkAllNotificationsDone(request.notifications)
 	if err = normalizedNotificationMutationError(err); err != nil {
 		return err
 	}
-	program.hideDoneNotificationsBestEffort(request.notifications)
+	if deps.hideDoneNotificationsBestEffort != nil {
+		deps.hideDoneNotificationsBestEffort(request.notifications)
+	}
 	return nil
 }
 
@@ -53,19 +82,22 @@ type pullRequestStoryReviewPrepareRequest struct {
 	summary githubdomain.PullRequest
 }
 
-func (request pullRequestStoryReviewPrepareRequest) run(program *Program) (preparedStoryReview, error) {
+func (request pullRequestStoryReviewPrepareRequest) run(deps storyReviewPrepareCommandDeps) (preparedStoryReview, error) {
 	repository := strings.TrimSpace(pullRequestRepositoryName(request.summary.Repository))
 	if repository == "" || repository == "-" || request.summary.Number <= 0 {
 		return preparedStoryReview{}, errors.New("missing pull request identity")
 	}
+	if deps.detailQueries == nil || deps.reviewMutations == nil || deps.storyGenerator == nil {
+		return preparedStoryReview{}, errors.New("github loader is unavailable")
+	}
 
-	detail, detailOK := storyReviewDetail(program, request.summary)
-	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, request.summary.Number)
+	detail, detailOK := storyReviewDetail(deps, request.summary)
+	rawDiff, err := deps.detailQueries.GetPullRequestDiff(repository, request.summary.Number)
 	if err != nil {
 		return preparedStoryReview{}, newTransientErrorPopupActionError(err)
 	}
 
-	generatedStory, err := program.storyGenerator.Generate(program.runtimeConfig.storyReviewConfig, story.Request{
+	generatedStory, err := deps.storyGenerator.Generate(deps.storyReviewConfig, story.Request{
 		Metadata:  buildStoryReviewMetadata(request.summary, detail, detailOK, rawDiff),
 		DiffItems: buildStoryReviewDiffItems(rawDiff.Files),
 		DiffText:  rawDiff.UnifiedDiff,
@@ -74,7 +106,7 @@ func (request pullRequestStoryReviewPrepareRequest) run(program *Program) (prepa
 		return preparedStoryReview{}, err
 	}
 
-	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, request.summary.Number)
+	pendingReviewID, err := deps.reviewMutations.StartPendingPullRequestReview(repository, request.summary.Number)
 	if err != nil {
 		return preparedStoryReview{}, newTransientErrorPopupActionError(err)
 	}
@@ -90,18 +122,20 @@ func (request pullRequestStoryReviewPrepareRequest) run(program *Program) (prepa
 	}, nil
 }
 
-func storyReviewDetail(program *Program, summary githubdomain.PullRequest) (githubdomain.PullRequestDetail, bool) {
-	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
-		return result.detail, true
+func storyReviewDetail(deps storyReviewPrepareCommandDeps, summary githubdomain.PullRequest) (githubdomain.PullRequestDetail, bool) {
+	if deps.pullRequestDetailForSummary != nil {
+		if result, ok := deps.pullRequestDetailForSummary(summary); ok && result.err == nil {
+			return result.detail, true
+		}
 	}
-	if !program.hasDetailQueries() {
+	if deps.detailQueries == nil {
 		return githubdomain.PullRequestDetail{}, false
 	}
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
 		return githubdomain.PullRequestDetail{}, false
 	}
-	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
+	detail, err := deps.detailQueries.GetPullRequestDetail(repository, summary.Number)
 	if err != nil {
 		return githubdomain.PullRequestDetail{}, false
 	}

@@ -512,7 +512,7 @@ func TestUpdate_GivenLoadedPullRequestDiffResult_WhenApplying_ThenItStoresTheRes
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 
-	Update(subject, loadPullRequestDiffResult(subject, githubcli.ToDomainPullRequestSummary(summary)))
+	Update(subject, loadPullRequestDiffResult(newWorkflowCommandDeps(subject), githubcli.ToDomainPullRequestSummary(summary)))
 
 	actual := cache.savedDiffs["acme/widgets#42"]
 	if !reflect.DeepEqual(actual.Diff, expected) || actual.SourceUpdatedAt != summary.UpdatedAt {
