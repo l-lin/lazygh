@@ -653,6 +653,26 @@ func TestRefactorGuard_GivenDetailFoldFiles_WhenScanning_ThenTheyDoNotReachThrou
 	}
 }
 
+func TestRefactorGuard_GivenCharacterMotionFiles_WhenScanning_ThenTheyDoNotReachThroughDetailShellHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`currentDetailDocument\(`,
+		`mutateDetailViewStateForYankMotion\(`,
+		`mutatePullRequestBuildRunPopupViewStateForYankMotion\(`,
+		`mutateDetailViewState\(`,
+		`mutatePullRequestBuildRunPopupViewState\(`,
+		`refreshShell\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "program_character_motion.go" || base == "yank_motion.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected character-motion and yank files to route live detail shell work through explicit commands, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenPageHandlersDispatchInsteadOfResolvingViews(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,
@@ -682,6 +702,7 @@ func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecute
 		"assignee_picker_search_cmd.go":         true,
 		"cmd_actions_popup_async_requests.go":   true,
 		"cmd_detail_fold.go":                    true,
+		"cmd_detail_motion.go":                  true,
 		"cmd_interaction.go":                    true,
 		"cmd_modal_editor_submit_requests.go":   true,
 		"cmd_popup_feature_request_requests.go": true,

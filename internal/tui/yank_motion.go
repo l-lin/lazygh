@@ -51,11 +51,11 @@ func (program *Program) startDetailYank(gui *gocui.Gui, view *gocui.View) error 
 		return program.copySelectedDetailText(gui, view)
 	}
 	if program.detailState.viewState.hasPendingYank() {
-		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(detailDocument, int) {})
+		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFinishPendingYank, View: view, SelectionKind: detailYankMotionLinewise}})
+		return nil
 	}
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.armPendingYank()
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmPendingYank, View: view}})
+	return nil
 }
 
 func (program *Program) startPullRequestBuildRunPopupYank(gui *gocui.Gui, view *gocui.View) error {
@@ -67,11 +67,11 @@ func (program *Program) startPullRequestBuildRunPopupYank(gui *gocui.Gui, view *
 		return program.copySelectedPullRequestBuildRunPopupText(gui, view)
 	}
 	if popup.viewState.hasPendingYank() {
-		return program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(*detailViewState, detailDocument, int) {})
+		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFinishPendingYank, View: view, SelectionKind: detailYankMotionLinewise}})
+		return nil
 	}
-	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
-		state.armPendingYank()
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmPendingYank, View: view}})
+	return nil
 }
 
 func (program *Program) copySelectedText(state *detailViewState, document detailDocument) {
@@ -95,43 +95,6 @@ func (program *Program) writeTextToClipboard(text string) error {
 		return ErrClipboardUnavailable
 	}
 	return program.clipboardWriter.WriteText(text)
-}
-
-func (program *Program) mutateDetailViewStateForYankMotion(gui *gocui.Gui, view *gocui.View, selectionKind detailYankMotionSelectionKind, mutate func(detailDocument, int)) error {
-	program.clearPendingSelectionPrefix()
-	actualView := program.resolveView(gui, view, viewDetailName)
-	viewportHeight := viewPageSize(actualView)
-	document := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(document, viewportHeight)
-	snapshot := newDetailYankSnapshot(program.detailState.viewState)
-	pendingYank := program.detailState.viewState.hasPendingYank()
-	mutate(document, viewportHeight)
-	program.syncDetailViewState(document, viewportHeight)
-	if pendingYank {
-		program.finishPendingYank(document, &program.detailState.viewState, snapshot, selectionKind)
-	}
-	program.syncActionsPopupSearch()
-	return program.refreshShell(gui)
-}
-
-func (program *Program) mutatePullRequestBuildRunPopupViewStateForYankMotion(gui *gocui.Gui, view *gocui.View, selectionKind detailYankMotionSelectionKind, mutate func(*detailViewState, detailDocument, int)) error {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewPullRequestBuildInfoName)
-	document := program.currentPullRequestBuildRunPopupDocument(actualView)
-	viewportHeight := viewPageSize(actualView)
-	popup.viewState.sync(document, viewportHeight)
-	snapshot := newDetailYankSnapshot(popup.viewState)
-	pendingYank := popup.viewState.hasPendingYank()
-	mutate(&popup.viewState, document, viewportHeight)
-	popup.viewState.sync(document, viewportHeight)
-	if pendingYank {
-		program.finishPendingYank(document, &popup.viewState, snapshot, selectionKind)
-	}
-	return program.refreshShell(gui)
 }
 
 func (program *Program) finishPendingYank(document detailDocument, state *detailViewState, snapshot detailYankSnapshot, selectionKind detailYankMotionSelectionKind) {

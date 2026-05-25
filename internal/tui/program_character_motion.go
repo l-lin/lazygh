@@ -21,47 +21,6 @@ func (program *Program) registeredKeybindingSpecs() []keybindingSpec {
 	return specs
 }
 
-func (program *Program) activeDetailCharacterMotionTargetBindingSpecs() []keybindingSpec {
-	if !program.detailState.viewState.hasPendingCharacterMotion() {
-		return nil
-	}
-
-	actualView := program.resolveView(program.gui, nil, viewDetailName)
-	document := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(document, viewPageSize(actualView))
-	bindings := characterMotionTargetRunes(detailDocumentLineAt(document, program.detailState.viewState.cursor.line))
-	if len(bindings) == 0 {
-		return nil
-	}
-
-	specs := make([]keybindingSpec, 0, len(bindings))
-	for _, target := range bindings {
-		specs = append(specs, keybindingSpec{viewName: viewDetailName, key: target, handler: program.detailCharacterMotionTargetHandler(target)})
-	}
-	return specs
-}
-
-func (program *Program) activePullRequestBuildRunPopupCharacterMotionTargetBindingSpecs() []keybindingSpec {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil || !popup.viewState.hasPendingCharacterMotion() {
-		return nil
-	}
-
-	actualView := program.resolveView(program.gui, nil, viewPullRequestBuildInfoName)
-	document := program.currentPullRequestBuildRunPopupDocument(actualView)
-	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(actualView))
-	bindings := characterMotionTargetRunes(detailDocumentLineAt(document, popup.viewState.cursor.line))
-	if len(bindings) == 0 {
-		return nil
-	}
-
-	specs := make([]keybindingSpec, 0, len(bindings))
-	for _, target := range bindings {
-		specs = append(specs, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: target, handler: program.pullRequestBuildRunPopupCharacterMotionTargetHandler(target)})
-	}
-	return specs
-}
-
 func (program *Program) activeDetailCharacterMotionRepeatBindingSpecs() []keybindingSpec {
 	if !program.detailState.viewState.hasLastCharacterMotion {
 		return nil
@@ -140,17 +99,15 @@ func characterMotionTargetRunes(line []rune) []rune {
 
 func (program *Program) detailCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-			program.detailState.viewState.consumePendingCharacterMotion(document, viewportHeight, target)
-		})
+		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationConsumePendingCharacter, View: view, SelectionKind: detailYankMotionCharacterInclusive, Rune: target}})
+		return nil
 	}
 }
 
 func (program *Program) pullRequestBuildRunPopupCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		return program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(state *detailViewState, document detailDocument, viewportHeight int) {
-			state.consumePendingCharacterMotion(document, viewportHeight, target)
-		})
+		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationConsumePendingCharacter, View: view, SelectionKind: detailYankMotionCharacterInclusive, Rune: target}})
+		return nil
 	}
 }
 
@@ -179,18 +136,16 @@ func (program *Program) repeatDetailCharacterMotionBackward(gui *gocui.Gui, view
 }
 
 func (program *Program) armDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.armCharacterMotion(direction, mode)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmCharacter, View: view, Direction: direction, Mode: mode}})
+	return nil
 }
 
 func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
 	if !program.detailState.viewState.hasLastCharacterMotion {
 		return nil
 	}
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.repeatCharacterMotion(document, viewportHeight, reverse)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationRepeatCharacter, View: view, Reverse: reverse, SelectionKind: detailYankMotionCharacterInclusive}})
+	return nil
 }
 
 func (program *Program) startPullRequestBuildRunPopupCharacterFindForward(gui *gocui.Gui, view *gocui.View) error {
@@ -218,16 +173,14 @@ func (program *Program) repeatPullRequestBuildRunPopupCharacterMotionBackward(gu
 }
 
 func (program *Program) armPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
-	return program.mutatePullRequestBuildRunPopupViewState(gui, view, func(state *detailViewState, document detailDocument, viewportHeight int) {
-		state.armCharacterMotion(direction, mode)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmCharacter, View: view, Direction: direction, Mode: mode}})
+	return nil
 }
 
 func (program *Program) repeatPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
 	if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasLastCharacterMotion {
 		return nil
 	}
-	return program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(state *detailViewState, document detailDocument, viewportHeight int) {
-		state.repeatCharacterMotion(document, viewportHeight, reverse)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationRepeatCharacter, View: view, Reverse: reverse, SelectionKind: detailYankMotionCharacterInclusive}})
+	return nil
 }
