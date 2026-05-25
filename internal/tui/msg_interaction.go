@@ -26,8 +26,8 @@ type MsgFeedbackSet struct {
 	Message string
 }
 
-type MsgActionsPopupActionResultHandled struct {
-	Result actionsPopupActionResult
+type MsgActionsPopupActionErrorHandled struct {
+	Err error
 }
 
 type MsgModalEditorOpened struct {
@@ -209,7 +209,7 @@ type MsgSetAllDetailFolds struct {
 }
 
 func (MsgFeedbackSet) isMsg()                                  {}
-func (MsgActionsPopupActionResultHandled) isMsg()              {}
+func (MsgActionsPopupActionErrorHandled) isMsg()               {}
 func (MsgModalEditorOpened) isMsg()                            {}
 func (MsgModalEditorClosed) isMsg()                            {}
 func (MsgModalEditorSubmitRequested) isMsg()                   {}

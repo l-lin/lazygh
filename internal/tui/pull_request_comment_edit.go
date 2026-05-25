@@ -46,13 +46,13 @@ func (program *Program) deletePullRequestCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestCommentEditActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
-	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
 			return program.submitPullRequestCommentUpdate(target, body)
 		}, reviewInlineCommentModalHeight); err != nil {
@@ -64,21 +64,18 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) ac
 			}
 		}
 		return nil
-	}))
+	})
 }
 
-func (program *Program) executeDeletePullRequestCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeDeletePullRequestCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestCommentEditActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if err := program.deletePullRequestComment(target); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: pullRequestCommentDeletedSuccessMessage}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: pullRequestCommentDeletedSuccessMessage})
 }
 
 func (program *Program) submitPullRequestCommentUpdate(target pullRequestCommentEditActionTarget, body string) error {

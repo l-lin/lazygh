@@ -9,34 +9,23 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) applyActionsPopupActionResultHandled(message MsgActionsPopupActionResultHandled) {
-	result := message.Result
-	if result.err != nil {
-		if popupMessage, ok := transientErrorPopupActionMessage(result.err); ok {
-			program.actionsPopupWidget.errorMessage = ""
-			program.reportError(program.gui, popupMessage)
-			return
-		}
-		var feedbackErr actionsPopupStatusLineError
-		if errors.As(result.err, &feedbackErr) {
-			program.actionsPopupWidget.errorMessage = ""
-			program.setFeedback(feedbackErr.feedbackTarget, result.err.Error())
-			return
-		}
-		if feedbackMessage := strings.TrimSpace(result.feedbackMessage); feedbackMessage != "" {
-			program.actionsPopupWidget.errorMessage = ""
-			program.setFeedback(result.feedbackTarget, feedbackMessage)
-			return
-		}
-		program.actionsPopupWidget.errorMessage = strings.TrimSpace(result.err.Error())
-		program.reportError(program.gui, program.actionsPopupWidget.errorMessage)
+func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPopupActionErrorHandled) {
+	if message.Err == nil {
 		return
 	}
-
-	if result.closePopup {
-		program.clearPendingSelectionPrefix()
-		program.closeActionsPopupState()
+	if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
+		program.actionsPopupWidget.errorMessage = ""
+		program.reportError(program.gui, popupMessage)
+		return
 	}
+	var feedbackErr actionsPopupStatusLineError
+	if errors.As(message.Err, &feedbackErr) {
+		program.actionsPopupWidget.errorMessage = ""
+		program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
+		return
+	}
+	program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
+	program.reportError(program.gui, program.actionsPopupWidget.errorMessage)
 }
 
 func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPopupClosedWithFeedback) {

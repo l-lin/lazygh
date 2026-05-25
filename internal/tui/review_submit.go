@@ -43,25 +43,25 @@ func (program *Program) submitPendingReviewRequestChangesAction() actionsPopupAc
 	}
 }
 
-func (program *Program) executeSubmitPendingReviewCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSubmitPendingReviewCommentAction(gui *gocui.Gui) error {
 	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewCommentComposerTitle, githubdomain.PullRequestReviewEventComment)
 }
 
-func (program *Program) executeSubmitPendingReviewApprovalAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSubmitPendingReviewApprovalAction(gui *gocui.Gui) error {
 	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewApprovalTitle, githubdomain.PullRequestReviewEventApprove)
 }
 
-func (program *Program) executeSubmitPendingReviewRequestChangesAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSubmitPendingReviewRequestChangesAction(gui *gocui.Gui) error {
 	return program.openPendingReviewSubmitComposer(gui, pullRequestRequestChangesComposerTitle, githubdomain.PullRequestReviewEventRequestChanges)
 }
 
-func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title string, event githubdomain.PullRequestReviewEvent) actionsPopupActionResult {
+func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title string, event githubdomain.PullRequestReviewEvent) error {
 	target, ok := program.selectedPendingPullRequestReviewTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
-	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openModalEditor(gui, title, "", func(body string) error {
 			submitErr := program.submitPendingPullRequestReview(target, event, body)
 			if submitErr != nil && event == githubdomain.PullRequestReviewEventRequestChanges {
@@ -77,7 +77,7 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 			}
 		}
 		return nil
-	}))
+	})
 }
 
 func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullRequestReviewTarget, bool) {

@@ -48,13 +48,13 @@ func (program *Program) deleteInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestReviewCommentActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
-	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openMultilineModalEditor(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) error {
 			return program.submitInlineCommentUpdate(target, body)
 		}, reviewInlineCommentModalHeight); err != nil {
@@ -66,21 +66,18 @@ func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) actions
 			}
 		}
 		return nil
-	}))
+	})
 }
 
-func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestReviewCommentActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if err := program.deleteInlineComment(target); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: inlineCommentDeletedSuccessMessage}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: inlineCommentDeletedSuccessMessage})
 }
 
 func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommentActionTarget, body string) error {

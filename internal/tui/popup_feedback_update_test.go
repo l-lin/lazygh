@@ -27,12 +27,12 @@ func TestUpdate_GivenMsgActionsPopupClosedWithFeedback_WhenApplying_ThenItCloses
 	}
 }
 
-func TestUpdate_GivenMsgActionsPopupActionResultHandledWithStatusLineError_WhenApplying_ThenItKeepsThePopupOpenAndShowsStatusFeedback(t *testing.T) {
+func TestUpdate_GivenMsgActionsPopupActionErrorHandledWithStatusLineError_WhenApplying_ThenItKeepsThePopupOpenAndShowsStatusFeedback(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.model.OpenActionsPopup(3)
 	subject.actionsPopupWidget.errorMessage = "stale"
 
-	Update(subject, MsgActionsPopupActionResultHandled{Result: actionsPopupActionResult{err: newActionsPopupStatusLineError(FocusDetailView, errors.New("boom"))}})
+	Update(subject, MsgActionsPopupActionErrorHandled{Err: newActionsPopupStatusLineError(FocusDetailView, errors.New("boom"))})
 
 	if !subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to stay open after a status-line validation error")

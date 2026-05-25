@@ -36,15 +36,15 @@ func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
-	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		return program.openInlineCommentReplyComposer(gui, target)
-	}))
+	})
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {

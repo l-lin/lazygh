@@ -229,15 +229,15 @@ func (program *Program) applyToggleAssigneePickerSelectionRequested(message MsgT
 	program.actionsPopupWidget.assigneePicker.rememberCandidates([]githubdomain.PullRequestAuthor{message.Candidate})
 }
 
-func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.PullRequestAuthor) actionsPopupActionResult {
+func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.PullRequestAuthor) error {
 	if !program.assigneePickerVisible() {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if strings.TrimSpace(candidate.Login) == "" {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	program.applyToggleAssigneePickerSelectionRequested(MsgToggleAssigneePickerSelectionRequested{Candidate: candidate})
-	return actionsPopupActionResult{}
+	return nil
 }
 
 func (program *Program) applySubmitAssigneePickerRequested(message MsgSubmitAssigneePickerRequested) []Cmd {

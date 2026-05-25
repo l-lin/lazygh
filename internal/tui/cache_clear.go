@@ -21,14 +21,11 @@ func (program *Program) clearCacheActionsPopupAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeClearCacheAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeClearCacheAction(gui *gocui.Gui) error {
 	if program.pullRequestCache == nil {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
-	if err := program.dispatch(gui, MsgClearCacheRequested{}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgClearCacheRequested{})
 }
 
 func (program *Program) actionsPopupConfirmationMessage() string {

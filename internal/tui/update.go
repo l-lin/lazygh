@@ -73,8 +73,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyFeedbackSet(actual)
 	case MsgActionsPopupClosedWithFeedback:
 		program.applyActionsPopupClosedWithFeedback(actual)
-	case MsgActionsPopupActionResultHandled:
-		program.applyActionsPopupActionResultHandled(actual)
+	case MsgActionsPopupActionErrorHandled:
+		program.applyActionsPopupActionErrorHandled(actual)
 	case MsgModalEditorOpened:
 		program.openModalEditorState(actual.State)
 	case MsgModalEditorClosed:

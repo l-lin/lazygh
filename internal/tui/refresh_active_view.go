@@ -15,30 +15,27 @@ func (program *Program) refreshActiveView(gui *gocui.Gui, _ *gocui.View) error {
 		if state.Mode != ScreenModeBrowser {
 			return nil
 		}
-		return program.handleActionsPopupActionResult(gui, actionsPopupActionResultFromError(program.executeRefreshPullRequestListAction(gui)))
+		return program.handleActionsPopupActionError(gui, program.executeRefreshPullRequestListAction(gui))
 	case sidePanelNotificationsViewNumber:
-		return program.handleActionsPopupActionResult(gui, program.executeRefreshNotificationsAction(gui))
+		return program.handleActionsPopupActionError(gui, program.executeRefreshNotificationsAction(gui))
 	case mainPanelViewNumber:
 		if !program.actionContext().IsPullRequestContext() {
 			return nil
 		}
-		return program.handleActionsPopupActionResult(gui, actionsPopupActionResultFromError(program.executeRefreshPullRequestAction(gui)))
+		return program.handleActionsPopupActionError(gui, program.executeRefreshPullRequestAction(gui))
 	default:
 		return nil
 	}
 }
 
-func (program *Program) executeRefreshNotificationsAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeRefreshNotificationsAction(gui *gocui.Gui) error {
 	pendingOperations := 0
 	if gui != nil && !program.reviewModeActive() && program.hasNotificationQueries() && program.markManualNotificationRefresh() {
 		pendingOperations++
 	}
 	program.beginManualRefresh(notificationsRefreshSuccessMessage, pendingOperations)
 	program.reloadNotifications(gui)
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
 func (program *Program) markManualNotificationRefresh() bool {

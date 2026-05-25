@@ -72,9 +72,9 @@ func TestAssigneePickerCandidateSections_GivenSelectedSearchResultAndANewQuery_W
 	}
 	given_runQueuedAsync(t, asyncRunner, len(asyncRunner.runs)-1)
 
-	actualResult := subject.toggleAssigneePickerSelection(githubdomain.PullRequestAuthor{Login: "charlie", Name: "Charlie"})
-	if actualResult.err != nil {
-		t.Fatalf("expected no toggle error, actual %v", actualResult.err)
+	actualErr = subject.toggleAssigneePickerSelection(githubdomain.PullRequestAuthor{Login: "charlie", Name: "Charlie"})
+	if actualErr != nil {
+		t.Fatalf("expected no toggle error, actual %v", actualErr)
 	}
 	if !subject.editActionsPopupSearch(searchView, gocui.KeyCtrlU, 0, gocui.ModNone) {
 		t.Fatal("expected ctrl+u to clear the assignee picker query")

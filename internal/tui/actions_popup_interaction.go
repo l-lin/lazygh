@@ -136,14 +136,14 @@ func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *goc
 		if !ok {
 			return nil
 		}
-		return program.handleActionsPopupActionResult(gui, action.execute(gui))
+		return program.handleActionsPopupActionError(gui, action.execute(gui))
 	}
 
 	action, ok := program.selectedActionsPopupAction()
 	if !ok {
 		return nil
 	}
-	return program.handleActionsPopupActionResult(gui, action.execute(gui))
+	return program.handleActionsPopupActionError(gui, action.execute(gui))
 }
 
 func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
@@ -154,11 +154,11 @@ func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocu
 	if !program.assigneePickerVisible() {
 		return program.executeSelectedActionsPopupAction(gui, nil)
 	}
-	return program.handleActionsPopupActionResult(gui, actionsPopupActionResultFromError(program.executeSubmitAssigneePickerAction(gui)))
+	return program.handleActionsPopupActionError(gui, program.executeSubmitAssigneePickerAction(gui))
 }
 
-func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result actionsPopupActionResult) error {
-	return program.dispatch(gui, MsgActionsPopupActionResultHandled{Result: result})
+func (program *Program) handleActionsPopupActionError(gui *gocui.Gui, err error) error {
+	return program.dispatch(gui, MsgActionsPopupActionErrorHandled{Err: err})
 }
 
 func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {

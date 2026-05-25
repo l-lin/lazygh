@@ -124,9 +124,9 @@ The stores under `workflow_stores.go` track in-flight state, cache state, and in
 
 Search, the actions popup, transient errors, the build popup, and the modal editor all live in `internal/tui`. The editor callbacks dispatch typed edit messages instead of redrawing their own views directly.
 
-The highest-value actions-popup flows now do the same. Navigation, cache clear, custom search, assignee and reaction pickers, theme changes, refresh actions, title and description edits, and pending-review start or cancel now dispatch typed popup messages and let update-owned helpers or commands own the follow-up state changes.
+The actions popup now follows the same pattern. Navigation, cache clear, custom search, assignee and reaction pickers, theme changes, refresh actions, review flows, pull request edits, and the remaining popup-triggered mutations dispatch typed messages or return plain errors, and update-owned helpers or commands own the follow-up state changes.
 
-That keeps one redraw path in charge of rendering, even though the live editor objects still sit inside `Program` rather than inside a pure child model, and `actionsPopupActionResult` now mostly survives as compatibility glue for synchronous availability and error returns rather than popup close, feedback, or async state transitions.
+That keeps one redraw path in charge of rendering. Popup-local error presentation is still centralized, but it now routes through a single reducer-owned error message instead of a legacy result struct. The live editor objects still sit inside `Program` rather than inside a pure child model.
 
 ## Story review pipeline
 
@@ -172,7 +172,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, `actionsPopupActionResult` still exists as thin compatibility glue for some synchronous popup action errors, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, popup and editor feature files still contain some direct shell-facing mutation/query work, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
 
 If you want to understand the project quickly, start with these files:
 

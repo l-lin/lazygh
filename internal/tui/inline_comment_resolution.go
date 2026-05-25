@@ -48,21 +48,21 @@ func (program *Program) unresolveInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeResolveInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeResolveInlineCommentAction(gui *gocui.Gui) error {
 	return program.executeInlineCommentResolutionAction(gui, true)
 }
 
-func (program *Program) executeUnresolveInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeUnresolveInlineCommentAction(gui *gocui.Gui) error {
 	return program.executeInlineCommentResolutionAction(gui, false)
 }
 
-func (program *Program) executeInlineCommentResolutionAction(gui *gocui.Gui, resolved bool) actionsPopupActionResult {
+func (program *Program) executeInlineCommentResolutionAction(gui *gocui.Gui, resolved bool) error {
 	target, ok := program.selectedPullRequestReviewThreadActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasReviewMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
 
 	var err error
@@ -74,14 +74,11 @@ func (program *Program) executeInlineCommentResolutionAction(gui *gocui.Gui, res
 		feedbackMessage = inlineCommentUnresolvedSuccessMessage
 	}
 	if err != nil {
-		return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallySetReviewThreadResolved(target, resolved)
-	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: feedbackMessage}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: feedbackMessage})
 }
 
 func (program *Program) selectedPullRequestReviewThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {
