@@ -120,17 +120,17 @@ func (state detailViewState) isPositionYankHighlighted(document detailDocument, 
 }
 
 func (program *Program) activateYankHighlight(state *detailViewState, selection detailSelectionRange) {
-	if program == nil || state == nil || program.yankHighlightDuration <= 0 {
+	if program == nil || state == nil || program.timingState.yankHighlightDuration <= 0 {
 		return
 	}
-	state.setYankHighlight(selection, program.currentTime().Add(program.yankHighlightDuration))
+	state.setYankHighlight(selection, program.currentTime().Add(program.timingState.yankHighlightDuration))
 }
 
 func (program *Program) hasYankHighlights() bool {
 	if program == nil {
 		return false
 	}
-	if program.detailViewState.hasYankHighlight() {
+	if program.detailState.viewState.hasYankHighlight() {
 		return true
 	}
 	return program.pullRequestBuildRunPopup != nil && program.pullRequestBuildRunPopup.viewState.hasYankHighlight()
@@ -142,7 +142,7 @@ func (program *Program) clearExpiredYankHighlights() bool {
 	}
 
 	now := program.currentTime()
-	cleared := program.detailViewState.clearExpiredYankHighlight(now)
+	cleared := program.detailState.viewState.clearExpiredYankHighlight(now)
 	if popup := program.pullRequestBuildRunPopup; popup != nil {
 		if popup.viewState.clearExpiredYankHighlight(now) {
 			cleared = true
@@ -152,8 +152,8 @@ func (program *Program) clearExpiredYankHighlights() bool {
 }
 
 func (program *Program) currentTime() time.Time {
-	if program == nil || program.now == nil {
+	if program == nil || program.timingState.now == nil {
 		return time.Now()
 	}
-	return program.now()
+	return program.timingState.now()
 }

@@ -74,7 +74,7 @@ func (program *Program) loadingSpinnerFrame() string {
 		return ""
 	}
 
-	return string(loadingSpinnerFrames[program.loadingSpinnerFrameIndex%len(loadingSpinnerFrames)])
+	return string(loadingSpinnerFrames[program.startupState.loadingSpinnerFrameIndex%len(loadingSpinnerFrames)])
 }
 
 func (program *Program) advanceLoadingSpinnerFrame() {
@@ -82,7 +82,7 @@ func (program *Program) advanceLoadingSpinnerFrame() {
 		return
 	}
 
-	program.loadingSpinnerFrameIndex = (program.loadingSpinnerFrameIndex + 1) % len(loadingSpinnerFrames)
+	program.startupState.loadingSpinnerFrameIndex = (program.startupState.loadingSpinnerFrameIndex + 1) % len(loadingSpinnerFrames)
 }
 
 func (program *Program) loadingSpinnerStatus(label string) string {

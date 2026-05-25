@@ -119,7 +119,7 @@ func (program *Program) selectedBrowserInlineCommentActionTarget() (pullRequestR
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	switch program.activeDetailTab {
+	switch program.detailState.activeTab {
 	case CommentsDetailTab:
 		return program.selectedBrowserCommentsInlineCommentActionTarget()
 	case ChangesDetailTab:
@@ -139,7 +139,7 @@ func (program *Program) selectedBrowserCommentsInlineCommentActionTarget() (pull
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailState.wrapWidth, program.detailState.viewState.cursor.line)
 	if !ok || sectionAtCursor.section.inlineThread == nil || !sectionAtCursor.inBody {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
@@ -172,7 +172,7 @@ func (program *Program) selectedBrowserChangesInlineCommentActionTarget() (pullR
 
 	detailDocument := program.currentDetailDocument(nil)
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailViewState)
+	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
@@ -199,20 +199,20 @@ func (program *Program) selectedReviewDiffInlineCommentActionTarget() (pullReque
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
-	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
-	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailViewState)
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailState.wrapWidth)
+	document := program.currentReviewDiffDocument(selectedFile, program.detailState.wrapWidth)
+	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailState.viewState)
 	if !ok {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) {
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReviewCommentActionTarget{}, false
 	}
 
 	return pullRequestReviewCommentActionTarget{
 		repository: repository,
-		number:     program.reviewSession.summary.Number,
+		number:     program.navigationState.reviewSession.summary.Number,
 		commentID:  strings.TrimSpace(comment.ID),
 		body:       comment.Body,
 	}, true

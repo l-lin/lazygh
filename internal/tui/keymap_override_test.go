@@ -402,8 +402,8 @@ func TestRegisteredKeybindingSpecs_GivenCharacterMotionRepeatOverridesAndSearchH
 			"repeat_character_motion_backward": {")"},
 		},
 	})
-	subject.detailViewState.lastCharacterMotion = detailCharacterMotion{target: 'a', direction: detailCharacterMotionDirectionForward, mode: detailCharacterMotionMatch}
-	subject.detailViewState.hasLastCharacterMotion = true
+	subject.detailState.viewState.lastCharacterMotion = detailCharacterMotion{target: 'a', direction: detailCharacterMotionDirectionForward, mode: detailCharacterMotionMatch}
+	subject.detailState.viewState.hasLastCharacterMotion = true
 
 	actual := subject.registeredKeybindingSpecs()
 

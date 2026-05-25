@@ -9,17 +9,17 @@ func Update(program *Program, msg Msg) []Cmd {
 
 	switch actual := msg.(type) {
 	case MsgAppStarted:
-		program.appStarted = true
+		program.startupState.appStarted = true
 	case MsgNextSideView:
 		program.clearPendingSelectionPrefix()
-		program.detailViewState.clearPendingPrefix()
+		program.detailState.viewState.clearPendingPrefix()
 		if program.sideViewCyclingBlocked() {
 			return nil
 		}
 		program.applyProjectedScreenState(program.screenState().NextSideView())
 	case MsgPreviousSideView:
 		program.clearPendingSelectionPrefix()
-		program.detailViewState.clearPendingPrefix()
+		program.detailState.viewState.clearPendingPrefix()
 		if program.sideViewCyclingBlocked() {
 			return nil
 		}
@@ -29,7 +29,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		if program.mainPaneActionBlocked() {
 			return nil
 		}
-		program.detailViewState.clearPendingPrefix()
+		program.detailState.viewState.clearPendingPrefix()
 		state := program.screenState()
 		targetView, ok := state.ViewByNumber(actual.Number)
 		if !ok {
@@ -68,12 +68,12 @@ func Update(program *Program, msg Msg) []Cmd {
 		if program.mainPaneActionBlocked() || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
 			return nil
 		}
-		program.detailViewState.clearPendingPrefix()
+		program.detailState.viewState.clearPendingPrefix()
 		if inputContext.SearchUsesReviewTree {
 			program.startReviewFileTreeSearch()
 		} else {
 			if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-				program.reviewSession.fileTreeSearchQuery = ""
+				program.navigationState.reviewSession.fileTreeSearchQuery = ""
 			}
 			program.model.StartSearch()
 		}
@@ -88,7 +88,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgModalEditorOpened:
 		program.openModalEditorState(actual.State)
 	case MsgModalEditorClosed:
-		program.modalEditor = nil
+		program.overlayState.modalEditor = nil
 	case MsgModalEditorSubmitRequested:
 		return program.applyModalEditorSubmitRequested()
 	case MsgModalEditorSubmitFinished:
@@ -259,9 +259,9 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyPullRequestBuildRunJobLogLoaded(actual)
 	case MsgOpenActionsPopup:
 		program.clearPendingSelectionPrefix()
-		program.detailViewState.clearPendingPrefix()
+		program.detailState.viewState.clearPendingPrefix()
 		program.clearActionsPopupPendingConfirmation()
-		if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+		if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 			return nil
 		}
 		if actual.ActionCount <= 0 {
@@ -320,10 +320,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.model.MoveActionsPopupSelectionToBottom()
 		program.actionsPopupWidget.errorMessage = ""
 	case MsgModalEditorEdited:
-		if program.modalEditor == nil {
+		if program.overlayState.modalEditor == nil {
 			return nil
 		}
-		program.modalEditor.errorMessage = ""
+		program.overlayState.modalEditor.errorMessage = ""
 	}
 
 	return nil

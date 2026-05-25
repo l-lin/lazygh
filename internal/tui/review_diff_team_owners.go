@@ -68,5 +68,5 @@ func (program *Program) shouldLoadPullRequestDiffTeamOwners() bool {
 	if program.reviewModeActive() {
 		return true
 	}
-	return program.shouldShowPullRequestDetailTabs() && program.activeDetailTab == ChangesDetailTab
+	return program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == ChangesDetailTab
 }

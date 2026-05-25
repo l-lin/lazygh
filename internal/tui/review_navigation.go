@@ -37,9 +37,9 @@ func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error 
 		return nil
 	}
 
-	originalRow := program.reviewSession.selectedFileTreeRow
-	program.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.reviewSession.selectedFileTreeRow, selectableRows, change)
-	if program.reviewSession.selectedFileTreeRow == originalRow {
+	originalRow := program.navigationState.reviewSession.selectedFileTreeRow
+	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, change)
+	if program.navigationState.reviewSession.selectedFileTreeRow == originalRow {
 		return nil
 	}
 
@@ -63,12 +63,12 @@ func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction revie
 		return nil
 	}
 
-	program.detailViewState.clearPendingPrefix()
-	program.reviewSession.selectedFileTreeRow = target.fileTreeRow
+	program.detailState.viewState.clearPendingPrefix()
+	program.navigationState.reviewSession.selectedFileTreeRow = target.fileTreeRow
 	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, detailView, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.cursor = document.clampPosition(detailPosition{line: target.renderedLine, column: 0})
-		program.detailViewState.preferredColumn = 0
-		program.detailViewState.sync(document, viewportHeight)
+		program.detailState.viewState.cursor = document.clampPosition(detailPosition{line: target.renderedLine, column: 0})
+		program.detailState.viewState.preferredColumn = 0
+		program.detailState.viewState.sync(document, viewportHeight)
 	}); actualErr != nil {
 		return actualErr
 	}
@@ -77,14 +77,14 @@ func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction revie
 }
 
 func (program *Program) currentReviewCommentPosition(detailView *gocui.View) (int, int) {
-	currentFileTreeRow := program.reviewSession.selectedFileTreeRow
+	currentFileTreeRow := program.navigationState.reviewSession.selectedFileTreeRow
 	if !program.reviewModeActive() {
 		return currentFileTreeRow, 0
 	}
 
 	document := program.currentDetailDocument(detailView)
 	program.syncDetailViewState(document, viewPageSize(detailView))
-	currentRowIndex := document.rowIndexForPosition(program.detailViewState.cursor)
+	currentRowIndex := document.rowIndexForPosition(program.detailState.viewState.cursor)
 	if currentRowIndex < 0 || currentRowIndex >= len(document.rows) {
 		return currentFileTreeRow, 0
 	}
@@ -129,7 +129,7 @@ func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []
 		fileTreeRows[row.FileIndex] = row.VisibleRowIndex
 	}
 
-	width := program.detailWrapWidth
+	width := program.detailState.wrapWidth
 	if detailView != nil && detailView.InnerWidth() > 0 {
 		width = max(detailView.InnerWidth(), 1)
 	}

@@ -322,11 +322,11 @@ func then_reviewModeDetailCursorLineContains(t *testing.T, gui *gocui.Gui, subje
 	then_noError(t, actualErr)
 	document := subject.currentDetailDocument(detailView)
 	subject.syncDetailViewState(document, detailView.InnerHeight())
-	if subject.detailViewState.cursor.line < 0 || subject.detailViewState.cursor.line >= len(document.lines) {
-		t.Fatalf("expected detail cursor line within bounds, actual %d", subject.detailViewState.cursor.line)
+	if subject.detailState.viewState.cursor.line < 0 || subject.detailState.viewState.cursor.line >= len(document.lines) {
+		t.Fatalf("expected detail cursor line within bounds, actual %d", subject.detailState.viewState.cursor.line)
 	}
 
-	actualLine := string(document.lines[subject.detailViewState.cursor.line])
+	actualLine := string(document.lines[subject.detailState.viewState.cursor.line])
 	if !strings.Contains(actualLine, expectedSegment) {
 		t.Fatalf("expected detail cursor line to contain %q, actual %q", expectedSegment, actualLine)
 	}

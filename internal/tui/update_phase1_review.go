@@ -10,9 +10,9 @@ func (program *Program) applyMoveReviewFile(message MsgMoveReviewFile) {
 		return
 	}
 
-	originalRow := program.reviewSession.selectedFileTreeRow
-	program.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.reviewSession.selectedFileTreeRow, selectableRows, message.Delta)
-	if program.reviewSession.selectedFileTreeRow == originalRow {
+	originalRow := program.navigationState.reviewSession.selectedFileTreeRow
+	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, message.Delta)
+	if program.navigationState.reviewSession.selectedFileTreeRow == originalRow {
 		return
 	}
 }
@@ -29,12 +29,12 @@ func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) {
 		return
 	}
 
-	program.detailViewState.clearPendingPrefix()
-	program.reviewSession.selectedFileTreeRow = target.fileTreeRow
+	program.detailState.viewState.clearPendingPrefix()
+	program.navigationState.reviewSession.selectedFileTreeRow = target.fileTreeRow
 	_ = program.mutateDetailViewStateWithoutRefresh(program.gui, detailView, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.cursor = document.clampPosition(detailPosition{line: target.renderedLine, column: 0})
-		program.detailViewState.preferredColumn = 0
-		program.detailViewState.sync(document, viewportHeight)
+		program.detailState.viewState.cursor = document.clampPosition(detailPosition{line: target.renderedLine, column: 0})
+		program.detailState.viewState.preferredColumn = 0
+		program.detailState.viewState.sync(document, viewportHeight)
 	})
 }
 
@@ -47,7 +47,7 @@ func (program *Program) applyToggleReviewTreeRowVisibility() {
 	if !ok || len(visibleTree.Rows) == 0 {
 		return
 	}
-	selectedRowIndex := clampIndex(program.reviewSession.selectedFileTreeRow, len(visibleTree.Rows))
+	selectedRowIndex := clampIndex(program.navigationState.reviewSession.selectedFileTreeRow, len(visibleTree.Rows))
 	selectedRow := visibleTree.Rows[selectedRowIndex]
 
 	rawTree, _, rawTreeOK := program.reviewSessionRawTree()
@@ -58,9 +58,9 @@ func (program *Program) applyToggleReviewTreeRowVisibility() {
 	if !ok {
 		return
 	}
-	program.setReviewTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.reviewSession.collapsedTreeRowIDs))
-	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
-	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID)
+	program.setReviewTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.navigationState.reviewSession.collapsedTreeRowIDs))
+	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.navigationState.reviewSession.collapsedTreeRowIDs)
+	program.navigationState.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID)
 }
 
 func (program *Program) applySetAllReviewTreeFolds(message MsgSetAllReviewTreeFolds) {
@@ -77,13 +77,13 @@ func (program *Program) applySetAllReviewTreeFolds(message MsgSetAllReviewTreeFo
 	if !visibleTreeOK || len(currentVisibleTree.Rows) == 0 {
 		return
 	}
-	selectedRowID := currentVisibleTree.Rows[clampIndex(program.reviewSession.selectedFileTreeRow, len(currentVisibleTree.Rows))].ID
+	selectedRowID := currentVisibleTree.Rows[clampIndex(program.navigationState.reviewSession.selectedFileTreeRow, len(currentVisibleTree.Rows))].ID
 	if !program.setAllReviewTreeRowsCollapsed(rawTree, message.Collapsed) {
 		return
 	}
 
-	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
-	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID)
+	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.navigationState.reviewSession.collapsedTreeRowIDs)
+	program.navigationState.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID)
 }
 
 func (program *Program) applyToggleInlineConversationVisibility(message MsgToggleInlineConversationVisibility) {

@@ -7,7 +7,6 @@ import (
 
 	clip "github.com/l-lin/lazygh/internal/clipboard"
 	appconfig "github.com/l-lin/lazygh/internal/config"
-	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/story"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -52,46 +51,25 @@ type Program struct {
 	*statusStore
 	*optimisticMutationCoordinator
 	*imageLoadCoordinator
-	loadingSpinnerFrameIndex              int
-	detailWrapWidth                       int
-	activeDetailTab                       DetailTab
-	lastDetailIdentity                    string
-	detailViewState                       detailViewState
-	clipboardReader                       ClipboardReader
-	clipboardWriter                       ClipboardWriter
-	helpVisible                           bool
-	searchWidget                          searchWidgetState
-	actionsPopupWidget                    actionsPopupWidgetState
-	transientErrorPopup                   transientErrorPopupState
-	errorMessages                         []string
-	reviewSession                         reviewSessionState
-	modalEditor                           *modalEditorState
-	externalEditor                        ExternalEditor
-	linkOpener                            LinkOpener
-	markdownRenderer                      MarkdownRenderer
-	storyGenerator                        reviewStoryGenerator
-	asyncRunner                           asyncRunner
-	uiUpdater                             uiUpdater
-	gui                                   *gocui.Gui
-	keymapOverrides                       appconfig.KeymapOverrides
-	pullRequestSearches                   []appconfig.PullRequestSearch
-	storyReviewConfig                     story.Config
-	themePresetStore                      ThemePresetStore
-	openedPullRequestSummary              *githubdomain.PullRequest
-	openedPullRequestTab                  PullRequestTab
-	pendingSelectionKeySequence           keySequenceState
-	pendingListViewportPlacements         map[string]viewportPlacement
-	registeredKeybindingFingerprint       string
-	now                                   func() time.Time
-	after                                 func(time.Duration) <-chan time.Time
-	yankHighlightDuration                 time.Duration
-	transientErrorPopupDuration           time.Duration
-	manualPullRequestListRefreshPending   map[PullRequestTab]bool
-	manualPullRequestDetailRefreshPending map[string]bool
-	manualPullRequestDiffRefreshPending   map[string]bool
-	manualNotificationRefreshPending      bool
-	manualRefreshFeedback                 *manualRefreshFeedbackState
-	appStarted                            bool
+	startupState       startupStateModel
+	detailState        detailStateModel
+	clipboardReader    ClipboardReader
+	clipboardWriter    ClipboardWriter
+	overlayState       overlayStateModel
+	searchWidget       searchWidgetState
+	actionsPopupWidget actionsPopupWidgetState
+	navigationState    navigationStateModel
+	externalEditor     ExternalEditor
+	linkOpener         LinkOpener
+	markdownRenderer   MarkdownRenderer
+	storyGenerator     reviewStoryGenerator
+	asyncRunner        asyncRunner
+	uiUpdater          uiUpdater
+	gui                *gocui.Gui
+	runtimeConfig      runtimeConfigState
+	themePresetStore   ThemePresetStore
+	timingState        timingStateModel
+	manualRefreshState manualRefreshStateModel
 }
 
 func NewProgram() *Program {
@@ -123,49 +101,44 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	imageCoordinator := newImageLoadCoordinator(imageStore, &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}})
 
 	return &Program{
-		model:                                 model,
-		sessionQueries:                        resolvedDeps.SessionQueries,
-		pullRequestListQueries:                resolvedDeps.PullRequestList,
-		notificationQueries:                   resolvedDeps.NotificationQueries,
-		detailQueries:                         resolvedDeps.DetailQueries,
-		pullRequestMutations:                  resolvedDeps.PullRequestMutations,
-		reviewMutations:                       resolvedDeps.ReviewMutations,
-		notificationMutations:                 resolvedDeps.NotificationMutations,
-		reactionMutations:                     resolvedDeps.ReactionMutations,
-		buildQueries:                          resolvedDeps.BuildQueries,
-		markdownHTMLRenderer:                  resolvedDeps.MarkdownHTMLRenderer,
-		authTokenProvider:                     resolvedDeps.AuthTokenProvider,
-		sessionStore:                          sessionState,
-		persistentCacheStore:                  persistence,
-		pullRequestListStore:                  newPullRequestListStore(persistence),
-		notificationStore:                     newNotificationStore(persistence),
-		detailStore:                           detailState,
-		reviewStore:                           reviewState,
-		buildStore:                            newBuildStore(),
-		statusStore:                           newStatusStore(),
-		optimisticMutationCoordinator:         newOptimisticMutationCoordinator(),
-		imageLoadCoordinator:                  imageCoordinator,
-		externalEditor:                        resolvedDeps.ExternalEditor,
-		linkOpener:                            resolvedDeps.LinkOpener,
-		markdownRenderer:                      glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
-		storyGenerator:                        commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
-		themePresetStore:                      resolvedDeps.ThemePresetStore,
-		asyncRunner:                           goroutineAsyncRunner{},
-		uiUpdater:                             queuedUIUpdater{},
-		clipboardReader:                       resolvedDeps.ClipboardReader,
-		clipboardWriter:                       resolvedDeps.ClipboardWriter,
-		detailViewState:                       newDetailViewState(),
-		detailWrapWidth:                       defaultDetailWrapWidth,
-		pullRequestSearches:                   appconfig.DefaultPullRequestSearches(),
-		actionsPopupWidget:                    actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
-		pendingListViewportPlacements:         map[string]viewportPlacement{},
-		now:                                   time.Now,
-		after:                                 time.After,
-		yankHighlightDuration:                 defaultYankHighlightDuration,
-		transientErrorPopupDuration:           defaultTransientErrorPopupDuration,
-		manualPullRequestListRefreshPending:   map[PullRequestTab]bool{},
-		manualPullRequestDetailRefreshPending: map[string]bool{},
-		manualPullRequestDiffRefreshPending:   map[string]bool{},
+		model:                         model,
+		sessionQueries:                resolvedDeps.SessionQueries,
+		pullRequestListQueries:        resolvedDeps.PullRequestList,
+		notificationQueries:           resolvedDeps.NotificationQueries,
+		detailQueries:                 resolvedDeps.DetailQueries,
+		pullRequestMutations:          resolvedDeps.PullRequestMutations,
+		reviewMutations:               resolvedDeps.ReviewMutations,
+		notificationMutations:         resolvedDeps.NotificationMutations,
+		reactionMutations:             resolvedDeps.ReactionMutations,
+		buildQueries:                  resolvedDeps.BuildQueries,
+		markdownHTMLRenderer:          resolvedDeps.MarkdownHTMLRenderer,
+		authTokenProvider:             resolvedDeps.AuthTokenProvider,
+		sessionStore:                  sessionState,
+		persistentCacheStore:          persistence,
+		pullRequestListStore:          newPullRequestListStore(persistence),
+		notificationStore:             newNotificationStore(persistence),
+		detailStore:                   detailState,
+		reviewStore:                   reviewState,
+		buildStore:                    newBuildStore(),
+		statusStore:                   newStatusStore(),
+		optimisticMutationCoordinator: newOptimisticMutationCoordinator(),
+		imageLoadCoordinator:          imageCoordinator,
+		externalEditor:                resolvedDeps.ExternalEditor,
+		linkOpener:                    resolvedDeps.LinkOpener,
+		markdownRenderer:              glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
+		storyGenerator:                commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
+		themePresetStore:              resolvedDeps.ThemePresetStore,
+		asyncRunner:                   goroutineAsyncRunner{},
+		uiUpdater:                     queuedUIUpdater{},
+		clipboardReader:               resolvedDeps.ClipboardReader,
+		clipboardWriter:               resolvedDeps.ClipboardWriter,
+		startupState:                  startupStateModel{},
+		detailState:                   detailStateModel{viewState: newDetailViewState(), wrapWidth: defaultDetailWrapWidth},
+		actionsPopupWidget:            actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
+		navigationState:               navigationStateModel{pendingListViewportPlacements: map[string]viewportPlacement{}},
+		runtimeConfig:                 runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},
+		timingState:                   timingStateModel{now: time.Now, after: time.After, yankHighlightDuration: defaultYankHighlightDuration, transientErrorPopupDuration: defaultTransientErrorPopupDuration},
+		manualRefreshState:            manualRefreshStateModel{pullRequestListPending: map[PullRequestTab]bool{}, pullRequestDetailPending: map[string]bool{}, pullRequestDiffPending: map[string]bool{}},
 	}
 }
 
@@ -226,7 +199,7 @@ func (program *Program) configureGUI(gui *gocui.Gui) {
 	gui.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	gui.SelFrameColor = gocui.GetColor(theme.ActiveBorderHex)
 	program.gui = gui
-	if !program.appStarted {
+	if !program.startupState.appStarted {
 		_ = program.dispatch(gui, MsgAppStarted{})
 	}
 }

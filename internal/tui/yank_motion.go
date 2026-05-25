@@ -47,14 +47,14 @@ func (state *detailViewState) armPendingYank() {
 }
 
 func (program *Program) startDetailYank(gui *gocui.Gui, view *gocui.View) error {
-	if program.model.Focus() == FocusDetailView && program.detailViewState.mode.isVisual() {
+	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
 		return program.copySelectedDetailText(gui, view)
 	}
-	if program.detailViewState.hasPendingYank() {
+	if program.detailState.viewState.hasPendingYank() {
 		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(detailDocument, int) {})
 	}
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.armPendingYank()
+		program.detailState.viewState.armPendingYank()
 	})
 }
 
@@ -103,12 +103,12 @@ func (program *Program) mutateDetailViewStateForYankMotion(gui *gocui.Gui, view 
 	viewportHeight := viewPageSize(actualView)
 	document := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(document, viewportHeight)
-	snapshot := newDetailYankSnapshot(program.detailViewState)
-	pendingYank := program.detailViewState.hasPendingYank()
+	snapshot := newDetailYankSnapshot(program.detailState.viewState)
+	pendingYank := program.detailState.viewState.hasPendingYank()
 	mutate(document, viewportHeight)
 	program.syncDetailViewState(document, viewportHeight)
 	if pendingYank {
-		program.finishPendingYank(document, &program.detailViewState, snapshot, selectionKind)
+		program.finishPendingYank(document, &program.detailState.viewState, snapshot, selectionKind)
 	}
 	program.syncActionsPopupSearch()
 	return program.refreshShell(gui)

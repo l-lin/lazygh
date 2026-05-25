@@ -111,7 +111,7 @@ func TestPullRequestCommentComposer_GivenOpenComposer_WhenSubmittingWithAltEnter
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
 	given_commentComposer(t, gui, subject)
-	subject.modalEditor.editor.SetText("Ship it")
+	subject.overlayState.modalEditor.editor.SetText("Ship it")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -137,7 +137,7 @@ func TestPullRequestCommentComposer_GivenOpenComposer_WhenSubmittingWithControlS
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
 	given_commentComposer(t, gui, subject)
-	subject.modalEditor.editor.SetText("Ship it faster")
+	subject.overlayState.modalEditor.editor.SetText("Ship it faster")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlS)
 	actualErr = actualHandler(gui, nil)
@@ -162,7 +162,7 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 	then_noError(t, actualErr)
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Ship it")
+	subject.overlayState.modalEditor.editor.SetText("Ship it")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -191,7 +191,7 @@ func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	then_noError(t, actualErr)
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Line one\nLine two")
+	subject.overlayState.modalEditor.editor.SetText("Line one\nLine two")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -233,7 +233,7 @@ func TestPullRequestCommentComposer_GivenCommentsTabSubmit_WhenPostingComment_Th
 	subject.asyncRunner = asyncRunner
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Optimistic comment")
+	subject.overlayState.modalEditor.editor.SetText("Optimistic comment")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -279,7 +279,7 @@ func TestPullRequestCommentComposer_GivenChangesTabSubmit_WhenPostingComment_The
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
@@ -287,7 +287,7 @@ func TestPullRequestCommentComposer_GivenChangesTabSubmit_WhenPostingComment_The
 	subject.asyncRunner = asyncRunner
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Changes tab comment")
+	subject.overlayState.modalEditor.editor.SetText("Changes tab comment")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -328,7 +328,7 @@ func TestPullRequestCommentComposer_GivenPullRequestDetail_WhenSubmitting_ThenIt
 	then_noError(t, actualErr)
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Ship it from detail")
+	subject.overlayState.modalEditor.editor.SetText("Ship it from detail")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)

@@ -66,29 +66,29 @@ func TestUpdate_GivenMsgLoadingSpinnerTick_WhenApplying_ThenItOnlyAdvancesWhileL
 
 	Update(subject, MsgLoadingSpinnerTick{})
 
-	if actual := subject.loadingSpinnerFrameIndex; actual != 1 {
+	if actual := subject.startupState.loadingSpinnerFrameIndex; actual != 1 {
 		t.Fatalf("expected loading spinner frame index %d after an active tick, actual %d", 1, actual)
 	}
 
 	subject.notificationsLoading = false
 	Update(subject, MsgLoadingSpinnerTick{})
 
-	if actual := subject.loadingSpinnerFrameIndex; actual != 1 {
+	if actual := subject.startupState.loadingSpinnerFrameIndex; actual != 1 {
 		t.Fatalf("expected loading spinner frame index %d when no work remains, actual %d", 1, actual)
 	}
 }
 
 func TestUpdate_GivenMsgTransientErrorPopupExpired_WhenApplying_ThenItClearsOnlyTheMatchingPopupGeneration(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
-	subject.transientErrorPopup = transientErrorPopupState{message: "boom", generation: 7, expiresAt: time.Now().Add(-time.Second)}
+	subject.overlayState.transientErrorPopup = transientErrorPopupState{message: "boom", generation: 7, expiresAt: time.Now().Add(-time.Second)}
 
 	Update(subject, MsgTransientErrorPopupExpired{Generation: 6})
-	if actual := subject.transientErrorPopup.message; actual != "boom" {
+	if actual := subject.overlayState.transientErrorPopup.message; actual != "boom" {
 		t.Fatalf("expected popup message %q to stay visible for a stale expiry result, actual %q", "boom", actual)
 	}
 
 	Update(subject, MsgTransientErrorPopupExpired{Generation: 7})
 	if subject.transientErrorPopupVisible() {
-		t.Fatalf("expected the matching transient popup generation to be cleared, actual %+v", subject.transientErrorPopup)
+		t.Fatalf("expected the matching transient popup generation to be cleared, actual %+v", subject.overlayState.transientErrorPopup)
 	}
 }

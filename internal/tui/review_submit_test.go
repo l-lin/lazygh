@@ -73,7 +73,7 @@ func TestActionsPopup_GivenReviewModeSubmitCommentActionSelected_WhenSubmitting_
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Looks good overall")
+	subject.overlayState.modalEditor.editor.SetText("Looks good overall")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -87,7 +87,7 @@ func TestActionsPopup_GivenReviewModeSubmitCommentActionSelected_WhenSubmitting_
 	if !reflect.DeepEqual(loader.submitReviewBodies, []string{"Looks good overall"}) {
 		t.Fatalf("expected submitted review bodies %v, actual %v", []string{"Looks good overall"}, loader.submitReviewBodies)
 	}
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to be inactive after submit")
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
@@ -204,17 +204,17 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Needs tests")
+	subject.overlayState.modalEditor.editor.SetText("Needs tests")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay active after the submit error")
 	}
-	if subject.reviewSession.pendingReviewID != "PRR_pending" {
-		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.reviewSession.pendingReviewID)
+	if subject.navigationState.reviewSession.pendingReviewID != "PRR_pending" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.navigationState.reviewSession.pendingReviewID)
 	}
 	if !reflect.DeepEqual(loader.submitReviewIDs, []string{"PRR_pending"}) {
 		t.Fatalf("expected submitted review ids %v, actual %v", []string{"PRR_pending"}, loader.submitReviewIDs)

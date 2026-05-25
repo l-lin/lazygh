@@ -25,7 +25,7 @@ func (program *Program) reviewDiffRenderKey(file reviewDiffFile, width int) revi
 	return reviewDiffRenderCacheKey{
 		identity:           program.reviewDiffRenderIdentity(file),
 		width:              width,
-		collapsedSignature: reviewDiffCollapsedStateSignature(file, program.reviewSession.collapsedThreadIDs),
+		collapsedSignature: reviewDiffCollapsedStateSignature(file, program.navigationState.reviewSession.collapsedThreadIDs),
 	}
 }
 
@@ -37,9 +37,9 @@ func (program *Program) reviewDiffRenderIdentity(file reviewDiffFile) string {
 
 	return fmt.Sprintf(
 		"%s#%d:%s:%s",
-		pullRequestRepositoryName(program.reviewSession.summary.Repository),
-		program.reviewSession.summary.Number,
-		strings.TrimSpace(program.reviewSession.pendingReviewID),
+		pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
+		program.navigationState.reviewSession.summary.Number,
+		strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID),
 		path,
 	)
 }

@@ -165,7 +165,7 @@ func (renderer OverlayRenderer) Renderer(viewName string) (ViewRenderer, bool) {
 func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) screenViewFrame {
 	switch viewName {
 	case viewHelpName:
-		if !renderer.program.helpVisible {
+		if !renderer.program.overlayState.helpVisible {
 			return screenViewFrame{ViewName: viewName}
 		}
 		innerWidth, innerHeight := renderer.program.helpViewSize(maxX, maxY)
@@ -178,8 +178,8 @@ func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) scree
 		}
 		totalWidth := boundedHalfWidth(maxX, modalEditorMinWidth, modalEditorFallbackWidth)
 		totalHeight := modalEditorTotalHeight
-		if renderer.program.modalEditor != nil {
-			totalHeight = renderer.program.modalEditor.Height()
+		if renderer.program.overlayState.modalEditor != nil {
+			totalHeight = renderer.program.overlayState.modalEditor.Height()
 		}
 		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
 	case viewPullRequestBuildInfoName:

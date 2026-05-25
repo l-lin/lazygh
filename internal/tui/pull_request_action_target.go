@@ -16,7 +16,7 @@ type pullRequestActionTarget struct {
 func (program *Program) currentPullRequestSummary() (githubdomain.PullRequest, bool) {
 	actionContext := program.actionContext()
 	if actionContext.IsReviewContext() {
-		summary, ok := toDomainPullRequestSummary(program.reviewSession.summary)
+		summary, ok := toDomainPullRequestSummary(program.navigationState.reviewSession.summary)
 		if !ok {
 			return githubdomain.PullRequest{}, false
 		}

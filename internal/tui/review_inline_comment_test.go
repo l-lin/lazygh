@@ -52,11 +52,11 @@ func TestReviewMode_GivenTheDetailCursorOnADiffLine_WhenOpeningTheInlineCommentC
 	if actual := y1 - y0 + 1; actual != reviewInlineCommentModalHeight {
 		t.Fatalf("expected inline comment composer height %d, actual %d", reviewInlineCommentModalHeight, actual)
 	}
-	if actual := subject.modalEditor.Text(); actual != "" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "" {
 		t.Fatalf("expected an empty inline comment draft without a visual selection, actual %q", actual)
 	}
 
-	subject.modalEditor.editor.SetText("Draft inline comment")
+	subject.overlayState.modalEditor.editor.SetText("Draft inline comment")
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyCtrlG)
 	actualErr = actualHandler(gui, composerView)
 	then_noError(t, actualErr)
@@ -101,7 +101,7 @@ func TestReviewMode_GivenALinewiseSelectionAcrossAddedJavaLines_WhenOpeningTheIn
 		"return format(version);",
 		"```",
 	}, "\n")
-	if actual := subject.modalEditor.Text(); actual != expected {
+	if actual := subject.overlayState.modalEditor.Text(); actual != expected {
 		t.Fatalf("expected inline comment draft %q, actual %q", expected, actual)
 	}
 }
@@ -131,7 +131,7 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Please add context")
+	subject.overlayState.modalEditor.editor.SetText("Please add context")
 
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -188,14 +188,14 @@ func TestReviewMode_GivenALinewiseSelection_WhenSubmittingAnInlineComment_ThenIt
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
-	if subject.detailViewState.mode != detailLineVisualMode {
-		t.Fatalf("expected mode %v before submission, actual %v", detailLineVisualMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailLineVisualMode {
+		t.Fatalf("expected mode %v before submission, actual %v", detailLineVisualMode, subject.detailState.viewState.mode)
 	}
-	if subject.detailViewState.visualAnchor == subject.detailViewState.cursor {
-		t.Fatalf("expected a linewise selection before submission, actual anchor %+v cursor %+v", subject.detailViewState.visualAnchor, subject.detailViewState.cursor)
+	if subject.detailState.viewState.visualAnchor == subject.detailState.viewState.cursor {
+		t.Fatalf("expected a linewise selection before submission, actual anchor %+v cursor %+v", subject.detailState.viewState.visualAnchor, subject.detailState.viewState.cursor)
 	}
 
-	subject.modalEditor.editor.SetText("Please add context")
+	subject.overlayState.modalEditor.editor.SetText("Please add context")
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -205,11 +205,11 @@ func TestReviewMode_GivenALinewiseSelection_WhenSubmittingAnInlineComment_ThenIt
 	if !reflect.DeepEqual(loader.reviewThreadTargets, expectedTargets) {
 		t.Fatalf("expected review thread targets %+v, actual %+v", expectedTargets, loader.reviewThreadTargets)
 	}
-	if subject.detailViewState.mode != detailNormalMode {
-		t.Fatalf("expected mode %v after submission, actual %v", detailNormalMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after submission, actual %v", detailNormalMode, subject.detailState.viewState.mode)
 	}
-	if subject.detailViewState.visualAnchor != subject.detailViewState.cursor {
-		t.Fatalf("expected visual anchor %+v to match cursor %+v after submission", subject.detailViewState.visualAnchor, subject.detailViewState.cursor)
+	if subject.detailState.viewState.visualAnchor != subject.detailState.viewState.cursor {
+		t.Fatalf("expected visual anchor %+v to match cursor %+v after submission", subject.detailState.viewState.visualAnchor, subject.detailState.viewState.cursor)
 	}
 
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
@@ -247,7 +247,7 @@ func TestReviewMode_GivenInlineCommentSubmit_WhenPostingOptimistically_ThenItKee
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
-	subject.modalEditor.editor.SetText("Optimistic inline comment")
+	subject.overlayState.modalEditor.editor.SetText("Optimistic inline comment")
 
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -338,7 +338,7 @@ func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeep
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Draft inline comment")
+	subject.overlayState.modalEditor.editor.SetText("Draft inline comment")
 	subject.asyncRunner = &capturingAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 
@@ -366,9 +366,9 @@ func given_reviewModeDetailCursorOnLineContaining(t *testing.T, gui *gocui.Gui, 
 	document := subject.currentDetailDocument(detailView)
 	subject.syncDetailViewState(document, detailView.InnerHeight())
 	lineIndex, _ := given_detailDocumentLineContaining(t, document, segment)
-	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: 0}
-	subject.detailViewState.preferredColumn = 0
-	subject.detailViewState.sync(document, detailView.InnerHeight())
+	subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: 0}
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.sync(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
 }
@@ -382,11 +382,11 @@ func given_reviewModeLinewiseSelectionBetweenLinesContaining(t *testing.T, gui *
 	subject.syncDetailViewState(document, detailView.InnerHeight())
 	startLineIndex, _ := given_detailDocumentLineContaining(t, document, startSegment)
 	endLineIndex, _ := given_detailDocumentLineContaining(t, document, endSegment)
-	subject.detailViewState.mode = detailLineVisualMode
-	subject.detailViewState.visualAnchor = detailPosition{line: startLineIndex, column: 0}
-	subject.detailViewState.cursor = detailPosition{line: endLineIndex, column: 0}
-	subject.detailViewState.preferredColumn = 0
-	subject.detailViewState.sync(document, detailView.InnerHeight())
+	subject.detailState.viewState.mode = detailLineVisualMode
+	subject.detailState.viewState.visualAnchor = detailPosition{line: startLineIndex, column: 0}
+	subject.detailState.viewState.cursor = detailPosition{line: endLineIndex, column: 0}
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.sync(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
 }

@@ -37,7 +37,7 @@ func TestOpenReviewByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_ThenIt
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
 
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to start before the first layout")
 	}
 	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/rocket#77"}) {

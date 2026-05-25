@@ -33,11 +33,11 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 	program.setPullRequestsLoadStarted(MyPullRequestsTab, true)
 	program.setPullRequestsLoading(MyPullRequestsTab, false)
 	program.setPullRequestsCount(MyPullRequestsTab, 1, true)
-	program.reviewSession = reviewSessionState{}
+	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
-	program.activeDetailTab = DescriptionDetailTab
-	program.detailViewState.reset()
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.activeTab = DescriptionDetailTab
+	program.detailState.viewState.reset()
+	program.detailState.viewState.clearPendingPrefix()
 	program.clearPendingSelectionPrefix()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.showOpenedPullRequestInDetailFullscreen()
@@ -50,15 +50,15 @@ func (program *Program) showOpenedPullRequestInDetailFullscreen() {
 
 func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {
 	summaryCopy := summary
-	program.openedPullRequestSummary = &summaryCopy
-	program.openedPullRequestTab = tab
+	program.navigationState.openedPullRequestSummary = &summaryCopy
+	program.navigationState.openedPullRequestTab = tab
 }
 
 func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (githubdomain.PullRequest, bool) {
-	if program.openedPullRequestSummary == nil || program.openedPullRequestTab != tab {
+	if program.navigationState.openedPullRequestSummary == nil || program.navigationState.openedPullRequestTab != tab {
 		return githubdomain.PullRequest{}, false
 	}
-	return *program.openedPullRequestSummary, true
+	return *program.navigationState.openedPullRequestSummary, true
 }
 
 func (program *Program) pullRequestsWithOpenedPullRequestSummary(tab PullRequestTab, pullRequests []githubdomain.PullRequest) []githubdomain.PullRequest {

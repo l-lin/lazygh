@@ -64,7 +64,7 @@ func (program *Program) clearCachedData() error {
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestSearchState()
-	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.pullRequestSearches))
+	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
 	program.model.SetNotifications([]Item{notificationsLoadingItem()})
 	return nil
 }

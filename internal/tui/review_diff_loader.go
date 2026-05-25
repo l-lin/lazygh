@@ -36,13 +36,13 @@ func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
 
 func (program *Program) selectedPullRequestSummaryForDiff() (githubdomain.PullRequest, bool) {
 	if program.reviewModeActive() {
-		summary := program.reviewSession.summary
+		summary := program.navigationState.reviewSession.summary
 		if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 			return githubdomain.PullRequest{}, false
 		}
 		return summary, true
 	}
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != ChangesDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() || program.detailState.activeTab != ChangesDetailTab {
 		return githubdomain.PullRequest{}, false
 	}
 

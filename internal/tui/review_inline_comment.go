@@ -54,9 +54,9 @@ func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, sel
 	}, reviewInlineCommentModalHeight); err != nil {
 		return err
 	}
-	if program.modalEditor != nil {
-		program.modalEditor.afterSubmit = func(*gocui.Gui) {
-			program.detailViewState.exitVisualMode()
+	if program.overlayState.modalEditor != nil {
+		program.overlayState.modalEditor.afterSubmit = func(*gocui.Gui) {
+			program.detailState.viewState.exitVisualMode()
 		}
 	}
 	return nil
@@ -107,9 +107,9 @@ func (program *Program) selectedReviewInlineCommentSelection(gui *gocui.Gui, vie
 		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	pendingReviewID := strings.TrimSpace(program.reviewSession.pendingReviewID)
-	if repository == "" || program.reviewSession.summary.Number <= 0 || pendingReviewID == "" {
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+	pendingReviewID := strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID)
+	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 || pendingReviewID == "" {
 		return pullRequestInlineCommentSelection{}, errors.New("missing pull request review context")
 	}
 
@@ -120,7 +120,7 @@ func (program *Program) selectedReviewInlineCommentSelection(gui *gocui.Gui, vie
 	}
 
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
-	return pullRequestInlineCommentSelectionFromRenderedRows(repository, program.reviewSession.summary.Number, pendingReviewID, false, renderedRows, detailDocument, program.detailViewState)
+	return pullRequestInlineCommentSelectionFromRenderedRows(repository, program.navigationState.reviewSession.summary.Number, pendingReviewID, false, renderedRows, detailDocument, program.detailState.viewState)
 }
 
 func (program *Program) selectedBrowserChangesInlineCommentSelection(gui *gocui.Gui, view *gocui.View) (pullRequestInlineCommentSelection, error) {
@@ -148,7 +148,7 @@ func (program *Program) selectedBrowserChangesInlineCommentSelection(gui *gocui.
 	}
 	detailDocument := program.inlineCommentDetailDocument(gui, view)
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	return pullRequestInlineCommentSelectionFromRenderedRows(repository, summary.Number, pendingReviewID, true, renderedRows, detailDocument, program.detailViewState)
+	return pullRequestInlineCommentSelectionFromRenderedRows(repository, summary.Number, pendingReviewID, true, renderedRows, detailDocument, program.detailState.viewState)
 }
 
 func (program *Program) inlineCommentDetailDocument(gui *gocui.Gui, view *gocui.View) detailDocument {
@@ -230,5 +230,5 @@ func (program *Program) pendingReviewIDForInlineComment(target pullRequestInline
 }
 
 func (program *Program) browserChangesInlineCommentShortcutActive() bool {
-	return program.shouldShowPullRequestDetailTabs() && program.activeDetailTab == ChangesDetailTab
+	return program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == ChangesDetailTab
 }

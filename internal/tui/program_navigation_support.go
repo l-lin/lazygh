@@ -44,13 +44,13 @@ func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideC
 }
 
 func (program *Program) clearPendingSelectionPrefix() {
-	program.pendingSelectionKeySequence.clear()
+	program.navigationState.pendingSelectionKeySequence.clear()
 }
 
 func (program *Program) applyProjectedScreenState(state ScreenState) {
 	program.model.ApplyProjectedScreenState(state)
 	if mainView, ok := state.ViewByNumber(mainPanelViewNumber); ok && len(mainView.Tabs) > 0 {
-		program.activeDetailTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
+		program.detailState.activeTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
 	}
 }
 
@@ -129,11 +129,11 @@ func (program *Program) refreshDetailView(gui *gocui.Gui) error {
 }
 
 func (program *Program) sideViewCyclingBlocked() bool {
-	return program.model.PaneLayoutSize() == PaneLayoutFullscreen || program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible()
+	return program.model.PaneLayoutSize() == PaneLayoutFullscreen || program.overlayState.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible()
 }
 
 func (program *Program) mainPaneActionBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildRunPopupVisible()
+	return program.overlayState.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildRunPopupVisible()
 }
 
 func (program *Program) detailTransitionBlocked() bool {

@@ -16,7 +16,7 @@ func (program *Program) syncDetailViewRenderState(view *gocui.View) {
 		return
 	}
 
-	program.detailWrapWidth = effectiveMarkdownWidth(view.InnerWidth())
+	program.detailState.wrapWidth = effectiveMarkdownWidth(view.InnerWidth())
 	detailDocument := program.currentDetailDocument(view)
 	program.syncDetailViewState(detailDocument, view.InnerHeight())
 }

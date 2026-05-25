@@ -55,7 +55,7 @@ func TestViewZeroScroll_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItScroll
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_largeReviewSessionPullRequestDiff()), fileTeamOwnersAttempted: true}
 	subject.startReviewSession(githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}, "PRR_scroll")
 	subject.clampReviewSessionSelection()
-	expectedSelectedFileTreeRow := subject.reviewSession.selectedFileTreeRow
+	expectedSelectedFileTreeRow := subject.navigationState.reviewSession.selectedFileTreeRow
 	gui := given_headlessGuiWithSize(t, 120, 12)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -76,8 +76,8 @@ func TestViewZeroScroll_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItScroll
 	if actualOriginY != initialOriginY+1 {
 		t.Fatalf("expected detail origin y %d after Shift-j in review mode, actual %d", initialOriginY+1, actualOriginY)
 	}
-	if subject.reviewSession.selectedFileTreeRow != expectedSelectedFileTreeRow {
-		t.Fatalf("expected selected review file tree row %d, actual %d", expectedSelectedFileTreeRow, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != expectedSelectedFileTreeRow {
+		t.Fatalf("expected selected review file tree row %d, actual %d", expectedSelectedFileTreeRow, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 
 	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')

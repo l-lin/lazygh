@@ -10,7 +10,7 @@ import (
 )
 
 func (program *Program) reviewSessionMetadataContent() string {
-	reference := pullRequestReference(program.reviewSession.summary, githubdomain.PullRequestDetail{})
+	reference := pullRequestReference(program.navigationState.reviewSession.summary, githubdomain.PullRequestDetail{})
 	return valueOrDash(strings.TrimSpace(reference))
 }
 
@@ -36,20 +36,20 @@ func (program *Program) reviewSessionDetailContent() string {
 	if !ok {
 		return program.reviewSessionNoDiffDetail()
 	}
-	return renderReviewDiffFileWithCollapsedThreadsForViewer(selectedFile, program.markdownRenderer, program.detailWrapWidth, program.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
+	return renderReviewDiffFileWithCollapsedThreadsForViewer(selectedFile, program.markdownRenderer, program.detailState.wrapWidth, program.navigationState.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
 }
 
 func (program *Program) reviewSessionDescriptionContent() string {
-	summary := program.reviewSession.summary
+	summary := program.navigationState.reviewSession.summary
 	if result, ok := program.pullRequestDetailForSummary(summary); ok {
 		if result.err != nil {
 			return renderPullRequestDetailError(summary, result.err)
 		}
 
 		header := renderPullRequestBrowserHeader(summary, result.detail)
-		overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailWrapWidth)
-		content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
-		return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
+		overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailState.wrapWidth)
+		content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
+		return renderPullRequestBrowserDetailContent(header, overview, content, program.detailState.wrapWidth)
 	}
 
 	return renderPullRequestDetailLoading(summary, program.loadingSpinnerFrame())
@@ -65,7 +65,7 @@ func (program *Program) reviewSessionStoryChapterContent() string {
 	if strings.TrimSpace(chapter.Narrative) != "" {
 		sections = append(sections, strings.TrimSpace(chapter.Narrative))
 	}
-	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), program.markdownRenderer, program.detailWrapWidth, "No chapter narrative is available.")
+	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), program.markdownRenderer, program.detailState.wrapWidth, "No chapter narrative is available.")
 }
 
 func (program *Program) reviewSessionDescriptionSummaryAndDetail() (githubdomain.PullRequest, githubdomain.PullRequestDetail, bool) {
@@ -73,7 +73,7 @@ func (program *Program) reviewSessionDescriptionSummaryAndDetail() (githubdomain
 		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
 	}
 
-	summary := program.reviewSession.summary
+	summary := program.navigationState.reviewSession.summary
 	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
 		return summary, githubdomain.PullRequestDetail{}, false
@@ -96,10 +96,10 @@ func (program *Program) reviewSessionShowsStoryChapter() bool {
 }
 
 func (program *Program) reviewSessionLoadingDetail() string {
-	summary := program.reviewSession.summary
+	summary := program.navigationState.reviewSession.summary
 	repository := pullRequestRepositoryName(summary.Repository)
 	lines := []string{
-		fmt.Sprintf("Pending review %s is open for %s#%d.", valueOrDash(program.reviewSession.pendingReviewID), repository, summary.Number),
+		fmt.Sprintf("Pending review %s is open for %s#%d.", valueOrDash(program.navigationState.reviewSession.pendingReviewID), repository, summary.Number),
 		"",
 		"Loading pull request diff...",
 		fmt.Sprintf("Running `gh api repos/%s/pulls/%d -H 'Accept: application/vnd.github.v3.diff'`.", repository, summary.Number),
@@ -118,10 +118,10 @@ func (program *Program) reviewSessionDiffErrorDetail(err error) string {
 }
 
 func (program *Program) reviewSessionNoDiffDetail() string {
-	summary := program.reviewSession.summary
+	summary := program.navigationState.reviewSession.summary
 	repository := pullRequestRepositoryName(summary.Repository)
 	lines := []string{
-		fmt.Sprintf("Pending review %s is open for %s#%d.", valueOrDash(program.reviewSession.pendingReviewID), repository, summary.Number),
+		fmt.Sprintf("Pending review %s is open for %s#%d.", valueOrDash(program.navigationState.reviewSession.pendingReviewID), repository, summary.Number),
 		"",
 		"No changed files are available for this review.",
 	}
@@ -135,29 +135,29 @@ func (program *Program) reviewSessionDetailIdentity() string {
 	if program.reviewSessionShowsDescription() {
 		return fmt.Sprintf(
 			"review:%s:%d:%s:description",
-			pullRequestRepositoryName(program.reviewSession.summary.Repository),
-			program.reviewSession.summary.Number,
-			program.reviewSession.pendingReviewID,
+			pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
+			program.navigationState.reviewSession.summary.Number,
+			program.navigationState.reviewSession.pendingReviewID,
 		)
 	}
 	if chapter, ok := program.selectedReviewSessionStoryChapter(); ok {
 		return fmt.Sprintf(
 			"review:%s:%d:%s:chapter:%s",
-			pullRequestRepositoryName(program.reviewSession.summary.Repository),
-			program.reviewSession.summary.Number,
-			program.reviewSession.pendingReviewID,
+			pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
+			program.navigationState.reviewSession.summary.Number,
+			program.navigationState.reviewSession.pendingReviewID,
 			chapter.ID,
 		)
 	}
-	selectedFilePath := fmt.Sprintf("row:%d", program.reviewSession.selectedFileTreeRow)
+	selectedFilePath := fmt.Sprintf("row:%d", program.navigationState.reviewSession.selectedFileTreeRow)
 	if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
 		selectedFilePath = selectedFile.Path
 	}
 	return fmt.Sprintf(
 		"review:%s:%d:%s:file:%s",
-		pullRequestRepositoryName(program.reviewSession.summary.Repository),
-		program.reviewSession.summary.Number,
-		program.reviewSession.pendingReviewID,
+		pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
+		program.navigationState.reviewSession.summary.Number,
+		program.navigationState.reviewSession.pendingReviewID,
 		selectedFilePath,
 	)
 }
@@ -166,7 +166,7 @@ func (program *Program) reviewSessionDiffResult() (pullRequestDiffResult, bool) 
 	if !program.reviewModeActive() {
 		return pullRequestDiffResult{}, false
 	}
-	return program.pullRequestDiffForSummary(program.reviewSession.summary)
+	return program.pullRequestDiffForSummary(program.navigationState.reviewSession.summary)
 }
 
 func renderReadOnlyTextView(view *gocui.View, text string) {

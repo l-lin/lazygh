@@ -31,8 +31,8 @@ func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error 
 	if actualErr != nil {
 		return actualErr
 	}
-	if program.modalEditor != nil {
-		program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+	if program.overlayState.modalEditor != nil {
+		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
 			program.reloadActivePullRequestsTab(gui)
 		}
 	}
@@ -67,7 +67,7 @@ func (program *Program) submitPullRequestCustomSearch(criteria string) error {
 }
 
 func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullRequestSearch) PullRequestTab {
-	searches := append([]appconfig.PullRequestSearch(nil), appconfig.ResolvePullRequestSearches(program.pullRequestSearches)...)
+	searches := append([]appconfig.PullRequestSearch(nil), appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)...)
 	customTab, customTabExists := pullRequestCustomSearchTab(searches)
 	preservedRows := make(map[PullRequestTab][]PullRequestRow, len(program.model.PullRequestTabs()))
 	for _, tab := range program.model.PullRequestTabs() {
@@ -84,7 +84,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 		searches = append(searches, search)
 	}
 
-	program.pullRequestSearches = searches
+	program.runtimeConfig.pullRequestSearches = searches
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(searches))
 	for tab, rows := range preservedRows {
 		program.model.SetPullRequestRows(tab, rows)

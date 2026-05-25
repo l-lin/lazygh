@@ -25,7 +25,7 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_T
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
 
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected browser mode to stay active")
 	}
 	if !reflect.DeepEqual(loader.startReviewCalls, []string(nil)) {
@@ -40,8 +40,8 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_T
 	if subject.model.FullscreenPane() != FocusDetailView {
 		t.Fatalf("expected fullscreen pane %v, actual %v", FocusDetailView, subject.model.FullscreenPane())
 	}
-	if subject.activeDetailTab != DescriptionDetailTab {
-		t.Fatalf("expected active detail tab %v, actual %v", DescriptionDetailTab, subject.activeDetailTab)
+	if subject.detailState.activeTab != DescriptionDetailTab {
+		t.Fatalf("expected active detail tab %v, actual %v", DescriptionDetailTab, subject.detailState.activeTab)
 	}
 
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
@@ -85,7 +85,7 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLAfterLayout_WhenOpening_Then
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected browser mode to stay active")
 	}
 	if subject.model.Focus() != FocusDetailView {
@@ -94,8 +94,8 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLAfterLayout_WhenOpening_Then
 	if subject.model.PaneLayoutSize() != PaneLayoutFullscreen {
 		t.Fatalf("expected layout size %v, actual %v", PaneLayoutFullscreen, subject.model.PaneLayoutSize())
 	}
-	if subject.activeDetailTab != DescriptionDetailTab {
-		t.Fatalf("expected active detail tab %v, actual %v", DescriptionDetailTab, subject.activeDetailTab)
+	if subject.detailState.activeTab != DescriptionDetailTab {
+		t.Fatalf("expected active detail tab %v, actual %v", DescriptionDetailTab, subject.detailState.activeTab)
 	}
 
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
@@ -149,7 +149,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingOpenPullRequestByURL_Th
 
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
 		t.Fatal("expected the PR URL prompt to use the single-line editor")
 	}
 	modalView, actualErr := gui.View(viewModalEditorName)
@@ -195,10 +195,10 @@ func TestOpenPullRequestByURL_GivenTheURLInputPopup_WhenPressingEnter_ThenItSubm
 
 	modalView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
 		t.Fatal("expected the PR URL prompt to use the single-line editor")
 	}
-	subject.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/pull/13")
+	subject.overlayState.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/pull/13")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)
 	actualErr = actualHandler(gui, modalView)
 	then_noError(t, actualErr)
@@ -317,7 +317,7 @@ func TestOpenPullRequestByURL_GivenAnInvalidGitHubURL_WhenOpening_ThenItReturnsA
 	if !errors.Is(actualErr, githubdomain.ErrInvalidPullRequestURL) {
 		t.Fatalf("expected error %v, actual %v", githubdomain.ErrInvalidPullRequestURL, actualErr)
 	}
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the validation error")
 	}
 }
@@ -421,14 +421,14 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLBeforeLayout_WhenStartingRev
 	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/rocket#77"}) {
 		t.Fatalf("expected start review calls %v, actual %v", []string{"acme/rocket#77"}, loader.startReviewCalls)
 	}
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to become active")
 	}
-	if subject.reviewSession.summary.Repository.NameWithOwner != "acme/rocket" {
-		t.Fatalf("expected review repository %q, actual %q", "acme/rocket", subject.reviewSession.summary.Repository.NameWithOwner)
+	if subject.navigationState.reviewSession.summary.Repository.NameWithOwner != "acme/rocket" {
+		t.Fatalf("expected review repository %q, actual %q", "acme/rocket", subject.navigationState.reviewSession.summary.Repository.NameWithOwner)
 	}
-	if subject.reviewSession.summary.Number != 77 {
-		t.Fatalf("expected review pull request number %d, actual %d", 77, subject.reviewSession.summary.Number)
+	if subject.navigationState.reviewSession.summary.Number != 77 {
+		t.Fatalf("expected review pull request number %d, actual %d", 77, subject.navigationState.reviewSession.summary.Number)
 	}
 }
 

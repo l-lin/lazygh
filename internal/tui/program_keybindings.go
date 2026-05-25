@@ -100,7 +100,7 @@ func bindingsForViews(viewNames []string, definitions ...keybindingDefinition) [
 }
 
 func (program *Program) ApplyKeymapOverrides(overrides appconfig.KeymapOverrides) {
-	program.keymapOverrides = copyKeymapOverrides(overrides)
+	program.runtimeConfig.keymapOverrides = copyKeymapOverrides(overrides)
 }
 
 func copyKeymapOverrides(overrides appconfig.KeymapOverrides) appconfig.KeymapOverrides {
@@ -127,7 +127,7 @@ func (program *Program) setKeybindings(gui *gocui.Gui) error {
 
 	specs := program.registeredKeybindingSpecs()
 	fingerprint := fingerprintKeybindingSpecs(specs)
-	if fingerprint == program.registeredKeybindingFingerprint {
+	if fingerprint == program.navigationState.registeredKeybindingFingerprint {
 		return nil
 	}
 
@@ -137,7 +137,7 @@ func (program *Program) setKeybindings(gui *gocui.Gui) error {
 			return err
 		}
 	}
-	program.registeredKeybindingFingerprint = fingerprint
+	program.navigationState.registeredKeybindingFingerprint = fingerprint
 	return nil
 }
 
@@ -148,7 +148,7 @@ func (program *Program) reloadRegisteredKeybindings(gui *gocui.Gui) error {
 
 	specs := program.registeredKeybindingSpecs()
 	fingerprint := fingerprintKeybindingSpecs(specs)
-	if fingerprint == program.registeredKeybindingFingerprint {
+	if fingerprint == program.navigationState.registeredKeybindingFingerprint {
 		return nil
 	}
 
@@ -158,7 +158,7 @@ func (program *Program) reloadRegisteredKeybindings(gui *gocui.Gui) error {
 			return err
 		}
 	}
-	program.registeredKeybindingFingerprint = fingerprint
+	program.navigationState.registeredKeybindingFingerprint = fingerprint
 	return nil
 }
 
@@ -271,13 +271,13 @@ func (entry keybindingDispatchEntry) consumePendingContinuation(state *keySequen
 func (program *Program) keySequenceStateForView(viewName string) *keySequenceState {
 	switch viewName {
 	case viewDetailName:
-		return &program.detailViewState.pendingKeySequence
+		return &program.detailState.viewState.pendingKeySequence
 	case viewPullRequestBuildInfoName:
 		if program.pullRequestBuildRunPopup != nil {
 			return &program.pullRequestBuildRunPopup.viewState.pendingKeySequence
 		}
 	}
-	return &program.pendingSelectionKeySequence
+	return &program.navigationState.pendingSelectionKeySequence
 }
 
 func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {
@@ -423,7 +423,7 @@ type keybindingTarget struct {
 }
 
 func (program *Program) overrideBindings(action keybindingAction) ([]configuredKeySequence, bool) {
-	if len(program.keymapOverrides) == 0 || !action.configurable {
+	if len(program.runtimeConfig.keymapOverrides) == 0 || !action.configurable {
 		return nil, false
 	}
 
@@ -435,7 +435,7 @@ func (program *Program) overrideBindings(action keybindingAction) ([]configuredK
 }
 
 func (program *Program) parseOverrideBindings(scope string, action string, allowSequences bool) ([]configuredKeySequence, bool) {
-	actions, ok := program.keymapOverrides[scope]
+	actions, ok := program.runtimeConfig.keymapOverrides[scope]
 	if !ok {
 		return nil, false
 	}

@@ -20,7 +20,7 @@ const (
 
 func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	if program.helpVisible || program.model.SearchActive() {
+	if program.overlayState.helpVisible || program.model.SearchActive() {
 		return nil
 	}
 	return program.dispatch(gui, MsgCopyPullRequestURLRequested{View: view})

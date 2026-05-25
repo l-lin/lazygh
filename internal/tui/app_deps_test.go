@@ -88,7 +88,7 @@ func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_Th
 	renderer := &fakeMarkdownHTMLRenderer{renderedHTML: "<p>resolved</p>"}
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{MarkdownHTMLRenderer: renderer})
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

@@ -54,7 +54,7 @@ func (program *Program) selectedPullRequestReactionActionTarget() (pullRequestRe
 		if !ok {
 			return pullRequestReactionActionTarget{}, false
 		}
-		switch program.activeDetailTab {
+		switch program.detailState.activeTab {
 		case CommentsDetailTab:
 			return program.selectedBrowserCommentReactionActionTarget(summary)
 		case ChangesDetailTab:
@@ -65,7 +65,7 @@ func (program *Program) selectedPullRequestReactionActionTarget() (pullRequestRe
 			return pullRequestReactionActionTarget{}, false
 		}
 	case FocusPullRequestsView:
-		if program.activeDetailTab != DescriptionDetailTab {
+		if program.detailState.activeTab != DescriptionDetailTab {
 			return pullRequestReactionActionTarget{}, false
 		}
 		summary, ok := program.model.SelectedPullRequestSummary()
@@ -99,7 +99,7 @@ func (program *Program) selectedPullRequestReactionTargetFromSummary(summary git
 }
 
 func (program *Program) selectedBrowserCommentReactionActionTarget(summary githubdomain.PullRequest) (pullRequestReactionActionTarget, bool) {
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() || program.detailState.activeTab != CommentsDetailTab {
 		return pullRequestReactionActionTarget{}, false
 	}
 
@@ -108,7 +108,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailState.wrapWidth, program.detailState.viewState.cursor.line)
 	if !ok {
 		return pullRequestReactionActionTarget{}, false
 	}
@@ -159,7 +159,7 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 }
 
 func (program *Program) selectedBrowserChangesReactionActionTarget(summary githubdomain.PullRequest) (pullRequestReactionActionTarget, bool) {
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != ChangesDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() || program.detailState.activeTab != ChangesDetailTab {
 		return pullRequestReactionActionTarget{}, false
 	}
 
@@ -170,7 +170,7 @@ func (program *Program) selectedBrowserChangesReactionActionTarget(summary githu
 
 	detailDocument := program.currentDetailDocument(nil)
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailViewState)
+	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
@@ -199,21 +199,21 @@ func (program *Program) selectedReviewDiffReactionActionTarget() (pullRequestRea
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
-	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
-	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailViewState)
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailState.wrapWidth)
+	document := program.currentReviewDiffDocument(selectedFile, program.detailState.wrapWidth)
+	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailState.viewState)
 	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 {
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 {
 		return pullRequestReactionActionTarget{}, false
 	}
 
 	return pullRequestReactionActionTarget{
 		repository:     repository,
-		number:         program.reviewSession.summary.Number,
+		number:         program.navigationState.reviewSession.summary.Number,
 		subjectID:      strings.TrimSpace(comment.ID),
 		reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
 		invalidateDiff: true,

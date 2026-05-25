@@ -90,10 +90,10 @@ func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary g
 	}
 
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	if _, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState); ok {
+	if _, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState); ok {
 		return program.toggleBrowserChangesThreadVisibility(gui, summary, result.data.Files, detailDocument)
 	}
-	filePath, ok := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailViewState)
+	filePath, ok := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
 		return nil
 	}
@@ -113,15 +113,15 @@ func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summa
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, width)
 	headerLineIndex := reviewDiffFileHeaderLineIndex(updatedRows, trimmedFilePath)
 	if headerLineIndex >= 0 {
-		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-		program.detailViewState.preferredColumn = 0
+		program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
+		program.detailState.viewState.preferredColumn = 0
 	}
 	return nil
 }
 
 func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, files []reviewDiffFile, detailDocument detailDocument) error {
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
+	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
 		return nil
 	}
@@ -133,8 +133,8 @@ func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, sum
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
-		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-		program.detailViewState.preferredColumn = 0
+		program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
+		program.detailState.viewState.preferredColumn = 0
 	}
 	return nil
 }

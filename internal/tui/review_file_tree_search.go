@@ -28,12 +28,12 @@ func (program *Program) reviewFileTreeSearchQuery() string {
 		return program.model.SearchDraft()
 	}
 
-	return program.reviewSession.fileTreeSearchQuery
+	return program.navigationState.reviewSession.fileTreeSearchQuery
 }
 
 func (program *Program) submitReviewFileTreeSearch() {
 	query := program.model.SearchDraft()
-	program.reviewSession.fileTreeSearchQuery = query
+	program.navigationState.reviewSession.fileTreeSearchQuery = query
 	program.model.CloseSearchPrompt()
 	program.followSubmittedReviewFileTreeSearch(query)
 }
@@ -55,7 +55,7 @@ func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose search
 		return nil
 	}
 
-	query := program.reviewSession.fileTreeSearchQuery
+	query := program.navigationState.reviewSession.fileTreeSearchQuery
 	if strings.TrimSpace(query) == "" {
 		return nil
 	}
@@ -77,7 +77,7 @@ func (program *Program) followReviewFileTreeSearch(query string, choose searchMa
 		return false
 	}
 
-	program.reviewSession.selectedFileTreeRow = matchRows[matchIndex]
+	program.navigationState.reviewSession.selectedFileTreeRow = matchRows[matchIndex]
 	return true
 }
 

@@ -13,7 +13,7 @@ func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view 
 }
 
 func (program *Program) toggleInlineConversationVisibilityState(view *gocui.View) error {
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
@@ -51,19 +51,19 @@ func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui,
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewportHeight)
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
+	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
 		return nil
 	}
 
-	collapsed := reviewDiffThreadCollapsed(thread, program.reviewSession.collapsedThreadIDs)
+	collapsed := reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs)
 	program.setReviewThreadCollapsed(thread.ID, !collapsed)
 
 	updatedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
-		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-		program.detailViewState.preferredColumn = 0
+		program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
+		program.detailState.viewState.preferredColumn = 0
 	}
 	return nil
 }
@@ -93,18 +93,18 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewportHeight)
 
-	if program.activeDetailTab == ChangesDetailTab {
+	if program.detailState.activeTab == ChangesDetailTab {
 		return program.toggleBrowserChangesVisibility(gui, summary, detailDocument)
 	}
 
-	if program.activeDetailTab == CommentsDetailTab {
-		sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, program.detailViewState.cursor.line)
+	if program.detailState.activeTab == CommentsDetailTab {
+		sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, program.detailState.viewState.cursor.line)
 		if !ok {
 			return nil
 		}
 		program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-		program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
-		program.detailViewState.preferredColumn = 0
+		program.detailState.viewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
+		program.detailState.viewState.preferredColumn = 0
 		return nil
 	}
 
@@ -123,13 +123,13 @@ func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *go
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewportHeight)
 
-	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailState.viewState.cursor.line)
 	if !ok {
 		return nil
 	}
 	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-	program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
-	program.detailViewState.preferredColumn = 0
+	program.detailState.viewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
+	program.detailState.viewState.preferredColumn = 0
 	return nil
 }
 
@@ -138,10 +138,10 @@ func (program *Program) setReviewThreadCollapsed(threadID string, collapsed bool
 	if trimmedThreadID == "" {
 		return
 	}
-	if program.reviewSession.collapsedThreadIDs == nil {
-		program.reviewSession.collapsedThreadIDs = map[string]bool{}
+	if program.navigationState.reviewSession.collapsedThreadIDs == nil {
+		program.navigationState.reviewSession.collapsedThreadIDs = map[string]bool{}
 	}
-	program.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
+	program.navigationState.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
 	program.invalidateReviewDiffRenderCache()
 }
 

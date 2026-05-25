@@ -22,14 +22,14 @@ func (program *Program) registeredKeybindingSpecs() []keybindingSpec {
 }
 
 func (program *Program) activeDetailCharacterMotionTargetBindingSpecs() []keybindingSpec {
-	if !program.detailViewState.hasPendingCharacterMotion() {
+	if !program.detailState.viewState.hasPendingCharacterMotion() {
 		return nil
 	}
 
 	actualView := program.resolveView(program.gui, nil, viewDetailName)
 	document := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(document, viewPageSize(actualView))
-	bindings := characterMotionTargetRunes(detailDocumentLineAt(document, program.detailViewState.cursor.line))
+	bindings := characterMotionTargetRunes(detailDocumentLineAt(document, program.detailState.viewState.cursor.line))
 	if len(bindings) == 0 {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (program *Program) activePullRequestBuildRunPopupCharacterMotionTargetBindi
 }
 
 func (program *Program) activeDetailCharacterMotionRepeatBindingSpecs() []keybindingSpec {
-	if !program.detailViewState.hasLastCharacterMotion {
+	if !program.detailState.viewState.hasLastCharacterMotion {
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func characterMotionTargetRunes(line []rune) []rune {
 func (program *Program) detailCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
 		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.consumePendingCharacterMotion(document, viewportHeight, target)
+			program.detailState.viewState.consumePendingCharacterMotion(document, viewportHeight, target)
 		})
 	}
 }
@@ -180,16 +180,16 @@ func (program *Program) repeatDetailCharacterMotionBackward(gui *gocui.Gui, view
 
 func (program *Program) armDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.armCharacterMotion(direction, mode)
+		program.detailState.viewState.armCharacterMotion(direction, mode)
 	})
 }
 
 func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
-	if !program.detailViewState.hasLastCharacterMotion {
+	if !program.detailState.viewState.hasLastCharacterMotion {
 		return nil
 	}
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.repeatCharacterMotion(document, viewportHeight, reverse)
+		program.detailState.viewState.repeatCharacterMotion(document, viewportHeight, reverse)
 	})
 }
 

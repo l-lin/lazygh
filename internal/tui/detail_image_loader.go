@@ -99,8 +99,8 @@ func (program *Program) currentReviewSessionImageHTMLSources() []detailImageHTML
 		}
 		markdown := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{"# " + strings.TrimSpace(chapter.Title), strings.TrimSpace(chapter.Narrative)}), "\n\n"))
 		return []detailImageHTMLSource{{
-			key:          detailImageSourceKey(fmt.Sprintf("story:%s:%s", pullRequestDetailKey(program.reviewSession.summary.Repository, program.reviewSession.summary.Number), firstNonEmpty(strings.TrimSpace(chapter.ID), strings.TrimSpace(chapter.Title))), markdown),
-			repository:   pullRequestRepositoryName(program.reviewSession.summary.Repository),
+			key:          detailImageSourceKey(fmt.Sprintf("story:%s:%s", pullRequestDetailKey(program.navigationState.reviewSession.summary.Repository, program.navigationState.reviewSession.summary.Number), firstNonEmpty(strings.TrimSpace(chapter.ID), strings.TrimSpace(chapter.Title))), markdown),
+			repository:   pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
 			markdown:     markdown,
 			renderedHTML: "",
 		}}
@@ -110,11 +110,11 @@ func (program *Program) currentReviewSessionImageHTMLSources() []detailImageHTML
 	if !ok {
 		return nil
 	}
-	return program.reviewDiffFileImageHTMLSources(program.reviewSession.summary, selectedFile)
+	return program.reviewDiffFileImageHTMLSources(program.navigationState.reviewSession.summary, selectedFile)
 }
 
 func (program *Program) currentPullRequestImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
-	switch program.activeDetailTab {
+	switch program.detailState.activeTab {
 	case CommentsDetailTab:
 		return program.pullRequestCommentsImageHTMLSources(summary, detail)
 	case CommitsDetailTab:

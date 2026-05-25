@@ -45,15 +45,15 @@ func (program *Program) appendRecordedErrorMessage(message string) {
 		return
 	}
 
-	program.errorMessages = append(program.errorMessages, message)
-	if len(program.errorMessages) <= maxRecordedErrorMessages {
+	program.overlayState.errorMessages = append(program.overlayState.errorMessages, message)
+	if len(program.overlayState.errorMessages) <= maxRecordedErrorMessages {
 		return
 	}
-	program.errorMessages = append([]string(nil), program.errorMessages[len(program.errorMessages)-maxRecordedErrorMessages:]...)
+	program.overlayState.errorMessages = append([]string(nil), program.overlayState.errorMessages[len(program.overlayState.errorMessages)-maxRecordedErrorMessages:]...)
 }
 
 func (program *Program) hasRecordedErrors() bool {
-	return program != nil && len(program.errorMessages) > 0
+	return program != nil && len(program.overlayState.errorMessages) > 0
 }
 
 func (program *Program) currentRecentErrorsActionsPopupAction() (actionsPopupAction, bool) {
@@ -91,9 +91,9 @@ func (program *Program) renderRecentErrorsPopupBody() string {
 	if !program.hasRecordedErrors() {
 		return "No recent errors recorded."
 	}
-	messages := make([]string, 0, len(program.errorMessages))
-	for index := len(program.errorMessages) - 1; index >= 0; index-- {
-		messages = append(messages, program.errorMessages[index])
+	messages := make([]string, 0, len(program.overlayState.errorMessages))
+	for index := len(program.overlayState.errorMessages) - 1; index >= 0; index-- {
+		messages = append(messages, program.overlayState.errorMessages[index])
 	}
 	return strings.Join(messages, "\n\n")
 }
@@ -108,17 +108,17 @@ func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) 
 		return
 	}
 
-	generation := program.transientErrorPopup.generation + 1
+	generation := program.overlayState.transientErrorPopup.generation + 1
 	popup := transientErrorPopupState{message: trimmedMessage, generation: generation}
-	if program.transientErrorPopupDuration > 0 {
-		popup.expiresAt = program.currentTime().Add(program.transientErrorPopupDuration)
+	if program.timingState.transientErrorPopupDuration > 0 {
+		popup.expiresAt = program.currentTime().Add(program.timingState.transientErrorPopupDuration)
 	}
-	program.transientErrorPopup = popup
-	if gui == nil || program.transientErrorPopupDuration <= 0 || program.after == nil {
+	program.overlayState.transientErrorPopup = popup
+	if gui == nil || program.timingState.transientErrorPopupDuration <= 0 || program.timingState.after == nil {
 		return
 	}
 
-	delay := program.after(program.transientErrorPopupDuration)
+	delay := program.timingState.after(program.timingState.transientErrorPopupDuration)
 	program.asyncRunner.Go(func() {
 		if delay != nil {
 			<-delay
@@ -134,16 +134,16 @@ func (program *Program) clearExpiredTransientErrorPopup(now time.Time) bool {
 	if !program.transientErrorPopupVisible() {
 		return false
 	}
-	if program.transientErrorPopup.expiresAt.IsZero() || now.Before(program.transientErrorPopup.expiresAt) {
+	if program.overlayState.transientErrorPopup.expiresAt.IsZero() || now.Before(program.overlayState.transientErrorPopup.expiresAt) {
 		return false
 	}
 
-	program.transientErrorPopup = transientErrorPopupState{}
+	program.overlayState.transientErrorPopup = transientErrorPopupState{}
 	return true
 }
 
 func (program *Program) transientErrorPopupVisible() bool {
-	return program != nil && strings.TrimSpace(program.transientErrorPopup.message) != ""
+	return program != nil && strings.TrimSpace(program.overlayState.transientErrorPopup.message) != ""
 }
 
 func (program *Program) configureTransientErrorPopupView(view *gocui.View) {
@@ -172,7 +172,7 @@ func (program *Program) renderTransientErrorPopupView(view *gocui.View) {
 }
 
 func (program *Program) transientErrorPopupFrame(maxX int, maxY int) paneFrame {
-	message := strings.TrimSpace(program.transientErrorPopup.message)
+	message := strings.TrimSpace(program.overlayState.transientErrorPopup.message)
 	maxWidth := boundedHalfWidth(maxX, transientErrorPopupMinWidth, transientErrorPopupFallbackWidth)
 	longestLineWidth := transientErrorPopupMinWidth
 	for _, line := range strings.Split(message, "\n") {
@@ -195,7 +195,7 @@ func (program *Program) transientErrorPopupFrame(maxX int, maxY int) paneFrame {
 }
 
 func (program *Program) transientErrorPopupLines(innerWidth int) []string {
-	return transientErrorPopupLinesForMessage(program.transientErrorPopup.message, innerWidth)
+	return transientErrorPopupLinesForMessage(program.overlayState.transientErrorPopup.message, innerWidth)
 }
 
 func transientErrorPopupLinesForMessage(message string, innerWidth int) []string {

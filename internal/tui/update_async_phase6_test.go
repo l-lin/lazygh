@@ -137,13 +137,13 @@ func TestUpdate_GivenMsgStoryReviewPrepared_WhenSuccessful_ThenItClearsLoadingAn
 	if subject.storyReviewLoading {
 		t.Fatalf("expected story review loading to be cleared after the async result")
 	}
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatalf("expected the prepared story review to start a review session")
 	}
-	if actual := subject.reviewSession.mode; actual != reviewSessionModeStory {
+	if actual := subject.navigationState.reviewSession.mode; actual != reviewSessionModeStory {
 		t.Fatalf("expected review session mode %v, actual %v", reviewSessionModeStory, actual)
 	}
-	if actual := subject.reviewSession.pendingReviewID; actual != "review-123" {
+	if actual := subject.navigationState.reviewSession.pendingReviewID; actual != "review-123" {
 		t.Fatalf("expected pending review id %q, actual %q", "review-123", actual)
 	}
 }

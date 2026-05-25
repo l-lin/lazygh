@@ -25,7 +25,7 @@ func TestActionsPopup_GivenBrowserChangesTabCursorOnAnOwnedInlineComment_WhenOpe
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
@@ -61,7 +61,7 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
@@ -75,7 +75,7 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Updated inline body")
+	subject.overlayState.modalEditor.editor.SetText("Updated inline body")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -127,7 +127,7 @@ func TestDeleteInlineComment_GivenBrowserChangesTabAction_WhenSubmittingOptimist
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")

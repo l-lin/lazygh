@@ -182,7 +182,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAMatchingSumma
 	subject.asyncRunner = asyncRunner
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -220,7 +220,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailMissingCommitData_
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -267,7 +267,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailWithAStaleSummaryV
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -316,7 +316,7 @@ func TestMaybeLoadSelectedPullRequestDetail_GivenACachedDetailAndARefreshFailure
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDetail(gui)
@@ -349,7 +349,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenACachedDiffWithAMatchingSummaryVe
 	subject.startReviewSession(summary, "PRR_cache")
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDiff(gui)
@@ -386,12 +386,12 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndACachedDiffWi
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDiff(gui)
@@ -468,12 +468,12 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.configureGUI(gui)
 
 	subject.maybeLoadSelectedPullRequestDiff(gui)

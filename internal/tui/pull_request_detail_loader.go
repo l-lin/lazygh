@@ -38,7 +38,7 @@ func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdoma
 func (program *Program) selectedPullRequestSummaryForDetail() (githubdomain.PullRequest, bool) {
 	actionContext := program.actionContext()
 	if actionContext.IsReviewContext() {
-		summary, ok := toDomainPullRequestSummary(program.reviewSession.summary)
+		summary, ok := toDomainPullRequestSummary(program.navigationState.reviewSession.summary)
 		if !ok || pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 			return githubdomain.PullRequest{}, false
 		}
@@ -90,9 +90,9 @@ func (program *Program) currentDetailIdentity() string {
 		if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
 			if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
 				if actionContext.MainView.SourceView.Focus == FocusNotificationsView {
-					return fmt.Sprintf("notification-pr:%s:tab:%d", key, program.activeDetailTab)
+					return fmt.Sprintf("notification-pr:%s:tab:%d", key, program.detailState.activeTab)
 				}
-				return fmt.Sprintf("pr:%s:tab:%d", key, program.activeDetailTab)
+				return fmt.Sprintf("pr:%s:tab:%d", key, program.detailState.activeTab)
 			}
 		}
 		return fmt.Sprintf("pr-state:%d:%d", program.model.ActivePullRequestTab(), program.model.SelectedPullRequestIndex(program.model.ActivePullRequestTab()))

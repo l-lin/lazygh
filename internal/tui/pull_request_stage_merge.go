@@ -74,7 +74,7 @@ func (program *Program) pullRequestStateMutationVisible() bool {
 	case FocusPullRequestsView:
 		return true
 	case FocusDetailView:
-		return program.shouldShowPullRequestDetailTabs() && program.activeDetailTab == DescriptionDetailTab
+		return program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == DescriptionDetailTab
 	default:
 		return false
 	}
@@ -566,13 +566,13 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 		}
 	}
 
-	if program.openedPullRequestSummary != nil && samePullRequestIdentity(*program.openedPullRequestSummary, identity) {
-		updated := *program.openedPullRequestSummary
+	if program.navigationState.openedPullRequestSummary != nil && samePullRequestIdentity(*program.navigationState.openedPullRequestSummary, identity) {
+		updated := *program.navigationState.openedPullRequestSummary
 		mutate(&updated)
-		program.pinOpenedPullRequestSummary(program.openedPullRequestTab, updated)
+		program.pinOpenedPullRequestSummary(program.navigationState.openedPullRequestTab, updated)
 	}
-	if samePullRequestIdentity(program.reviewSession.summary, identity) {
-		mutate(&program.reviewSession.summary)
+	if samePullRequestIdentity(program.navigationState.reviewSession.summary, identity) {
+		mutate(&program.navigationState.reviewSession.summary)
 	}
 }
 

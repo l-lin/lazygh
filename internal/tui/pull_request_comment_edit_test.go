@@ -102,7 +102,7 @@ func TestEditPullRequestComment_GivenBrowserCommentsTabSubmit_WhenSubmittingOpti
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Updated PR comment")
+	subject.overlayState.modalEditor.editor.SetText("Updated PR comment")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)

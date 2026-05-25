@@ -28,7 +28,7 @@ func TestDetailSearch_GivenBrowserDetailFocusAndWordUnderCursor_WhenPressingStar
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_viewDoesNotExist(t, gui, viewSearchName)
-	then_detailCursorIs(t, subject.detailViewState, expectedCurrent)
+	then_detailCursorIs(t, subject.detailState.viewState, expectedCurrent)
 	if actual := subject.model.DetailSearchQuery(); actual != "Alpha" {
 		t.Fatalf("expected applied detail search query %q, actual %q", "Alpha", actual)
 	}
@@ -38,7 +38,7 @@ func TestDetailSearch_GivenBrowserDetailFocusAndWordUnderCursor_WhenPressingStar
 
 	actualErr = subject.nextDetailSearchMatch(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, expectedNext)
+	then_detailCursorIs(t, subject.detailState.viewState, expectedNext)
 }
 
 func TestDetailSearch_GivenReviewDetailFocusAndWordUnderCursor_WhenPressingPound_ThenItAppliesTheSearchBackwardsAndFlipsNAndNWithoutOpeningThePrompt(t *testing.T) {
@@ -75,15 +75,15 @@ func TestDetailSearch_GivenReviewDetailFocusAndWordUnderCursor_WhenPressingPound
 	if subject.model.SearchActive() {
 		t.Fatal("expected reverse word search to avoid leaving the search prompt active")
 	}
-	then_detailCursorIs(t, subject.detailViewState, expectedPrevious)
+	then_detailCursorIs(t, subject.detailState.viewState, expectedPrevious)
 
 	actualErr = subject.nextDetailSearchMatch(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, given_detailPositionOfSegmentOccurrence(t, gui, subject, "line", 0))
+	then_detailCursorIs(t, subject.detailState.viewState, given_detailPositionOfSegmentOccurrence(t, gui, subject, "line", 0))
 
 	actualErr = subject.previousDetailSearchMatch(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, expectedForward)
+	then_detailCursorIs(t, subject.detailState.viewState, expectedForward)
 }
 
 func given_detailCursorOnSegment(t *testing.T, gui *gocui.Gui, subject *Program, segment string) {
@@ -98,9 +98,9 @@ func given_detailCursorOnSegmentOccurrence(t *testing.T, gui *gocui.Gui, subject
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	document := subject.currentDetailDocument(detailView)
-	subject.detailViewState.cursor = target
-	subject.detailViewState.preferredColumn = document.screenColumnForPosition(subject.detailViewState.cursor)
-	subject.detailViewState.sync(document, detailView.InnerHeight())
+	subject.detailState.viewState.cursor = target
+	subject.detailState.viewState.preferredColumn = document.screenColumnForPosition(subject.detailState.viewState.cursor)
+	subject.detailState.viewState.sync(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
 }

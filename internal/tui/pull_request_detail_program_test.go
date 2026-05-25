@@ -243,13 +243,13 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 	then_noError(t, actualErr)
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	if subject.activeDetailTab != CommentsDetailTab {
-		t.Fatalf("expected active detail tab %v, actual %v", CommentsDetailTab, subject.activeDetailTab)
+	if subject.detailState.activeTab != CommentsDetailTab {
+		t.Fatalf("expected active detail tab %v, actual %v", CommentsDetailTab, subject.detailState.activeTab)
 	}
 	actualErr = subject.nextDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	if subject.activeDetailTab != CommitsDetailTab {
-		t.Fatalf("expected active detail tab %v, actual %v", CommitsDetailTab, subject.activeDetailTab)
+	if subject.detailState.activeTab != CommitsDetailTab {
+		t.Fatalf("expected active detail tab %v, actual %v", CommitsDetailTab, subject.detailState.activeTab)
 	}
 	for _, expected := range []string{"● 2222222 newer commit", "│ Authors: Newer Dev", "│ Rendered newer body", "● 1111111 older commit", "│ Authors: Older Dev", "│ Rendered older body"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
@@ -270,8 +270,8 @@ func TestLayout_GivenPullRequestCommits_WhenRendering_ThenBrowserModeShowsFourDe
 
 	actualErr = subject.previousDetailTab(gui, nil)
 	then_noError(t, actualErr)
-	if subject.activeDetailTab != CommentsDetailTab {
-		t.Fatalf("expected active detail tab %v after going backward, actual %v", CommentsDetailTab, subject.activeDetailTab)
+	if subject.detailState.activeTab != CommentsDetailTab {
+		t.Fatalf("expected active detail tab %v after going backward, actual %v", CommentsDetailTab, subject.detailState.activeTab)
 	}
 }
 

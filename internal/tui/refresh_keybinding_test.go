@@ -153,7 +153,7 @@ func TestRefreshActiveView_GivenNotificationsFocus_WhenTheReloadFails_ThenItShow
 		notificationsErr: errors.New("notification refresh refused"),
 	}
 	subject := given_notificationActionProgram(loader.notifications, loader)
-	subject.transientErrorPopupDuration = 0
+	subject.timingState.transientErrorPopupDuration = 0
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

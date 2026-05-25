@@ -366,7 +366,7 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 		t.Fatal("expected the transient error popup state to stay visible")
 	}
 	then_transientErrorPopupContains(t, gui, "review refused")
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the error")
 	}
 }
@@ -1748,7 +1748,7 @@ func TestEditInlineComment_GivenBrowserCommentsTabSubmit_WhenSubmittingOptimisti
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Updated body")
+	subject.overlayState.modalEditor.editor.SetText("Updated body")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -1817,7 +1817,7 @@ func TestEditInlineComment_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefreshesT
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Updated body")
+	subject.overlayState.modalEditor.editor.SetText("Updated body")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -2019,7 +2019,7 @@ func TestEditInlineComment_GivenReviewModeSubmit_WhenSubmittingOptimistically_Th
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Updated body")
+	subject.overlayState.modalEditor.editor.SetText("Updated body")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)

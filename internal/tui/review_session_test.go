@@ -39,11 +39,11 @@ func TestReviewMode_GivenStartReviewActionSelected_WhenExecuting_ThenItRepurpose
 	actualErr = given_startingReviewMode(t, gui, subject)
 	then_noError(t, actualErr)
 
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to be active")
 	}
-	if subject.reviewSession.pendingReviewID != "PRR_pending" {
-		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.reviewSession.pendingReviewID)
+	if subject.navigationState.reviewSession.pendingReviewID != "PRR_pending" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.navigationState.reviewSession.pendingReviewID)
 	}
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
 	then_viewExists(t, gui, viewUserName)
@@ -1237,7 +1237,7 @@ func TestBrowserMode_GivenReviewRenderingSupport_WhenRefreshingThePullRequestDet
 		},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.activeDetailTab = CommentsDetailTab
+	subject.detailState.activeTab = CommentsDetailTab
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Inline body": "Rendered inline body"}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -1377,21 +1377,21 @@ func TestReviewMode_GivenTheFilesPane_WhenPressingGGOrG_ThenItMovesToTheFirstOrL
 	bottomHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'G')
 	actualErr = bottomHandler(gui, nil)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != selectableRows[len(selectableRows)-1] {
-		t.Fatalf("expected selected review row %d, actual %d", selectableRows[len(selectableRows)-1], subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != selectableRows[len(selectableRows)-1] {
+		t.Fatalf("expected selected review row %d, actual %d", selectableRows[len(selectableRows)-1], subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 
 	topHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'g')
 	actualErr = topHandler(gui, nil)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != selectableRows[len(selectableRows)-1] {
-		t.Fatalf("expected the first g to arm the motion without moving selection, actual %d", subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != selectableRows[len(selectableRows)-1] {
+		t.Fatalf("expected the first g to arm the motion without moving selection, actual %d", subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 
 	actualErr = topHandler(gui, nil)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != selectableRows[0] {
-		t.Fatalf("expected selected review row %d, actual %d", selectableRows[0], subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != selectableRows[0] {
+		t.Fatalf("expected selected review row %d, actual %d", selectableRows[0], subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 }
 
@@ -1450,7 +1450,7 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpe
 	actualErr = exitHandler(gui, nil)
 	then_noError(t, actualErr)
 
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
@@ -1459,8 +1459,8 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenExiting_ThenItKeepsTheReviewOpe
 
 	actualErr = given_startingReviewMode(t, gui, subject)
 	then_noError(t, actualErr)
-	if subject.reviewSession.pendingReviewID != "PRR_pending" {
-		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.reviewSession.pendingReviewID)
+	if subject.navigationState.reviewSession.pendingReviewID != "PRR_pending" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.navigationState.reviewSession.pendingReviewID)
 	}
 }
 
@@ -1480,7 +1480,7 @@ func TestReviewMode_GivenAnOpenPendingReview_WhenPressingQFromTheFileTree_ThenIt
 	actualErr = exitHandler(gui, nil)
 	then_noError(t, actualErr)
 
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	then_statusLineContains(t, gui, pendingPullRequestReviewKeptOpenMessage)
@@ -1512,7 +1512,7 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 		},
 	}
 	subject := given_pullRequestCommentProgram(model, loader)
-	subject.activeDetailTab = CommentsDetailTab
+	subject.detailState.activeTab = CommentsDetailTab
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -1527,7 +1527,7 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 	actualErr = exitHandler(gui, nil)
 	then_noError(t, actualErr)
 
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to be inactive after exiting")
 	}
 	if subject.model.Focus() != FocusDetailView {
@@ -1539,8 +1539,8 @@ func TestReviewMode_GivenItStartedFromPullRequestDetail_WhenExiting_ThenItRestor
 	if subject.model.SelectedPullRequestIndex(RequestedPullRequestsTab) != 1 {
 		t.Fatalf("expected requested pull request selection 1, actual %d", subject.model.SelectedPullRequestIndex(RequestedPullRequestsTab))
 	}
-	if subject.activeDetailTab != CommentsDetailTab {
-		t.Fatalf("expected detail tab %v, actual %v", CommentsDetailTab, subject.activeDetailTab)
+	if subject.detailState.activeTab != CommentsDetailTab {
+		t.Fatalf("expected detail tab %v, actual %v", CommentsDetailTab, subject.detailState.activeTab)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
 

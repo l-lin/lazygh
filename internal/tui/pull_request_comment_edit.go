@@ -106,7 +106,7 @@ func (program *Program) selectedPullRequestCommentEditActionTarget() (pullReques
 	if program.model.Focus() != FocusDetailView || program.reviewModeActive() {
 		return pullRequestCommentEditActionTarget{}, false
 	}
-	if !program.shouldShowPullRequestDetailTabs() || program.activeDetailTab != CommentsDetailTab {
+	if !program.shouldShowPullRequestDetailTabs() || program.detailState.activeTab != CommentsDetailTab {
 		return pullRequestCommentEditActionTarget{}, false
 	}
 
@@ -119,7 +119,7 @@ func (program *Program) selectedPullRequestCommentEditActionTarget() (pullReques
 		return pullRequestCommentEditActionTarget{}, false
 	}
 
-	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailState.wrapWidth, program.detailState.viewState.cursor.line)
 	if !ok || sectionAtCursor.section.comment == nil {
 		return pullRequestCommentEditActionTarget{}, false
 	}

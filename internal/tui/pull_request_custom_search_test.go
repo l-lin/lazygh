@@ -55,10 +55,10 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpen
 
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
 		t.Fatal("expected the custom search popup to use the single-line editor")
 	}
-	if actual := subject.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
 		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --state open --sort updated --order desc", actual)
 	}
 }
@@ -75,10 +75,10 @@ func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefill
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	if subject.modalEditor == nil || subject.modalEditor.lineEditor == nil {
+	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
 		t.Fatal("expected the custom search popup to use the single-line editor")
 	}
-	if actual := subject.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
 		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --state open --sort updated --order desc", actual)
 	}
 	then_statusLineKeyHintsAre(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
@@ -106,7 +106,7 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 	then_noError(t, actualErr)
 	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ':')(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.lineEditor.SetText("--author @me --state open --label bug")
+	subject.overlayState.modalEditor.lineEditor.SetText("--author @me --state open --label bug")
 	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)(gui, nil)
 	then_noError(t, actualErr)
 
@@ -126,10 +126,10 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 
 	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ':')(gui, nil)
 	then_noError(t, actualErr)
-	if actual := subject.modalEditor.Text(); actual != "--author @me --state open --label bug" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --label bug" {
 		t.Fatalf("expected the active custom search criteria %q, actual %q", "--author @me --state open --label bug", actual)
 	}
-	subject.modalEditor.lineEditor.SetText("--author @me --state closed")
+	subject.overlayState.modalEditor.lineEditor.SetText("--author @me --state closed")
 	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)(gui, nil)
 	then_noError(t, actualErr)
 

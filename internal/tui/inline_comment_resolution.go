@@ -97,7 +97,7 @@ func (program *Program) selectedBrowserInlineCommentThreadActionTarget() (pullRe
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	switch program.activeDetailTab {
+	switch program.detailState.activeTab {
 	case CommentsDetailTab:
 		return program.selectedBrowserCommentsInlineCommentThreadActionTarget()
 	case ChangesDetailTab:
@@ -117,7 +117,7 @@ func (program *Program) selectedBrowserCommentsInlineCommentThreadActionTarget()
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailState.wrapWidth, program.detailState.viewState.cursor.line)
 	if !ok || sectionAtCursor.section.inlineThread == nil {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
@@ -147,7 +147,7 @@ func (program *Program) selectedBrowserChangesInlineCommentThreadActionTarget() 
 
 	detailDocument := program.currentDetailDocument(nil)
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
+	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
@@ -175,20 +175,20 @@ func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullReques
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
-	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, document, program.detailViewState)
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailState.wrapWidth)
+	document := program.currentReviewDiffDocument(selectedFile, program.detailState.wrapWidth)
+	thread, ok := reviewDiffThreadAtCursor(renderedRows, document, program.detailState.viewState)
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
 	return pullRequestReviewThreadActionTarget{
 		repository: repository,
-		number:     program.reviewSession.summary.Number,
+		number:     program.navigationState.reviewSession.summary.Number,
 		threadID:   strings.TrimSpace(thread.ID),
 		resolved:   thread.IsResolved,
 	}, true

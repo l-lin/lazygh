@@ -3,7 +3,7 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 func (program *Program) modalEditorVisible() bool {
-	return program != nil && program.modalEditor != nil
+	return program != nil && program.overlayState.modalEditor != nil
 }
 
 func (program *Program) openModalEditorFromActionsPopup(gui *gocui.Gui, open func(*gocui.Gui) error) actionsPopupActionResult {

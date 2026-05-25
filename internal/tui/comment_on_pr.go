@@ -33,7 +33,7 @@ func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.
 
 func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, view *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	if program.pullRequestCommentComposerBlocked() {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, vie
 }
 
 func (program *Program) pullRequestCommentComposerBlocked() bool {
-	return program.helpVisible || program.model.SearchActive() || program.modalEditorVisible()
+	return program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible()
 }
 
 func (program *Program) submitPullRequestComment(target pullRequestCommentTarget, body string) error {

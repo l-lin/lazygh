@@ -52,10 +52,10 @@ func TestProgramStart_GivenFreshProgram_WhenStarting_ThenItMarksStartedAndSyncsT
 	actualErr := subject.start(gui)
 	then_noError(t, actualErr)
 
-	if !subject.appStarted {
+	if !subject.startupState.appStarted {
 		t.Fatal("expected the program to be marked as started during startup")
 	}
-	if actual := subject.registeredKeybindingFingerprint; actual == "" {
+	if actual := subject.navigationState.registeredKeybindingFingerprint; actual == "" {
 		t.Fatal("expected startup to register the initial keybindings")
 	}
 	then_currentViewNameIs(t, gui, viewPullRequestsName)

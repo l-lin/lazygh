@@ -55,8 +55,8 @@ func TestTransientErrorPopup_GivenAVisibleError_WhenItsLifetimeExpires_ThenItDis
 	currentTime := time.Date(2026, time.May, 20, 12, 0, 0, 0, time.UTC)
 	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
-	subject.now = func() time.Time { return currentTime }
-	subject.after = func(time.Duration) <-chan time.Time { return delay }
+	subject.timingState.now = func() time.Time { return currentTime }
+	subject.timingState.after = func(time.Duration) <-chan time.Time { return delay }
 	gui := given_headlessGuiWithSize(t, 120, 30)
 	defer gui.Close()
 	subject.configureGUI(gui)

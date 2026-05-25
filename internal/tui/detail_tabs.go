@@ -12,7 +12,7 @@ func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
 	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return nil
 	}
-	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
 		return nil
 	}
 
@@ -24,7 +24,7 @@ func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) erro
 		return nil
 	}
 
-	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
 		return nil
 	}
 

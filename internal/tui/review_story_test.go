@@ -36,7 +36,7 @@ func TestActionsPopup_GivenStoryReviewActionWithoutConfiguredAgent_WhenExecuting
 		t.Fatalf("expected popup title %q, actual %q", "Actions", popupView.Title)
 	}
 	then_statusLineContains(t, gui, "story_review.agent_command")
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the configuration error")
 	}
 }
@@ -67,7 +67,7 @@ func TestReviewStoryMode_GivenTheAgentIsStillRunning_WhenStartingStoryReview_The
 		t.Fatalf("expected one queued story review load, actual %d", len(asyncRunner.runs))
 	}
 	then_statusLineIs(t, gui, string(loadingSpinnerFrames[0]))
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected story review mode to stay inactive until the async load finishes")
 	}
 }
@@ -109,7 +109,7 @@ func TestActionsPopup_GivenStoryReviewAction_WhenGitHubRefusesToStartThePendingR
 
 	then_statusLineDoesNotContain(t, gui, "story review refused")
 	then_transientErrorPopupContains(t, gui, "story review refused")
-	if subject.reviewSession.active {
+	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the GitHub error")
 	}
 }
@@ -164,11 +164,11 @@ func TestReviewStoryMode_GivenGeneratedChapters_WhenExecutingTheAction_ThenItSho
 	actualErr = given_startingStoryReviewMode(t, gui, subject)
 	then_noError(t, actualErr)
 
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to be active")
 	}
-	if subject.reviewSession.pendingReviewID != "PRR_story" {
-		t.Fatalf("expected pending review id %q, actual %q", "PRR_story", subject.reviewSession.pendingReviewID)
+	if subject.navigationState.reviewSession.pendingReviewID != "PRR_story" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_story", subject.navigationState.reviewSession.pendingReviewID)
 	}
 	if len(storyGenerator.configs) != 1 {
 		t.Fatalf("expected one story review generation call, actual %d", len(storyGenerator.configs))

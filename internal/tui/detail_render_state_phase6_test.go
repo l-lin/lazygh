@@ -12,7 +12,7 @@ func TestViewDerivation_GivenRenderGo_WhenInspecting_ThenItDoesNotMutateDetailSh
 	actualSource := string(contents)
 
 	for _, forbiddenSnippet := range []string{
-		"program.detailWrapWidth =",
+		"program.detailState.wrapWidth =",
 		"program.syncDetailViewState(",
 	} {
 		if strings.Contains(actualSource, forbiddenSnippet) {
@@ -30,20 +30,20 @@ func TestDetailViewRenderState_GivenDetailView_WhenPreparing_ThenItUpdatesWrapWi
 	if actualErr != nil && !isUnknownViewError(actualErr) {
 		then_noError(t, actualErr)
 	}
-	subject.detailWrapWidth = defaultDetailWrapWidth
-	subject.detailViewState.cursor = detailPosition{line: 999}
-	subject.lastDetailIdentity = "stale"
+	subject.detailState.wrapWidth = defaultDetailWrapWidth
+	subject.detailState.viewState.cursor = detailPosition{line: 999}
+	subject.detailState.lastIdentity = "stale"
 
 	subject.syncDetailViewRenderState(view)
 
 	expectedWrapWidth := effectiveMarkdownWidth(view.InnerWidth())
-	if actual := subject.detailWrapWidth; actual != expectedWrapWidth {
+	if actual := subject.detailState.wrapWidth; actual != expectedWrapWidth {
 		t.Fatalf("expected detail wrap width %d, actual %d", expectedWrapWidth, actual)
 	}
-	if actual := subject.lastDetailIdentity; actual == "stale" {
+	if actual := subject.detailState.lastIdentity; actual == "stale" {
 		t.Fatalf("expected detail identity to sync away from %q", "stale")
 	}
-	if actual := subject.detailViewState.cursor.line; actual >= 999 {
+	if actual := subject.detailState.viewState.cursor.line; actual >= 999 {
 		t.Fatalf("expected the detail cursor to be clamped during render-state prep, actual line %d", actual)
 	}
 }

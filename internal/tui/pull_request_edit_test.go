@@ -28,7 +28,7 @@ func TestActionsPopup_GivenEditTitleActionSelected_WhenExecuting_ThenItOpensTheS
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	if subject.modalEditor.lineEditor == nil {
+	if subject.overlayState.modalEditor.lineEditor == nil {
 		t.Fatal("expected the title editor to use the line editor")
 	}
 	titleView, actualErr := gui.View(viewModalEditorName)
@@ -102,7 +102,7 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenPressingEnter_ThenItRefr
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.lineEditor.SetText("Renamed PR")
+	subject.overlayState.modalEditor.lineEditor.SetText("Renamed PR")
 
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -154,7 +154,7 @@ func TestEditPullRequestTitle_GivenSubmitFailure_WhenPressingEnter_ThenItKeepsTh
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.lineEditor.SetText("Broken title")
+	subject.overlayState.modalEditor.lineEditor.SetText("Broken title")
 
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -188,7 +188,7 @@ func TestEditPullRequestTitle_GivenControlG_WhenOpeningTheExternalEditor_ThenItR
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.lineEditor.SetText("Draft title")
+	subject.overlayState.modalEditor.lineEditor.SetText("Draft title")
 
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -252,7 +252,7 @@ func TestEditPullRequestDescription_GivenControlG_WhenOpeningTheExternalEditor_T
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Draft body")
+	subject.overlayState.modalEditor.editor.SetText("Draft body")
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -283,7 +283,7 @@ func TestEditPullRequestDescription_GivenMissingExternalEditor_WhenOpeningIt_The
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Draft body")
+	subject.overlayState.modalEditor.editor.SetText("Draft body")
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -314,7 +314,7 @@ func TestEditPullRequestDescription_GivenExternalEditorFailure_WhenOpeningIt_The
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Draft body")
+	subject.overlayState.modalEditor.editor.SetText("Draft body")
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
@@ -350,7 +350,7 @@ func TestEditPullRequestDescription_GivenSuccessfulSubmit_WhenSubmitting_ThenItR
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Updated body")
+	subject.overlayState.modalEditor.editor.SetText("Updated body")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
@@ -402,7 +402,7 @@ func TestEditPullRequestDescription_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	then_noError(t, actualErr)
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
-	subject.modalEditor.editor.SetText("Broken body")
+	subject.overlayState.modalEditor.editor.SetText("Broken body")
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)

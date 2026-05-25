@@ -113,7 +113,7 @@ func TestActionsPopup_GivenReviewModeDiffLine_WhenExecutingAddInlineComment_Then
 	if strings.Contains(composerView.Title, pullRequestCommentComposerTitle) {
 		t.Fatalf("expected popup action to avoid the PR comment composer, actual %q", composerView.Title)
 	}
-	if actual := subject.modalEditor.Text(); actual != "" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "" {
 		t.Fatalf("expected an empty inline comment draft for a single diff line, actual %q", actual)
 	}
 }
@@ -141,7 +141,7 @@ func TestActionsPopup_GivenReviewModeLinewiseSelectionAcrossAddedLines_WhenExecu
 		"return format(version);",
 		"```",
 	}, "\n")
-	if actual := subject.modalEditor.Text(); actual != expected {
+	if actual := subject.overlayState.modalEditor.Text(); actual != expected {
 		t.Fatalf("expected inline comment draft %q, actual %q", expected, actual)
 	}
 }

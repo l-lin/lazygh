@@ -106,7 +106,7 @@ func TestDetailYank_GivenNormalMode_WhenUsingMotionBindings_ThenItCopiesExpected
 			given_detailCursorOnSegmentOccurrence(t, gui, subject, testCase.startSegment, testCase.startOccurrence)
 			detailView, actualErr := gui.View(viewDetailName)
 			then_noError(t, actualErr)
-			expectedCursor := subject.detailViewState.cursor
+			expectedCursor := subject.detailState.viewState.cursor
 
 			expectedClipboard := testCase.expectedClipboard
 			if expectedClipboard == "" {
@@ -119,11 +119,11 @@ func TestDetailYank_GivenNormalMode_WhenUsingMotionBindings_ThenItCopiesExpected
 			if actual := clipboardWriter.writes; len(actual) != 1 || actual[0] != expectedClipboard {
 				t.Fatalf("expected clipboard writes %v, actual %v", []string{expectedClipboard}, actual)
 			}
-			if subject.detailViewState.cursor != expectedCursor {
-				t.Fatalf("expected cursor %+v after yanking, actual %+v", expectedCursor, subject.detailViewState.cursor)
+			if subject.detailState.viewState.cursor != expectedCursor {
+				t.Fatalf("expected cursor %+v after yanking, actual %+v", expectedCursor, subject.detailState.viewState.cursor)
 			}
-			if subject.detailViewState.mode != detailNormalMode {
-				t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailViewState.mode)
+			if subject.detailState.viewState.mode != detailNormalMode {
+				t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailState.viewState.mode)
 			}
 			then_statusLineContains(t, gui, detailYankSuccessMessage)
 		})
@@ -147,7 +147,7 @@ func TestCloseDetail_GivenPendingYank_WhenHandlingEscape_ThenItCancelsTheYankBef
 	then_noError(t, actualErr)
 
 	then_currentViewNameIs(t, gui, viewDetailName)
-	if subject.detailViewState.hasPendingYank() {
+	if subject.detailState.viewState.hasPendingYank() {
 		t.Fatal("expected pending yank to be cleared after escape")
 	}
 

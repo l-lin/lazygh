@@ -18,7 +18,7 @@ func (program *Program) openAllDetailFolds(gui *gocui.Gui, view *gocui.View) err
 
 func (program *Program) setAllDetailFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
-		program.detailViewState.clearPendingPrefix()
+		program.detailState.viewState.clearPendingPrefix()
 		return nil
 	}
 
@@ -55,7 +55,7 @@ func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewportHeight)
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
-	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailViewState)
+	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 
 	if !program.setAllReviewThreadsCollapsed(selectedFile.Threads, collapsed) {
 		return nil
@@ -65,8 +65,8 @@ func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view
 	if cursorOnThread {
 		headerLineIndex := reviewDiffThreadHeaderLineIndex(program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width), threadAtCursor.ID)
 		if headerLineIndex >= 0 {
-			program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-			program.detailViewState.preferredColumn = 0
+			program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
+			program.detailState.viewState.preferredColumn = 0
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
@@ -77,8 +77,8 @@ func (program *Program) setAllReviewThreadsCollapsed(threads []reviewDiffThread,
 	if len(threads) == 0 {
 		return false
 	}
-	if program.reviewSession.collapsedThreadIDs == nil {
-		program.reviewSession.collapsedThreadIDs = map[string]bool{}
+	if program.navigationState.reviewSession.collapsedThreadIDs == nil {
+		program.navigationState.reviewSession.collapsedThreadIDs = map[string]bool{}
 	}
 
 	changed := false
@@ -87,10 +87,10 @@ func (program *Program) setAllReviewThreadsCollapsed(threads []reviewDiffThread,
 		if trimmedThreadID == "" {
 			continue
 		}
-		if reviewDiffThreadCollapsed(thread, program.reviewSession.collapsedThreadIDs) != collapsed {
+		if reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs) != collapsed {
 			changed = true
 		}
-		program.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
+		program.navigationState.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
 	}
 	if changed {
 		program.invalidateReviewDiffRenderCache()
@@ -117,7 +117,7 @@ func (program *Program) setAllBrowserDetailFolds(gui *gocui.Gui, view *gocui.Vie
 	detailDocument := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(detailDocument, viewportHeight)
 
-	switch program.activeDetailTab {
+	switch program.detailState.activeTab {
 	case ChangesDetailTab:
 		return program.setAllBrowserChangesThreadFolds(gui, summary, detailDocument, viewportHeight, collapsed)
 	case CommentsDetailTab:
@@ -129,7 +129,7 @@ func (program *Program) setAllBrowserDetailFolds(gui *gocui.Gui, view *gocui.Vie
 
 func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
 	sections := program.currentPullRequestOverviewSections(summary, detail, detailDocument.width)
-	sectionAtCursor, cursorOnSection := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailViewState.cursor.line)
+	sectionAtCursor, cursorOnSection := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailState.viewState.cursor.line)
 	if !program.setBrowserDetailSectionsCollapsed(browserDetailSectionIDs(sections), collapsed) {
 		return nil
 	}
@@ -137,8 +137,8 @@ func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githu
 	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
 	if cursorOnSection {
 		if headerFocusLine, ok := browserDetailSectionHeaderFocusLine(program.currentPullRequestOverviewSections(summary, detail, detailDocument.width), sectionAtCursor.section.id, false); ok {
-			program.detailViewState.cursor = detailPosition{line: browserDescriptionOverviewStartLine(summary, detail) + headerFocusLine, column: 0}
-			program.detailViewState.preferredColumn = 0
+			program.detailState.viewState.cursor = detailPosition{line: browserDescriptionOverviewStartLine(summary, detail) + headerFocusLine, column: 0}
+			program.detailState.viewState.preferredColumn = 0
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
@@ -147,7 +147,7 @@ func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githu
 
 func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
 	sections := program.currentPullRequestConversationSections(summary, detail, detailDocument.width)
-	sectionAtCursor, cursorOnSection := program.browserConversationSectionAtCursor(summary, detail, detailDocument.width, program.detailViewState.cursor.line)
+	sectionAtCursor, cursorOnSection := program.browserConversationSectionAtCursor(summary, detail, detailDocument.width, program.detailState.viewState.cursor.line)
 	if !program.setBrowserDetailSectionsCollapsed(browserDetailSectionIDs(sections), collapsed) {
 		return nil
 	}
@@ -155,8 +155,8 @@ func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary g
 	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
 	if cursorOnSection {
 		if headerFocusLine, ok := browserDetailSectionHeaderFocusLine(program.currentPullRequestConversationSections(summary, detail, detailDocument.width), sectionAtCursor.section.id, false); ok {
-			program.detailViewState.cursor = detailPosition{line: headerFocusLine, column: 0}
-			program.detailViewState.preferredColumn = 0
+			program.detailState.viewState.cursor = detailPosition{line: headerFocusLine, column: 0}
+			program.detailState.viewState.preferredColumn = 0
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
@@ -170,7 +170,7 @@ func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary 
 	}
 
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	filePathAtCursor, cursorOnFile := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailViewState)
+	filePathAtCursor, cursorOnFile := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	sectionIDs := append(browserChangesFileSectionIDs(summary, result.data.Files), browserChangesThreadSectionIDs(summary, result.data.Files)...)
 	if !program.setBrowserDetailSectionsCollapsed(sectionIDs, collapsed) {
 		return nil
@@ -180,8 +180,8 @@ func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary 
 	if cursorOnFile {
 		headerLineIndex := reviewDiffFileHeaderLineIndex(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width), filePathAtCursor)
 		if headerLineIndex >= 0 {
-			program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-			program.detailViewState.preferredColumn = 0
+			program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
+			program.detailState.viewState.preferredColumn = 0
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)

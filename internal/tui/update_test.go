@@ -7,7 +7,7 @@ func TestUpdate_GivenMsgAppStarted_WhenApplying_ThenItMarksTheProgramAsStarted(t
 
 	actual := Update(subject, MsgAppStarted{})
 
-	if !subject.appStarted {
+	if !subject.startupState.appStarted {
 		t.Fatal("expected the program to be marked as started")
 	}
 	if len(actual) != 0 {

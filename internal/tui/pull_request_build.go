@@ -159,7 +159,7 @@ func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document
 		return pullRequestOverviewEntry{}, false
 	}
 
-	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, document.width, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, document.width, program.detailState.viewState.cursor.line)
 	if !ok || !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Builds") {
 		return pullRequestOverviewEntry{}, false
 	}

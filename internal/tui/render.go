@@ -38,7 +38,7 @@ func (program *Program) configureDetailView(view *gocui.View) {
 	if program.shouldShowPullRequestDetailTabs() {
 		view.TitlePrefix = "[0]"
 		view.Tabs = program.detailTabLabels()
-		view.TabIndex = int(program.activeDetailTab)
+		view.TabIndex = int(program.detailState.activeTab)
 		view.SelFgColor = gocui.GetColor(theme.ActiveTextHex) | gocui.AttrBold
 	}
 	view.Wrap = false
@@ -154,5 +154,5 @@ func (program *Program) renderNotificationsView(view *gocui.View) {
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
-	renderDetailDocumentView(view, program.currentDetailDocument(view), program.detailViewState)
+	renderDetailDocumentView(view, program.currentDetailDocument(view), program.detailState.viewState)
 }

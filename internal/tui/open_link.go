@@ -41,7 +41,7 @@ func (program *Program) openCurrentLink(view *gocui.View) error {
 func (program *Program) currentDetailCursorLink(view *gocui.View) (string, bool) {
 	document := program.currentDetailDocument(view)
 	program.syncDetailViewState(document, viewPageSize(view))
-	if actual, ok := document.linkAt(program.detailViewState.cursor); ok {
+	if actual, ok := document.linkAt(program.detailState.viewState.cursor); ok {
 		return actual, true
 	}
 	return program.buildLinkUnderCursor(document)

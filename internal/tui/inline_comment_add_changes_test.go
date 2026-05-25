@@ -85,7 +85,7 @@ func TestPullRequestCommentShortcut_GivenBrowserChangesDiffLine_WhenPressingC_Th
 	if strings.Contains(composerView.Title, pullRequestCommentComposerTitle) {
 		t.Fatalf("expected changes-tab comment shortcut to avoid the PR comment composer, actual %q", composerView.Title)
 	}
-	if actual := subject.modalEditor.Text(); actual != "" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "" {
 		t.Fatalf("expected an empty inline comment draft for a single diff line, actual %q", actual)
 	}
 }
@@ -116,7 +116,7 @@ func TestPullRequestCommentShortcut_GivenBrowserChangesLinewiseSelectionAcrossAd
 		"return format(version);",
 		"```",
 	}, "\n")
-	if actual := subject.modalEditor.Text(); actual != expected {
+	if actual := subject.overlayState.modalEditor.Text(); actual != expected {
 		t.Fatalf("expected inline comment draft %q, actual %q", expected, actual)
 	}
 }
@@ -146,7 +146,7 @@ func TestInlineComment_GivenBrowserChangesSubmitWithoutPendingReview_WhenPosting
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Optimistic inline comment")
+	subject.overlayState.modalEditor.editor.SetText("Optimistic inline comment")
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -202,7 +202,7 @@ func given_browserChangesDetailFocusForInlineComment(t *testing.T, gui *gocui.Gu
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	actualErr = subject.focusDetailView(gui, nil)

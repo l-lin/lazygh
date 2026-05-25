@@ -9,25 +9,25 @@ import (
 
 func (program *Program) configureModalEditorView(view *gocui.View) {
 	configureFramedOverlayView(view, program.modalEditorTitle(), "")
-	view.Wrap = program.modalEditor != nil && program.modalEditor.lineEditor == nil
+	view.Wrap = program.overlayState.modalEditor != nil && program.overlayState.modalEditor.lineEditor == nil
 	view.Highlight = false
 	view.Editable = true
 	view.Editor = gocui.EditorFunc(program.editModalEditor)
 }
 
 func (program *Program) renderModalEditorView(view *gocui.View) {
-	if view == nil || program.modalEditor == nil {
+	if view == nil || program.overlayState.modalEditor == nil {
 		return
 	}
 
 	view.Clear()
-	text := program.modalEditor.Text()
+	text := program.overlayState.modalEditor.Text()
 	fmt.Fprint(view, text)
 	if view.Wrap {
-		program.setWrappedMultilineInputCursor(view, text, program.modalEditor.Cursor())
+		program.setWrappedMultilineInputCursor(view, text, program.overlayState.modalEditor.Cursor())
 		return
 	}
-	column, row := program.modalEditor.CursorXY()
+	column, row := program.overlayState.modalEditor.CursorXY()
 	program.setMultilineInputCursor(view, column, row)
 }
 
@@ -35,10 +35,10 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 	if key == gocui.KeyAltEnter || key == gocui.KeyEsc {
 		return false
 	}
-	if program.modalEditor == nil {
+	if program.overlayState.modalEditor == nil {
 		return false
 	}
-	if !program.modalEditor.HandleKey(key, ch, mod) {
+	if !program.overlayState.modalEditor.HandleKey(key, ch, mod) {
 		return false
 	}
 
@@ -46,12 +46,12 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 }
 
 func (program *Program) modalEditorTitle() string {
-	if program.modalEditor == nil {
+	if program.overlayState.modalEditor == nil {
 		return ""
 	}
 
-	title := strings.TrimSpace(program.modalEditor.title)
-	message := strings.TrimSpace(program.modalEditor.errorMessage)
+	title := strings.TrimSpace(program.overlayState.modalEditor.title)
+	message := strings.TrimSpace(program.overlayState.modalEditor.errorMessage)
 	if message == "" {
 		return title
 	}

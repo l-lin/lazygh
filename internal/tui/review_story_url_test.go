@@ -58,14 +58,14 @@ func TestOpenStoryReviewByURL_GivenAValidGitHubPullRequestsURLBeforeLayout_WhenR
 	actualErr = subject.layout(gui)
 	then_noError(t, actualErr)
 
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected story review mode to be active")
 	}
-	if subject.reviewSession.mode != reviewSessionModeStory {
-		t.Fatalf("expected review session mode %v, actual %v", reviewSessionModeStory, subject.reviewSession.mode)
+	if subject.navigationState.reviewSession.mode != reviewSessionModeStory {
+		t.Fatalf("expected review session mode %v, actual %v", reviewSessionModeStory, subject.navigationState.reviewSession.mode)
 	}
-	if subject.reviewSession.pendingReviewID != "PRR_story" {
-		t.Fatalf("expected pending review id %q, actual %q", "PRR_story", subject.reviewSession.pendingReviewID)
+	if subject.navigationState.reviewSession.pendingReviewID != "PRR_story" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_story", subject.navigationState.reviewSession.pendingReviewID)
 	}
 	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/rocket#77"}) {
 		t.Fatalf("expected start review calls %v, actual %v", []string{"acme/rocket#77"}, loader.startReviewCalls)

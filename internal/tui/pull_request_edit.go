@@ -36,8 +36,8 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 		}); err != nil {
 			return err
 		}
-		if program.modalEditor != nil {
-			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
 				program.reloadActivePullRequestsTab(gui)
 			}
 		}
@@ -66,8 +66,8 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 		}, pullRequestDescriptionEditorHeight); err != nil {
 			return err
 		}
-		if program.modalEditor != nil {
-			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
 				program.reloadActivePullRequestsTab(gui)
 			}
 		}

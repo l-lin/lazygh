@@ -351,8 +351,8 @@ func given_cursorOnDetailText(t *testing.T, subject *Program, view *gocui.View, 
 		t.Fatalf("expected line %q to contain text %q", line, expectedText)
 	}
 
-	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: utf8.RuneCountInString(line[:byteIndex])}
-	subject.detailViewState.preferredColumn = subject.detailViewState.cursor.column
+	subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: utf8.RuneCountInString(line[:byteIndex])}
+	subject.detailState.viewState.preferredColumn = subject.detailState.viewState.cursor.column
 }
 
 func when_detailCursorMovesToText(t *testing.T, subject *Program, gui *gocui.Gui, view *gocui.View, expectedText string) error {
@@ -365,8 +365,8 @@ func when_detailCursorMovesToText(t *testing.T, subject *Program, gui *gocui.Gui
 			t.Fatalf("expected line %q to contain text %q", line, expectedText)
 		}
 
-		subject.detailViewState.cursor = detailPosition{line: lineIndex, column: utf8.RuneCountInString(line[:byteIndex])}
-		subject.detailViewState.preferredColumn = subject.detailViewState.cursor.column
+		subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: utf8.RuneCountInString(line[:byteIndex])}
+		subject.detailState.viewState.preferredColumn = subject.detailState.viewState.cursor.column
 	})
 }
 

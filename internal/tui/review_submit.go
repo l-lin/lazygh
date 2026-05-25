@@ -71,8 +71,8 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 		}); err != nil {
 			return err
 		}
-		if program.modalEditor != nil {
-			program.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
 				program.finishSubmittedPendingPullRequestReview(gui, target)
 			}
 		}
@@ -85,17 +85,17 @@ func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullReq
 		return pendingPullRequestReviewTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	pendingReviewID := strings.TrimSpace(program.reviewSession.pendingReviewID)
-	if repository == "" || repository == "-" || program.reviewSession.summary.Number <= 0 || pendingReviewID == "" {
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+	pendingReviewID := strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID)
+	if repository == "" || repository == "-" || program.navigationState.reviewSession.summary.Number <= 0 || pendingReviewID == "" {
 		return pendingPullRequestReviewTarget{}, false
 	}
 
 	return pendingPullRequestReviewTarget{
 		repository:      repository,
-		number:          program.reviewSession.summary.Number,
+		number:          program.navigationState.reviewSession.summary.Number,
 		pendingReviewID: pendingReviewID,
-		sourceFocus:     program.reviewSession.sourceFocus,
+		sourceFocus:     program.navigationState.reviewSession.sourceFocus,
 	}, true
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
-	width := program.detailWrapWidth
+	width := program.detailState.wrapWidth
 	if view != nil && view.InnerWidth() > 0 {
 		width = view.InnerWidth()
 	}
@@ -76,7 +76,7 @@ func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width
 		return entry.rows
 	}
 
-	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, program.markdownRenderer, width, program.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
+	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, program.markdownRenderer, width, program.navigationState.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
 	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
 	entry.rows = rows
 	program.storeReviewDiffRenderEntry(cacheKey, entry)

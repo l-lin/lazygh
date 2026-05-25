@@ -13,7 +13,7 @@ func TestCurrentDetailDocument_GivenTheCommentsTabForTheSamePullRequest_WhenBuil
 	}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.markdownRenderer = renderer
-	subject.activeDetailTab = CommentsDetailTab
+	subject.detailState.activeTab = CommentsDetailTab
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:  "First PR",
 		Number: 42,
@@ -90,11 +90,11 @@ func TestBrowserConversationSectionAtCursor_GivenCommentsTabDocumentAlreadyBuilt
 	if !ok || result.err != nil {
 		t.Fatalf("expected cached detail, actual %+v", result)
 	}
-	cursorLine := subject.detailViewState.cursor.line
+	cursorLine := subject.detailState.viewState.cursor.line
 	renderer.callCount = 0
 
 	for range 2 {
-		actual, ok := subject.browserConversationSectionAtCursor(summary, result.detail, subject.detailWrapWidth, cursorLine)
+		actual, ok := subject.browserConversationSectionAtCursor(summary, result.detail, subject.detailState.wrapWidth, cursorLine)
 		if !ok {
 			t.Fatal("expected a conversation section at the inline thread cursor")
 		}
@@ -225,7 +225,7 @@ func TestCurrentActionsPopupActions_GivenChangesTabDiffAlreadyRendered_WhenResol
 
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 	renderer.callCount = 0
@@ -262,7 +262,7 @@ func TestMoveActionsPopupSelection_GivenChangesTabPopupAlreadyOpen_WhenNavigatin
 
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 	then_noError(t, subject.openActionsPopup(gui, nil))

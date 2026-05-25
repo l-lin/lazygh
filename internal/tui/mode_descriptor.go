@@ -45,7 +45,7 @@ func (BrowserMode) SidebarSchema(program *Program) SidebarSchema {
 func (BrowserMode) ScreenState(program *Program) ScreenState {
 	state := program.model.ScreenState()
 	if program.browserShowsPullRequestDetailTabs() {
-		state = state.WithViewTabs(mainPanelViewNumber, int(program.activeDetailTab), program.detailScreenTabs())
+		state = state.WithViewTabs(mainPanelViewNumber, int(program.detailState.activeTab), program.detailScreenTabs())
 	}
 	return state
 }
@@ -107,8 +107,8 @@ func (StoryReviewMode) MainViewResolver(program *Program, state ScreenState) Mai
 }
 
 func (program *Program) modeDescriptor() ModeDescriptor {
-	if program.reviewSession.active {
-		if program.reviewSession.mode == reviewSessionModeStory {
+	if program.navigationState.reviewSession.active {
+		if program.navigationState.reviewSession.mode == reviewSessionModeStory {
 			return StoryReviewMode{}
 		}
 		return ReviewMode{}
@@ -172,7 +172,7 @@ func (program *Program) actionContext() ActionContext {
 		Mode:            state.Mode,
 		ActiveView:      state.ActiveView(),
 		MainView:        program.mainViewResolver(),
-		ActiveDetailTab: program.activeDetailTab,
+		ActiveDetailTab: program.detailState.activeTab,
 	}
 }
 

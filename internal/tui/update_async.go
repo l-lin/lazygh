@@ -202,7 +202,7 @@ func (program *Program) applyLoadingSpinnerTick() {
 }
 
 func (program *Program) applyTransientErrorPopupExpired(message MsgTransientErrorPopupExpired) {
-	if program.transientErrorPopup.generation != message.Generation {
+	if program.overlayState.transientErrorPopup.generation != message.Generation {
 		return
 	}
 	program.clearExpiredTransientErrorPopup(program.currentTime())

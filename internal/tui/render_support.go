@@ -17,18 +17,18 @@ func (program *Program) detailViewContent() string {
 				return renderPullRequestDetailError(summary, result.err)
 			}
 
-			switch program.activeDetailTab {
+			switch program.detailState.activeTab {
 			case CommentsDetailTab:
-				return program.renderCurrentPullRequestConversationsTab(summary, result.detail, program.detailWrapWidth)
+				return program.renderCurrentPullRequestConversationsTab(summary, result.detail, program.detailState.wrapWidth)
 			case CommitsDetailTab:
-				return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailWrapWidth)
+				return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailState.wrapWidth)
 			case ChangesDetailTab:
-				return program.renderCurrentPullRequestChangesTab(summary, program.detailWrapWidth)
+				return program.renderCurrentPullRequestChangesTab(summary, program.detailState.wrapWidth)
 			default:
 				header := renderPullRequestBrowserHeader(summary, result.detail)
-				overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailWrapWidth)
-				content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailWrapWidth)
-				return renderPullRequestBrowserDetailContent(header, overview, content, program.detailWrapWidth)
+				overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailState.wrapWidth)
+				content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
+				return renderPullRequestBrowserDetailContent(header, overview, content, program.detailState.wrapWidth)
 			}
 		}
 		return renderPullRequestDetailLoading(summary, program.loadingSpinnerFrame())
@@ -40,7 +40,7 @@ func (program *Program) detailViewContent() string {
 					if result.err != nil {
 						return renderIssueDetailError(notification, repository, result.err)
 					}
-					return renderIssueDetail(repository, result.detail, program.markdownRenderer, program.detailWrapWidth)
+					return renderIssueDetail(repository, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
 				}
 				return renderNotificationDetailLoading(notification, repository, program.loadingSpinnerFrame())
 			}
@@ -49,7 +49,7 @@ func (program *Program) detailViewContent() string {
 					if result.err != nil {
 						return renderReleaseDetailError(notification, repository, result.err)
 					}
-					return renderReleaseDetail(repository, result.detail, program.markdownRenderer, program.detailWrapWidth)
+					return renderReleaseDetail(repository, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
 				}
 				return renderNotificationDetailLoading(notification, repository, program.loadingSpinnerFrame())
 			}
@@ -103,7 +103,7 @@ func (program *Program) detailHeader(item Item) string {
 }
 
 func (program *Program) buildCurrentDetailDocument(width int) detailDocument {
-	if !program.reviewModeActive() && program.activeDetailTab == ChangesDetailTab {
+	if !program.reviewModeActive() && program.detailState.activeTab == ChangesDetailTab {
 		if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
 			if result, ok := program.pullRequestDiffForSummary(summary); ok && result.err == nil {
 				return newReviewDiffDetailDocument(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, width), width)
@@ -127,13 +127,13 @@ func (program *Program) currentConnectedUserName() string {
 
 func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
 	identity := program.currentDetailIdentity()
-	if identity != program.lastDetailIdentity {
-		program.lastDetailIdentity = identity
-		program.detailViewState.reset()
+	if identity != program.detailState.lastIdentity {
+		program.detailState.lastIdentity = identity
+		program.detailState.viewState.reset()
 	}
 
-	program.detailViewState.sync(detailDocument, viewportHeight)
-	program.detailViewState.syncSearch(detailDocument, program.model.DetailSearchQuery())
+	program.detailState.viewState.sync(detailDocument, viewportHeight)
+	program.detailState.viewState.syncSearch(detailDocument, program.model.DetailSearchQuery())
 }
 
 func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) bool {

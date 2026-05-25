@@ -12,8 +12,8 @@ func TestDetailYankHighlight_GivenMotionYank_WhenRendering_ThenItUsesSearchHighl
 	clipboardWriter := &fakeClipboardWriter{}
 	subject := NewProgramWithModel(model)
 	subject.clipboardWriter = clipboardWriter
-	subject.yankHighlightDuration = time.Second
-	subject.now = func() time.Time { return now }
+	subject.timingState.yankHighlightDuration = time.Second
+	subject.timingState.now = func() time.Time { return now }
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -41,8 +41,8 @@ func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenItClear
 	clipboardWriter := &fakeClipboardWriter{}
 	subject := NewProgramWithModel(model)
 	subject.clipboardWriter = clipboardWriter
-	subject.yankHighlightDuration = 200 * time.Millisecond
-	subject.now = func() time.Time { return now }
+	subject.timingState.yankHighlightDuration = 200 * time.Millisecond
+	subject.timingState.now = func() time.Time { return now }
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -62,7 +62,7 @@ func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenItClear
 	lineIndex := given_viewLineIndexContaining(t, detailView, "Alpha Beta")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewDetailName, lineIndex, "Alpha")
 
-	now = now.Add(subject.yankHighlightDuration + time.Millisecond)
+	now = now.Add(subject.timingState.yankHighlightDuration + time.Millisecond)
 	subject.clearExpiredYankHighlights()
 	then_noError(t, subject.afterStateChange(gui))
 
@@ -76,8 +76,8 @@ func TestPullRequestBuildRunPopup_GivenVisualYank_WhenRendering_ThenItUsesSearch
 	clipboardWriter := &fakeClipboardWriter{}
 	subject := given_pullRequestCommentProgram(model, &fakePullRequestDetailLoader{})
 	subject.clipboardWriter = clipboardWriter
-	subject.yankHighlightDuration = time.Second
-	subject.now = func() time.Time { return now }
+	subject.timingState.yankHighlightDuration = time.Second
+	subject.timingState.now = func() time.Time { return now }
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

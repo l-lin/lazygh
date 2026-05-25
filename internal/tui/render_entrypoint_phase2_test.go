@@ -25,7 +25,7 @@ func TestLayout_GivenStartedProgramWithLoadablePullRequestDetail_WhenRendering_T
 		"acme/widgets#42": {Title: "Loaded PR", Number: 42, Body: "Hello from the detail loader"},
 	}}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -43,7 +43,7 @@ func TestLayout_GivenStartedProgramWithLoadablePullRequestDetail_WhenRendering_T
 
 func TestRefreshViews_GivenVisibleActionsPopup_WhenRefreshing_ThenItDoesNotMutateThePopupSearchState(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
-	subject.appStarted = true
+	subject.startupState.appStarted = true
 	subject.model.OpenActionsPopup(3)
 	subject.model.UpdateActionsPopupSearch("stale", []int{99})
 	expected := []int{99}

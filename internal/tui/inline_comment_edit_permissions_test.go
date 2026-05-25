@@ -51,7 +51,7 @@ func TestActionsPopup_GivenBrowserChangesTabCursorOnANonOwnedInlineComment_WhenO
 
 	then_noError(t, subject.layout(gui))
 	then_noError(t, subject.openDetail(gui, nil))
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	then_noError(t, subject.afterStateChange(gui))
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 

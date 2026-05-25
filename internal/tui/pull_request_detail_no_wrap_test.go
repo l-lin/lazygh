@@ -120,7 +120,7 @@ func TestLayout_GivenCommentsTabWithALongMarkdownComment_WhenBuildingViewZeroDoc
 			},
 		},
 	})
-	subject.activeDetailTab = CommentsDetailTab
+	subject.detailState.activeTab = CommentsDetailTab
 	gui := given_headlessGuiWithSize(t, 60, 20)
 	defer gui.Close()
 	subject.configureGUI(gui)

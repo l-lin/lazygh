@@ -231,7 +231,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 		detailErrors: map[string]error{"acme/widgets#42": errors.New("detail refresh refused")},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.transientErrorPopupDuration = 0
+	subject.timingState.transientErrorPopupDuration = 0
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
 		Title:       "Old PR",
 		Number:      42,
@@ -264,7 +264,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 func TestActionsPopup_GivenRefreshPullRequestListAction_WhenTheReloadFails_ThenItShowsATransientErrorPopup(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{listPullRequestsErr: errors.New("list refresh refused")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.transientErrorPopupDuration = 0
+	subject.timingState.transientErrorPopupDuration = 0
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -303,7 +303,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMod
 		},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.transientErrorPopupDuration = 0
+	subject.timingState.transientErrorPopupDuration = 0
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

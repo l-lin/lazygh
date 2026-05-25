@@ -63,8 +63,8 @@ func TestReviewMode_GivenSubmittedFileTreeSearch_WhenRendering_ThenItKeepsTheTre
 	}
 	modelLineIndex := given_viewLineIndexContaining(t, filesView, "model.go")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewPullRequestsName, modelLineIndex, "model")
-	if subject.reviewSession.selectedFileTreeRow != modelLineIndex {
-		t.Fatalf("expected selected review tree row %d, actual %d", modelLineIndex, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != modelLineIndex {
+		t.Fatalf("expected selected review tree row %d, actual %d", modelLineIndex, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 
 	footerView, actualErr := gui.View(viewPullRequestsFooterName)
@@ -128,8 +128,8 @@ func TestReviewMode_GivenSubmittedFileTreeSearchByTeamName_WhenRendering_ThenItH
 	then_noError(t, actualErr)
 	matchLineIndex := given_viewLineIndexContaining(t, filesView, "render.go")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewPullRequestsName, matchLineIndex, "P3C")
-	if subject.reviewSession.selectedFileTreeRow != matchLineIndex {
-		t.Fatalf("expected selected review tree row %d, actual %d", matchLineIndex, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != matchLineIndex {
+		t.Fatalf("expected selected review tree row %d, actual %d", matchLineIndex, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 
 	footerView, actualErr := gui.View(viewPullRequestsFooterName)
@@ -210,8 +210,8 @@ func then_reviewTreeSelectionAndDetailAre(t *testing.T, gui *gocui.Gui, subject 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
 	expectedRow := given_viewLineIndexContaining(t, filesView, expectedFile)
-	if subject.reviewSession.selectedFileTreeRow != expectedRow {
-		t.Fatalf("expected selected review tree row %d for %q, actual %d", expectedRow, expectedFile, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != expectedRow {
+		t.Fatalf("expected selected review tree row %d for %q, actual %d", expectedRow, expectedFile, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 
 	detailView, actualErr := gui.View(viewDetailName)

@@ -236,8 +236,8 @@ func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_Th
 	if actual := clipboardWriter.writes; len(actual) != 1 || actual[0] != "Beta\nGamma" {
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"Beta\nGamma"}, actual)
 	}
-	if subject.detailViewState.mode != detailNormalMode {
-		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailState.viewState.mode)
 	}
 
 	then_statusLineContains(t, gui, detailYankSuccessMessage)
@@ -277,8 +277,8 @@ func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenIt
 	if actual := clipboardWriter.writes; len(actual) != 1 || actual[0] != "Alpha" {
 		t.Fatalf("expected clipboard writes %v, actual %v", []string{"Alpha"}, actual)
 	}
-	if subject.detailViewState.mode != detailNormalMode {
-		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after yanking, actual %v", detailNormalMode, subject.detailState.viewState.mode)
 	}
 
 	then_statusLineContains(t, gui, detailYankSuccessMessage)
@@ -315,8 +315,8 @@ func TestCopyPullRequestURL_GivenDetailVisualModeAndClipboardFailure_WhenYanking
 	actualErr = subject.copyPullRequestURL(gui, detailView)
 	then_noError(t, actualErr)
 
-	if subject.detailViewState.mode != detailNormalMode {
-		t.Fatalf("expected mode %v after a failed yank, actual %v", detailNormalMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after a failed yank, actual %v", detailNormalMode, subject.detailState.viewState.mode)
 	}
 
 	then_statusLineContains(t, gui, detailYankFailureMessage)
@@ -342,8 +342,8 @@ func TestCloseDetail_GivenDetailVisualMode_WhenHandlingEscape_ThenItLeavesVisual
 	actualErr = subject.closeDetail(gui, detailView)
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewDetailName)
-	if subject.detailViewState.mode != detailNormalMode {
-		t.Fatalf("expected mode %v after the first escape, actual %v", detailNormalMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailNormalMode {
+		t.Fatalf("expected mode %v after the first escape, actual %v", detailNormalMode, subject.detailState.viewState.mode)
 	}
 
 	actualErr = subject.closeDetail(gui, detailView)

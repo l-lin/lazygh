@@ -58,7 +58,7 @@ func (program *Program) visibleScreenOverlays() []OverlayState {
 	if program.modalEditorVisible() {
 		overlays = append(overlays, OverlayState{Kind: OverlayKindModalEditor})
 	}
-	if program.helpVisible {
+	if program.overlayState.helpVisible {
 		overlays = append(overlays, OverlayState{Kind: OverlayKindHelp})
 	}
 	return overlays

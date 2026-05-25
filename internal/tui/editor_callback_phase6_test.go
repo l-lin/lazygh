@@ -69,12 +69,12 @@ func TestUpdate_GivenMsgActionsPopupSearchEdited_WhenAssigneePickerIsVisible_The
 
 func TestUpdate_GivenMsgModalEditorEdited_WhenModalEditorIsVisible_ThenItClearsTheErrorMessage(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
-	subject.modalEditor = newLineModalEditorState("Prompt", "draft", nil)
-	subject.modalEditor.errorMessage = "boom"
+	subject.overlayState.modalEditor = newLineModalEditorState("Prompt", "draft", nil)
+	subject.overlayState.modalEditor.errorMessage = "boom"
 
 	Update(subject, MsgModalEditorEdited{})
 
-	if actual := subject.modalEditor.errorMessage; actual != "" {
+	if actual := subject.overlayState.modalEditor.errorMessage; actual != "" {
 		t.Fatalf("expected modal editor error message %q, actual %q", "", actual)
 	}
 }

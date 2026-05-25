@@ -73,7 +73,7 @@ func (program *Program) validateStoryReviewAvailability() error {
 	if !program.hasDetailQueries() || !program.hasReviewMutations() || program.storyGenerator == nil {
 		return errors.New(storyReviewUnavailableMessage)
 	}
-	if !program.storyReviewConfig.Configured() {
+	if !program.runtimeConfig.storyReviewConfig.Configured() {
 		return errors.New(storyReviewConfigureAgentMessage)
 	}
 	return nil
@@ -91,7 +91,7 @@ func (program *Program) prepareStoryReview(summary githubdomain.PullRequest) (pr
 		return preparedStoryReview{}, newTransientErrorPopupActionError(actualErr)
 	}
 
-	generatedStory, actualErr := program.storyGenerator.Generate(program.storyReviewConfig, story.Request{
+	generatedStory, actualErr := program.storyGenerator.Generate(program.runtimeConfig.storyReviewConfig, story.Request{
 		Metadata:  buildStoryReviewMetadata(summary, detail, detailOK, rawDiff),
 		DiffItems: buildStoryReviewDiffItems(rawDiff.Files),
 		DiffText:  rawDiff.UnifiedDiff,

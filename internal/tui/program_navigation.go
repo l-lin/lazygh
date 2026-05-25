@@ -17,7 +17,7 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
 	if program.model.Focus() == FocusDetailView || program.actionContext().IsReviewContext() {
 		return program.handleSelectionChange(gui, view, 1, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.moveDown(document, viewportHeight)
+			program.detailState.viewState.moveDown(document, viewportHeight)
 		})
 	}
 
@@ -27,7 +27,7 @@ func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) erro
 func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error {
 	if program.model.Focus() == FocusDetailView || program.actionContext().IsReviewContext() {
 		return program.handleSelectionChange(gui, view, -1, func(document detailDocument, viewportHeight int) {
-			program.detailViewState.moveUp(document, viewportHeight)
+			program.detailState.viewState.moveUp(document, viewportHeight)
 		})
 	}
 
@@ -40,7 +40,7 @@ func (program *Program) moveDetailViewDown(gui *gocui.Gui, _ *gocui.View) error 
 	}
 
 	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.scrollDown(document, viewportHeight)
+		program.detailState.viewState.scrollDown(document, viewportHeight)
 	})
 }
 
@@ -50,7 +50,7 @@ func (program *Program) moveDetailViewUp(gui *gocui.Gui, _ *gocui.View) error {
 	}
 
 	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.scrollUp(document, viewportHeight)
+		program.detailState.viewState.scrollUp(document, viewportHeight)
 	})
 }
 
@@ -58,7 +58,7 @@ func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
 	actualView := program.resolveView(gui, view, program.currentViewName())
 	pageSize := viewPageSize(actualView)
 	return program.handlePageChange(gui, actualView, pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailViewState.pageDown(document, viewportHeight)
+		program.detailState.viewState.pageDown(document, viewportHeight)
 	})
 }
 
@@ -66,7 +66,7 @@ func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
 	actualView := program.resolveView(gui, view, program.currentViewName())
 	pageSize := viewPageSize(actualView)
 	return program.handlePageChange(gui, actualView, -pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailViewState.pageUp(document, viewportHeight)
+		program.detailState.viewState.pageUp(document, viewportHeight)
 	})
 }
 
@@ -74,7 +74,7 @@ func (program *Program) fullPageDown(gui *gocui.Gui, view *gocui.View) error {
 	actualView := program.resolveView(gui, view, program.currentViewName())
 	pageSize := viewPageSize(actualView)
 	return program.handlePageChange(gui, actualView, fullPageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailViewState.fullPageDown(document, viewportHeight)
+		program.detailState.viewState.fullPageDown(document, viewportHeight)
 	})
 }
 
@@ -82,7 +82,7 @@ func (program *Program) fullPageUp(gui *gocui.Gui, view *gocui.View) error {
 	actualView := program.resolveView(gui, view, program.currentViewName())
 	pageSize := viewPageSize(actualView)
 	return program.handlePageChange(gui, actualView, -fullPageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailViewState.fullPageUp(document, viewportHeight)
+		program.detailState.viewState.fullPageUp(document, viewportHeight)
 	})
 }
 
@@ -118,19 +118,19 @@ func (program *Program) moveSideSelectionToViewportBottom(gui *gocui.Gui, view *
 
 func (program *Program) recenterDetailView(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.recenter(document, viewportHeight)
+		program.detailState.viewState.recenter(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToViewportTop(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.placeCursorAtViewportTop(document, viewportHeight)
+		program.detailState.viewState.placeCursorAtViewportTop(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.placeCursorAtViewportBottom(document, viewportHeight)
+		program.detailState.viewState.placeCursorAtViewportBottom(document, viewportHeight)
 	})
 }
 
@@ -152,87 +152,87 @@ func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View)
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveLeft(document, viewportHeight)
+		program.detailState.viewState.moveLeft(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorRight(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveRight(document, viewportHeight)
+		program.detailState.viewState.moveRight(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToRowStart(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToRowStart(document, viewportHeight)
+		program.detailState.viewState.moveToRowStart(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToRowEnd(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToRowEnd(document, viewportHeight)
+		program.detailState.viewState.moveToRowEnd(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToTop(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToTop(document, viewportHeight)
+		program.detailState.viewState.moveToTop(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToBottom(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToBottom(document, viewportHeight)
+		program.detailState.viewState.moveToBottom(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToNextWord(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterExclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToNextWord(document, viewportHeight)
+		program.detailState.viewState.moveToNextWord(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToWordEnd(document, viewportHeight)
+		program.detailState.viewState.moveToWordEnd(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToNextBigWord(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterExclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToNextBigWord(document, viewportHeight)
+		program.detailState.viewState.moveToNextBigWord(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToBigWordEnd(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToBigWordEnd(document, viewportHeight)
+		program.detailState.viewState.moveToBigWordEnd(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToPreviousWord(document, viewportHeight)
+		program.detailState.viewState.moveToPreviousWord(document, viewportHeight)
 	})
 }
 
 func (program *Program) moveDetailCursorToPreviousBigWord(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.moveToPreviousBigWord(document, viewportHeight)
+		program.detailState.viewState.moveToPreviousBigWord(document, viewportHeight)
 	})
 }
 
 func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.enterVisualMode()
-		program.detailViewState.sync(document, viewportHeight)
+		program.detailState.viewState.enterVisualMode()
+		program.detailState.viewState.sync(document, viewportHeight)
 	})
 }
 
 func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailViewState.enterLineVisualMode(document)
-		program.detailViewState.sync(document, viewportHeight)
+		program.detailState.viewState.enterLineVisualMode(document)
+		program.detailState.viewState.sync(document, viewportHeight)
 	})
 }
 
@@ -284,7 +284,7 @@ func (program *Program) focusNotificationsView(gui *gocui.Gui, _ *gocui.View) er
 
 func (program *Program) openDetail(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	if program.detailTransitionBlocked() {
 		return nil
 	}
@@ -298,16 +298,16 @@ func (program *Program) closeDetail(gui *gocui.Gui, _ *gocui.View) error {
 	if program.detailTransitionBlocked() {
 		return nil
 	}
-	if program.model.Focus() == FocusDetailView && program.detailViewState.mode.isVisual() {
-		program.detailViewState.exitVisualMode()
+	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
+		program.detailState.viewState.exitVisualMode()
 		return program.refreshDetailView(gui)
 	}
-	if program.model.Focus() == FocusDetailView && program.detailViewState.hasPendingYank() {
-		program.detailViewState.clearPendingPrefix()
+	if program.model.Focus() == FocusDetailView && program.detailState.viewState.hasPendingYank() {
+		program.detailState.viewState.clearPendingPrefix()
 		return program.refreshDetailView(gui)
 	}
 
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	program.model.CloseDetail()
 	return program.syncCurrentView(gui)
 }

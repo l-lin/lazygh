@@ -18,7 +18,7 @@ const (
 
 func (program *Program) openPullRequestByClipboardShortcut(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	if program.mainPaneActionBlocked() || program.actionContext().IsReviewContext() {
 		return nil
 	}

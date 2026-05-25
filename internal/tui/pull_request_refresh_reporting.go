@@ -20,18 +20,18 @@ func (program *Program) beginManualRefresh(successMessage string, pendingOperati
 	}
 
 	program.feedbackMessage = ""
-	program.manualRefreshFeedback = &manualRefreshFeedbackState{
+	program.manualRefreshState.feedback = &manualRefreshFeedbackState{
 		successMessage:    strings.TrimSpace(successMessage),
 		pendingOperations: pendingOperations,
 	}
 }
 
 func (program *Program) completeManualRefreshOperation(gui *gocui.Gui, err error) {
-	if program == nil || program.manualRefreshFeedback == nil {
+	if program == nil || program.manualRefreshState.feedback == nil {
 		return
 	}
 
-	state := program.manualRefreshFeedback
+	state := program.manualRefreshState.feedback
 	if err != nil {
 		if !state.failed {
 			program.feedbackMessage = ""
@@ -48,26 +48,26 @@ func (program *Program) completeManualRefreshOperation(gui *gocui.Gui, err error
 	if !state.failed && state.successMessage != "" {
 		program.setFeedback(FocusDetailView, state.successMessage)
 	}
-	program.manualRefreshFeedback = nil
+	program.manualRefreshState.feedback = nil
 }
 
 func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) bool {
 	if program == nil {
 		return false
 	}
-	if program.manualPullRequestListRefreshPending == nil {
-		program.manualPullRequestListRefreshPending = map[PullRequestTab]bool{}
+	if program.manualRefreshState.pullRequestListPending == nil {
+		program.manualRefreshState.pullRequestListPending = map[PullRequestTab]bool{}
 	}
-	program.manualPullRequestListRefreshPending[tab] = true
+	program.manualRefreshState.pullRequestListPending[tab] = true
 	return true
 }
 
 func (program *Program) consumeManualPullRequestListRefresh(tab PullRequestTab) bool {
-	if program == nil || program.manualPullRequestListRefreshPending == nil {
+	if program == nil || program.manualRefreshState.pullRequestListPending == nil {
 		return false
 	}
-	pending := program.manualPullRequestListRefreshPending[tab]
-	delete(program.manualPullRequestListRefreshPending, tab)
+	pending := program.manualRefreshState.pullRequestListPending[tab]
+	delete(program.manualRefreshState.pullRequestListPending, tab)
 	return pending
 }
 
@@ -75,22 +75,22 @@ func (program *Program) markManualPullRequestDetailRefresh(summary githubdomain.
 	if program == nil {
 		return false
 	}
-	if program.manualPullRequestDetailRefreshPending == nil {
-		program.manualPullRequestDetailRefreshPending = map[string]bool{}
+	if program.manualRefreshState.pullRequestDetailPending == nil {
+		program.manualRefreshState.pullRequestDetailPending = map[string]bool{}
 	}
 	if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-		program.manualPullRequestDetailRefreshPending[key] = true
+		program.manualRefreshState.pullRequestDetailPending[key] = true
 		return true
 	}
 	return false
 }
 
 func (program *Program) consumeManualPullRequestDetailRefresh(key string) bool {
-	if program == nil || program.manualPullRequestDetailRefreshPending == nil || key == "" {
+	if program == nil || program.manualRefreshState.pullRequestDetailPending == nil || key == "" {
 		return false
 	}
-	pending := program.manualPullRequestDetailRefreshPending[key]
-	delete(program.manualPullRequestDetailRefreshPending, key)
+	pending := program.manualRefreshState.pullRequestDetailPending[key]
+	delete(program.manualRefreshState.pullRequestDetailPending, key)
 	return pending
 }
 
@@ -98,22 +98,22 @@ func (program *Program) markManualPullRequestDiffRefresh(summary githubdomain.Pu
 	if program == nil {
 		return false
 	}
-	if program.manualPullRequestDiffRefreshPending == nil {
-		program.manualPullRequestDiffRefreshPending = map[string]bool{}
+	if program.manualRefreshState.pullRequestDiffPending == nil {
+		program.manualRefreshState.pullRequestDiffPending = map[string]bool{}
 	}
 	if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-		program.manualPullRequestDiffRefreshPending[key] = true
+		program.manualRefreshState.pullRequestDiffPending[key] = true
 		return true
 	}
 	return false
 }
 
 func (program *Program) consumeManualPullRequestDiffRefresh(key string) bool {
-	if program == nil || program.manualPullRequestDiffRefreshPending == nil || key == "" {
+	if program == nil || program.manualRefreshState.pullRequestDiffPending == nil || key == "" {
 		return false
 	}
-	pending := program.manualPullRequestDiffRefreshPending[key]
-	delete(program.manualPullRequestDiffRefreshPending, key)
+	pending := program.manualRefreshState.pullRequestDiffPending[key]
+	delete(program.manualRefreshState.pullRequestDiffPending, key)
 	return pending
 }
 

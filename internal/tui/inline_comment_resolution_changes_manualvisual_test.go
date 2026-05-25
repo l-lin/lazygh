@@ -49,7 +49,7 @@ func TestManualVisual_BrowserChangesInlineCommentResolutionActionsPopup(t *testi
 	if actualErr = subject.openDetail(gui, nil); actualErr != nil {
 		t.Fatalf("expected no error, actual %v", actualErr)
 	}
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	if actualErr = subject.afterStateChange(gui); actualErr != nil {
 		t.Fatalf("expected no error, actual %v", actualErr)
 	}

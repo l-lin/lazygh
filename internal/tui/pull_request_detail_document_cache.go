@@ -22,7 +22,7 @@ func (program *Program) currentPullRequestDetailDocumentCacheKey(width int) (pul
 		if !program.reviewSessionShowsDescription() {
 			return pullRequestDetailDocumentCacheKey{}, false
 		}
-		summary = program.reviewSession.summary
+		summary = program.navigationState.reviewSession.summary
 		tab = DescriptionDetailTab
 	default:
 		selectedSummary, ok := program.selectedPullRequestSummaryForDetail()
@@ -30,7 +30,7 @@ func (program *Program) currentPullRequestDetailDocumentCacheKey(width int) (pul
 			return pullRequestDetailDocumentCacheKey{}, false
 		}
 		summary = selectedSummary
-		tab = program.activeDetailTab
+		tab = program.detailState.activeTab
 	}
 	if result, ok := program.pullRequestDetailForSummary(summary); !ok || result.err != nil {
 		return pullRequestDetailDocumentCacheKey{}, false

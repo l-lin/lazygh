@@ -108,7 +108,7 @@ func TestPanelViewContracts_GivenBrowserModeProgram_WhenPressingBrackets_ThenOnl
 	then_currentPanelViewIs(t, gui, mainPanelViewZero)
 	then_noError(t, given_handlerForBinding(t, subject.keybindingSpecs(), panelViewName(mainPanelViewZero), ']')(gui, nil))
 	then_currentPanelViewIs(t, gui, mainPanelViewZero)
-	if actual := subject.activeDetailTab; actual != CommentsDetailTab {
+	if actual := subject.detailState.activeTab; actual != CommentsDetailTab {
 		t.Fatalf("expected view 0 to switch to tab %v, actual %v", CommentsDetailTab, actual)
 	}
 }

@@ -321,14 +321,14 @@ func TestActionsPopup_GivenPullRequestNotificationDetailFocus_WhenExecutingStart
 	actualErr = given_startingReviewMode(t, gui, subject)
 	then_noError(t, actualErr)
 
-	if !subject.reviewSession.active {
+	if !subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to become active")
 	}
-	if subject.reviewSession.pendingReviewID != "PRR_pending" {
-		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.reviewSession.pendingReviewID)
+	if subject.navigationState.reviewSession.pendingReviewID != "PRR_pending" {
+		t.Fatalf("expected pending review id %q, actual %q", "PRR_pending", subject.navigationState.reviewSession.pendingReviewID)
 	}
-	if subject.reviewSession.summary.Number != 42 {
-		t.Fatalf("expected review summary number %d, actual %d", 42, subject.reviewSession.summary.Number)
+	if subject.navigationState.reviewSession.summary.Number != 42 {
+		t.Fatalf("expected review summary number %d, actual %d", 42, subject.navigationState.reviewSession.summary.Number)
 	}
 }
 

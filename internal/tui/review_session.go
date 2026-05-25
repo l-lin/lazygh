@@ -79,13 +79,13 @@ func (program *Program) startStoryReviewSession(summary any, pendingReviewID str
 }
 
 func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
-	program.reviewSession = reviewSessionState{
+	program.navigationState.reviewSession = reviewSessionState{
 		active:                       true,
 		mode:                         mode,
 		sourceFocus:                  program.model.Focus(),
-		sourceDetailTab:              program.activeDetailTab,
+		sourceDetailTab:              program.detailState.activeTab,
 		sourcePaneLayoutSize:         program.model.paneLayoutSize,
 		sourceFullscreenPane:         program.model.fullscreenPane,
 		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
@@ -109,19 +109,19 @@ func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) restorePullRequestBrowserFromReviewMode() {
-	if !program.reviewSession.active {
+	if !program.navigationState.reviewSession.active {
 		return
 	}
 
-	sourceFocus := program.reviewSession.sourceFocus
-	sourceDetailTab := program.reviewSession.sourceDetailTab
-	sourcePaneLayoutSize := program.reviewSession.sourcePaneLayoutSize
-	sourceFullscreenPane := program.reviewSession.sourceFullscreenPane
-	sourceDetailFullscreenReturn := program.reviewSession.sourceDetailFullscreenReturn
-	program.reviewSession = reviewSessionState{}
+	sourceFocus := program.navigationState.reviewSession.sourceFocus
+	sourceDetailTab := program.navigationState.reviewSession.sourceDetailTab
+	sourcePaneLayoutSize := program.navigationState.reviewSession.sourcePaneLayoutSize
+	sourceFullscreenPane := program.navigationState.reviewSession.sourceFullscreenPane
+	sourceDetailFullscreenReturn := program.navigationState.reviewSession.sourceDetailFullscreenReturn
+	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
-	program.activeDetailTab = sourceDetailTab
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.activeTab = sourceDetailTab
+	program.detailState.viewState.clearPendingPrefix()
 	program.model.SetPaneLayoutSize(sourcePaneLayoutSize)
 	program.model.SetFullscreenPane(sourceFullscreenPane)
 	program.model.SetDetailFullscreenReturnSize(sourceDetailFullscreenReturn)
@@ -145,7 +145,7 @@ func (program *Program) reviewModePaneLayoutSize() PaneLayoutSize {
 }
 
 func (program *Program) reviewSessionFiles() []Item {
-	if !program.reviewSession.active {
+	if !program.navigationState.reviewSession.active {
 		return nil
 	}
 
@@ -170,7 +170,7 @@ func (program *Program) reviewSessionSelectedVisibleLine() int {
 		return 0
 	}
 	program.clampReviewSessionSelection()
-	return program.reviewSession.selectedFileTreeRow
+	return program.navigationState.reviewSession.selectedFileTreeRow
 }
 
 func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
@@ -198,51 +198,51 @@ func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
 func (program *Program) clampReviewSessionSelection() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok || len(selectableRows) == 0 {
-		program.reviewSession.selectedFileTreeRow = 0
+		program.navigationState.reviewSession.selectedFileTreeRow = 0
 		return
 	}
-	if program.reviewSession.selectedFileTreeRow < 0 {
-		if program.reviewSession.mode != reviewSessionModeStory {
+	if program.navigationState.reviewSession.selectedFileTreeRow < 0 {
+		if program.navigationState.reviewSession.mode != reviewSessionModeStory {
 			if fileRows, fileRowsOK := program.reviewSessionFileRows(); fileRowsOK && len(fileRows) > 0 {
-				program.reviewSession.selectedFileTreeRow = fileRows[0]
+				program.navigationState.reviewSession.selectedFileTreeRow = fileRows[0]
 				return
 			}
 		}
-		program.reviewSession.selectedFileTreeRow = selectableRows[0]
+		program.navigationState.reviewSession.selectedFileTreeRow = selectableRows[0]
 		return
 	}
 
-	program.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.reviewSession.selectedFileTreeRow, selectableRows, 0)
+	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, 0)
 }
 
 func (program *Program) adjustReviewSessionSelection(change int) {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok || len(selectableRows) == 0 {
-		program.reviewSession.selectedFileTreeRow = 0
+		program.navigationState.reviewSession.selectedFileTreeRow = 0
 		return
 	}
 
-	program.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.reviewSession.selectedFileTreeRow, selectableRows, change)
+	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, change)
 }
 
 func (program *Program) moveReviewSessionSelectionToTop() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok || len(selectableRows) == 0 {
-		program.reviewSession.selectedFileTreeRow = 0
+		program.navigationState.reviewSession.selectedFileTreeRow = 0
 		return
 	}
 
-	program.reviewSession.selectedFileTreeRow = selectableRows[0]
+	program.navigationState.reviewSession.selectedFileTreeRow = selectableRows[0]
 }
 
 func (program *Program) moveReviewSessionSelectionToBottom() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok || len(selectableRows) == 0 {
-		program.reviewSession.selectedFileTreeRow = 0
+		program.navigationState.reviewSession.selectedFileTreeRow = 0
 		return
 	}
 
-	program.reviewSession.selectedFileTreeRow = selectableRows[len(selectableRows)-1]
+	program.navigationState.reviewSession.selectedFileTreeRow = selectableRows[len(selectableRows)-1]
 }
 
 func (program *Program) reviewSessionSelectableRows() ([]int, bool) {
@@ -258,8 +258,8 @@ func (program *Program) reviewSessionRawTree() (reviewDiffTree, []reviewDiffFile
 	if !ok || result.err != nil {
 		return reviewDiffTree{}, nil, false
 	}
-	if program.reviewSession.mode == reviewSessionModeStory && len(program.reviewSession.story.Tree.Rows) > 0 {
-		return program.reviewSession.story.Tree, result.data.Files, true
+	if program.navigationState.reviewSession.mode == reviewSessionModeStory && len(program.navigationState.reviewSession.story.Tree.Rows) > 0 {
+		return program.navigationState.reviewSession.story.Tree, result.data.Files, true
 	}
 	return result.data.FileTree, result.data.Files, true
 }
@@ -269,7 +269,7 @@ func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiff
 	if !ok {
 		return reviewDiffTree{}, nil, false
 	}
-	return reviewDiffTreeVisibleRows(tree, program.reviewSession.collapsedTreeRowIDs), files, true
+	return reviewDiffTreeVisibleRows(tree, program.navigationState.reviewSession.collapsedTreeRowIDs), files, true
 }
 
 func (program *Program) selectedReviewSessionTreeRow() (reviewDiffTreeRow, []reviewDiffFile, bool) {
@@ -278,7 +278,7 @@ func (program *Program) selectedReviewSessionTreeRow() (reviewDiffTreeRow, []rev
 		return reviewDiffTreeRow{}, nil, false
 	}
 	program.clampReviewSessionSelection()
-	rowIndex := clampIndex(program.reviewSession.selectedFileTreeRow, len(tree.Rows))
+	rowIndex := clampIndex(program.navigationState.reviewSession.selectedFileTreeRow, len(tree.Rows))
 	return tree.Rows[rowIndex], files, true
 }
 
@@ -287,10 +287,10 @@ func (program *Program) selectedReviewSessionStoryChapter() (reviewStoryChapter,
 	if !ok || row.Kind != reviewDiffTreeRowKindChapter {
 		return reviewStoryChapter{}, false
 	}
-	if row.ChapterIndex < 0 || row.ChapterIndex >= len(program.reviewSession.story.Chapters) {
+	if row.ChapterIndex < 0 || row.ChapterIndex >= len(program.navigationState.reviewSession.story.Chapters) {
 		return reviewStoryChapter{}, false
 	}
-	return program.reviewSession.story.Chapters[row.ChapterIndex], true
+	return program.navigationState.reviewSession.story.Chapters[row.ChapterIndex], true
 }
 
 func (program *Program) reviewSessionFileRows() ([]int, bool) {

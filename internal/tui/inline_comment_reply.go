@@ -87,7 +87,7 @@ func (program *Program) selectedBrowserInlineCommentReplyTarget() (pullRequestRe
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 
-	switch program.activeDetailTab {
+	switch program.detailState.activeTab {
 	case CommentsDetailTab:
 		return program.selectedBrowserConversationsInlineCommentReplyTarget()
 	case ChangesDetailTab:
@@ -107,7 +107,7 @@ func (program *Program) selectedBrowserConversationsInlineCommentReplyTarget() (
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 
-	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailWrapWidth, program.detailViewState.cursor.line)
+	sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, program.detailState.wrapWidth, program.detailState.viewState.cursor.line)
 	if !ok || sectionAtCursor.section.inlineThread == nil || !sectionAtCursor.inBody {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
@@ -139,7 +139,7 @@ func (program *Program) selectedBrowserChangesInlineCommentReplyTarget() (pullRe
 
 	detailDocument := program.currentDetailDocument(nil)
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	thread, _, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailViewState)
+	thread, _, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
@@ -165,29 +165,29 @@ func (program *Program) selectedReviewInlineCommentReplyTarget() (pullRequestRev
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailWrapWidth)
-	document := program.currentReviewDiffDocument(selectedFile, program.detailWrapWidth)
-	thread, _, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailViewState)
+	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailState.wrapWidth)
+	document := program.currentReviewDiffDocument(selectedFile, program.detailState.wrapWidth)
+	thread, _, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailState.viewState)
 	if !ok {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.reviewSession.summary.Repository))
-	if repository == "" || program.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
+	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadReplyTarget{}, false
 	}
 	return pullRequestReviewThreadReplyTarget{
 		repository:    repository,
-		number:        program.reviewSession.summary.Number,
-		pendingReview: strings.TrimSpace(program.reviewSession.pendingReviewID),
+		number:        program.navigationState.reviewSession.summary.Number,
+		pendingReview: strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID),
 		threadID:      strings.TrimSpace(thread.ID),
 	}, true
 }
 
 func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.View) error {
 	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+	program.detailState.viewState.clearPendingPrefix()
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return nil
 	}
 	if !program.inlineCommentReplyShortcutContextActive() {
@@ -212,7 +212,7 @@ func (program *Program) inlineCommentReplyShortcutContextActive() bool {
 	if !program.shouldShowPullRequestDetailTabs() {
 		return false
 	}
-	switch program.activeDetailTab {
+	switch program.detailState.activeTab {
 	case CommentsDetailTab, ChangesDetailTab:
 		return true
 	default:

@@ -34,28 +34,28 @@ func (program *Program) applyActionsPopupActionResultHandled(message MsgActionsP
 }
 
 func (program *Program) applyModalEditorSubmitRequested() []Cmd {
-	if program == nil || program.modalEditor == nil {
+	if program == nil || program.overlayState.modalEditor == nil {
 		return nil
 	}
 
-	program.modalEditor.errorMessage = ""
+	program.overlayState.modalEditor.errorMessage = ""
 	var afterSubmit func(*Program)
-	if callback := program.modalEditor.afterSubmit; callback != nil {
+	if callback := program.overlayState.modalEditor.afterSubmit; callback != nil {
 		afterSubmit = func(program *Program) {
 			callback(program.gui)
 		}
 	}
-	return []Cmd{modalEditorSubmitCmd{Text: program.modalEditor.Text(), Submit: program.modalEditor.submit, AfterSubmit: afterSubmit}}
+	return []Cmd{modalEditorSubmitCmd{Text: program.overlayState.modalEditor.Text(), Submit: program.overlayState.modalEditor.submit, AfterSubmit: afterSubmit}}
 }
 
 func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) {
-	if program == nil || program.modalEditor == nil {
+	if program == nil || program.overlayState.modalEditor == nil {
 		return
 	}
 
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-			program.modalEditor.errorMessage = ""
+			program.overlayState.modalEditor.errorMessage = ""
 			program.reportError(program.gui, popupMessage)
 			return
 		}
@@ -64,33 +64,33 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 			program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
 			return
 		}
-		program.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
+		program.overlayState.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
 		return
 	}
 
 	if message.AfterSubmit != nil {
 		message.AfterSubmit(program)
 	}
-	program.modalEditor = nil
+	program.overlayState.modalEditor = nil
 }
 
 func (program *Program) applyModalEditorExternalEditRequested() []Cmd {
-	if program == nil || program.modalEditor == nil {
+	if program == nil || program.overlayState.modalEditor == nil {
 		return nil
 	}
-	return []Cmd{modalEditorExternalEditCmd{Text: program.modalEditor.Text()}}
+	return []Cmd{modalEditorExternalEditCmd{Text: program.overlayState.modalEditor.Text()}}
 }
 
 func (program *Program) applyModalEditorExternalEditFinished(message MsgModalEditorExternalEditFinished) {
-	if program == nil || program.modalEditor == nil {
+	if program == nil || program.overlayState.modalEditor == nil {
 		return
 	}
 	if message.Err != nil {
-		program.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
+		program.overlayState.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
 		return
 	}
 
-	program.modalEditor.errorMessage = ""
+	program.overlayState.modalEditor.errorMessage = ""
 	program.setModalEditorTextFromExternalEditor(message.Text)
 }
 
@@ -98,7 +98,7 @@ func (program *Program) openModalEditorState(state *modalEditorState) {
 	if program == nil {
 		return
 	}
-	program.modalEditor = state
+	program.overlayState.modalEditor = state
 }
 
 func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullRequestBuildRunLoadRequested) []Cmd {
@@ -204,7 +204,7 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 	if message.Err == nil {
 		switch message.SelectionTarget {
 		case clipboardWriteSelectionDetail:
-			program.activateYankHighlight(&program.detailViewState, message.Selection)
+			program.activateYankHighlight(&program.detailState.viewState, message.Selection)
 		case clipboardWriteSelectionBuildPopup:
 			if program.pullRequestBuildRunPopup != nil {
 				program.activateYankHighlight(&program.pullRequestBuildRunPopup.viewState, message.Selection)
@@ -231,7 +231,7 @@ func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequ
 }
 
 func (program *Program) applyOpenLinkUnderCursorRequested(message MsgOpenLinkUnderCursorRequested) []Cmd {
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	url, ok := program.currentDetailCursorLink(program.resolveView(program.gui, message.View, viewDetailName))
 	switch {
 	case !ok:
@@ -266,11 +266,11 @@ func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message M
 }
 
 func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequestURLRequested) []Cmd {
-	if program.model.Focus() == FocusDetailView && program.detailViewState.mode.isVisual() {
+	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
 		return program.selectedDetailClipboardWriteCmd(program.resolveView(program.gui, message.View, viewDetailName))
 	}
 
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	url, ok := program.selectedPullRequestURL()
 	if !ok {
 		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
@@ -308,9 +308,9 @@ func (program *Program) applyCopyPullRequestBuildRunPopupContentRequested(messag
 func (program *Program) selectedDetailClipboardWriteCmd(view *gocui.View) []Cmd {
 	detailDocument := program.currentDetailDocument(view)
 	program.syncDetailViewState(detailDocument, viewPageSize(view))
-	selection, _ := detailSelectionForCurrentMode(program.detailViewState, detailDocument)
-	text := program.detailViewState.selectedText(detailDocument)
-	program.detailViewState.exitVisualMode()
+	selection, _ := detailSelectionForCurrentMode(program.detailState.viewState, detailDocument)
+	text := program.detailState.viewState.selectedText(detailDocument)
+	program.detailState.viewState.exitVisualMode()
 	return []Cmd{writeClipboardCmd{Text: text, SuccessMessage: detailYankSuccessMessage, FailureMessage: detailYankFailureMessage, Target: program.model.Focus(), Selection: selection, SelectionTarget: clipboardWriteSelectionDetail}}
 }
 

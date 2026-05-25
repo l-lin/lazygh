@@ -86,7 +86,7 @@ func TestActionsPopup_GivenBrowserChangesCursorOnInlineComment_WhenOpening_ThenI
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
@@ -160,11 +160,11 @@ func TestReplyToInlineComment_GivenBrowserConversationsAction_WhenSubmitting_The
 	if !strings.Contains(editorView.Title, pullRequestInlineCommentReplyEditorTitle) {
 		t.Fatalf("expected editor title to contain %q, actual %q", pullRequestInlineCommentReplyEditorTitle, editorView.Title)
 	}
-	if actual := subject.modalEditor.Text(); actual != "" {
+	if actual := subject.overlayState.modalEditor.Text(); actual != "" {
 		t.Fatalf("expected an empty inline comment reply draft, actual %q", actual)
 	}
 
-	subject.modalEditor.editor.SetText("Browser reply body")
+	subject.overlayState.modalEditor.editor.SetText("Browser reply body")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -208,7 +208,7 @@ func TestReplyToInlineComment_GivenBrowserChangesAction_WhenSubmitting_ThenItRef
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
@@ -222,7 +222,7 @@ func TestReplyToInlineComment_GivenBrowserChangesAction_WhenSubmitting_ThenItRef
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Browser changes reply")
+	subject.overlayState.modalEditor.editor.SetText("Browser changes reply")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -442,7 +442,7 @@ func TestReplyToInlineComment_GivenReviewModeAction_WhenSubmitting_ThenItAddsThe
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Review reply body")
+	subject.overlayState.modalEditor.editor.SetText("Review reply body")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -502,7 +502,7 @@ func TestReplyToInlineComment_GivenCommentsTabSubmit_WhenPostingReply_ThenItKeep
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Optimistic reply")
+	subject.overlayState.modalEditor.editor.SetText("Optimistic reply")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -544,7 +544,7 @@ func TestReplyToInlineComment_GivenChangesTabSubmit_WhenPostingReply_ThenItKeeps
 	then_noError(t, actualErr)
 	actualErr = subject.openDetail(gui, nil)
 	then_noError(t, actualErr)
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered inline thread body")
@@ -560,7 +560,7 @@ func TestReplyToInlineComment_GivenChangesTabSubmit_WhenPostingReply_ThenItKeeps
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Optimistic reply")
+	subject.overlayState.modalEditor.editor.SetText("Optimistic reply")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -614,7 +614,7 @@ func TestReplyToInlineComment_GivenReviewModeSubmit_WhenPostingReply_ThenItKeeps
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Optimistic reply")
+	subject.overlayState.modalEditor.editor.SetText("Optimistic reply")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)

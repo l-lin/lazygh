@@ -63,7 +63,7 @@ func (program *Program) shouldShowStatusLineKeyHints(focus Focus) bool {
 	if focus != program.model.Focus() || !program.model.PaneVisible(focus) {
 		return false
 	}
-	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
 		return false
 	}
 	return isMainPaneFocus(focus)
@@ -76,9 +76,9 @@ func (program *Program) modalEditorKeyHintsText() string {
 
 	submitAction := modalEditorSubmitAction
 	submitFallback := "Alt+Enter"
-	if program.modalEditor != nil {
-		submitAction = program.modalEditor.submitAction()
-		submitFallback = program.modalEditor.submitHintFallback()
+	if program.overlayState.modalEditor != nil {
+		submitAction = program.overlayState.modalEditor.submitAction()
+		submitFallback = program.overlayState.modalEditor.submitHintFallback()
 	}
 	submitHint := statusLineHintSpec{label: "submit", fallback: submitFallback, actionIDs: []keybindingActionID{{scope: keymapScopeModalEditor, action: submitAction}}}
 
@@ -93,7 +93,7 @@ func (program *Program) shouldShowModalEditorStatusLineKeyHints() bool {
 	if !program.modalEditorVisible() {
 		return false
 	}
-	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildRunPopupVisible() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.pullRequestBuildRunPopupVisible() {
 		return false
 	}
 	return true
@@ -125,7 +125,7 @@ func (program *Program) shouldShowActionsPopupSearchStatusLineKeyHints() bool {
 	if !program.model.ActionsPopupVisible() || !program.model.ActionsPopupSearchActive() {
 		return false
 	}
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
 		return false
 	}
 	return true
@@ -155,7 +155,7 @@ func (program *Program) shouldShowActionsPopupStatusLineKeyHints() bool {
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
 		return false
 	}
-	if program.helpVisible || program.model.SearchActive() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() || program.pullRequestBuildRunPopupVisible() {
 		return false
 	}
 	return true
@@ -176,7 +176,7 @@ func (program *Program) shouldShowSearchStatusLineKeyHints() bool {
 	if !program.searchPromptVisible() {
 		return false
 	}
-	if program.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+	if program.overlayState.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return false
 	}
 	return true
@@ -199,7 +199,7 @@ func (program *Program) shouldShowPullRequestBuildRunPopupStatusLineKeyHints() b
 	if !program.pullRequestBuildRunPopupVisible() || program.searchPromptVisible() {
 		return false
 	}
-	if program.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+	if program.overlayState.helpVisible || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return false
 	}
 	return true

@@ -8,9 +8,9 @@ type pullRequestCountState struct {
 }
 
 func (program *Program) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
-	program.pullRequestSearches = appconfig.ResolvePullRequestSearches(searches)
+	program.runtimeConfig.pullRequestSearches = appconfig.ResolvePullRequestSearches(searches)
 	program.resetPullRequestSearchState()
-	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.pullRequestSearches))
+	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
 }
 
 func pullRequestTabSeedsForSearches(searches []appconfig.PullRequestSearch) []PullRequestTabSeed {
@@ -23,7 +23,7 @@ func pullRequestTabSeedsForSearches(searches []appconfig.PullRequestSearch) []Pu
 }
 
 func (program *Program) pullRequestSearch(tab PullRequestTab) appconfig.PullRequestSearch {
-	searches := appconfig.ResolvePullRequestSearches(program.pullRequestSearches)
+	searches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)
 	index := int(tab)
 	if index < 0 || index >= len(searches) {
 		return searches[0]

@@ -4,18 +4,18 @@ func (program *Program) setPendingListViewportPlacement(viewName string, placeme
 	if viewName == "" {
 		return
 	}
-	if program.pendingListViewportPlacements == nil {
-		program.pendingListViewportPlacements = map[string]viewportPlacement{}
+	if program.navigationState.pendingListViewportPlacements == nil {
+		program.navigationState.pendingListViewportPlacements = map[string]viewportPlacement{}
 	}
-	program.pendingListViewportPlacements[viewName] = placement
+	program.navigationState.pendingListViewportPlacements[viewName] = placement
 }
 
 func (program *Program) pendingListViewportPlacement(viewName string) (viewportPlacement, bool) {
-	if viewName == "" || len(program.pendingListViewportPlacements) == 0 {
+	if viewName == "" || len(program.navigationState.pendingListViewportPlacements) == 0 {
 		return 0, false
 	}
 
-	placement, ok := program.pendingListViewportPlacements[viewName]
+	placement, ok := program.navigationState.pendingListViewportPlacements[viewName]
 	if !ok {
 		return 0, false
 	}
@@ -23,10 +23,10 @@ func (program *Program) pendingListViewportPlacement(viewName string) (viewportP
 }
 
 func (program *Program) clearPendingListViewportPlacement(viewName string) {
-	if viewName == "" || len(program.pendingListViewportPlacements) == 0 {
+	if viewName == "" || len(program.navigationState.pendingListViewportPlacements) == 0 {
 		return
 	}
-	delete(program.pendingListViewportPlacements, viewName)
+	delete(program.navigationState.pendingListViewportPlacements, viewName)
 }
 
 func (program *Program) clearVisibleListViewportPlacements(layout ScreenLayout) {

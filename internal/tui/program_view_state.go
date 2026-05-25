@@ -16,7 +16,7 @@ func (program *Program) afterStateChange(gui *gocui.Gui) error {
 	if program.model.ActionsPopupVisible() {
 		program.syncActionsPopupSearch()
 	}
-	if program.appStarted {
+	if program.startupState.appStarted {
 		program.executeCmds(gui, program.plannedCommands(gui))
 	}
 	return program.refreshViews(gui)
@@ -83,7 +83,7 @@ func (program *Program) refreshActionsPopupViews(gui *gocui.Gui) error {
 
 func (program *Program) syncCurrentView(gui *gocui.Gui) error {
 	gui.Cursor = program.shouldShowCursor()
-	if program.helpVisible {
+	if program.overlayState.helpVisible {
 		gui.Cursor = false
 		return program.setCurrentViewIfPresent(gui, viewHelpName)
 	}

@@ -76,8 +76,8 @@ func (program *Program) optimisticPullRequestDetailSeed(identity githubdomain.Pu
 		}
 	}
 
-	if program.openedPullRequestSummary != nil && samePullRequestIdentity(*program.openedPullRequestSummary, identity) {
-		summary := *program.openedPullRequestSummary
+	if program.navigationState.openedPullRequestSummary != nil && samePullRequestIdentity(*program.navigationState.openedPullRequestSummary, identity) {
+		summary := *program.navigationState.openedPullRequestSummary
 		return githubdomain.PullRequestDetail{
 			Title:   strings.TrimSpace(summary.Title),
 			Number:  summary.Number,
@@ -88,8 +88,8 @@ func (program *Program) optimisticPullRequestDetailSeed(identity githubdomain.Pu
 		}
 	}
 
-	if samePullRequestIdentity(program.reviewSession.summary, identity) {
-		summary := program.reviewSession.summary
+	if samePullRequestIdentity(program.navigationState.reviewSession.summary, identity) {
+		summary := program.navigationState.reviewSession.summary
 		return githubdomain.PullRequestDetail{
 			Title:   strings.TrimSpace(summary.Title),
 			Number:  summary.Number,

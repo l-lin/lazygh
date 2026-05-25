@@ -15,7 +15,7 @@ func (program *Program) toggleSelectedReviewTreeRowVisibility(gui *gocui.Gui) (b
 	if !ok || len(visibleTree.Rows) == 0 {
 		return false, nil
 	}
-	selectedRowIndex := clampIndex(program.reviewSession.selectedFileTreeRow, len(visibleTree.Rows))
+	selectedRowIndex := clampIndex(program.navigationState.reviewSession.selectedFileTreeRow, len(visibleTree.Rows))
 	selectedRow := visibleTree.Rows[selectedRowIndex]
 
 	rawTree, _, rawTreeOK := program.reviewSessionRawTree()
@@ -26,9 +26,9 @@ func (program *Program) toggleSelectedReviewTreeRowVisibility(gui *gocui.Gui) (b
 	if !ok {
 		return false, nil
 	}
-	program.setReviewTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.reviewSession.collapsedTreeRowIDs))
-	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
-	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID)
+	program.setReviewTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.navigationState.reviewSession.collapsedTreeRowIDs))
+	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.navigationState.reviewSession.collapsedTreeRowIDs)
+	program.navigationState.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID)
 	return true, nil
 }
 
@@ -58,13 +58,13 @@ func (program *Program) setAllReviewTreeFolds(gui *gocui.Gui, _ *gocui.View, col
 	if !visibleTreeOK || len(currentVisibleTree.Rows) == 0 {
 		return nil
 	}
-	selectedRowID := currentVisibleTree.Rows[clampIndex(program.reviewSession.selectedFileTreeRow, len(currentVisibleTree.Rows))].ID
+	selectedRowID := currentVisibleTree.Rows[clampIndex(program.navigationState.reviewSession.selectedFileTreeRow, len(currentVisibleTree.Rows))].ID
 	if !program.setAllReviewTreeRowsCollapsed(rawTree, collapsed) {
 		return nil
 	}
 
-	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
-	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID)
+	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.navigationState.reviewSession.collapsedTreeRowIDs)
+	program.navigationState.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID)
 	return nil
 }
 
@@ -77,18 +77,18 @@ func (program *Program) setReviewTreeRowCollapsed(rowID string, collapsed bool) 
 	if trimmedRowID == "" {
 		return
 	}
-	if program.reviewSession.collapsedTreeRowIDs == nil {
-		program.reviewSession.collapsedTreeRowIDs = map[string]bool{}
+	if program.navigationState.reviewSession.collapsedTreeRowIDs == nil {
+		program.navigationState.reviewSession.collapsedTreeRowIDs = map[string]bool{}
 	}
-	program.reviewSession.collapsedTreeRowIDs[trimmedRowID] = collapsed
+	program.navigationState.reviewSession.collapsedTreeRowIDs[trimmedRowID] = collapsed
 }
 
 func (program *Program) setAllReviewTreeRowsCollapsed(tree reviewDiffTree, collapsed bool) bool {
 	if len(tree.Rows) == 0 {
 		return false
 	}
-	if program.reviewSession.collapsedTreeRowIDs == nil {
-		program.reviewSession.collapsedTreeRowIDs = map[string]bool{}
+	if program.navigationState.reviewSession.collapsedTreeRowIDs == nil {
+		program.navigationState.reviewSession.collapsedTreeRowIDs = map[string]bool{}
 	}
 
 	changed := false
@@ -100,10 +100,10 @@ func (program *Program) setAllReviewTreeRowsCollapsed(tree reviewDiffTree, colla
 		if trimmedRowID == "" {
 			continue
 		}
-		if actualCollapsed, ok := program.reviewSession.collapsedTreeRowIDs[trimmedRowID]; !ok || actualCollapsed != collapsed {
+		if actualCollapsed, ok := program.navigationState.reviewSession.collapsedTreeRowIDs[trimmedRowID]; !ok || actualCollapsed != collapsed {
 			changed = true
 		}
-		program.reviewSession.collapsedTreeRowIDs[trimmedRowID] = collapsed
+		program.navigationState.reviewSession.collapsedTreeRowIDs[trimmedRowID] = collapsed
 	}
 	return changed
 }

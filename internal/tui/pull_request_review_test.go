@@ -108,7 +108,7 @@ func TestActionsPopup_GivenReviewCommentActionSelected_WhenExecuting_ThenItOpens
 		t.Fatalf("expected composer title to contain %q, actual %q", pullRequestReviewCommentComposerTitle, composerView.Title)
 	}
 
-	subject.modalEditor.editor.SetText("Please add context")
+	subject.overlayState.modalEditor.editor.SetText("Please add context")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
@@ -145,7 +145,7 @@ func TestActionsPopup_GivenRequestChangesActionSelected_WhenSubmittingFails_Then
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	subject.modalEditor.editor.SetText("Needs tests")
+	subject.overlayState.modalEditor.editor.SetText("Needs tests")
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)

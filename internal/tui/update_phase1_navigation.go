@@ -17,28 +17,28 @@ func (program *Program) applyAdvanceDetailTab(message MsgAdvanceDetailTab) {
 	if program.modeDescriptor().Mode() != ScreenModeBrowser {
 		return
 	}
-	if program.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
 		return
 	}
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	count := len(browserDetailTabs)
 	if count == 0 || message.Delta == 0 {
 		return
 	}
-	index := int(program.activeDetailTab)
+	index := int(program.detailState.activeTab)
 	if message.Delta > 0 {
-		program.activeDetailTab = DetailTab((index + 1) % count)
+		program.detailState.activeTab = DetailTab((index + 1) % count)
 		return
 	}
-	program.activeDetailTab = DetailTab((index + count - 1) % count)
+	program.detailState.activeTab = DetailTab((index + count - 1) % count)
 }
 
 func (program *Program) applyExitReviewMode() {
 	if !program.reviewModeActive() {
 		return
 	}
-	focus := program.reviewSession.sourceFocus
-	pendingReviewID := strings.TrimSpace(program.reviewSession.pendingReviewID)
+	focus := program.navigationState.reviewSession.sourceFocus
+	pendingReviewID := strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID)
 	program.restorePullRequestBrowserFromReviewMode()
 	if pendingReviewID != "" {
 		program.setFeedback(focus, pendingPullRequestReviewKeptOpenMessage)
@@ -47,21 +47,21 @@ func (program *Program) applyExitReviewMode() {
 
 func (program *Program) applyToggleHelp() {
 	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	if program.helpToggleBlocked() {
 		return
 	}
-	program.helpVisible = !program.helpVisible
+	program.overlayState.helpVisible = !program.overlayState.helpVisible
 }
 
 func (program *Program) applyCloseHelp() {
 	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	program.helpVisible = false
+	program.detailState.viewState.clearPendingPrefix()
+	program.overlayState.helpVisible = false
 }
 
 func (program *Program) applyAdjustFocusedPane(message MsgAdjustFocusedPane) {
-	if program.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return
 	}
 	if message.Delta > 0 {
@@ -126,7 +126,7 @@ func (program *Program) applyRepeatReviewFileTreeSearch(message MsgRepeatReviewF
 	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView {
 		return
 	}
-	query := program.reviewSession.fileTreeSearchQuery
+	query := program.navigationState.reviewSession.fileTreeSearchQuery
 	if strings.TrimSpace(query) == "" {
 		return
 	}
@@ -166,15 +166,15 @@ func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCur
 	actualView := program.resolveView(program.gui, message.View, viewDetailName)
 	document := program.currentDetailDocument(actualView)
 	program.syncDetailViewState(document, viewPageSize(actualView))
-	query, ok := document.wordAt(program.detailViewState.cursor)
+	query, ok := document.wordAt(program.detailState.viewState.cursor)
 	if !ok {
 		return
 	}
 
 	inputContext := program.inputContext()
-	program.detailViewState.clearPendingPrefix()
+	program.detailState.viewState.clearPendingPrefix()
 	if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-		program.reviewSession.fileTreeSearchQuery = ""
+		program.navigationState.reviewSession.fileTreeSearchQuery = ""
 	}
 	program.model.StartSearch()
 	program.updateActiveSearchDraft(query)

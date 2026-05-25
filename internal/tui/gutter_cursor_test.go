@@ -70,8 +70,8 @@ func TestBrowserChangesCursor_GivenDiffLineAtLogicalColumnZero_WhenRendering_The
 	if actualCursorX != expectedCursorX {
 		t.Fatalf("expected browser changes cursor x %d, actual %d", expectedCursorX, actualCursorX)
 	}
-	if subject.detailViewState.cursor.column != 0 {
-		t.Fatalf("expected logical diff cursor column %d, actual %d", 0, subject.detailViewState.cursor.column)
+	if subject.detailState.viewState.cursor.column != 0 {
+		t.Fatalf("expected logical diff cursor column %d, actual %d", 0, subject.detailState.viewState.cursor.column)
 	}
 
 	handler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, '0')
@@ -82,8 +82,8 @@ func TestBrowserChangesCursor_GivenDiffLineAtLogicalColumnZero_WhenRendering_The
 	if actualCursorX != expectedCursorX {
 		t.Fatalf("expected browser changes cursor x %d after moving to row start, actual %d", expectedCursorX, actualCursorX)
 	}
-	if subject.detailViewState.cursor.column != 0 {
-		t.Fatalf("expected logical diff cursor column %d after moving to row start, actual %d", 0, subject.detailViewState.cursor.column)
+	if subject.detailState.viewState.cursor.column != 0 {
+		t.Fatalf("expected logical diff cursor column %d after moving to row start, actual %d", 0, subject.detailState.viewState.cursor.column)
 	}
 }
 
@@ -117,8 +117,8 @@ func TestReviewDiffCursor_GivenDiffLineAtLogicalColumnZero_WhenRendering_ThenThe
 	if actualCursorX != expectedCursorX {
 		t.Fatalf("expected review diff cursor x %d, actual %d", expectedCursorX, actualCursorX)
 	}
-	if subject.detailViewState.cursor.column != 0 {
-		t.Fatalf("expected logical diff cursor column %d, actual %d", 0, subject.detailViewState.cursor.column)
+	if subject.detailState.viewState.cursor.column != 0 {
+		t.Fatalf("expected logical diff cursor column %d, actual %d", 0, subject.detailState.viewState.cursor.column)
 	}
 
 	handler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, '0')
@@ -129,8 +129,8 @@ func TestReviewDiffCursor_GivenDiffLineAtLogicalColumnZero_WhenRendering_ThenThe
 	if actualCursorX != expectedCursorX {
 		t.Fatalf("expected review diff cursor x %d after moving to row start, actual %d", expectedCursorX, actualCursorX)
 	}
-	if subject.detailViewState.cursor.column != 0 {
-		t.Fatalf("expected logical diff cursor column %d after moving to row start, actual %d", 0, subject.detailViewState.cursor.column)
+	if subject.detailState.viewState.cursor.column != 0 {
+		t.Fatalf("expected logical diff cursor column %d after moving to row start, actual %d", 0, subject.detailState.viewState.cursor.column)
 	}
 }
 
@@ -144,9 +144,9 @@ func given_browserChangesDetailCursorOnLineContaining(t *testing.T, gui *gocui.G
 	document := subject.currentDetailDocument(detailView)
 	subject.syncDetailViewState(document, detailView.InnerHeight())
 	lineIndex, _ := given_detailDocumentLineContaining(t, document, segment)
-	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: 0}
-	subject.detailViewState.preferredColumn = 0
-	subject.detailViewState.sync(document, detailView.InnerHeight())
+	subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: 0}
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.sync(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
 }

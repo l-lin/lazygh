@@ -69,7 +69,7 @@ func (program *Program) selectedPullRequestReactionRemovalTarget() (pullRequestR
 	}
 
 	document := program.currentDetailDocument(nil)
-	content, ok := viewerReactionContentAtCursor(document, program.detailViewState.cursor, target.reactionGroups)
+	content, ok := viewerReactionContentAtCursor(document, program.detailState.viewState.cursor, target.reactionGroups)
 	if !ok {
 		return pullRequestReactionRemovalTarget{}, false
 	}

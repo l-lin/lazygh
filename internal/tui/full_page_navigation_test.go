@@ -119,7 +119,7 @@ func TestFullPageNavigation_GivenReviewFilesViewSelection_WhenPressingPageDownAn
 	if !ok || len(selectableRows) < 2 {
 		t.Fatalf("expected selectable review rows, actual %v", selectableRows)
 	}
-	initialRow := subject.reviewSession.selectedFileTreeRow
+	initialRow := subject.navigationState.reviewSession.selectedFileTreeRow
 	step := fullPageDelta(filesView.InnerHeight())
 	expectedDownRow := adjustVisibleSelection(initialRow, selectableRows, step)
 	expectedUpRow := adjustVisibleSelection(expectedDownRow, selectableRows, -step)
@@ -133,8 +133,8 @@ func TestFullPageNavigation_GivenReviewFilesViewSelection_WhenPressingPageDownAn
 	then_noError(t, actualErr)
 	filesView, actualErr = gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != expectedDownRow {
-		t.Fatalf("expected selected review row %d, actual %d", expectedDownRow, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != expectedDownRow {
+		t.Fatalf("expected selected review row %d, actual %d", expectedDownRow, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 	then_listViewIsCenteredOnSelection(t, filesView, expectedDownRow, lineCount)
 
@@ -143,8 +143,8 @@ func TestFullPageNavigation_GivenReviewFilesViewSelection_WhenPressingPageDownAn
 	then_noError(t, actualErr)
 	filesView, actualErr = gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != expectedUpRow {
-		t.Fatalf("expected selected review row %d after paging back up, actual %d", expectedUpRow, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != expectedUpRow {
+		t.Fatalf("expected selected review row %d after paging back up, actual %d", expectedUpRow, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
 	then_listViewIsCenteredOnSelection(t, filesView, expectedUpRow, lineCount)
 }
@@ -350,7 +350,7 @@ func TestModalEditor_GivenControlBAndControlF_WhenEditing_ThenTheyMoveTheCursor(
 	if !actualHandled {
 		t.Fatal("expected ctrl-b to be handled by the modal editor")
 	}
-	actualColumn, actualRow := subject.modalEditor.CursorXY()
+	actualColumn, actualRow := subject.overlayState.modalEditor.CursorXY()
 	if actualColumn != 2 || actualRow != 0 {
 		t.Fatalf("expected modal editor cursor 2,0 after ctrl-b, actual %d,%d", actualColumn, actualRow)
 	}
@@ -359,7 +359,7 @@ func TestModalEditor_GivenControlBAndControlF_WhenEditing_ThenTheyMoveTheCursor(
 	if !actualHandled {
 		t.Fatal("expected ctrl-f to be handled by the modal editor")
 	}
-	actualColumn, actualRow = subject.modalEditor.CursorXY()
+	actualColumn, actualRow = subject.overlayState.modalEditor.CursorXY()
 	if actualColumn != 3 || actualRow != 0 {
 		t.Fatalf("expected modal editor cursor 3,0 after ctrl-f, actual %d,%d", actualColumn, actualRow)
 	}

@@ -162,7 +162,7 @@ func prepareManualVisualBrowserChangesGutterState(_ *testing.T, gui *gocui.Gui, 
 	if actualErr := subject.openDetail(gui, nil); actualErr != nil {
 		return actualErr
 	}
-	subject.activeDetailTab = ChangesDetailTab
+	subject.detailState.activeTab = ChangesDetailTab
 	if actualErr := subject.afterStateChange(gui); actualErr != nil {
 		return actualErr
 	}
@@ -205,9 +205,9 @@ func moveManualVisualDiffCursorToLine(gui *gocui.Gui, subject *Program, segment 
 	if actualErr != nil {
 		return actualErr
 	}
-	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: 0}
-	subject.detailViewState.preferredColumn = 0
-	subject.detailViewState.sync(document, detailView.InnerHeight())
+	subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: 0}
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.sync(document, detailView.InnerHeight())
 	return subject.refreshDetailView(gui)
 }
 

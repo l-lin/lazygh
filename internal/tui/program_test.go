@@ -95,15 +95,15 @@ func TestViewZeroMotion_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenI
 	if subject.model.SelectedPullRequestIndex(MyPullRequestsTab) != 0 {
 		t.Fatalf("expected selected pull request index %d, actual %d", 0, subject.model.SelectedPullRequestIndex(MyPullRequestsTab))
 	}
-	if subject.detailViewState.cursor == (detailPosition{}) {
-		t.Fatalf("expected the detail cursor to move, actual %+v", subject.detailViewState.cursor)
+	if subject.detailState.viewState.cursor == (detailPosition{}) {
+		t.Fatalf("expected the detail cursor to move, actual %+v", subject.detailState.viewState.cursor)
 	}
 
 	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')
 	actualErr = upHandler(nil, nil)
 	then_noError(t, actualErr)
-	if subject.detailViewState.cursor != (detailPosition{}) {
-		t.Fatalf("expected the detail cursor to return to the top, actual %+v", subject.detailViewState.cursor)
+	if subject.detailState.viewState.cursor != (detailPosition{}) {
+		t.Fatalf("expected the detail cursor to return to the top, actual %+v", subject.detailState.viewState.cursor)
 	}
 }
 
@@ -113,23 +113,23 @@ func TestViewZeroMotion_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItMovesT
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
 	subject.startReviewSession(summary, "PRR_shift_jk")
 	subject.clampReviewSessionSelection()
-	expectedSelectedFileTreeRow := subject.reviewSession.selectedFileTreeRow
+	expectedSelectedFileTreeRow := subject.navigationState.reviewSession.selectedFileTreeRow
 
 	downHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'J')
 	actualErr := downHandler(nil, nil)
 	then_noError(t, actualErr)
-	if subject.reviewSession.selectedFileTreeRow != expectedSelectedFileTreeRow {
-		t.Fatalf("expected selected file tree row %d, actual %d", expectedSelectedFileTreeRow, subject.reviewSession.selectedFileTreeRow)
+	if subject.navigationState.reviewSession.selectedFileTreeRow != expectedSelectedFileTreeRow {
+		t.Fatalf("expected selected file tree row %d, actual %d", expectedSelectedFileTreeRow, subject.navigationState.reviewSession.selectedFileTreeRow)
 	}
-	if subject.detailViewState.cursor == (detailPosition{}) {
-		t.Fatalf("expected the diff cursor to move, actual %+v", subject.detailViewState.cursor)
+	if subject.detailState.viewState.cursor == (detailPosition{}) {
+		t.Fatalf("expected the diff cursor to move, actual %+v", subject.detailState.viewState.cursor)
 	}
 
 	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')
 	actualErr = upHandler(nil, nil)
 	then_noError(t, actualErr)
-	if subject.detailViewState.cursor != (detailPosition{}) {
-		t.Fatalf("expected the diff cursor to return to the top, actual %+v", subject.detailViewState.cursor)
+	if subject.detailState.viewState.cursor != (detailPosition{}) {
+		t.Fatalf("expected the diff cursor to return to the top, actual %+v", subject.detailState.viewState.cursor)
 	}
 }
 

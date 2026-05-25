@@ -93,10 +93,10 @@ func TestDetailCharacterMotion_GivenDetailVisualMode_WhenPressingVFA_ThenItKeeps
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'a')(gui, detailView)
 	then_noError(t, actualErr)
 
-	if subject.detailViewState.mode != detailVisualMode {
-		t.Fatalf("expected detail mode %v, actual %v", detailVisualMode, subject.detailViewState.mode)
+	if subject.detailState.viewState.mode != detailVisualMode {
+		t.Fatalf("expected detail mode %v, actual %v", detailVisualMode, subject.detailState.viewState.mode)
 	}
-	then_detailSelectionIs(t, subject.currentDetailDocument(detailView), subject.detailViewState, start, detailPosition{line: start.line, column: start.column + 1})
+	then_detailSelectionIs(t, subject.currentDetailDocument(detailView), subject.detailState.viewState, start, detailPosition{line: start.line, column: start.column + 1})
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 }
 
@@ -152,7 +152,7 @@ func TestDetailCharacterMotion_GivenBrowserDetailTabs_WhenPressingForwardFindWit
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			subject.activeDetailTab = testCase.tab
+			subject.detailState.activeTab = testCase.tab
 			actualErr = subject.refreshDetailView(gui)
 			then_noError(t, actualErr)
 
@@ -168,7 +168,7 @@ func TestDetailCharacterMotion_GivenBrowserDetailTabs_WhenPressingForwardFindWit
 			actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'z')(gui, detailView)
 			then_noError(t, actualErr)
 
-			then_detailCursorIs(t, subject.detailViewState, expected)
+			then_detailCursorIs(t, subject.detailState.viewState, expected)
 		})
 	}
 }
@@ -215,7 +215,7 @@ func TestDetailCharacterMotion_GivenReviewModeDescription_WhenPressingForwardFin
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'z')(gui, detailView)
 	then_noError(t, actualErr)
 
-	then_detailCursorIs(t, subject.detailViewState, expected)
+	then_detailCursorIs(t, subject.detailState.viewState, expected)
 }
 
 func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingForwardFindWithAnUnboundTarget_ThenItNavigatesTheRenderedDiff(t *testing.T) {
@@ -243,8 +243,8 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingForwardFindWi
 	lineIndex, visibleLine := given_detailDocumentLineContaining(t, document, "internal/tui/render.go")
 	segmentColumn := given_runeIndexInString(t, visibleLine, "internal/tui/render.go")
 	expectedColumn := segmentColumn + given_runeIndexInString(t, "internal/tui/render.go", ".")
-	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: segmentColumn}
-	subject.detailViewState.preferredColumn = segmentColumn
+	subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: segmentColumn}
+	subject.detailState.viewState.preferredColumn = segmentColumn
 	subject.syncDetailViewState(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
@@ -256,7 +256,7 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingForwardFindWi
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, '.')(gui, detailView)
 	then_noError(t, actualErr)
 
-	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: expectedColumn})
+	then_detailCursorIs(t, subject.detailState.viewState, detailPosition{line: lineIndex, column: expectedColumn})
 }
 
 func TestDetailCharacterMotion_GivenBrowserDetailFocus_WhenPressingSemicolonAndComma_ThenItRepeatsTheLastCharacterMotion(t *testing.T) {
@@ -283,16 +283,16 @@ func TestDetailCharacterMotion_GivenBrowserDetailFocus_WhenPressingSemicolonAndC
 	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'z')(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, firstMatch)
+	then_detailCursorIs(t, subject.detailState.viewState, firstMatch)
 
 	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ';')(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, secondMatch)
+	then_detailCursorIs(t, subject.detailState.viewState, secondMatch)
 
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, firstMatch)
+	then_detailCursorIs(t, subject.detailState.viewState, firstMatch)
 }
 
 func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingFCommaSemicolonAndComma_ThenTheTargetAndRepeatsStayInTheDiff(t *testing.T) {
@@ -321,8 +321,8 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingFCommaSemicol
 	startColumn := given_runeIndexInString(t, visibleLine, "@@ -1,2 +1,3 @@")
 	firstComma := startColumn + given_runeIndexInString(t, "@@ -1,2 +1,3 @@", ",")
 	secondComma := firstComma + 5
-	subject.detailViewState.cursor = detailPosition{line: lineIndex, column: startColumn}
-	subject.detailViewState.preferredColumn = startColumn
+	subject.detailState.viewState.cursor = detailPosition{line: lineIndex, column: startColumn}
+	subject.detailState.viewState.preferredColumn = startColumn
 	subject.syncDetailViewState(document, detailView.InnerHeight())
 	actualErr = subject.refreshDetailView(gui)
 	then_noError(t, actualErr)
@@ -333,16 +333,16 @@ func TestDetailCharacterMotion_GivenReviewModeViewZero_WhenPressingFCommaSemicol
 	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: firstComma})
+	then_detailCursorIs(t, subject.detailState.viewState, detailPosition{line: lineIndex, column: firstComma})
 
 	registeredBindings = subject.registeredKeybindingSpecs()
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ';')(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: secondComma})
+	then_detailCursorIs(t, subject.detailState.viewState, detailPosition{line: lineIndex, column: secondComma})
 
 	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, ',')(gui, detailView)
 	then_noError(t, actualErr)
-	then_detailCursorIs(t, subject.detailViewState, detailPosition{line: lineIndex, column: firstComma})
+	then_detailCursorIs(t, subject.detailState.viewState, detailPosition{line: lineIndex, column: firstComma})
 }
 
 func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingForwardFindWithAnUnboundTarget_ThenItMovesThePopupCursor(t *testing.T) {
