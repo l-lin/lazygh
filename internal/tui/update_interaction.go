@@ -17,6 +17,12 @@ func (program *Program) applyActionsPopupActionResultHandled(message MsgActionsP
 			program.reportError(program.gui, popupMessage)
 			return
 		}
+		var feedbackErr actionsPopupStatusLineError
+		if errors.As(result.err, &feedbackErr) {
+			program.actionsPopupWidget.errorMessage = ""
+			program.setFeedback(feedbackErr.feedbackTarget, result.err.Error())
+			return
+		}
 		if feedbackMessage := strings.TrimSpace(result.feedbackMessage); feedbackMessage != "" {
 			program.actionsPopupWidget.errorMessage = ""
 			program.setFeedback(result.feedbackTarget, feedbackMessage)

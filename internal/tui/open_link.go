@@ -93,26 +93,23 @@ func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupActi
 		id:      "open-link-under-cursor",
 		title:   "Open link under cursor",
 		icon:    actionsPopupOpenLinkIcon,
-		execute: program.executeOpenLinkUnderCursorAction,
+		execute: actionsPopupExecuteErr(program.executeOpenLinkUnderCursorAction),
 	}
 }
 
-func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) error {
 	view := program.resolveView(gui, nil, viewDetailName)
 	if program.linkOpener == nil {
-		return actionsPopupActionResult{err: errors.New(openLinkOpenerUnavailableMessage)}
+		return errors.New(openLinkOpenerUnavailableMessage)
 	}
 	url, ok := program.currentDetailCursorLink(view)
 	if !ok {
-		return actionsPopupActionResult{err: errors.New(openLinkUnavailableMessage)}
+		return errors.New(openLinkUnavailableMessage)
 	}
 	if err := program.dispatch(gui, MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()}); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
 func (document detailDocument) linkAt(position detailPosition) (string, bool) {

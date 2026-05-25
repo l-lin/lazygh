@@ -142,7 +142,7 @@ func (program *Program) markNotificationReadAction() actionsPopupAction {
 		id:      "mark-notification-read",
 		title:   notificationMarkReadActionTitle,
 		icon:    actionsPopupMarkNotificationReadIcon,
-		execute: program.executeMarkNotificationReadAction,
+		execute: actionsPopupExecuteErr(program.executeMarkNotificationReadAction),
 	}
 }
 
@@ -151,7 +151,7 @@ func (program *Program) markNotificationDoneAction() actionsPopupAction {
 		id:      "mark-notification-done",
 		title:   notificationMarkDoneActionTitle,
 		icon:    actionsPopupMarkNotificationDoneIcon,
-		execute: program.executeMarkNotificationDoneAction,
+		execute: actionsPopupExecuteErr(program.executeMarkNotificationDoneAction),
 	}
 }
 
@@ -160,7 +160,7 @@ func (program *Program) markAllNotificationsReadAction() actionsPopupAction {
 		id:      "mark-all-notifications-read",
 		title:   notificationMarkAllReadActionTitle,
 		icon:    actionsPopupMarkAllNotificationsReadIcon,
-		execute: program.executeMarkAllNotificationsReadAction,
+		execute: actionsPopupExecuteErr(program.executeMarkAllNotificationsReadAction),
 	}
 }
 
@@ -169,7 +169,7 @@ func (program *Program) markAllNotificationsDoneAction() actionsPopupAction {
 		id:      "mark-all-notifications-done",
 		title:   notificationMarkAllDoneActionTitle,
 		icon:    actionsPopupMarkAllNotificationsDoneIcon,
-		execute: program.executeMarkAllNotificationsDoneAction,
+		execute: actionsPopupExecuteErr(program.executeMarkAllNotificationsDoneAction),
 	}
 }
 
@@ -178,58 +178,43 @@ func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
 		id:      "open-notification-in-browser",
 		title:   notificationOpenBrowserActionTitle,
 		icon:    actionsPopupOpenNotificationBrowserIcon,
-		execute: program.executeOpenNotificationInBrowserAction,
+		execute: actionsPopupExecuteErr(program.executeOpenNotificationInBrowserAction),
 	}
 }
 
-func (program *Program) executeMarkNotificationReadAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeMarkNotificationReadAction(gui *gocui.Gui) error {
 	if err := program.markSelectedNotificationRead(gui); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
-func (program *Program) executeMarkNotificationDoneAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeMarkNotificationDoneAction(gui *gocui.Gui) error {
 	if err := program.markSelectedNotificationDone(gui); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
-func (program *Program) executeMarkAllNotificationsReadAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeMarkAllNotificationsReadAction(gui *gocui.Gui) error {
 	if err := program.markAllLoadedNotificationsRead(gui); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
-func (program *Program) executeMarkAllNotificationsDoneAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeMarkAllNotificationsDoneAction(gui *gocui.Gui) error {
 	if err := program.markAllLoadedNotificationsDone(gui); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
-func (program *Program) executeOpenNotificationInBrowserAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeOpenNotificationInBrowserAction(gui *gocui.Gui) error {
 	if err := program.openSelectedNotificationInBrowser(gui); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
 func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {

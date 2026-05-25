@@ -325,7 +325,7 @@ func (program *Program) yankPullRequestURLActionsPopupAction() actionsPopupActio
 		id:      "yank-pull-request-url",
 		title:   "Yank URL to clipboard",
 		icon:    actionsPopupYankPullRequestURLIcon,
-		execute: program.executeYankPullRequestURLAction,
+		execute: actionsPopupExecuteErr(program.executeYankPullRequestURLAction),
 	}
 }
 
@@ -343,27 +343,24 @@ func (program *Program) commendOnPrAction() actionsPopupAction {
 		id:      "comment-on-pr",
 		title:   pullRequestCommentComposerTitle,
 		icon:    actionsPopupCommentOnPullRequestIcon,
-		execute: program.executeCommentOnPullRequestAction,
+		execute: actionsPopupExecuteErr(program.executeCommentOnPullRequestAction),
 	}
 }
 
-func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) error {
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		return program.openPullRequestCommentComposer(gui, nil)
 	})
 }
 
-func (program *Program) executeYankPullRequestURLAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeYankPullRequestURLAction(gui *gocui.Gui) error {
 	err := program.copySelectedPullRequestURL()
 	switch {
 	case err == nil:
-		if dispatchErr := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: yankSuccessMessage}); dispatchErr != nil {
-			return actionsPopupActionResult{err: dispatchErr}
-		}
-		return actionsPopupActionResult{}
+		return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: yankSuccessMessage})
 	case errors.Is(err, ErrNoPullRequestURL):
-		return actionsPopupActionResult{err: errors.New(yankUnavailableMessage)}
+		return errors.New(yankUnavailableMessage)
 	default:
-		return actionsPopupActionResult{err: errors.New(yankFailureMessage)}
+		return errors.New(yankFailureMessage)
 	}
 }

@@ -6,18 +6,15 @@ func (program *Program) modalEditorVisible() bool {
 	return program != nil && program.overlayState.modalEditor != nil
 }
 
-func (program *Program) openModalEditorFromActionsPopup(gui *gocui.Gui, open func(*gocui.Gui) error) actionsPopupActionResult {
+func (program *Program) openModalEditorFromActionsPopup(gui *gocui.Gui, open func(*gocui.Gui) error) error {
 	wasVisible := program.modalEditorVisible()
 	if err := open(gui); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
 	if !wasVisible && program.modalEditorVisible() {
-		if err := program.closeActionsPopupIfVisible(gui); err != nil {
-			return actionsPopupActionResult{err: err}
-		}
-		return actionsPopupActionResult{}
+		return program.closeActionsPopupIfVisible(gui)
 	}
-	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	return errActionsPopupActionUnavailable
 }
 
 func (program *Program) openModalEditor(gui *gocui.Gui, title string, initialText string, submit func(string) error) error {

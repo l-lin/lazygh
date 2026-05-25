@@ -54,7 +54,7 @@ func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) actions
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openMultilineModalEditor(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) error {
 			return program.submitInlineCommentUpdate(target, body)
 		}, reviewInlineCommentModalHeight); err != nil {
@@ -66,7 +66,7 @@ func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) actions
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {

@@ -67,5 +67,5 @@ func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAct
 }
 
 func (program *Program) executeOpenPullRequestByURLAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openModalEditorFromActionsPopup(gui, program.openPullRequestByURLEditor)
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, program.openPullRequestByURLEditor))
 }

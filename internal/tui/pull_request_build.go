@@ -86,7 +86,7 @@ func (program *Program) pullRequestBuildRunActionsPopupAction() actionsPopupActi
 		id:      "view-build-run",
 		title:   pullRequestBuildRunActionTitle,
 		icon:    actionsPopupBuildRunIcon,
-		execute: program.executePullRequestBuildRunAction,
+		execute: actionsPopupExecuteErr(program.executePullRequestBuildRunAction),
 	}
 }
 
@@ -95,36 +95,30 @@ func (program *Program) pullRequestBuildRunLogsActionsPopupAction() actionsPopup
 		id:      "view-build-run-job-logs",
 		title:   pullRequestBuildRunLogsActionTitle,
 		icon:    actionsPopupBuildRunLogsIcon,
-		execute: program.executePullRequestBuildRunLogsAction,
+		execute: actionsPopupExecuteErr(program.executePullRequestBuildRunLogsAction),
 	}
 }
 
-func (program *Program) executePullRequestBuildRunAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executePullRequestBuildRunAction(gui *gocui.Gui) error {
 	target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if err := program.startPullRequestBuildRunLoad(gui, target.summary, target.check); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
-func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) error {
 	target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if err := program.startPullRequestBuildRunJobLogLoad(gui, target.summary, target.check); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
 func pullRequestStatusCheckMatchingEntry(checks []githubdomain.PullRequestStatusCheck, entry pullRequestOverviewEntry) (githubdomain.PullRequestStatusCheck, bool) {

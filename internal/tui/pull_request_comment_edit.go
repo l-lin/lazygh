@@ -52,7 +52,7 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) ac
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
 			return program.submitPullRequestCommentUpdate(target, body)
 		}, reviewInlineCommentModalHeight); err != nil {
@@ -64,7 +64,7 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) ac
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) executeDeletePullRequestCommentAction(gui *gocui.Gui) actionsPopupActionResult {

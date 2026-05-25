@@ -95,12 +95,12 @@ func (program *Program) addInlineCommentAction() actionsPopupAction {
 }
 
 func (program *Program) executeAddInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if program.reviewModeActive() {
 			return program.openInlineReviewCommentComposer(gui, nil)
 		}
 		return program.openBrowserChangesInlineCommentComposer(gui, nil)
-	})
+	}))
 }
 
 func (program *Program) selectedReviewInlineCommentSelection(gui *gocui.Gui, view *gocui.View) (pullRequestInlineCommentSelection, error) {

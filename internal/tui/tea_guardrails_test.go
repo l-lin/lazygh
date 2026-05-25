@@ -233,6 +233,25 @@ func TestRefactorGuard_GivenRemainingPopupActionFiles_WhenScanning_ThenTheyDoNot
 	}
 }
 
+func TestRefactorGuard_GivenPhase1PopupResultFiles_WhenScanning_ThenTheyDoNotUseActionsPopupActionResultCompatibilityGlue(t *testing.T) {
+	phase1Files := map[string]bool{
+		"actions_popup_actions.go":  true,
+		"error_popup.go":            true,
+		"modal_editor_lifecycle.go": true,
+		"notification_actions.go":   true,
+		"open_link.go":              true,
+		"pull_request_build.go":     true,
+		"review_story.go":           true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`actionsPopupActionResult`), func(path string) bool {
+		return phase1Files[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the low-risk phase 1 popup files to stop using actionsPopupActionResult compatibility glue, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,

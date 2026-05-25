@@ -32,7 +32,7 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 
 	submittedTitle := target.title
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openLineModalEditor(gui, pullRequestTitleEditorTitle, target.title, func(title string) error {
 			submittedTitle = title
 			return program.submitPullRequestTitleEdit(target, title)
@@ -45,7 +45,7 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) editPullRequestDescriptionAction() actionsPopupAction {
@@ -65,7 +65,7 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 
 	submittedBody := target.body
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
 			submittedBody = body
 			return program.submitPullRequestDescriptionEdit(target, body)
@@ -78,7 +78,7 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarget, title string) error {

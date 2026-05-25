@@ -42,9 +42,9 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		return program.openInlineCommentReplyComposer(gui, target)
-	})
+	}))
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {

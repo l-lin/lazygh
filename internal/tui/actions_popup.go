@@ -42,4 +42,17 @@ type actionsPopupActionResult struct {
 	feedbackTarget  Focus
 }
 
+func actionsPopupExecuteErr(execute func(*gocui.Gui) error) func(*gocui.Gui) actionsPopupActionResult {
+	return func(gui *gocui.Gui) actionsPopupActionResult {
+		return actionsPopupActionResultFromError(execute(gui))
+	}
+}
+
+func actionsPopupActionResultFromError(err error) actionsPopupActionResult {
+	if err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
+}
+
 var errActionsPopupActionUnavailable = errors.New("action is unavailable")

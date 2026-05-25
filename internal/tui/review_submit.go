@@ -61,7 +61,7 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openModalEditor(gui, title, "", func(body string) error {
 			submitErr := program.submitPendingPullRequestReview(target, event, body)
 			if submitErr != nil && event == githubdomain.PullRequestReviewEventRequestChanges {
@@ -77,7 +77,7 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullRequestReviewTarget, bool) {

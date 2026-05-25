@@ -53,7 +53,7 @@ func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopup
 }
 
 func (program *Program) executeOpenPullRequestCustomSearchAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.openModalEditorFromActionsPopup(gui, program.openPullRequestCustomSearchEditor)
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, program.openPullRequestCustomSearchEditor))
 }
 
 func (program *Program) currentPullRequestSearchCriteria() string {

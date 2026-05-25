@@ -58,7 +58,7 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupA
 	}
 
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
 			return program.submitPullRequestReviewComment(target, body)
 		}); err != nil {
@@ -70,7 +70,7 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupA
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
@@ -89,7 +89,7 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) actionsPopup
 	}
 
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
 			return program.submitPullRequestRequestChanges(target, body)
 		}); err != nil {
@@ -101,7 +101,7 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) actionsPopup
 			}
 		}
 		return nil
-	})
+	}))
 }
 
 func (program *Program) submitPullRequestReviewComment(target pullRequestActionTarget, body string) error {

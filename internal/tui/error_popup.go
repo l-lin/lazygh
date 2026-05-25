@@ -68,13 +68,13 @@ func (program *Program) recentErrorsActionsPopupAction() actionsPopupAction {
 		id:      "view-recent-errors",
 		title:   recentErrorsActionTitle,
 		icon:    actionsPopupRecentErrorsIcon,
-		execute: program.executeRecentErrorsAction,
+		execute: actionsPopupExecuteErr(program.executeRecentErrorsAction),
 	}
 }
 
-func (program *Program) executeRecentErrorsAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeRecentErrorsAction(gui *gocui.Gui) error {
 	if !program.hasRecordedErrors() {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if err := program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
 		title:         recentErrorsPopupTitle,
@@ -82,12 +82,9 @@ func (program *Program) executeRecentErrorsAction(gui *gocui.Gui) actionsPopupAc
 		widthPercent:  recentErrorsPopupWidthPercent,
 		heightPercent: recentErrorsPopupHeightPercent,
 	}); err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
 func (program *Program) renderRecentErrorsPopupBody() string {

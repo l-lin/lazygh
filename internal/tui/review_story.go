@@ -42,18 +42,18 @@ func (program *Program) reviewStoryAction() actionsPopupAction {
 		id:      "review-pr-as-story",
 		title:   reviewStoryActionTitle,
 		icon:    actionsPopupReviewStoryIcon,
-		execute: program.executeReviewStoryAction,
+		execute: actionsPopupExecuteErr(program.executeReviewStoryAction),
 	}
 }
 
-func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeReviewStoryAction(gui *gocui.Gui) error {
 	if actualErr := program.validateStoryReviewAvailability(); actualErr != nil {
-		return program.storyReviewStatusLineErrorResult(actualErr)
+		return newActionsPopupStatusLineError(program.model.Focus(), actualErr)
 	}
 
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
-		return program.storyReviewStatusLineErrorResult(errActionsPopupActionUnavailable)
+		return newActionsPopupStatusLineError(program.model.Focus(), errActionsPopupActionUnavailable)
 	}
 
 	program.feedbackMessage = ""
@@ -61,10 +61,7 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 	program.runAsync(func() {
 		program.loadStoryReview(gui, summary)
 	})
-	if err := program.closeActionsPopupIfVisible(gui); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.closeActionsPopupIfVisible(gui)
 }
 
 func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubdomain.PullRequest) {
@@ -201,12 +198,4 @@ func preferredStoryMetadataValue(primary string, fallback string) string {
 		return trimmedPrimary
 	}
 	return strings.TrimSpace(fallback)
-}
-
-func (program *Program) storyReviewStatusLineErrorResult(actualErr error) actionsPopupActionResult {
-	return actionsPopupActionResult{
-		err:             actualErr,
-		feedbackMessage: strings.TrimSpace(actualErr.Error()),
-		feedbackTarget:  program.model.Focus(),
-	}
 }
