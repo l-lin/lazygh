@@ -17,23 +17,20 @@ func (program *Program) applyMoveReviewFile(message MsgMoveReviewFile) {
 	}
 }
 
-func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) {
+func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) []Cmd {
 	if !program.reviewModeActive() {
-		return
+		return nil
 	}
 
-	detailView := program.resolveView(program.gui, nil, viewDetailName)
-	currentFileTreeRow, currentRenderedLine := program.currentReviewCommentPosition(detailView)
-	target, ok := program.reviewSessionCommentTarget(detailView, currentFileTreeRow, currentRenderedLine, message.Direction)
+	currentFileTreeRow, currentRenderedLine := program.currentReviewCommentPosition()
+	target, ok := program.reviewSessionCommentTarget(nil, currentFileTreeRow, currentRenderedLine, message.Direction)
 	if !ok {
-		return
+		return nil
 	}
 
 	program.detailState.viewState.clearPendingPrefix()
 	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(target.fileTreeRow)
-	_ = program.mutateDetailViewStateWithoutRefresh(program.gui, detailView, func(document detailDocument, viewportHeight int) {
-		program.focusDetailLine(document, viewportHeight, target.renderedLine)
-	})
+	return []Cmd{focusReviewCommentCmd{RenderedLine: target.renderedLine}}
 }
 
 func (program *Program) applyToggleReviewTreeRowVisibility() {

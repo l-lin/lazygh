@@ -620,6 +620,20 @@ func TestRefactorGuard_GivenAsyncPopupAndRefreshUpdateFiles_WhenScanning_ThenThe
 	}
 }
 
+func TestRefactorGuard_GivenUpdateReviewInteractionFile_WhenScanning_ThenItDoesNotReachThroughDetailViewMutationHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`mutateDetailViewStateWithoutRefresh\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "update_review_interaction.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected update_review_interaction.go to stop at typed shell commands instead of direct detail-view mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,

@@ -172,7 +172,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgMoveReviewFile:
 		program.applyMoveReviewFile(actual)
 	case MsgMoveReviewComment:
-		program.applyMoveReviewComment(actual)
+		return program.applyMoveReviewComment(actual)
 	case MsgToggleReviewTreeRowVisibility:
 		program.applyToggleReviewTreeRowVisibility()
 	case MsgSetAllReviewTreeFolds:

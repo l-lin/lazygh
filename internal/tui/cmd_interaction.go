@@ -36,6 +36,7 @@ type interactionCommandRuntime struct {
 	beginManualRefresh                  func(string, int)
 	reviewModeActive                    func() bool
 	activePullRequestTab                func() PullRequestTab
+	focusDetailRenderedLine             func(*gocui.Gui, *gocui.View, int)
 	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 	prepareBuildPopupClipboardWrite     func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 }
@@ -80,6 +81,11 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		beginManualRefresh:                  program.beginManualRefresh,
 		reviewModeActive:                    program.reviewModeActive,
 		activePullRequestTab:                program.model.ActivePullRequestTab,
+		focusDetailRenderedLine: func(gui *gocui.Gui, view *gocui.View, line int) {
+			_ = program.mutateDetailViewStateWithoutRefresh(gui, view, func(document detailDocument, viewportHeight int) {
+				program.focusDetailLine(document, viewportHeight, line)
+			})
+		},
 		prepareSelectedDetailClipboardWrite: func(gui *gocui.Gui, view *gocui.View, target Focus) (writeClipboardCmd, bool) {
 			actualView := program.resolveView(gui, view, viewDetailName)
 			detailDocument := program.currentDetailDocument(actualView)
@@ -230,6 +236,22 @@ func executeBeginManualPullRequestRefreshCommand(runtime interactionCommandRunti
 	if runtime.beginManualRefresh != nil {
 		runtime.beginManualRefresh(command.SuccessMessage, pendingOperations)
 	}
+}
+
+type focusReviewCommentCmd struct {
+	RenderedLine int
+}
+
+func (command focusReviewCommentCmd) execute(program *Program, gui *gocui.Gui) {
+	executeFocusReviewCommentCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeFocusReviewCommentCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command focusReviewCommentCmd) {
+	if runtime.resolveView == nil || runtime.focusDetailRenderedLine == nil {
+		return
+	}
+	actualView := runtime.resolveView(gui, nil, viewDetailName)
+	runtime.focusDetailRenderedLine(gui, actualView, command.RenderedLine)
 }
 
 type resolveDetailSearchWordCmd struct {

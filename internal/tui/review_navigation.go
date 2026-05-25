@@ -30,14 +30,13 @@ type reviewCommentLocation struct {
 	renderedLine int
 }
 
-func (program *Program) currentReviewCommentPosition(detailView *gocui.View) (int, int) {
+func (program *Program) currentReviewCommentPosition() (int, int) {
 	currentFileTreeRow := program.navigationState.reviewSession.selectedFileTreeRow
 	if !program.reviewModeActive() {
 		return currentFileTreeRow, 0
 	}
 
-	document := program.currentDetailDocument(detailView)
-	program.syncDetailViewState(document, viewPageSize(detailView))
+	document := program.currentDetailDocument(nil)
 	currentRowIndex := document.rowIndexForPosition(program.detailState.viewState.cursor)
 	if currentRowIndex < 0 || currentRowIndex >= len(document.rows) {
 		return currentFileTreeRow, 0
