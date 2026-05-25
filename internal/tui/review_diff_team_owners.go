@@ -6,29 +6,6 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) withPullRequestDiffFileTeamOwners(repository string, number int, rawDiff githubdomain.PullRequestDiff) githubdomain.PullRequestDiff {
-	if rawDiff.FileTeamOwnersAttempted || !program.hasDetailQueries() || !program.shouldLoadPullRequestDiffTeamOwners() {
-		return rawDiff
-	}
-
-	rawDiff.FileTeamOwnersAttempted = true
-	filePaths := pullRequestDiffFilePaths(rawDiff.Files)
-	if len(filePaths) == 0 {
-		return rawDiff
-	}
-
-	teamOwnersByPath, err := program.detailQueries.GetPullRequestFileTeamOwners(repository, number, filePaths)
-	if err != nil {
-		return rawDiff
-	}
-	if len(teamOwnersByPath) == 0 {
-		return rawDiff
-	}
-
-	rawDiff.Files = pullRequestDiffFilesWithTeamOwners(rawDiff.Files, teamOwnersByPath)
-	return rawDiff
-}
-
 func pullRequestDiffFilePaths(files []githubdomain.PullRequestDiffFile) []string {
 	if len(files) == 0 {
 		return nil

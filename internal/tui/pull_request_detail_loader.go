@@ -13,28 +13,6 @@ func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
 	program.executeCmds(gui, program.detailStore.planSelectedPullRequestDetailLoad(program, gui))
 }
 
-func (program *Program) loadPullRequestDetail(gui *gocui.Gui, summary githubdomain.PullRequest) {
-	repository := pullRequestRepositoryName(summary.Repository)
-	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
-	pendingReviewState := pendingPullRequestReviewState{}
-	pendingReviewStateKnown := false
-	if program.hasReviewMutations() {
-		if pendingReviewID, found, pendingReviewErr := program.reviewMutations.GetPendingPullRequestReviewID(repository, summary.Number); pendingReviewErr == nil {
-			pendingReviewStateKnown = true
-			if found {
-				pendingReviewState.id = strings.TrimSpace(pendingReviewID)
-			}
-		}
-	}
-	program.dispatchAsync(gui, MsgPullRequestDetailLoaded{
-		Summary:                 summary,
-		Detail:                  detail,
-		Err:                     err,
-		PendingReviewState:      pendingReviewState,
-		PendingReviewStateKnown: pendingReviewStateKnown,
-	})
-}
-
 func (program *Program) selectedPullRequestSummaryForDetail() (githubdomain.PullRequest, bool) {
 	actionContext := program.actionContext()
 	if actionContext.IsReviewContext() {

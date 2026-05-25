@@ -88,7 +88,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 `dispatchAsync()` is the only production path that still talks to `uiUpdater.Apply(...)` directly. Worker goroutines use it to hop back onto the UI thread with typed result messages.
 
-Popup and modal-editor feature files now stop at typed request messages. Update-owned command builders own the GitHub-facing work.
+Popup and modal-editor feature files now stop at typed request messages. Update-owned command builders own the GitHub-facing work. The workflow command surface also owns pull-request detail, diff, and file-team-owner fetches, so the loader helper files stay on selection and identity logic instead of becoming a second transport layer.
 
 ### Screen derivation
 
@@ -121,6 +121,8 @@ Those selectors memoize expensive derived data outside the render entrypoints.
 The TUI plans background work after state changes. `plannedCommands()` inspects the current state and returns commands for cache hydration, connected-user loading, pull request lists, notifications, detail, diff data, and inline images.
 
 The stores under `workflow_stores.go` track in-flight state, cache state, and invalidation state. They are shell-oriented coordinators, not pure reducers, but their model writes now land through typed cache-hydration messages instead of mutating `program.model` directly.
+
+`workflow_commands.go` is now the command-layer home for detail and diff transport work, including the optional file-team-owner enrichment pass. `pull_request_detail_loader.go` and `review_diff_loader.go` still decide which summary is active, but they no longer call GitHub ports themselves.
 
 ### Overlays and editors
 
@@ -175,7 +177,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, a small explicit shell-helper allowlist still calls GitHub ports directly (`cmd_interaction.go`, `pull_request_detail_loader.go`, `review_diff_loader.go`, `review_diff_team_owners.go`, and `assignee_picker_search_cmd.go`), and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, a small explicit command-layer allowlist still calls GitHub ports directly (`workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`), and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
 
 If you want to understand the project quickly, start with these files:
 

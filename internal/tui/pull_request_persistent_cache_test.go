@@ -504,19 +504,15 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 		t.Fatalf("expected saved cached diff %+v with version %q, actual %+v", freshDiff, summary.UpdatedAt, actual)
 	}
 }
-func TestLoadPullRequestDiff_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
+func TestUpdate_GivenLoadedPullRequestDiffResult_WhenApplying_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": expected}}}
 	cache := &fakePersistentPullRequestCache{}
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
-	subject.uiUpdater = immediateUIUpdater{}
-	gui := given_headlessGui(t)
-	defer gui.Close()
-	subject.configureGUI(gui)
 
-	subject.loadPullRequestDiff(gui, summary)
+	Update(subject, loadPullRequestDiffResult(subject, githubcli.ToDomainPullRequestSummary(summary)))
 
 	actual := cache.savedDiffs["acme/widgets#42"]
 	if !reflect.DeepEqual(actual.Diff, expected) || actual.SourceUpdatedAt != summary.UpdatedAt {

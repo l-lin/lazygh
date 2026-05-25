@@ -322,17 +322,15 @@ func TestRefactorGuard_GivenPhase2PopupFeatureFiles_WhenScanning_ThenTheyDoNotCa
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplicitShellFilesCallGitHubPortsDirectly(t *testing.T) {
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplicitCommandFilesCallGitHubPortsDirectly(t *testing.T) {
 	allowedFiles := map[string]bool{
 		"assignee_picker_search_cmd.go":          true,
 		"cmd_interaction.go":                     true,
-		"pull_request_detail_loader.go":          true,
-		"review_diff_loader.go":                  true,
-		"review_diff_team_owners.go":             true,
 		"update_actions_popup.go":                true,
 		"update_popup_editor_mutations.go":       true,
 		"update_popup_feature_requests.go":       true,
 		"update_pull_request_popup_mutations.go": true,
+		"workflow_commands.go":                   true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestMutations|reviewMutations|reactionMutations|notificationMutations|detailQueries|buildQueries)\.[A-Za-z0-9_]+\(`), func(path string) bool {
@@ -349,7 +347,7 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplic
 		remainingMatches = append(remainingMatches, match)
 	}
 	if len(remainingMatches) != 0 {
-		t.Fatalf("expected direct GitHub ports to stay confined to update-owned files and explicit shell helpers, actual %v", remainingMatches)
+		t.Fatalf("expected direct GitHub ports to stay confined to update-owned files and explicit command files, actual %v", remainingMatches)
 	}
 }
 

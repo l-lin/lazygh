@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/jesseduffield/gocui"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -87,17 +89,76 @@ func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil || !program.hasDetailQueries() {
+		return
+	}
+
 	summary := command.summary
 	program.runAsync(func() {
-		program.loadPullRequestDetail(gui, summary)
+		program.dispatchAsync(gui, loadPullRequestDetailResult(program, summary))
 	})
 }
 
+func loadPullRequestDetailResult(program *Program, summary githubdomain.PullRequest) MsgPullRequestDetailLoaded {
+	repository := pullRequestRepositoryName(summary.Repository)
+	detail, err := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
+	pendingReviewState := pendingPullRequestReviewState{}
+	pendingReviewStateKnown := false
+	if program.hasReviewMutations() {
+		if pendingReviewID, found, pendingReviewErr := program.reviewMutations.GetPendingPullRequestReviewID(repository, summary.Number); pendingReviewErr == nil {
+			pendingReviewStateKnown = true
+			if found {
+				pendingReviewState.id = strings.TrimSpace(pendingReviewID)
+			}
+		}
+	}
+	return MsgPullRequestDetailLoaded{
+		Summary:                 summary,
+		Detail:                  detail,
+		Err:                     err,
+		PendingReviewState:      pendingReviewState,
+		PendingReviewStateKnown: pendingReviewStateKnown,
+	}
+}
+
 func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil || !program.hasDetailQueries() {
+		return
+	}
+
 	summary := command.summary
 	program.runAsync(func() {
-		program.loadPullRequestDiff(gui, summary)
+		program.dispatchAsync(gui, loadPullRequestDiffResult(program, summary))
 	})
+}
+
+func loadPullRequestDiffResult(program *Program, summary githubdomain.PullRequest) MsgPullRequestDiffLoaded {
+	repository := pullRequestRepositoryName(summary.Repository)
+	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
+	if err == nil {
+		rawDiff = loadPullRequestDiffFileTeamOwners(program, repository, summary.Number, rawDiff)
+	}
+	return MsgPullRequestDiffLoaded{Summary: summary, RawDiff: rawDiff, Err: err}
+}
+
+func loadPullRequestDiffFileTeamOwners(program *Program, repository string, number int, rawDiff githubdomain.PullRequestDiff) githubdomain.PullRequestDiff {
+	if program == nil || rawDiff.FileTeamOwnersAttempted || !program.hasDetailQueries() || !program.shouldLoadPullRequestDiffTeamOwners() {
+		return rawDiff
+	}
+
+	rawDiff.FileTeamOwnersAttempted = true
+	filePaths := pullRequestDiffFilePaths(rawDiff.Files)
+	if len(filePaths) == 0 {
+		return rawDiff
+	}
+
+	teamOwnersByPath, err := program.detailQueries.GetPullRequestFileTeamOwners(repository, number, filePaths)
+	if err != nil || len(teamOwnersByPath) == 0 {
+		return rawDiff
+	}
+
+	rawDiff.Files = pullRequestDiffFilesWithTeamOwners(rawDiff.Files, teamOwnersByPath)
+	return rawDiff
 }
 
 func (command loadIssueDetailCmd) execute(program *Program, gui *gocui.Gui) {

@@ -14,6 +14,7 @@ func TestAsyncResultHandlers_GivenLoaderAndTimerFiles_WhenInspecting_ThenTheyDoN
 		"program_loading.go",
 		"pull_request_detail_loader.go",
 		"review_diff_loader.go",
+		"workflow_commands.go",
 		"notification_loading.go",
 		"notification_detail_loader.go",
 		"detail_image_loader.go",

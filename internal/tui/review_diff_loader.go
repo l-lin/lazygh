@@ -21,19 +21,6 @@ func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
 	program.executeCmds(gui, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui))
 }
 
-func (program *Program) loadPullRequestDiff(gui *gocui.Gui, summary any) {
-	summaryValue, ok := toDomainPullRequestSummary(summary)
-	if !ok {
-		return
-	}
-	repository := pullRequestRepositoryName(summaryValue.Repository)
-	rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summaryValue.Number)
-	if err == nil {
-		rawDiff = program.withPullRequestDiffFileTeamOwners(repository, summaryValue.Number, rawDiff)
-	}
-	program.dispatchAsync(gui, MsgPullRequestDiffLoaded{Summary: summaryValue, RawDiff: rawDiff, Err: err})
-}
-
 func (program *Program) selectedPullRequestSummaryForDiff() (githubdomain.PullRequest, bool) {
 	if program.reviewModeActive() {
 		summary := program.navigationState.reviewSession.summary

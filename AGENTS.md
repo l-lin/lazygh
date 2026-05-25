@@ -9,6 +9,7 @@
 
 ## Repo rules
 - Run repeated commands through `mise run ...`.
+- Read `ARCHITECTURE.md` before architecture audits or refactors, and update it when package boundaries, command-layer exceptions, or TUI control-flow ownership change.
 - When a task references `.sandbox/todo-*.md` or `.sandbox/plans/*`, read that file first and treat it as the acceptance spec.
 - Implement one todo or one plan phase at a time unless the user explicitly asks for batching.
 - Use TDD. Add or update a failing test before implementation.
