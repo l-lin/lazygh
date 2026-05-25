@@ -57,7 +57,7 @@ func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui,
 	}
 
 	collapsed := reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs)
-	program.navigationState.reviewSession.setThreadCollapsed(thread.ID, !collapsed)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.withThreadCollapsed(thread.ID, !collapsed)
 	program.invalidateReviewDiffRenderCache()
 
 	updatedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)

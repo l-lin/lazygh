@@ -451,11 +451,7 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateFilesAndT
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDedicatedChildStateHelpersMutateDetailAndReviewChildStateDirectly(t *testing.T) {
-	allowedFiles := map[string]bool{
-		"detail_child_state.go":         true,
-		"review_session_child_state.go": true,
-	}
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDirectDetailAndReviewChildStateFieldMutationRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\.selectedFileTreeRow\s*=\s*[^=]`,
 		`program\.navigationState\.reviewSession\.collapsedTreeRowIDs\s*=\s*`,
@@ -471,17 +467,8 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDedicatedChildS
 		base := filepath.Base(path)
 		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
 	})
-
-	remainingMatches := make([]string, 0, len(actualMatches))
-	for _, match := range actualMatches {
-		base := filepath.Base(strings.Split(match, ":")[0])
-		if allowedFiles[base] {
-			continue
-		}
-		remainingMatches = append(remainingMatches, match)
-	}
-	if len(remainingMatches) != 0 {
-		t.Fatalf("expected detail/review child-state mutation to stay confined to dedicated helper files, actual %v", remainingMatches)
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail/review child-state field mutation to route through child reducers or whole-state replacement, actual %v", actualMatches)
 	}
 }
 
@@ -499,6 +486,20 @@ func TestRefactorGuard_GivenFooterFile_WhenScanning_ThenOnlyViewGlueStillDepends
 	}
 	if len(remainingMatches) != 0 {
 		t.Fatalf("expected footer helpers to stay on snapshot presenters instead of full Program coupling, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenDetailAndReviewChildReducerFiles_WhenScanning_ThenTheyStayOnValueReceiverTransitions(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`func \(program \*Program\)`,
+		`func \(state \*detailStateModel\)`,
+		`func \(state \*reviewSessionState\)`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return base == "detail_child_state.go" || base == "review_session_child_state.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail/review child reducer files to stay on child-model value transitions, actual %v", actualMatches)
 	}
 }
 

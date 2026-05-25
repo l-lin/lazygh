@@ -2,84 +2,71 @@ package tui
 
 import "strings"
 
-func (state *reviewSessionState) setSelectedFileTreeRow(row int) {
-	if state == nil {
-		return
-	}
+func (state reviewSessionState) withSelectedFileTreeRow(row int) reviewSessionState {
 	state.selectedFileTreeRow = row
+	return state
 }
 
-func (state *reviewSessionState) clampSelection(selectableRows []int, fileRows []int) {
-	if state == nil {
-		return
-	}
+func (state reviewSessionState) clampedSelection(selectableRows []int, fileRows []int) reviewSessionState {
 	if len(selectableRows) == 0 {
 		state.selectedFileTreeRow = 0
-		return
+		return state
 	}
 	if state.selectedFileTreeRow < 0 {
 		if state.mode != reviewSessionModeStory && len(fileRows) > 0 {
 			state.selectedFileTreeRow = fileRows[0]
-			return
+			return state
 		}
 		state.selectedFileTreeRow = selectableRows[0]
-		return
+		return state
 	}
 	state.selectedFileTreeRow = adjustVisibleSelection(state.selectedFileTreeRow, selectableRows, 0)
+	return state
 }
 
-func (state *reviewSessionState) adjustSelection(selectableRows []int, change int) {
-	if state == nil {
-		return
-	}
+func (state reviewSessionState) adjustedSelection(selectableRows []int, change int) reviewSessionState {
 	if len(selectableRows) == 0 {
 		state.selectedFileTreeRow = 0
-		return
+		return state
 	}
 	state.selectedFileTreeRow = adjustVisibleSelection(state.selectedFileTreeRow, selectableRows, change)
+	return state
 }
 
-func (state *reviewSessionState) moveSelectionToTop(selectableRows []int) {
-	if state == nil {
-		return
-	}
+func (state reviewSessionState) selectionAtTop(selectableRows []int) reviewSessionState {
 	if len(selectableRows) == 0 {
 		state.selectedFileTreeRow = 0
-		return
+		return state
 	}
 	state.selectedFileTreeRow = selectableRows[0]
+	return state
 }
 
-func (state *reviewSessionState) moveSelectionToBottom(selectableRows []int) {
-	if state == nil {
-		return
-	}
+func (state reviewSessionState) selectionAtBottom(selectableRows []int) reviewSessionState {
 	if len(selectableRows) == 0 {
 		state.selectedFileTreeRow = 0
-		return
+		return state
 	}
 	state.selectedFileTreeRow = selectableRows[len(selectableRows)-1]
+	return state
 }
 
-func (state *reviewSessionState) setTreeRowCollapsed(rowID string, collapsed bool) {
+func (state reviewSessionState) withTreeRowCollapsed(rowID string, collapsed bool) reviewSessionState {
 	trimmedRowID := strings.TrimSpace(rowID)
-	if state == nil || trimmedRowID == "" {
-		return
+	if trimmedRowID == "" {
+		return state
 	}
-	if state.collapsedTreeRowIDs == nil {
-		state.collapsedTreeRowIDs = map[string]bool{}
-	}
+	state.collapsedTreeRowIDs = copyReviewSessionCollapsedIDs(state.collapsedTreeRowIDs)
 	state.collapsedTreeRowIDs[trimmedRowID] = collapsed
+	return state
 }
 
-func (state *reviewSessionState) setAllTreeRowsCollapsed(tree reviewDiffTree, collapsed bool) bool {
-	if state == nil || len(tree.Rows) == 0 {
-		return false
-	}
-	if state.collapsedTreeRowIDs == nil {
-		state.collapsedTreeRowIDs = map[string]bool{}
+func (state reviewSessionState) withAllTreeRowsCollapsed(tree reviewDiffTree, collapsed bool) (reviewSessionState, bool) {
+	if len(tree.Rows) == 0 {
+		return state, false
 	}
 
+	collapsedRowIDs := copyReviewSessionCollapsedIDs(state.collapsedTreeRowIDs)
 	changed := false
 	for _, row := range tree.Rows {
 		if !row.Foldable {
@@ -89,43 +76,50 @@ func (state *reviewSessionState) setAllTreeRowsCollapsed(tree reviewDiffTree, co
 		if trimmedRowID == "" {
 			continue
 		}
-		if actualCollapsed, ok := state.collapsedTreeRowIDs[trimmedRowID]; !ok || actualCollapsed != collapsed {
+		if actualCollapsed, ok := collapsedRowIDs[trimmedRowID]; !ok || actualCollapsed != collapsed {
 			changed = true
 		}
-		state.collapsedTreeRowIDs[trimmedRowID] = collapsed
+		collapsedRowIDs[trimmedRowID] = collapsed
 	}
-	return changed
+	state.collapsedTreeRowIDs = collapsedRowIDs
+	return state, changed
 }
 
-func (state *reviewSessionState) setThreadCollapsed(threadID string, collapsed bool) {
+func (state reviewSessionState) withThreadCollapsed(threadID string, collapsed bool) reviewSessionState {
 	trimmedThreadID := strings.TrimSpace(threadID)
-	if state == nil || trimmedThreadID == "" {
-		return
+	if trimmedThreadID == "" {
+		return state
 	}
-	if state.collapsedThreadIDs == nil {
-		state.collapsedThreadIDs = map[string]bool{}
-	}
+	state.collapsedThreadIDs = copyReviewSessionCollapsedIDs(state.collapsedThreadIDs)
 	state.collapsedThreadIDs[trimmedThreadID] = collapsed
+	return state
 }
 
-func (state *reviewSessionState) setAllThreadsCollapsed(threads []reviewDiffThread, collapsed bool) bool {
-	if state == nil || len(threads) == 0 {
-		return false
-	}
-	if state.collapsedThreadIDs == nil {
-		state.collapsedThreadIDs = map[string]bool{}
+func (state reviewSessionState) withAllThreadsCollapsed(threads []reviewDiffThread, collapsed bool) (reviewSessionState, bool) {
+	if len(threads) == 0 {
+		return state, false
 	}
 
+	collapsedThreadIDs := copyReviewSessionCollapsedIDs(state.collapsedThreadIDs)
 	changed := false
 	for _, thread := range threads {
 		trimmedThreadID := strings.TrimSpace(thread.ID)
 		if trimmedThreadID == "" {
 			continue
 		}
-		if reviewDiffThreadCollapsed(thread, state.collapsedThreadIDs) != collapsed {
+		if reviewDiffThreadCollapsed(thread, collapsedThreadIDs) != collapsed {
 			changed = true
 		}
-		state.collapsedThreadIDs[trimmedThreadID] = collapsed
+		collapsedThreadIDs[trimmedThreadID] = collapsed
 	}
-	return changed
+	state.collapsedThreadIDs = collapsedThreadIDs
+	return state, changed
+}
+
+func copyReviewSessionCollapsedIDs(source map[string]bool) map[string]bool {
+	copied := make(map[string]bool, len(source))
+	for id, collapsed := range source {
+		copied[id] = collapsed
+	}
+	return copied
 }

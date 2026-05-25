@@ -11,7 +11,7 @@ func (program *Program) applyMoveReviewFile(message MsgMoveReviewFile) {
 	}
 
 	originalRow := program.navigationState.reviewSession.selectedFileTreeRow
-	program.navigationState.reviewSession.adjustSelection(selectableRows, message.Delta)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(selectableRows, message.Delta)
 	if program.navigationState.reviewSession.selectedFileTreeRow == originalRow {
 		return
 	}
@@ -30,7 +30,7 @@ func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) {
 	}
 
 	program.detailState.viewState.clearPendingPrefix()
-	program.navigationState.reviewSession.setSelectedFileTreeRow(target.fileTreeRow)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(target.fileTreeRow)
 	_ = program.mutateDetailViewStateWithoutRefresh(program.gui, detailView, func(document detailDocument, viewportHeight int) {
 		program.focusDetailLine(document, viewportHeight, target.renderedLine)
 	})
@@ -56,9 +56,9 @@ func (program *Program) applyToggleReviewTreeRowVisibility() {
 	if !ok {
 		return
 	}
-	program.navigationState.reviewSession.setTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.navigationState.reviewSession.collapsedTreeRowIDs))
+	program.navigationState.reviewSession = program.navigationState.reviewSession.withTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.navigationState.reviewSession.collapsedTreeRowIDs))
 	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.navigationState.reviewSession.collapsedTreeRowIDs)
-	program.navigationState.reviewSession.setSelectedFileTreeRow(reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID))
+	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID))
 }
 
 func (program *Program) applySetAllReviewTreeFolds(message MsgSetAllReviewTreeFolds) {
@@ -76,12 +76,14 @@ func (program *Program) applySetAllReviewTreeFolds(message MsgSetAllReviewTreeFo
 		return
 	}
 	selectedRowID := currentVisibleTree.Rows[clampIndex(program.navigationState.reviewSession.selectedFileTreeRow, len(currentVisibleTree.Rows))].ID
-	if !program.navigationState.reviewSession.setAllTreeRowsCollapsed(rawTree, message.Collapsed) {
+	updatedReviewSession, changed := program.navigationState.reviewSession.withAllTreeRowsCollapsed(rawTree, message.Collapsed)
+	if !changed {
 		return
 	}
+	program.navigationState.reviewSession = updatedReviewSession
 
 	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.navigationState.reviewSession.collapsedTreeRowIDs)
-	program.navigationState.reviewSession.setSelectedFileTreeRow(reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID))
+	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID))
 }
 
 func (program *Program) applyToggleInlineConversationVisibility(message MsgToggleInlineConversationVisibility) {

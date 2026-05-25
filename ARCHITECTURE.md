@@ -120,7 +120,7 @@ The detail pane uses selector-style document builders for:
 
 Those selectors memoize expensive derived data outside the render entrypoints.
 
-Detail and review hot-path child-state mutation is also narrower now. Cursor placement, wrap-width sync, and review-session selection or collapsed-state writes flow through `detail_child_state.go` and `review_session_child_state.go`, so fold, navigation, and render-support helpers stop mutating those child states inline across the package.
+Detail and review hot-path child-state transitions now live on child-model reducers. `detailStateModel` owns wrap-width, cursor-placement, viewport-sync, and search-sync transitions, while `reviewSessionState` owns file-tree selection and collapsed tree/thread reducers. Callers replace the whole child state instead of mutating nested fields inline across the package.
 
 ### Async workflow planning
 
@@ -185,7 +185,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because many helpers still depend on the full `*Program`—although the footer/key-hint family now reads from snapshot presenters instead of the whole shell—the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `cmd_popup_feature_request_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup builders, and the new detail/review child-state helpers are more auditable than before but still imperative helpers rather than pure child reducers.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because many helpers still depend on the full `*Program`—although the footer/key-hint family now reads from snapshot presenters instead of the whole shell—and the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `cmd_popup_feature_request_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup builders.
 
 If you want to understand the project quickly, start with these files:
 

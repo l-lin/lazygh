@@ -127,7 +127,7 @@ func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
 func (program *Program) clampReviewSessionSelection() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok {
-		program.navigationState.reviewSession.clampSelection(nil, nil)
+		program.navigationState.reviewSession = program.navigationState.reviewSession.clampedSelection(nil, nil)
 		return
 	}
 
@@ -135,37 +135,37 @@ func (program *Program) clampReviewSessionSelection() {
 	if !fileRowsOK {
 		fileRows = nil
 	}
-	program.navigationState.reviewSession.clampSelection(selectableRows, fileRows)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.clampedSelection(selectableRows, fileRows)
 }
 
 func (program *Program) adjustReviewSessionSelection(change int) {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok {
-		program.navigationState.reviewSession.adjustSelection(nil, change)
+		program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(nil, change)
 		return
 	}
 
-	program.navigationState.reviewSession.adjustSelection(selectableRows, change)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(selectableRows, change)
 }
 
 func (program *Program) moveReviewSessionSelectionToTop() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok {
-		program.navigationState.reviewSession.moveSelectionToTop(nil)
+		program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtTop(nil)
 		return
 	}
 
-	program.navigationState.reviewSession.moveSelectionToTop(selectableRows)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtTop(selectableRows)
 }
 
 func (program *Program) moveReviewSessionSelectionToBottom() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
 	if !ok {
-		program.navigationState.reviewSession.moveSelectionToBottom(nil)
+		program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtBottom(nil)
 		return
 	}
 
-	program.navigationState.reviewSession.moveSelectionToBottom(selectableRows)
+	program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtBottom(selectableRows)
 }
 
 func (program *Program) reviewSessionSelectableRows() ([]int, bool) {

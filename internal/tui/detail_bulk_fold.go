@@ -57,9 +57,11 @@ func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 
-	if !program.navigationState.reviewSession.setAllThreadsCollapsed(selectedFile.Threads, collapsed) {
+	updatedReviewSession, changed := program.navigationState.reviewSession.withAllThreadsCollapsed(selectedFile.Threads, collapsed)
+	if !changed {
 		return nil
 	}
+	program.navigationState.reviewSession = updatedReviewSession
 	program.invalidateReviewDiffRenderCache()
 
 	updatedDocument := program.currentReviewDiffDocument(selectedFile, detailDocument.width)
