@@ -83,8 +83,9 @@ The main read-only projection seams are:
 - `actionsPopupPresenter`
 - `searchViewPresenter`
 - `reviewSessionReadModel`
+- `review_session_selectors.go`
 
-Those snapshots keep footer, help, popup, title, and review-mode derivation off the full `*Program` bag.
+Those snapshots keep footer, help, popup, title, and hot review/story selection derivation off the full `*Program` bag.
 
 ## Command surfaces
 
@@ -95,6 +96,8 @@ Shell work now lives behind explicit command files.
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
 - `cmd_interaction.go`: popup reporting, clipboard work, link opening, detail-search follow-up, review-comment focus, page navigation, GUI reconfigure, and manual refresh registration
+- `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
+- `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport
 
 These command files still live in `internal/tui`, but they now build focused runtime bundles at the `Cmd.execute(...)` boundary instead of passing the full shell bag deep into helpers.
@@ -127,25 +130,28 @@ What is already in good shape:
 - explicit `Msg`, `Update`, and `Cmd`
 - pure workflow planners
 - child reducers for detail and review state
-- read-only presenters and read models
+- read-only presenters, read models, and review/session selectors
+- line navigation, fold toggles, and detail/build-popup motion now cross the shell boundary through explicit commands
 - update files no longer show direct GUI or live-view coupling in the audit
 
 What is still shell-heavy:
 
-- `program_navigation.go` and `program_navigation_support.go`
-- detail-view helper files such as `detail_bulk_fold.go`, `program_character_motion.go`, `yank_motion.go`, `review_inline_conversation.go`, `open_link.go`, `pull_request_build.go`, and `pull_request_reviewer.go`
+- navigation helpers such as `program_navigation.go`, `program_navigation_support.go`, and `program_detail_search.go`
+- popup navigation helpers such as `pull_request_build_popup_navigation.go` and `actions_popup_interaction.go`
+- cursor-dependent detail action files such as `open_link.go`, `pull_request_build.go`, `pull_request_reviewer.go`, and `review_inline_comment.go`
 - runtime entrypoints such as `view_url.go`, `editor_dispatch.go`, `actions_popup_async_success.go`, and `refresh_active_view.go`
 
 ## Audit snapshot, 2026-05-25
 
-The post-refactor audit still shows these main gaps:
+After finishing todos `027`-`029`, the main remaining gaps are:
 
-- `program_navigation.go`: 51 `func (program *Program)` methods, still the largest shell-heavy pocket
-- direct shell hotspots by file: `program_navigation.go` (24), `detail_bulk_fold.go` (16), `shell_refresh.go` (11), `yank_motion.go` (10), `program_character_motion.go` (7), `review_inline_conversation.go` (6), `pull_request_build.go` (5), `open_link.go` (4), `pull_request_reviewer.go` (3)
-- `update*.go` files no longer appear in the GUI or live-view coupling report
+- `program_navigation.go`: 51 `func (program *Program)` methods, still the largest non-command `*Program` pocket
+- non-command shell hotspots by file: `pull_request_build_popup_navigation.go` (25), `program_navigation.go` (22), `actions_popup_interaction.go` (11), `pull_request_build.go` (5), `program_navigation_support.go` (5), `open_link.go` (4), `review_inline_comment.go` (4), `pull_request_reviewer.go` (3)
+- GUI-bound runtime shortcuts remain in `view_url.go`, `editor_dispatch.go`, `actions_popup_async_success.go`, and `refresh_active_view.go`
+- `update*.go` files still stay out of the GUI and live-view coupling report
 - direct GitHub ports in `internal/tui` remain confined to `workflow_commands.go`
 
-That means the next migration work should stay focused on the remaining shell helpers, not on the reducer layer that was just cleaned up.
+That means the next migration work should stay focused on the remaining non-command shell helpers and runtime shortcuts, not on the reducer layer that was already cleaned up.
 
 ## Start here
 
