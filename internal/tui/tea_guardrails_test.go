@@ -513,6 +513,24 @@ func TestRefactorGuard_GivenDetailAndReviewChildReducerFiles_WhenScanning_ThenTh
 	}
 }
 
+func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
+		base := filepath.Base(path)
+		return base == "review_session.go" || base == "review_session_content.go"
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "startReviewAction(") || strings.Contains(match, "executeStartReviewAction(") || strings.Contains(match, "exitReviewMode(") || strings.Contains(match, "reviewModePaneLayoutSize(") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected review-session read helpers to live on the focused read model instead of review_session*.go, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,

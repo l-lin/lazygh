@@ -122,6 +122,8 @@ Those selectors memoize expensive derived data outside the render entrypoints.
 
 Detail and review hot-path child-state transitions now live on child-model reducers. `detailStateModel` owns wrap-width, cursor-placement, viewport-sync, and search-sync transitions, while `reviewSessionState` owns file-tree selection and collapsed tree/thread reducers. Callers replace the whole child state instead of mutating nested fields inline across the package.
 
+Review mode’s read side now also runs through a focused `reviewSessionReadModel` snapshot. That snapshot owns tree visibility, selected file/chapter derivation, review detail identity, loading/error placeholders, and story/diff description selection so `review_session.go` / `review_session_content.go` no longer walk the whole `*Program` shell for read-only projection.
+
 ### Async workflow planning
 
 The TUI plans background work after state changes through `plannedWorkflow()`. `workflow_plan_selectors.go` reads the live `Program` state, current selection, and persistent caches, then the pure planner functions in `workflow_plans.go` derive explicit load-start messages plus typed commands for cache hydration, connected-user loading, pull request lists, notifications, detail, diff data, and inline images.
