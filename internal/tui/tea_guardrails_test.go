@@ -61,6 +61,65 @@ func TestRefactorGuard_GivenRenderLayerFiles_WhenScanning_ThenTheyDoNotMutateSel
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDispatchUsesUiUpdaterApply(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"dispatch.go": true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`uiUpdater\.Apply\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected uiUpdater.Apply to stay confined to dispatch.go, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenTUIPackageGoFiles_WhenScanning_ThenNoPhaseMigrationFileNamesRemain(t *testing.T) {
+	packageRoot := given_guardPackageRoot(t)
+	actualMatches := make([]string, 0)
+
+	actualErr := filepath.WalkDir(packageRoot, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			name := entry.Name()
+			if name == ".git" || name == "testdata" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		base := filepath.Base(path)
+		if !strings.HasSuffix(base, ".go") || !strings.Contains(base, "_phase") {
+			return nil
+		}
+		relativePath, relErr := filepath.Rel(packageRoot, path)
+		if relErr != nil {
+			return relErr
+		}
+		actualMatches = append(actualMatches, filepath.ToSlash(relativePath))
+		return nil
+	})
+	if actualErr != nil {
+		t.Fatalf("walk go files: %v", actualErr)
+	}
+
+	slices.Sort(actualMatches)
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected migration phase file names to be removed, actual %v", actualMatches)
+	}
+}
+
 func given_isRenderLayerFile(path string) bool {
 	base := filepath.Base(path)
 	if !strings.HasSuffix(base, ".go") || strings.HasSuffix(base, "_test.go") {
