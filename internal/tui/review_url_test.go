@@ -8,6 +8,39 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
+func TestOpenReviewByURL_GivenAValidGitHubPRURLAfterLayout_WhenOpening_ThenItRefreshesThroughDispatch(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/rocket#77": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_model(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	actualErr = subject.OpenReviewByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	if !subject.navigationState.reviewSession.active {
+		t.Fatal("expected review mode to become active immediately")
+	}
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+
+	metadataView, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	if metadataView.Title != reviewModeMetadataTitle {
+		t.Fatalf("expected metadata view title %q, actual %q", reviewModeMetadataTitle, metadataView.Title)
+	}
+	if actual := strings.TrimSpace(metadataView.Buffer()); actual != "acme/rocket#77" {
+		t.Fatalf("expected metadata view buffer %q, actual %q", "acme/rocket#77", actual)
+	}
+}
+
 func TestOpenReviewByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRendering_ThenItStartsDirectlyInReviewMode(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",

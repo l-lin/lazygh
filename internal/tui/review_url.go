@@ -15,19 +15,5 @@ func (program *Program) OpenReviewByURL(rawURL string) error {
 	if err != nil {
 		return err
 	}
-	return program.openPullRequestReview(summary)
-}
-
-func (program *Program) openPullRequestReview(summary githubdomain.PullRequest) error {
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-
-	pendingReviewID, err := startPendingPullRequestReview(program, summary)
-	if err != nil {
-		return err
-	}
-
-	program.startReviewSession(summary, pendingReviewID)
-	return nil
+	return program.dispatchStartupMessage(MsgStartPullRequestReviewRequested{Summary: summary})
 }

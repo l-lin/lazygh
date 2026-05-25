@@ -26,7 +26,17 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 	}
 
 	summary.Repository.NameWithOwner = repository
-	Update(program, MsgOpenPullRequestInBrowserView{Summary: summary})
+	return program.dispatchStartupMessage(MsgOpenPullRequestInBrowserView{Summary: summary})
+}
+
+func (program *Program) dispatchStartupMessage(msg Msg) error {
+	if program == nil || msg == nil {
+		return nil
+	}
+	if program.gui != nil {
+		return program.dispatch(program.gui, msg)
+	}
+	program.executeCmds(nil, Update(program, msg))
 	return nil
 }
 

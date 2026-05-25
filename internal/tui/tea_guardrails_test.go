@@ -224,6 +224,22 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyActionsPopu
 	}
 }
 
+func TestRefactorGuard_GivenStartupReviewAndStoryUrlEntrypoints_WhenScanning_ThenTheyOnlyParseValidateAndDispatch(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`startReviewSession\(`,
+		`applyPreparedStoryReview\(`,
+		`layout\(program\.gui\)`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "review_url.go" || base == "review_story_url.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected startup review/story URL entrypoints to stay on parse-and-dispatch behavior, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenRemainingPopupActionFiles_WhenScanning_ThenTheyDoNotReturnLegacyClosePopupState(t *testing.T) {
 	remainingPopupFiles := map[string]bool{
 		"error_popup.go":            true,

@@ -12,16 +12,5 @@ func (program *Program) OpenStoryReviewByURL(rawURL string) error {
 		return actualErr
 	}
 
-	prepared, actualErr := program.prepareStoryReview(summary)
-	if actualErr != nil {
-		return actualErr
-	}
-
-	program.feedbackMessage = ""
-	program.storyReviewLoading = false
-	program.applyPreparedStoryReview(prepared)
-	if program.gui != nil {
-		return program.layout(program.gui)
-	}
-	return nil
+	return program.dispatchStartupMessage(MsgReviewStoryRequested{Summary: summary})
 }
