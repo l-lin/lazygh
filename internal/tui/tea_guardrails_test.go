@@ -242,6 +242,21 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditor
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyPopupFeatureWorkCallbacksRemain(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`Work\s+func\(\*Program\)\s+error`,
+		`func \(program \*Program\) prepareStoryReview\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected popup feature requests to use typed executors instead of legacy work callbacks, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenStartupReviewAndStoryUrlEntrypoints_WhenScanning_ThenTheyOnlyParseValidateAndDispatch(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`startReviewSession\(`,
@@ -372,8 +387,8 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplic
 		"cmd_actions_popup_async_requests.go":    true,
 		"cmd_interaction.go":                     true,
 		"cmd_modal_editor_submit_requests.go":    true,
+		"cmd_popup_feature_request_requests.go":  true,
 		"update_actions_popup.go":                true,
-		"update_popup_feature_requests.go":       true,
 		"update_pull_request_popup_mutations.go": true,
 		"workflow_commands.go":                   true,
 	}

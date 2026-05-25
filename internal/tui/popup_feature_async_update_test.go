@@ -6,7 +6,7 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOptimisticMutationAndReturnsAnUpdateOwnedCommand(t *testing.T) {
+func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOptimisticMutationAndReturnsATypedRequestCommand(t *testing.T) {
 	notifications := []githubcli.Notification{
 		given_notificationValue(t, given_pullRequestNotificationRow()),
 		given_notificationValue(t, given_issueNotificationRow()),
@@ -22,8 +22,19 @@ func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOp
 	if len(actual) != 1 {
 		t.Fatalf("expected one notification mutation command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(notificationMutationCmd); !ok {
+	command, ok := actual[0].(notificationMutationCmd)
+	if !ok {
 		t.Fatalf("expected a notificationMutationCmd, actual %T", actual[0])
+	}
+	request, ok := command.request.(notificationReadMutationRequest)
+	if !ok {
+		t.Fatalf("expected a notificationReadMutationRequest, actual %T", command.request)
+	}
+	if actual := request.threadID; actual != target.threadID {
+		t.Fatalf("expected request thread id %q, actual %q", target.threadID, actual)
+	}
+	if actual := command.SuccessFeedbackMessage; actual != notificationMarkedReadMessage {
+		t.Fatalf("expected success feedback %q, actual %q", notificationMarkedReadMessage, actual)
 	}
 	if !subject.notificationsLoading {
 		t.Fatal("expected notifications loading to start immediately")
@@ -34,7 +45,7 @@ func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOp
 	}
 }
 
-func TestUpdate_GivenMsgReviewStoryRequested_WhenApplying_ThenItClosesThePopupMarksStoryLoadingAndReturnsACommand(t *testing.T) {
+func TestUpdate_GivenMsgReviewStoryRequested_WhenApplying_ThenItClosesThePopupMarksStoryLoadingAndReturnsATypedPrepareRequest(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	summary, ok := subject.currentPullRequestSummary()
 	if !ok {
@@ -48,8 +59,16 @@ func TestUpdate_GivenMsgReviewStoryRequested_WhenApplying_ThenItClosesThePopupMa
 	if len(actual) != 1 {
 		t.Fatalf("expected one story review command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(storyReviewPrepareCmd); !ok {
+	command, ok := actual[0].(storyReviewPrepareCmd)
+	if !ok {
 		t.Fatalf("expected a storyReviewPrepareCmd, actual %T", actual[0])
+	}
+	request, ok := command.request.(pullRequestStoryReviewPrepareRequest)
+	if !ok {
+		t.Fatalf("expected a pullRequestStoryReviewPrepareRequest, actual %T", command.request)
+	}
+	if actual := request.summary.Number; actual != summary.Number {
+		t.Fatalf("expected story review summary number %d, actual %d", summary.Number, actual)
 	}
 	if subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to close before starting the story review work")

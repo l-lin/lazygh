@@ -1,28 +1,32 @@
 package tui
 
-import (
-	"github.com/jesseduffield/gocui"
+import "github.com/jesseduffield/gocui"
 
-	githubdomain "github.com/l-lin/lazygh/internal/github"
-)
+type notificationMutationRequest interface {
+	run(*Program) error
+}
+
+type storyReviewPreparationRequest interface {
+	run(*Program) (preparedStoryReview, error)
+}
 
 type notificationMutationCmd struct {
 	Snapshot               notificationMutationSnapshot
 	SuccessFeedbackMessage string
-	Work                   func(*Program) error
+	request                notificationMutationRequest
 }
 
 type storyReviewPrepareCmd struct {
-	Summary githubdomain.PullRequest
+	request storyReviewPreparationRequest
 }
 
 func (command notificationMutationCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || command.Work == nil {
+	if program == nil || command.request == nil {
 		return
 	}
 
 	run := func() {
-		err := command.Work(program)
+		err := command.request.run(program)
 		if gui == nil {
 			program.executeCmds(gui, Update(program, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err}))
 			return
@@ -37,12 +41,12 @@ func (command notificationMutationCmd) execute(program *Program, gui *gocui.Gui)
 }
 
 func (command storyReviewPrepareCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
+	if program == nil || command.request == nil {
 		return
 	}
 
 	run := func() {
-		prepared, err := program.prepareStoryReview(command.Summary)
+		prepared, err := command.request.run(program)
 		if gui == nil {
 			program.executeCmds(gui, Update(program, MsgStoryReviewPrepared{Prepared: prepared, Err: err}))
 			return
