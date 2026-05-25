@@ -49,7 +49,15 @@ func TestRefactorGuard_GivenProgramType_WhenInspecting_ThenDurableUIStateLivesIn
 		}
 	}
 
-	if actual := programType.NumField(); actual > 45 {
-		t.Fatalf("expected Program field count <= 45 after child-state extraction, actual %d", actual)
+	expectedDirectFieldNames := []string{"model", "programDeps", "programStores", "programViewRuntime", "programShellRuntime"}
+	actualDirectFieldNames := make([]string, 0, programType.NumField())
+	for index := range programType.NumField() {
+		actualDirectFieldNames = append(actualDirectFieldNames, programType.Field(index).Name)
+	}
+	if !reflect.DeepEqual(actualDirectFieldNames, expectedDirectFieldNames) {
+		t.Fatalf("expected Program to segment shell state into %v, actual %v", expectedDirectFieldNames, actualDirectFieldNames)
+	}
+	if actual := programType.NumField(); actual > len(expectedDirectFieldNames) {
+		t.Fatalf("expected Program direct field count <= %d after shell decomposition, actual %d", len(expectedDirectFieldNames), actual)
 	}
 }

@@ -28,8 +28,7 @@ const (
 	defaultYankHighlightDuration = 240 * time.Millisecond
 )
 
-type Program struct {
-	model                  *Model
+type programDeps struct {
 	sessionQueries         SessionQueries
 	pullRequestListQueries PullRequestListQueries
 	notificationQueries    NotificationQueries
@@ -41,6 +40,16 @@ type Program struct {
 	buildQueries           BuildQueries
 	markdownHTMLRenderer   MarkdownHTMLRenderer
 	authTokenProvider      AuthTokenProvider
+	clipboardReader        ClipboardReader
+	clipboardWriter        ClipboardWriter
+	externalEditor         ExternalEditor
+	linkOpener             LinkOpener
+	markdownRenderer       MarkdownRenderer
+	storyGenerator         reviewStoryGenerator
+	themePresetStore       ThemePresetStore
+}
+
+type programStores struct {
 	*sessionStore
 	*persistentCacheStore
 	*pullRequestListStore
@@ -51,25 +60,32 @@ type Program struct {
 	*statusStore
 	*optimisticMutationCoordinator
 	*imageLoadCoordinator
+}
+
+type programViewRuntime struct {
 	startupState       startupStateModel
 	detailState        detailStateModel
-	clipboardReader    ClipboardReader
-	clipboardWriter    ClipboardWriter
 	overlayState       overlayStateModel
 	searchWidget       searchWidgetState
 	actionsPopupWidget actionsPopupWidgetState
 	navigationState    navigationStateModel
-	externalEditor     ExternalEditor
-	linkOpener         LinkOpener
-	markdownRenderer   MarkdownRenderer
-	storyGenerator     reviewStoryGenerator
+	runtimeConfig      runtimeConfigState
+}
+
+type programShellRuntime struct {
 	asyncRunner        asyncRunner
 	uiUpdater          uiUpdater
 	gui                *gocui.Gui
-	runtimeConfig      runtimeConfigState
-	themePresetStore   ThemePresetStore
 	timingState        timingStateModel
 	manualRefreshState manualRefreshStateModel
+}
+
+type Program struct {
+	model *Model
+	programDeps
+	programStores
+	programViewRuntime
+	programShellRuntime
 }
 
 func NewProgram() *Program {
@@ -101,44 +117,52 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 	imageCoordinator := newImageLoadCoordinator(imageStore, &protocolDetailImageManager{imageStore: imageStore, imageProtocol: imageProtocol, terminal: screenTerminalGraphicsTerminal{}})
 
 	return &Program{
-		model:                         model,
-		sessionQueries:                resolvedDeps.SessionQueries,
-		pullRequestListQueries:        resolvedDeps.PullRequestList,
-		notificationQueries:           resolvedDeps.NotificationQueries,
-		detailQueries:                 resolvedDeps.DetailQueries,
-		pullRequestMutations:          resolvedDeps.PullRequestMutations,
-		reviewMutations:               resolvedDeps.ReviewMutations,
-		notificationMutations:         resolvedDeps.NotificationMutations,
-		reactionMutations:             resolvedDeps.ReactionMutations,
-		buildQueries:                  resolvedDeps.BuildQueries,
-		markdownHTMLRenderer:          resolvedDeps.MarkdownHTMLRenderer,
-		authTokenProvider:             resolvedDeps.AuthTokenProvider,
-		sessionStore:                  sessionState,
-		persistentCacheStore:          persistence,
-		pullRequestListStore:          newPullRequestListStore(persistence),
-		notificationStore:             newNotificationStore(persistence),
-		detailStore:                   detailState,
-		reviewStore:                   reviewState,
-		buildStore:                    newBuildStore(),
-		statusStore:                   newStatusStore(),
-		optimisticMutationCoordinator: newOptimisticMutationCoordinator(),
-		imageLoadCoordinator:          imageCoordinator,
-		externalEditor:                resolvedDeps.ExternalEditor,
-		linkOpener:                    resolvedDeps.LinkOpener,
-		markdownRenderer:              glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
-		storyGenerator:                commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
-		themePresetStore:              resolvedDeps.ThemePresetStore,
-		asyncRunner:                   goroutineAsyncRunner{},
-		uiUpdater:                     queuedUIUpdater{},
-		clipboardReader:               resolvedDeps.ClipboardReader,
-		clipboardWriter:               resolvedDeps.ClipboardWriter,
-		startupState:                  startupStateModel{},
-		detailState:                   detailStateModel{viewState: newDetailViewState(), wrapWidth: defaultDetailWrapWidth},
-		actionsPopupWidget:            actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
-		navigationState:               navigationStateModel{pendingListViewportPlacements: map[string]viewportPlacement{}},
-		runtimeConfig:                 runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},
-		timingState:                   timingStateModel{now: time.Now, after: time.After, yankHighlightDuration: defaultYankHighlightDuration, transientErrorPopupDuration: defaultTransientErrorPopupDuration},
-		manualRefreshState:            manualRefreshStateModel{pullRequestListPending: map[PullRequestTab]bool{}, pullRequestDetailPending: map[string]bool{}, pullRequestDiffPending: map[string]bool{}},
+		model: model,
+		programDeps: programDeps{
+			sessionQueries:         resolvedDeps.SessionQueries,
+			pullRequestListQueries: resolvedDeps.PullRequestList,
+			notificationQueries:    resolvedDeps.NotificationQueries,
+			detailQueries:          resolvedDeps.DetailQueries,
+			pullRequestMutations:   resolvedDeps.PullRequestMutations,
+			reviewMutations:        resolvedDeps.ReviewMutations,
+			notificationMutations:  resolvedDeps.NotificationMutations,
+			reactionMutations:      resolvedDeps.ReactionMutations,
+			buildQueries:           resolvedDeps.BuildQueries,
+			markdownHTMLRenderer:   resolvedDeps.MarkdownHTMLRenderer,
+			authTokenProvider:      resolvedDeps.AuthTokenProvider,
+			clipboardReader:        resolvedDeps.ClipboardReader,
+			clipboardWriter:        resolvedDeps.ClipboardWriter,
+			externalEditor:         resolvedDeps.ExternalEditor,
+			linkOpener:             resolvedDeps.LinkOpener,
+			markdownRenderer:       glamourMarkdownRenderer{imageStore: imageStore, imageProtocol: imageProtocol, terminalCellSize: screenTerminalCellSize{}},
+			storyGenerator:         commandReviewStoryGenerator{generator: story.NewGenerator(nil)},
+			themePresetStore:       resolvedDeps.ThemePresetStore,
+		},
+		programStores: programStores{
+			sessionStore:                  sessionState,
+			persistentCacheStore:          persistence,
+			pullRequestListStore:          newPullRequestListStore(persistence),
+			notificationStore:             newNotificationStore(persistence),
+			detailStore:                   detailState,
+			reviewStore:                   reviewState,
+			buildStore:                    newBuildStore(),
+			statusStore:                   newStatusStore(),
+			optimisticMutationCoordinator: newOptimisticMutationCoordinator(),
+			imageLoadCoordinator:          imageCoordinator,
+		},
+		programViewRuntime: programViewRuntime{
+			startupState:       startupStateModel{},
+			detailState:        detailStateModel{viewState: newDetailViewState(), wrapWidth: defaultDetailWrapWidth},
+			actionsPopupWidget: actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
+			navigationState:    navigationStateModel{pendingListViewportPlacements: map[string]viewportPlacement{}},
+			runtimeConfig:      runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},
+		},
+		programShellRuntime: programShellRuntime{
+			asyncRunner:        goroutineAsyncRunner{},
+			uiUpdater:          queuedUIUpdater{},
+			timingState:        timingStateModel{now: time.Now, after: time.After, yankHighlightDuration: defaultYankHighlightDuration, transientErrorPopupDuration: defaultTransientErrorPopupDuration},
+			manualRefreshState: manualRefreshStateModel{pullRequestListPending: map[PullRequestTab]bool{}, pullRequestDetailPending: map[string]bool{}, pullRequestDiffPending: map[string]bool{}},
+		},
 	}
 }
 
