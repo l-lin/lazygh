@@ -55,18 +55,7 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) error {
 	if !ok {
 		return newActionsPopupStatusLineError(program.model.Focus(), errActionsPopupActionUnavailable)
 	}
-
-	program.feedbackMessage = ""
-	program.storyReviewLoading = true
-	program.runAsync(func() {
-		program.loadStoryReview(gui, summary)
-	})
-	return program.closeActionsPopupIfVisible(gui)
-}
-
-func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubdomain.PullRequest) {
-	prepared, actualErr := program.prepareStoryReview(summary)
-	program.dispatchAsync(gui, MsgStoryReviewPrepared{Prepared: prepared, Err: actualErr})
+	return program.dispatch(gui, MsgReviewStoryRequested{Summary: summary})
 }
 
 func (program *Program) validateStoryReviewAvailability() error {
@@ -79,43 +68,6 @@ func (program *Program) validateStoryReviewAvailability() error {
 	return nil
 }
 
-func (program *Program) prepareStoryReview(summary githubdomain.PullRequest) (preparedStoryReview, error) {
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return preparedStoryReview{}, errors.New("missing pull request identity")
-	}
-
-	detail, detailOK := program.storyReviewDetail(summary)
-	rawDiff, actualErr := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
-	if actualErr != nil {
-		return preparedStoryReview{}, newTransientErrorPopupActionError(actualErr)
-	}
-
-	generatedStory, actualErr := program.storyGenerator.Generate(program.runtimeConfig.storyReviewConfig, story.Request{
-		Metadata:  buildStoryReviewMetadata(summary, detail, detailOK, rawDiff),
-		DiffItems: buildStoryReviewDiffItems(rawDiff.Files),
-		DiffText:  rawDiff.UnifiedDiff,
-	})
-	if actualErr != nil {
-		return preparedStoryReview{}, actualErr
-	}
-
-	pendingReviewID, actualErr := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
-	if actualErr != nil {
-		return preparedStoryReview{}, newTransientErrorPopupActionError(actualErr)
-	}
-
-	diffData := buildReviewDiffData(rawDiff)
-	return preparedStoryReview{
-		summary:         summary,
-		detail:          detail,
-		detailOK:        detailOK,
-		diffData:        diffData,
-		storyData:       buildReviewStoryData(generatedStory, diffData.Files),
-		pendingReviewID: pendingReviewID,
-	}, nil
-}
-
 func (program *Program) applyPreparedStoryReview(prepared preparedStoryReview) {
 	key := pullRequestDetailKey(prepared.summary.Repository, prepared.summary.Number)
 	program.pullRequestDiffCache[key] = pullRequestDiffResult{data: prepared.diffData}
@@ -124,24 +76,6 @@ func (program *Program) applyPreparedStoryReview(prepared preparedStoryReview) {
 		program.invalidatePullRequestDetailDocumentCache()
 	}
 	program.startStoryReviewSession(prepared.summary, prepared.pendingReviewID, prepared.storyData)
-}
-
-func (program *Program) storyReviewDetail(summary githubdomain.PullRequest) (githubdomain.PullRequestDetail, bool) {
-	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
-		return result.detail, true
-	}
-	if !program.hasDetailQueries() {
-		return githubdomain.PullRequestDetail{}, false
-	}
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return githubdomain.PullRequestDetail{}, false
-	}
-	detail, actualErr := program.detailQueries.GetPullRequestDetail(repository, summary.Number)
-	if actualErr != nil {
-		return githubdomain.PullRequestDetail{}, false
-	}
-	return detail, true
 }
 
 func buildStoryReviewMetadata(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailOK bool, rawDiff githubdomain.PullRequestDiff) story.Metadata {

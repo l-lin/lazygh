@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -183,31 +182,19 @@ func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
 }
 
 func (program *Program) executeMarkNotificationReadAction(gui *gocui.Gui) error {
-	if err := program.markSelectedNotificationRead(gui); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
+	return program.markSelectedNotificationRead(gui)
 }
 
 func (program *Program) executeMarkNotificationDoneAction(gui *gocui.Gui) error {
-	if err := program.markSelectedNotificationDone(gui); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
+	return program.markSelectedNotificationDone(gui)
 }
 
 func (program *Program) executeMarkAllNotificationsReadAction(gui *gocui.Gui) error {
-	if err := program.markAllLoadedNotificationsRead(gui); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
+	return program.markAllLoadedNotificationsRead(gui)
 }
 
 func (program *Program) executeMarkAllNotificationsDoneAction(gui *gocui.Gui) error {
-	if err := program.markAllLoadedNotificationsDone(gui); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
+	return program.markAllLoadedNotificationsDone(gui)
 }
 
 func (program *Program) executeOpenNotificationInBrowserAction(gui *gocui.Gui) error {
@@ -222,24 +209,7 @@ func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {
 	if !ok || target.threadID == "" {
 		return errActionsPopupActionUnavailable
 	}
-	if !target.notification.Unread {
-		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: notificationAlreadyReadMessage})
-	}
-
-	optimisticNotifications := program.loadedNotifications()
-	if !markNotificationReadState(optimisticNotifications, target.threadID, false) {
-		return errActionsPopupActionUnavailable
-	}
-
-	return program.startNotificationMutation(
-		gui,
-		notificationReadLoadingMessage,
-		notificationMarkedReadMessage,
-		notificationRows(optimisticNotifications),
-		func() error {
-			return normalizedNotificationMutationError(program.notificationMutations.MarkNotificationRead(target.threadID))
-		},
-	)
+	return program.dispatch(gui, MsgNotificationReadRequested{Target: target})
 }
 
 func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
@@ -247,68 +217,15 @@ func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
 	if !ok || target.threadID == "" {
 		return errActionsPopupActionUnavailable
 	}
-
-	optimisticNotifications, removed := removeNotificationWithThreadID(program.loadedNotifications(), target.threadID)
-	if !removed {
-		return errActionsPopupActionUnavailable
-	}
-
-	return program.startNotificationMutation(
-		gui,
-		notificationDoneLoadingMessage,
-		notificationMarkedDoneMessage,
-		notificationRows(optimisticNotifications),
-		func() error {
-			if err := normalizedNotificationMutationError(program.notificationMutations.MarkNotificationDone(target.threadID)); err != nil {
-				return err
-			}
-			program.hideDoneNotificationsBestEffort([]githubdomain.Notification{target.notification})
-			return nil
-		},
-	)
+	return program.dispatch(gui, MsgNotificationDoneRequested{Target: target})
 }
 
 func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
-	loadedNotifications := program.loadedNotifications()
-	if len(loadedNotifications) == 0 {
-		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: notificationNoNotificationsLoadedMessage})
-	}
-
-	optimisticNotifications := append([]githubdomain.Notification(nil), loadedNotifications...)
-	markAllNotificationsRead(optimisticNotifications)
-	return program.startNotificationMutation(
-		gui,
-		notificationAllReadLoadingMessage,
-		notificationMarkedAllReadMessage,
-		notificationRows(optimisticNotifications),
-		func() error {
-			_, err := program.notificationMutations.MarkAllNotificationsRead()
-			return normalizedNotificationMutationError(err)
-		},
-	)
+	return program.dispatch(gui, MsgAllNotificationsReadRequested{})
 }
 
 func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
-	loadedNotifications := program.loadedNotifications()
-	if len(loadedNotifications) == 0 {
-		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: notificationNoNotificationsLoadedMessage})
-	}
-
-	loadingMessage := fmt.Sprintf("Marking %d notifications as done...", len(loadedNotifications))
-	return program.startNotificationMutation(
-		gui,
-		loadingMessage,
-		notificationMarkedAllDoneMessage,
-		notificationRows(nil),
-		func() error {
-			_, err := program.notificationMutations.MarkAllNotificationsDone(loadedNotifications)
-			if err = normalizedNotificationMutationError(err); err != nil {
-				return err
-			}
-			program.hideDoneNotificationsBestEffort(loadedNotifications)
-			return nil
-		},
-	)
+	return program.dispatch(gui, MsgAllNotificationsDoneRequested{})
 }
 
 func (program *Program) openSelectedNotificationInBrowser(gui *gocui.Gui) error {
@@ -373,27 +290,6 @@ func (program *Program) handleNotificationKeyAction(gui *gocui.Gui, action func(
 	if err := action(gui); err != nil {
 		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: err.Error()})
 	}
-	return nil
-}
-
-func (program *Program) startNotificationMutation(gui *gocui.Gui, loadingMessage string, successFeedbackMessage string, optimisticRows []NotificationRow, work func() error) error {
-	if !program.hasNotificationMutations() {
-		return errors.New("github loader is unavailable")
-	}
-
-	snapshot := program.captureNotificationMutationSnapshot()
-	if actualErr := program.dispatch(gui, MsgNotificationMutationStarted{OptimisticRows: optimisticRows, LoadingMessage: loadingMessage}); actualErr != nil {
-		return actualErr
-	}
-	if gui == nil {
-		err := work()
-		return program.dispatch(gui, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: successFeedbackMessage, Err: err})
-	}
-
-	program.runAsync(func() {
-		err := work()
-		program.dispatchAsync(gui, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: successFeedbackMessage, Err: err})
-	})
 	return nil
 }
 
