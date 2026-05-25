@@ -20,8 +20,13 @@ type interactionCommandRuntime struct {
 	dispatch                            func(*gocui.Gui, Msg) error
 	dispatchAsync                       func(*gocui.Gui, Msg)
 	resolveView                         func(*gocui.Gui, *gocui.View, string) *gocui.View
+	currentDetailDocument               func(*gocui.View) detailDocument
+	syncDetailViewState                 func(detailDocument, int)
+	currentDetailCursor                 func() detailPosition
 	currentDetailCursorLink             func(*gocui.View) (string, bool)
 	currentPullRequestBuildRunPopupLink func(*gocui.View) (string, bool)
+	followSubmittedDetailSearch         func(*gocui.Gui) error
+	followReverseDetailSearch           func(*gocui.Gui) error
 	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 	prepareBuildPopupClipboardWrite     func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 }
@@ -38,18 +43,25 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		return interactionCommandRuntime{}
 	}
 	return interactionCommandRuntime{
-		linkOpener:                          program.linkOpener,
-		clipboardWriter:                     program.clipboardWriter,
-		clipboardReader:                     program.clipboardReader,
-		externalEditor:                      program.externalEditor,
-		buildQueries:                        program.buildQueries,
-		submitDeps:                          newModalEditorSubmitCommandDeps(program),
-		runAsync:                            program.runAsync,
-		dispatch:                            program.dispatch,
-		dispatchAsync:                       program.dispatchAsync,
-		resolveView:                         program.resolveView,
+		linkOpener:            program.linkOpener,
+		clipboardWriter:       program.clipboardWriter,
+		clipboardReader:       program.clipboardReader,
+		externalEditor:        program.externalEditor,
+		buildQueries:          program.buildQueries,
+		submitDeps:            newModalEditorSubmitCommandDeps(program),
+		runAsync:              program.runAsync,
+		dispatch:              program.dispatch,
+		dispatchAsync:         program.dispatchAsync,
+		resolveView:           program.resolveView,
+		currentDetailDocument: program.currentDetailDocument,
+		syncDetailViewState:   program.syncDetailViewState,
+		currentDetailCursor: func() detailPosition {
+			return program.detailState.viewState.cursor
+		},
 		currentDetailCursorLink:             program.currentDetailCursorLink,
 		currentPullRequestBuildRunPopupLink: program.currentPullRequestBuildRunPopupLink,
+		followSubmittedDetailSearch:         program.followSubmittedDetailSearch,
+		followReverseDetailSearch:           program.followReverseDetailSearch,
 		prepareSelectedDetailClipboardWrite: func(gui *gocui.Gui, view *gocui.View, target Focus) (writeClipboardCmd, bool) {
 			actualView := program.resolveView(gui, view, viewDetailName)
 			detailDocument := program.currentDetailDocument(actualView)
@@ -136,6 +148,50 @@ func (command reportErrorCmd) execute(program *Program, gui *gocui.Gui) {
 		return
 	}
 	program.reportError(gui, command.Message)
+}
+
+type resolveDetailSearchWordCmd struct {
+	View    *gocui.View
+	Reverse bool
+}
+
+func (command resolveDetailSearchWordCmd) execute(program *Program, gui *gocui.Gui) {
+	executeResolveDetailSearchWordCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeResolveDetailSearchWordCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command resolveDetailSearchWordCmd) {
+	if runtime.dispatch == nil || runtime.resolveView == nil || runtime.currentDetailDocument == nil || runtime.syncDetailViewState == nil || runtime.currentDetailCursor == nil {
+		return
+	}
+
+	actualView := runtime.resolveView(gui, command.View, viewDetailName)
+	document := runtime.currentDetailDocument(actualView)
+	runtime.syncDetailViewState(document, viewPageSize(actualView))
+	query, ok := document.wordAt(runtime.currentDetailCursor())
+	if !ok {
+		return
+	}
+	_ = runtime.dispatch(gui, MsgDetailSearchWordResolved{Query: query, Reverse: command.Reverse})
+}
+
+type followDetailSearchCmd struct {
+	Reverse bool
+}
+
+func (command followDetailSearchCmd) execute(program *Program, gui *gocui.Gui) {
+	executeFollowDetailSearchCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeFollowDetailSearchCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command followDetailSearchCmd) {
+	if command.Reverse {
+		if runtime.followReverseDetailSearch != nil {
+			_ = runtime.followReverseDetailSearch(gui)
+		}
+		return
+	}
+	if runtime.followSubmittedDetailSearch != nil {
+		_ = runtime.followSubmittedDetailSearch(gui)
+	}
 }
 
 type openLinkUnderCursorCmd struct {

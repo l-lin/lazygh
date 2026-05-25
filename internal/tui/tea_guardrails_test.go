@@ -582,6 +582,24 @@ func TestRefactorGuard_GivenUpdateInteractionFile_WhenScanning_ThenItDoesNotReac
 	}
 }
 
+func TestRefactorGuard_GivenDetailSearchUpdateFiles_WhenScanning_ThenTheyDoNotReachThroughDetailViewShellHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`currentDetailDocument\(`,
+		`syncDetailViewState\(`,
+		`followSubmittedDetailSearch\(`,
+		`followReverseDetailSearch\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "update_navigation_interaction.go" || base == "update.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail-search update files to stop at typed shell commands instead of direct detail-view shell helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,

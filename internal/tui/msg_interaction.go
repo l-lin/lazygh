@@ -203,6 +203,11 @@ type MsgSearchWordUnderCursor struct {
 	Reverse bool
 }
 
+type MsgDetailSearchWordResolved struct {
+	Query   string
+	Reverse bool
+}
+
 type MsgToggleInlineConversationVisibility struct {
 	View *gocui.View
 }
@@ -261,5 +266,6 @@ func (MsgMoveReviewSelectionToBottom) isMsg()                  {}
 func (MsgMoveReviewFile) isMsg()                               {}
 func (MsgMoveReviewComment) isMsg()                            {}
 func (MsgSearchWordUnderCursor) isMsg()                        {}
+func (MsgDetailSearchWordResolved) isMsg()                     {}
 func (MsgToggleInlineConversationVisibility) isMsg()           {}
 func (MsgSetAllDetailFolds) isMsg()                            {}

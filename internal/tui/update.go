@@ -178,7 +178,9 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgSetAllReviewTreeFolds:
 		program.applySetAllReviewTreeFolds(actual)
 	case MsgSearchWordUnderCursor:
-		program.applySearchWordUnderCursor(actual)
+		return program.applySearchWordUnderCursor(actual)
+	case MsgDetailSearchWordResolved:
+		return program.applyDetailSearchWordResolved(actual)
 	case MsgToggleInlineConversationVisibility:
 		program.applyToggleInlineConversationVisibility(actual)
 	case MsgSetAllDetailFolds:
@@ -202,12 +204,14 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.searchWidget.editor = nil
 
+		commands := []Cmd(nil)
 		if target == FocusDetailView {
-			_ = program.followSubmittedDetailSearch(nil)
+			commands = append(commands, followDetailSearchCmd{Reverse: false})
 		}
 		if target == FocusPullRequestsView {
 			program.followSubmittedPullRequestSearch(targetPullRequestTab, targetPullRequestIndex)
 		}
+		return commands
 	case MsgCancelSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
 			_ = program.cancelPullRequestBuildRunPopupSearch(nil)

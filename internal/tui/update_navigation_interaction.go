@@ -318,18 +318,19 @@ func (program *Program) applyMoveReviewSelectionToBottom() {
 	program.moveReviewSessionSelectionToBottom()
 }
 
-func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCursor) {
+func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCursor) []Cmd {
 	program.clearPendingSelectionPrefix()
 	if program.mainPaneActionBlocked() {
-		return
+		return nil
 	}
 
-	actualView := program.resolveView(program.gui, message.View, viewDetailName)
-	document := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(document, viewPageSize(actualView))
-	query, ok := document.wordAt(program.detailState.viewState.cursor)
-	if !ok {
-		return
+	return []Cmd{resolveDetailSearchWordCmd{View: message.View, Reverse: message.Reverse}}
+}
+
+func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWordResolved) []Cmd {
+	query := strings.TrimSpace(message.Query)
+	if query == "" {
+		return nil
 	}
 
 	inputContext := program.inputContext()
@@ -342,9 +343,5 @@ func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCur
 	program.model.SubmitSearch()
 	program.searchWidget.detailReversed = message.Reverse
 	program.searchWidget.editor = nil
-	if message.Reverse {
-		_ = program.followReverseDetailSearch(program.gui)
-		return
-	}
-	_ = program.followSubmittedDetailSearch(program.gui)
+	return []Cmd{followDetailSearchCmd{Reverse: message.Reverse}}
 }
