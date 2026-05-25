@@ -227,6 +227,18 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyClearCacheRequested()
 	case MsgStartPullRequestReviewRequested:
 		return program.applyStartPullRequestReviewRequested(actual)
+	case MsgOpenPullRequestInBrowserRequested:
+		return program.applyOpenPullRequestInBrowserRequested(actual)
+	case MsgApprovePullRequestRequested:
+		return program.applyApprovePullRequestRequested(actual)
+	case MsgReRequestPullRequestReviewRequested:
+		return program.applyReRequestPullRequestReviewRequested(actual)
+	case MsgPullRequestLifecycleMutationRequested:
+		return program.applyPullRequestLifecycleMutationRequested(actual)
+	case MsgPullRequestAutoMergeMutationRequested:
+		return program.applyPullRequestAutoMergeMutationRequested(actual)
+	case MsgPullRequestBranchUpdateRequested:
+		return program.applyPullRequestBranchUpdateRequested(actual)
 	case MsgPullRequestCustomSearchSubmitted:
 		return program.applyPullRequestCustomSearchSubmitted(actual)
 	case MsgOpenAssigneePickerRequested:

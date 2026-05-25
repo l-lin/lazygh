@@ -8,6 +8,56 @@ type MsgStartPullRequestReviewRequested struct {
 	Summary githubdomain.PullRequest
 }
 
+type MsgOpenPullRequestInBrowserRequested struct {
+	Target pullRequestActionTarget
+}
+
+type MsgApprovePullRequestRequested struct {
+	Target pullRequestActionTarget
+}
+
+type MsgReRequestPullRequestReviewRequested struct {
+	Target pullRequestReviewerRequestTarget
+}
+
+type pullRequestLifecycleMutationKind int
+
+const (
+	pullRequestLifecycleMutationReadyForReview pullRequestLifecycleMutationKind = iota
+	pullRequestLifecycleMutationConvertToDraft
+	pullRequestLifecycleMutationClose
+	pullRequestLifecycleMutationReopen
+)
+
+type MsgPullRequestLifecycleMutationRequested struct {
+	Kind           pullRequestLifecycleMutationKind
+	Target         pullRequestActionTarget
+	Summary        githubdomain.PullRequest
+	State          string
+	IsDraft        bool
+	SuccessMessage string
+}
+
+type pullRequestAutoMergeMutationKind int
+
+const (
+	pullRequestAutoMergeMutationEnable pullRequestAutoMergeMutationKind = iota
+	pullRequestAutoMergeMutationDisable
+)
+
+type MsgPullRequestAutoMergeMutationRequested struct {
+	Kind           pullRequestAutoMergeMutationKind
+	Target         pullRequestActionTarget
+	Summary        githubdomain.PullRequest
+	Enabled        bool
+	SuccessMessage string
+}
+
+type MsgPullRequestBranchUpdateRequested struct {
+	Target  pullRequestActionTarget
+	Summary githubdomain.PullRequest
+}
+
 type MsgPullRequestCustomSearchSubmitted struct {
 	Criteria string
 }
@@ -74,6 +124,12 @@ type MsgCancelPendingPullRequestReviewRequested struct {
 
 func (MsgClearCacheRequested) isMsg()                     {}
 func (MsgStartPullRequestReviewRequested) isMsg()         {}
+func (MsgOpenPullRequestInBrowserRequested) isMsg()       {}
+func (MsgApprovePullRequestRequested) isMsg()             {}
+func (MsgReRequestPullRequestReviewRequested) isMsg()     {}
+func (MsgPullRequestLifecycleMutationRequested) isMsg()   {}
+func (MsgPullRequestAutoMergeMutationRequested) isMsg()   {}
+func (MsgPullRequestBranchUpdateRequested) isMsg()        {}
 func (MsgPullRequestCustomSearchSubmitted) isMsg()        {}
 func (MsgOpenAssigneePickerRequested) isMsg()             {}
 func (MsgToggleAssigneePickerSelectionRequested) isMsg()  {}

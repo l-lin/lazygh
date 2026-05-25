@@ -17,10 +17,10 @@ func (program *Program) executeOpenPullRequestInBrowserAction(gui *gocui.Gui) ac
 	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-
-	return program.startActionsPopupAsyncGHCommand(gui, openPullRequestInBrowserCommand(target.repository, target.number), func() error {
-		return program.pullRequestMutations.OpenPullRequestInBrowser(target.repository, target.number)
-	}, actionsPopupAsyncFeedbackSuccess{Message: pullRequestBrowserOpenSuccessMessage})
+	if err := program.dispatch(gui, MsgOpenPullRequestInBrowserRequested{Target: target}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func openPullRequestInBrowserCommand(repository string, number int) string {

@@ -140,6 +140,22 @@ func TestRefactorGuard_GivenPhase2ActionFiles_WhenScanning_ThenTheyDoNotMutateSt
 	}
 }
 
+func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCallTheLegacyAsyncPopupBridge(t *testing.T) {
+	phase1Files := map[string]bool{
+		"pull_request_browser.go":     true,
+		"pull_request_review.go":      true,
+		"pull_request_reviewer.go":    true,
+		"pull_request_stage_merge.go": true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`startActionsPopupAsyncGHCommand\(`), func(path string) bool {
+		return phase1Files[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected phase 1 popup async files to use reducer-owned request messages instead of the legacy async popup bridge, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,

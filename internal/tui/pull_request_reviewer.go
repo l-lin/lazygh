@@ -51,14 +51,10 @@ func (program *Program) executeReRequestPullRequestReviewAction(gui *gocui.Gui, 
 	if !program.hasPullRequestMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-
-	return program.startActionsPopupAsyncGHCommand(gui, requestPullRequestReviewerCommand(target.repository, target.number, target.reviewerLogin), func() error {
-		return program.pullRequestMutations.RequestPullRequestReviewer(target.repository, target.number, target.reviewerLogin)
-	}, actionsPopupAsyncInvalidatePullRequestSuccess{
-		Repository: target.repository,
-		Number:     target.number,
-		Message:    pullRequestReviewReRequestedSuccessMessage,
-	})
+	if err := program.dispatch(gui, MsgReRequestPullRequestReviewRequested{Target: target}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func requestPullRequestReviewerCommand(repository string, number int, reviewerLogin string) string {

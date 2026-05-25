@@ -171,67 +171,19 @@ func (program *Program) updatePullRequestBranchAction() actionsPopupAction {
 }
 
 func (program *Program) executeMarkPullRequestReadyForReviewAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.executePullRequestLifecycleMutation(
-		gui,
-		"gh pr ready",
-		func(target pullRequestActionTarget) string {
-			return pullRequestReadyCommand(target.repository, target.number, false)
-		},
-		func(repository string, number int) error {
-			return program.pullRequestMutations.MarkPullRequestReadyForReview(repository, number)
-		},
-		"OPEN",
-		false,
-		pullRequestMarkedReadyForReviewSuccessMessage,
-	)
+	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationReadyForReview, "OPEN", false, pullRequestMarkedReadyForReviewSuccessMessage)
 }
 
 func (program *Program) executeConvertPullRequestToDraftAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.executePullRequestLifecycleMutation(
-		gui,
-		"gh pr ready",
-		func(target pullRequestActionTarget) string {
-			return pullRequestReadyCommand(target.repository, target.number, true)
-		},
-		func(repository string, number int) error {
-			return program.pullRequestMutations.ConvertPullRequestToDraft(repository, number)
-		},
-		"OPEN",
-		true,
-		pullRequestConvertedToDraftSuccessMessage,
-	)
+	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationConvertToDraft, "OPEN", true, pullRequestConvertedToDraftSuccessMessage)
 }
 
 func (program *Program) executeClosePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.executePullRequestLifecycleMutation(
-		gui,
-		"gh pr close",
-		func(target pullRequestActionTarget) string {
-			return closePullRequestCommand(target.repository, target.number)
-		},
-		func(repository string, number int) error {
-			return program.pullRequestMutations.ClosePullRequest(repository, number)
-		},
-		"CLOSED",
-		program.currentPullRequestDraftState(),
-		pullRequestClosedSuccessMessage,
-	)
+	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationClose, "CLOSED", program.currentPullRequestDraftState(), pullRequestClosedSuccessMessage)
 }
 
 func (program *Program) executeReopenPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.executePullRequestLifecycleMutation(
-		gui,
-		"gh pr reopen",
-		func(target pullRequestActionTarget) string {
-			return reopenPullRequestCommand(target.repository, target.number)
-		},
-		func(repository string, number int) error {
-			return program.pullRequestMutations.ReopenPullRequest(repository, number)
-		},
-		"OPEN",
-		program.currentPullRequestDraftState(),
-		pullRequestReopenedSuccessMessage,
-	)
+	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationReopen, "OPEN", program.currentPullRequestDraftState(), pullRequestReopenedSuccessMessage)
 }
 
 func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
@@ -246,31 +198,11 @@ func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) acti
 }
 
 func (program *Program) executeEnablePullRequestAutoMergeAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.executePullRequestAutoMergeMutation(
-		gui,
-		func(target pullRequestActionTarget) string {
-			return enablePullRequestAutoMergeCommand(target.repository, target.number)
-		},
-		func(repository string, number int) error {
-			return program.pullRequestMutations.EnablePullRequestAutoMerge(repository, number)
-		},
-		true,
-		pullRequestAutoMergeEnabledSuccessMessage,
-	)
+	return program.executePullRequestAutoMergeMutation(gui, pullRequestAutoMergeMutationEnable, true, pullRequestAutoMergeEnabledSuccessMessage)
 }
 
 func (program *Program) executeDisablePullRequestAutoMergeAction(gui *gocui.Gui) actionsPopupActionResult {
-	return program.executePullRequestAutoMergeMutation(
-		gui,
-		func(target pullRequestActionTarget) string {
-			return disablePullRequestAutoMergeCommand(target.repository, target.number)
-		},
-		func(repository string, number int) error {
-			return program.pullRequestMutations.DisablePullRequestAutoMerge(repository, number)
-		},
-		false,
-		pullRequestAutoMergeDisabledSuccessMessage,
-	)
+	return program.executePullRequestAutoMergeMutation(gui, pullRequestAutoMergeMutationDisable, false, pullRequestAutoMergeDisabledSuccessMessage)
 }
 
 func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) actionsPopupActionResult {
@@ -278,13 +210,10 @@ func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) act
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-
-	return program.startActionsPopupAsyncGHCommand(gui, updatePullRequestBranchCommand(target.repository, target.number), func() error {
-		return normalizedPullRequestMutationError(program.pullRequestMutations.UpdatePullRequestBranch(target.repository, target.number), "gh pr update-branch")
-	}, actionsPopupAsyncPullRequestBranchUpdateSuccess{
-		Summary: summary,
-		Message: pullRequestBranchUpdatedSuccessMessage,
-	})
+	if err := program.dispatch(gui, MsgPullRequestBranchUpdateRequested{Target: target, Summary: summary}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) currentPullRequestDraftState() bool {
@@ -393,35 +322,39 @@ func (program *Program) selectedPullRequestMutationContext() (pullRequestActionT
 	return target, summary, nil
 }
 
-func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, commandName string, command func(pullRequestActionTarget) string, mutate func(string, int) error, state string, isDraft bool, successMessage string) actionsPopupActionResult {
+func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, kind pullRequestLifecycleMutationKind, state string, isDraft bool, successMessage string) actionsPopupActionResult {
 	target, summary, err := program.selectedPullRequestMutationContext()
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-
-	return program.startActionsPopupAsyncGHCommand(gui, command(target), func() error {
-		return normalizedPullRequestMutationError(mutate(target.repository, target.number), commandName)
-	}, actionsPopupAsyncPullRequestLifecycleSuccess{
-		Summary: summary,
-		State:   state,
-		IsDraft: isDraft,
-		Message: successMessage,
-	})
+	if err := program.dispatch(gui, MsgPullRequestLifecycleMutationRequested{
+		Kind:           kind,
+		Target:         target,
+		Summary:        summary,
+		State:          state,
+		IsDraft:        isDraft,
+		SuccessMessage: successMessage,
+	}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
-func (program *Program) executePullRequestAutoMergeMutation(gui *gocui.Gui, command func(pullRequestActionTarget) string, mutate func(string, int) error, enabled bool, successMessage string) actionsPopupActionResult {
+func (program *Program) executePullRequestAutoMergeMutation(gui *gocui.Gui, kind pullRequestAutoMergeMutationKind, enabled bool, successMessage string) actionsPopupActionResult {
 	target, summary, err := program.selectedPullRequestMutationContext()
 	if err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-
-	return program.startActionsPopupAsyncGHCommand(gui, command(target), func() error {
-		return normalizedPullRequestMutationError(mutate(target.repository, target.number), "gh pr merge")
-	}, actionsPopupAsyncPullRequestAutoMergeSuccess{
-		Summary: summary,
-		Enabled: enabled,
-		Message: successMessage,
-	})
+	if err := program.dispatch(gui, MsgPullRequestAutoMergeMutationRequested{
+		Kind:           kind,
+		Target:         target,
+		Summary:        summary,
+		Enabled:        enabled,
+		SuccessMessage: successMessage,
+	}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) actionsPopupActionResult {

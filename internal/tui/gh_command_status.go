@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "strings"
 
 func formatStatusLineCommand(arguments ...string) string {
 	normalizedArguments := make([]string, 0, len(arguments))
@@ -41,24 +37,4 @@ func (program *Program) clearGHCommandLoading() {
 	}
 
 	program.ghCommandLoadingMessage = ""
-}
-
-func (program *Program) startActionsPopupAsyncGHCommand(gui *gocui.Gui, command string, work func() error, success actionsPopupAsyncSuccess) actionsPopupActionResult {
-	if gui == nil {
-		if err := work(); err != nil {
-			return actionsPopupActionResult{err: err}
-		}
-		if success != nil {
-			program.executeCmds(gui, success.apply(program))
-		}
-		return actionsPopupActionResult{closePopup: true}
-	}
-
-	program.actionsPopupWidget.errorMessage = ""
-	program.startGHCommandLoading(command)
-	program.runAsync(func() {
-		err := work()
-		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
-	})
-	return actionsPopupActionResult{}
 }
