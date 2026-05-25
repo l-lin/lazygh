@@ -88,6 +88,8 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 `dispatchAsync()` is the only production path that still talks to `uiUpdater.Apply(...)` directly. Worker goroutines use it to hop back onto the UI thread with typed result messages.
 
+Popup and modal-editor feature files now stop at typed request messages. Update-owned command builders own the GitHub-facing work.
+
 ### Screen derivation
 
 The TUI separates screen derivation from terminal application in a few layers.
@@ -124,9 +126,9 @@ The stores under `workflow_stores.go` track in-flight state, cache state, and in
 
 Search, the actions popup, transient errors, the build popup, and the modal editor all live in `internal/tui`. The editor callbacks dispatch typed edit messages instead of redrawing their own views directly.
 
-The actions popup now follows the same pattern. Navigation, cache clear, custom search, assignee and reaction pickers, theme changes, refresh actions, review flows, pull request edits, and the remaining popup-triggered mutations dispatch typed messages or return plain errors, and update-owned helpers or commands own the follow-up state changes.
+Modal editors now support typed submit-request messages. Popup and modal-editor feature files no longer call GitHub query or mutation ports directly. Commenting, review submissions, pull request edits, inline comment mutations, notification actions, and story-review startup now dispatch typed request messages and let update-owned commands talk to the ports.
 
-That keeps one redraw path in charge of rendering. Popup-local error presentation is still centralized, but it now routes through a single reducer-owned error message instead of a legacy result struct. The live editor objects still sit inside `Program` rather than inside a pure child model.
+That keeps one redraw path in charge of rendering. Popup-local error presentation is still centralized, but it now routes through reducer-owned messages instead of a legacy result struct. The legacy submit callback path remains only for local, non-GitHub editor flows such as custom search. The live editor objects still sit inside `Program` rather than inside a pure child model.
 
 ## Story review pipeline
 
@@ -154,11 +156,12 @@ A normal read flow looks like this:
 A normal mutation flow looks like this:
 
 1. The user triggers an action from a keybinding, popup, or editor.
-2. The TUI starts a command or mutation through an injected capability.
-3. Long-running work runs in the async shell.
-4. Completion comes back as a typed result message.
-5. `Update` applies optimistic success, rollback, invalidation, feedback, or popup state changes.
-6. The shell redraws the derived screen.
+2. The feature surface dispatches a typed request message.
+3. `Update` builds a command through the injected capability.
+4. Long-running work runs in the async shell when needed.
+5. Completion comes back as a typed result message, or a reducer-owned success hook runs on the UI thread.
+6. `Update` applies optimistic success, rollback, invalidation, feedback, or popup state changes.
+7. The shell redraws the derived screen.
 
 That flow is much cleaner than it was. It still is not universal.
 
@@ -172,7 +175,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, popup and editor feature files still contain some direct shell-facing mutation/query work, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, some explicit shell helpers and loader files still call GitHub ports directly, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
 
 If you want to understand the project quickly, start with these files:
 

@@ -322,6 +322,38 @@ func TestRefactorGuard_GivenPhase2PopupFeatureFiles_WhenScanning_ThenTheyDoNotCa
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplicitShellFilesCallGitHubPortsDirectly(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"assignee_picker_search_cmd.go":          true,
+		"cmd_interaction.go":                     true,
+		"pull_request_detail_loader.go":          true,
+		"review_diff_loader.go":                  true,
+		"review_diff_team_owners.go":             true,
+		"review_url.go":                          true,
+		"update_actions_popup.go":                true,
+		"update_popup_editor_mutations.go":       true,
+		"update_popup_feature_requests.go":       true,
+		"update_pull_request_popup_mutations.go": true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestMutations|reviewMutations|reactionMutations|notificationMutations|detailQueries|buildQueries)\.[A-Za-z0-9_]+\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected direct GitHub ports to stay confined to update-owned files and explicit shell helpers, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,
