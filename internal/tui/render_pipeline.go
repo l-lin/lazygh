@@ -398,10 +398,6 @@ func (program *Program) applyScreenComposition(gui *gocui.Gui, composition scree
 		}
 	}
 
-	if actualErr := program.syncCurrentView(gui); actualErr != nil {
-		return actualErr
-	}
-
 	program.clearVisibleListViewportPlacements(composition.Layout)
 	program.syncRenderedDetailImages(gui)
 	return nil

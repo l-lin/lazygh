@@ -45,6 +45,11 @@ func (program *Program) applyNotificationMutationStarted(message MsgNotification
 	program.notificationsLoadingDetailMessage = strings.TrimSpace(message.LoadingMessage)
 }
 
+func (program *Program) restoreNotificationMutationSnapshot(snapshot notificationMutationSnapshot) {
+	program.model.SetNotificationRows(snapshot.rows)
+	program.model.SelectNotificationIndex(snapshot.selectedIndex)
+}
+
 func (program *Program) applyNotificationMutationFinished(message MsgNotificationMutationFinished) {
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""

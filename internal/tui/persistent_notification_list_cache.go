@@ -2,18 +2,16 @@ package tui
 
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
-func (program *Program) hydrateNotificationsFromCache() bool {
+func (program *Program) notificationsFromCache() ([]githubdomain.Notification, bool) {
 	if program.pullRequestCache == nil || !program.canHydrateNotificationsFromCache() {
-		return false
+		return nil, false
 	}
 
 	notifications, ok, actualErr := program.pullRequestCache.Notifications()
 	if actualErr != nil || !ok {
-		return false
+		return nil, false
 	}
-
-	program.model.SetNotificationRows(notificationRows(program.filterDoneNotifications(notifications)))
-	return true
+	return notifications, true
 }
 
 func (program *Program) canHydrateNotificationsFromCache() bool {

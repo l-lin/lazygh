@@ -140,6 +140,55 @@ func TestRefactorGuard_GivenPhase2ActionFiles_WhenScanning_ThenTheyDoNotMutateSt
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,
+		`program\.model\.adjustSelectionBy\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if strings.HasPrefix(base, "model") || strings.HasPrefix(base, "update") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected reducer/update files to own all program.model mutator methods, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyShellGlueUsesDirectViewSyncHelpers(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"program_loading.go":    true,
+		"program_view_state.go": true,
+		"shell_refresh.go":      true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`syncCurrentView\(|refreshDetailView\(|reloadActivePullRequestsTab\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected direct view-sync helpers to stay in shell glue, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenTUIPackageGoFiles_WhenScanning_ThenNoPhaseMigrationFileNamesRemain(t *testing.T) {
 	packageRoot := given_guardPackageRoot(t)
 	actualMatches := make([]string, 0)

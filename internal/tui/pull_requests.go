@@ -279,20 +279,6 @@ func pullRequestMergeChecksBackgroundHex(pullRequest githubdomain.PullRequest) s
 	}
 }
 
-func (program *Program) restylePullRequestRows() {
-	if program == nil || program.model == nil {
-		return
-	}
-
-	for _, tab := range program.model.PullRequestTabs() {
-		rows := program.model.PullRequestRows(tab)
-		if len(rows) == 0 {
-			continue
-		}
-		program.model.SetPullRequestRows(tab, restyledPullRequestRows(rows))
-	}
-}
-
 func restyledPullRequestRows(rows []PullRequestRow) []PullRequestRow {
 	restyledRows := make([]PullRequestRow, 0, len(rows))
 	for _, row := range rows {

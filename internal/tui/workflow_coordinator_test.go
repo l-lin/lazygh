@@ -89,12 +89,13 @@ func TestPullRequestListStore_GivenCachedRowsAndALiveReload_WhenPlanningTheLoad_
 
 	actual := subject.pullRequestListStore.planLoad(subject, gui, MyPullRequestsTab)
 
-	if len(actual) != 1 {
-		t.Fatalf("expected one queued command, actual %d", len(actual))
+	if len(actual) != 2 {
+		t.Fatalf("expected cache hydration plus one queued load command, actual %d", len(actual))
 	}
+	actual[0].execute(subject, gui)
 	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Title != "Cached PR" {
-		t.Fatalf("expected cached pull request rows %+v, actual %+v", []string{"Cached PR"}, actualRows)
+		t.Fatalf("expected cached pull request rows %+v after hydration, actual %+v", []string{"Cached PR"}, actualRows)
 	}
 	if actual := subject.pullRequestListStore.planLoad(subject, gui, MyPullRequestsTab); len(actual) != 0 {
 		t.Fatalf("expected no second load command while the first is already planned, actual %d", len(actual))

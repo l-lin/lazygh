@@ -80,9 +80,9 @@ That makes `Program` the main coordinator. It is useful, but it is also the larg
 
 The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
-- `Msg` types describe events such as focus changes, search edits, popup actions, and async results.
+- `Msg` types describe events such as focus changes, search edits, popup requests, cache hydration, and async results.
 - `Update` applies those messages to the live program state.
-- `Cmd` values describe shell work such as loading pull requests, notifications, detail, diff data, rendered markdown images, and popup search requests.
+- `Cmd` values describe shell work such as loading pull requests, hydrating cached lists, loading detail and diff data, rendering markdown images, and running popup-triggered mutations.
 
 `dispatch()` runs `Update`, executes returned commands, and then hands control to `afterStateChange()` for shell sync and redraw.
 
@@ -116,15 +116,17 @@ Those selectors memoize expensive derived data outside the render entrypoints.
 
 ### Async workflow planning
 
-The TUI plans background work after state changes. `plannedCommands()` inspects the current state and returns load commands for the connected user, pull request lists, notifications, detail, diff data, and inline images.
+The TUI plans background work after state changes. `plannedCommands()` inspects the current state and returns commands for cache hydration, connected-user loading, pull request lists, notifications, detail, diff data, and inline images.
 
-The stores under `workflow_stores.go` track in-flight state, cache state, and invalidation state. They are shell-oriented coordinators, not pure reducers.
+The stores under `workflow_stores.go` track in-flight state, cache state, and invalidation state. They are shell-oriented coordinators, not pure reducers, but their model writes now land through typed cache-hydration messages instead of mutating `program.model` directly.
 
 ### Overlays and editors
 
-Search, the actions popup, transient errors, the build popup, and the modal editor all live in `internal/tui`. The editor callbacks now dispatch typed edit messages instead of redrawing their own views directly.
+Search, the actions popup, transient errors, the build popup, and the modal editor all live in `internal/tui`. The editor callbacks dispatch typed edit messages instead of redrawing their own views directly.
 
-That keeps one redraw path in charge of rendering, even though the live editor objects still sit inside `Program` rather than inside a pure child model.
+The highest-value actions-popup flows now do the same. Navigation, cache clear, custom search, assignee and reaction pickers, theme changes, refresh actions, title and description edits, and pending-review start or cancel now dispatch typed popup messages and let update-owned helpers or commands own the follow-up state changes.
+
+That keeps one redraw path in charge of rendering, even though the live editor objects still sit inside `Program` rather than inside a pure child model, and some lower-value popup actions still use the older `actionsPopupActionResult` bridge.
 
 ## Story review pipeline
 
@@ -170,7 +172,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, startup still leans on render-time shell wiring, and many feature entry points still mutate shell state before forcing redraw through `layout`, `afterStateChange`, or `refreshViewsIfGUI`.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, some popup actions still go through the older `actionsPopupActionResult` bridge, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
 
 If you want to understand the project quickly, start with these files:
 

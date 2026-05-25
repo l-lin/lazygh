@@ -20,14 +20,14 @@ func (store *pullRequestListStore) planLoad(program *Program, gui *gocui.Gui, ta
 		return nil
 	}
 
-	program.hydratePullRequestsFromCache(tab)
+	commands := []Cmd{hydratePullRequestsFromCacheCmd{tab: tab}}
 	if !program.hasPullRequestListQueries() {
-		return nil
+		return commands
 	}
 
 	store.setPullRequestsLoadStarted(tab, true)
 	store.setPullRequestsLoading(tab, true)
-	return []Cmd{loadPullRequestsCmd{tab: tab}}
+	return append(commands, loadPullRequestsCmd{tab: tab})
 }
 
 func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, tab PullRequestTab) []Cmd {
@@ -35,14 +35,14 @@ func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, 
 		return nil
 	}
 
-	program.hydratePullRequestsFromCache(tab)
+	commands := []Cmd{hydratePullRequestsFromCacheCmd{tab: tab}}
 	if !program.hasPullRequestListQueries() {
-		return nil
+		return commands
 	}
 
 	store.setPullRequestsLoadStarted(tab, true)
 	store.setPullRequestsLoading(tab, true)
-	return []Cmd{loadPullRequestsCmd{tab: tab}}
+	return append(commands, loadPullRequestsCmd{tab: tab})
 }
 
 func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []Cmd {
@@ -50,15 +50,15 @@ func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []Cmd
 		return nil
 	}
 
-	program.hydrateNotificationsFromCache()
+	commands := []Cmd{hydrateNotificationsFromCacheCmd{}}
 	if !program.hasNotificationQueries() {
-		return nil
+		return commands
 	}
 
 	store.notificationsLoadStarted = true
 	store.notificationsLoading = true
 	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	return []Cmd{loadNotificationsCmd{}}
+	return append(commands, loadNotificationsCmd{})
 }
 
 func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []Cmd {
@@ -66,15 +66,15 @@ func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []C
 		return nil
 	}
 
-	program.hydrateNotificationsFromCache()
+	commands := []Cmd{hydrateNotificationsFromCacheCmd{}}
 	if !program.hasNotificationQueries() {
-		return nil
+		return commands
 	}
 
 	store.notificationsLoadStarted = true
 	store.notificationsLoading = true
 	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	return []Cmd{loadNotificationsCmd{}}
+	return append(commands, loadNotificationsCmd{})
 }
 
 func (store *detailStore) planSelectedPullRequestDetailLoad(program *Program, gui *gocui.Gui) []Cmd {

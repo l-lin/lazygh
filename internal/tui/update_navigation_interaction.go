@@ -221,6 +221,15 @@ func (program *Program) applyRepeatActionsPopupSearch(message MsgRepeatActionsPo
 	program.actionsPopupWidget.errorMessage = ""
 }
 
+func (program *Program) setSideSearchSelection(focus Focus, index int) {
+	switch focus {
+	case FocusNotificationsView:
+		program.model.SelectNotificationIndex(index)
+	default:
+		program.model.SelectUserIndex(index)
+	}
+}
+
 func (program *Program) applyRepeatSideSearch(message MsgRepeatSideSearch) {
 	if program.reviewModeActive() || program.model.Focus() != message.Focus {
 		return
@@ -252,6 +261,25 @@ func (program *Program) applyRepeatPullRequestSearch(message MsgRepeatPullReques
 	if matchIndex < 0 || matchIndex >= len(matchIndexes) {
 		return
 	}
+	program.model.SelectPullRequestIndex(tab, matchIndexes[matchIndex])
+}
+
+func (program *Program) followSubmittedPullRequestSearch(tab PullRequestTab, startIndex int) {
+	if program.reviewModeActive() {
+		return
+	}
+
+	query := program.model.PullRequestSearchQuery(tab)
+	if strings.TrimSpace(query) == "" {
+		return
+	}
+
+	matchIndexes := program.model.visiblePullRequestIndexes(tab)
+	matchIndex := searchMatchIndexAtOrAfter(matchIndexes, startIndex)
+	if matchIndex < 0 || matchIndex >= len(matchIndexes) {
+		return
+	}
+
 	program.model.SelectPullRequestIndex(tab, matchIndexes[matchIndex])
 }
 

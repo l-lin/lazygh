@@ -2,6 +2,15 @@ package tui
 
 import "strings"
 
+func (program *Program) applyPullRequestsCacheHydrated(message MsgPullRequestsCacheHydrated) {
+	program.setPullRequestsCount(message.Tab, len(message.PullRequests), true)
+	program.model.SetPullRequestRows(message.Tab, program.pullRequestRowsForTab(message.Tab, message.PullRequests, nil))
+}
+
+func (program *Program) applyNotificationsCacheHydrated(message MsgNotificationsCacheHydrated) {
+	program.model.SetNotificationRows(notificationRows(program.filterDoneNotifications(message.Notifications)))
+}
+
 func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded) {
 	connectedUserLogin := ""
 	connectedUserName := ""

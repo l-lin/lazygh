@@ -13,6 +13,10 @@ func (program *Program) clearActionsPopupPendingConfirmation() {
 	program.actionsPopupWidget.pendingConfirmationActionID = ""
 }
 
+func (program *Program) updateActionsPopupSearch(query string) {
+	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
+}
+
 func (program *Program) applyClearCacheRequested() {
 	if program.pullRequestCache == nil {
 		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
@@ -303,6 +307,20 @@ func (program *Program) applyThemePresetSelected(message MsgThemePresetSelected)
 	return []Cmd{saveThemePresetCmd{NormalizedName: normalizedName, Label: strings.TrimSpace(message.Label)}}
 }
 
+func (program *Program) restylePullRequestRows() {
+	if program == nil || program.model == nil {
+		return
+	}
+
+	for _, tab := range program.model.PullRequestTabs() {
+		rows := program.model.PullRequestRows(tab)
+		if len(rows) == 0 {
+			continue
+		}
+		program.model.SetPullRequestRows(tab, restyledPullRequestRows(rows))
+	}
+}
+
 func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) {
 	if message.Err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
@@ -375,6 +393,44 @@ func (program *Program) applyPullRequestDescriptionEditApplied(message MsgPullRe
 	program.optimisticallyUpdatePullRequestDescription(message.Target.repository, message.Target.number, message.Body)
 	program.setFeedback(message.FeedbackTarget, pullRequestDescriptionEditSuccessMessage)
 	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
+}
+
+func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.PullRequest, mutate func(*githubdomain.PullRequest)) {
+	if program == nil || program.model == nil {
+		return
+	}
+
+	for _, tab := range program.model.PullRequestTabs() {
+		rows := program.model.PullRequestRows(tab)
+		if len(rows) == 0 {
+			continue
+		}
+
+		updatedRows := append([]PullRequestRow(nil), rows...)
+		updated := false
+		for index, row := range rows {
+			if row.Summary == nil || !samePullRequestIdentity(*row.Summary, identity) {
+				continue
+			}
+
+			summary := *row.Summary
+			mutate(&summary)
+			updatedRows[index] = pullRequestRow(summary)
+			updated = true
+		}
+		if updated {
+			program.model.SetPullRequestRows(tab, updatedRows)
+		}
+	}
+
+	if program.navigationState.openedPullRequestSummary != nil && samePullRequestIdentity(*program.navigationState.openedPullRequestSummary, identity) {
+		updated := *program.navigationState.openedPullRequestSummary
+		mutate(&updated)
+		program.pinOpenedPullRequestSummary(program.navigationState.openedPullRequestTab, updated)
+	}
+	if samePullRequestIdentity(program.navigationState.reviewSession.summary, identity) {
+		mutate(&program.navigationState.reviewSession.summary)
+	}
 }
 
 func (program *Program) applyCancelPendingPullRequestReviewRequested(message MsgCancelPendingPullRequestReviewRequested) []Cmd {

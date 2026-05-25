@@ -188,10 +188,6 @@ func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) 
 	return actions[selectedIndex], true
 }
 
-func (program *Program) updateActionsPopupSearch(query string) {
-	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
-}
-
 func (program *Program) currentActionsPopupMatchingIndexes(query string) []int {
 	if program.assigneePickerVisible() {
 		return program.matchingAssigneePickerIndexes(query)

@@ -25,6 +25,13 @@ func (program *Program) refreshDetailView(gui *gocui.Gui) error {
 	return program.syncShellState(gui)
 }
 
+func (program *Program) applyScreenCompositionAndSyncView(gui *gocui.Gui, composition screenComposition) error {
+	if actualErr := program.applyScreenComposition(gui, composition); actualErr != nil {
+		return actualErr
+	}
+	return program.syncCurrentView(gui)
+}
+
 func (program *Program) mutateDetailViewState(gui *gocui.Gui, view *gocui.View, mutate func(detailDocument, int)) error {
 	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, view, mutate); actualErr != nil {
 		return actualErr

@@ -29,7 +29,7 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 
 	program.gui = gui
 	maxX, maxY := gui.Size()
-	if actualErr := program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY)); actualErr != nil {
+	if actualErr := program.applyScreenCompositionAndSyncView(gui, program.screenCompositionForSize(maxX, maxY)); actualErr != nil {
 		return actualErr
 	}
 	return program.syncShellState(gui)

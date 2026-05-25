@@ -23,7 +23,7 @@ func (program *Program) layout(gui *gocui.Gui) error {
 
 	program.gui = gui
 	maxX, maxY := gui.Size()
-	return program.applyScreenComposition(gui, program.screenCompositionForSize(maxX, maxY))
+	return program.applyScreenCompositionAndSyncView(gui, program.screenCompositionForSize(maxX, maxY))
 }
 
 func (program *Program) sidebarTopPaneHeight() int {

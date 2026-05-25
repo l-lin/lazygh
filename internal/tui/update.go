@@ -221,6 +221,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		if program.assigneePickerVisible() && requestID > 0 && strings.TrimSpace(actual.Query) != "" {
 			return []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: actual.Query, Delay: program.actionsPopupWidget.assigneePickerSearchDebounceDelay, DispatchLoading: true}}
 		}
+	case MsgPullRequestSearchesApplied:
+		program.applyPullRequestSearchesApplied(actual)
 	case MsgClearCacheRequested:
 		program.applyClearCacheRequested()
 	case MsgStartPullRequestReviewRequested:
@@ -253,6 +255,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPullRequestDescriptionEditApplied(actual)
 	case MsgCancelPendingPullRequestReviewRequested:
 		return program.applyCancelPendingPullRequestReviewRequested(actual)
+	case MsgPullRequestsCacheHydrated:
+		program.applyPullRequestsCacheHydrated(actual)
+	case MsgNotificationsCacheHydrated:
+		program.applyNotificationsCacheHydrated(actual)
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 	case MsgPullRequestsLoaded:

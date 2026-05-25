@@ -98,11 +98,6 @@ func (program *Program) captureNotificationMutationSnapshot() notificationMutati
 	}
 }
 
-func (program *Program) restoreNotificationMutationSnapshot(snapshot notificationMutationSnapshot) {
-	program.model.SetNotificationRows(snapshot.rows)
-	program.model.SelectNotificationIndex(snapshot.selectedIndex)
-}
-
 func markNotificationReadState(notifications []githubdomain.Notification, threadID string, unread bool) bool {
 	trimmedThreadID := strings.TrimSpace(threadID)
 	if trimmedThreadID == "" {

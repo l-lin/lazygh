@@ -16,6 +16,10 @@ type reloadPullRequestsTabCmd struct {
 	tab PullRequestTab
 }
 
+type hydratePullRequestsFromCacheCmd struct {
+	tab PullRequestTab
+}
+
 type loadNotificationsCmd struct{}
 
 type loadPullRequestDetailCmd struct {
@@ -44,6 +48,8 @@ type loadCurrentDetailImageCmd struct {
 	imageURL string
 }
 
+type hydrateNotificationsFromCacheCmd struct{}
+
 func (loadConnectedUserCmd) execute(program *Program, gui *gocui.Gui) {
 	program.runAsync(func() {
 		program.loadConnectedUser(gui)
@@ -54,6 +60,17 @@ func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
 	program.runAsync(func() {
 		program.loadPullRequests(gui, command.tab)
 	})
+}
+
+func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil {
+		return
+	}
+	pullRequests, ok := program.pullRequestsFromCache(command.tab)
+	if !ok {
+		return
+	}
+	program.executeCmds(gui, Update(program, MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests}))
 }
 
 func (command reloadPullRequestsTabCmd) execute(program *Program, gui *gocui.Gui) {
@@ -111,6 +128,17 @@ func (command loadCurrentDetailImageCmd) execute(program *Program, gui *gocui.Gu
 	program.runAsync(func() {
 		program.loadCurrentDetailImage(gui, imageURL)
 	})
+}
+
+func (hydrateNotificationsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil {
+		return
+	}
+	notifications, ok := program.notificationsFromCache()
+	if !ok {
+		return
+	}
+	program.executeCmds(gui, Update(program, MsgNotificationsCacheHydrated{Notifications: notifications}))
 }
 
 func (program *Program) runAsync(run func()) {

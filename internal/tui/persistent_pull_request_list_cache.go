@@ -2,19 +2,16 @@ package tui
 
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
-func (program *Program) hydratePullRequestsFromCache(tab PullRequestTab) bool {
+func (program *Program) pullRequestsFromCache(tab PullRequestTab) ([]githubdomain.PullRequest, bool) {
 	if program.pullRequestCache == nil || !program.canHydratePullRequestsFromCache(tab) {
-		return false
+		return nil, false
 	}
 
 	pullRequests, ok, actualErr := program.pullRequestCache.PullRequests(program.pullRequestSearch(tab))
 	if actualErr != nil || !ok {
-		return false
+		return nil, false
 	}
-
-	program.setPullRequestsCount(tab, len(pullRequests), true)
-	program.model.SetPullRequestRows(tab, program.pullRequestRowsForTab(tab, pullRequests, nil))
-	return true
+	return pullRequests, true
 }
 
 func (program *Program) canHydratePullRequestsFromCache(tab PullRequestTab) bool {

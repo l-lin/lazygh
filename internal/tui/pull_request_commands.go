@@ -8,9 +8,7 @@ type pullRequestCountState struct {
 }
 
 func (program *Program) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
-	program.runtimeConfig.pullRequestSearches = appconfig.ResolvePullRequestSearches(searches)
-	program.resetPullRequestSearchState()
-	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
+	Update(program, MsgPullRequestSearchesApplied{Searches: appconfig.ResolvePullRequestSearches(searches)})
 }
 
 func pullRequestTabSeedsForSearches(searches []appconfig.PullRequestSearch) []PullRequestTabSeed {
@@ -82,15 +80,6 @@ func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
 		state, ok := program.additionalPullRequestsCounts[tab]
 		return state.count, ok && state.known
 	}
-}
-
-func (program *Program) syncPullRequestLoadingItem(tab PullRequestTab) {
-	rows := program.model.PullRequestRows(tab)
-	if len(rows) != 1 || !program.isPullRequestLoadingItem(rows[0].Item) {
-		return
-	}
-
-	program.model.SetPullRequestRows(tab, []PullRequestRow{{Item: program.pullRequestLoadingItem(tab)}})
 }
 
 func (program *Program) isPullRequestLoadingItem(item Item) bool {

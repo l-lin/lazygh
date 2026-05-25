@@ -7,6 +7,15 @@ type MsgActionsPopupAsyncGHCommandFinished struct {
 	Success actionsPopupAsyncSuccess
 }
 
+type MsgPullRequestsCacheHydrated struct {
+	Tab          PullRequestTab
+	PullRequests []githubdomain.PullRequest
+}
+
+type MsgNotificationsCacheHydrated struct {
+	Notifications []githubdomain.Notification
+}
+
 type MsgNotificationMutationStarted struct {
 	OptimisticRows []NotificationRow
 	LoadingMessage string
@@ -51,6 +60,8 @@ type MsgPullRequestBuildRunJobLogLoaded struct {
 }
 
 func (MsgActionsPopupAsyncGHCommandFinished) isMsg() {}
+func (MsgPullRequestsCacheHydrated) isMsg()          {}
+func (MsgNotificationsCacheHydrated) isMsg()         {}
 func (MsgNotificationMutationStarted) isMsg()        {}
 func (MsgNotificationMutationFinished) isMsg()       {}
 func (MsgStoryReviewPrepared) isMsg()                {}

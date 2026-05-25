@@ -538,44 +538,6 @@ func (program *Program) applyVisiblePullRequestLifecycleMutation(summary githubd
 	program.invalidatePullRequestMutationCaches(summary)
 }
 
-func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.PullRequest, mutate func(*githubdomain.PullRequest)) {
-	if program == nil || program.model == nil {
-		return
-	}
-
-	for _, tab := range program.model.PullRequestTabs() {
-		rows := program.model.PullRequestRows(tab)
-		if len(rows) == 0 {
-			continue
-		}
-
-		updatedRows := append([]PullRequestRow(nil), rows...)
-		updated := false
-		for index, row := range rows {
-			if row.Summary == nil || !samePullRequestIdentity(*row.Summary, identity) {
-				continue
-			}
-
-			summary := *row.Summary
-			mutate(&summary)
-			updatedRows[index] = pullRequestRow(summary)
-			updated = true
-		}
-		if updated {
-			program.model.SetPullRequestRows(tab, updatedRows)
-		}
-	}
-
-	if program.navigationState.openedPullRequestSummary != nil && samePullRequestIdentity(*program.navigationState.openedPullRequestSummary, identity) {
-		updated := *program.navigationState.openedPullRequestSummary
-		mutate(&updated)
-		program.pinOpenedPullRequestSummary(program.navigationState.openedPullRequestTab, updated)
-	}
-	if samePullRequestIdentity(program.navigationState.reviewSession.summary, identity) {
-		mutate(&program.navigationState.reviewSession.summary)
-	}
-}
-
 func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullRequest, state string, isDraft bool) {
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	if key == "" {
