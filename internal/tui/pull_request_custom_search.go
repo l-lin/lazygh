@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 
@@ -27,20 +26,9 @@ func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.Vie
 }
 
 func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error {
-	submittedCriteria := ""
-	actualErr := program.openLineModalEditorWithHeight(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), func(criteria string) error {
-		submittedCriteria = criteria
-		return program.submitPullRequestCustomSearch(criteria)
+	return program.openLineModalEditorWithHeightAndSubmitRequested(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), func(criteria string) Msg {
+		return MsgPullRequestCustomSearchSubmitRequested{Criteria: criteria}
 	}, pullRequestCustomSearchEditorHeight)
-	if actualErr != nil {
-		return actualErr
-	}
-	if program.overlayState.modalEditor != nil {
-		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			_ = program.dispatch(gui, MsgPullRequestCustomSearchSubmitted{Criteria: submittedCriteria})
-		}
-	}
-	return nil
 }
 
 func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopupAction {
@@ -58,14 +46,6 @@ func (program *Program) executeOpenPullRequestCustomSearchAction(gui *gocui.Gui)
 
 func (program *Program) currentPullRequestSearchCriteria() string {
 	return formatPullRequestSearchCriteria(program.pullRequestSearch(program.model.ActivePullRequestTab()).Command)
-}
-
-func (program *Program) submitPullRequestCustomSearch(criteria string) error {
-	command := pullRequestCustomSearchCommand(criteria)
-	if len(command) == 0 {
-		return errors.New("search criteria cannot be empty")
-	}
-	return nil
 }
 
 func pullRequestCustomSearchTab(searches []appconfig.PullRequestSearch) (PullRequestTab, bool) {

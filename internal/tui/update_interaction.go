@@ -41,18 +41,10 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 
 	editorState := program.overlayState.modalEditor
 	editorState.errorMessage = ""
-	if editorState.submitRequested != nil {
-		return Update(program, editorState.submitRequested(editorState.Text()))
+	if editorState.submitRequested == nil {
+		return nil
 	}
-
-	var afterSubmit func(*Program) []Cmd
-	if callback := editorState.afterSubmit; callback != nil {
-		afterSubmit = func(program *Program) []Cmd {
-			callback(program.gui)
-			return nil
-		}
-	}
-	return []Cmd{modalEditorSubmitCmd{Text: editorState.Text(), Submit: editorState.submit, AfterSubmit: afterSubmit}}
+	return Update(program, editorState.submitRequested(editorState.Text()))
 }
 
 func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) []Cmd {
@@ -76,8 +68,8 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	}
 
 	var commands []Cmd
-	if message.AfterSubmit != nil {
-		commands = message.AfterSubmit(program)
+	if message.Success != nil {
+		commands = message.Success.apply(program)
 	}
 	program.overlayState.modalEditor = nil
 	return commands
@@ -223,6 +215,10 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 		return
 	}
 	program.setFeedback(message.Target, message.FailureMessage)
+}
+
+func (program *Program) applyOpenPullRequestByURLSubmitRequested(message MsgOpenPullRequestByURLSubmitRequested) []Cmd {
+	return []Cmd{modalEditorSubmitCmd{request: openPullRequestByURLSubmitRequest{rawURL: message.URL}}}
 }
 
 func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequestURLReadFromClipboard) {

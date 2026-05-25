@@ -248,7 +248,7 @@ func TestPaneResize_GivenSearchHelpOrAnotherModal_WhenHandlingResizeActions_Then
 			return subject.openActionsPopup(gui, nil)
 		}},
 		{name: "modal editor", setup: func(subject *Program, gui *gocui.Gui) error {
-			return subject.openLineModalEditor(gui, "Resize blocker", "", nil)
+			return subject.openLineModalEditor(gui, "Resize blocker", "")
 		}},
 	}
 

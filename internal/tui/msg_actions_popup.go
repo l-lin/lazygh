@@ -63,6 +63,10 @@ type MsgActionsPopupClosedWithFeedback struct {
 	Message string
 }
 
+type MsgPullRequestCustomSearchSubmitRequested struct {
+	Criteria string
+}
+
 type MsgPullRequestCustomSearchSubmitted struct {
 	Criteria string
 }
@@ -140,6 +144,7 @@ func (MsgPullRequestLifecycleMutationRequested) isMsg()   {}
 func (MsgPullRequestAutoMergeMutationRequested) isMsg()   {}
 func (MsgPullRequestBranchUpdateRequested) isMsg()        {}
 func (MsgActionsPopupClosedWithFeedback) isMsg()          {}
+func (MsgPullRequestCustomSearchSubmitRequested) isMsg()  {}
 func (MsgPullRequestCustomSearchSubmitted) isMsg()        {}
 func (MsgOpenAssigneePickerRequested) isMsg()             {}
 func (MsgToggleAssigneePickerSelectionRequested) isMsg()  {}

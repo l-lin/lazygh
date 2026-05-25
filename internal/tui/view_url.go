@@ -1,18 +1,11 @@
 package tui
 
 import (
-	"errors"
-	"strings"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func (program *Program) OpenPullRequestByURL(rawURL string) error {
-	if !program.hasDetailQueries() && !program.hasPullRequestListQueries() {
-		return errors.New("github loader is unavailable")
-	}
-
-	summary, err := githubdomain.ParsePullRequestURL(rawURL)
+	summary, err := pullRequestSummaryForURL(program, rawURL)
 	if err != nil {
 		return err
 	}
@@ -20,12 +13,6 @@ func (program *Program) OpenPullRequestByURL(rawURL string) error {
 }
 
 func (program *Program) openPullRequestInBrowser(summary githubdomain.PullRequest) error {
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-
-	summary.Repository.NameWithOwner = repository
 	return program.dispatchStartupMessage(MsgOpenPullRequestInBrowserView{Summary: summary})
 }
 

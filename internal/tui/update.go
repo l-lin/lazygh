@@ -129,6 +129,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyClipboardWriteFinished(actual)
 	case MsgReadPullRequestURLFromClipboardRequested:
 		return []Cmd{readPullRequestURLFromClipboardCmd{}}
+	case MsgOpenPullRequestByURLSubmitRequested:
+		return program.applyOpenPullRequestByURLSubmitRequested(actual)
 	case MsgPullRequestURLReadFromClipboard:
 		program.applyPullRequestURLReadFromClipboard(actual)
 	case MsgOpenLinkUnderCursorRequested:
@@ -251,6 +253,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPullRequestAutoMergeMutationRequested(actual)
 	case MsgPullRequestBranchUpdateRequested:
 		return program.applyPullRequestBranchUpdateRequested(actual)
+	case MsgPullRequestCustomSearchSubmitRequested:
+		return program.applyPullRequestCustomSearchSubmitRequested(actual)
 	case MsgPullRequestCustomSearchSubmitted:
 		return program.applyPullRequestCustomSearchSubmitted(actual)
 	case MsgOpenAssigneePickerRequested:

@@ -39,8 +39,8 @@ type MsgModalEditorClosed struct{}
 type MsgModalEditorSubmitRequested struct{}
 
 type MsgModalEditorSubmitFinished struct {
-	Err         error
-	AfterSubmit func(*Program) []Cmd
+	Err     error
+	Success modalEditorSubmitSuccess
 }
 
 type MsgModalEditorExternalEditRequested struct{}
@@ -127,6 +127,10 @@ type MsgClipboardWriteFinished struct {
 }
 
 type MsgReadPullRequestURLFromClipboardRequested struct{}
+
+type MsgOpenPullRequestByURLSubmitRequested struct {
+	URL string
+}
 
 type MsgPullRequestURLReadFromClipboard struct {
 	URL string
@@ -237,6 +241,7 @@ func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
 func (MsgReadPullRequestURLFromClipboardRequested) isMsg()     {}
+func (MsgOpenPullRequestByURLSubmitRequested) isMsg()          {}
 func (MsgPullRequestURLReadFromClipboard) isMsg()              {}
 func (MsgOpenLinkUnderCursorRequested) isMsg()                 {}
 func (MsgOpenPullRequestBuildRunPopupLinkRequested) isMsg()    {}

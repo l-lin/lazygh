@@ -12,7 +12,7 @@ func TestOpenModalEditorFromActionsPopup_GivenOpenerCreatesAModal_WhenOpening_Th
 	subject.model.OpenActionsPopup(1)
 
 	actualErr := subject.openModalEditorFromActionsPopup(nil, func(_ *gocui.Gui) error {
-		subject.overlayState.modalEditor = newLineModalEditorState("Title", "", nil)
+		subject.overlayState.modalEditor = newLineModalEditorState("Title", "")
 		return nil
 	})
 

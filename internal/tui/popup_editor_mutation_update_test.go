@@ -2,7 +2,7 @@ package tui
 
 import "testing"
 
-func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBuildsAModalEditorCommandWithReducerOwnedSuccess(t *testing.T) {
+func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBuildsATypedModalEditorSubmitRequest(t *testing.T) {
 	summary := given_pullRequestMutationSummary("OPEN", false)
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
@@ -21,17 +21,40 @@ func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBui
 	if !ok {
 		t.Fatalf("expected a modalEditorSubmitCmd, actual %T", actual[0])
 	}
-	if command.Submit == nil {
-		t.Fatal("expected the submit command to include work")
-	}
-	if command.AfterSubmit == nil {
-		t.Fatal("expected the submit command to include a reducer-owned success hook")
-	}
-	if actual := command.Text; actual != "Ship it" {
-		t.Fatalf("expected submit text %q, actual %q", "Ship it", actual)
-	}
 
-	followUpCommands := command.AfterSubmit(subject)
+	request, ok := command.request.(pullRequestCommentSubmitRequest)
+	if !ok {
+		t.Fatalf("expected a typed pullRequestCommentSubmitRequest, actual %T", command.request)
+	}
+	if actual := request.target.repository; actual != "acme/widgets" {
+		t.Fatalf("expected request repository %q, actual %q", "acme/widgets", actual)
+	}
+	if actual := request.target.number; actual != 42 {
+		t.Fatalf("expected request number %d, actual %d", 42, actual)
+	}
+	if actual := request.body; actual != "Ship it" {
+		t.Fatalf("expected request body %q, actual %q", "Ship it", actual)
+	}
+	if actual := request.feedbackTarget; actual != FocusDetailView {
+		t.Fatalf("expected feedback target %v, actual %v", FocusDetailView, actual)
+	}
+}
+
+func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccess_WhenApplying_ThenItAppliesSuccessAndClosesTheModal(t *testing.T) {
+	summary := given_pullRequestMutationSummary("OPEN", false)
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.overlayState.modalEditor = newModalEditorStateWithSubmitRequested("Comment", "Ship it", nil)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
+
+	actual := Update(subject, MsgModalEditorSubmitFinished{Success: pullRequestCommentSubmitSuccess{
+		Target:         pullRequestCommentTarget{repository: "acme/widgets", number: 42},
+		Body:           "Ship it",
+		FeedbackTarget: FocusDetailView,
+	}})
+
+	if subject.overlayState.modalEditor != nil {
+		t.Fatal("expected the modal editor to close after a successful typed submit")
+	}
 
 	cachedDetail, ok := subject.pullRequestDetailCache["acme/widgets#42"]
 	if !ok {
@@ -46,7 +69,7 @@ func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBui
 	if actual := subject.feedbackMessage; actual != pullRequestCommentSuccessMessage {
 		t.Fatalf("expected feedback %q, actual %q", pullRequestCommentSuccessMessage, actual)
 	}
-	if len(followUpCommands) != 0 {
-		t.Fatalf("expected no follow-up commands, actual %d", len(followUpCommands))
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
 	}
 }

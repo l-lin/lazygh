@@ -90,22 +90,16 @@ func (command modalEditorExternalEditCmd) execute(program *Program, gui *gocui.G
 }
 
 type modalEditorSubmitCmd struct {
-	Text        string
-	Submit      func(string) error
-	AfterSubmit func(*Program) []Cmd
+	request modalEditorSubmitRequest
 }
 
 func (command modalEditorSubmitCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
-		return
-	}
-	if command.Submit == nil {
-		_ = program.dispatch(gui, MsgModalEditorSubmitFinished{AfterSubmit: command.AfterSubmit})
+	if program == nil || command.request == nil {
 		return
 	}
 
-	err := command.Submit(command.Text)
-	_ = program.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, AfterSubmit: command.AfterSubmit})
+	success, err := command.request.run(program)
+	_ = program.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, Success: success})
 }
 
 type pullRequestBuildRunLoadCmd struct {

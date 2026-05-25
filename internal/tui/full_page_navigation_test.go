@@ -337,7 +337,7 @@ func TestModalEditor_GivenControlBAndControlF_WhenEditing_ThenTheyMoveTheCursor(
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = subject.openModalEditor(gui, "Edit", "abc", func(string) error { return nil })
+	actualErr = subject.openModalEditor(gui, "Edit", "abc")
 	then_noError(t, actualErr)
 	modalView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)

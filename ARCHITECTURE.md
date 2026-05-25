@@ -134,9 +134,9 @@ Pull-request search reconfiguration and cache clear now reset pull-request list 
 
 Search, the actions popup, transient errors, the build popup, and the modal editor all live in `internal/tui`. The editor callbacks dispatch typed edit messages instead of redrawing their own views directly.
 
-Modal editors now support typed submit-request messages. Popup and modal-editor feature files no longer call GitHub query or mutation ports directly. Commenting, review submissions, pull request edits, inline comment mutations, notification actions, and story-review startup now dispatch typed request messages and let update-owned commands talk to the ports. The startup URL entrypoints for browser, review, and story-review mode now stop at URL parsing plus `dispatchStartupMessage(...)` delegation to the same reducer-owned browser/review/story messages used inside the TUI, so redraw stays under `dispatch()` / `afterStateChange()` instead of ad-hoc `layout(...)` calls.
+Modal editors now support typed submit-request messages backed by explicit request executors in `cmd_modal_editor_submit_requests.go`. Popup and modal-editor feature files no longer call GitHub query or mutation ports directly. Commenting, review submissions, pull request edits, inline comment mutations, open-by-URL, custom search, notification actions, and story-review startup now dispatch typed request messages and let explicit command executors talk to the ports or derive local success results. The startup URL entrypoints for browser, review, and story-review mode now stop at URL parsing plus `dispatchStartupMessage(...)` delegation to the same reducer-owned browser/review/story messages used inside the TUI, so redraw stays under `dispatch()` / `afterStateChange()` instead of ad-hoc `layout(...)` calls.
 
-That keeps one redraw path in charge of rendering. Popup-local error presentation is still centralized, but it now routes through reducer-owned messages instead of a legacy result struct. The legacy submit callback path remains only for local, non-GitHub editor flows such as custom search. The live editor objects still sit inside `Program` rather than inside a pure child model.
+That keeps one redraw path in charge of rendering. Popup-local error presentation is still centralized, but it now routes through reducer-owned messages instead of a legacy result struct. Modal-editor submit callbacks are gone; both GitHub-backed and local modal flows now share the typed request/result surface. The live editor objects still sit inside `Program` rather than inside a pure child model.
 
 ## Story review pipeline
 
@@ -183,7 +183,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup/editor/story builders, the modal-editor and notification/story command surfaces still carry closure-based submit or work hooks, and the new detail/review child-state helpers are more auditable than before but still imperative helpers rather than pure child reducers.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup/story builders, the notification/story command surface still carries closure-based work hooks, and the new detail/review child-state helpers are more auditable than before but still imperative helpers rather than pure child reducers.
 
 If you want to understand the project quickly, start with these files:
 

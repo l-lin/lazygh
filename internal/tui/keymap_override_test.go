@@ -163,7 +163,7 @@ func TestKeybindingSpecs_GivenModalEditorSingleLineSubmitOverride_WhenListingBin
 			"submit_line": {"X"},
 		},
 	})
-	then_noError(t, subject.openLineModalEditor(nil, "Prompt", "", nil))
+	then_noError(t, subject.openLineModalEditor(nil, "Prompt", ""))
 
 	actual := subject.keybindingSpecs()
 
@@ -178,7 +178,7 @@ func TestKeybindingSpecs_GivenModalEditorSingleLineSubmitOverride_WhenListingMul
 			"submit_line": {"X"},
 		},
 	})
-	then_noError(t, subject.openModalEditor(nil, "Prompt", "", nil))
+	then_noError(t, subject.openModalEditor(nil, "Prompt", ""))
 
 	actual := subject.keybindingSpecs()
 

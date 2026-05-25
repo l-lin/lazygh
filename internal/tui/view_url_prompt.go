@@ -27,7 +27,9 @@ func (program *Program) openPullRequestByClipboardShortcut(gui *gocui.Gui, _ *go
 }
 
 func (program *Program) openPullRequestByURLEditor(gui *gocui.Gui) error {
-	return program.openLineModalEditorWithHeight(gui, openPullRequestByURLActionTitle, "", program.OpenPullRequestByURL, openPullRequestByURLEditorHeight)
+	return program.openLineModalEditorWithHeightAndSubmitRequested(gui, openPullRequestByURLActionTitle, "", func(rawURL string) Msg {
+		return MsgOpenPullRequestByURLSubmitRequested{URL: rawURL}
+	}, openPullRequestByURLEditorHeight)
 }
 
 func (program *Program) clipboardPullRequestURL() (string, error) {

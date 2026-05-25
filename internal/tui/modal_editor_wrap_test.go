@@ -31,7 +31,7 @@ func TestModalEditor_GivenLongParagraph_WhenRendering_ThenItUsesVisibleWordWrapA
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = subject.openModalEditor(gui, "Compose", "alpha beta gamma delta zeta", nil)
+	actualErr = subject.openModalEditor(gui, "Compose", "alpha beta gamma delta zeta")
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
