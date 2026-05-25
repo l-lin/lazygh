@@ -52,7 +52,7 @@ func TestUpdate_GivenMsgPendingPullRequestReviewSubmitted_WhenApplying_ThenItRes
 	subject.startReviewSession(summary, "PRR_pending")
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
-	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{identity: "acme/widgets#42:main.go", width: 80}] = reviewDiffRenderCacheEntry{}
+	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{repositoryName: "acme/widgets", pullRequestNumber: 42, filePath: "main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 
 	Update(subject, MsgPendingPullRequestReviewSubmitted{Target: pendingPullRequestReviewTarget{repository: "acme/widgets", number: 42, pendingReviewID: "PRR_pending", sourceFocus: FocusPullRequestsView}})
 

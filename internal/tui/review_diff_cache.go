@@ -1,15 +1,14 @@
 package tui
 
-import (
-	"fmt"
-	"sort"
-	"strings"
-)
+import "strings"
 
 type reviewDiffRenderCacheKey struct {
-	identity           string
+	repositoryName     string
+	pullRequestNumber  int
+	pendingReviewID    string
+	filePath           string
 	width              int
-	collapsedSignature string
+	collapsedSignature uint64
 }
 
 type reviewDiffRenderCacheEntry struct {
@@ -22,40 +21,48 @@ func (program *Program) reviewDiffRenderKey(file reviewDiffFile, width int) revi
 		width = 1
 	}
 
-	return reviewDiffRenderCacheKey{
-		identity:           program.reviewDiffRenderIdentity(file),
+	key := reviewDiffRenderCacheKey{
+		filePath:           strings.TrimSpace(file.Path),
 		width:              width,
 		collapsedSignature: reviewDiffCollapsedStateSignature(file, program.navigationState.reviewSession.collapsedThreadIDs),
 	}
-}
-
-func (program *Program) reviewDiffRenderIdentity(file reviewDiffFile) string {
-	path := strings.TrimSpace(file.Path)
 	if !program.reviewModeActive() {
-		return path
+		return key
 	}
 
-	return fmt.Sprintf(
-		"%s#%d:%s:%s",
-		pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
-		program.navigationState.reviewSession.summary.Number,
-		strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID),
-		path,
-	)
+	key.repositoryName = pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository)
+	key.pullRequestNumber = program.navigationState.reviewSession.summary.Number
+	key.pendingReviewID = strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID)
+	return key
 }
 
-func reviewDiffCollapsedStateSignature(file reviewDiffFile, collapsedThreadIDs map[string]bool) string {
+func reviewDiffCollapsedStateSignature(file reviewDiffFile, collapsedThreadIDs map[string]bool) uint64 {
 	if len(file.Threads) == 0 {
-		return ""
+		return 0
 	}
 
-	parts := make([]string, 0, len(file.Threads))
+	const (
+		fnv64Offset = 1469598103934665603
+		fnv64Prime  = 1099511628211
+	)
+
+	hash := uint64(fnv64Offset)
 	for _, thread := range file.Threads {
 		threadID := strings.TrimSpace(thread.ID)
-		parts = append(parts, fmt.Sprintf("%s=%t", threadID, reviewDiffThreadCollapsed(thread, collapsedThreadIDs)))
+		for index := 0; index < len(threadID); index++ {
+			hash ^= uint64(threadID[index])
+			hash *= fnv64Prime
+		}
+		if reviewDiffThreadCollapsed(thread, collapsedThreadIDs) {
+			hash ^= uint64('1')
+		} else {
+			hash ^= uint64('0')
+		}
+		hash *= fnv64Prime
+		hash ^= uint64(0xff)
+		hash *= fnv64Prime
 	}
-	sort.Strings(parts)
-	return strings.Join(parts, ",")
+	return hash
 }
 
 func (program *Program) cachedReviewDiffRenderEntry(key reviewDiffRenderCacheKey) (reviewDiffRenderCacheEntry, bool) {

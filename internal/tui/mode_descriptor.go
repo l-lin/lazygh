@@ -100,9 +100,7 @@ func (StoryReviewMode) MainViewResolver(program *Program, state ScreenState) Mai
 	if resolver.SourceView.Focus != FocusPullRequestsView {
 		return resolver
 	}
-	if _, ok := program.selectedReviewSessionStoryChapter(); ok {
-		resolver.ContentKind = MainContentKindStoryChapter
-	}
+	resolver.ContentKind = program.reviewSessionMainContentKind()
 	return resolver
 }
 

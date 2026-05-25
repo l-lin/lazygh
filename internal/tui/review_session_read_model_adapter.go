@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -18,8 +19,8 @@ func (program *Program) reviewSessionReadModel() reviewSessionReadModel {
 		summary:             state.summary,
 		pendingReviewID:     strings.TrimSpace(state.pendingReviewID),
 		selectedFileTreeRow: state.selectedFileTreeRow,
-		collapsedTreeRowIDs: copyStringBoolMap(state.collapsedTreeRowIDs),
-		collapsedThreadIDs:  copyStringBoolMap(state.collapsedThreadIDs),
+		collapsedTreeRowIDs: state.collapsedTreeRowIDs,
+		collapsedThreadIDs:  state.collapsedThreadIDs,
 		story:               state.story,
 		detailWrapWidth:     program.detailState.wrapWidth,
 		markdownRenderer:    program.markdownRenderer,
@@ -30,10 +31,11 @@ func (program *Program) reviewSessionReadModel() reviewSessionReadModel {
 		return model
 	}
 
+	model.mainContentKind = program.reviewSessionMainContentKind()
 	if result, ok := program.pullRequestDetailForSummary(model.summary); ok {
 		model.descriptionResult = result
 		model.descriptionResultKnown = true
-		if result.err == nil {
+		if result.err == nil && model.mainContentKind == MainContentKindReviewDescription {
 			model.descriptionOverview = program.renderCurrentPullRequestOverview(model.summary, result.detail, model.detailWrapWidth)
 		}
 	}
@@ -41,28 +43,7 @@ func (program *Program) reviewSessionReadModel() reviewSessionReadModel {
 		model.diffResult = result
 		model.diffResultKnown = true
 	}
-
-	stateSnapshot := program.screenState()
-	mainView := stateSnapshot.MainViewResolver()
-	model.mainContentKind = mainView.ContentKind
-	if stateSnapshot.Mode == ScreenModeStoryReview && mainView.SourceView.Focus == FocusPullRequestsView {
-		if _, ok := model.selectedStoryChapter(); ok {
-			model.mainContentKind = MainContentKindStoryChapter
-		}
-	}
 	return model
-}
-
-func copyStringBoolMap(source map[string]bool) map[string]bool {
-	if len(source) == 0 {
-		return nil
-	}
-
-	copied := make(map[string]bool, len(source))
-	for key, value := range source {
-		copied[key] = value
-	}
-	return copied
 }
 
 func (program *Program) reviewSessionMetadataContent() string {
@@ -79,15 +60,35 @@ func (program *Program) reviewSessionDescriptionSummaryAndDetail() (githubdomain
 }
 
 func (program *Program) reviewSessionShowsDescription() bool {
-	return program.reviewSessionReadModel().showsDescription()
+	return program.reviewSessionMainContentKind() == MainContentKindReviewDescription
 }
 
 func (program *Program) reviewSessionShowsStoryChapter() bool {
-	return program.reviewSessionReadModel().showsStoryChapter()
+	return program.reviewSessionMainContentKind() == MainContentKindStoryChapter
 }
 
 func (program *Program) reviewSessionDetailIdentity() string {
-	return program.reviewSessionReadModel().detailIdentity()
+	state := program.navigationState.reviewSession
+	if !state.active {
+		return ""
+	}
+
+	repositoryName := pullRequestRepositoryName(state.summary.Repository)
+	pendingReviewID := strings.TrimSpace(state.pendingReviewID)
+	switch program.reviewSessionMainContentKind() {
+	case MainContentKindReviewDescription:
+		return fmt.Sprintf("review:%s:%d:%s:description", repositoryName, state.summary.Number, pendingReviewID)
+	case MainContentKindStoryChapter:
+		if chapter, ok := program.selectedReviewSessionStoryChapter(); ok {
+			return fmt.Sprintf("review:%s:%d:%s:chapter:%s", repositoryName, state.summary.Number, pendingReviewID, chapter.ID)
+		}
+	}
+
+	selectedFilePath := fmt.Sprintf("row:%d", state.selectedFileTreeRow)
+	if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
+		selectedFilePath = selectedFile.Path
+	}
+	return fmt.Sprintf("review:%s:%d:%s:file:%s", repositoryName, state.summary.Number, pendingReviewID, selectedFilePath)
 }
 
 func (program *Program) reviewSessionFiles() []Item {
@@ -100,16 +101,19 @@ func (program *Program) reviewSessionFiles() []Item {
 }
 
 func (program *Program) reviewSessionSelectedVisibleLine() int {
-	readModel := program.reviewSessionReadModel()
-	if !readModel.diffResultKnown || readModel.diffResult.err != nil {
+	if _, ok := program.reviewSessionDiffData(); !ok {
 		return 0
 	}
 	program.clampReviewSessionSelection()
-	return program.reviewSessionReadModel().selectedVisibleLine()
+	return maxInt(program.navigationState.reviewSession.selectedFileTreeRow, 0)
 }
 
 func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
-	return program.reviewSessionReadModel().selectedDiffFile()
+	data, ok := program.reviewSessionDiffData()
+	if !ok {
+		return reviewDiffFile{}, false
+	}
+	return reviewSessionSelectedDiffFile(program.navigationState.reviewSession, data)
 }
 
 func (program *Program) clampReviewSessionSelection() {
@@ -162,7 +166,12 @@ func (program *Program) reviewSessionSelectableRows() ([]int, bool) {
 }
 
 func (program *Program) reviewSessionRawTree() (reviewDiffTree, []reviewDiffFile, bool) {
-	return program.reviewSessionReadModel().rawTree()
+	data, ok := program.reviewSessionDiffData()
+	if !ok {
+		return reviewDiffTree{}, nil, false
+	}
+	tree, files := reviewSessionRawTree(program.navigationState.reviewSession, data)
+	return tree, files, true
 }
 
 func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiffFile, bool) {
@@ -170,7 +179,11 @@ func (program *Program) reviewSessionCurrentTree() (reviewDiffTree, []reviewDiff
 }
 
 func (program *Program) selectedReviewSessionStoryChapter() (reviewStoryChapter, bool) {
-	return program.reviewSessionReadModel().selectedStoryChapter()
+	data, ok := program.reviewSessionDiffData()
+	if !ok {
+		return reviewStoryChapter{}, false
+	}
+	return reviewSessionSelectedStoryChapter(program.navigationState.reviewSession, data)
 }
 
 func (program *Program) reviewSessionFileRows() ([]int, bool) {
