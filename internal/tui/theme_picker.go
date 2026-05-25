@@ -39,15 +39,12 @@ func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
 		id:      "change-theme",
 		title:   themePickerActionTitle,
 		icon:    actionsPopupChangeThemeIcon,
-		execute: program.executeOpenThemePickerAction,
+		execute: actionsPopupExecuteErr(program.executeOpenThemePickerAction),
 	}
 }
 
-func (program *Program) executeOpenThemePickerAction(gui *gocui.Gui) actionsPopupActionResult {
-	if err := program.dispatch(gui, MsgOpenThemePickerRequested{}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+func (program *Program) executeOpenThemePickerAction(gui *gocui.Gui) error {
+	return program.dispatch(gui, MsgOpenThemePickerRequested{})
 }
 
 func (program *Program) currentThemePickerActions() []actionsPopupAction {
@@ -68,26 +65,23 @@ func (program *Program) themePickerAction(preset theme.Preset) actionsPopupActio
 	return actionsPopupAction{
 		id:    "theme-" + normalizedName,
 		title: strings.TrimSpace(preset.Label),
-		execute: func(gui *gocui.Gui) actionsPopupActionResult {
+		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
 			return program.executeThemePickerPresetAction(gui, preset)
-		},
+		}),
 	}
 }
 
-func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset theme.Preset) actionsPopupActionResult {
+func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset theme.Preset) error {
 	if !program.themePickerVisible() {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if program.themePresetStore == nil {
-		return actionsPopupActionResult{err: errors.New("theme preset store is unavailable")}
+		return errors.New("theme preset store is unavailable")
 	}
 
 	normalizedName := theme.NormalizePresetName(preset.Name)
 	if normalizedName == "" {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
-	if err := program.dispatch(gui, MsgThemePresetSelected{NormalizedName: normalizedName, Label: strings.TrimSpace(preset.Label)}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgThemePresetSelected{NormalizedName: normalizedName, Label: strings.TrimSpace(preset.Label)})
 }

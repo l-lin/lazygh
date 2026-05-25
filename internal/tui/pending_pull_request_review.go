@@ -92,7 +92,7 @@ func (program *Program) cancelPendingPullRequestReviewAction() actionsPopupActio
 		id:      "cancel-pending-review",
 		title:   cancelPendingPullRequestReviewActionTitle,
 		icon:    actionsPopupCancelPendingReviewIcon,
-		execute: program.executeCancelPendingPullRequestReviewAction,
+		execute: actionsPopupExecuteErr(program.executeCancelPendingPullRequestReviewAction),
 	}
 }
 
@@ -125,16 +125,13 @@ func (program *Program) selectedPendingPullRequestReviewActionTarget() (pendingP
 	}, true
 }
 
-func (program *Program) executeCancelPendingPullRequestReviewAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeCancelPendingPullRequestReviewAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPendingPullRequestReviewActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasReviewMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
-	if err := program.dispatch(gui, MsgCancelPendingPullRequestReviewRequested{Target: target}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgCancelPendingPullRequestReviewRequested{Target: target})
 }

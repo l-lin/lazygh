@@ -20,22 +20,19 @@ func (program *Program) reviewApproveAction() actionsPopupAction {
 		id:      "review-approve",
 		title:   pullRequestReviewApprovalTitle,
 		icon:    actionsPopupReviewApproveIcon,
-		execute: program.executeApprovePullRequestAction,
+		execute: actionsPopupExecuteErr(program.executeApprovePullRequestAction),
 	}
 }
 
-func (program *Program) executeApprovePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeApprovePullRequestAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasReviewMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
-	if err := program.dispatch(gui, MsgApprovePullRequestRequested{Target: target}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgApprovePullRequestRequested{Target: target})
 }
 
 func approvePullRequestCommand(repository string, number int) string {
@@ -47,18 +44,18 @@ func (program *Program) reviewCommentAction() actionsPopupAction {
 		id:      "review-comment",
 		title:   pullRequestReviewCommentComposerTitle,
 		icon:    actionsPopupReviewCommentIcon,
-		execute: program.executeReviewCommentAction,
+		execute: actionsPopupExecuteErr(program.executeReviewCommentAction),
 	}
 }
 
-func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeReviewCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
 	feedbackTarget := program.model.Focus()
-	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
 			return program.submitPullRequestReviewComment(target, body)
 		}); err != nil {
@@ -70,7 +67,7 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupA
 			}
 		}
 		return nil
-	}))
+	})
 }
 
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
@@ -78,18 +75,18 @@ func (program *Program) reviewRequestChangesAction() actionsPopupAction {
 		id:      "review-request-changes",
 		title:   pullRequestRequestChangesComposerTitle,
 		icon:    actionsPopupReviewRequestChangesIcon,
-		execute: program.executeRequestChangesAction,
+		execute: actionsPopupExecuteErr(program.executeRequestChangesAction),
 	}
 }
 
-func (program *Program) executeRequestChangesAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeRequestChangesAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
 	feedbackTarget := program.model.Focus()
-	return actionsPopupActionResultFromError(program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
+	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
 			return program.submitPullRequestRequestChanges(target, body)
 		}); err != nil {
@@ -101,7 +98,7 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) actionsPopup
 			}
 		}
 		return nil
-	}))
+	})
 }
 
 func (program *Program) submitPullRequestReviewComment(target pullRequestActionTarget, body string) error {

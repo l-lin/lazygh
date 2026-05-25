@@ -77,22 +77,19 @@ func (program *Program) assignPullRequestAction() actionsPopupAction {
 		id:      "assign-pull-request",
 		title:   assignPullRequestActionTitle,
 		icon:    actionsPopupEditPullRequestIcon,
-		execute: program.executeOpenAssigneePickerAction,
+		execute: actionsPopupExecuteErr(program.executeOpenAssigneePickerAction),
 	}
 }
 
-func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestAssigneePickerTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
-	if err := program.dispatch(gui, MsgOpenAssigneePickerRequested{Target: target}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgOpenAssigneePickerRequested{Target: target})
 }
 
 func (program *Program) currentAssigneePickerActionCount() int {
@@ -252,12 +249,9 @@ func (program *Program) currentAssigneePickerActionsForQuery(query string) []act
 			id:       "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
 			title:    program.assigneePickerLabel(candidate),
 			keywords: program.assigneePickerSearchKeywords(candidate),
-			execute: func(gui *gocui.Gui) actionsPopupActionResult {
-				if err := program.dispatch(gui, MsgToggleAssigneePickerSelectionRequested{Candidate: candidate}); err != nil {
-					return actionsPopupActionResult{err: err}
-				}
-				return actionsPopupActionResult{}
-			},
+			execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
+				return program.dispatch(gui, MsgToggleAssigneePickerSelectionRequested{Candidate: candidate})
+			}),
 		})
 	}
 	return actions
@@ -439,26 +433,23 @@ func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAu
 	return checkbox + " " + identityLabel + " (" + trimmedName + ")"
 }
 
-func (program *Program) executeSubmitAssigneePickerAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSubmitAssigneePickerAction(gui *gocui.Gui) error {
 	if !program.assigneePickerVisible() {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
 
 	repository := program.actionsPopupWidget.assigneePicker.target.repository
 	number := program.actionsPopupWidget.assigneePicker.target.number
 	addLogins, removeLogins := program.actionsPopupWidget.assigneePicker.selectedDiff()
-	if err := program.dispatch(gui, MsgSubmitAssigneePickerRequested{
+	return program.dispatch(gui, MsgSubmitAssigneePickerRequested{
 		Repository:   repository,
 		Number:       number,
 		AddLogins:    addLogins,
 		RemoveLogins: removeLogins,
-	}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	})
 }
 
 func updatePullRequestAssigneesCommand(repository string, number int, addLogins []string, removeLogins []string) string {

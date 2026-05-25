@@ -9,18 +9,15 @@ import (
 
 const pullRequestBrowserOpenSuccessMessage = "PR opened in browser"
 
-func (program *Program) executeOpenPullRequestInBrowserAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeOpenPullRequestInBrowserAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
-	if err := program.dispatch(gui, MsgOpenPullRequestInBrowserRequested{Target: target}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgOpenPullRequestInBrowserRequested{Target: target})
 }
 
 func openPullRequestInBrowserCommand(repository string, number int) string {

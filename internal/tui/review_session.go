@@ -44,22 +44,19 @@ func (program *Program) startReviewAction() actionsPopupAction {
 		id:      "start-review",
 		title:   "Start review",
 		icon:    actionsPopupStartReviewIcon,
-		execute: program.executeStartReviewAction,
+		execute: actionsPopupExecuteErr(program.executeStartReviewAction),
 	}
 }
 
-func (program *Program) executeStartReviewAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeStartReviewAction(gui *gocui.Gui) error {
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasReviewMutations() {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
-	if err := program.dispatch(gui, MsgStartPullRequestReviewRequested{Summary: summary}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgStartPullRequestReviewRequested{Summary: summary})
 }
 
 func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {

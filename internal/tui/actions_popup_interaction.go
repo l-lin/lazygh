@@ -154,7 +154,7 @@ func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocu
 	if !program.assigneePickerVisible() {
 		return program.executeSelectedActionsPopupAction(gui, nil)
 	}
-	return program.handleActionsPopupActionResult(gui, program.executeSubmitAssigneePickerAction(gui))
+	return program.handleActionsPopupActionResult(gui, actionsPopupActionResultFromError(program.executeSubmitAssigneePickerAction(gui)))
 }
 
 func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result actionsPopupActionResult) error {

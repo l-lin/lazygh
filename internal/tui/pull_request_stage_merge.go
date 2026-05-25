@@ -96,7 +96,7 @@ func (program *Program) markPullRequestReadyForReviewAction() actionsPopupAction
 		id:      "mark-pull-request-ready-for-review",
 		title:   markPullRequestReadyForReviewActionTitle,
 		icon:    actionsPopupEditPullRequestIcon,
-		execute: program.executeMarkPullRequestReadyForReviewAction,
+		execute: actionsPopupExecuteErr(program.executeMarkPullRequestReadyForReviewAction),
 	}
 }
 
@@ -105,7 +105,7 @@ func (program *Program) convertPullRequestToDraftAction() actionsPopupAction {
 		id:      "convert-pull-request-to-draft",
 		title:   convertPullRequestToDraftActionTitle,
 		icon:    actionsPopupEditPullRequestIcon,
-		execute: program.executeConvertPullRequestToDraftAction,
+		execute: actionsPopupExecuteErr(program.executeConvertPullRequestToDraftAction),
 	}
 }
 
@@ -114,7 +114,7 @@ func (program *Program) closePullRequestAction() actionsPopupAction {
 		id:      "close-pull-request",
 		title:   closePullRequestActionTitle,
 		icon:    actionsPopupClosePullRequestIcon,
-		execute: program.executeClosePullRequestAction,
+		execute: actionsPopupExecuteErr(program.executeClosePullRequestAction),
 	}
 }
 
@@ -123,7 +123,7 @@ func (program *Program) reopenPullRequestAction() actionsPopupAction {
 		id:      "reopen-pull-request",
 		title:   reopenPullRequestActionTitle,
 		icon:    actionsPopupReopenPullRequestIcon,
-		execute: program.executeReopenPullRequestAction,
+		execute: actionsPopupExecuteErr(program.executeReopenPullRequestAction),
 	}
 }
 
@@ -132,7 +132,7 @@ func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 		id:      "squash-merge-pull-request",
 		title:   squashMergePullRequestActionTitle,
 		icon:    actionsPopupReviewApproveIcon,
-		execute: program.executeSquashMergePullRequestAction,
+		execute: actionsPopupExecuteErr(program.executeSquashMergePullRequestAction),
 	}
 }
 
@@ -148,7 +148,7 @@ func (program *Program) enablePullRequestAutoMergeAction() actionsPopupAction {
 		id:      "enable-pull-request-auto-merge",
 		title:   enablePullRequestAutoMergeActionTitle,
 		icon:    actionsPopupReviewApproveIcon,
-		execute: program.executeEnablePullRequestAutoMergeAction,
+		execute: actionsPopupExecuteErr(program.executeEnablePullRequestAutoMergeAction),
 	}
 }
 
@@ -157,7 +157,7 @@ func (program *Program) disablePullRequestAutoMergeAction() actionsPopupAction {
 		id:      "disable-pull-request-auto-merge",
 		title:   disablePullRequestAutoMergeActionTitle,
 		icon:    actionsPopupClosePullRequestIcon,
-		execute: program.executeDisablePullRequestAutoMergeAction,
+		execute: actionsPopupExecuteErr(program.executeDisablePullRequestAutoMergeAction),
 	}
 }
 
@@ -166,54 +166,51 @@ func (program *Program) updatePullRequestBranchAction() actionsPopupAction {
 		id:      "update-pull-request-branch",
 		title:   updatePullRequestBranchActionTitle,
 		icon:    actionsPopupRefreshPullRequestIcon,
-		execute: program.executeUpdatePullRequestBranchAction,
+		execute: actionsPopupExecuteErr(program.executeUpdatePullRequestBranchAction),
 	}
 }
 
-func (program *Program) executeMarkPullRequestReadyForReviewAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeMarkPullRequestReadyForReviewAction(gui *gocui.Gui) error {
 	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationReadyForReview, "OPEN", false, pullRequestMarkedReadyForReviewSuccessMessage)
 }
 
-func (program *Program) executeConvertPullRequestToDraftAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeConvertPullRequestToDraftAction(gui *gocui.Gui) error {
 	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationConvertToDraft, "OPEN", true, pullRequestConvertedToDraftSuccessMessage)
 }
 
-func (program *Program) executeClosePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeClosePullRequestAction(gui *gocui.Gui) error {
 	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationClose, "CLOSED", program.currentPullRequestDraftState(), pullRequestClosedSuccessMessage)
 }
 
-func (program *Program) executeReopenPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeReopenPullRequestAction(gui *gocui.Gui) error {
 	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationReopen, "OPEN", program.currentPullRequestDraftState(), pullRequestReopenedSuccessMessage)
 }
 
-func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) error {
 	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != squashMergePullRequestActionTitle {
 		program.actionsPopupWidget.pendingConfirmationActionID = squashMergePullRequestActionTitle
 		program.actionsPopupWidget.errorMessage = ""
-		return actionsPopupActionResult{}
+		return nil
 	}
 
 	program.clearActionsPopupPendingConfirmation()
 	return program.startSquashMergePullRequestMutation(gui)
 }
 
-func (program *Program) executeEnablePullRequestAutoMergeAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeEnablePullRequestAutoMergeAction(gui *gocui.Gui) error {
 	return program.executePullRequestAutoMergeMutation(gui, pullRequestAutoMergeMutationEnable, true, pullRequestAutoMergeEnabledSuccessMessage)
 }
 
-func (program *Program) executeDisablePullRequestAutoMergeAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeDisablePullRequestAutoMergeAction(gui *gocui.Gui) error {
 	return program.executePullRequestAutoMergeMutation(gui, pullRequestAutoMergeMutationDisable, false, pullRequestAutoMergeDisabledSuccessMessage)
 }
 
-func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) error {
 	target, summary, err := program.selectedPullRequestMutationContext()
 	if err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.dispatch(gui, MsgPullRequestBranchUpdateRequested{Target: target, Summary: summary}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgPullRequestBranchUpdateRequested{Target: target, Summary: summary})
 }
 
 func (program *Program) currentPullRequestDraftState() bool {
@@ -322,45 +319,39 @@ func (program *Program) selectedPullRequestMutationContext() (pullRequestActionT
 	return target, summary, nil
 }
 
-func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, kind pullRequestLifecycleMutationKind, state string, isDraft bool, successMessage string) actionsPopupActionResult {
+func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, kind pullRequestLifecycleMutationKind, state string, isDraft bool, successMessage string) error {
 	target, summary, err := program.selectedPullRequestMutationContext()
 	if err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.dispatch(gui, MsgPullRequestLifecycleMutationRequested{
+	return program.dispatch(gui, MsgPullRequestLifecycleMutationRequested{
 		Kind:           kind,
 		Target:         target,
 		Summary:        summary,
 		State:          state,
 		IsDraft:        isDraft,
 		SuccessMessage: successMessage,
-	}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	})
 }
 
-func (program *Program) executePullRequestAutoMergeMutation(gui *gocui.Gui, kind pullRequestAutoMergeMutationKind, enabled bool, successMessage string) actionsPopupActionResult {
+func (program *Program) executePullRequestAutoMergeMutation(gui *gocui.Gui, kind pullRequestAutoMergeMutationKind, enabled bool, successMessage string) error {
 	target, summary, err := program.selectedPullRequestMutationContext()
 	if err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
-	if err := program.dispatch(gui, MsgPullRequestAutoMergeMutationRequested{
+	return program.dispatch(gui, MsgPullRequestAutoMergeMutationRequested{
 		Kind:           kind,
 		Target:         target,
 		Summary:        summary,
 		Enabled:        enabled,
 		SuccessMessage: successMessage,
-	}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	})
 }
 
-func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) error {
 	target, summary, err := program.selectedPullRequestMutationContext()
 	if err != nil {
-		return actionsPopupActionResult{err: err}
+		return err
 	}
 
 	command := squashMergePullRequestCommand(target.repository, target.number)
@@ -374,20 +365,17 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 	if gui == nil {
 		if err := program.runSquashMergePullRequestMutation(target); err != nil {
 			program.clearGHCommandLoading()
-			return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
+			return newTransientErrorPopupActionError(err)
 		}
 		program.executeCmds(gui, Update(program, MsgActionsPopupAsyncGHCommandFinished{Success: success}))
-		return actionsPopupActionResult{}
+		return nil
 	}
 
 	program.runAsync(func() {
 		err := program.runSquashMergePullRequestMutation(target)
 		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 	})
-	if err := program.dispatch(gui, MsgCloseActionsPopup{}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgCloseActionsPopup{})
 }
 
 func (program *Program) runSquashMergePullRequestMutation(target pullRequestActionTarget) error {

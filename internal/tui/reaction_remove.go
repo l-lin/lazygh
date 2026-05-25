@@ -32,34 +32,28 @@ func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool
 		id:    "remove-reaction-" + reactionID,
 		title: "Remove reaction " + reactionTitle,
 		icon:  actionsPopupRemoveReactionIcon,
-		execute: func(gui *gocui.Gui) actionsPopupActionResult {
+		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
 			return program.executeRemoveReactionAction(gui, target)
-		},
+		}),
 	}.withGroup(target.popupGroup()), true
 }
 
-func (program *Program) executeRemoveReactionAction(gui *gocui.Gui, target pullRequestReactionRemovalTarget) actionsPopupActionResult {
+func (program *Program) executeRemoveReactionAction(gui *gocui.Gui, target pullRequestReactionRemovalTarget) error {
 	if strings.TrimSpace(target.subjectID) == "" {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !reactionGroupViewerHasReacted(target.reactionGroups, target.content) {
-		if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionAlreadyRemovedMessage}); err != nil {
-			return actionsPopupActionResult{err: err}
-		}
-		return actionsPopupActionResult{}
+		return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionAlreadyRemovedMessage})
 	}
 	if !program.hasReactionMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
 	if err := program.reactionMutations.RemoveReaction(target.subjectID, target.content); err != nil {
-		return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
+		return newTransientErrorPopupActionError(err)
 	}
 
 	program.optimisticallyRemoveReaction(target)
-	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionRemovedSuccessMessage}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionRemovedSuccessMessage})
 }
 
 func (program *Program) selectedPullRequestReactionRemovalTarget() (pullRequestReactionRemovalTarget, bool) {

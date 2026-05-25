@@ -30,9 +30,9 @@ func (program *Program) currentReRequestPullRequestReviewAction() (actionsPopupA
 		id:    "re-request-review-" + strings.ToLower(trimmedLogin),
 		title: reRequestPullRequestReviewActionTitle(trimmedLogin),
 		icon:  actionsPopupReRequestReviewIcon,
-		execute: func(gui *gocui.Gui) actionsPopupActionResult {
+		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
 			return program.executeReRequestPullRequestReviewAction(gui, target)
-		},
+		}),
 	}, true
 }
 
@@ -44,17 +44,14 @@ func reRequestPullRequestReviewActionTitle(reviewerLogin string) string {
 	return reRequestPullRequestReviewActionTitlePrefix + " " + label
 }
 
-func (program *Program) executeReRequestPullRequestReviewAction(gui *gocui.Gui, target pullRequestReviewerRequestTarget) actionsPopupActionResult {
+func (program *Program) executeReRequestPullRequestReviewAction(gui *gocui.Gui, target pullRequestReviewerRequestTarget) error {
 	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.reviewerLogin) == "" {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	if !program.hasPullRequestMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
+		return errors.New("github loader is unavailable")
 	}
-	if err := program.dispatch(gui, MsgReRequestPullRequestReviewRequested{Target: target}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgReRequestPullRequestReviewRequested{Target: target})
 }
 
 func requestPullRequestReviewerCommand(repository string, number int, reviewerLogin string) string {

@@ -334,7 +334,7 @@ func (program *Program) openPullRequestInBrowserActionsPopupAction() actionsPopu
 		id:      "open-pull-request-in-browser",
 		title:   "Open PR in browser",
 		icon:    actionsPopupOpenPullRequestBrowserIcon,
-		execute: program.executeOpenPullRequestInBrowserAction,
+		execute: actionsPopupExecuteErr(program.executeOpenPullRequestInBrowserAction),
 	}
 }
 

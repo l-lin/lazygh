@@ -15,14 +15,14 @@ func (program *Program) refreshActiveView(gui *gocui.Gui, _ *gocui.View) error {
 		if state.Mode != ScreenModeBrowser {
 			return nil
 		}
-		return program.handleActionsPopupActionResult(gui, program.executeRefreshPullRequestListAction(gui))
+		return program.handleActionsPopupActionResult(gui, actionsPopupActionResultFromError(program.executeRefreshPullRequestListAction(gui)))
 	case sidePanelNotificationsViewNumber:
 		return program.handleActionsPopupActionResult(gui, program.executeRefreshNotificationsAction(gui))
 	case mainPanelViewNumber:
 		if !program.actionContext().IsPullRequestContext() {
 			return nil
 		}
-		return program.handleActionsPopupActionResult(gui, program.executeRefreshPullRequestAction(gui))
+		return program.handleActionsPopupActionResult(gui, actionsPopupActionResultFromError(program.executeRefreshPullRequestAction(gui)))
 	default:
 		return nil
 	}

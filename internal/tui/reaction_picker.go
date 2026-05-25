@@ -31,19 +31,16 @@ func (program *Program) addReactionAction() actionsPopupAction {
 		id:      "add-reaction",
 		title:   reactionPickerTitle,
 		icon:    actionsPopupAddReactionIcon,
-		execute: program.executeOpenReactionPickerAction,
+		execute: actionsPopupExecuteErr(program.executeOpenReactionPickerAction),
 	}
 }
 
-func (program *Program) executeOpenReactionPickerAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeOpenReactionPickerAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestReactionActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
-	if err := program.dispatch(gui, MsgOpenReactionPickerRequested{Target: target}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgOpenReactionPickerRequested{Target: target})
 }
 
 func (program *Program) currentReactionPickerActions() []actionsPopupAction {
@@ -63,9 +60,9 @@ func (program *Program) reactionPickerAction(content githubdomain.ReactionConten
 	return actionsPopupAction{
 		id:    "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
 		title: title,
-		execute: func(gui *gocui.Gui) actionsPopupActionResult {
+		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
 			return program.executeReactionPickerAction(gui, content)
-		},
+		}),
 	}
 }
 
@@ -92,14 +89,11 @@ func reactionPickerActionMetadata(content githubdomain.ReactionContent) string {
 	}
 }
 
-func (program *Program) executeReactionPickerAction(gui *gocui.Gui, content githubdomain.ReactionContent) actionsPopupActionResult {
+func (program *Program) executeReactionPickerAction(gui *gocui.Gui, content githubdomain.ReactionContent) error {
 	if !program.reactionPickerVisible() {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
-	if err := program.dispatch(gui, MsgAddReactionRequested{Target: program.actionsPopupWidget.reactionPicker.target, Content: content}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgAddReactionRequested{Target: program.actionsPopupWidget.reactionPicker.target, Content: content})
 }
 
 func reactionGroupViewerHasReacted(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) bool {

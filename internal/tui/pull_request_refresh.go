@@ -14,7 +14,7 @@ func (program *Program) refreshPullRequestAction() actionsPopupAction {
 		id:      "refresh-current-pull-request-information",
 		title:   pullRequestRefreshActionTitle,
 		icon:    actionsPopupRefreshPullRequestIcon,
-		execute: program.executeRefreshPullRequestAction,
+		execute: actionsPopupExecuteErr(program.executeRefreshPullRequestAction),
 	}
 }
 
@@ -23,29 +23,23 @@ func (program *Program) refreshPullRequestListAction() actionsPopupAction {
 		id:      "refresh-pull-request-list",
 		title:   pullRequestListRefreshActionTitle,
 		icon:    actionsPopupRefreshPullRequestIcon,
-		execute: program.executeRefreshPullRequestListAction,
+		execute: actionsPopupExecuteErr(program.executeRefreshPullRequestListAction),
 	}
 }
 
-func (program *Program) executeRefreshPullRequestListAction(gui *gocui.Gui) actionsPopupActionResult {
-	if err := program.dispatch(gui, MsgRefreshPullRequestListRequested{}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+func (program *Program) executeRefreshPullRequestListAction(gui *gocui.Gui) error {
+	return program.dispatch(gui, MsgRefreshPullRequestListRequested{})
 }
 
-func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
-		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+		return errActionsPopupActionUnavailable
 	}
 
-	if err := program.dispatch(gui, MsgRefreshPullRequestRequested{Target: target, Summary: summary}); err != nil {
-		return actionsPopupActionResult{err: err}
-	}
-	return actionsPopupActionResult{}
+	return program.dispatch(gui, MsgRefreshPullRequestRequested{Target: target, Summary: summary})
 }
