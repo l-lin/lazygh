@@ -49,7 +49,7 @@ func (program *Program) startActionsPopupAsyncGHCommand(gui *gocui.Gui, command 
 			return actionsPopupActionResult{err: err}
 		}
 		if success != nil {
-			success.apply(program)
+			program.executeCmds(gui, success.apply(program))
 		}
 		return actionsPopupActionResult{closePopup: true}
 	}

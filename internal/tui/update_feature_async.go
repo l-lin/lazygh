@@ -20,20 +20,22 @@ func (program *Program) closeActionsPopupState() {
 	program.actionsPopupWidget.assigneePickerLoad = nil
 }
 
-func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActionsPopupAsyncGHCommandFinished) {
+func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActionsPopupAsyncGHCommandFinished) []Cmd {
 	program.clearGHCommandLoading()
 	if message.Err != nil {
 		program.reportError(program.gui, strings.TrimSpace(message.Err.Error()))
-		return
+		return nil
 	}
 
+	var commands []Cmd
 	if message.Success != nil {
-		message.Success.apply(program)
+		commands = message.Success.apply(program)
 	}
 	if program.model != nil && program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
 		program.closeActionsPopupState()
 	}
+	return commands
 }
 
 func (program *Program) applyNotificationMutationStarted(message MsgNotificationMutationStarted) {

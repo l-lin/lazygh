@@ -27,13 +27,17 @@ func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.Vie
 }
 
 func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error {
-	actualErr := program.openLineModalEditorWithHeight(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), program.submitPullRequestCustomSearch, pullRequestCustomSearchEditorHeight)
+	submittedCriteria := ""
+	actualErr := program.openLineModalEditorWithHeight(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), func(criteria string) error {
+		submittedCriteria = criteria
+		return program.submitPullRequestCustomSearch(criteria)
+	}, pullRequestCustomSearchEditorHeight)
 	if actualErr != nil {
 		return actualErr
 	}
 	if program.overlayState.modalEditor != nil {
 		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			program.reloadActivePullRequestsTab(gui)
+			_ = program.dispatch(gui, MsgPullRequestCustomSearchSubmitted{Criteria: submittedCriteria})
 		}
 	}
 	return nil
@@ -61,43 +65,7 @@ func (program *Program) submitPullRequestCustomSearch(criteria string) error {
 	if len(command) == 0 {
 		return errors.New("search criteria cannot be empty")
 	}
-
-	program.upsertPullRequestCustomSearch(appconfig.PullRequestSearch{Label: pullRequestCustomSearchLabel, Command: command})
 	return nil
-}
-
-func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullRequestSearch) PullRequestTab {
-	searches := append([]appconfig.PullRequestSearch(nil), appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)...)
-	customTab, customTabExists := pullRequestCustomSearchTab(searches)
-	preservedRows := make(map[PullRequestTab][]PullRequestRow, len(program.model.PullRequestTabs()))
-	for _, tab := range program.model.PullRequestTabs() {
-		if customTabExists && tab == customTab {
-			continue
-		}
-		preservedRows[tab] = program.model.PullRequestRows(tab)
-	}
-
-	if customTabExists {
-		searches[customTab] = search
-	} else {
-		customTab = PullRequestTab(len(searches))
-		searches = append(searches, search)
-	}
-
-	program.runtimeConfig.pullRequestSearches = searches
-	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(searches))
-	for tab, rows := range preservedRows {
-		program.model.SetPullRequestRows(tab, rows)
-	}
-	program.model.SetPullRequestRows(customTab, []PullRequestRow{{Item: program.pullRequestLoadingItem(customTab)}})
-	program.model.ClearPullRequestSearchQuery(customTab)
-	program.setPullRequestsLoadStarted(customTab, false)
-	program.setPullRequestsLoading(customTab, false)
-	program.setPullRequestsCount(customTab, 0, false)
-
-	state := program.model.ScreenState().WithViewTabs(sidePanelPullRequestsViewNumber, int(customTab), program.model.pullRequestScreenTabs()).FocusViewNumber(sidePanelPullRequestsViewNumber)
-	program.model.applyBrowserScreenState(state)
-	return customTab
 }
 
 func pullRequestCustomSearchTab(searches []appconfig.PullRequestSearch) (PullRequestTab, bool) {

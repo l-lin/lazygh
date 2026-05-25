@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -22,55 +21,14 @@ func (program *Program) clearCacheActionsPopupAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeClearCacheAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeClearCacheAction(gui *gocui.Gui) actionsPopupActionResult {
 	if program.pullRequestCache == nil {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != clearCacheActionTitle {
-		program.actionsPopupWidget.pendingConfirmationActionID = clearCacheActionTitle
-		program.actionsPopupWidget.errorMessage = ""
-		return actionsPopupActionResult{}
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	if err := program.clearCachedData(); err != nil {
+	if err := program.dispatch(gui, MsgClearCacheRequested{}); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	program.setFeedback(program.model.Focus(), clearCacheSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
-}
-
-func (program *Program) clearCachedData() error {
-	if program.pullRequestCache == nil {
-		return errors.New("persistent cache is unavailable")
-	}
-	if err := program.pullRequestCache.Clear(); err != nil {
-		return err
-	}
-
-	program.pullRequestDetailCache = map[string]pullRequestDetailResult{}
-	program.pullRequestDetailLoadInFlight = map[string]bool{}
-	program.pullRequestDiffCache = map[string]pullRequestDiffResult{}
-	program.pullRequestDiffLoadInFlight = map[string]bool{}
-	program.pendingPullRequestReviewCache = map[string]pendingPullRequestReviewState{}
-	program.issueDetailCache = map[string]issueDetailResult{}
-	program.issueDetailLoadInFlight = map[string]bool{}
-	program.releaseDetailCache = map[string]releaseDetailResult{}
-	program.releaseDetailLoadInFlight = map[string]bool{}
-	program.notificationsLoadStarted = false
-	program.notificationsLoading = false
-	program.notificationsLoadingDetailMessage = ""
-	program.ghCommandLoadingMessage = ""
-	program.invalidatePullRequestDetailDocumentCache()
-	program.invalidateReviewDiffRenderCache()
-	program.resetPullRequestSearchState()
-	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
-	program.model.SetNotifications([]Item{notificationsLoadingItem()})
-	return nil
-}
-
-func (program *Program) clearActionsPopupPendingConfirmation() {
-	program.actionsPopupWidget.pendingConfirmationActionID = ""
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) actionsPopupConfirmationMessage() string {

@@ -133,14 +133,8 @@ func (program *Program) executeCancelPendingPullRequestReviewAction(gui *gocui.G
 	if !program.hasReviewMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
 	}
-	if err := program.reviewMutations.DeletePullRequestReview(target.pendingReviewID); err != nil {
-		return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
+	if err := program.dispatch(gui, MsgCancelPendingPullRequestReviewRequested{Target: target}); err != nil {
+		return actionsPopupActionResult{err: err}
 	}
-
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
-	program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, "")
-	program.reloadActivePullRequestsTab(gui)
-	program.setFeedback(target.sourceFocus, pendingPullRequestReviewCanceledMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return actionsPopupActionResult{}
 }

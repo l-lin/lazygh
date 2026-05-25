@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"strings"
-
 	"github.com/jesseduffield/gocui"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -50,87 +48,22 @@ func (program *Program) startReviewAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeStartReviewAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeStartReviewAction(gui *gocui.Gui) actionsPopupActionResult {
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if err := program.openPullRequestReview(summary); err != nil {
+	if !program.hasReviewMutations() {
+		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
+	}
+	if err := program.dispatch(gui, MsgStartPullRequestReviewRequested{Summary: summary}); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
-}
-
-func (program *Program) startReviewSession(summary any, pendingReviewID string) {
-	summaryValue, ok := toDomainPullRequestSummary(summary)
-	if !ok {
-		return
-	}
-	program.startReviewSessionWithMode(summaryValue, pendingReviewID, reviewSessionModeDiff, reviewStoryData{})
-}
-
-func (program *Program) startStoryReviewSession(summary any, pendingReviewID string, story reviewStoryData) {
-	summaryValue, ok := toDomainPullRequestSummary(summary)
-	if !ok {
-		return
-	}
-	program.startReviewSessionWithMode(summaryValue, pendingReviewID, reviewSessionModeStory, story)
-}
-
-func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
-	program.detailState.viewState.clearPendingPrefix()
-	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
-	program.navigationState.reviewSession = reviewSessionState{
-		active:                       true,
-		mode:                         mode,
-		sourceFocus:                  program.model.Focus(),
-		sourceDetailTab:              program.detailState.activeTab,
-		sourcePaneLayoutSize:         program.model.paneLayoutSize,
-		sourceFullscreenPane:         program.model.fullscreenPane,
-		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
-		summary:                      summary,
-		pendingReviewID:              trimmedPendingReviewID,
-		selectedFileTreeRow:          -1,
-		collapsedTreeRowIDs:          map[string]bool{},
-		collapsedThreadIDs:           map[string]bool{},
-		story:                        story,
-	}
-	if trimmedPendingReviewID != "" {
-		program.setPendingPullRequestReviewState(summary, trimmedPendingReviewID)
-	}
-	program.invalidateReviewDiffRenderCache()
-	program.model.SetPaneLayoutSize(program.reviewModePaneLayoutSize())
-	program.model.FocusPullRequestsView()
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {
 	return program.dispatch(gui, MsgExitReviewMode{})
-}
-
-func (program *Program) restorePullRequestBrowserFromReviewMode() {
-	if !program.navigationState.reviewSession.active {
-		return
-	}
-
-	sourceFocus := program.navigationState.reviewSession.sourceFocus
-	sourceDetailTab := program.navigationState.reviewSession.sourceDetailTab
-	sourcePaneLayoutSize := program.navigationState.reviewSession.sourcePaneLayoutSize
-	sourceFullscreenPane := program.navigationState.reviewSession.sourceFullscreenPane
-	sourceDetailFullscreenReturn := program.navigationState.reviewSession.sourceDetailFullscreenReturn
-	program.navigationState.reviewSession = reviewSessionState{}
-	program.invalidateReviewDiffRenderCache()
-	program.detailState.activeTab = sourceDetailTab
-	program.detailState.viewState.clearPendingPrefix()
-	program.model.SetPaneLayoutSize(sourcePaneLayoutSize)
-	program.model.SetFullscreenPane(sourceFullscreenPane)
-	program.model.SetDetailFullscreenReturnSize(sourceDetailFullscreenReturn)
-
-	switch sourceFocus {
-	case FocusDetailView:
-		program.model.FocusDetailView()
-	default:
-		program.model.FocusPullRequestsView()
-	}
 }
 
 func (program *Program) reviewModePaneLayoutSize() PaneLayoutSize {

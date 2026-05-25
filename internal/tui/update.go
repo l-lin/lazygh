@@ -221,6 +221,38 @@ func Update(program *Program, msg Msg) []Cmd {
 		if program.assigneePickerVisible() && requestID > 0 && strings.TrimSpace(actual.Query) != "" {
 			return []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: actual.Query, Delay: program.actionsPopupWidget.assigneePickerSearchDebounceDelay, DispatchLoading: true}}
 		}
+	case MsgClearCacheRequested:
+		program.applyClearCacheRequested()
+	case MsgStartPullRequestReviewRequested:
+		return program.applyStartPullRequestReviewRequested(actual)
+	case MsgPullRequestCustomSearchSubmitted:
+		return program.applyPullRequestCustomSearchSubmitted(actual)
+	case MsgOpenAssigneePickerRequested:
+		return program.applyOpenAssigneePickerRequested(actual)
+	case MsgToggleAssigneePickerSelectionRequested:
+		program.applyToggleAssigneePickerSelectionRequested(actual)
+	case MsgSubmitAssigneePickerRequested:
+		return program.applySubmitAssigneePickerRequested(actual)
+	case MsgOpenReactionPickerRequested:
+		program.applyOpenReactionPickerRequested(actual)
+	case MsgAddReactionRequested:
+		return program.applyAddReactionRequested(actual)
+	case MsgOpenThemePickerRequested:
+		program.applyOpenThemePickerRequested()
+	case MsgThemePresetSelected:
+		return program.applyThemePresetSelected(actual)
+	case MsgThemePresetSaved:
+		program.applyThemePresetSaved(actual)
+	case MsgRefreshPullRequestListRequested:
+		return program.applyRefreshPullRequestListRequested()
+	case MsgRefreshPullRequestRequested:
+		return program.applyRefreshPullRequestRequested(actual)
+	case MsgPullRequestTitleEditApplied:
+		return program.applyPullRequestTitleEditApplied(actual)
+	case MsgPullRequestDescriptionEditApplied:
+		return program.applyPullRequestDescriptionEditApplied(actual)
+	case MsgCancelPendingPullRequestReviewRequested:
+		return program.applyCancelPendingPullRequestReviewRequested(actual)
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 	case MsgPullRequestsLoaded:
@@ -244,7 +276,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgTransientErrorPopupExpired:
 		program.applyTransientErrorPopupExpired(actual)
 	case MsgActionsPopupAsyncGHCommandFinished:
-		program.applyActionsPopupAsyncGHCommandFinished(actual)
+		return program.applyActionsPopupAsyncGHCommandFinished(actual)
 	case MsgNotificationMutationStarted:
 		program.applyNotificationMutationStarted(actual)
 	case MsgNotificationMutationFinished:

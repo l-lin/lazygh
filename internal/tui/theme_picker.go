@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -44,11 +43,10 @@ func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeOpenThemePickerAction(_ *gocui.Gui) actionsPopupActionResult {
-	program.actionsPopupWidget.themePicker = &themePickerState{}
-	program.actionsPopupWidget.searchEditor = nil
-	program.actionsPopupWidget.errorMessage = ""
-	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
+func (program *Program) executeOpenThemePickerAction(gui *gocui.Gui) actionsPopupActionResult {
+	if err := program.dispatch(gui, MsgOpenThemePickerRequested{}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
 	return actionsPopupActionResult{}
 }
 
@@ -88,18 +86,8 @@ func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset th
 	if normalizedName == "" {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	if err := program.themePresetStore.SaveThemePreset(normalizedName); err != nil {
+	if err := program.dispatch(gui, MsgThemePresetSelected{NormalizedName: normalizedName, Label: strings.TrimSpace(preset.Label)}); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-
-	theme.ApplyPalette(theme.ResolvePaletteWithPreset(normalizedName, theme.Palette{}))
-	program.restylePullRequestRows()
-	program.invalidatePullRequestDetailDocumentCache()
-	program.invalidateReviewDiffRenderCache()
-	program.actionsPopupWidget.errorMessage = ""
-	program.setFeedback(program.model.Focus(), fmt.Sprintf("Theme changed to %s", strings.TrimSpace(preset.Label)))
-	if gui != nil {
-		program.configureGUI(gui)
-	}
-	return actionsPopupActionResult{closePopup: true}
+	return actionsPopupActionResult{}
 }

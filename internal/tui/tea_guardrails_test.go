@@ -107,6 +107,39 @@ func TestRefactorGuard_GivenPhase1NavigationFiles_WhenScanning_ThenTheyDoNotMuta
 	}
 }
 
+func TestRefactorGuard_GivenPhase2ActionFiles_WhenScanning_ThenTheyDoNotMutateStateFromPopupActionSurfaces(t *testing.T) {
+	phase2Files := map[string]bool{
+		"cache_clear.go":                 true,
+		"review_session.go":              true,
+		"pull_request_custom_search.go":  true,
+		"pull_request_assignee.go":       true,
+		"reaction_picker.go":             true,
+		"theme_picker.go":                true,
+		"pull_request_refresh.go":        true,
+		"pull_request_edit.go":           true,
+		"pending_pull_request_review.go": true,
+	}
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,
+		`program\.actionsPopupWidget\.[A-Za-z0-9_]+\s*=`,
+		`reloadActivePullRequestsTab\(`,
+		`setFeedback\(`,
+		`clearCachedData\(`,
+		`openPullRequestReview\(`,
+		`upsertPullRequestCustomSearch\(`,
+		`openAssigneePicker\(`,
+		`startAssigneePickerWarmup\(`,
+		`toggleAssigneePickerSelection\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return phase2Files[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected phase 2 popup action files to route mutations through reducer-owned messages and commands, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenTUIPackageGoFiles_WhenScanning_ThenNoPhaseMigrationFileNamesRemain(t *testing.T) {
 	packageRoot := given_guardPackageRoot(t)
 	actualMatches := make([]string, 0)

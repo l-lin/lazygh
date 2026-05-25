@@ -28,13 +28,10 @@ func (program *Program) refreshPullRequestListAction() actionsPopupAction {
 }
 
 func (program *Program) executeRefreshPullRequestListAction(gui *gocui.Gui) actionsPopupActionResult {
-	pendingOperations := 0
-	if gui != nil && program.hasPullRequestListQueries() && program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab()) {
-		pendingOperations++
+	if err := program.dispatch(gui, MsgRefreshPullRequestListRequested{}); err != nil {
+		return actionsPopupActionResult{err: err}
 	}
-	program.beginManualRefresh(pullRequestListRefreshSuccessMessage, pendingOperations)
-	program.reloadActivePullRequestsTab(gui)
-	return actionsPopupActionResult{closePopup: true}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) actionsPopupActionResult {
@@ -47,29 +44,8 @@ func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) actionsP
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
-	pendingOperations := 0
-	if program.hasDetailQueries() {
-		if program.markManualPullRequestDetailRefresh(summary) {
-			pendingOperations++
-		}
-		program.markPullRequestDetailNeedsRefresh(summary)
+	if err := program.dispatch(gui, MsgRefreshPullRequestRequested{Target: target, Summary: summary}); err != nil {
+		return actionsPopupActionResult{err: err}
 	}
-	if program.reviewModeActive() {
-		if program.hasDetailQueries() {
-			if program.markManualPullRequestDiffRefresh(summary) {
-				pendingOperations++
-			}
-			program.markPullRequestDiffNeedsRefresh(summary)
-		}
-	} else {
-		if gui != nil && program.hasPullRequestListQueries() && program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab()) {
-			pendingOperations++
-		}
-	}
-	program.beginManualRefresh(pullRequestRefreshSuccessMessage, pendingOperations)
-	if !program.reviewModeActive() {
-		program.reloadActivePullRequestsTab(gui)
-	}
-	program.invalidatePersistentPullRequest(target.repository, target.number)
-	return actionsPopupActionResult{closePopup: true}
+	return actionsPopupActionResult{}
 }

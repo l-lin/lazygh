@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -36,15 +35,14 @@ func (program *Program) addReactionAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeOpenReactionPickerAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeOpenReactionPickerAction(gui *gocui.Gui) actionsPopupActionResult {
 	target, ok := program.selectedPullRequestReactionActionTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-	program.actionsPopupWidget.reactionPicker = &reactionPickerState{target: target}
-	program.actionsPopupWidget.searchEditor = nil
-	program.actionsPopupWidget.errorMessage = ""
-	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
+	if err := program.dispatch(gui, MsgOpenReactionPickerRequested{Target: target}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
 	return actionsPopupActionResult{}
 }
 
@@ -65,8 +63,8 @@ func (program *Program) reactionPickerAction(content githubdomain.ReactionConten
 	return actionsPopupAction{
 		id:    "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
 		title: title,
-		execute: func(_ *gocui.Gui) actionsPopupActionResult {
-			return program.executeReactionPickerAction(content)
+		execute: func(gui *gocui.Gui) actionsPopupActionResult {
+			return program.executeReactionPickerAction(gui, content)
 		},
 	}
 }
@@ -94,26 +92,14 @@ func reactionPickerActionMetadata(content githubdomain.ReactionContent) string {
 	}
 }
 
-func (program *Program) executeReactionPickerAction(content githubdomain.ReactionContent) actionsPopupActionResult {
+func (program *Program) executeReactionPickerAction(gui *gocui.Gui, content githubdomain.ReactionContent) actionsPopupActionResult {
 	if !program.reactionPickerVisible() {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
-
-	target := program.actionsPopupWidget.reactionPicker.target
-	if reactionGroupViewerHasReacted(target.reactionGroups, content) {
-		program.setFeedback(program.model.Focus(), pullRequestReactionAlreadyAddedMessage)
-		return actionsPopupActionResult{closePopup: true}
+	if err := program.dispatch(gui, MsgAddReactionRequested{Target: program.actionsPopupWidget.reactionPicker.target, Content: content}); err != nil {
+		return actionsPopupActionResult{err: err}
 	}
-	if !program.hasReactionMutations() {
-		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
-	}
-	if err := program.reactionMutations.AddReaction(target.subjectID, content); err != nil {
-		return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
-	}
-
-	program.optimisticallyAddReaction(target, content)
-	program.setFeedback(program.model.Focus(), pullRequestReactionAddedSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
+	return actionsPopupActionResult{}
 }
 
 func reactionGroupViewerHasReacted(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) bool {

@@ -30,15 +30,18 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) action
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
+	submittedTitle := target.title
+	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openLineModalEditor(gui, pullRequestTitleEditorTitle, target.title, func(title string) error {
+			submittedTitle = title
 			return program.submitPullRequestTitleEdit(target, title)
 		}); err != nil {
 			return err
 		}
 		if program.overlayState.modalEditor != nil {
 			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				program.reloadActivePullRequestsTab(gui)
+				_ = program.dispatch(gui, MsgPullRequestTitleEditApplied{Target: target, Title: submittedTitle, FeedbackTarget: feedbackTarget})
 			}
 		}
 		return nil
@@ -60,15 +63,18 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
+	submittedBody := target.body
+	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
 		if err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
+			submittedBody = body
 			return program.submitPullRequestDescriptionEdit(target, body)
 		}, pullRequestDescriptionEditorHeight); err != nil {
 			return err
 		}
 		if program.overlayState.modalEditor != nil {
 			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				program.reloadActivePullRequestsTab(gui)
+				_ = program.dispatch(gui, MsgPullRequestDescriptionEditApplied{Target: target, Body: submittedBody, FeedbackTarget: feedbackTarget})
 			}
 		}
 		return nil
@@ -85,9 +91,7 @@ func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarge
 	if err := program.pullRequestMutations.EditPullRequestTitle(target.repository, target.number, title); err != nil {
 		return newTransientErrorPopupActionError(err)
 	}
-
 	program.optimisticallyUpdatePullRequestTitle(target.repository, target.number, title)
-	program.setFeedback(program.model.Focus(), pullRequestTitleEditSuccessMessage)
 	return nil
 }
 
@@ -101,8 +105,6 @@ func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActio
 	if err := program.pullRequestMutations.EditPullRequestDescription(target.repository, target.number, body); err != nil {
 		return newTransientErrorPopupActionError(err)
 	}
-
 	program.optimisticallyUpdatePullRequestDescription(target.repository, target.number, body)
-	program.setFeedback(program.model.Focus(), pullRequestDescriptionEditSuccessMessage)
 	return nil
 }
