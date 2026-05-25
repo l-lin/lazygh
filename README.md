@@ -9,6 +9,8 @@
 ![PR story review|500](./doc/story_review.png)
 ![Change theme|500](./doc/change_theme.png)
 
+Need the code map too? Read [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ## Prerequisites
 
 - [`gh`](https://cli.github.com/) to connect to GitHub. Private image loading uses your `gh` auth session.
