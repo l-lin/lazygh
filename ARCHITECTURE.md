@@ -126,7 +126,7 @@ The stores under `workflow_stores.go` track in-flight state, cache state, and in
 
 Search, the actions popup, transient errors, the build popup, and the modal editor all live in `internal/tui`. The editor callbacks dispatch typed edit messages instead of redrawing their own views directly.
 
-Modal editors now support typed submit-request messages. Popup and modal-editor feature files no longer call GitHub query or mutation ports directly. Commenting, review submissions, pull request edits, inline comment mutations, notification actions, and story-review startup now dispatch typed request messages and let update-owned commands talk to the ports.
+Modal editors now support typed submit-request messages. Popup and modal-editor feature files no longer call GitHub query or mutation ports directly. Commenting, review submissions, pull request edits, inline comment mutations, notification actions, and story-review startup now dispatch typed request messages and let update-owned commands talk to the ports. The startup URL entrypoints for browser, review, and story-review mode now stop at URL parsing plus update-owned browser/review/story helpers instead of shelling to GitHub themselves.
 
 That keeps one redraw path in charge of rendering. Popup-local error presentation is still centralized, but it now routes through reducer-owned messages instead of a legacy result struct. The legacy submit callback path remains only for local, non-GitHub editor flows such as custom search. The live editor objects still sit inside `Program` rather than inside a pure child model.
 
@@ -175,7 +175,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, some explicit shell helpers and loader files still call GitHub ports directly, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, a small explicit shell-helper allowlist still calls GitHub ports directly (`cmd_interaction.go`, `pull_request_detail_loader.go`, `review_diff_loader.go`, `review_diff_team_owners.go`, and `assignee_picker_search_cmd.go`), and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
 
 If you want to understand the project quickly, start with these files:
 

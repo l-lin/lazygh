@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"strings"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
@@ -24,14 +23,9 @@ func (program *Program) openPullRequestReview(summary githubdomain.PullRequest) 
 		return errors.New("github loader is unavailable")
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-
-	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
+	pendingReviewID, err := program.startPendingPullRequestReview(summary)
 	if err != nil {
-		return newTransientErrorPopupActionError(err)
+		return err
 	}
 
 	program.startReviewSession(summary, pendingReviewID)

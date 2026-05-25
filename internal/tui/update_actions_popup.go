@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -77,12 +78,25 @@ func (program *Program) applyStartPullRequestReviewRequested(message MsgStartPul
 
 	command := formatStatusLineCommand("start", "review", repository, fmt.Sprintf("#%d", summary.Number))
 	return []Cmd{actionsPopupAsyncWorkCmd{Command: command, Work: func(program *Program) (actionsPopupAsyncSuccess, error) {
-		pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
+		pendingReviewID, err := program.startPendingPullRequestReview(summary)
 		if err != nil {
-			return nil, newTransientErrorPopupActionError(err)
+			return nil, err
 		}
 		return actionsPopupAsyncStartReviewSuccess{Summary: summary, PendingReviewID: pendingReviewID}, nil
 	}}}
+}
+
+func (program *Program) startPendingPullRequestReview(summary githubdomain.PullRequest) (string, error) {
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || repository == "-" || summary.Number <= 0 {
+		return "", errors.New("missing pull request identity")
+	}
+
+	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(repository, summary.Number)
+	if err != nil {
+		return "", newTransientErrorPopupActionError(err)
+	}
+	return pendingReviewID, nil
 }
 
 func (program *Program) startReviewSession(summary any, pendingReviewID string) {

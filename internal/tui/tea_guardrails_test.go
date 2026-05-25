@@ -329,7 +329,6 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplic
 		"pull_request_detail_loader.go":          true,
 		"review_diff_loader.go":                  true,
 		"review_diff_team_owners.go":             true,
-		"review_url.go":                          true,
 		"update_actions_popup.go":                true,
 		"update_popup_editor_mutations.go":       true,
 		"update_popup_feature_requests.go":       true,
