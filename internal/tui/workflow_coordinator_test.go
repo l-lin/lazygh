@@ -76,27 +76,38 @@ func TestPullRequestListStore_GivenCachedRowsAndALiveReload_WhenPlanningTheLoad_
 	cachedSummary := githubcli.PullRequest{Title: "Cached PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Cached body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
 	loader := &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}}
 	cache := &fakePersistentPullRequestCache{pullRequestsBySearchKey: map[string][]githubcli.PullRequest{fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0]): {cachedSummary}}}
+	asyncRunner := &capturingAsyncRunner{}
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.notificationsLoadStarted = true
+	subject.asyncRunner = asyncRunner
 	subject.startupState.appStarted = true
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
-	actual := subject.pullRequestListStore.planLoad(subject, gui, MyPullRequestsTab)
+	actual := subject.pullRequestListLoadPlan(MyPullRequestsTab)
 
-	if len(actual) != 2 {
-		t.Fatalf("expected cache hydration plus one queued load command, actual %d", len(actual))
+	if len(actual.messages) != 1 || len(actual.commands) != 2 {
+		t.Fatalf("expected one load-start message plus cache hydration and one queued load command, actual messages=%d commands=%d", len(actual.messages), len(actual.commands))
 	}
-	actual[0].execute(subject, gui)
+	actualRowsBeforeHydration := subject.model.PullRequestRows(MyPullRequestsTab)
+	if len(actualRowsBeforeHydration) != 1 || actualRowsBeforeHydration[0].Summary != nil {
+		t.Fatalf("expected the planner to stay pure before execution, actual %+v", actualRowsBeforeHydration)
+	}
+
+	subject.executeWorkflowPlan(gui, actual)
+
 	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Title != "Cached PR" {
 		t.Fatalf("expected cached pull request rows %+v after hydration, actual %+v", []string{"Cached PR"}, actualRows)
 	}
-	if actual := subject.pullRequestListStore.planLoad(subject, gui, MyPullRequestsTab); len(actual) != 0 {
-		t.Fatalf("expected no second load command while the first is already planned, actual %d", len(actual))
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued live reload, actual %d", len(asyncRunner.runs))
+	}
+	if actual := subject.pullRequestListLoadPlan(MyPullRequestsTab); len(actual.messages) != 0 || len(actual.commands) != 0 {
+		t.Fatalf("expected no second load command while the first is already planned, actual messages=%d commands=%d", len(actual.messages), len(actual.commands))
 	}
 }
 
@@ -125,11 +136,17 @@ func TestExecuteWorkflowCommands_GivenASelectedPullRequestDetailLoadPlan_WhenRun
 	defer gui.Close()
 	subject.configureGUI(gui)
 
-	planned := subject.detailStore.planSelectedPullRequestDetailLoad(subject, gui)
+	planned := subject.selectedPullRequestDetailLoadPlan()
 
-	if len(planned) != 1 {
-		t.Fatalf("expected one planned detail load command, actual %d", len(planned))
+	if len(planned.messages) != 1 || len(planned.commands) != 2 {
+		t.Fatalf("expected one load-start message plus cache hydration and one planned detail load command, actual messages=%d commands=%d", len(planned.messages), len(planned.commands))
 	}
+	if _, ok := subject.pullRequestDetailForSummary(summary); ok {
+		t.Fatal("expected the planner to stay pure before the hydration command runs")
+	}
+
+	subject.executeWorkflowPlan(gui, planned)
+
 	actualBeforeRefresh, ok := subject.pullRequestDetailForSummary(summary)
 	if !ok {
 		t.Fatal("expected the cached detail to be hydrated before the refresh runs")
@@ -137,14 +154,11 @@ func TestExecuteWorkflowCommands_GivenASelectedPullRequestDetailLoadPlan_WhenRun
 	if actualBeforeRefresh.detail.Body != "Cached body" {
 		t.Fatalf("expected cached detail body %q before refresh, actual %+v", "Cached body", actualBeforeRefresh.detail)
 	}
-
-	subject.executeWorkflowCommands(gui, planned)
-
 	if len(asyncRunner.runs) != 1 {
 		t.Fatalf("expected one queued async run, actual %d", len(asyncRunner.runs))
 	}
-	if actual := subject.detailStore.planSelectedPullRequestDetailLoad(subject, gui); len(actual) != 0 {
-		t.Fatalf("expected no second detail load command while the first is still in flight, actual %d", len(actual))
+	if actual := subject.selectedPullRequestDetailLoadPlan(); len(actual.messages) != 0 || len(actual.commands) != 0 {
+		t.Fatalf("expected no second detail load command while the first is still in flight, actual messages=%d commands=%d", len(actual.messages), len(actual.commands))
 	}
 
 	asyncRunner.runs[0]()
@@ -197,11 +211,17 @@ func TestReviewStore_GivenACachedDiffWithoutTeamOwners_WhenPlanningTheSelectedLo
 	defer gui.Close()
 	subject.configureGUI(gui)
 
-	planned := subject.reviewStore.planSelectedPullRequestDiffLoad(subject, gui)
+	planned := subject.selectedPullRequestDiffLoadPlan()
 
-	if len(planned) != 1 {
-		t.Fatalf("expected one planned diff load command, actual %d", len(planned))
+	if len(planned.messages) != 1 || len(planned.commands) != 2 {
+		t.Fatalf("expected one load-start message plus cache hydration and one planned diff load command, actual messages=%d commands=%d", len(planned.messages), len(planned.commands))
 	}
+	if _, ok := subject.pullRequestDiffForSummary(summary); ok {
+		t.Fatal("expected the planner to stay pure before the hydration command runs")
+	}
+
+	subject.executeWorkflowPlan(gui, planned)
+
 	actualBeforeRefresh, ok := subject.pullRequestDiffForSummary(summary)
 	if !ok {
 		t.Fatal("expected the cached diff to be hydrated before the refresh runs")
@@ -209,14 +229,11 @@ func TestReviewStore_GivenACachedDiffWithoutTeamOwners_WhenPlanningTheSelectedLo
 	if len(actualBeforeRefresh.data.Files) != 1 || actualBeforeRefresh.data.Files[0].Path != "main.go" {
 		t.Fatalf("expected the cached diff files to stay visible, actual %+v", actualBeforeRefresh.data.Files)
 	}
-
-	subject.executeWorkflowCommands(gui, planned)
-
 	if len(asyncRunner.runs) != 1 {
 		t.Fatalf("expected one queued async run, actual %d", len(asyncRunner.runs))
 	}
-	if actual := subject.reviewStore.planSelectedPullRequestDiffLoad(subject, gui); len(actual) != 0 {
-		t.Fatalf("expected no second diff load command while the first is still in flight, actual %d", len(actual))
+	if actual := subject.selectedPullRequestDiffLoadPlan(); len(actual.messages) != 0 || len(actual.commands) != 0 {
+		t.Fatalf("expected no second diff load command while the first is still in flight, actual messages=%d commands=%d", len(actual.messages), len(actual.commands))
 	}
 
 	asyncRunner.runs[0]()

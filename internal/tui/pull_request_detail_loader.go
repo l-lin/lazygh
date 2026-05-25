@@ -10,7 +10,7 @@ import (
 )
 
 func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
-	program.executeCmds(gui, program.detailStore.planSelectedPullRequestDetailLoad(program, gui))
+	program.executeWorkflowPlan(gui, program.selectedPullRequestDetailLoadPlan())
 }
 
 func (program *Program) selectedPullRequestSummaryForDetail() (githubdomain.PullRequest, bool) {

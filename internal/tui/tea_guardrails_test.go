@@ -351,6 +351,22 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplic
 	}
 }
 
+func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`\*Program`,
+		`gocui\.Gui`,
+		`program\.[A-Za-z0-9_]+`,
+		`store\.[A-Za-z0-9_]+(?:\[[^\]]+\])?\s*=\s*`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "workflow_plans.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected workflow_plans.go to stay on pure plan derivation without Program/GUI coupling or inline store mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,

@@ -311,10 +311,32 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyCancelPendingPullRequestReviewRequested(actual)
 	case MsgPendingPullRequestReviewSubmitted:
 		program.applyPendingPullRequestReviewSubmitted(actual)
+	case MsgConnectedUserLoadPlanned:
+		program.applyConnectedUserLoadPlanned()
+	case MsgPullRequestsLoadPlanned:
+		program.applyPullRequestsLoadPlanned(actual)
+	case MsgNotificationsLoadPlanned:
+		program.applyNotificationsLoadPlanned()
+	case MsgPullRequestDetailLoadPlanned:
+		program.applyPullRequestDetailLoadPlanned(actual)
+	case MsgPullRequestDiffLoadPlanned:
+		program.applyPullRequestDiffLoadPlanned(actual)
+	case MsgIssueDetailLoadPlanned:
+		program.applyIssueDetailLoadPlanned(actual)
+	case MsgReleaseDetailLoadPlanned:
+		program.applyReleaseDetailLoadPlanned(actual)
+	case MsgCurrentDetailImageHTMLLoadPlanned:
+		program.applyCurrentDetailImageHTMLLoadPlanned(actual)
+	case MsgCurrentDetailImageLoadPlanned:
+		program.applyCurrentDetailImageLoadPlanned(actual)
 	case MsgPullRequestsCacheHydrated:
 		program.applyPullRequestsCacheHydrated(actual)
 	case MsgNotificationsCacheHydrated:
 		program.applyNotificationsCacheHydrated(actual)
+	case MsgPullRequestDetailCacheHydrated:
+		program.applyPullRequestDetailCacheHydrated(actual)
+	case MsgPullRequestDiffCacheHydrated:
+		program.applyPullRequestDiffCacheHydrated(actual)
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 	case MsgPullRequestsLoaded:

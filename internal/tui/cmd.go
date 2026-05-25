@@ -18,6 +18,16 @@ func (program *Program) executeCmds(gui *gocui.Gui, cmds []Cmd) {
 	}
 }
 
+func (program *Program) executeWorkflowPlan(gui *gocui.Gui, plan workflowPlan) {
+	if program == nil {
+		return
+	}
+	for _, message := range plan.messages {
+		program.executeCmds(gui, Update(program, message))
+	}
+	program.executeCmds(gui, plan.commands)
+}
+
 func (program *Program) executeWorkflowCommands(gui *gocui.Gui, commands []Cmd) {
 	program.executeCmds(gui, commands)
 }

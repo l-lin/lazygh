@@ -18,7 +18,7 @@ type pullRequestDiffResult struct {
 }
 
 func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
-	program.executeCmds(gui, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui))
+	program.executeWorkflowPlan(gui, program.selectedPullRequestDiffLoadPlan())
 }
 
 func (program *Program) selectedPullRequestSummaryForDiff() (githubdomain.PullRequest, bool) {

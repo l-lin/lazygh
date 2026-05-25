@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
-	program.executeCmds(gui, program.sessionStore.planLoad(program, gui))
+	program.executeWorkflowPlan(gui, program.sessionLoadPlan())
 }
 
 func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
@@ -15,7 +15,7 @@ func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
 }
 
 func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
-	program.executeCmds(gui, program.pullRequestListStore.planLoad(program, gui, tab))
+	program.executeWorkflowPlan(gui, program.pullRequestListLoadPlan(tab))
 }
 
 func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
@@ -24,7 +24,7 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 	}
 
 	tab := program.model.ActivePullRequestTab()
-	program.executeCmds(gui, program.pullRequestListStore.planReload(program, gui, tab))
+	program.executeWorkflowPlan(gui, program.pullRequestListReloadPlan(tab))
 	_ = program.afterStateChange(gui)
 }
 
@@ -33,7 +33,7 @@ func (program *Program) reloadNotifications(gui *gocui.Gui) {
 		return
 	}
 
-	program.executeCmds(gui, program.notificationStore.planReload(program, gui))
+	program.executeWorkflowPlan(gui, program.notificationReloadPlan())
 	_ = program.afterStateChange(gui)
 }
 

@@ -3,209 +3,251 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (store *sessionStore) planLoad(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil || !program.hasSessionQueries() || store.connectedUserLoadStarted {
-		return nil
-	}
-
-	store.connectedUserLoadStarted = true
-	return []Cmd{loadConnectedUserCmd{}}
+type workflowPlan struct {
+	messages []Msg
+	commands []Cmd
 }
 
-func (store *pullRequestListStore) planLoad(program *Program, gui *gocui.Gui, tab PullRequestTab) []Cmd {
-	if store == nil || program == nil || gui == nil || store.pullRequestsLoadStarted(tab) || program.model.ActivePullRequestTab() != tab {
-		return nil
+func (plan *workflowPlan) append(other workflowPlan) {
+	if len(other.messages) != 0 {
+		plan.messages = append(plan.messages, other.messages...)
 	}
-
-	commands := []Cmd{hydratePullRequestsFromCacheCmd{tab: tab}}
-	if !program.hasPullRequestListQueries() {
-		return commands
+	if len(other.commands) != 0 {
+		plan.commands = append(plan.commands, other.commands...)
 	}
-
-	store.setPullRequestsLoadStarted(tab, true)
-	store.setPullRequestsLoading(tab, true)
-	return append(commands, loadPullRequestsCmd{tab: tab})
 }
 
-func (store *pullRequestListStore) planReload(program *Program, gui *gocui.Gui, tab PullRequestTab) []Cmd {
-	if store == nil || program == nil || gui == nil {
-		return nil
+func (plan *workflowPlan) addMessage(message Msg) {
+	if message == nil {
+		return
 	}
-
-	commands := []Cmd{hydratePullRequestsFromCacheCmd{tab: tab}}
-	if !program.hasPullRequestListQueries() {
-		return commands
-	}
-
-	store.setPullRequestsLoadStarted(tab, true)
-	store.setPullRequestsLoading(tab, true)
-	return append(commands, loadPullRequestsCmd{tab: tab})
+	plan.messages = append(plan.messages, message)
 }
 
-func (store *notificationStore) planLoad(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil || program.reviewModeActive() || store.notificationsLoadStarted {
-		return nil
+func (plan *workflowPlan) addCommand(command Cmd) {
+	if command == nil {
+		return
 	}
-
-	commands := []Cmd{hydrateNotificationsFromCacheCmd{}}
-	if !program.hasNotificationQueries() {
-		return commands
-	}
-
-	store.notificationsLoadStarted = true
-	store.notificationsLoading = true
-	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	return append(commands, loadNotificationsCmd{})
+	plan.commands = append(plan.commands, command)
 }
 
-func (store *notificationStore) planReload(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil || program.reviewModeActive() {
-		return nil
-	}
-
-	commands := []Cmd{hydrateNotificationsFromCacheCmd{}}
-	if !program.hasNotificationQueries() {
-		return commands
-	}
-
-	store.notificationsLoadStarted = true
-	store.notificationsLoading = true
-	store.notificationsLoadingDetailMessage = notificationsLoadingDetail
-	return append(commands, loadNotificationsCmd{})
+type sessionLoadPlanInput struct {
+	hasSessionQueries bool
+	loadStarted       bool
 }
 
-func (store *detailStore) planSelectedPullRequestDetailLoad(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil {
-		return nil
+func planSessionLoad(input sessionLoadPlanInput) workflowPlan {
+	if !input.hasSessionQueries || input.loadStarted {
+		return workflowPlan{}
 	}
 
-	summary, ok := program.selectedPullRequestSummaryForDetail()
-	if !ok {
-		return nil
-	}
-
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	if key == "" || store.pullRequestDetailLoadInFlight[key] {
-		return nil
-	}
-
-	program.hydratePullRequestDetailFromCache(summary)
-	cachedResult, cached := program.pullRequestDetailForSummary(summary)
-	if !program.pullRequestDetailNeedsRefresh(summary, cachedResult, cached) || !program.hasDetailQueries() {
-		return nil
-	}
-
-	store.pullRequestDetailLoadInFlight[key] = true
-	return []Cmd{loadPullRequestDetailCmd{summary: summary}}
+	actual := workflowPlan{}
+	actual.addMessage(MsgConnectedUserLoadPlanned{})
+	actual.addCommand(loadConnectedUserCmd{})
+	return actual
 }
 
-func (store *reviewStore) planSelectedPullRequestDiffLoad(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil {
-		return nil
-	}
-
-	summary, ok := program.selectedPullRequestSummaryForDiff()
-	if !ok {
-		return nil
-	}
-
-	key := pullRequestDetailKey(summary.Repository, summary.Number)
-	if key == "" || store.pullRequestDiffLoadInFlight[key] {
-		return nil
-	}
-
-	program.hydratePullRequestDiffFromCache(summary)
-	cachedResult, cached := program.pullRequestDiffForSummary(summary)
-	if !program.pullRequestDiffNeedsRefresh(summary, cachedResult, cached) || !program.hasDetailQueries() {
-		return nil
-	}
-
-	store.pullRequestDiffLoadInFlight[key] = true
-	return []Cmd{loadPullRequestDiffCmd{summary: summary}}
+type pullRequestListLoadPlanInput struct {
+	activeTab             PullRequestTab
+	targetTab             PullRequestTab
+	loadStarted           bool
+	hasPullRequestQueries bool
+	forceReload           bool
 }
 
-func (store *detailStore) planSelectedNotificationDetailLoad(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil || program.reviewModeActive() || program.model.currentSideFocus() != FocusNotificationsView {
-		return nil
+func planPullRequestListLoad(input pullRequestListLoadPlanInput) workflowPlan {
+	if !input.forceReload && (input.activeTab != input.targetTab || input.loadStarted) {
+		return workflowPlan{}
 	}
 
-	notification, ok := program.model.SelectedNotification()
-	if !ok {
-		return nil
-	}
-	if _, ok := notification.PullRequestSummary(); ok {
-		return nil
+	actual := workflowPlan{}
+	actual.addCommand(hydratePullRequestsFromCacheCmd{tab: input.targetTab})
+	if !input.hasPullRequestQueries {
+		return actual
 	}
 
-	if repository, number, ok := notification.IssueIdentity(); ok {
-		key := notificationDetailKey(repository, number)
-		if key == "" || store.issueDetailLoadInFlight[key] || program.issueDetailLoaded(key) || !program.hasNotificationQueries() {
-			return nil
-		}
-		store.issueDetailLoadInFlight[key] = true
-		return []Cmd{loadIssueDetailCmd{repository: repository, number: number}}
-	}
-
-	if repository, id, ok := notification.ReleaseIdentity(); ok {
-		key := notificationDetailKey(repository, id)
-		if key == "" || store.releaseDetailLoadInFlight[key] || program.releaseDetailLoaded(key) || !program.hasNotificationQueries() {
-			return nil
-		}
-		store.releaseDetailLoadInFlight[key] = true
-		return []Cmd{loadReleaseDetailCmd{repository: repository, id: id}}
-	}
-
-	return nil
+	actual.addMessage(MsgPullRequestsLoadPlanned{Tab: input.targetTab})
+	actual.addCommand(loadPullRequestsCmd{tab: input.targetTab})
+	return actual
 }
 
-func (store *imageLoadCoordinator) planCurrentDetailImageHTMLLoads(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil || !program.hasMarkdownHTMLRenderer() {
-		return nil
+type notificationLoadPlanInput struct {
+	reviewModeActive       bool
+	loadStarted            bool
+	hasNotificationQueries bool
+	forceReload            bool
+}
+
+func planNotificationLoad(input notificationLoadPlanInput) workflowPlan {
+	if input.reviewModeActive || (!input.forceReload && input.loadStarted) {
+		return workflowPlan{}
 	}
 
-	commands := make([]Cmd, 0)
-	for _, source := range program.currentDetailImageHTMLSources() {
+	actual := workflowPlan{}
+	actual.addCommand(hydrateNotificationsFromCacheCmd{})
+	if !input.hasNotificationQueries {
+		return actual
+	}
+
+	actual.addMessage(MsgNotificationsLoadPlanned{})
+	actual.addCommand(loadNotificationsCmd{})
+	return actual
+}
+
+type pullRequestDetailLoadPlanInput struct {
+	summary                  githubdomain.PullRequest
+	hasSelection             bool
+	key                      string
+	loadInFlight             bool
+	visibleResult            pullRequestDetailResult
+	visibleResultLoaded      bool
+	hydrateVisibleResult     bool
+	hasPullRequestDetailPort bool
+}
+
+func planPullRequestDetailLoad(input pullRequestDetailLoadPlanInput) workflowPlan {
+	if !input.hasSelection || input.key == "" || input.loadInFlight {
+		return workflowPlan{}
+	}
+
+	actual := workflowPlan{}
+	if input.hydrateVisibleResult {
+		actual.addCommand(hydratePullRequestDetailFromCacheCmd{summary: input.summary})
+	}
+	if !pullRequestDetailNeedsRefresh(input.summary, input.visibleResult, input.visibleResultLoaded) || !input.hasPullRequestDetailPort {
+		return actual
+	}
+
+	actual.addMessage(MsgPullRequestDetailLoadPlanned{Key: input.key})
+	actual.addCommand(loadPullRequestDetailCmd{summary: input.summary})
+	return actual
+}
+
+type pullRequestDiffLoadPlanInput struct {
+	summary                githubdomain.PullRequest
+	hasSelection           bool
+	key                    string
+	loadInFlight           bool
+	visibleResult          pullRequestDiffResult
+	visibleResultLoaded    bool
+	hydrateVisibleResult   bool
+	shouldLoadTeamOwners   bool
+	hasPullRequestDiffPort bool
+}
+
+func planPullRequestDiffLoad(input pullRequestDiffLoadPlanInput) workflowPlan {
+	if !input.hasSelection || input.key == "" || input.loadInFlight {
+		return workflowPlan{}
+	}
+
+	actual := workflowPlan{}
+	if input.hydrateVisibleResult {
+		actual.addCommand(hydratePullRequestDiffFromCacheCmd{summary: input.summary})
+	}
+	if !pullRequestDiffNeedsRefresh(input.summary, input.visibleResult, input.visibleResultLoaded, input.shouldLoadTeamOwners) || !input.hasPullRequestDiffPort {
+		return actual
+	}
+
+	actual.addMessage(MsgPullRequestDiffLoadPlanned{Key: input.key})
+	actual.addCommand(loadPullRequestDiffCmd{summary: input.summary})
+	return actual
+}
+
+type notificationDetailLoadKind int
+
+const (
+	notificationDetailLoadKindNone notificationDetailLoadKind = iota
+	notificationDetailLoadKindIssue
+	notificationDetailLoadKindRelease
+)
+
+type notificationDetailLoadPlanInput struct {
+	kind                   notificationDetailLoadKind
+	repository             string
+	number                 int
+	key                    string
+	loaded                 bool
+	loadInFlight           bool
+	hasNotificationQueries bool
+}
+
+func planNotificationDetailLoad(input notificationDetailLoadPlanInput) workflowPlan {
+	if input.kind == notificationDetailLoadKindNone || input.key == "" || input.loaded || input.loadInFlight || !input.hasNotificationQueries {
+		return workflowPlan{}
+	}
+
+	actual := workflowPlan{}
+	switch input.kind {
+	case notificationDetailLoadKindIssue:
+		actual.addMessage(MsgIssueDetailLoadPlanned{Repository: input.repository, Number: input.number})
+		actual.addCommand(loadIssueDetailCmd{repository: input.repository, number: input.number})
+	case notificationDetailLoadKindRelease:
+		actual.addMessage(MsgReleaseDetailLoadPlanned{Repository: input.repository, ID: input.number})
+		actual.addCommand(loadReleaseDetailCmd{repository: input.repository, id: input.number})
+	}
+	return actual
+}
+
+type detailImageHTMLLoadPlanInput struct {
+	hasMarkdownHTMLRenderer bool
+	sources                 []detailImageHTMLSource
+	loadInFlightByKey       map[string]bool
+	loadFailedByKey         map[string]bool
+}
+
+func planCurrentDetailImageHTMLLoads(input detailImageHTMLLoadPlanInput) workflowPlan {
+	if !input.hasMarkdownHTMLRenderer {
+		return workflowPlan{}
+	}
+
+	actual := workflowPlan{}
+	plannedKeys := map[string]bool{}
+	for _, source := range input.sources {
 		if !source.canLoadRenderedHTML() {
 			continue
 		}
-		if store.detailImageHTMLLoadInFlight[source.key] || store.detailImageHTMLLoadFailed[source.key] {
+		if input.loadInFlightByKey[source.key] || input.loadFailedByKey[source.key] || plannedKeys[source.key] {
 			continue
 		}
 
+		plannedKeys[source.key] = true
 		sourceCopy := source
-		store.detailImageHTMLLoadInFlight[source.key] = true
-		commands = append(commands, loadCurrentDetailImageHTMLCmd{source: sourceCopy})
+		actual.addMessage(MsgCurrentDetailImageHTMLLoadPlanned{SourceKey: source.key})
+		actual.addCommand(loadCurrentDetailImageHTMLCmd{source: sourceCopy})
 	}
-	return commands
+	return actual
 }
 
-func (store *imageLoadCoordinator) planCurrentDetailImageLoads(program *Program, gui *gocui.Gui) []Cmd {
-	if store == nil || program == nil || gui == nil || program.detailImageStore == nil {
-		return nil
+type detailImageLoadPlanInput struct {
+	detailImageStoreAvailable bool
+	sources                   []detailImageHTMLSource
+	imageAlreadyLoadedByURL   map[string]bool
+	loadInFlightByURL         map[string]bool
+	loadFailedByURL           map[string]bool
+}
+
+func planCurrentDetailImageLoads(input detailImageLoadPlanInput) workflowPlan {
+	if !input.detailImageStoreAvailable {
+		return workflowPlan{}
 	}
 
-	commands := make([]Cmd, 0)
-	for _, source := range program.currentDetailImageHTMLSources() {
+	actual := workflowPlan{}
+	plannedURLs := map[string]bool{}
+	for _, source := range input.sources {
 		preparedMarkdown := prepareMarkdownForImageRendering(source.markdown, source.renderedHTML)
 		for _, occurrence := range collectMarkdownImageOccurrences(preparedMarkdown) {
 			imageURL := strings.TrimSpace(occurrence.imageURL)
-			if imageURL == "" {
-				continue
-			}
-			if _, ok := program.detailImageStore.ImageBySource(imageURL); ok {
-				continue
-			}
-			if store.detailImageLoadInFlight[imageURL] || store.detailImageLoadFailed[imageURL] {
+			if imageURL == "" || input.imageAlreadyLoadedByURL[imageURL] || input.loadInFlightByURL[imageURL] || input.loadFailedByURL[imageURL] || plannedURLs[imageURL] {
 				continue
 			}
 
-			imageURLCopy := imageURL
-			store.detailImageLoadInFlight[imageURLCopy] = true
-			commands = append(commands, loadCurrentDetailImageCmd{imageURL: imageURLCopy})
+			plannedURLs[imageURL] = true
+			actual.addMessage(MsgCurrentDetailImageLoadPlanned{ImageURL: imageURL})
+			actual.addCommand(loadCurrentDetailImageCmd{imageURL: imageURL})
 		}
 	}
-	return commands
+	return actual
 }

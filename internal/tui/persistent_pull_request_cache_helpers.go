@@ -6,35 +6,30 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) hydratePullRequestDetailFromCache(summary githubdomain.PullRequest) bool {
+func (program *Program) pullRequestDetailFromPersistentCache(summary githubdomain.PullRequest) (pullRequestDetailResult, bool) {
 	if program.pullRequestCache == nil {
-		return false
+		return pullRequestDetailResult{}, false
 	}
 
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	if key == "" {
-		return false
-	}
-	if _, ok := program.pullRequestDetailCache[key]; ok {
-		return false
+		return pullRequestDetailResult{}, false
 	}
 
 	cached, ok, actualErr := program.pullRequestCache.PullRequestDetail(pullRequestRepositoryName(summary.Repository), summary.Number)
 	if actualErr != nil || !ok {
-		return false
+		return pullRequestDetailResult{}, false
 	}
 
 	clonedDetail := clonePullRequestDetail(cached.Detail)
-	program.pullRequestDetailCache[key] = pullRequestDetailResult{
+	return pullRequestDetailResult{
 		detail:          clonedDetail,
 		sourceUpdatedAt: strings.TrimSpace(cached.SourceUpdatedAt),
 		needsRefresh:    cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt) || pullRequestDetailMissingBrowserTabData(clonedDetail),
-	}
-	program.invalidatePullRequestDetailDocumentCache()
-	return true
+	}, true
 }
 
-func (program *Program) pullRequestDetailNeedsRefresh(summary githubdomain.PullRequest, result pullRequestDetailResult, ok bool) bool {
+func pullRequestDetailNeedsRefresh(summary githubdomain.PullRequest, result pullRequestDetailResult, ok bool) bool {
 	if !ok || result.err != nil {
 		return true
 	}
@@ -60,41 +55,35 @@ func (program *Program) cachePullRequestDetail(summary githubdomain.PullRequest,
 	_ = program.pullRequestCache.SavePullRequestDetail(summary, detail)
 }
 
-func (program *Program) hydratePullRequestDiffFromCache(summary githubdomain.PullRequest) bool {
+func (program *Program) pullRequestDiffFromPersistentCache(summary githubdomain.PullRequest) (pullRequestDiffResult, bool) {
 	if program.pullRequestCache == nil {
-		return false
+		return pullRequestDiffResult{}, false
 	}
 
 	key := pullRequestDetailKey(summary.Repository, summary.Number)
 	if key == "" {
-		return false
-	}
-	if _, ok := program.pullRequestDiffCache[key]; ok {
-		return false
+		return pullRequestDiffResult{}, false
 	}
 
 	cached, ok, actualErr := program.pullRequestCache.PullRequestDiff(pullRequestRepositoryName(summary.Repository), summary.Number)
 	if actualErr != nil || !ok {
-		return false
+		return pullRequestDiffResult{}, false
 	}
 
-	program.pullRequestDiffCache[key] = pullRequestDiffResult{
+	return pullRequestDiffResult{
 		data:                    buildReviewDiffData(cached.Diff),
 		sourceUpdatedAt:         strings.TrimSpace(cached.SourceUpdatedAt),
 		needsRefresh:            cachedPullRequestNeedsRefresh(summary, cached.SourceUpdatedAt),
 		fileTeamOwnersAttempted: cached.Diff.FileTeamOwnersAttempted,
-	}
-	program.invalidateReviewDiffRenderCache()
-	program.clampReviewSessionSelection()
-	return true
+	}, true
 }
 
-func (program *Program) pullRequestDiffNeedsRefresh(summary githubdomain.PullRequest, result pullRequestDiffResult, ok bool) bool {
+func pullRequestDiffNeedsRefresh(summary githubdomain.PullRequest, result pullRequestDiffResult, ok bool, shouldLoadTeamOwners bool) bool {
 	if !ok || result.err != nil {
 		return true
 	}
 
-	if program.shouldLoadPullRequestDiffTeamOwners() && !result.fileTeamOwnersAttempted {
+	if shouldLoadTeamOwners && !result.fileTeamOwnersAttempted {
 		return true
 	}
 

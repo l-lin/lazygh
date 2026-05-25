@@ -20,7 +20,7 @@ type releaseDetailResult struct {
 }
 
 func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
-	program.executeCmds(gui, program.detailStore.planSelectedNotificationDetailLoad(program, gui))
+	program.executeWorkflowPlan(gui, program.selectedNotificationDetailLoadPlan())
 }
 
 func (program *Program) loadIssueDetail(gui *gocui.Gui, repository string, number int) {

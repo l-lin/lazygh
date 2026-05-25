@@ -84,7 +84,9 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 - `Update` applies those messages to the live program state.
 - `Cmd` values describe shell work such as loading pull requests, hydrating cached lists, loading detail and diff data, rendering markdown images, and running popup-triggered mutations.
 
-`dispatch()` runs `Update`, executes returned commands, and then hands control to `afterStateChange()` for shell sync and redraw.
+`dispatch()` runs `Update`, executes returned commands, and then hands control to `afterStateChange()` for shell planning, shell sync, and redraw.
+
+`afterStateChange()` now executes a `workflowPlan`: selector helpers read the live `Program` state, pure planner functions derive explicit load-start messages plus typed commands, the reducer applies those messages, and the shell runs the commands.
 
 `dispatchAsync()` is the only production path that still talks to `uiUpdater.Apply(...)` directly. Worker goroutines use it to hop back onto the UI thread with typed result messages.
 
@@ -118,11 +120,11 @@ Those selectors memoize expensive derived data outside the render entrypoints.
 
 ### Async workflow planning
 
-The TUI plans background work after state changes. `plannedCommands()` inspects the current state and returns commands for cache hydration, connected-user loading, pull request lists, notifications, detail, diff data, and inline images.
+The TUI plans background work after state changes through `plannedWorkflow()`. `workflow_plan_selectors.go` reads the live `Program` state, current selection, and persistent caches, then the pure planner functions in `workflow_plans.go` derive explicit load-start messages plus typed commands for cache hydration, connected-user loading, pull request lists, notifications, detail, diff data, and inline images.
 
-The stores under `workflow_stores.go` track in-flight state, cache state, and invalidation state. They are shell-oriented coordinators, not pure reducers, but their model writes now land through typed cache-hydration messages instead of mutating `program.model` directly.
+The stores under `workflow_stores.go` still track in-flight state, cache state, and invalidation state. They are shell-oriented coordinators, not pure reducers, but the planner no longer flips those flags inline while deciding commands. Reducer-owned messages now mark load starts, in-flight detail and diff refreshes, notification detail loads, and image loads, while cache hydration for detail and diff also lands through typed messages instead of a planner side effect.
 
-`workflow_commands.go` is now the command-layer home for detail and diff transport work, including the optional file-team-owner enrichment pass. `pull_request_detail_loader.go` and `review_diff_loader.go` still decide which summary is active, but they no longer call GitHub ports themselves.
+`workflow_commands.go` is now the command-layer home for detail and diff transport work, including the optional file-team-owner enrichment pass and the typed cache-hydration commands. `pull_request_detail_loader.go` and `review_diff_loader.go` still decide which summary is active, but they no longer call GitHub ports themselves or hydrate caches while planning.
 
 ### Overlays and editors
 
@@ -147,8 +149,8 @@ A normal read flow looks like this:
 1. The user changes selection or focus.
 2. The TUI dispatches a `Msg`.
 3. `Update` mutates the model.
-4. `afterStateChange()` asks `plannedCommands()` what data is now missing or stale.
-5. The shell runs typed load commands through the injected ports.
+4. `afterStateChange()` asks `plannedWorkflow()` what data is now missing or stale.
+5. The reducer applies explicit load-start and cache-hydration messages, then the shell runs typed load commands through the injected ports.
 6. Async results come back as typed result messages through `dispatchAsync()`.
 7. The reducer updates caches and visible rows.
 8. The render pipeline derives screen state, layout, and view content, then applies them to `gocui`.

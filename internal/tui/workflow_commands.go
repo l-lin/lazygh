@@ -22,6 +22,14 @@ type hydratePullRequestsFromCacheCmd struct {
 	tab PullRequestTab
 }
 
+type hydratePullRequestDetailFromCacheCmd struct {
+	summary githubdomain.PullRequest
+}
+
+type hydratePullRequestDiffFromCacheCmd struct {
+	summary githubdomain.PullRequest
+}
+
 type loadNotificationsCmd struct{}
 
 type loadPullRequestDetailCmd struct {
@@ -79,13 +87,31 @@ func (command reloadPullRequestsTabCmd) execute(program *Program, gui *gocui.Gui
 	if program == nil {
 		return
 	}
-	program.executeCmds(gui, program.pullRequestListStore.planReload(program, gui, command.tab))
+	program.executeWorkflowPlan(gui, program.pullRequestListReloadPlan(command.tab))
 }
 
 func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
 	program.runAsync(func() {
 		program.loadNotifications(gui)
 	})
+}
+
+func (command hydratePullRequestDetailFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil {
+		return
+	}
+	key := pullRequestDetailKey(command.summary.Repository, command.summary.Number)
+	if key == "" {
+		return
+	}
+	if _, ok := program.pullRequestDetailCache[key]; ok {
+		return
+	}
+	result, ok := program.pullRequestDetailFromPersistentCache(command.summary)
+	if !ok {
+		return
+	}
+	program.executeCmds(gui, Update(program, MsgPullRequestDetailCacheHydrated{Summary: command.summary, Result: result}))
 }
 
 func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
@@ -119,6 +145,24 @@ func loadPullRequestDetailResult(program *Program, summary githubdomain.PullRequ
 		PendingReviewState:      pendingReviewState,
 		PendingReviewStateKnown: pendingReviewStateKnown,
 	}
+}
+
+func (command hydratePullRequestDiffFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil {
+		return
+	}
+	key := pullRequestDetailKey(command.summary.Repository, command.summary.Number)
+	if key == "" {
+		return
+	}
+	if _, ok := program.pullRequestDiffCache[key]; ok {
+		return
+	}
+	result, ok := program.pullRequestDiffFromPersistentCache(command.summary)
+	if !ok {
+		return
+	}
+	program.executeCmds(gui, Update(program, MsgPullRequestDiffCacheHydrated{Summary: command.summary, Result: result}))
 }
 
 func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {

@@ -7,7 +7,7 @@ import (
 )
 
 func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
-	program.executeCmds(gui, program.notificationStore.planLoad(program, gui))
+	program.executeWorkflowPlan(gui, program.notificationLoadPlan())
 }
 
 func (program *Program) loadNotifications(gui *gocui.Gui) {

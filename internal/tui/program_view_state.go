@@ -17,7 +17,7 @@ func (program *Program) afterStateChange(gui *gocui.Gui) error {
 		program.syncActionsPopupSearch()
 	}
 	if program.startupState.appStarted {
-		program.executeCmds(gui, program.plannedCommands(gui))
+		program.executeWorkflowPlan(gui, program.plannedWorkflow())
 	}
 	return program.refreshViews(gui)
 }

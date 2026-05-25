@@ -1,22 +1,20 @@
 package tui
 
-import "github.com/jesseduffield/gocui"
-
-func (program *Program) plannedCommands(gui *gocui.Gui) []Cmd {
-	if program == nil || gui == nil {
-		return nil
+func (program *Program) plannedWorkflow() workflowPlan {
+	if program == nil {
+		return workflowPlan{}
 	}
 
-	commands := make([]Cmd, 0, 8)
-	commands = append(commands, program.sessionStore.planLoad(program, gui)...)
-	commands = append(commands, program.pullRequestListStore.planLoad(program, gui, program.model.ActivePullRequestTab())...)
+	actual := workflowPlan{}
+	actual.append(program.sessionLoadPlan())
+	actual.append(program.pullRequestListLoadPlan(program.model.ActivePullRequestTab()))
 	if !program.reviewModeActive() {
-		commands = append(commands, program.notificationStore.planLoad(program, gui)...)
-		commands = append(commands, program.detailStore.planSelectedNotificationDetailLoad(program, gui)...)
+		actual.append(program.notificationLoadPlan())
+		actual.append(program.selectedNotificationDetailLoadPlan())
 	}
-	commands = append(commands, program.detailStore.planSelectedPullRequestDetailLoad(program, gui)...)
-	commands = append(commands, program.reviewStore.planSelectedPullRequestDiffLoad(program, gui)...)
-	commands = append(commands, program.imageLoadCoordinator.planCurrentDetailImageHTMLLoads(program, gui)...)
-	commands = append(commands, program.imageLoadCoordinator.planCurrentDetailImageLoads(program, gui)...)
-	return commands
+	actual.append(program.selectedPullRequestDetailLoadPlan())
+	actual.append(program.selectedPullRequestDiffLoadPlan())
+	actual.append(program.currentDetailImageHTMLLoadsPlan())
+	actual.append(program.currentDetailImageLoadsPlan())
+	return actual
 }

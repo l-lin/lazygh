@@ -20,7 +20,7 @@ type detailImageHTMLSource struct {
 }
 
 func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
-	program.executeCmds(gui, program.imageLoadCoordinator.planCurrentDetailImageHTMLLoads(program, gui))
+	program.executeWorkflowPlan(gui, program.currentDetailImageHTMLLoadsPlan())
 }
 
 func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detailImageHTMLSource) {
@@ -29,7 +29,7 @@ func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detail
 }
 
 func (program *Program) maybeLoadCurrentDetailImages(gui *gocui.Gui) {
-	program.executeCmds(gui, program.imageLoadCoordinator.planCurrentDetailImageLoads(program, gui))
+	program.executeWorkflowPlan(gui, program.currentDetailImageLoadsPlan())
 }
 
 func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) {
