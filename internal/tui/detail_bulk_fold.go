@@ -57,45 +57,20 @@ func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 
-	if !program.setAllReviewThreadsCollapsed(selectedFile.Threads, collapsed) {
+	if !program.navigationState.reviewSession.setAllThreadsCollapsed(selectedFile.Threads, collapsed) {
 		return nil
 	}
+	program.invalidateReviewDiffRenderCache()
 
 	updatedDocument := program.currentReviewDiffDocument(selectedFile, detailDocument.width)
 	if cursorOnThread {
 		headerLineIndex := reviewDiffThreadHeaderLineIndex(program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width), threadAtCursor.ID)
 		if headerLineIndex >= 0 {
-			program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-			program.detailState.viewState.preferredColumn = 0
+			program.placeDetailCursorAtLine(updatedDocument, headerLineIndex)
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
 	return nil
-}
-
-func (program *Program) setAllReviewThreadsCollapsed(threads []reviewDiffThread, collapsed bool) bool {
-	if len(threads) == 0 {
-		return false
-	}
-	if program.navigationState.reviewSession.collapsedThreadIDs == nil {
-		program.navigationState.reviewSession.collapsedThreadIDs = map[string]bool{}
-	}
-
-	changed := false
-	for _, thread := range threads {
-		trimmedThreadID := strings.TrimSpace(thread.ID)
-		if trimmedThreadID == "" {
-			continue
-		}
-		if reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs) != collapsed {
-			changed = true
-		}
-		program.navigationState.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
-	}
-	if changed {
-		program.invalidateReviewDiffRenderCache()
-	}
-	return changed
 }
 
 func (program *Program) setAllBrowserDetailFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
@@ -137,8 +112,7 @@ func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githu
 	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
 	if cursorOnSection {
 		if headerFocusLine, ok := browserDetailSectionHeaderFocusLine(program.currentPullRequestOverviewSections(summary, detail, detailDocument.width), sectionAtCursor.section.id, false); ok {
-			program.detailState.viewState.cursor = detailPosition{line: browserDescriptionOverviewStartLine(summary, detail) + headerFocusLine, column: 0}
-			program.detailState.viewState.preferredColumn = 0
+			program.placeDetailCursorAtLine(updatedDocument, browserDescriptionOverviewStartLine(summary, detail)+headerFocusLine)
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
@@ -155,8 +129,7 @@ func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary g
 	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
 	if cursorOnSection {
 		if headerFocusLine, ok := browserDetailSectionHeaderFocusLine(program.currentPullRequestConversationSections(summary, detail, detailDocument.width), sectionAtCursor.section.id, false); ok {
-			program.detailState.viewState.cursor = detailPosition{line: headerFocusLine, column: 0}
-			program.detailState.viewState.preferredColumn = 0
+			program.placeDetailCursorAtLine(updatedDocument, headerFocusLine)
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
@@ -180,8 +153,7 @@ func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary 
 	if cursorOnFile {
 		headerLineIndex := reviewDiffFileHeaderLineIndex(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width), filePathAtCursor)
 		if headerLineIndex >= 0 {
-			program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-			program.detailState.viewState.preferredColumn = 0
+			program.placeDetailCursorAtLine(updatedDocument, headerLineIndex)
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)

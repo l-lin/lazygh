@@ -418,6 +418,40 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateFilesAndT
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDedicatedChildStateHelpersMutateDetailAndReviewChildStateDirectly(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"detail_child_state.go":         true,
+		"review_session_child_state.go": true,
+	}
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.navigationState\.reviewSession\.selectedFileTreeRow\s*=\s*[^=]`,
+		`program\.navigationState\.reviewSession\.collapsedTreeRowIDs\s*=\s*`,
+		`program\.navigationState\.reviewSession\.collapsedThreadIDs\s*=\s*`,
+		`program\.navigationState\.reviewSession\.collapsedTreeRowIDs\[[^\]]+\]\s*=`,
+		`program\.navigationState\.reviewSession\.collapsedThreadIDs\[[^\]]+\]\s*=`,
+		`program\.detailState\.wrapWidth\s*=\s*`,
+		`program\.detailState\.viewState\.(?:cursor|preferredColumn)\s*=\s*`,
+		`program\.detailState\.viewState\.(?:reset|sync)\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected detail/review child-state mutation to stay confined to dedicated helper files, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

@@ -125,17 +125,6 @@ func (program *Program) currentConnectedUserName() string {
 	return strings.TrimSpace(program.connectedUserName)
 }
 
-func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
-	identity := program.currentDetailIdentity()
-	if identity != program.detailState.lastIdentity {
-		program.detailState.lastIdentity = identity
-		program.detailState.viewState.reset()
-	}
-
-	program.detailState.viewState.sync(detailDocument, viewportHeight)
-	program.detailState.viewState.syncSearch(detailDocument, program.model.DetailSearchQuery())
-}
-
 func (program *Program) shouldHighlightSelection(focus Focus, selectable bool) bool {
 	if !selectable {
 		return false

@@ -126,52 +126,46 @@ func (program *Program) selectedReviewSessionDiffFile() (reviewDiffFile, bool) {
 
 func (program *Program) clampReviewSessionSelection() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
-	if !ok || len(selectableRows) == 0 {
-		program.navigationState.reviewSession.selectedFileTreeRow = 0
-		return
-	}
-	if program.navigationState.reviewSession.selectedFileTreeRow < 0 {
-		if program.navigationState.reviewSession.mode != reviewSessionModeStory {
-			if fileRows, fileRowsOK := program.reviewSessionFileRows(); fileRowsOK && len(fileRows) > 0 {
-				program.navigationState.reviewSession.selectedFileTreeRow = fileRows[0]
-				return
-			}
-		}
-		program.navigationState.reviewSession.selectedFileTreeRow = selectableRows[0]
+	if !ok {
+		program.navigationState.reviewSession.clampSelection(nil, nil)
 		return
 	}
 
-	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, 0)
+	fileRows, fileRowsOK := program.reviewSessionFileRows()
+	if !fileRowsOK {
+		fileRows = nil
+	}
+	program.navigationState.reviewSession.clampSelection(selectableRows, fileRows)
 }
 
 func (program *Program) adjustReviewSessionSelection(change int) {
 	selectableRows, ok := program.reviewSessionSelectableRows()
-	if !ok || len(selectableRows) == 0 {
-		program.navigationState.reviewSession.selectedFileTreeRow = 0
+	if !ok {
+		program.navigationState.reviewSession.adjustSelection(nil, change)
 		return
 	}
 
-	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, change)
+	program.navigationState.reviewSession.adjustSelection(selectableRows, change)
 }
 
 func (program *Program) moveReviewSessionSelectionToTop() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
-	if !ok || len(selectableRows) == 0 {
-		program.navigationState.reviewSession.selectedFileTreeRow = 0
+	if !ok {
+		program.navigationState.reviewSession.moveSelectionToTop(nil)
 		return
 	}
 
-	program.navigationState.reviewSession.selectedFileTreeRow = selectableRows[0]
+	program.navigationState.reviewSession.moveSelectionToTop(selectableRows)
 }
 
 func (program *Program) moveReviewSessionSelectionToBottom() {
 	selectableRows, ok := program.reviewSessionSelectableRows()
-	if !ok || len(selectableRows) == 0 {
-		program.navigationState.reviewSession.selectedFileTreeRow = 0
+	if !ok {
+		program.navigationState.reviewSession.moveSelectionToBottom(nil)
 		return
 	}
 
-	program.navigationState.reviewSession.selectedFileTreeRow = selectableRows[len(selectableRows)-1]
+	program.navigationState.reviewSession.moveSelectionToBottom(selectableRows)
 }
 
 func (program *Program) reviewSessionSelectableRows() ([]int, bool) {

@@ -57,13 +57,13 @@ func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui,
 	}
 
 	collapsed := reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs)
-	program.setReviewThreadCollapsed(thread.ID, !collapsed)
+	program.navigationState.reviewSession.setThreadCollapsed(thread.ID, !collapsed)
+	program.invalidateReviewDiffRenderCache()
 
 	updatedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
-		program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-		program.detailState.viewState.preferredColumn = 0
+		program.placeDetailCursorAtLine(detailDocument, headerLineIndex)
 	}
 	return nil
 }
@@ -103,8 +103,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 			return nil
 		}
 		program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-		program.detailState.viewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
-		program.detailState.viewState.preferredColumn = 0
+		program.placeDetailCursorAtLine(detailDocument, sectionAtCursor.headerFocusLine)
 		return nil
 	}
 
@@ -128,21 +127,8 @@ func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *go
 		return nil
 	}
 	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-	program.detailState.viewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
-	program.detailState.viewState.preferredColumn = 0
+	program.placeDetailCursorAtLine(detailDocument, sectionAtCursor.headerFocusLine)
 	return nil
-}
-
-func (program *Program) setReviewThreadCollapsed(threadID string, collapsed bool) {
-	trimmedThreadID := strings.TrimSpace(threadID)
-	if trimmedThreadID == "" {
-		return
-	}
-	if program.navigationState.reviewSession.collapsedThreadIDs == nil {
-		program.navigationState.reviewSession.collapsedThreadIDs = map[string]bool{}
-	}
-	program.navigationState.reviewSession.collapsedThreadIDs[trimmedThreadID] = collapsed
-	program.invalidateReviewDiffRenderCache()
 }
 
 func reviewDiffThreadCollapsed(thread reviewDiffThread, collapsedThreadIDs map[string]bool) bool {

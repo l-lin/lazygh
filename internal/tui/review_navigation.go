@@ -1,8 +1,6 @@
 package tui
 
-import (
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 type reviewNavigationDirection int
 
@@ -27,53 +25,9 @@ func (program *Program) nextReviewComment(gui *gocui.Gui, _ *gocui.View) error {
 	return program.dispatch(gui, MsgMoveReviewComment{Direction: reviewNavigationForward})
 }
 
-func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error {
-	if !program.reviewModeActive() {
-		return nil
-	}
-
-	selectableRows, ok := program.reviewSessionFileRows()
-	if !ok || len(selectableRows) == 0 {
-		return nil
-	}
-
-	originalRow := program.navigationState.reviewSession.selectedFileTreeRow
-	program.navigationState.reviewSession.selectedFileTreeRow = adjustVisibleSelection(program.navigationState.reviewSession.selectedFileTreeRow, selectableRows, change)
-	if program.navigationState.reviewSession.selectedFileTreeRow == originalRow {
-		return nil
-	}
-
-	return nil
-}
-
 type reviewCommentLocation struct {
 	fileTreeRow  int
 	renderedLine int
-}
-
-func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction reviewNavigationDirection) error {
-	if !program.reviewModeActive() {
-		return nil
-	}
-
-	detailView := program.resolveView(gui, nil, viewDetailName)
-	currentFileTreeRow, currentRenderedLine := program.currentReviewCommentPosition(detailView)
-	target, ok := program.reviewSessionCommentTarget(detailView, currentFileTreeRow, currentRenderedLine, direction)
-	if !ok {
-		return nil
-	}
-
-	program.detailState.viewState.clearPendingPrefix()
-	program.navigationState.reviewSession.selectedFileTreeRow = target.fileTreeRow
-	if actualErr := program.mutateDetailViewStateWithoutRefresh(gui, detailView, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.cursor = document.clampPosition(detailPosition{line: target.renderedLine, column: 0})
-		program.detailState.viewState.preferredColumn = 0
-		program.detailState.viewState.sync(document, viewportHeight)
-	}); actualErr != nil {
-		return actualErr
-	}
-
-	return nil
 }
 
 func (program *Program) currentReviewCommentPosition(detailView *gocui.View) (int, int) {

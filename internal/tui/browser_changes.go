@@ -113,8 +113,7 @@ func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summa
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, width)
 	headerLineIndex := reviewDiffFileHeaderLineIndex(updatedRows, trimmedFilePath)
 	if headerLineIndex >= 0 {
-		program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-		program.detailState.viewState.preferredColumn = 0
+		program.placeDetailCursorAtLine(newReviewDiffDetailDocument(updatedRows, width), headerLineIndex)
 	}
 	return nil
 }
@@ -133,8 +132,7 @@ func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, sum
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
-		program.detailState.viewState.cursor = detailPosition{line: headerLineIndex, column: 0}
-		program.detailState.viewState.preferredColumn = 0
+		program.placeDetailCursorAtLine(newReviewDiffDetailDocument(updatedRows, detailDocument.width), headerLineIndex)
 	}
 	return nil
 }

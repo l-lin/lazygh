@@ -131,7 +131,7 @@ func (program *Program) applyOpenPullRequestInBrowserView(message MsgOpenPullReq
 	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
 	program.detailState.activeTab = DescriptionDetailTab
-	program.detailState.viewState.reset()
+	program.resetDetailViewState()
 	program.detailState.viewState.clearPendingPrefix()
 	program.clearPendingSelectionPrefix()
 	program.invalidatePullRequestDetailDocumentCache()

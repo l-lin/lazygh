@@ -225,14 +225,14 @@ func (program *Program) moveDetailCursorToPreviousBigWord(gui *gocui.Gui, view *
 func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailState.viewState.enterVisualMode()
-		program.detailState.viewState.sync(document, viewportHeight)
+		program.syncCurrentDetailViewport(document, viewportHeight)
 	})
 }
 
 func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.View) error {
 	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
 		program.detailState.viewState.enterLineVisualMode(document)
-		program.detailState.viewState.sync(document, viewportHeight)
+		program.syncCurrentDetailViewport(document, viewportHeight)
 	})
 }
 

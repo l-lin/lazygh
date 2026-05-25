@@ -118,6 +118,8 @@ The detail pane uses selector-style document builders for:
 
 Those selectors memoize expensive derived data outside the render entrypoints.
 
+Detail and review hot-path child-state mutation is also narrower now. Cursor placement, wrap-width sync, and review-session selection or collapsed-state writes flow through `detail_child_state.go` and `review_session_child_state.go`, so fold, navigation, and render-support helpers stop mutating those child states inline across the package.
+
 ### Async workflow planning
 
 The TUI plans background work after state changes through `plannedWorkflow()`. `workflow_plan_selectors.go` reads the live `Program` state, current selection, and persistent caches, then the pure planner functions in `workflow_plans.go` derive explicit load-start messages plus typed commands for cache hydration, connected-user loading, pull request lists, notifications, detail, diff data, and inline images.
@@ -181,7 +183,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, a small explicit command-layer allowlist still calls GitHub ports directly (`workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`), and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup/editor/story builders, the modal-editor and notification/story command surfaces still carry closure-based submit or work hooks, and the new detail/review child-state helpers are more auditable than before but still imperative helpers rather than pure child reducers.
 
 If you want to understand the project quickly, start with these files:
 
