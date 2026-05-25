@@ -13,7 +13,7 @@ func TestAppliedSearchFooterText_GivenAnEmptyDetailQueryInReviewMode_WhenComputi
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiffWithComments())}
 	subject.startReviewSession(githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}, "PRR_perf")
 
-	actual := subject.appliedSearchFooterText(FocusDetailView)
+	actual := subject.footerPresenter().paneFooterStateFor(FocusDetailView).Text()
 
 	if actual != "" {
 		t.Fatalf("expected empty footer text, actual %q", actual)

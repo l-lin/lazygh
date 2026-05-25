@@ -257,52 +257,22 @@ func (program *Program) helpKeyWidth(sections []helpSection) int {
 }
 
 func (program *Program) helpKeysOrFallback(fallback string, actionIDs ...keybindingActionID) string {
-	if len(actionIDs) == 0 {
-		return formatKeyTextForDisplay(fallback)
-	}
-
-	actualLabels, ok, hasOverride := program.resolvedKeyLabels(actionIDs...)
-	if !ok || !hasOverride || len(actualLabels) == 0 {
-		return formatKeyTextForDisplay(fallback)
-	}
-
-	return strings.Join(formattedKeySequenceLabelsForDisplay(actualLabels), "/")
+	return program.keybindingLabelResolver().helpKeysOrFallback(fallback, actionIDs...)
 }
 
 func (program *Program) resolvedKeyLabelsText(actionIDs ...keybindingActionID) string {
-	actualLabels, ok, _ := program.resolvedKeyLabels(actionIDs...)
-	if !ok || len(actualLabels) == 0 {
-		return ""
-	}
-	return strings.Join(formattedKeySequenceLabelsForDisplay(actualLabels), "/")
+	return program.keybindingLabelResolver().resolvedKeyLabelsText(actionIDs...)
 }
 
 func (program *Program) resolvedKeyLabels(actionIDs ...keybindingActionID) ([]string, bool, bool) {
-	if len(actionIDs) == 0 {
-		return nil, false, false
-	}
+	return program.keybindingLabelResolver().resolvedKeyLabels(actionIDs...)
+}
 
-	resolvedActions := map[keybindingActionID]resolvedKeybindingAction{}
-	for _, action := range program.resolvedKeybindingActions() {
-		resolvedActions[action.action.id] = action
+func (program *Program) keybindingLabelResolver() keybindingLabelResolver {
+	if program == nil {
+		return keybindingLabelResolver{}
 	}
-
-	actualLabels := make([]string, 0)
-	hasOverride := false
-	for _, actionID := range actionIDs {
-		action, ok := resolvedActions[actionID]
-		if !ok {
-			return nil, false, false
-		}
-		if action.overridden {
-			hasOverride = true
-		}
-		for _, binding := range action.bindings {
-			actualLabels = append(actualLabels, binding.label)
-		}
-	}
-
-	return actualLabels, true, hasOverride
+	return newKeybindingLabelResolver(program.resolvedKeybindingActions())
 }
 
 func formattedKeySequenceLabelsForDisplay(labels []string) []string {

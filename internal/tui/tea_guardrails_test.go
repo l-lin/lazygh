@@ -485,6 +485,23 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDedicatedChildS
 	}
 }
 
+func TestRefactorGuard_GivenFooterFile_WhenScanning_ThenOnlyViewGlueStillDependsOnProgram(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
+		return filepath.Base(path) == "footer.go"
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "configurePaneFooterView(") || strings.Contains(match, "renderPaneFooterView(") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected footer helpers to stay on snapshot presenters instead of full Program coupling, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

@@ -109,6 +109,8 @@ The render pipeline is mostly read-only now.
 
 Renderers configure views and write content, but selector caching, list viewport cleanup, terminal image sync, and detail-view shell sync have been pushed out of `render.go` and into shell or selector helpers.
 
+Pane-footer and status-line key-hint derivation now also runs through a read-only `footerPresenter` snapshot plus a small keybinding-label resolver. That keeps footer/help-key formatting logic off the full `*Program` shell bag while leaving view configuration and drawing as shell-owned glue.
+
 The detail pane uses selector-style document builders for:
 
 - pull request detail documents
@@ -183,7 +185,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because many helpers still depend on the full `*Program`, the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `cmd_popup_feature_request_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup builders, and the new detail/review child-state helpers are more auditable than before but still imperative helpers rather than pure child reducers.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because many helpers still depend on the full `*Program`—although the footer/key-hint family now reads from snapshot presenters instead of the whole shell—the direct-port allowlist still includes explicit command files (`cmd_actions_popup_async_requests.go`, `cmd_modal_editor_submit_requests.go`, `cmd_popup_feature_request_requests.go`, `workflow_commands.go`, `cmd_interaction.go`, and `assignee_picker_search_cmd.go`) plus a few update-owned popup builders, and the new detail/review child-state helpers are more auditable than before but still imperative helpers rather than pure child reducers.
 
 If you want to understand the project quickly, start with these files:
 

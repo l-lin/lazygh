@@ -242,14 +242,15 @@ func (presenter StatusLinePresenter) Renderer() ViewRenderer {
 
 type KeyHintPresenter struct {
 	program *Program
+	footer  footerPresenter
 }
 
 func (program *Program) keyHintPresenter() KeyHintPresenter {
-	return KeyHintPresenter{program: program}
+	return KeyHintPresenter{program: program, footer: program.footerPresenter()}
 }
 
 func (presenter KeyHintPresenter) Text() string {
-	return strings.TrimSpace(presenter.program.statusLineKeyHintsText())
+	return strings.TrimSpace(presenter.footer.statusLineKeyHintsText())
 }
 
 func (presenter KeyHintPresenter) Renderer() (ViewRenderer, bool) {
@@ -312,6 +313,7 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 		layout.HiddenFrames = append(layout.HiddenFrames, screenViewFrame{ViewName: viewName})
 	}
 
+	footerPresenter := program.footerPresenter()
 	for index, footerName := range []string{viewUserFooterName, viewPullRequestsFooterName, viewNotificationsFooterName, viewDetailFooterName} {
 		focus := focusForFooterName(footerName)
 		parentName := paneViewName(focus)
@@ -320,7 +322,7 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 			layout.FooterFrames[index] = screenViewFrame{ViewName: footerName, Visible: false, OnTop: true}
 			continue
 		}
-		text := strings.TrimSpace(program.paneFooterStateFor(focus).Text())
+		text := strings.TrimSpace(footerPresenter.paneFooterStateFor(focus).Text())
 		layout.FooterFrames[index] = screenViewFrame{ViewName: footerName, Frame: paneBottomOverlayFrame(parentFrame.Frame), Visible: text != "", OnTop: true}
 	}
 
@@ -329,7 +331,7 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 		layout.OverlayFrames = append(layout.OverlayFrames, overlayRenderer.Frame(overlayViewName, maxX, maxY))
 	}
 
-	keyHintsText := program.keyHintPresenter().Text()
+	keyHintsText := strings.TrimSpace(footerPresenter.statusLineKeyHintsText())
 	layout.StatusLineKeyHints = screenViewFrame{ViewName: viewStatusLineKeyHintsName, Visible: false, OnTop: true}
 	if keyHintsText != "" {
 		layout.StatusLineKeyHints = screenViewFrame{ViewName: viewStatusLineKeyHintsName, Frame: statusLineKeyHintsFrame(maxX, maxY, keyHintsText), Visible: true, OnTop: true}
@@ -455,5 +457,5 @@ func focusForFooterName(viewName string) Focus {
 }
 
 func (program *Program) paneFooterTextForView(viewName string) string {
-	return strings.TrimSpace(program.paneFooterStateFor(focusForFooterName(viewName)).Text())
+	return strings.TrimSpace(program.footerPresenter().paneFooterStateFor(focusForFooterName(viewName)).Text())
 }
