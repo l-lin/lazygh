@@ -54,46 +54,11 @@ func (program *Program) pullRequestBuildRunPopupVisible() bool {
 }
 
 func (program *Program) openPullRequestBuildRunPopup(gui *gocui.Gui, content pullRequestBuildRunPopupContent) error {
-	title := strings.TrimSpace(content.title)
-	if title == "" {
-		title = pullRequestBuildRunPopupTitle(content.checkTitle)
-	}
-
-	copiedJobs := append([]githubdomain.PullRequestBuildRunJob(nil), content.jobs...)
-	program.pullRequestBuildRunPopup = &pullRequestBuildRunPopupState{
-		title:         title,
-		runURL:        strings.TrimSpace(content.runURL),
-		repository:    strings.TrimSpace(content.repository),
-		body:          renderPullRequestBuildRunPopupContent(content),
-		jobs:          copiedJobs,
-		previousPopup: content.previousPopup,
-		widthPercent:  content.widthPercent,
-		heightPercent: content.heightPercent,
-		viewState:     newDetailViewState(),
-		documents:     map[int]detailDocument{},
-	}
-	if gui == nil {
-		return nil
-	}
-	return program.layout(gui)
+	return program.dispatch(gui, MsgPullRequestBuildRunPopupOpened{Content: content})
 }
 
 func (program *Program) closePullRequestBuildRunPopup(gui *gocui.Gui, _ *gocui.View) error {
-	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.viewState.mode.isVisual() {
-		popup.viewState.exitVisualMode()
-		return program.refreshViewsIfGUI(gui)
-	}
-	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.viewState.hasPendingYank() {
-		popup.viewState.clearPendingPrefix()
-		return program.refreshViewsIfGUI(gui)
-	}
-	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.previousPopup != nil {
-		program.pullRequestBuildRunPopup = popup.previousPopup
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	program.pullRequestBuildRunPopup = nil
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgPullRequestBuildRunPopupClosed{})
 }
 
 func (program *Program) configurePullRequestBuildRunPopupView(view *gocui.View) {

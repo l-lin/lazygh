@@ -105,21 +105,7 @@ func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequ
 }
 
 func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {
-	if !program.reviewSession.active {
-		return nil
-	}
-
-	sourceFocus := program.reviewSession.sourceFocus
-	pendingReviewID := strings.TrimSpace(program.reviewSession.pendingReviewID)
-	program.restorePullRequestBrowserFromReviewMode()
-	if pendingReviewID != "" {
-		program.setFeedback(sourceFocus, pendingPullRequestReviewKeptOpenMessage)
-	}
-	if gui == nil {
-		return nil
-	}
-
-	return program.layout(gui)
+	return program.dispatch(gui, MsgExitReviewMode{})
 }
 
 func (program *Program) restorePullRequestBrowserFromReviewMode() {

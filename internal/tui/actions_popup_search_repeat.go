@@ -22,11 +22,11 @@ func (model *Model) followActionsPopupSearchMatch(choose searchMatchIndexChooser
 }
 
 func (program *Program) nextActionsPopupSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.repeatActionsPopupSearch(gui, searchMatchIndexAfter)
+	return program.dispatch(gui, MsgRepeatActionsPopupSearch{Direction: searchRepeatForward})
 }
 
 func (program *Program) previousActionsPopupSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.repeatActionsPopupSearch(gui, searchMatchIndexBefore)
+	return program.dispatch(gui, MsgRepeatActionsPopupSearch{Direction: searchRepeatBackward})
 }
 
 func (program *Program) repeatActionsPopupSearch(gui *gocui.Gui, choose searchMatchIndexChooser) error {
@@ -44,5 +44,5 @@ func (program *Program) repeatActionsPopupSearch(gui *gocui.Gui, choose searchMa
 	}
 
 	program.actionsPopupWidget.errorMessage = ""
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }

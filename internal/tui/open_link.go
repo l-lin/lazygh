@@ -22,20 +22,7 @@ const (
 )
 
 func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {
-	program.detailViewState.clearPendingPrefix()
-	err := program.openCurrentLink(program.resolveView(gui, view, viewDetailName))
-	switch {
-	case err == nil:
-		program.setFeedback(program.model.Focus(), openLinkSuccessMessage)
-	case errors.Is(err, ErrNoLinkUnderCursor):
-		program.setFeedback(program.model.Focus(), openLinkUnavailableMessage)
-	case errors.Is(err, ErrLinkOpenerUnavailable):
-		program.setFeedback(program.model.Focus(), openLinkOpenerUnavailableMessage)
-	default:
-		program.setFeedback(program.model.Focus(), openLinkFailureMessage)
-	}
-
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgOpenLinkUnderCursorRequested{View: view})
 }
 
 func (program *Program) openCurrentLink(view *gocui.View) error {
@@ -111,18 +98,18 @@ func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupActi
 }
 
 func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) actionsPopupActionResult {
-	err := program.openCurrentLink(program.resolveView(gui, nil, viewDetailName))
-	switch {
-	case err == nil:
-		program.setFeedback(program.model.Focus(), openLinkSuccessMessage)
-		return actionsPopupActionResult{closePopup: true}
-	case errors.Is(err, ErrNoLinkUnderCursor):
-		return actionsPopupActionResult{err: errors.New(openLinkUnavailableMessage)}
-	case errors.Is(err, ErrLinkOpenerUnavailable):
+	view := program.resolveView(gui, nil, viewDetailName)
+	if program.linkOpener == nil {
 		return actionsPopupActionResult{err: errors.New(openLinkOpenerUnavailableMessage)}
-	default:
-		return actionsPopupActionResult{err: errors.New(openLinkFailureMessage)}
 	}
+	url, ok := program.currentDetailCursorLink(view)
+	if !ok {
+		return actionsPopupActionResult{err: errors.New(openLinkUnavailableMessage)}
+	}
+	if err := program.dispatch(gui, MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{closePopup: true}
 }
 
 func (document detailDocument) linkAt(position detailPosition) (string, bool) {

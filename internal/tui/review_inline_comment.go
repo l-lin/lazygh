@@ -45,11 +45,7 @@ func (program *Program) openBrowserChangesInlineCommentComposer(gui *gocui.Gui, 
 }
 
 func (program *Program) handleInlineCommentSelectionError(gui *gocui.Gui, err error) error {
-	program.setFeedback(FocusDetailView, strings.TrimSpace(err.Error()))
-	if gui == nil {
-		return nil
-	}
-	return program.afterStateChange(gui)
+	return program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: strings.TrimSpace(err.Error())})
 }
 
 func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, selection pullRequestInlineCommentSelection) error {

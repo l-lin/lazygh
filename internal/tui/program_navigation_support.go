@@ -15,7 +15,7 @@ func (program *Program) handleSelectionChange(gui *gocui.Gui, view *gocui.View, 
 			return nil
 		}
 		program.adjustReviewSessionSelection(sideChange)
-		return program.refreshViewsIfGUI(gui)
+		return program.refreshShell(gui)
 	}
 
 	program.model.adjustSelectionBy(sideChange)
@@ -47,36 +47,11 @@ func (program *Program) clearPendingSelectionPrefix() {
 	program.pendingSelectionKeySequence.clear()
 }
 
-func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
-	if gui == nil {
-		return nil
-	}
-
-	return program.afterStateChange(gui)
-}
-
 func (program *Program) applyProjectedScreenState(state ScreenState) {
 	program.model.ApplyProjectedScreenState(state)
 	if mainView, ok := state.ViewByNumber(mainPanelViewNumber); ok && len(mainView.Tabs) > 0 {
 		program.activeDetailTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
 	}
-}
-
-func (program *Program) applyModeScreenState(gui *gocui.Gui, state ScreenState) error {
-	program.applyProjectedScreenState(state)
-	return program.refreshViewsIfGUI(gui)
-}
-
-func (program *Program) focusPanelViewNumber(gui *gocui.Gui, viewNumber int) error {
-	state := program.screenState()
-	targetView, ok := state.ViewByNumber(viewNumber)
-	if !ok {
-		return nil
-	}
-	if program.model.PaneLayoutSize() == PaneLayoutFullscreen && program.model.FullscreenPane() != targetView.Focus {
-		return nil
-	}
-	return program.applyModeScreenState(gui, state.FocusViewNumber(viewNumber))
 }
 
 func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackName string) *gocui.View {
@@ -92,25 +67,6 @@ func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackNa
 		return nil
 	}
 	return actualView
-}
-
-func (program *Program) recenterListSelection(gui *gocui.Gui, view *gocui.View, fallbackName string, selectedVisibleLine int, lineCount int) error {
-	return program.placeListSelection(gui, view, fallbackName, selectedVisibleLine, lineCount, viewportPlacementCenter)
-}
-
-func (program *Program) placeListSelection(gui *gocui.Gui, view *gocui.View, fallbackName string, selectedVisibleLine int, lineCount int, placement viewportPlacement) error {
-	if lineCount < 1 {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, fallbackName)
-	viewName := fallbackName
-	if actualView != nil && actualView.Name() != "" {
-		viewName = actualView.Name()
-	}
-	program.setPendingListViewportPlacement(viewName, placement)
-	program.placeListLine(actualView, selectedVisibleLine, lineCount, placement)
-	return program.refreshViewsIfGUI(gui)
 }
 
 func (program *Program) currentSideListState() (string, int, int) {

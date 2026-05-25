@@ -9,17 +9,21 @@ import (
 )
 
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
+	return program.dispatch(gui, MsgToggleInlineConversationVisibility{View: view})
+}
+
+func (program *Program) toggleInlineConversationVisibilityState(view *gocui.View) error {
 	program.detailViewState.clearPendingPrefix()
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return nil
 	}
 	if program.reviewModeActive() {
 		if program.reviewSessionShowsDescription() {
-			return program.toggleReviewDescriptionSectionVisibility(gui, view)
+			return program.toggleReviewDescriptionSectionVisibility(nil, view)
 		}
-		return program.toggleReviewInlineConversationVisibility(gui, view)
+		return program.toggleReviewInlineConversationVisibility(nil, view)
 	}
-	return program.toggleBrowserDetailSectionVisibility(gui, view)
+	return program.toggleBrowserDetailSectionVisibility(nil, view)
 }
 
 func (program *Program) toggleReviewDescriptionSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
@@ -61,10 +65,7 @@ func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui,
 		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
 		program.detailViewState.preferredColumn = 0
 	}
-	if gui == nil {
-		return nil
-	}
-	return program.afterStateChange(gui)
+	return nil
 }
 
 func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
@@ -104,10 +105,7 @@ func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, vie
 		program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
 		program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
 		program.detailViewState.preferredColumn = 0
-		if gui == nil {
-			return nil
-		}
-		return program.afterStateChange(gui)
+		return nil
 	}
 
 	return program.toggleOverviewSectionVisibility(gui, view, summary, result.detail)
@@ -132,10 +130,7 @@ func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *go
 	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
 	program.detailViewState.cursor = detailPosition{line: sectionAtCursor.headerFocusLine, column: 0}
 	program.detailViewState.preferredColumn = 0
-	if gui == nil {
-		return nil
-	}
-	return program.afterStateChange(gui)
+	return nil
 }
 
 func (program *Program) setReviewThreadCollapsed(threadID string, collapsed bool) {

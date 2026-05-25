@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/jesseduffield/gocui"
 
@@ -24,24 +23,11 @@ func (program *Program) openPullRequestByClipboardShortcut(gui *gocui.Gui, _ *go
 		return nil
 	}
 
-	clipboardURL, err := program.clipboardPullRequestURL()
-	if err != nil {
-		program.setFeedback(program.model.Focus(), openPullRequestByClipboardFeedbackMessage(err))
-		return program.refreshViewsIfGUI(gui)
-	}
-	if err := program.OpenPullRequestByURL(clipboardURL); err != nil {
-		program.setFeedback(program.model.Focus(), strings.TrimSpace(err.Error()))
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgReadPullRequestURLFromClipboardRequested{})
 }
 
 func (program *Program) openPullRequestByURLEditor(gui *gocui.Gui) error {
-	if err := program.openLineModalEditorWithHeight(gui, openPullRequestByURLActionTitle, "", program.OpenPullRequestByURL, openPullRequestByURLEditorHeight); err != nil {
-		return err
-	}
-	return program.refreshViewsIfGUI(gui)
+	return program.openLineModalEditorWithHeight(gui, openPullRequestByURLActionTitle, "", program.OpenPullRequestByURL, openPullRequestByURLEditorHeight)
 }
 
 func (program *Program) clipboardPullRequestURL() (string, error) {

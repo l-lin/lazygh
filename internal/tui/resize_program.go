@@ -7,8 +7,7 @@ func (program *Program) growFocusedPane(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	program.model.GrowFocusedPane()
-	return program.layout(gui)
+	return program.dispatch(gui, MsgAdjustFocusedPane{Delta: 1})
 }
 
 func (program *Program) shrinkFocusedPane(gui *gocui.Gui, _ *gocui.View) error {
@@ -16,6 +15,5 @@ func (program *Program) shrinkFocusedPane(gui *gocui.Gui, _ *gocui.View) error {
 		return nil
 	}
 
-	program.model.ShrinkFocusedPane()
-	return program.layout(gui)
+	return program.dispatch(gui, MsgAdjustFocusedPane{Delta: -1})
 }

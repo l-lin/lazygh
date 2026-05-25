@@ -6,35 +6,8 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func (program *Program) openModalEditorInExternalEditor(gui *gocui.Gui, view *gocui.View) error {
-	if program == nil || program.modalEditor == nil {
-		return nil
-	}
-	if program.externalEditor == nil {
-		program.modalEditor.errorMessage = "external editor is unavailable"
-		return program.refreshModalEditorAfterExternalEdit(gui, view)
-	}
-
-	editedText, err := program.externalEditor.Edit(gui, program.modalEditor.Text())
-	if err != nil {
-		program.modalEditor.errorMessage = strings.TrimSpace(err.Error())
-		return program.refreshModalEditorAfterExternalEdit(gui, view)
-	}
-
-	program.modalEditor.errorMessage = ""
-	program.setModalEditorTextFromExternalEditor(editedText)
-	return program.refreshModalEditorAfterExternalEdit(gui, view)
-}
-
-func (program *Program) refreshModalEditorAfterExternalEdit(gui *gocui.Gui, view *gocui.View) error {
-	if gui != nil {
-		return program.afterStateChange(gui)
-	}
-	if view != nil {
-		program.configureModalEditorView(view)
-		program.renderModalEditorView(view)
-	}
-	return nil
+func (program *Program) openModalEditorInExternalEditor(gui *gocui.Gui, _ *gocui.View) error {
+	return program.dispatch(gui, MsgModalEditorExternalEditRequested{})
 }
 
 func (program *Program) setModalEditorTextFromExternalEditor(text string) {

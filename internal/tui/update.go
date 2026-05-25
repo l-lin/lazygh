@@ -81,6 +81,90 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.searchWidget.editor = newLineEditor(actual.Query)
 	case MsgSearchDraftChanged:
 		program.updateActiveSearchDraft(actual.Query)
+	case MsgFeedbackSet:
+		program.applyFeedbackSet(actual)
+	case MsgActionsPopupActionResultHandled:
+		program.applyActionsPopupActionResultHandled(actual)
+	case MsgModalEditorOpened:
+		program.openModalEditorState(actual.State)
+	case MsgModalEditorClosed:
+		program.modalEditor = nil
+	case MsgModalEditorSubmitRequested:
+		return program.applyModalEditorSubmitRequested()
+	case MsgModalEditorSubmitFinished:
+		program.applyModalEditorSubmitFinished(actual)
+	case MsgModalEditorExternalEditRequested:
+		return program.applyModalEditorExternalEditRequested()
+	case MsgModalEditorExternalEditFinished:
+		program.applyModalEditorExternalEditFinished(actual)
+	case MsgPullRequestBuildRunLoadRequested:
+		return program.applyPullRequestBuildRunLoadRequested(actual)
+	case MsgPullRequestBuildRunJobLogLoadRequested:
+		return program.applyPullRequestBuildRunJobLogLoadRequested(actual)
+	case MsgPullRequestBuildRunPopupOpened:
+		program.applyPullRequestBuildRunPopupOpened(actual)
+	case MsgPullRequestBuildRunPopupClosed:
+		program.applyPullRequestBuildRunPopupClosed()
+	case MsgAdvanceDetailTab:
+		program.applyAdvanceDetailTab(actual)
+	case MsgExitReviewMode:
+		program.applyExitReviewMode()
+	case MsgToggleHelp:
+		program.applyToggleHelp()
+	case MsgCloseHelp:
+		program.applyCloseHelp()
+	case MsgAdjustFocusedPane:
+		program.applyAdjustFocusedPane(actual)
+	case MsgOpenBrowserURLRequested:
+		return program.applyOpenBrowserURLRequested(actual)
+	case MsgOpenBrowserURLFinished:
+		program.applyOpenBrowserURLFinished(actual)
+	case MsgClipboardWriteFinished:
+		program.applyClipboardWriteFinished(actual)
+	case MsgReadPullRequestURLFromClipboardRequested:
+		return []Cmd{readPullRequestURLFromClipboardCmd{}}
+	case MsgPullRequestURLReadFromClipboard:
+		program.applyPullRequestURLReadFromClipboard(actual)
+	case MsgOpenLinkUnderCursorRequested:
+		return program.applyOpenLinkUnderCursorRequested(actual)
+	case MsgOpenPullRequestBuildRunPopupLinkRequested:
+		return program.applyOpenPullRequestBuildRunPopupLinkRequested(actual)
+	case MsgCopySelectedDetailTextRequested:
+		return program.selectedDetailClipboardWriteCmd(program.resolveView(program.gui, actual.View, viewDetailName))
+	case MsgCopyPullRequestURLRequested:
+		return program.applyCopyPullRequestURLRequested(actual)
+	case MsgCopyPullRequestBuildRunPopupContentRequested:
+		return program.applyCopyPullRequestBuildRunPopupContentRequested(actual)
+	case MsgOpenNotificationInBrowserRequested:
+		return program.applyOpenNotificationInBrowserRequested()
+	case MsgRepeatActionsPopupSearch:
+		program.applyRepeatActionsPopupSearch(actual)
+	case MsgRepeatSideSearch:
+		program.applyRepeatSideSearch(actual)
+	case MsgRepeatPullRequestSearch:
+		program.applyRepeatPullRequestSearch(actual)
+	case MsgRepeatReviewFileTreeSearch:
+		program.applyRepeatReviewFileTreeSearch(actual)
+	case MsgMoveReviewSelection:
+		program.applyMoveReviewSelection(actual)
+	case MsgMoveReviewSelectionToTop:
+		program.applyMoveReviewSelectionToTop()
+	case MsgMoveReviewSelectionToBottom:
+		program.applyMoveReviewSelectionToBottom()
+	case MsgMoveReviewFile:
+		program.applyMoveReviewFile(actual)
+	case MsgMoveReviewComment:
+		program.applyMoveReviewComment(actual)
+	case MsgToggleReviewTreeRowVisibility:
+		program.applyToggleReviewTreeRowVisibility()
+	case MsgSetAllReviewTreeFolds:
+		program.applySetAllReviewTreeFolds(actual)
+	case MsgSearchWordUnderCursor:
+		program.applySearchWordUnderCursor(actual)
+	case MsgToggleInlineConversationVisibility:
+		program.applyToggleInlineConversationVisibility(actual)
+	case MsgSetAllDetailFolds:
+		program.applySetAllDetailFolds(actual)
 	case MsgSubmitSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
 			_ = program.submitPullRequestBuildRunPopupSearch(nil)

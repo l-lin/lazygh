@@ -228,8 +228,7 @@ func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {
 		return errActionsPopupActionUnavailable
 	}
 	if !target.notification.Unread {
-		program.setFeedback(program.model.Focus(), notificationAlreadyReadMessage)
-		return program.refreshViewsIfGUI(gui)
+		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: notificationAlreadyReadMessage})
 	}
 
 	optimisticNotifications := program.loadedNotifications()
@@ -277,8 +276,7 @@ func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
 func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
 	loadedNotifications := program.loadedNotifications()
 	if len(loadedNotifications) == 0 {
-		program.setFeedback(program.model.Focus(), notificationNoNotificationsLoadedMessage)
-		return program.refreshViewsIfGUI(gui)
+		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: notificationNoNotificationsLoadedMessage})
 	}
 
 	optimisticNotifications := append([]githubdomain.Notification(nil), loadedNotifications...)
@@ -298,8 +296,7 @@ func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
 func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 	loadedNotifications := program.loadedNotifications()
 	if len(loadedNotifications) == 0 {
-		program.setFeedback(program.model.Focus(), notificationNoNotificationsLoadedMessage)
-		return program.refreshViewsIfGUI(gui)
+		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: notificationNoNotificationsLoadedMessage})
 	}
 
 	loadingMessage := fmt.Sprintf("Marking %d notifications as done...", len(loadedNotifications))
@@ -328,11 +325,7 @@ func (program *Program) openSelectedNotificationInBrowser(gui *gocui.Gui) error 
 	if !ok {
 		return errActionsPopupActionUnavailable
 	}
-	if err := program.linkOpener.Open(browserURL); err != nil {
-		return err
-	}
-	program.setFeedback(program.model.Focus(), notificationOpenBrowserSuccessMessage)
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
 }
 
 func (program *Program) selectedNotificationBrowserURL() (string, bool) {
@@ -383,8 +376,7 @@ func (program *Program) markNotificationDone(gui *gocui.Gui, _ *gocui.View) erro
 
 func (program *Program) handleNotificationKeyAction(gui *gocui.Gui, action func(*gocui.Gui) error) error {
 	if err := action(gui); err != nil {
-		program.setFeedback(program.model.Focus(), err.Error())
-		return program.refreshViewsIfGUI(gui)
+		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: err.Error()})
 	}
 	return nil
 }

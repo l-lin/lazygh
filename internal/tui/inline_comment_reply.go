@@ -196,11 +196,7 @@ func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.Vi
 
 	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if !ok {
-		program.setFeedback(FocusDetailView, inlineCommentReplyUnavailableMessage)
-		if gui == nil {
-			return nil
-		}
-		return program.afterStateChange(gui)
+		return program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: inlineCommentReplyUnavailableMessage})
 	}
 
 	return program.openInlineCommentReplyComposer(gui, target)

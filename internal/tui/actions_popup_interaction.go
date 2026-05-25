@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 func (program *Program) actionsPopupSelectionLineState() (int, int) {
 	return program.currentActionsPopupSelectedRenderedLine(), program.currentActionsPopupRenderedLineCount()
@@ -162,39 +158,7 @@ func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocu
 }
 
 func (program *Program) handleActionsPopupActionResult(gui *gocui.Gui, result actionsPopupActionResult) error {
-	if result.err != nil {
-		if message, ok := transientErrorPopupActionMessage(result.err); ok {
-			program.actionsPopupWidget.errorMessage = ""
-			program.reportError(gui, message)
-			if gui == nil {
-				return nil
-			}
-			return program.afterStateChange(gui)
-		}
-		if message := strings.TrimSpace(result.feedbackMessage); message != "" {
-			program.actionsPopupWidget.errorMessage = ""
-			program.setFeedback(result.feedbackTarget, message)
-			if gui == nil {
-				return nil
-			}
-			return program.afterStateChange(gui)
-		}
-		program.actionsPopupWidget.errorMessage = strings.TrimSpace(result.err.Error())
-		program.reportError(gui, program.actionsPopupWidget.errorMessage)
-		if gui == nil {
-			return nil
-		}
-		return program.afterStateChange(gui)
-	}
-
-	if result.closePopup {
-		return program.closeActionsPopup(gui, nil)
-	}
-	if gui == nil {
-		return nil
-	}
-
-	return program.afterStateChange(gui)
+	return program.dispatch(gui, MsgActionsPopupActionResultHandled{Result: result})
 }
 
 func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {

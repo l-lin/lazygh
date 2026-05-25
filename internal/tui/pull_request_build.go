@@ -70,24 +70,7 @@ func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary git
 			repository: repository,
 		},
 	}
-	program.feedbackMessage = ""
-	program.pullRequestBuildRunPopup = nil
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunCommand(repository, check)}
-	program.runAsync(func() {
-		program.loadPullRequestBuildRun(gui, repository, target)
-	})
-	return program.refreshViewsIfGUI(gui)
-}
-
-func (program *Program) loadPullRequestBuildRun(gui *gocui.Gui, repository string, target pullRequestBuildRunTarget) {
-	rawRunOutput, err := program.buildQueries.GetPullRequestBuildRun(repository, target.check)
-	jobs := []githubdomain.PullRequestBuildRunJob(nil)
-	jobsErr := error(nil)
-	if err == nil {
-		jobs, jobsErr = program.buildQueries.GetPullRequestBuildRunJobs(repository, target.check)
-	}
-
-	program.dispatchAsync(gui, MsgPullRequestBuildRunLoaded{Target: target, RawRunOutput: rawRunOutput, Jobs: jobs, JobsErr: jobsErr, Err: err})
+	return program.dispatch(gui, MsgPullRequestBuildRunLoadRequested{Target: target})
 }
 
 func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubdomain.PullRequest, check githubdomain.PullRequestStatusCheck) error {
@@ -95,22 +78,7 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 		return nil
 	}
 
-	repository := pullRequestRepositoryName(summary.Repository)
-	if repository == "" || repository == "-" {
-		return nil
-	}
-
-	program.feedbackMessage = ""
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunJobsCommand(repository, check)}
-	program.runAsync(func() {
-		program.loadPullRequestBuildRunJobLog(gui, repository, check)
-	})
-	return program.refreshViewsIfGUI(gui)
-}
-
-func (program *Program) loadPullRequestBuildRunJobLog(gui *gocui.Gui, repository string, check githubdomain.PullRequestStatusCheck) {
-	job, rawLogOutput, err := program.buildQueries.GetPullRequestBuildRunJobLogForCheck(repository, check)
-	program.dispatchAsync(gui, MsgPullRequestBuildRunJobLogLoaded{Repository: repository, Job: job, RawLogOutput: rawLogOutput, Err: err})
+	return program.dispatch(gui, MsgPullRequestBuildRunJobLogLoadRequested{Summary: summary, Check: check})
 }
 
 func (program *Program) pullRequestBuildRunActionsPopupAction() actionsPopupAction {

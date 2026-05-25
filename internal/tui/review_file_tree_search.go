@@ -43,11 +43,11 @@ func (program *Program) cancelReviewFileTreeSearch() {
 }
 
 func (program *Program) nextReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.repeatReviewFileTreeSearch(gui, searchMatchIndexAfter)
+	return program.dispatch(gui, MsgRepeatReviewFileTreeSearch{Direction: searchRepeatForward})
 }
 
 func (program *Program) previousReviewFileTreeSearchMatch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.repeatReviewFileTreeSearch(gui, searchMatchIndexBefore)
+	return program.dispatch(gui, MsgRepeatReviewFileTreeSearch{Direction: searchRepeatBackward})
 }
 
 func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose searchMatchIndexChooser) error {
@@ -63,7 +63,7 @@ func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose search
 		return nil
 	}
 
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) followSubmittedReviewFileTreeSearch(query string) bool {

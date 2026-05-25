@@ -116,10 +116,7 @@ func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summa
 		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
 		program.detailViewState.preferredColumn = 0
 	}
-	if gui == nil {
-		return nil
-	}
-	return program.afterStateChange(gui)
+	return nil
 }
 
 func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, files []reviewDiffFile, detailDocument detailDocument) error {
@@ -139,10 +136,7 @@ func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, sum
 		program.detailViewState.cursor = detailPosition{line: headerLineIndex, column: 0}
 		program.detailViewState.preferredColumn = 0
 	}
-	if gui == nil {
-		return nil
-	}
-	return program.afterStateChange(gui)
+	return nil
 }
 
 func reviewDiffFilePathAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (string, bool) {

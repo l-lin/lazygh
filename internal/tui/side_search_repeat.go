@@ -7,19 +7,19 @@ import (
 )
 
 func (program *Program) nextUserSearchMatch(gui *gocui.Gui, view *gocui.View) error {
-	return program.repeatSideSearch(gui, FocusUserView, searchMatchIndexAfter)
+	return program.dispatch(gui, MsgRepeatSideSearch{Focus: FocusUserView, Direction: searchRepeatForward})
 }
 
 func (program *Program) previousUserSearchMatch(gui *gocui.Gui, view *gocui.View) error {
-	return program.repeatSideSearch(gui, FocusUserView, searchMatchIndexBefore)
+	return program.dispatch(gui, MsgRepeatSideSearch{Focus: FocusUserView, Direction: searchRepeatBackward})
 }
 
 func (program *Program) nextNotificationsSearchMatch(gui *gocui.Gui, view *gocui.View) error {
-	return program.repeatSideSearch(gui, FocusNotificationsView, searchMatchIndexAfter)
+	return program.dispatch(gui, MsgRepeatSideSearch{Focus: FocusNotificationsView, Direction: searchRepeatForward})
 }
 
 func (program *Program) previousNotificationsSearchMatch(gui *gocui.Gui, view *gocui.View) error {
-	return program.repeatSideSearch(gui, FocusNotificationsView, searchMatchIndexBefore)
+	return program.dispatch(gui, MsgRepeatSideSearch{Focus: FocusNotificationsView, Direction: searchRepeatBackward})
 }
 
 func (program *Program) repeatSideSearch(gui *gocui.Gui, focus Focus, choose searchMatchIndexChooser) error {
@@ -38,7 +38,7 @@ func (program *Program) repeatSideSearch(gui *gocui.Gui, focus Focus, choose sea
 	}
 
 	program.setSideSearchSelection(focus, matchIndexes[matchIndex])
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) sideSearchState(focus Focus) (string, []int, int) {

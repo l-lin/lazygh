@@ -136,15 +136,7 @@ func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *g
 
 func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
 	if program.actionContext().IsReviewContext() {
-		program.clearPendingSelectionPrefix()
-		if program.selectionChangeBlocked() {
-			return nil
-		}
-		if program.model.Focus() != FocusPullRequestsView {
-			return nil
-		}
-		program.moveReviewSessionSelectionToTop()
-		return program.refreshViewsIfGUI(gui)
+		return program.dispatch(gui, MsgMoveReviewSelectionToTop{})
 	}
 
 	return program.dispatch(gui, MsgMoveSideSelectionToTop{})
@@ -152,15 +144,7 @@ func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) er
 
 func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View) error {
 	if program.actionContext().IsReviewContext() {
-		program.clearPendingSelectionPrefix()
-		if program.selectionChangeBlocked() {
-			return nil
-		}
-		if program.model.Focus() != FocusPullRequestsView {
-			return nil
-		}
-		program.moveReviewSessionSelectionToBottom()
-		return program.refreshViewsIfGUI(gui)
+		return program.dispatch(gui, MsgMoveReviewSelectionToBottom{})
 	}
 
 	return program.dispatch(gui, MsgMoveSideSelectionToBottom{})
@@ -341,40 +325,7 @@ func (program *Program) searchWordUnderCursorBackward(gui *gocui.Gui, view *gocu
 }
 
 func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, reverse bool) error {
-	program.clearPendingSelectionPrefix()
-	if program.mainPaneActionBlocked() {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewDetailName)
-	document := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(document, viewPageSize(actualView))
-	query, ok := document.wordAt(program.detailViewState.cursor)
-	if !ok {
-		return nil
-	}
-
-	inputContext := program.inputContext()
-	program.detailViewState.clearPendingPrefix()
-	if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-		program.reviewSession.fileTreeSearchQuery = ""
-	}
-	program.model.StartSearch()
-	program.updateActiveSearchDraft(query)
-	program.model.SubmitSearch()
-	program.searchWidget.detailReversed = reverse
-	program.searchWidget.editor = nil
-
-	if reverse {
-		if actualErr := program.followReverseDetailSearch(gui); actualErr != nil {
-			return actualErr
-		}
-	} else {
-		if actualErr := program.followSubmittedDetailSearch(gui); actualErr != nil {
-			return actualErr
-		}
-	}
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgSearchWordUnderCursor{View: view, Reverse: reverse})
 }
 
 func (program *Program) openSearchWithInitialQuery(gui *gocui.Gui, query string) error {
@@ -394,23 +345,9 @@ func (program *Program) closeSearch(gui *gocui.Gui) error {
 }
 
 func (program *Program) toggleHelp(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	if program.helpToggleBlocked() {
-		return nil
-	}
-
-	program.helpVisible = !program.helpVisible
-	if !program.helpVisible {
-		return program.closeHelp(gui, nil)
-	}
-
-	return program.layout(gui)
+	return program.dispatch(gui, MsgToggleHelp{})
 }
 
 func (program *Program) closeHelp(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailViewState.clearPendingPrefix()
-	program.helpVisible = false
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgCloseHelp{})
 }

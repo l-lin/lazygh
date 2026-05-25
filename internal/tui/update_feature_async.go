@@ -111,7 +111,7 @@ func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBui
 	popupContent := message.Target.popupContent
 	popupContent.body = message.RawRunOutput
 	popupContent.jobs = append([]githubdomain.PullRequestBuildRunJob(nil), message.Jobs...)
-	_ = program.openPullRequestBuildRunPopup(nil, popupContent)
+	program.openPullRequestBuildRunPopupState(popupContent)
 	if message.JobsErr != nil {
 		program.reportError(program.gui, strings.TrimSpace(normalizeGHCommandError(message.JobsErr).Error()))
 	}
@@ -124,7 +124,7 @@ func (program *Program) applyPullRequestBuildRunJobLogLoaded(message MsgPullRequ
 		return
 	}
 
-	_ = program.openPullRequestBuildRunPopup(nil, pullRequestBuildRunPopupContent{
+	program.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{
 		title:         pullRequestBuildRunLogsPopupTitle(message.Job.Name),
 		runURL:        strings.TrimSpace(message.Job.URL),
 		repository:    message.Repository,

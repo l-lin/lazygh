@@ -12,19 +12,19 @@ const (
 )
 
 func (program *Program) previousReviewFile(gui *gocui.Gui, _ *gocui.View) error {
-	return program.moveReviewSessionFile(gui, int(reviewNavigationBackward))
+	return program.dispatch(gui, MsgMoveReviewFile{Delta: int(reviewNavigationBackward)})
 }
 
 func (program *Program) nextReviewFile(gui *gocui.Gui, _ *gocui.View) error {
-	return program.moveReviewSessionFile(gui, int(reviewNavigationForward))
+	return program.dispatch(gui, MsgMoveReviewFile{Delta: int(reviewNavigationForward)})
 }
 
 func (program *Program) previousReviewComment(gui *gocui.Gui, _ *gocui.View) error {
-	return program.moveReviewSessionComment(gui, reviewNavigationBackward)
+	return program.dispatch(gui, MsgMoveReviewComment{Direction: reviewNavigationBackward})
 }
 
 func (program *Program) nextReviewComment(gui *gocui.Gui, _ *gocui.View) error {
-	return program.moveReviewSessionComment(gui, reviewNavigationForward)
+	return program.dispatch(gui, MsgMoveReviewComment{Direction: reviewNavigationForward})
 }
 
 func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error {
@@ -43,7 +43,7 @@ func (program *Program) moveReviewSessionFile(gui *gocui.Gui, change int) error 
 		return nil
 	}
 
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 type reviewCommentLocation struct {
@@ -73,7 +73,7 @@ func (program *Program) moveReviewSessionComment(gui *gocui.Gui, direction revie
 		return actualErr
 	}
 
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) currentReviewCommentPosition(detailView *gocui.View) (int, int) {

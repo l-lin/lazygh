@@ -87,17 +87,7 @@ func (program *Program) copySelectedText(state *detailViewState, document detail
 }
 
 func (program *Program) copySelectedPullRequestBuildRunPopupText(gui *gocui.Gui, view *gocui.View) error {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewPullRequestBuildInfoName)
-	document := program.currentPullRequestBuildRunPopupDocument(actualView)
-	viewportHeight := viewPageSize(actualView)
-	popup.viewState.sync(document, viewportHeight)
-	program.copySelectedText(&popup.viewState, document)
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgCopyPullRequestBuildRunPopupContentRequested{View: view})
 }
 
 func (program *Program) writeTextToClipboard(text string) error {
@@ -121,7 +111,7 @@ func (program *Program) mutateDetailViewStateForYankMotion(gui *gocui.Gui, view 
 		program.finishPendingYank(document, &program.detailViewState, snapshot, selectionKind)
 	}
 	program.syncActionsPopupSearch()
-	return program.refreshViewsIfGUI(gui)
+	return program.refreshShell(gui)
 }
 
 func (program *Program) mutatePullRequestBuildRunPopupViewStateForYankMotion(gui *gocui.Gui, view *gocui.View, selectionKind detailYankMotionSelectionKind, mutate func(*detailViewState, detailDocument, int)) error {
@@ -141,7 +131,7 @@ func (program *Program) mutatePullRequestBuildRunPopupViewStateForYankMotion(gui
 	if pendingYank {
 		program.finishPendingYank(document, &popup.viewState, snapshot, selectionKind)
 	}
-	return program.refreshViewsIfGUI(gui)
+	return program.refreshShell(gui)
 }
 
 func (program *Program) finishPendingYank(document detailDocument, state *detailViewState, snapshot detailYankSnapshot, selectionKind detailYankMotionSelectionKind) {

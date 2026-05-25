@@ -16,10 +16,7 @@ func (program *Program) nextDetailTab(gui *gocui.Gui, view *gocui.View) error {
 		return nil
 	}
 
-	program.detailViewState.clearPendingPrefix()
-	program.activeDetailTab = DetailTab((int(program.activeDetailTab) + 1) % len(browserDetailTabs))
-
-	return program.afterStateChange(gui)
+	return program.dispatch(gui, MsgAdvanceDetailTab{Delta: 1})
 }
 
 func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) error {
@@ -31,9 +28,7 @@ func (program *Program) previousDetailTab(gui *gocui.Gui, view *gocui.View) erro
 		return nil
 	}
 
-	program.detailViewState.clearPendingPrefix()
-	program.activeDetailTab = DetailTab((int(program.activeDetailTab) + len(browserDetailTabs) - 1) % len(browserDetailTabs))
-	return program.afterStateChange(gui)
+	return program.dispatch(gui, MsgAdvanceDetailTab{Delta: -1})
 }
 
 func (program *Program) shouldShowPullRequestDetailTabs() bool {

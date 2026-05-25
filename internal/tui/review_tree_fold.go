@@ -29,20 +29,19 @@ func (program *Program) toggleSelectedReviewTreeRowVisibility(gui *gocui.Gui) (b
 	program.setReviewTreeRowCollapsed(targetRow.ID, !reviewDiffTreeRowCollapsed(targetRow, program.reviewSession.collapsedTreeRowIDs))
 	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
 	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, targetRow.ID)
-	return true, program.refreshViewsIfGUI(gui)
+	return true, nil
 }
 
 func (program *Program) togglePullRequestFold(gui *gocui.Gui, _ *gocui.View) error {
-	_, actualErr := program.toggleSelectedReviewTreeRowVisibility(gui)
-	return actualErr
+	return program.dispatch(gui, MsgToggleReviewTreeRowVisibility{})
 }
 
 func (program *Program) closeAllReviewTreeFolds(gui *gocui.Gui, view *gocui.View) error {
-	return program.setAllReviewTreeFolds(gui, view, true)
+	return program.dispatch(gui, MsgSetAllReviewTreeFolds{Collapsed: true})
 }
 
 func (program *Program) openAllReviewTreeFolds(gui *gocui.Gui, view *gocui.View) error {
-	return program.setAllReviewTreeFolds(gui, view, false)
+	return program.dispatch(gui, MsgSetAllReviewTreeFolds{Collapsed: false})
 }
 
 func (program *Program) setAllReviewTreeFolds(gui *gocui.Gui, _ *gocui.View, collapsed bool) error {
@@ -66,7 +65,7 @@ func (program *Program) setAllReviewTreeFolds(gui *gocui.Gui, _ *gocui.View, col
 
 	updatedVisibleTree := reviewDiffTreeVisibleRows(rawTree, program.reviewSession.collapsedTreeRowIDs)
 	program.reviewSession.selectedFileTreeRow = reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID)
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) reviewTreeFoldBlocked() bool {

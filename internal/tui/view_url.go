@@ -41,10 +41,6 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 	program.clearPendingSelectionPrefix()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.showOpenedPullRequestInDetailFullscreen()
-
-	if program.gui != nil {
-		return program.afterStateChange(program.gui)
-	}
 	return nil
 }
 

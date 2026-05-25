@@ -30,7 +30,7 @@ func (program *Program) submitPullRequestBuildRunPopupSearch(gui *gocui.Gui) err
 	if err := program.followSubmittedPullRequestBuildRunPopupSearch(gui); err != nil {
 		return err
 	}
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) cancelPullRequestBuildRunPopupSearch(gui *gocui.Gui) error {

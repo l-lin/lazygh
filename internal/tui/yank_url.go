@@ -23,45 +23,11 @@ func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) err
 	if program.helpVisible || program.model.SearchActive() {
 		return nil
 	}
-	if program.model.Focus() == FocusDetailView && program.detailViewState.mode.isVisual() {
-		return program.copySelectedDetailText(gui, view)
-	}
-
-	program.detailViewState.clearPendingPrefix()
-	err := program.copySelectedPullRequestURL()
-	switch {
-	case err == nil:
-		program.setFeedback(program.model.Focus(), yankSuccessMessage)
-	case errors.Is(err, ErrNoPullRequestURL):
-		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
-	default:
-		program.setFeedback(program.model.Focus(), yankFailureMessage)
-	}
-
-	if gui == nil {
-		return nil
-	}
-
-	return program.afterStateChange(gui)
+	return program.dispatch(gui, MsgCopyPullRequestURLRequested{View: view})
 }
 
 func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View) error {
-	actualView := view
-	if actualView == nil && gui != nil {
-		if detailView, actualErr := gui.View(viewDetailName); actualErr == nil {
-			actualView = detailView
-		}
-	}
-
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewPageSize(actualView))
-	program.copySelectedText(&program.detailViewState, detailDocument)
-
-	if gui == nil {
-		return nil
-	}
-
-	return program.afterStateChange(gui)
+	return program.dispatch(gui, MsgCopySelectedDetailTextRequested{View: view})
 }
 
 func (program *Program) copySelectedPullRequestURL() error {

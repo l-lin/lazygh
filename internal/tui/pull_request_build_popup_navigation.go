@@ -1,17 +1,12 @@
 package tui
 
-import (
-	"errors"
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 func (program *Program) mutatePullRequestBuildRunPopupViewState(gui *gocui.Gui, view *gocui.View, mutate func(*detailViewState, detailDocument, int)) error {
 	if err := program.mutatePullRequestBuildRunPopupViewStateWithoutRefresh(gui, view, mutate); err != nil {
 		return err
 	}
-	return program.refreshViewsIfGUI(gui)
+	return program.refreshShell(gui)
 }
 
 func (program *Program) mutatePullRequestBuildRunPopupViewStateWithoutRefresh(gui *gocui.Gui, view *gocui.View, mutate func(*detailViewState, detailDocument, int)) error {
@@ -152,64 +147,9 @@ func (program *Program) fullPagePullRequestBuildRunPopupUp(gui *gocui.Gui, view 
 }
 
 func (program *Program) copyPullRequestBuildRunPopupContent(gui *gocui.Gui, view *gocui.View) error {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewPullRequestBuildInfoName)
-	document := program.currentPullRequestBuildRunPopupDocument(actualView)
-	viewportHeight := viewPageSize(actualView)
-	popup.viewState.sync(document, viewportHeight)
-	popup.viewState.clearPendingPrefix()
-
-	if popup.viewState.mode.isVisual() {
-		program.copySelectedText(&popup.viewState, document)
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	trimmedRunURL := strings.TrimSpace(popup.runURL)
-	var err error
-	switch {
-	case trimmedRunURL == "":
-		err = ErrNoPullRequestURL
-	case program.clipboardWriter == nil:
-		err = ErrClipboardUnavailable
-	default:
-		err = program.clipboardWriter.WriteText(trimmedRunURL)
-	}
-
-	switch {
-	case err == nil:
-		program.setFeedback(program.model.Focus(), yankSuccessMessage)
-	case errors.Is(err, ErrNoPullRequestURL):
-		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
-	default:
-		program.setFeedback(program.model.Focus(), yankFailureMessage)
-	}
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgCopyPullRequestBuildRunPopupContentRequested{View: view})
 }
 
 func (program *Program) openPullRequestBuildRunPopupLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
-		return nil
-	}
-	popup.viewState.clearPendingPrefix()
-	if program.linkOpener == nil {
-		program.setFeedback(program.model.Focus(), openLinkOpenerUnavailableMessage)
-		return program.refreshViewsIfGUI(gui)
-	}
-
-	actualView := program.resolveView(gui, view, viewPullRequestBuildInfoName)
-	url, ok := program.currentPullRequestBuildRunPopupLink(actualView)
-	switch {
-	case !ok:
-		program.setFeedback(program.model.Focus(), openLinkUnavailableMessage)
-	case program.linkOpener.Open(url) == nil:
-		program.setFeedback(program.model.Focus(), openLinkSuccessMessage)
-	default:
-		program.setFeedback(program.model.Focus(), openLinkFailureMessage)
-	}
-	return program.refreshViewsIfGUI(gui)
+	return program.dispatch(gui, MsgOpenPullRequestBuildRunPopupLinkRequested{View: view})
 }

@@ -9,11 +9,11 @@ import (
 )
 
 func (program *Program) closeAllDetailFolds(gui *gocui.Gui, view *gocui.View) error {
-	return program.setAllDetailFolds(gui, view, true)
+	return program.dispatch(gui, MsgSetAllDetailFolds{View: view, Collapsed: true})
 }
 
 func (program *Program) openAllDetailFolds(gui *gocui.Gui, view *gocui.View) error {
-	return program.setAllDetailFolds(gui, view, false)
+	return program.dispatch(gui, MsgSetAllDetailFolds{View: view, Collapsed: false})
 }
 
 func (program *Program) setAllDetailFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
@@ -70,7 +70,7 @@ func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) setAllReviewThreadsCollapsed(threads []reviewDiffThread, collapsed bool) bool {
@@ -142,7 +142,7 @@ func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githu
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
@@ -160,7 +160,7 @@ func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary g
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
@@ -185,7 +185,7 @@ func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary 
 		}
 	}
 	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return program.refreshViewsIfGUI(gui)
+	return nil
 }
 
 func browserDetailSectionIDs(sections []browserDetailSection) []string {
