@@ -26,9 +26,18 @@ func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.
 		return nil
 	}
 
-	return program.openModalEditor(gui, pullRequestCommentComposerTitle, "", func(body string) error {
+	feedbackTarget := program.model.Focus()
+	if err := program.openModalEditor(gui, pullRequestCommentComposerTitle, "", func(body string) error {
 		return program.submitPullRequestComment(target, body)
-	})
+	}); err != nil {
+		return err
+	}
+	if program.overlayState.modalEditor != nil {
+		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+			_ = program.dispatch(gui, MsgFeedbackSet{Target: feedbackTarget, Message: pullRequestCommentSuccessMessage})
+		}
+	}
+	return nil
 }
 
 func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, view *gocui.View) error {
@@ -67,7 +76,6 @@ func (program *Program) submitPullRequestComment(target pullRequestCommentTarget
 	}
 
 	program.optimisticallyAppendPullRequestComment(target, body)
-	program.setFeedback(program.model.Focus(), pullRequestCommentSuccessMessage)
 	return nil
 }
 

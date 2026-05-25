@@ -35,7 +35,10 @@ func (program *Program) executeRefreshNotificationsAction(gui *gocui.Gui) action
 	}
 	program.beginManualRefresh(notificationsRefreshSuccessMessage, pendingOperations)
 	program.reloadNotifications(gui)
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) markManualNotificationRefresh() bool {

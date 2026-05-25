@@ -33,6 +33,12 @@ func (program *Program) applyActionsPopupActionResultHandled(message MsgActionsP
 	}
 }
 
+func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPopupClosedWithFeedback) {
+	program.clearPendingSelectionPrefix()
+	program.closeActionsPopupState()
+	program.setFeedback(message.Target, strings.TrimSpace(message.Message))
+}
+
 func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 	if program == nil || program.overlayState.modalEditor == nil {
 		return nil

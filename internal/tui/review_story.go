@@ -61,7 +61,10 @@ func (program *Program) executeReviewStoryAction(gui *gocui.Gui) actionsPopupAct
 	program.runAsync(func() {
 		program.loadStoryReview(gui, summary)
 	})
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) loadStoryReview(gui *gocui.Gui, summary githubdomain.PullRequest) {

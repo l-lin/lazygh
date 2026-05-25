@@ -126,7 +126,7 @@ Search, the actions popup, transient errors, the build popup, and the modal edit
 
 The highest-value actions-popup flows now do the same. Navigation, cache clear, custom search, assignee and reaction pickers, theme changes, refresh actions, title and description edits, and pending-review start or cancel now dispatch typed popup messages and let update-owned helpers or commands own the follow-up state changes.
 
-That keeps one redraw path in charge of rendering, even though the live editor objects still sit inside `Program` rather than inside a pure child model, and some lower-value popup actions still use the older `actionsPopupActionResult` bridge.
+That keeps one redraw path in charge of rendering, even though the live editor objects still sit inside `Program` rather than inside a pure child model, and `actionsPopupActionResult` now mostly survives as compatibility glue for synchronous availability and error returns rather than popup close, feedback, or async state transitions.
 
 ## Story review pipeline
 
@@ -172,7 +172,7 @@ The repo has clear boundaries, and they matter.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is a read-only detail pane.
 
-The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, some popup actions still go through the older `actionsPopupActionResult` bridge, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
+The TUI is now TEA-inspired with real `Msg`, `Update`, and `Cmd` pieces. It is still not strict TEA because `Program` remains large, `actionsPopupActionResult` still exists as thin compatibility glue for some synchronous popup action errors, and a few shell-oriented coordinators still sit beside the reducer rather than inside it.
 
 If you want to understand the project quickly, start with these files:
 

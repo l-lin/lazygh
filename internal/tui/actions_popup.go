@@ -16,6 +16,13 @@ type actionsPopupAction struct {
 	execute  func(*gocui.Gui) actionsPopupActionResult
 }
 
+func (program *Program) closeActionsPopupIfVisible(gui *gocui.Gui) error {
+	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
+		return nil
+	}
+	return program.dispatch(gui, MsgCloseActionsPopup{})
+}
+
 func (action actionsPopupAction) withGroup(group string) actionsPopupAction {
 	action.group = strings.TrimSpace(group)
 	return action

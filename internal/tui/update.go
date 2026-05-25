@@ -71,6 +71,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applySearchDraftChanged(actual)
 	case MsgFeedbackSet:
 		program.applyFeedbackSet(actual)
+	case MsgActionsPopupClosedWithFeedback:
+		program.applyActionsPopupClosedWithFeedback(actual)
 	case MsgActionsPopupActionResultHandled:
 		program.applyActionsPopupActionResultHandled(actual)
 	case MsgModalEditorOpened:
@@ -267,6 +269,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPullRequestDescriptionEditApplied(actual)
 	case MsgCancelPendingPullRequestReviewRequested:
 		return program.applyCancelPendingPullRequestReviewRequested(actual)
+	case MsgPendingPullRequestReviewSubmitted:
+		program.applyPendingPullRequestReviewSubmitted(actual)
 	case MsgPullRequestsCacheHydrated:
 		program.applyPullRequestsCacheHydrated(actual)
 	case MsgNotificationsCacheHydrated:

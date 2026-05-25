@@ -32,19 +32,21 @@ func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool
 		id:    "remove-reaction-" + reactionID,
 		title: "Remove reaction " + reactionTitle,
 		icon:  actionsPopupRemoveReactionIcon,
-		execute: func(_ *gocui.Gui) actionsPopupActionResult {
-			return program.executeRemoveReactionAction(target)
+		execute: func(gui *gocui.Gui) actionsPopupActionResult {
+			return program.executeRemoveReactionAction(gui, target)
 		},
 	}.withGroup(target.popupGroup()), true
 }
 
-func (program *Program) executeRemoveReactionAction(target pullRequestReactionRemovalTarget) actionsPopupActionResult {
+func (program *Program) executeRemoveReactionAction(gui *gocui.Gui, target pullRequestReactionRemovalTarget) actionsPopupActionResult {
 	if strings.TrimSpace(target.subjectID) == "" {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 	if !reactionGroupViewerHasReacted(target.reactionGroups, target.content) {
-		program.setFeedback(program.model.Focus(), pullRequestReactionAlreadyRemovedMessage)
-		return actionsPopupActionResult{closePopup: true}
+		if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionAlreadyRemovedMessage}); err != nil {
+			return actionsPopupActionResult{err: err}
+		}
+		return actionsPopupActionResult{}
 	}
 	if !program.hasReactionMutations() {
 		return actionsPopupActionResult{err: errors.New("github loader is unavailable")}
@@ -54,8 +56,10 @@ func (program *Program) executeRemoveReactionAction(target pullRequestReactionRe
 	}
 
 	program.optimisticallyRemoveReaction(target)
-	program.setFeedback(program.model.Focus(), pullRequestReactionRemovedSuccessMessage)
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionRemovedSuccessMessage}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) selectedPullRequestReactionRemovalTarget() (pullRequestReactionRemovalTarget, bool) {

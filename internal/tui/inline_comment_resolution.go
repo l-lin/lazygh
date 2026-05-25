@@ -48,15 +48,15 @@ func (program *Program) unresolveInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeResolveInlineCommentAction(_ *gocui.Gui) actionsPopupActionResult {
-	return program.executeInlineCommentResolutionAction(true)
+func (program *Program) executeResolveInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+	return program.executeInlineCommentResolutionAction(gui, true)
 }
 
-func (program *Program) executeUnresolveInlineCommentAction(_ *gocui.Gui) actionsPopupActionResult {
-	return program.executeInlineCommentResolutionAction(false)
+func (program *Program) executeUnresolveInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
+	return program.executeInlineCommentResolutionAction(gui, false)
 }
 
-func (program *Program) executeInlineCommentResolutionAction(resolved bool) actionsPopupActionResult {
+func (program *Program) executeInlineCommentResolutionAction(gui *gocui.Gui, resolved bool) actionsPopupActionResult {
 	target, ok := program.selectedPullRequestReviewThreadActionTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
@@ -78,8 +78,10 @@ func (program *Program) executeInlineCommentResolutionAction(resolved bool) acti
 	}
 
 	program.optimisticallySetReviewThreadResolved(target, resolved)
-	program.setFeedback(program.model.Focus(), feedbackMessage)
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: feedbackMessage}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) selectedPullRequestReviewThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {

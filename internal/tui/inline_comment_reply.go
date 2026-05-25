@@ -48,9 +48,17 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) action
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {
-	return program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
+	if err := program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
 		return program.submitInlineCommentReply(target, body)
-	}, reviewInlineCommentModalHeight)
+	}, reviewInlineCommentModalHeight); err != nil {
+		return err
+	}
+	if program.overlayState.modalEditor != nil {
+		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+			_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestInlineCommentReplySuccessMessage})
+		}
+	}
+	return nil
 }
 
 func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadReplyTarget, body string) error {
@@ -68,7 +76,6 @@ func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadR
 	}
 
 	program.optimisticallyAppendInlineCommentReply(target, body)
-	program.setFeedback(FocusDetailView, pullRequestInlineCommentReplySuccessMessage)
 	return nil
 }
 

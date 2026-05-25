@@ -53,13 +53,21 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) ac
 	}
 
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
+		if err := program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
 			return program.submitPullRequestCommentUpdate(target, body)
-		}, reviewInlineCommentModalHeight)
+		}, reviewInlineCommentModalHeight); err != nil {
+			return err
+		}
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestCommentUpdatedSuccessMessage})
+			}
+		}
+		return nil
 	})
 }
 
-func (program *Program) executeDeletePullRequestCommentAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeDeletePullRequestCommentAction(gui *gocui.Gui) actionsPopupActionResult {
 	target, ok := program.selectedPullRequestCommentEditActionTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
@@ -67,7 +75,10 @@ func (program *Program) executeDeletePullRequestCommentAction(_ *gocui.Gui) acti
 	if err := program.deletePullRequestComment(target); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: pullRequestCommentDeletedSuccessMessage}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) submitPullRequestCommentUpdate(target pullRequestCommentEditActionTarget, body string) error {
@@ -82,7 +93,6 @@ func (program *Program) submitPullRequestCommentUpdate(target pullRequestComment
 	}
 
 	program.optimisticallyUpdatePullRequestComment(target, body)
-	program.setFeedback(FocusDetailView, pullRequestCommentUpdatedSuccessMessage)
 	return nil
 }
 
@@ -98,7 +108,6 @@ func (program *Program) deletePullRequestComment(target pullRequestCommentEditAc
 	}
 
 	program.optimisticallyDeletePullRequestComment(target)
-	program.setFeedback(FocusDetailView, pullRequestCommentDeletedSuccessMessage)
 	return nil
 }
 

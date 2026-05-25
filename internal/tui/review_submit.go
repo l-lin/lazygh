@@ -114,12 +114,5 @@ func (program *Program) submitPendingPullRequestReview(target pendingPullRequest
 }
 
 func (program *Program) finishSubmittedPendingPullRequestReview(gui *gocui.Gui, target pendingPullRequestReviewTarget) {
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
-	program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, "")
-	program.restorePullRequestBrowserFromReviewMode()
-	program.setFeedback(target.sourceFocus, pullRequestReviewSuccessMessage)
-	if gui != nil {
-		_ = program.layout(gui)
-	}
+	_ = program.dispatch(gui, MsgPendingPullRequestReviewSubmitted{Target: target})
 }

@@ -9,6 +9,13 @@ type actionsPopupAsyncSuccess interface {
 	apply(*Program) []Cmd
 }
 
+func applyActionsPopupFeedback(program *Program, target Focus, message string) {
+	if program == nil {
+		return
+	}
+	program.applyFeedbackSet(MsgFeedbackSet{Target: target, Message: message})
+}
+
 type actionsPopupAsyncFeedbackSuccess struct {
 	Message string
 }
@@ -17,7 +24,7 @@ func (success actionsPopupAsyncFeedbackSuccess) apply(program *Program) []Cmd {
 	if program == nil {
 		return nil
 	}
-	program.setFeedback(program.model.Focus(), success.Message)
+	applyActionsPopupFeedback(program, program.model.Focus(), success.Message)
 	return nil
 }
 
@@ -33,7 +40,7 @@ func (success actionsPopupAsyncPullRequestLifecycleSuccess) apply(program *Progr
 		return nil
 	}
 	program.applyVisiblePullRequestLifecycleMutation(success.Summary, success.State, success.IsDraft)
-	program.setFeedback(program.model.Focus(), success.Message)
+	applyActionsPopupFeedback(program, program.model.Focus(), success.Message)
 	return nil
 }
 
@@ -48,7 +55,7 @@ func (success actionsPopupAsyncPullRequestAutoMergeSuccess) apply(program *Progr
 		return nil
 	}
 	program.applyVisiblePullRequestAutoMergeMutation(success.Summary, success.Enabled)
-	program.setFeedback(program.model.Focus(), success.Message)
+	applyActionsPopupFeedback(program, program.model.Focus(), success.Message)
 	return nil
 }
 
@@ -62,7 +69,7 @@ func (success actionsPopupAsyncPullRequestBranchUpdateSuccess) apply(program *Pr
 		return nil
 	}
 	program.applyVisiblePullRequestBranchUpdate(success.Summary)
-	program.setFeedback(program.model.Focus(), success.Message)
+	applyActionsPopupFeedback(program, program.model.Focus(), success.Message)
 	return nil
 }
 
@@ -81,7 +88,7 @@ func (success actionsPopupAsyncInvalidatePullRequestSuccess) apply(program *Prog
 	if success.InvalidateDiff {
 		program.invalidatePullRequestDiff(success.Repository, success.Number)
 	}
-	program.setFeedback(program.model.Focus(), success.Message)
+	applyActionsPopupFeedback(program, program.model.Focus(), success.Message)
 	return nil
 }
 
@@ -98,7 +105,7 @@ func (success actionsPopupAsyncPullRequestAssigneesUpdatedSuccess) apply(program
 		return nil
 	}
 	program.optimisticallyUpdatePullRequestAssignees(success.Repository, success.Number, success.AddLogins, success.RemoveLogins)
-	program.setFeedback(program.model.Focus(), success.Message)
+	applyActionsPopupFeedback(program, program.model.Focus(), success.Message)
 	return nil
 }
 
@@ -125,7 +132,7 @@ func (success actionsPopupAsyncReactionAddedSuccess) apply(program *Program) []C
 		return nil
 	}
 	program.optimisticallyAddReaction(success.Target, success.Content)
-	program.setFeedback(program.model.Focus(), pullRequestReactionAddedSuccessMessage)
+	applyActionsPopupFeedback(program, program.model.Focus(), pullRequestReactionAddedSuccessMessage)
 	return nil
 }
 
@@ -143,7 +150,7 @@ func (success actionsPopupAsyncThemeAppliedSuccess) apply(program *Program) []Cm
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.actionsPopupWidget.errorMessage = ""
-	program.setFeedback(program.model.Focus(), "Theme changed to "+success.Label)
+	applyActionsPopupFeedback(program, program.model.Focus(), "Theme changed to "+success.Label)
 	if program.gui != nil {
 		program.configureGUI(program.gui)
 	}
@@ -161,6 +168,6 @@ func (success actionsPopupAsyncPendingReviewCanceledSuccess) apply(program *Prog
 	program.invalidatePullRequestDetail(success.Target.repository, success.Target.number)
 	program.invalidatePullRequestDiff(success.Target.repository, success.Target.number)
 	program.setPendingPullRequestReviewStateByIdentity(success.Target.repository, success.Target.number, "")
-	program.setFeedback(success.Target.sourceFocus, pendingPullRequestReviewCanceledMessage)
+	applyActionsPopupFeedback(program, success.Target.sourceFocus, pendingPullRequestReviewCanceledMessage)
 	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
 }

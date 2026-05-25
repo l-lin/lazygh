@@ -55,13 +55,21 @@ func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) actions
 	}
 
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openMultilineModalEditor(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) error {
+		if err := program.openMultilineModalEditor(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) error {
 			return program.submitInlineCommentUpdate(target, body)
-		}, reviewInlineCommentModalHeight)
+		}, reviewInlineCommentModalHeight); err != nil {
+			return err
+		}
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: inlineCommentUpdatedSuccessMessage})
+			}
+		}
+		return nil
 	})
 }
 
-func (program *Program) executeDeleteInlineCommentAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) actionsPopupActionResult {
 	target, ok := program.selectedPullRequestReviewCommentActionTarget()
 	if !ok {
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
@@ -69,7 +77,10 @@ func (program *Program) executeDeleteInlineCommentAction(_ *gocui.Gui) actionsPo
 	if err := program.deleteInlineComment(target); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: inlineCommentDeletedSuccessMessage}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommentActionTarget, body string) error {
@@ -84,7 +95,6 @@ func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommen
 	}
 
 	program.optimisticallyUpdateReviewComment(target, body)
-	program.setFeedback(FocusDetailView, inlineCommentUpdatedSuccessMessage)
 	return nil
 }
 
@@ -100,7 +110,6 @@ func (program *Program) deleteInlineComment(target pullRequestReviewCommentActio
 	}
 
 	program.optimisticallyDeleteReviewComment(target)
-	program.setFeedback(FocusDetailView, inlineCommentDeletedSuccessMessage)
 	return nil
 }
 

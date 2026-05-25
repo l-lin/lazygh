@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -12,6 +10,11 @@ type manualRefreshFeedbackState struct {
 	successMessage    string
 	pendingOperations int
 	failed            bool
+}
+
+type manualRefreshFeedbackCompletion struct {
+	popupError     string
+	successMessage string
 }
 
 func (program *Program) beginManualRefresh(successMessage string, pendingOperations int) {
@@ -26,16 +29,17 @@ func (program *Program) beginManualRefresh(successMessage string, pendingOperati
 	}
 }
 
-func (program *Program) completeManualRefreshOperation(gui *gocui.Gui, err error) {
+func (program *Program) completeManualRefreshOperation(err error) manualRefreshFeedbackCompletion {
 	if program == nil || program.manualRefreshState.feedback == nil {
-		return
+		return manualRefreshFeedbackCompletion{}
 	}
 
 	state := program.manualRefreshState.feedback
+	completion := manualRefreshFeedbackCompletion{}
 	if err != nil {
 		if !state.failed {
 			program.feedbackMessage = ""
-			program.reportError(gui, strings.TrimSpace(normalizeGHCommandError(err).Error()))
+			completion.popupError = strings.TrimSpace(normalizeGHCommandError(err).Error())
 		}
 		state.failed = true
 	}
@@ -43,12 +47,13 @@ func (program *Program) completeManualRefreshOperation(gui *gocui.Gui, err error
 		state.pendingOperations--
 	}
 	if state.pendingOperations > 0 {
-		return
+		return completion
 	}
 	if !state.failed && state.successMessage != "" {
-		program.setFeedback(FocusDetailView, state.successMessage)
+		completion.successMessage = state.successMessage
 	}
 	program.manualRefreshState.feedback = nil
+	return completion
 }
 
 func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) bool {

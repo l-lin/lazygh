@@ -156,6 +156,83 @@ func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCall
 	}
 }
 
+func TestRefactorGuard_GivenPhase2PopupFeedbackFiles_WhenScanning_ThenTheyDoNotOwnFeedbackReportingOrPopupCloseState(t *testing.T) {
+	phase2Files := map[string]bool{
+		"actions_popup_actions.go":          true,
+		"comment_on_pr.go":                  true,
+		"inline_comment_edit.go":            true,
+		"inline_comment_reply.go":           true,
+		"inline_comment_resolution.go":      true,
+		"pull_request_comment_edit.go":      true,
+		"pull_request_refresh_reporting.go": true,
+		"pull_request_review.go":            true,
+		"pull_request_stage_merge.go":       true,
+		"reaction_remove.go":                true,
+		"review_inline_comment.go":          true,
+		"review_submit.go":                  true,
+		"yank_motion.go":                    true,
+	}
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.(?:setFeedback|reportError)\(`,
+		`actionsPopupActionResult\{closePopup:\s*true\}`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return phase2Files[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected phase 2 popup feedback files to route feedback, reporting, and popup close state through update-owned helpers or messages, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDirectFeedbackAndErrorReportingStayInUpdateFiles(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:setFeedback|reportError)\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if strings.HasPrefix(base, "update") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected direct feedback and error reporting to stay in update files, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyAsyncPopupBridgeRemains(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`startActionsPopupAsyncGHCommand\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the legacy async popup bridge to be retired, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenRemainingPopupActionFiles_WhenScanning_ThenTheyDoNotReturnLegacyClosePopupState(t *testing.T) {
+	remainingPopupFiles := map[string]bool{
+		"error_popup.go":            true,
+		"modal_editor_lifecycle.go": true,
+		"notification_actions.go":   true,
+		"open_link.go":              true,
+		"pull_request_build.go":     true,
+		"refresh_active_view.go":    true,
+		"review_story.go":           true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`actionsPopupActionResult\{closePopup:\s*true\}`), func(path string) bool {
+		return remainingPopupFiles[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the remaining popup action files to close through reducer-owned messages instead of legacy action results, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,

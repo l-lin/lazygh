@@ -27,6 +27,16 @@ func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded)
 	program.model.SetUsers([]Item{connectedUserStateItem(message.User, message.Err)})
 }
 
+func (program *Program) applyManualRefreshCompletion(err error) {
+	completion := program.completeManualRefreshOperation(err)
+	if completion.popupError != "" {
+		program.reportError(program.gui, completion.popupError)
+	}
+	if completion.successMessage != "" {
+		program.setFeedback(FocusDetailView, completion.successMessage)
+	}
+}
+
 func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) {
 	program.setPullRequestsLoading(message.Tab, false)
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
@@ -37,13 +47,13 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) {
 		program.model.SetPullRequestRows(message.Tab, rows)
 		program.selectOpenedPullRequestRow(message.Tab)
 		if manualRefresh {
-			program.completeManualRefreshOperation(program.gui, nil)
+			program.applyManualRefreshCompletion(nil)
 		}
 		return
 	}
 
 	if manualRefresh {
-		program.completeManualRefreshOperation(program.gui, message.Err)
+		program.applyManualRefreshCompletion(message.Err)
 	}
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
@@ -76,13 +86,13 @@ func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded)
 		program.cacheNotifications(filteredNotifications)
 		program.model.SetNotificationRows(notificationRows(filteredNotifications))
 		if manualRefresh {
-			program.completeManualRefreshOperation(program.gui, nil)
+			program.applyManualRefreshCompletion(nil)
 		}
 		return
 	}
 
 	if manualRefresh {
-		program.completeManualRefreshOperation(program.gui, message.Err)
+		program.applyManualRefreshCompletion(message.Err)
 	}
 	if !program.shouldPreserveNotificationRowsOnRefreshError() {
 		program.model.SetNotificationRows(notificationsStateRows(nil, message.Err))
@@ -106,7 +116,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: clonedDetail, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
-			program.completeManualRefreshOperation(program.gui, nil)
+			program.applyManualRefreshCompletion(nil)
 		}
 		return
 	}
@@ -115,7 +125,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		program.pullRequestDetailCache[key] = pullRequestDetailResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
-			program.completeManualRefreshOperation(program.gui, message.Err)
+			program.applyManualRefreshCompletion(message.Err)
 		}
 		return
 	}
@@ -125,7 +135,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	cachedResult.needsRefresh = false
 	program.pullRequestDetailCache[key] = cachedResult
 	if manualRefresh {
-		program.completeManualRefreshOperation(program.gui, message.Err)
+		program.applyManualRefreshCompletion(message.Err)
 	}
 }
 
@@ -148,7 +158,7 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
 		if manualRefresh {
-			program.completeManualRefreshOperation(program.gui, nil)
+			program.applyManualRefreshCompletion(nil)
 		}
 		return
 	}
@@ -159,7 +169,7 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
 		if manualRefresh {
-			program.completeManualRefreshOperation(program.gui, message.Err)
+			program.applyManualRefreshCompletion(message.Err)
 		}
 		return
 	}
@@ -171,7 +181,7 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	program.pullRequestDiffCache[key] = cachedResult
 	program.invalidatePullRequestDetailDocumentCache()
 	if manualRefresh {
-		program.completeManualRefreshOperation(program.gui, message.Err)
+		program.applyManualRefreshCompletion(message.Err)
 	}
 }
 

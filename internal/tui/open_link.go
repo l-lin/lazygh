@@ -109,7 +109,10 @@ func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) actions
 	if err := program.dispatch(gui, MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()}); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (document detailDocument) linkAt(position detailPosition) (string, bool) {

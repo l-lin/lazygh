@@ -353,12 +353,14 @@ func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) action
 	})
 }
 
-func (program *Program) executeYankPullRequestURLAction(_ *gocui.Gui) actionsPopupActionResult {
+func (program *Program) executeYankPullRequestURLAction(gui *gocui.Gui) actionsPopupActionResult {
 	err := program.copySelectedPullRequestURL()
 	switch {
 	case err == nil:
-		program.setFeedback(program.model.Focus(), yankSuccessMessage)
-		return actionsPopupActionResult{closePopup: true}
+		if dispatchErr := program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: yankSuccessMessage}); dispatchErr != nil {
+			return actionsPopupActionResult{err: dispatchErr}
+		}
+		return actionsPopupActionResult{}
 	case errors.Is(err, ErrNoPullRequestURL):
 		return actionsPopupActionResult{err: errors.New(yankUnavailableMessage)}
 	default:

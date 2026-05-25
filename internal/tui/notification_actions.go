@@ -186,35 +186,50 @@ func (program *Program) executeMarkNotificationReadAction(gui *gocui.Gui) action
 	if err := program.markSelectedNotificationRead(gui); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) executeMarkNotificationDoneAction(gui *gocui.Gui) actionsPopupActionResult {
 	if err := program.markSelectedNotificationDone(gui); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) executeMarkAllNotificationsReadAction(gui *gocui.Gui) actionsPopupActionResult {
 	if err := program.markAllLoadedNotificationsRead(gui); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) executeMarkAllNotificationsDoneAction(gui *gocui.Gui) actionsPopupActionResult {
 	if err := program.markAllLoadedNotificationsDone(gui); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) executeOpenNotificationInBrowserAction(gui *gocui.Gui) actionsPopupActionResult {
 	if err := program.openSelectedNotificationInBrowser(gui); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {

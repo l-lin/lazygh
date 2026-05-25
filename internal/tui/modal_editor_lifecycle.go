@@ -12,7 +12,10 @@ func (program *Program) openModalEditorFromActionsPopup(gui *gocui.Gui, open fun
 		return actionsPopupActionResult{err: err}
 	}
 	if !wasVisible && program.modalEditorVisible() {
-		return actionsPopupActionResult{closePopup: true}
+		if err := program.closeActionsPopupIfVisible(gui); err != nil {
+			return actionsPopupActionResult{err: err}
+		}
+		return actionsPopupActionResult{}
 	}
 	return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 }

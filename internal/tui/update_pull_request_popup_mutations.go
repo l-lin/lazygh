@@ -126,6 +126,15 @@ func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullReq
 	}}}
 }
 
+func (program *Program) applyPendingPullRequestReviewSubmitted(message MsgPendingPullRequestReviewSubmitted) {
+	target := message.Target
+	program.invalidatePullRequestDetail(target.repository, target.number)
+	program.invalidatePullRequestDiff(target.repository, target.number)
+	program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, "")
+	program.restorePullRequestBrowserFromReviewMode()
+	program.setFeedback(target.sourceFocus, pullRequestReviewSuccessMessage)
+}
+
 func popupPullRequestActionTargetIdentity(target pullRequestActionTarget) (string, int, bool) {
 	repository := strings.TrimSpace(target.repository)
 	if pullRequestKeyFromIdentity(repository, target.number) == "" {

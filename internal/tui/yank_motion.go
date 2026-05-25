@@ -80,9 +80,9 @@ func (program *Program) copySelectedText(state *detailViewState, document detail
 	state.exitVisualMode()
 	if err == nil {
 		program.activateYankHighlight(state, selection)
-		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
+		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankSuccessMessage})
 	} else {
-		program.setFeedback(program.model.Focus(), detailYankFailureMessage)
+		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankFailureMessage})
 	}
 }
 
@@ -143,9 +143,9 @@ func (program *Program) finishPendingYank(document detailDocument, state *detail
 	}
 	if err := program.writeTextToClipboard(selection.text(document)); err == nil {
 		program.activateYankHighlight(state, selection)
-		program.setFeedback(program.model.Focus(), detailYankSuccessMessage)
+		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankSuccessMessage})
 	} else {
-		program.setFeedback(program.model.Focus(), detailYankFailureMessage)
+		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankFailureMessage})
 	}
 }
 

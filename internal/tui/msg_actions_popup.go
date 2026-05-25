@@ -58,6 +58,11 @@ type MsgPullRequestBranchUpdateRequested struct {
 	Summary githubdomain.PullRequest
 }
 
+type MsgActionsPopupClosedWithFeedback struct {
+	Target  Focus
+	Message string
+}
+
 type MsgPullRequestCustomSearchSubmitted struct {
 	Criteria string
 }
@@ -122,6 +127,10 @@ type MsgCancelPendingPullRequestReviewRequested struct {
 	Target pendingPullRequestReviewActionTarget
 }
 
+type MsgPendingPullRequestReviewSubmitted struct {
+	Target pendingPullRequestReviewTarget
+}
+
 func (MsgClearCacheRequested) isMsg()                     {}
 func (MsgStartPullRequestReviewRequested) isMsg()         {}
 func (MsgOpenPullRequestInBrowserRequested) isMsg()       {}
@@ -130,6 +139,7 @@ func (MsgReRequestPullRequestReviewRequested) isMsg()     {}
 func (MsgPullRequestLifecycleMutationRequested) isMsg()   {}
 func (MsgPullRequestAutoMergeMutationRequested) isMsg()   {}
 func (MsgPullRequestBranchUpdateRequested) isMsg()        {}
+func (MsgActionsPopupClosedWithFeedback) isMsg()          {}
 func (MsgPullRequestCustomSearchSubmitted) isMsg()        {}
 func (MsgOpenAssigneePickerRequested) isMsg()             {}
 func (MsgToggleAssigneePickerSelectionRequested) isMsg()  {}
@@ -144,3 +154,4 @@ func (MsgRefreshPullRequestRequested) isMsg()             {}
 func (MsgPullRequestTitleEditApplied) isMsg()             {}
 func (MsgPullRequestDescriptionEditApplied) isMsg()       {}
 func (MsgCancelPendingPullRequestReviewRequested) isMsg() {}
+func (MsgPendingPullRequestReviewSubmitted) isMsg()       {}

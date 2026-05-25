@@ -55,8 +55,9 @@ func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, sel
 		return err
 	}
 	if program.overlayState.modalEditor != nil {
-		program.overlayState.modalEditor.afterSubmit = func(*gocui.Gui) {
+		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
 			program.detailState.viewState.exitVisualMode()
+			_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestReviewInlineCommentSuccessMessage})
 		}
 	}
 	return nil
@@ -201,7 +202,6 @@ func (program *Program) submitPullRequestInlineComment(target pullRequestInlineC
 
 	target.pendingReview = pendingReviewID
 	program.optimisticallyAppendInlineComment(target, body)
-	program.setFeedback(FocusDetailView, pullRequestReviewInlineCommentSuccessMessage)
 	return nil
 }
 

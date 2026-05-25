@@ -365,30 +365,29 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) acti
 
 	command := squashMergePullRequestCommand(target.repository, target.number)
 	program.startGHCommandLoading(command)
+	success := actionsPopupAsyncPullRequestLifecycleSuccess{
+		Summary: summary,
+		State:   "MERGED",
+		IsDraft: false,
+		Message: pullRequestSquashMergedSuccessMessage,
+	}
 	if gui == nil {
 		if err := program.runSquashMergePullRequestMutation(target); err != nil {
 			program.clearGHCommandLoading()
 			return actionsPopupActionResult{err: newTransientErrorPopupActionError(err)}
 		}
-		program.clearGHCommandLoading()
-		program.applyVisiblePullRequestLifecycleMutation(summary, "MERGED", false)
-		program.setFeedback(program.model.Focus(), pullRequestSquashMergedSuccessMessage)
-		return actionsPopupActionResult{closePopup: true}
+		program.executeCmds(gui, Update(program, MsgActionsPopupAsyncGHCommandFinished{Success: success}))
+		return actionsPopupActionResult{}
 	}
 
 	program.runAsync(func() {
 		err := program.runSquashMergePullRequestMutation(target)
-		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{
-			Err: err,
-			Success: actionsPopupAsyncPullRequestLifecycleSuccess{
-				Summary: summary,
-				State:   "MERGED",
-				IsDraft: false,
-				Message: pullRequestSquashMergedSuccessMessage,
-			},
-		})
+		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 	})
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.dispatch(gui, MsgCloseActionsPopup{}); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) runSquashMergePullRequestMutation(target pullRequestActionTarget) error {

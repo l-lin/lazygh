@@ -57,10 +57,19 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) actionsPopupA
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
+	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
+		if err := program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
 			return program.submitPullRequestReviewComment(target, body)
-		})
+		}); err != nil {
+			return err
+		}
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				_ = program.dispatch(gui, MsgFeedbackSet{Target: feedbackTarget, Message: pullRequestReviewSuccessMessage})
+			}
+		}
+		return nil
 	})
 }
 
@@ -79,10 +88,19 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) actionsPopup
 		return actionsPopupActionResult{err: errActionsPopupActionUnavailable}
 	}
 
+	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
+		if err := program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
 			return program.submitPullRequestRequestChanges(target, body)
-		})
+		}); err != nil {
+			return err
+		}
+		if program.overlayState.modalEditor != nil {
+			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
+				_ = program.dispatch(gui, MsgFeedbackSet{Target: feedbackTarget, Message: pullRequestReviewSuccessMessage})
+			}
+		}
+		return nil
 	})
 }
 
@@ -99,7 +117,6 @@ func (program *Program) submitPullRequestReviewComment(target pullRequestActionT
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
 	program.invalidatePullRequestDiff(target.repository, target.number)
-	program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
 	return nil
 }
 
@@ -116,6 +133,5 @@ func (program *Program) submitPullRequestRequestChanges(target pullRequestAction
 
 	program.invalidatePullRequestDetail(target.repository, target.number)
 	program.invalidatePullRequestDiff(target.repository, target.number)
-	program.setFeedback(program.model.Focus(), pullRequestReviewSuccessMessage)
 	return nil
 }

@@ -8,7 +8,8 @@ import (
 )
 
 func TestOpenModalEditorFromActionsPopup_GivenOpenerCreatesAModal_WhenOpening_ThenItClosesThePopup(t *testing.T) {
-	subject := &Program{}
+	subject := NewProgramWithModel(given_model())
+	subject.model.OpenActionsPopup(1)
 
 	actual := subject.openModalEditorFromActionsPopup(nil, func(_ *gocui.Gui) error {
 		subject.overlayState.modalEditor = newLineModalEditorState("Title", "", nil)
@@ -18,7 +19,10 @@ func TestOpenModalEditorFromActionsPopup_GivenOpenerCreatesAModal_WhenOpening_Th
 	if actual.err != nil {
 		t.Fatalf("expected no error, actual %v", actual.err)
 	}
-	if !actual.closePopup {
+	if actual.closePopup {
+		t.Fatal("expected popup close to route through the reducer instead of the legacy action result")
+	}
+	if subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to close after opening the modal editor")
 	}
 }

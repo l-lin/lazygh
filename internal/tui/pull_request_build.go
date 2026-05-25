@@ -107,7 +107,10 @@ func (program *Program) executePullRequestBuildRunAction(gui *gocui.Gui) actions
 	if err := program.startPullRequestBuildRunLoad(gui, target.summary, target.check); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) actionsPopupActionResult {
@@ -118,7 +121,10 @@ func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) act
 	if err := program.startPullRequestBuildRunJobLogLoad(gui, target.summary, target.check); err != nil {
 		return actionsPopupActionResult{err: err}
 	}
-	return actionsPopupActionResult{closePopup: true}
+	if err := program.closeActionsPopupIfVisible(gui); err != nil {
+		return actionsPopupActionResult{err: err}
+	}
+	return actionsPopupActionResult{}
 }
 
 func pullRequestStatusCheckMatchingEntry(checks []githubdomain.PullRequestStatusCheck, entry pullRequestOverviewEntry) (githubdomain.PullRequestStatusCheck, bool) {
