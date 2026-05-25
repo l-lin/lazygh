@@ -103,3 +103,21 @@ func (store *pullRequestListStore) setPullRequestsCount(tab PullRequestTab, coun
 		store.additionalPullRequestsCounts[tab] = pullRequestCountState{count: count, known: known}
 	}
 }
+
+func (store *pullRequestListStore) resetPullRequestListLoadState() {
+	if store == nil {
+		return
+	}
+
+	store.myPullRequestsLoadStarted = false
+	store.requestedPullRequestsLoadStarted = false
+	store.myPullRequestsLoading = false
+	store.requestedPullRequestsLoading = false
+	store.myPullRequestsCount = 0
+	store.myPullRequestsCountKnown = false
+	store.requestedPullRequestsCount = 0
+	store.requestedPullRequestsCountKnown = false
+	store.additionalPullRequestsLoadStarted = map[PullRequestTab]bool{}
+	store.additionalPullRequestsLoading = map[PullRequestTab]bool{}
+	store.additionalPullRequestsCounts = map[PullRequestTab]pullRequestCountState{}
+}

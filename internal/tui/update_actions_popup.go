@@ -62,7 +62,7 @@ func (program *Program) clearCachedData() error {
 	program.ghCommandLoadingMessage = ""
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
-	program.resetPullRequestSearchState()
+	program.resetPullRequestListLoadState()
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
 	program.model.SetNotifications([]Item{notificationsLoadingItem()})
 	return nil

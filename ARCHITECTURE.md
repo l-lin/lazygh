@@ -124,6 +124,8 @@ The TUI plans background work after state changes through `plannedWorkflow()`. `
 
 The stores under `workflow_stores.go` still track in-flight state, cache state, and invalidation state. They are shell-oriented coordinators, not pure reducers, but the planner no longer flips those flags inline while deciding commands. Reducer-owned messages now mark load starts, in-flight detail and diff refreshes, notification detail loads, and image loads, while cache hydration for detail and diff also lands through typed messages instead of a planner side effect.
 
+Pull-request search reconfiguration and cache clear now reset pull-request list load-start, loading, and count state through `pullRequestListStore.resetPullRequestListLoadState()`. Update-owned files call that focused store helper, and `pull_request_commands.go` stays on search descriptors, loading labels, and tab helpers.
+
 `workflow_commands.go` is now the command-layer home for detail and diff transport work, including the optional file-team-owner enrichment pass and the typed cache-hydration commands. `pull_request_detail_loader.go` and `review_diff_loader.go` still decide which summary is active, but they no longer call GitHub ports themselves or hydrate caches while planning.
 
 ### Overlays and editors

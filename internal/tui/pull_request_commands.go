@@ -37,20 +37,6 @@ func (program *Program) pullRequestLoadingItem(tab PullRequestTab) Item {
 	return pullRequestLoadingItem(program.pullRequestListState(tab))
 }
 
-func (program *Program) resetPullRequestSearchState() {
-	program.myPullRequestsLoadStarted = false
-	program.requestedPullRequestsLoadStarted = false
-	program.myPullRequestsLoading = false
-	program.requestedPullRequestsLoading = false
-	program.myPullRequestsCount = 0
-	program.myPullRequestsCountKnown = false
-	program.requestedPullRequestsCount = 0
-	program.requestedPullRequestsCountKnown = false
-	program.additionalPullRequestsLoadStarted = map[PullRequestTab]bool{}
-	program.additionalPullRequestsLoading = map[PullRequestTab]bool{}
-	program.additionalPullRequestsCounts = map[PullRequestTab]pullRequestCountState{}
-}
-
 func (program *Program) pullRequestsTabLabels() []string {
 	tabs := program.model.PullRequestTabs()
 	labels := make([]string, 0, len(tabs))

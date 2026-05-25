@@ -351,6 +351,46 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndExplic
 	}
 }
 
+func TestRefactorGuard_GivenPullRequestCommandSurface_WhenScanning_ThenItDoesNotMutatePullRequestListLoadStateDirectly(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.(?:myPullRequestsLoadStarted|requestedPullRequestsLoadStarted|myPullRequestsLoading|requestedPullRequestsLoading)\s*=`,
+		`program\.(?:myPullRequestsCount|myPullRequestsCountKnown|requestedPullRequestsCount|requestedPullRequestsCountKnown)\s*=`,
+		`program\.(?:additionalPullRequestsLoadStarted|additionalPullRequestsLoading|additionalPullRequestsCounts)\s*=`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "pull_request_commands.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected pull_request_commands.go to stay on search descriptors and tab helpers instead of mutating pull request list load state, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateFilesAndTheStoreHelperResetPullRequestListLoadState(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"program_loading.go":              true,
+		"update_actions_popup.go":         true,
+		"update_pull_request_commands.go": true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`resetPullRequestListLoadState\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected pull request list load-state resets to stay behind the store helper and update-owned callers, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,
