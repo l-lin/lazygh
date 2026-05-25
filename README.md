@@ -54,6 +54,16 @@ mise run lazygh view https://github.com/acme/widgets/pull/42
 mise run lazygh review https://github.com/acme/widgets/pull/42
 ```
 
+### Development tasks
+
+```sh
+mise run test
+mise run coverage
+mise run build
+```
+
+`mise run coverage` writes `.sandbox/coverage/coverage.out` and prints the repo-wide coverage summary.
+
 ### Releases
 
 Tagged pushes that match `v*` publish release archives and `checksums.txt`.

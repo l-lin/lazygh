@@ -5,6 +5,17 @@ import (
 	"testing"
 )
 
+func TestNewSystemReader_GivenANewReader_WhenCreating_ThenItConfiguresTheSystemClipboardReadFunction(t *testing.T) {
+	actual := NewSystemReader()
+
+	if actual == nil {
+		t.Fatal("expected a reader instance")
+	}
+	if actual.readAll == nil {
+		t.Fatal("expected the system clipboard read function to be configured")
+	}
+}
+
 func TestReadText_GivenSystemReader_WhenReading_ThenItDelegatesToTheUnderlyingClipboardFunction(t *testing.T) {
 	readCalled := false
 	subject := SystemReader{readAll: func() (string, error) {

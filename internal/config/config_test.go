@@ -390,6 +390,44 @@ func TestResolveLinksConfig_GivenAConfiguredOpenCommand_WhenResolving_ThenItKeep
 	}
 }
 
+func TestConfig_ResolvedLinks_GivenConfiguredLinks_WhenResolving_ThenItDelegatesToTheNormalizedLinksConfig(t *testing.T) {
+	subject := Config{Links: LinksConfig{OpenCommand: []string{" open ", " -a ", " Firefox "}}}
+
+	actual := subject.ResolvedLinks()
+
+	expected := LinksConfig{OpenCommand: []string{"open", "-a", "Firefox"}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected links config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestFormatGHCommand_GivenTrimmedArguments_WhenFormatting_ThenItPrefixesGHAndPreservesTheNormalizedArguments(t *testing.T) {
+	actual := FormatGHCommand([]string{" pr ", " list ", " --limit ", " 50 "})
+
+	expected := "gh pr list --limit 50"
+	if actual != expected {
+		t.Fatalf("expected formatted command %q, actual %q", expected, actual)
+	}
+}
+
+func TestFormatGHCommand_GivenABlankArgument_WhenFormatting_ThenItFallsBackToTheBareExecutableName(t *testing.T) {
+	actual := FormatGHCommand([]string{"pr", "", "list"})
+
+	expected := "gh"
+	if actual != expected {
+		t.Fatalf("expected formatted command %q, actual %q", expected, actual)
+	}
+}
+
+func TestFormatGHCommand_GivenNoArguments_WhenFormatting_ThenItReturnsTheBareExecutableName(t *testing.T) {
+	actual := FormatGHCommand(nil)
+
+	expected := "gh"
+	if actual != expected {
+		t.Fatalf("expected formatted command %q, actual %q", expected, actual)
+	}
+}
+
 func TestConfig_ResolvedStoryReview_GivenNoConfiguredPrompt_WhenResolving_ThenItFallsBackToTheDefaultPrompt(t *testing.T) {
 	subject := Config{}
 

@@ -5,6 +5,17 @@ import (
 	"testing"
 )
 
+func TestNewSystemWriter_GivenANewWriter_WhenCreating_ThenItConfiguresTheSystemClipboardWriteFunction(t *testing.T) {
+	actual := NewSystemWriter()
+
+	if actual == nil {
+		t.Fatal("expected a writer instance")
+	}
+	if actual.writeAll == nil {
+		t.Fatal("expected the system clipboard write function to be configured")
+	}
+}
+
 func TestWriteText_GivenSystemWriter_WhenWriting_ThenItDelegatesToTheUnderlyingClipboardFunction(t *testing.T) {
 	writeCalled := false
 	subject := SystemWriter{writeAll: func(actual string) error {
