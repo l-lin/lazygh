@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -61,24 +60,7 @@ func (program *Program) executeInlineCommentResolutionAction(gui *gocui.Gui, res
 	if !ok {
 		return errActionsPopupActionUnavailable
 	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-
-	var err error
-	feedbackMessage := inlineCommentResolvedSuccessMessage
-	if resolved {
-		err = program.reviewMutations.ResolvePullRequestReviewThread(target.threadID)
-	} else {
-		err = program.reviewMutations.UnresolvePullRequestReviewThread(target.threadID)
-		feedbackMessage = inlineCommentUnresolvedSuccessMessage
-	}
-	if err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallySetReviewThreadResolved(target, resolved)
-	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: feedbackMessage})
+	return program.dispatch(gui, MsgInlineCommentResolutionRequested{Target: target, Resolved: resolved})
 }
 
 func (program *Program) selectedPullRequestReviewThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {

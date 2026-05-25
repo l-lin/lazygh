@@ -353,36 +353,7 @@ func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) erro
 	if err != nil {
 		return err
 	}
-
-	command := squashMergePullRequestCommand(target.repository, target.number)
-	program.startGHCommandLoading(command)
-	success := actionsPopupAsyncPullRequestLifecycleSuccess{
-		Summary: summary,
-		State:   "MERGED",
-		IsDraft: false,
-		Message: pullRequestSquashMergedSuccessMessage,
-	}
-	if gui == nil {
-		if err := program.runSquashMergePullRequestMutation(target); err != nil {
-			program.clearGHCommandLoading()
-			return newTransientErrorPopupActionError(err)
-		}
-		program.executeCmds(gui, Update(program, MsgActionsPopupAsyncGHCommandFinished{Success: success}))
-		return nil
-	}
-
-	program.runAsync(func() {
-		err := program.runSquashMergePullRequestMutation(target)
-		program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
-	})
-	return program.dispatch(gui, MsgCloseActionsPopup{})
-}
-
-func (program *Program) runSquashMergePullRequestMutation(target pullRequestActionTarget) error {
-	if err := program.pullRequestMutations.SquashMergePullRequest(target.repository, target.number); err != nil {
-		return normalizedPullRequestMutationError(err, "gh pr merge")
-	}
-	return nil
+	return program.dispatch(gui, MsgPullRequestSquashMergeRequested{Target: target, Summary: summary})
 }
 
 func pullRequestReadyCommand(repository string, number int, undo bool) string {

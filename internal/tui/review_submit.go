@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -61,22 +60,11 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 		return errActionsPopupActionUnavailable
 	}
 
+	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openModalEditor(gui, title, "", func(body string) error {
-			submitErr := program.submitPendingPullRequestReview(target, event, body)
-			if submitErr != nil && event == githubdomain.PullRequestReviewEventRequestChanges {
-				return newModalEditorStatusLineError(program.model.Focus(), submitErr)
-			}
-			return submitErr
-		}); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				program.finishSubmittedPendingPullRequestReview(gui, target)
-			}
-		}
-		return nil
+		return program.openModalEditorWithSubmitRequested(gui, title, "", func(body string) Msg {
+			return MsgPendingPullRequestReviewSubmitRequested{Target: target, Event: event, Body: body, FeedbackTarget: feedbackTarget}
+		})
 	})
 }
 
@@ -97,22 +85,4 @@ func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullReq
 		pendingReviewID: pendingReviewID,
 		sourceFocus:     program.navigationState.reviewSession.sourceFocus,
 	}, true
-}
-
-func (program *Program) submitPendingPullRequestReview(target pendingPullRequestReviewTarget, event githubdomain.PullRequestReviewEvent, body string) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.pendingReviewID) == "" {
-		return errors.New("missing pull request review context")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-
-	if err := program.reviewMutations.SubmitPullRequestReview(target.pendingReviewID, event, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-	return nil
-}
-
-func (program *Program) finishSubmittedPendingPullRequestReview(gui *gocui.Gui, target pendingPullRequestReviewTarget) {
-	_ = program.dispatch(gui, MsgPendingPullRequestReviewSubmitted{Target: target})
 }

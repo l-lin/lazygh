@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 	"unicode/utf8"
 
@@ -42,18 +41,7 @@ func (program *Program) executeRemoveReactionAction(gui *gocui.Gui, target pullR
 	if strings.TrimSpace(target.subjectID) == "" {
 		return errActionsPopupActionUnavailable
 	}
-	if !reactionGroupViewerHasReacted(target.reactionGroups, target.content) {
-		return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionAlreadyRemovedMessage})
-	}
-	if !program.hasReactionMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.reactionMutations.RemoveReaction(target.subjectID, target.content); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyRemoveReaction(target)
-	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionRemovedSuccessMessage})
+	return program.dispatch(gui, MsgReactionRemovalRequested{Target: target})
 }
 
 func (program *Program) selectedPullRequestReactionRemovalTarget() (pullRequestReactionRemovalTarget, bool) {

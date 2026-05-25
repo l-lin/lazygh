@@ -1,11 +1,6 @@
 package tui
 
-import (
-	"errors"
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 const (
 	pullRequestTitleEditorTitle              = "Edit PR title"
@@ -30,21 +25,11 @@ func (program *Program) executeEditPullRequestTitleAction(gui *gocui.Gui) error 
 		return errActionsPopupActionUnavailable
 	}
 
-	submittedTitle := target.title
 	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openLineModalEditor(gui, pullRequestTitleEditorTitle, target.title, func(title string) error {
-			submittedTitle = title
-			return program.submitPullRequestTitleEdit(target, title)
-		}); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				_ = program.dispatch(gui, MsgPullRequestTitleEditApplied{Target: target, Title: submittedTitle, FeedbackTarget: feedbackTarget})
-			}
-		}
-		return nil
+		return program.openLineModalEditorWithSubmitRequested(gui, pullRequestTitleEditorTitle, target.title, func(title string) Msg {
+			return MsgPullRequestTitleEditRequested{Target: target, Title: title, FeedbackTarget: feedbackTarget}
+		})
 	})
 }
 
@@ -63,48 +48,10 @@ func (program *Program) executeEditPullRequestDescriptionAction(gui *gocui.Gui) 
 		return errActionsPopupActionUnavailable
 	}
 
-	submittedBody := target.body
 	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openMultilineModalEditor(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) error {
-			submittedBody = body
-			return program.submitPullRequestDescriptionEdit(target, body)
-		}, pullRequestDescriptionEditorHeight); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				_ = program.dispatch(gui, MsgPullRequestDescriptionEditApplied{Target: target, Body: submittedBody, FeedbackTarget: feedbackTarget})
-			}
-		}
-		return nil
+		return program.openMultilineModalEditorWithSubmitRequested(gui, pullRequestDescriptionEditorTitle, target.body, func(body string) Msg {
+			return MsgPullRequestDescriptionEditRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+		}, pullRequestDescriptionEditorHeight)
 	})
-}
-
-func (program *Program) submitPullRequestTitleEdit(target pullRequestActionTarget, title string) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.pullRequestMutations.EditPullRequestTitle(target.repository, target.number, title); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-	program.optimisticallyUpdatePullRequestTitle(target.repository, target.number, title)
-	return nil
-}
-
-func (program *Program) submitPullRequestDescriptionEdit(target pullRequestActionTarget, body string) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.pullRequestMutations.EditPullRequestDescription(target.repository, target.number, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-	program.optimisticallyUpdatePullRequestDescription(target.repository, target.number, body)
-	return nil
 }

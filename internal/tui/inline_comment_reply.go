@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -48,35 +47,9 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) error 
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {
-	if err := program.openMultilineModalEditor(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) error {
-		return program.submitInlineCommentReply(target, body)
-	}, reviewInlineCommentModalHeight); err != nil {
-		return err
-	}
-	if program.overlayState.modalEditor != nil {
-		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestInlineCommentReplySuccessMessage})
-		}
-	}
-	return nil
-}
-
-func (program *Program) submitInlineCommentReply(target pullRequestReviewThreadReplyTarget, body string) error {
-	if strings.TrimSpace(target.threadID) == "" {
-		return errors.New("missing inline comment thread identity")
-	}
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.reviewMutations.AddPullRequestReviewThreadReply(target.pendingReview, target.threadID, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyAppendInlineCommentReply(target, body)
-	return nil
+	return program.openMultilineModalEditorWithSubmitRequested(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) Msg {
+		return MsgInlineCommentReplySubmitRequested{Target: target, Body: body}
+	}, reviewInlineCommentModalHeight)
 }
 
 func (program *Program) selectedPullRequestReviewThreadReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {

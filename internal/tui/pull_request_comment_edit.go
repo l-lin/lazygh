@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -53,17 +52,9 @@ func (program *Program) executeUpdatePullRequestCommentAction(gui *gocui.Gui) er
 	}
 
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openMultilineModalEditor(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) error {
-			return program.submitPullRequestCommentUpdate(target, body)
-		}, reviewInlineCommentModalHeight); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestCommentUpdatedSuccessMessage})
-			}
-		}
-		return nil
+		return program.openMultilineModalEditorWithSubmitRequested(gui, pullRequestCommentUpdateEditorTitle, target.body, func(body string) Msg {
+			return MsgPullRequestCommentUpdateRequested{Target: target, Body: body}
+		}, reviewInlineCommentModalHeight)
 	})
 }
 
@@ -72,40 +63,7 @@ func (program *Program) executeDeletePullRequestCommentAction(gui *gocui.Gui) er
 	if !ok {
 		return errActionsPopupActionUnavailable
 	}
-	if err := program.deletePullRequestComment(target); err != nil {
-		return err
-	}
-	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: pullRequestCommentDeletedSuccessMessage})
-}
-
-func (program *Program) submitPullRequestCommentUpdate(target pullRequestCommentEditActionTarget, body string) error {
-	if strings.TrimSpace(target.commentID) == "" {
-		return errors.New("missing pull request comment identity")
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.pullRequestMutations.UpdatePullRequestComment(target.commentID, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyUpdatePullRequestComment(target, body)
-	return nil
-}
-
-func (program *Program) deletePullRequestComment(target pullRequestCommentEditActionTarget) error {
-	if strings.TrimSpace(target.commentID) == "" {
-		return errors.New("missing pull request comment identity")
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.pullRequestMutations.DeletePullRequestComment(target.commentID); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyDeletePullRequestComment(target)
-	return nil
+	return program.dispatch(gui, MsgPullRequestCommentDeleteRequested{Target: target})
 }
 
 func (program *Program) selectedPullRequestCommentEditActionTarget() (pullRequestCommentEditActionTarget, bool) {

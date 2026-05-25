@@ -82,7 +82,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgModalEditorSubmitRequested:
 		return program.applyModalEditorSubmitRequested()
 	case MsgModalEditorSubmitFinished:
-		program.applyModalEditorSubmitFinished(actual)
+		return program.applyModalEditorSubmitFinished(actual)
 	case MsgModalEditorExternalEditRequested:
 		return program.applyModalEditorExternalEditRequested()
 	case MsgModalEditorExternalEditFinished:
@@ -267,6 +267,36 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPullRequestTitleEditApplied(actual)
 	case MsgPullRequestDescriptionEditApplied:
 		return program.applyPullRequestDescriptionEditApplied(actual)
+	case MsgPullRequestCommentSubmitRequested:
+		return program.applyPullRequestCommentSubmitRequested(actual)
+	case MsgPullRequestReviewCommentSubmitRequested:
+		return program.applyPullRequestReviewCommentSubmitRequested(actual)
+	case MsgPullRequestRequestChangesSubmitRequested:
+		return program.applyPullRequestRequestChangesSubmitRequested(actual)
+	case MsgPullRequestTitleEditRequested:
+		return program.applyPullRequestTitleEditRequested(actual)
+	case MsgPullRequestDescriptionEditRequested:
+		return program.applyPullRequestDescriptionEditRequested(actual)
+	case MsgPullRequestCommentUpdateRequested:
+		return program.applyPullRequestCommentUpdateRequested(actual)
+	case MsgPullRequestCommentDeleteRequested:
+		return program.applyPullRequestCommentDeleteRequested(actual)
+	case MsgInlineCommentUpdateRequested:
+		return program.applyInlineCommentUpdateRequested(actual)
+	case MsgInlineCommentDeleteRequested:
+		return program.applyInlineCommentDeleteRequested(actual)
+	case MsgInlineCommentReplySubmitRequested:
+		return program.applyInlineCommentReplySubmitRequested(actual)
+	case MsgInlineCommentResolutionRequested:
+		return program.applyInlineCommentResolutionRequested(actual)
+	case MsgReviewInlineCommentSubmitRequested:
+		return program.applyReviewInlineCommentSubmitRequested(actual)
+	case MsgPendingPullRequestReviewSubmitRequested:
+		return program.applyPendingPullRequestReviewSubmitRequested(actual)
+	case MsgReactionRemovalRequested:
+		return program.applyReactionRemovalRequested(actual)
+	case MsgPullRequestSquashMergeRequested:
+		return program.applyPullRequestSquashMergeRequested(actual)
 	case MsgCancelPendingPullRequestReviewRequested:
 		return program.applyCancelPendingPullRequestReviewRequested(actual)
 	case MsgPendingPullRequestReviewSubmitted:

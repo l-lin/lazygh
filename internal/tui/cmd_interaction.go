@@ -92,7 +92,7 @@ func (command modalEditorExternalEditCmd) execute(program *Program, gui *gocui.G
 type modalEditorSubmitCmd struct {
 	Text        string
 	Submit      func(string) error
-	AfterSubmit func(*Program)
+	AfterSubmit func(*Program) []Cmd
 }
 
 func (command modalEditorSubmitCmd) execute(program *Program, gui *gocui.Gui) {

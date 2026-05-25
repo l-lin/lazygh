@@ -109,6 +109,63 @@ func (success actionsPopupAsyncPullRequestAssigneesUpdatedSuccess) apply(program
 	return nil
 }
 
+type actionsPopupAsyncPullRequestCommentDeletedSuccess struct {
+	Target pullRequestCommentEditActionTarget
+}
+
+func (success actionsPopupAsyncPullRequestCommentDeletedSuccess) apply(program *Program) []Cmd {
+	if program == nil {
+		return nil
+	}
+	program.optimisticallyDeletePullRequestComment(success.Target)
+	applyActionsPopupFeedback(program, FocusDetailView, pullRequestCommentDeletedSuccessMessage)
+	return nil
+}
+
+type actionsPopupAsyncInlineCommentDeletedSuccess struct {
+	Target pullRequestReviewCommentActionTarget
+}
+
+func (success actionsPopupAsyncInlineCommentDeletedSuccess) apply(program *Program) []Cmd {
+	if program == nil {
+		return nil
+	}
+	program.optimisticallyDeleteReviewComment(success.Target)
+	applyActionsPopupFeedback(program, FocusDetailView, inlineCommentDeletedSuccessMessage)
+	return nil
+}
+
+type actionsPopupAsyncInlineCommentResolutionSuccess struct {
+	Target   pullRequestReviewThreadActionTarget
+	Resolved bool
+}
+
+func (success actionsPopupAsyncInlineCommentResolutionSuccess) apply(program *Program) []Cmd {
+	if program == nil {
+		return nil
+	}
+	program.optimisticallySetReviewThreadResolved(success.Target, success.Resolved)
+	message := inlineCommentResolvedSuccessMessage
+	if !success.Resolved {
+		message = inlineCommentUnresolvedSuccessMessage
+	}
+	applyActionsPopupFeedback(program, program.model.Focus(), message)
+	return nil
+}
+
+type actionsPopupAsyncReactionRemovedSuccess struct {
+	Target pullRequestReactionRemovalTarget
+}
+
+func (success actionsPopupAsyncReactionRemovedSuccess) apply(program *Program) []Cmd {
+	if program == nil {
+		return nil
+	}
+	program.optimisticallyRemoveReaction(success.Target)
+	applyActionsPopupFeedback(program, program.model.Focus(), pullRequestReactionRemovedSuccessMessage)
+	return nil
+}
+
 type actionsPopupAsyncStartReviewSuccess struct {
 	Summary         githubdomain.PullRequest
 	PendingReviewID string

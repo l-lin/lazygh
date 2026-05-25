@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"errors"
-
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 const (
 	pullRequestCommentComposerTitle  = "Comment on PR"
@@ -27,17 +23,9 @@ func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.
 	}
 
 	feedbackTarget := program.model.Focus()
-	if err := program.openModalEditor(gui, pullRequestCommentComposerTitle, "", func(body string) error {
-		return program.submitPullRequestComment(target, body)
-	}); err != nil {
-		return err
-	}
-	if program.overlayState.modalEditor != nil {
-		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			_ = program.dispatch(gui, MsgFeedbackSet{Target: feedbackTarget, Message: pullRequestCommentSuccessMessage})
-		}
-	}
-	return nil
+	return program.openModalEditorWithSubmitRequested(gui, pullRequestCommentComposerTitle, "", func(body string) Msg {
+		return MsgPullRequestCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+	})
 }
 
 func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, view *gocui.View) error {
@@ -61,22 +49,6 @@ func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, vie
 
 func (program *Program) pullRequestCommentComposerBlocked() bool {
 	return program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible()
-}
-
-func (program *Program) submitPullRequestComment(target pullRequestCommentTarget, body string) error {
-	if target.repository == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-
-	if err := program.pullRequestMutations.CommentOnPullRequest(target.repository, target.number, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyAppendPullRequestComment(target, body)
-	return nil
 }
 
 func (program *Program) selectedPullRequestCommentTarget() (pullRequestCommentTarget, bool) {

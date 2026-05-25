@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -55,17 +54,9 @@ func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) error {
 	}
 
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openMultilineModalEditor(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) error {
-			return program.submitInlineCommentUpdate(target, body)
-		}, reviewInlineCommentModalHeight); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: inlineCommentUpdatedSuccessMessage})
-			}
-		}
-		return nil
+		return program.openMultilineModalEditorWithSubmitRequested(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) Msg {
+			return MsgInlineCommentUpdateRequested{Target: target, Body: body}
+		}, reviewInlineCommentModalHeight)
 	})
 }
 
@@ -74,40 +65,7 @@ func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) error {
 	if !ok {
 		return errActionsPopupActionUnavailable
 	}
-	if err := program.deleteInlineComment(target); err != nil {
-		return err
-	}
-	return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: FocusDetailView, Message: inlineCommentDeletedSuccessMessage})
-}
-
-func (program *Program) submitInlineCommentUpdate(target pullRequestReviewCommentActionTarget, body string) error {
-	if strings.TrimSpace(target.commentID) == "" {
-		return errors.New("missing inline comment identity")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.reviewMutations.UpdatePullRequestReviewComment(target.commentID, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyUpdateReviewComment(target, body)
-	return nil
-}
-
-func (program *Program) deleteInlineComment(target pullRequestReviewCommentActionTarget) error {
-	if strings.TrimSpace(target.commentID) == "" {
-		return errors.New("missing inline comment identity")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.reviewMutations.DeletePullRequestReviewComment(target.commentID); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.optimisticallyDeleteReviewComment(target)
-	return nil
+	return program.dispatch(gui, MsgInlineCommentDeleteRequested{Target: target})
 }
 
 func (program *Program) selectedPullRequestReviewCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {

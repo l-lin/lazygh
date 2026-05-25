@@ -285,6 +285,29 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoActionsPopupActio
 	}
 }
 
+func TestRefactorGuard_GivenPhase1PopupEditorMutationFiles_WhenScanning_ThenTheyDoNotCallGitHubMutationPortsDirectly(t *testing.T) {
+	phase1Files := map[string]bool{
+		"comment_on_pr.go":             true,
+		"inline_comment_edit.go":       true,
+		"inline_comment_reply.go":      true,
+		"inline_comment_resolution.go": true,
+		"pull_request_comment_edit.go": true,
+		"pull_request_edit.go":         true,
+		"pull_request_review.go":       true,
+		"pull_request_stage_merge.go":  true,
+		"reaction_remove.go":           true,
+		"review_inline_comment.go":     true,
+		"review_submit.go":             true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestMutations|reviewMutations|reactionMutations)\.[A-Za-z0-9_]+\(`), func(path string) bool {
+		return phase1Files[filepath.Base(path)]
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the phase 1 popup/editor mutation files to route GitHub mutations through update-owned commands, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyModelAndUpdateFilesUseProgramModelMutatorMethods(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.model\.(?:Set|Open|Close|Select|Move|Update|Start|Cancel|Clear|Grow|Shrink|Focus|Blur|Submit|Advance|Cycle|Toggle|Reset|Remove|Add|Apply|Mark|Restore|Use)[A-Z][A-Za-z0-9_]*\(`,

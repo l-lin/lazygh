@@ -3,7 +3,6 @@ package tui
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/jesseduffield/gocui"
 )
@@ -56,17 +55,9 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) error {
 
 	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openModalEditor(gui, pullRequestReviewCommentComposerTitle, "", func(body string) error {
-			return program.submitPullRequestReviewComment(target, body)
-		}); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				_ = program.dispatch(gui, MsgFeedbackSet{Target: feedbackTarget, Message: pullRequestReviewSuccessMessage})
-			}
-		}
-		return nil
+		return program.openModalEditorWithSubmitRequested(gui, pullRequestReviewCommentComposerTitle, "", func(body string) Msg {
+			return MsgPullRequestReviewCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+		})
 	})
 }
 
@@ -87,48 +78,8 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) error {
 
 	feedbackTarget := program.model.Focus()
 	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if err := program.openModalEditor(gui, pullRequestRequestChangesComposerTitle, "", func(body string) error {
-			return program.submitPullRequestRequestChanges(target, body)
-		}); err != nil {
-			return err
-		}
-		if program.overlayState.modalEditor != nil {
-			program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-				_ = program.dispatch(gui, MsgFeedbackSet{Target: feedbackTarget, Message: pullRequestReviewSuccessMessage})
-			}
-		}
-		return nil
+		return program.openModalEditorWithSubmitRequested(gui, pullRequestRequestChangesComposerTitle, "", func(body string) Msg {
+			return MsgPullRequestRequestChangesSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+		})
 	})
-}
-
-func (program *Program) submitPullRequestReviewComment(target pullRequestActionTarget, body string) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.reviewMutations.ReviewPullRequestWithComment(target.repository, target.number, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
-	return nil
-}
-
-func (program *Program) submitPullRequestRequestChanges(target pullRequestActionTarget, body string) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	if err := program.reviewMutations.RequestChangesOnPullRequest(target.repository, target.number, body); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	program.invalidatePullRequestDetail(target.repository, target.number)
-	program.invalidatePullRequestDiff(target.repository, target.number)
-	return nil
 }

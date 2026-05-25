@@ -17,21 +17,32 @@ const (
 )
 
 type modalEditorState struct {
-	title        string
-	editor       *multilineEditor
-	lineEditor   *lineEditor
-	errorMessage string
-	submit       func(string) error
-	afterSubmit  func(*gocui.Gui)
-	totalHeight  int
+	title           string
+	editor          *multilineEditor
+	lineEditor      *lineEditor
+	errorMessage    string
+	submit          func(string) error
+	submitRequested func(string) Msg
+	afterSubmit     func(*gocui.Gui)
+	totalHeight     int
 }
 
 func newModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
 	return newMultilineModalEditorState(title, initialText, submit, modalEditorTotalHeight)
 }
 
+func newModalEditorStateWithSubmitRequested(title string, initialText string, submitRequested func(string) Msg) *modalEditorState {
+	state := newModalEditorState(title, initialText, nil)
+	state.submitRequested = submitRequested
+	return state
+}
+
 func newLineModalEditorState(title string, initialText string, submit func(string) error) *modalEditorState {
 	return newLineModalEditorStateWithHeight(title, initialText, submit, lineModalEditorTotalHeight)
+}
+
+func newLineModalEditorStateWithSubmitRequested(title string, initialText string, submitRequested func(string) Msg) *modalEditorState {
+	return newLineModalEditorStateWithHeightAndSubmitRequested(title, initialText, submitRequested, lineModalEditorTotalHeight)
 }
 
 func newLineModalEditorStateWithHeight(title string, initialText string, submit func(string) error, totalHeight int) *modalEditorState {
@@ -50,6 +61,12 @@ func newLineModalEditorStateWithHeight(title string, initialText string, submit 
 	}
 }
 
+func newLineModalEditorStateWithHeightAndSubmitRequested(title string, initialText string, submitRequested func(string) Msg, totalHeight int) *modalEditorState {
+	state := newLineModalEditorStateWithHeight(title, initialText, nil, totalHeight)
+	state.submitRequested = submitRequested
+	return state
+}
+
 func newMultilineModalEditorState(title string, initialText string, submit func(string) error, totalHeight int) *modalEditorState {
 	if submit == nil {
 		submit = func(string) error { return nil }
@@ -61,6 +78,12 @@ func newMultilineModalEditorState(title string, initialText string, submit func(
 		submit:      submit,
 		totalHeight: totalHeight,
 	}
+}
+
+func newMultilineModalEditorStateWithSubmitRequested(title string, initialText string, submitRequested func(string) Msg, totalHeight int) *modalEditorState {
+	state := newMultilineModalEditorState(title, initialText, nil, totalHeight)
+	state.submitRequested = submitRequested
+	return state
 }
 
 func (state *modalEditorState) Text() string {

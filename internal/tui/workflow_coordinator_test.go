@@ -11,7 +11,7 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestSubmitPullRequestTitleEdit_GivenLoadedSummaryAndDetail_WhenEditing_ThenItKeepsTheVisibleCachesHot(t *testing.T) {
+func TestUpdate_GivenMsgPullRequestTitleEditApplied_WhenApplying_ThenItKeepsTheVisibleCachesHot(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "Old title", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Old body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
 	loader := &fakePullRequestDetailLoader{}
 	cache := &fakePersistentPullRequestCache{}
@@ -19,9 +19,8 @@ func TestSubmitPullRequestTitleEdit_GivenLoadedSummaryAndDetail_WhenEditing_Then
 	subject.pullRequestCache = cache
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", State: "OPEN"}), sourceUpdatedAt: summary.UpdatedAt}
 
-	actualErr := subject.submitPullRequestTitleEdit(pullRequestActionTarget{repository: "acme/widgets", number: 42}, "New title")
+	Update(subject, MsgPullRequestTitleEditApplied{Target: pullRequestActionTarget{repository: "acme/widgets", number: 42}, Title: "New title", FeedbackTarget: FocusPullRequestsView})
 
-	then_noError(t, actualErr)
 	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Title != "New title" {
 		t.Fatalf("expected the visible pull request title %q, actual %+v", "New title", actualRows)
@@ -41,7 +40,7 @@ func TestSubmitPullRequestTitleEdit_GivenLoadedSummaryAndDetail_WhenEditing_Then
 	}
 }
 
-func TestSubmitPullRequestDescriptionEdit_GivenLoadedSummaryAndDetail_WhenEditing_ThenItKeepsTheVisibleCachesHot(t *testing.T) {
+func TestUpdate_GivenMsgPullRequestDescriptionEditApplied_WhenApplying_ThenItKeepsTheVisibleCachesHot(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "Old title", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Old body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
 	loader := &fakePullRequestDetailLoader{}
 	cache := &fakePersistentPullRequestCache{}
@@ -49,9 +48,8 @@ func TestSubmitPullRequestDescriptionEdit_GivenLoadedSummaryAndDetail_WhenEditin
 	subject.pullRequestCache = cache
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", BodyHTML: "<p>Old body</p>", State: "OPEN"}), sourceUpdatedAt: summary.UpdatedAt}
 
-	actualErr := subject.submitPullRequestDescriptionEdit(pullRequestActionTarget{repository: "acme/widgets", number: 42}, "New body")
+	Update(subject, MsgPullRequestDescriptionEditApplied{Target: pullRequestActionTarget{repository: "acme/widgets", number: 42}, Body: "New body", FeedbackTarget: FocusPullRequestsView})
 
-	then_noError(t, actualErr)
 	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Body != "New body" {
 		t.Fatalf("expected the visible pull request body %q, actual %+v", "New body", actualRows)

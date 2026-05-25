@@ -39,40 +39,48 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 		return nil
 	}
 
-	program.overlayState.modalEditor.errorMessage = ""
-	var afterSubmit func(*Program)
-	if callback := program.overlayState.modalEditor.afterSubmit; callback != nil {
-		afterSubmit = func(program *Program) {
+	editorState := program.overlayState.modalEditor
+	editorState.errorMessage = ""
+	if editorState.submitRequested != nil {
+		return Update(program, editorState.submitRequested(editorState.Text()))
+	}
+
+	var afterSubmit func(*Program) []Cmd
+	if callback := editorState.afterSubmit; callback != nil {
+		afterSubmit = func(program *Program) []Cmd {
 			callback(program.gui)
+			return nil
 		}
 	}
-	return []Cmd{modalEditorSubmitCmd{Text: program.overlayState.modalEditor.Text(), Submit: program.overlayState.modalEditor.submit, AfterSubmit: afterSubmit}}
+	return []Cmd{modalEditorSubmitCmd{Text: editorState.Text(), Submit: editorState.submit, AfterSubmit: afterSubmit}}
 }
 
-func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) {
+func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) []Cmd {
 	if program == nil || program.overlayState.modalEditor == nil {
-		return
+		return nil
 	}
 
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 			program.overlayState.modalEditor.errorMessage = ""
 			program.reportError(program.gui, popupMessage)
-			return
+			return nil
 		}
 		var feedbackErr modalEditorStatusLineError
 		if errors.As(message.Err, &feedbackErr) {
 			program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
-			return
+			return nil
 		}
 		program.overlayState.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
-		return
+		return nil
 	}
 
+	var commands []Cmd
 	if message.AfterSubmit != nil {
-		message.AfterSubmit(program)
+		commands = message.AfterSubmit(program)
 	}
 	program.overlayState.modalEditor = nil
+	return commands
 }
 
 func (program *Program) applyModalEditorExternalEditRequested() []Cmd {

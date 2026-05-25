@@ -40,7 +40,7 @@ type MsgModalEditorSubmitRequested struct{}
 
 type MsgModalEditorSubmitFinished struct {
 	Err         error
-	AfterSubmit func(*Program)
+	AfterSubmit func(*Program) []Cmd
 }
 
 type MsgModalEditorExternalEditRequested struct{}

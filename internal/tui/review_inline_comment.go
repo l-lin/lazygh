@@ -49,18 +49,9 @@ func (program *Program) handleInlineCommentSelectionError(gui *gocui.Gui, err er
 }
 
 func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, selection pullRequestInlineCommentSelection) error {
-	if err := program.openMultilineModalEditor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) error {
-		return program.submitPullRequestInlineComment(selection.target, body)
-	}, reviewInlineCommentModalHeight); err != nil {
-		return err
-	}
-	if program.overlayState.modalEditor != nil {
-		program.overlayState.modalEditor.afterSubmit = func(gui *gocui.Gui) {
-			program.detailState.viewState.exitVisualMode()
-			_ = program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestReviewInlineCommentSuccessMessage})
-		}
-	}
-	return nil
+	return program.openMultilineModalEditorWithSubmitRequested(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) Msg {
+		return MsgReviewInlineCommentSubmitRequested{Target: selection.target, Body: body}
+	}, reviewInlineCommentModalHeight)
 }
 
 func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, bool) {
@@ -182,51 +173,6 @@ func pullRequestInlineCommentSelectionFromRenderedRows(repository string, number
 		},
 		initialBody: reviewInlineCommentSuggestionBody(threadTarget.Path, reviewDiffSelectedSnippet(renderedRows, detailDocument, state)),
 	}, nil
-}
-
-func (program *Program) submitPullRequestInlineComment(target pullRequestInlineCommentTarget, body string) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return errors.New("missing pull request identity")
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-
-	pendingReviewID, err := program.pendingReviewIDForInlineComment(target)
-	if err != nil {
-		return err
-	}
-	if err := program.reviewMutations.AddPullRequestReviewThread(pendingReviewID, body, target.threadTarget); err != nil {
-		return newTransientErrorPopupActionError(err)
-	}
-
-	target.pendingReview = pendingReviewID
-	program.optimisticallyAppendInlineComment(target, body)
-	return nil
-}
-
-func (program *Program) pendingReviewIDForInlineComment(target pullRequestInlineCommentTarget) (string, error) {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 {
-		return "", errors.New("missing pull request identity")
-	}
-	if strings.TrimSpace(target.pendingReview) != "" {
-		program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, target.pendingReview)
-		return strings.TrimSpace(target.pendingReview), nil
-	}
-	if !program.hasReviewMutations() {
-		return "", errors.New("github loader is unavailable")
-	}
-
-	pendingReviewID, err := program.reviewMutations.StartPendingPullRequestReview(target.repository, target.number)
-	if err != nil {
-		return "", newTransientErrorPopupActionError(err)
-	}
-	pendingReviewID = strings.TrimSpace(pendingReviewID)
-	if pendingReviewID == "" {
-		return "", errors.New("missing pull request review context")
-	}
-	program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, pendingReviewID)
-	return pendingReviewID, nil
 }
 
 func (program *Program) browserChangesInlineCommentShortcutActive() bool {
