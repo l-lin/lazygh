@@ -23,8 +23,7 @@ func (program *Program) closeActionsPopupState() {
 func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActionsPopupAsyncGHCommandFinished) []Cmd {
 	program.clearGHCommandLoading()
 	if message.Err != nil {
-		program.reportError(program.gui, strings.TrimSpace(message.Err.Error()))
-		return nil
+		return []Cmd{reportErrorCmd{Message: strings.TrimSpace(message.Err.Error())}}
 	}
 
 	var commands []Cmd
@@ -50,32 +49,32 @@ func (program *Program) restoreNotificationMutationSnapshot(snapshot notificatio
 	program.model.SelectNotificationIndex(snapshot.selectedIndex)
 }
 
-func (program *Program) applyNotificationMutationFinished(message MsgNotificationMutationFinished) {
+func (program *Program) applyNotificationMutationFinished(message MsgNotificationMutationFinished) []Cmd {
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""
 	if message.Err != nil {
 		program.restoreNotificationMutationSnapshot(message.Snapshot)
-		program.reportError(program.gui, strings.TrimSpace(message.Err.Error()))
-		return
+		return []Cmd{reportErrorCmd{Message: strings.TrimSpace(message.Err.Error())}}
 	}
 
 	program.cacheNotifications(program.loadedNotifications())
 	program.setFeedback(program.model.Focus(), message.SuccessFeedbackMessage)
+	return nil
 }
 
-func (program *Program) applyStoryReviewPrepared(message MsgStoryReviewPrepared) {
+func (program *Program) applyStoryReviewPrepared(message MsgStoryReviewPrepared) []Cmd {
 	program.storyReviewLoading = false
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-			program.reportError(program.gui, popupMessage)
-			return
+			return []Cmd{reportErrorCmd{Message: popupMessage}}
 		}
 		program.setFeedback(program.model.Focus(), strings.TrimSpace(message.Err.Error()))
-		return
+		return nil
 	}
 
 	program.feedbackMessage = ""
 	program.applyPreparedStoryReview(message.Prepared)
+	return nil
 }
 
 func (program *Program) applyAssigneePickerSearchLoadingStarted(message MsgAssigneePickerSearchLoadingStarted) {
@@ -85,9 +84,9 @@ func (program *Program) applyAssigneePickerSearchLoadingStarted(message MsgAssig
 	program.markAssigneePickerSearchLoading(message.Query)
 }
 
-func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePickerSearchLoaded) {
+func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePickerSearchLoaded) []Cmd {
 	if !program.assigneePickerSearchRequestCurrent(message.RequestID, message.Query) {
-		return
+		return nil
 	}
 
 	trimmedQuery := strings.TrimSpace(message.Query)
@@ -97,22 +96,21 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 	if message.Err != nil {
 		program.actionsPopupWidget.assigneePicker.searchResults = nil
 		program.actionsPopupWidget.errorMessage = ""
-		program.reportError(program.gui, strings.TrimSpace(normalizedAssigneePickerError(message.Err).Error()))
 		program.syncActionsPopupSearch()
-		return
+		return []Cmd{reportErrorCmd{Message: strings.TrimSpace(normalizedAssigneePickerError(message.Err).Error())}}
 	}
 
 	program.actionsPopupWidget.assigneePicker.rememberCandidates(message.Results)
 	program.actionsPopupWidget.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), message.Results...)
 	program.actionsPopupWidget.errorMessage = ""
 	program.syncActionsPopupSearch()
+	return nil
 }
 
-func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBuildRunLoaded) {
+func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBuildRunLoaded) []Cmd {
 	program.pullRequestBuildRunLoad = nil
 	if message.Err != nil {
-		program.reportError(program.gui, strings.TrimSpace(normalizeGHCommandError(message.Err).Error()))
-		return
+		return []Cmd{reportErrorCmd{Message: strings.TrimSpace(normalizeGHCommandError(message.Err).Error())}}
 	}
 
 	popupContent := message.Target.popupContent
@@ -120,15 +118,15 @@ func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBui
 	popupContent.jobs = append([]githubdomain.PullRequestBuildRunJob(nil), message.Jobs...)
 	program.openPullRequestBuildRunPopupState(popupContent)
 	if message.JobsErr != nil {
-		program.reportError(program.gui, strings.TrimSpace(normalizeGHCommandError(message.JobsErr).Error()))
+		return []Cmd{reportErrorCmd{Message: strings.TrimSpace(normalizeGHCommandError(message.JobsErr).Error())}}
 	}
+	return nil
 }
 
-func (program *Program) applyPullRequestBuildRunJobLogLoaded(message MsgPullRequestBuildRunJobLogLoaded) {
+func (program *Program) applyPullRequestBuildRunJobLogLoaded(message MsgPullRequestBuildRunJobLogLoaded) []Cmd {
 	program.pullRequestBuildRunLoad = nil
 	if message.Err != nil {
-		program.reportError(program.gui, strings.TrimSpace(normalizeGHCommandError(message.Err).Error()))
-		return
+		return []Cmd{reportErrorCmd{Message: strings.TrimSpace(normalizeGHCommandError(message.Err).Error())}}
 	}
 
 	program.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{
@@ -139,4 +137,5 @@ func (program *Program) applyPullRequestBuildRunJobLogLoaded(message MsgPullRequ
 		widthPercent:  pullRequestBuildLogsPopupWidthPercent,
 		heightPercent: pullRequestBuildLogsPopupHeightPercent,
 	})
+	return nil
 }

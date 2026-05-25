@@ -27,17 +27,18 @@ func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded)
 	program.model.SetUsers([]Item{connectedUserStateItem(message.User, message.Err)})
 }
 
-func (program *Program) applyManualRefreshCompletion(err error) {
+func (program *Program) applyManualRefreshCompletion(err error) []Cmd {
 	completion := program.completeManualRefreshOperation(err)
-	if completion.popupError != "" {
-		program.reportError(program.gui, completion.popupError)
-	}
 	if completion.successMessage != "" {
 		program.setFeedback(FocusDetailView, completion.successMessage)
 	}
+	if completion.popupError != "" {
+		return []Cmd{reportErrorCmd{Message: completion.popupError}}
+	}
+	return nil
 }
 
-func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) {
+func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) []Cmd {
 	program.setPullRequestsLoading(message.Tab, false)
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
@@ -47,18 +48,19 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) {
 		program.model.SetPullRequestRows(message.Tab, rows)
 		program.selectOpenedPullRequestRow(message.Tab)
 		if manualRefresh {
-			program.applyManualRefreshCompletion(nil)
+			return program.applyManualRefreshCompletion(nil)
 		}
-		return
+		return nil
 	}
 
-	if manualRefresh {
-		program.applyManualRefreshCompletion(message.Err)
-	}
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
 		program.model.SetPullRequestRows(message.Tab, program.pullRequestRowsForTab(message.Tab, nil, message.Err))
 	}
+	if manualRefresh {
+		return program.applyManualRefreshCompletion(message.Err)
+	}
+	return nil
 }
 
 func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
@@ -77,7 +79,7 @@ func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
 	}
 }
 
-func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded) {
+func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded) []Cmd {
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""
 	manualRefresh := program.consumeManualNotificationRefresh()
@@ -86,23 +88,24 @@ func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded)
 		program.cacheNotifications(filteredNotifications)
 		program.model.SetNotificationRows(notificationRows(filteredNotifications))
 		if manualRefresh {
-			program.applyManualRefreshCompletion(nil)
+			return program.applyManualRefreshCompletion(nil)
 		}
-		return
+		return nil
 	}
 
-	if manualRefresh {
-		program.applyManualRefreshCompletion(message.Err)
-	}
 	if !program.shouldPreserveNotificationRowsOnRefreshError() {
 		program.model.SetNotificationRows(notificationsStateRows(nil, message.Err))
 	}
+	if manualRefresh {
+		return program.applyManualRefreshCompletion(message.Err)
+	}
+	return nil
 }
 
-func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetailLoaded) {
+func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetailLoaded) []Cmd {
 	key := pullRequestDetailKey(message.Summary.Repository, message.Summary.Number)
 	if key == "" {
-		return
+		return nil
 	}
 
 	delete(program.pullRequestDetailLoadInFlight, key)
@@ -116,18 +119,18 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: clonedDetail, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
-			program.applyManualRefreshCompletion(nil)
+			return program.applyManualRefreshCompletion(nil)
 		}
-		return
+		return nil
 	}
 
 	if !program.canKeepPullRequestDetailOnRefreshError(key) {
 		program.pullRequestDetailCache[key] = pullRequestDetailResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
-			program.applyManualRefreshCompletion(message.Err)
+			return program.applyManualRefreshCompletion(message.Err)
 		}
-		return
+		return nil
 	}
 
 	cachedResult := program.pullRequestDetailCache[key]
@@ -135,14 +138,15 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	cachedResult.needsRefresh = false
 	program.pullRequestDetailCache[key] = cachedResult
 	if manualRefresh {
-		program.applyManualRefreshCompletion(message.Err)
+		return program.applyManualRefreshCompletion(message.Err)
 	}
+	return nil
 }
 
-func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoaded) {
+func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoaded) []Cmd {
 	key := pullRequestDetailKey(message.Summary.Repository, message.Summary.Number)
 	if key == "" {
-		return
+		return nil
 	}
 
 	delete(program.pullRequestDiffLoadInFlight, key)
@@ -158,9 +162,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
 		if manualRefresh {
-			program.applyManualRefreshCompletion(nil)
+			return program.applyManualRefreshCompletion(nil)
 		}
-		return
+		return nil
 	}
 
 	if !program.canKeepPullRequestDiffOnRefreshError(key) {
@@ -169,9 +173,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
 		if manualRefresh {
-			program.applyManualRefreshCompletion(message.Err)
+			return program.applyManualRefreshCompletion(message.Err)
 		}
-		return
+		return nil
 	}
 
 	cachedResult := program.pullRequestDiffCache[key]
@@ -181,8 +185,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	program.pullRequestDiffCache[key] = cachedResult
 	program.invalidatePullRequestDetailDocumentCache()
 	if manualRefresh {
-		program.applyManualRefreshCompletion(message.Err)
+		return program.applyManualRefreshCompletion(message.Err)
 	}
+	return nil
 }
 
 func (program *Program) applyIssueDetailLoaded(message MsgIssueDetailLoaded) {

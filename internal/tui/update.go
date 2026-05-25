@@ -242,7 +242,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgPullRequestSearchesApplied:
 		program.applyPullRequestSearchesApplied(actual)
 	case MsgClearCacheRequested:
-		program.applyClearCacheRequested()
+		return program.applyClearCacheRequested()
 	case MsgStartPullRequestReviewRequested:
 		return program.applyStartPullRequestReviewRequested(actual)
 	case MsgOpenPullRequestInBrowserRequested:
@@ -276,7 +276,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgThemePresetSelected:
 		return program.applyThemePresetSelected(actual)
 	case MsgThemePresetSaved:
-		program.applyThemePresetSaved(actual)
+		return program.applyThemePresetSaved(actual)
 	case MsgRefreshPullRequestListRequested:
 		return program.applyRefreshPullRequestListRequested()
 	case MsgRefreshPullRequestRequested:
@@ -348,13 +348,13 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 	case MsgPullRequestsLoaded:
-		program.applyPullRequestsLoaded(actual)
+		return program.applyPullRequestsLoaded(actual)
 	case MsgNotificationsLoaded:
-		program.applyNotificationsLoaded(actual)
+		return program.applyNotificationsLoaded(actual)
 	case MsgPullRequestDetailLoaded:
-		program.applyPullRequestDetailLoaded(actual)
+		return program.applyPullRequestDetailLoaded(actual)
 	case MsgPullRequestDiffLoaded:
-		program.applyPullRequestDiffLoaded(actual)
+		return program.applyPullRequestDiffLoaded(actual)
 	case MsgIssueDetailLoaded:
 		program.applyIssueDetailLoaded(actual)
 	case MsgReleaseDetailLoaded:
@@ -372,17 +372,17 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgNotificationMutationStarted:
 		program.applyNotificationMutationStarted(actual)
 	case MsgNotificationMutationFinished:
-		program.applyNotificationMutationFinished(actual)
+		return program.applyNotificationMutationFinished(actual)
 	case MsgStoryReviewPrepared:
-		program.applyStoryReviewPrepared(actual)
+		return program.applyStoryReviewPrepared(actual)
 	case MsgAssigneePickerSearchLoadingStarted:
 		program.applyAssigneePickerSearchLoadingStarted(actual)
 	case MsgAssigneePickerSearchLoaded:
-		program.applyAssigneePickerSearchLoaded(actual)
+		return program.applyAssigneePickerSearchLoaded(actual)
 	case MsgPullRequestBuildRunLoaded:
-		program.applyPullRequestBuildRunLoaded(actual)
+		return program.applyPullRequestBuildRunLoaded(actual)
 	case MsgPullRequestBuildRunJobLogLoaded:
-		program.applyPullRequestBuildRunJobLogLoaded(actual)
+		return program.applyPullRequestBuildRunJobLogLoaded(actual)
 	case MsgOpenActionsPopup:
 		program.clearPendingSelectionPrefix()
 		program.detailState.viewState.clearPendingPrefix()

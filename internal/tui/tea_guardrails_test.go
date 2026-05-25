@@ -600,6 +600,26 @@ func TestRefactorGuard_GivenDetailSearchUpdateFiles_WhenScanning_ThenTheyDoNotRe
 	}
 }
 
+func TestRefactorGuard_GivenAsyncPopupAndRefreshUpdateFiles_WhenScanning_ThenTheyDoNotReachThroughGuiOrManualRefreshShellHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.gui`,
+		`program\.reportError\(`,
+		`configureGUI\(`,
+		`markManualPullRequestListRefresh\(`,
+		`markManualPullRequestDetailRefresh\(`,
+		`markManualPullRequestDiffRefresh\(`,
+		`beginManualRefresh\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "update_feature_async.go" || base == "update_actions_popup.go" || base == "update_async.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected async popup/refresh update files to stop at typed shell commands instead of direct gui or manual-refresh shell helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,

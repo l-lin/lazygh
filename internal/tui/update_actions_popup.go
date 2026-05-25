@@ -17,25 +17,25 @@ func (program *Program) updateActionsPopupSearch(query string) {
 	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
 }
 
-func (program *Program) applyClearCacheRequested() {
+func (program *Program) applyClearCacheRequested() []Cmd {
 	if program.pullRequestCache == nil {
 		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
-		return
+		return nil
 	}
 	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != clearCacheActionTitle {
 		program.actionsPopupWidget.pendingConfirmationActionID = clearCacheActionTitle
 		program.actionsPopupWidget.errorMessage = ""
-		return
+		return nil
 	}
 
 	program.clearActionsPopupPendingConfirmation()
 	if err := program.clearCachedData(); err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(err.Error())
-		program.reportError(program.gui, program.actionsPopupWidget.errorMessage)
-		return
+		return []Cmd{reportErrorCmd{Message: program.actionsPopupWidget.errorMessage}}
 	}
 	program.closeActionsPopupState()
 	program.setFeedback(program.model.Focus(), clearCacheSuccessMessage)
+	return nil
 }
 
 func (program *Program) clearCachedData() error {
@@ -297,11 +297,10 @@ func (program *Program) restylePullRequestRows() {
 	}
 }
 
-func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) {
+func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd {
 	if message.Err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
-		program.reportError(program.gui, program.actionsPopupWidget.errorMessage)
-		return
+		return []Cmd{reportErrorCmd{Message: program.actionsPopupWidget.errorMessage}}
 	}
 
 	theme.ApplyPalette(theme.ResolvePaletteWithPreset(strings.TrimSpace(message.NormalizedName), theme.Palette{}))
@@ -310,53 +309,39 @@ func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) {
 	program.invalidateReviewDiffRenderCache()
 	program.actionsPopupWidget.errorMessage = ""
 	program.setFeedback(program.model.Focus(), "Theme changed to "+strings.TrimSpace(message.Label))
-	if program.gui != nil {
-		program.configureGUI(program.gui)
-	}
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
+	return []Cmd{configureGUICmd{}}
 }
 
 func (program *Program) applyRefreshPullRequestListRequested() []Cmd {
 	tab := program.model.ActivePullRequestTab()
-	pendingOperations := 0
-	if program.gui != nil && program.hasPullRequestListQueries() && program.markManualPullRequestListRefresh(tab) {
-		pendingOperations++
-	}
-	program.beginManualRefresh(pullRequestListRefreshSuccessMessage, pendingOperations)
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
-	return []Cmd{reloadPullRequestsTabCmd{tab: tab}}
+	return []Cmd{
+		beginManualPullRequestListRefreshCmd{Tab: tab, SuccessMessage: pullRequestListRefreshSuccessMessage},
+		reloadPullRequestsTabCmd{tab: tab},
+	}
 }
 
 func (program *Program) applyRefreshPullRequestRequested(message MsgRefreshPullRequestRequested) []Cmd {
 	target := message.Target
 	summary := message.Summary
-	pendingOperations := 0
 	if program.hasDetailQueries() {
-		if program.markManualPullRequestDetailRefresh(summary) {
-			pendingOperations++
-		}
 		program.markPullRequestDetailNeedsRefresh(summary)
-	}
-	if program.reviewModeActive() {
-		if program.hasDetailQueries() {
-			if program.markManualPullRequestDiffRefresh(summary) {
-				pendingOperations++
-			}
+		if program.reviewModeActive() {
 			program.markPullRequestDiffNeedsRefresh(summary)
 		}
-	} else if program.gui != nil && program.hasPullRequestListQueries() && program.markManualPullRequestListRefresh(program.model.ActivePullRequestTab()) {
-		pendingOperations++
 	}
-	program.beginManualRefresh(pullRequestRefreshSuccessMessage, pendingOperations)
 	program.invalidatePersistentPullRequest(target.repository, target.number)
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
-	if program.reviewModeActive() {
-		return nil
+
+	commands := []Cmd{beginManualPullRequestRefreshCmd{Summary: summary, SuccessMessage: pullRequestRefreshSuccessMessage}}
+	if !program.reviewModeActive() {
+		commands = append(commands, reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()})
 	}
-	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
+	return commands
 }
 
 func (program *Program) applyPullRequestTitleEditApplied(message MsgPullRequestTitleEditApplied) []Cmd {

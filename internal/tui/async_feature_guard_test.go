@@ -53,7 +53,7 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinished_WhenSuccessful_ThenIt
 	}
 }
 
-func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresTheSnapshotAndClearsLoading(t *testing.T) {
+func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresTheSnapshotClearsLoadingAndReturnsAReportErrorCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	snapshot := notificationMutationSnapshot{
 		rows:          []NotificationRow{{Item: Item{Title: "before-1"}}, {Item: Item{Title: "before-2"}}},
@@ -64,23 +64,26 @@ func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresT
 	subject.notificationsLoading = true
 	subject.notificationsLoadingDetailMessage = notificationDoneLoadingMessage
 
-	Update(subject, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: "ignored", Err: errors.New("boom")})
+	actual := Update(subject, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: "ignored", Err: errors.New("boom")})
 
 	if subject.notificationsLoading {
 		t.Fatalf("expected notifications loading to be cleared after the mutation result")
 	}
-	if actual := subject.notificationsLoadingDetailMessage; actual != "" {
-		t.Fatalf("expected notification loading detail %q, actual %q", "", actual)
+	if actualDetail := subject.notificationsLoadingDetailMessage; actualDetail != "" {
+		t.Fatalf("expected notification loading detail %q, actual %q", "", actualDetail)
 	}
 	actualRows := subject.model.NotificationRows()
 	if len(actualRows) != 2 || actualRows[0].Item.Title != "before-1" || actualRows[1].Item.Title != "before-2" {
 		t.Fatalf("expected restored rows %+v, actual %+v", snapshot.rows, actualRows)
 	}
-	if actual := subject.model.SelectedNotificationIndex(); actual != 1 {
-		t.Fatalf("expected restored selected notification index %d, actual %d", 1, actual)
+	if actualIndex := subject.model.SelectedNotificationIndex(); actualIndex != 1 {
+		t.Fatalf("expected restored selected notification index %d, actual %d", 1, actualIndex)
 	}
-	if !subject.transientErrorPopupVisible() {
-		t.Fatalf("expected a failing notification mutation to report an error popup")
+	if len(actual) != 1 {
+		t.Fatalf("expected one report-error command, actual %d", len(actual))
+	}
+	if _, ok := actual[0].(reportErrorCmd); !ok {
+		t.Fatalf("expected a reportErrorCmd, actual %T", actual[0])
 	}
 }
 

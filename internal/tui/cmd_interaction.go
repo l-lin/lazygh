@@ -27,6 +27,15 @@ type interactionCommandRuntime struct {
 	currentPullRequestBuildRunPopupLink func(*gocui.View) (string, bool)
 	followSubmittedDetailSearch         func(*gocui.Gui) error
 	followReverseDetailSearch           func(*gocui.Gui) error
+	configureGUI                        func(*gocui.Gui)
+	hasPullRequestListQueries           func() bool
+	hasDetailQueries                    func() bool
+	markManualPullRequestListRefresh    func(PullRequestTab) bool
+	markManualPullRequestDetailRefresh  func(githubdomain.PullRequest) bool
+	markManualPullRequestDiffRefresh    func(githubdomain.PullRequest) bool
+	beginManualRefresh                  func(string, int)
+	reviewModeActive                    func() bool
+	activePullRequestTab                func() PullRequestTab
 	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 	prepareBuildPopupClipboardWrite     func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 }
@@ -62,6 +71,15 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		currentPullRequestBuildRunPopupLink: program.currentPullRequestBuildRunPopupLink,
 		followSubmittedDetailSearch:         program.followSubmittedDetailSearch,
 		followReverseDetailSearch:           program.followReverseDetailSearch,
+		configureGUI:                        program.configureGUI,
+		hasPullRequestListQueries:           program.hasPullRequestListQueries,
+		hasDetailQueries:                    program.hasDetailQueries,
+		markManualPullRequestListRefresh:    program.markManualPullRequestListRefresh,
+		markManualPullRequestDetailRefresh:  program.markManualPullRequestDetailRefresh,
+		markManualPullRequestDiffRefresh:    program.markManualPullRequestDiffRefresh,
+		beginManualRefresh:                  program.beginManualRefresh,
+		reviewModeActive:                    program.reviewModeActive,
+		activePullRequestTab:                program.model.ActivePullRequestTab,
 		prepareSelectedDetailClipboardWrite: func(gui *gocui.Gui, view *gocui.View, target Focus) (writeClipboardCmd, bool) {
 			actualView := program.resolveView(gui, view, viewDetailName)
 			detailDocument := program.currentDetailDocument(actualView)
@@ -148,6 +166,70 @@ func (command reportErrorCmd) execute(program *Program, gui *gocui.Gui) {
 		return
 	}
 	program.reportError(gui, command.Message)
+}
+
+type configureGUICmd struct{}
+
+func (configureGUICmd) execute(program *Program, gui *gocui.Gui) {
+	executeConfigureGUICommand(newInteractionCommandRuntime(program), gui)
+}
+
+func executeConfigureGUICommand(runtime interactionCommandRuntime, gui *gocui.Gui) {
+	if gui == nil || runtime.configureGUI == nil {
+		return
+	}
+	runtime.configureGUI(gui)
+}
+
+type beginManualPullRequestListRefreshCmd struct {
+	Tab            PullRequestTab
+	SuccessMessage string
+}
+
+func (command beginManualPullRequestListRefreshCmd) execute(program *Program, gui *gocui.Gui) {
+	executeBeginManualPullRequestListRefreshCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeBeginManualPullRequestListRefreshCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command beginManualPullRequestListRefreshCmd) {
+	pendingOperations := 0
+	if gui != nil && runtime.hasPullRequestListQueries != nil && runtime.hasPullRequestListQueries() && runtime.markManualPullRequestListRefresh != nil && runtime.markManualPullRequestListRefresh(command.Tab) {
+		pendingOperations++
+	}
+	if runtime.beginManualRefresh != nil {
+		runtime.beginManualRefresh(command.SuccessMessage, pendingOperations)
+	}
+}
+
+type beginManualPullRequestRefreshCmd struct {
+	Summary        githubdomain.PullRequest
+	SuccessMessage string
+}
+
+func (command beginManualPullRequestRefreshCmd) execute(program *Program, gui *gocui.Gui) {
+	executeBeginManualPullRequestRefreshCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeBeginManualPullRequestRefreshCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command beginManualPullRequestRefreshCmd) {
+	pendingOperations := 0
+	if runtime.hasDetailQueries != nil && runtime.hasDetailQueries() {
+		if runtime.markManualPullRequestDetailRefresh != nil && runtime.markManualPullRequestDetailRefresh(command.Summary) {
+			pendingOperations++
+		}
+	}
+	if runtime.reviewModeActive != nil && runtime.reviewModeActive() {
+		if runtime.hasDetailQueries != nil && runtime.hasDetailQueries() {
+			if runtime.markManualPullRequestDiffRefresh != nil && runtime.markManualPullRequestDiffRefresh(command.Summary) {
+				pendingOperations++
+			}
+		}
+	} else if gui != nil && runtime.hasPullRequestListQueries != nil && runtime.hasPullRequestListQueries() && runtime.markManualPullRequestListRefresh != nil && runtime.activePullRequestTab != nil {
+		if runtime.markManualPullRequestListRefresh(runtime.activePullRequestTab()) {
+			pendingOperations++
+		}
+	}
+	if runtime.beginManualRefresh != nil {
+		runtime.beginManualRefresh(command.SuccessMessage, pendingOperations)
+	}
 }
 
 type resolveDetailSearchWordCmd struct {
