@@ -111,7 +111,7 @@ The render pipeline is mostly read-only now.
 
 Renderers configure views and write content, but selector caching, list viewport cleanup, terminal image sync, and detail-view shell sync have been pushed out of `render.go` and into shell or selector helpers.
 
-Pane-footer, status-line key hints, and help-popup keybinding tables now run through read-only snapshot presenters (`footerPresenter` and `helpPresenter`) plus a small keybinding-label resolver. That keeps footer/help derivation logic off the full `*Program` shell bag while leaving view configuration and drawing as shell-owned glue.
+Pane-footer, status-line key hints, help-popup keybinding tables, actions-popup chrome state, and shared search or pane-title derivation now run through read-only snapshot presenters (`footerPresenter`, `helpPresenter`, `actionsPopupPresenter`, and `searchViewPresenter`) plus a small keybinding-label resolver. That keeps footer/help/popup/title derivation logic off the full `*Program` shell bag while leaving view configuration and drawing as shell-owned glue.
 
 The detail pane uses selector-style document builders for:
 

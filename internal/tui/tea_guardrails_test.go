@@ -499,6 +499,40 @@ func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenOnlyViewGlueStillDependsOn
 	}
 }
 
+func TestRefactorGuard_GivenActionsPopupViewFile_WhenScanning_ThenOnlyViewGlueStillDependsOnProgram(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
+		return filepath.Base(path) == "actions_popup_view.go"
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "layoutActionsPopupViews(") || strings.Contains(match, "layoutActionsPopupSearchView(") || strings.Contains(match, "configureActionsPopupChromeView(") || strings.Contains(match, "renderActionsPopupChromeView(") || strings.Contains(match, "configureActionsPopupView(") || strings.Contains(match, "renderActionsPopupView(") || strings.Contains(match, "configureActionsPopupSearchView(") || strings.Contains(match, "renderActionsPopupSearchView(") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected actions_popup_view.go to stay on snapshot presenters instead of full Program coupling, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenSearchViewFile_WhenScanning_ThenOnlyPromptGlueStillDependsOnProgram(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
+		return filepath.Base(path) == "search_view.go"
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "layoutBottomPromptView(") || strings.Contains(match, "configureSearchView(") || strings.Contains(match, "renderSearchView(") || strings.Contains(match, "editSearch(") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected search_view.go to stay on prompt glue instead of full Program coupling, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenDetailAndReviewChildReducerFiles_WhenScanning_ThenTheyStayOnValueReceiverTransitions(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
 		`func \(program \*Program\)`,

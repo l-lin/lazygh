@@ -1,13 +1,6 @@
 package tui
 
-import (
-	"fmt"
-	"unicode/utf8"
-
-	"github.com/jesseduffield/gocui"
-
-	"github.com/l-lin/lazygh/internal/theme"
-)
+import "github.com/jesseduffield/gocui"
 
 const bottomPromptPrefix = "/"
 
@@ -36,33 +29,9 @@ func (program *Program) configureSearchView(view *gocui.View) {
 	program.configureBottomPromptView(view, gocui.EditorFunc(program.editSearch), true)
 }
 
-func (program *Program) configureBottomPromptView(view *gocui.View, editor gocui.Editor, editable bool) {
-	view.Title = ""
-	view.Frame = false
-	view.FrameRunes = nil
-	view.FrameColor = gocui.GetColor(theme.ActiveBorderHex)
-	view.TitleColor = gocui.GetColor(theme.ActiveTextHex)
-	view.FgColor = gocui.GetColor(theme.ActiveTextHex)
-	view.BgColor = gocuiColorOrDefault(theme.BackgroundHex)
-	view.Wrap = false
-	view.Highlight = false
-	view.Editable = editable
-	view.Editor = editor
-}
-
 func (program *Program) renderSearchView(view *gocui.View) {
-	program.renderBottomPromptView(view, program.currentSearchText(), program.currentSearchCursor())
-}
-
-func (program *Program) renderBottomPromptView(view *gocui.View, text string, cursorIndex int) {
-	if view == nil {
-		return
-	}
-
-	view.Clear()
-	prompt := bottomPromptPrefix + text
-	fmt.Fprint(view, prompt)
-	program.setInputCursor(view, prompt, cursorIndex+utf8.RuneCountInString(bottomPromptPrefix))
+	presenter := program.searchViewPresenter()
+	program.renderBottomPromptView(view, presenter.promptText(), presenter.promptCursor())
 }
 
 func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
@@ -77,117 +46,6 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 	}
 
 	return program.dispatchEditorMessage(MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
-}
-
-func (program *Program) userViewTitle() string {
-	if program.modeDescriptor().Mode() != ScreenModeBrowser {
-		return reviewModeMetadataTitle
-	}
-	return "[1]-" + detailAuthorIcon + " Connected user"
-}
-
-func (program *Program) detailViewTitle() string {
-	switch program.mainViewResolver().ContentKind {
-	case MainContentKindReviewDescription:
-		return reviewModeDescriptionTitle
-	case MainContentKindStoryChapter:
-		return reviewModeChapterTitle
-	case MainContentKindReviewDiff:
-		return reviewModeDiffTitle
-	default:
-		if program.shouldShowPullRequestDetailTabs() {
-			return ""
-		}
-		return "[0]-Detail"
-	}
-}
-
-func (program *Program) notificationsViewTitle() string {
-	count, ok := program.notificationsCount()
-	if !ok {
-		return "Notifications"
-	}
-	return fmt.Sprintf("Notifications (%d)", count)
-}
-
-func (program *Program) notificationsCount() (int, bool) {
-	rows := program.model.NotificationRows()
-	if len(rows) == 0 {
-		return 0, false
-	}
-	if len(rows) == 1 && rows[0].Notification == nil {
-		item := rows[0].Item
-		if program.isNotificationLoadingItem(item) || program.isNotificationErrorItem(item) {
-			return 0, false
-		}
-		if item.Title == notificationsEmptyTitle && item.Detail == notificationsEmptyDetail {
-			return 0, true
-		}
-	}
-
-	count := 0
-	for _, row := range rows {
-		if row.Notification == nil {
-			return 0, false
-		}
-		count++
-	}
-	return count, true
-}
-
-func (program *Program) pullRequestsViewTitle() string {
-	switch program.modeDescriptor().Mode() {
-	case ScreenModeStoryReview:
-		return reviewModeChaptersTitle
-	case ScreenModeReview:
-		return reviewModeFilesTitle
-	default:
-		return ""
-	}
-}
-
-func (program *Program) setInputCursor(view *gocui.View, value string, cursorIndex int) {
-	if view == nil {
-		return
-	}
-
-	innerWidth := max(view.InnerWidth(), 1)
-
-	valueWidth := utf8.RuneCountInString(value)
-	if cursorIndex < 0 {
-		cursorIndex = 0
-	}
-	if cursorIndex > valueWidth {
-		cursorIndex = valueWidth
-	}
-
-	originX := 0
-	if cursorIndex >= innerWidth {
-		originX = cursorIndex - innerWidth + 1
-	}
-	cursorX := max(cursorIndex-originX, 0)
-	if cursorX >= innerWidth {
-		cursorX = innerWidth - 1
-	}
-
-	view.SetOrigin(originX, 0)
-	view.SetCursor(cursorX, 0)
-}
-
-func (program *Program) currentSearchText() string {
-	if program.searchWidget.editor != nil {
-		return program.searchWidget.editor.Text()
-	}
-
-	return program.model.SearchDraft()
-}
-
-func (program *Program) currentSearchCursor() int {
-	if program.searchWidget.editor != nil {
-		return program.searchWidget.editor.Cursor()
-	}
-
-	return utf8.RuneCountInString(program.model.SearchDraft())
 }
 
 func pluralize(count int, singular string, plural string) string {
