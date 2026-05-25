@@ -74,7 +74,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgActionsPopupClosedWithFeedback:
 		program.applyActionsPopupClosedWithFeedback(actual)
 	case MsgActionsPopupActionErrorHandled:
-		program.applyActionsPopupActionErrorHandled(actual)
+		return program.applyActionsPopupActionErrorHandled(actual)
 	case MsgModalEditorOpened:
 		program.openModalEditorState(actual.State)
 	case MsgModalEditorClosed:
@@ -138,7 +138,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgOpenPullRequestBuildRunPopupLinkRequested:
 		return program.applyOpenPullRequestBuildRunPopupLinkRequested(actual)
 	case MsgCopySelectedDetailTextRequested:
-		return program.selectedDetailClipboardWriteCmd(program.resolveView(program.gui, actual.View, viewDetailName))
+		return []Cmd{prepareSelectedDetailClipboardWriteCmd{View: actual.View, Target: program.model.Focus()}}
 	case MsgCopyPullRequestURLRequested:
 		return program.applyCopyPullRequestURLRequested(actual)
 	case MsgCopyPullRequestBuildRunPopupContentRequested:

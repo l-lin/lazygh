@@ -185,7 +185,7 @@ func TestRefactorGuard_GivenPhase2PopupFeedbackFiles_WhenScanning_ThenTheyDoNotO
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDirectFeedbackAndErrorReportingStayInUpdateFiles(t *testing.T) {
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDirectFeedbackAndErrorReportingStayInUpdateFilesOrExplicitInteractionCommands(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:setFeedback|reportError)\(`), func(path string) bool {
 		base := filepath.Base(path)
 		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
@@ -194,13 +194,13 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDirectFeedbackAndEr
 	remainingMatches := make([]string, 0, len(actualMatches))
 	for _, match := range actualMatches {
 		base := filepath.Base(strings.Split(match, ":")[0])
-		if strings.HasPrefix(base, "update") {
+		if strings.HasPrefix(base, "update") || base == "cmd_interaction.go" {
 			continue
 		}
 		remainingMatches = append(remainingMatches, match)
 	}
 	if len(remainingMatches) != 0 {
-		t.Fatalf("expected direct feedback and error reporting to stay in update files, actual %v", remainingMatches)
+		t.Fatalf("expected direct feedback and error reporting to stay in update files or explicit interaction commands, actual %v", remainingMatches)
 	}
 }
 
@@ -528,6 +528,23 @@ func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayO
 	}
 	if len(remainingMatches) != 0 {
 		t.Fatalf("expected review-session read helpers to live on the focused read model instead of review_session*.go, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenUpdateInteractionFile_WhenScanning_ThenItDoesNotReachThroughGuiOrResolveViews(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.gui`,
+		`resolveView\(`,
+		`currentDetailDocument\(`,
+		`currentPullRequestBuildRunPopupDocument\(`,
+		`syncDetailViewState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "update_interaction.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected update_interaction.go to stay on reducer intent selection without direct gui/view coupling, actual %v", actualMatches)
 	}
 }
 

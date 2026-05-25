@@ -4,28 +4,25 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
-func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPopupActionErrorHandled) {
+func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPopupActionErrorHandled) []Cmd {
 	if message.Err == nil {
-		return
+		return nil
 	}
 	if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 		program.actionsPopupWidget.errorMessage = ""
-		program.reportError(program.gui, popupMessage)
-		return
+		return []Cmd{reportErrorCmd{Message: popupMessage}}
 	}
 	var feedbackErr actionsPopupStatusLineError
 	if errors.As(message.Err, &feedbackErr) {
 		program.actionsPopupWidget.errorMessage = ""
 		program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
-		return
+		return nil
 	}
 	program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
-	program.reportError(program.gui, program.actionsPopupWidget.errorMessage)
+	return []Cmd{reportErrorCmd{Message: program.actionsPopupWidget.errorMessage}}
 }
 
 func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPopupClosedWithFeedback) {
@@ -55,8 +52,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 			program.overlayState.modalEditor.errorMessage = ""
-			program.reportError(program.gui, popupMessage)
-			return nil
+			return []Cmd{reportErrorCmd{Message: popupMessage}}
 		}
 		var feedbackErr modalEditorStatusLineError
 		if errors.As(message.Err, &feedbackErr) {
@@ -237,17 +233,7 @@ func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequ
 
 func (program *Program) applyOpenLinkUnderCursorRequested(message MsgOpenLinkUnderCursorRequested) []Cmd {
 	program.detailState.viewState.clearPendingPrefix()
-	url, ok := program.currentDetailCursorLink(program.resolveView(program.gui, message.View, viewDetailName))
-	switch {
-	case !ok:
-		program.setFeedback(program.model.Focus(), openLinkUnavailableMessage)
-		return nil
-	case program.linkOpener == nil:
-		program.setFeedback(program.model.Focus(), openLinkOpenerUnavailableMessage)
-		return nil
-	default:
-		return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
-	}
+	return []Cmd{openLinkUnderCursorCmd{View: message.View, Target: program.model.Focus()}}
 }
 
 func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message MsgOpenPullRequestBuildRunPopupLinkRequested) []Cmd {
@@ -256,23 +242,12 @@ func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message M
 		return nil
 	}
 	popup.viewState.clearPendingPrefix()
-	if program.linkOpener == nil {
-		program.setFeedback(program.model.Focus(), openLinkOpenerUnavailableMessage)
-		return nil
-	}
-
-	actualView := program.resolveView(program.gui, message.View, viewPullRequestBuildInfoName)
-	url, ok := program.currentPullRequestBuildRunPopupLink(actualView)
-	if !ok {
-		program.setFeedback(program.model.Focus(), openLinkUnavailableMessage)
-		return nil
-	}
-	return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
+	return []Cmd{openPullRequestBuildRunPopupLinkCmd{View: message.View, Target: program.model.Focus()}}
 }
 
 func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequestURLRequested) []Cmd {
 	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
-		return program.selectedDetailClipboardWriteCmd(program.resolveView(program.gui, message.View, viewDetailName))
+		return []Cmd{prepareSelectedDetailClipboardWriteCmd{View: message.View, Target: program.model.Focus()}}
 	}
 
 	program.detailState.viewState.clearPendingPrefix()
@@ -285,49 +260,19 @@ func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequ
 }
 
 func (program *Program) applyCopyPullRequestBuildRunPopupContentRequested(message MsgCopyPullRequestBuildRunPopupContentRequested) []Cmd {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
+	if program.pullRequestBuildRunPopup == nil {
 		return nil
 	}
-
-	actualView := program.resolveView(program.gui, message.View, viewPullRequestBuildInfoName)
-	document := program.currentPullRequestBuildRunPopupDocument(actualView)
-	viewportHeight := viewPageSize(actualView)
-	popup.viewState.sync(document, viewportHeight)
-	popup.viewState.clearPendingPrefix()
-	if popup.viewState.mode.isVisual() {
-		selection, _ := detailSelectionForCurrentMode(popup.viewState, document)
-		text := popup.viewState.selectedText(document)
-		popup.viewState.exitVisualMode()
-		return []Cmd{writeClipboardCmd{Text: text, SuccessMessage: detailYankSuccessMessage, FailureMessage: detailYankFailureMessage, Target: program.model.Focus(), Selection: selection, SelectionTarget: clipboardWriteSelectionBuildPopup}}
-	}
-
-	trimmedRunURL := strings.TrimSpace(popup.runURL)
-	if trimmedRunURL == "" {
-		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
-		return nil
-	}
-	return []Cmd{writeClipboardCmd{Text: trimmedRunURL, SuccessMessage: yankSuccessMessage, FailureMessage: yankFailureMessage, Target: program.model.Focus()}}
-}
-
-func (program *Program) selectedDetailClipboardWriteCmd(view *gocui.View) []Cmd {
-	detailDocument := program.currentDetailDocument(view)
-	program.syncDetailViewState(detailDocument, viewPageSize(view))
-	selection, _ := detailSelectionForCurrentMode(program.detailState.viewState, detailDocument)
-	text := program.detailState.viewState.selectedText(detailDocument)
-	program.detailState.viewState.exitVisualMode()
-	return []Cmd{writeClipboardCmd{Text: text, SuccessMessage: detailYankSuccessMessage, FailureMessage: detailYankFailureMessage, Target: program.model.Focus(), Selection: selection, SelectionTarget: clipboardWriteSelectionDetail}}
+	return []Cmd{preparePullRequestBuildRunPopupClipboardWriteCmd{View: message.View, Target: program.model.Focus()}}
 }
 
 func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	if program.linkOpener == nil {
-		program.reportError(program.gui, openLinkOpenerUnavailableMessage)
-		return nil
+		return []Cmd{reportErrorCmd{Message: openLinkOpenerUnavailableMessage}}
 	}
 	browserURL, ok := program.selectedNotificationBrowserURL()
 	if !ok {
-		program.reportError(program.gui, errActionsPopupActionUnavailable.Error())
-		return nil
+		return []Cmd{reportErrorCmd{Message: errActionsPopupActionUnavailable.Error()}}
 	}
 	return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
 }

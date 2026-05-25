@@ -92,6 +92,8 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 Popup and modal-editor feature files now stop at typed request messages. Actions-popup async mutations run through typed request descriptors in `cmd_actions_popup_async_requests.go`, modal-editor submits run through `cmd_modal_editor_submit_requests.go`, and notification/story popup requests run through `cmd_popup_feature_request_requests.go` instead of embedded `func(*Program)` work closures. Those executors now build focused command dependency bundles at the `Cmd.execute(...)` boundary, so the request/helper logic no longer receives the full `*Program` shell bag. The workflow command surface also owns pull-request detail, diff, and file-team-owner fetches, and its helper logic likewise reads from focused command deps instead of the whole runtime shell, so the loader helper files stay on selection and identity logic instead of becoming a second transport layer.
 
+`update_interaction.go` also now stops at typed shell commands for transient popup errors, open-link actions, and clipboard-preparation flows. Live view lookup, document sync, and popup reporting moved to explicit command executors in `cmd_interaction.go` instead of running inline inside the reducer.
+
 ### Screen derivation
 
 The TUI separates screen derivation from terminal application in a few layers.
