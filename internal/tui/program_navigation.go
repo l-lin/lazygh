@@ -55,35 +55,19 @@ func (program *Program) moveDetailViewUp(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
-	actualView := program.resolveView(gui, view, program.currentViewName())
-	pageSize := viewPageSize(actualView)
-	return program.handlePageChange(gui, actualView, pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.pageDown(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindHalfDown})
 }
 
 func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
-	actualView := program.resolveView(gui, view, program.currentViewName())
-	pageSize := viewPageSize(actualView)
-	return program.handlePageChange(gui, actualView, -pageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.pageUp(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindHalfUp})
 }
 
 func (program *Program) fullPageDown(gui *gocui.Gui, view *gocui.View) error {
-	actualView := program.resolveView(gui, view, program.currentViewName())
-	pageSize := viewPageSize(actualView)
-	return program.handlePageChange(gui, actualView, fullPageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.fullPageDown(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindFullDown})
 }
 
 func (program *Program) fullPageUp(gui *gocui.Gui, view *gocui.View) error {
-	actualView := program.resolveView(gui, view, program.currentViewName())
-	pageSize := viewPageSize(actualView)
-	return program.handlePageChange(gui, actualView, -fullPageDelta(pageSize), func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.fullPageUp(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindFullUp})
 }
 
 func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) error {

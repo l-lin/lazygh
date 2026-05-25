@@ -36,6 +36,7 @@ type interactionCommandRuntime struct {
 	beginManualRefresh                  func(string, int)
 	reviewModeActive                    func() bool
 	activePullRequestTab                func() PullRequestTab
+	handlePageNavigation                func(*gocui.Gui, *gocui.View, pageNavigationKind)
 	focusDetailRenderedLine             func(*gocui.Gui, *gocui.View, int)
 	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 	prepareBuildPopupClipboardWrite     func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
@@ -81,6 +82,29 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		beginManualRefresh:                  program.beginManualRefresh,
 		reviewModeActive:                    program.reviewModeActive,
 		activePullRequestTab:                program.model.ActivePullRequestTab,
+		handlePageNavigation: func(gui *gocui.Gui, view *gocui.View, kind pageNavigationKind) {
+			actualView := program.resolveView(gui, view, program.currentViewName())
+			pageSize := viewPageSize(actualView)
+			delta := pageNavigationDelta(kind, pageSize)
+			switch kind {
+			case pageNavigationKindHalfDown:
+				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.pageDown(document, viewportHeight)
+				})
+			case pageNavigationKindHalfUp:
+				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.pageUp(document, viewportHeight)
+				})
+			case pageNavigationKindFullDown:
+				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.fullPageDown(document, viewportHeight)
+				})
+			case pageNavigationKindFullUp:
+				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.fullPageUp(document, viewportHeight)
+				})
+			}
+		},
 		focusDetailRenderedLine: func(gui *gocui.Gui, view *gocui.View, line int) {
 			_ = program.mutateDetailViewStateWithoutRefresh(gui, view, func(document detailDocument, viewportHeight int) {
 				program.focusDetailLine(document, viewportHeight, line)
@@ -252,6 +276,37 @@ func executeFocusReviewCommentCommand(runtime interactionCommandRuntime, gui *go
 	}
 	actualView := runtime.resolveView(gui, nil, viewDetailName)
 	runtime.focusDetailRenderedLine(gui, actualView, command.RenderedLine)
+}
+
+type pageNavigationCmd struct {
+	View *gocui.View
+	Kind pageNavigationKind
+}
+
+func (command pageNavigationCmd) execute(program *Program, gui *gocui.Gui) {
+	executePageNavigationCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executePageNavigationCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command pageNavigationCmd) {
+	if runtime.handlePageNavigation == nil {
+		return
+	}
+	runtime.handlePageNavigation(gui, command.View, command.Kind)
+}
+
+func pageNavigationDelta(kind pageNavigationKind, pageSize int) int {
+	switch kind {
+	case pageNavigationKindHalfDown:
+		return pageDelta(pageSize)
+	case pageNavigationKindHalfUp:
+		return -pageDelta(pageSize)
+	case pageNavigationKindFullDown:
+		return fullPageDelta(pageSize)
+	case pageNavigationKindFullUp:
+		return -fullPageDelta(pageSize)
+	default:
+		return 0
+	}
 }
 
 type resolveDetailSearchWordCmd struct {

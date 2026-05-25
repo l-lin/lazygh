@@ -206,6 +206,14 @@ func (program *Program) applyAdjustFocusedPane(message MsgAdjustFocusedPane) {
 	}
 }
 
+func (program *Program) applyPageNavigationRequested(message MsgPageNavigationRequested) []Cmd {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return nil
+	}
+	return []Cmd{pageNavigationCmd{View: message.View, Kind: message.Kind}}
+}
+
 func (program *Program) applyRepeatActionsPopupSearch(message MsgRepeatActionsPopupSearch) {
 	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {

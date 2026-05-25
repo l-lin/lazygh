@@ -121,6 +121,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyCloseHelp()
 	case MsgAdjustFocusedPane:
 		program.applyAdjustFocusedPane(actual)
+	case MsgPageNavigationRequested:
+		return program.applyPageNavigationRequested(actual)
 	case MsgOpenBrowserURLRequested:
 		return program.applyOpenBrowserURLRequested(actual)
 	case MsgOpenBrowserURLFinished:

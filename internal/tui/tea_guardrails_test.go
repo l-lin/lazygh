@@ -634,6 +634,20 @@ func TestRefactorGuard_GivenUpdateReviewInteractionFile_WhenScanning_ThenItDoesN
 	}
 }
 
+func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenPageHandlersDispatchInsteadOfResolvingViews(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`handlePageChange\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "program_navigation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected program_navigation.go page handlers to dispatch typed commands instead of resolving views inline, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,

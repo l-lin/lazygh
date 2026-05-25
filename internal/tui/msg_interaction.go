@@ -103,6 +103,20 @@ type MsgAdjustFocusedPane struct {
 	Delta int
 }
 
+type pageNavigationKind int
+
+const (
+	pageNavigationKindHalfDown pageNavigationKind = iota
+	pageNavigationKindHalfUp
+	pageNavigationKindFullDown
+	pageNavigationKindFullUp
+)
+
+type MsgPageNavigationRequested struct {
+	View *gocui.View
+	Kind pageNavigationKind
+}
+
 type MsgOpenBrowserURLRequested struct {
 	URL            string
 	SuccessMessage string
@@ -242,6 +256,7 @@ func (MsgExitReviewMode) isMsg()                               {}
 func (MsgToggleHelp) isMsg()                                   {}
 func (MsgCloseHelp) isMsg()                                    {}
 func (MsgAdjustFocusedPane) isMsg()                            {}
+func (MsgPageNavigationRequested) isMsg()                      {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
