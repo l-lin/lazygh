@@ -186,9 +186,9 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgDetailSearchWordResolved:
 		return program.applyDetailSearchWordResolved(actual)
 	case MsgToggleInlineConversationVisibility:
-		program.applyToggleInlineConversationVisibility(actual)
+		return program.applyToggleInlineConversationVisibility(actual)
 	case MsgSetAllDetailFolds:
-		program.applySetAllDetailFolds(actual)
+		return program.applySetAllDetailFolds(actual)
 	case MsgSubmitSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
 			_ = program.submitPullRequestBuildRunPopupSearch(nil)

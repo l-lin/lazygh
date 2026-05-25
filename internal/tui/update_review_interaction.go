@@ -83,10 +83,10 @@ func (program *Program) applySetAllReviewTreeFolds(message MsgSetAllReviewTreeFo
 	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(reviewDiffTreePreferredVisibleRowIndex(rawTree, updatedVisibleTree, selectedRowID))
 }
 
-func (program *Program) applyToggleInlineConversationVisibility(message MsgToggleInlineConversationVisibility) {
-	_ = program.toggleInlineConversationVisibilityState(message.View)
+func (program *Program) applyToggleInlineConversationVisibility(message MsgToggleInlineConversationVisibility) []Cmd {
+	return []Cmd{toggleInlineConversationVisibilityCmd{View: message.View}}
 }
 
-func (program *Program) applySetAllDetailFolds(message MsgSetAllDetailFolds) {
-	_ = program.setAllDetailFolds(nil, message.View, message.Collapsed)
+func (program *Program) applySetAllDetailFolds(message MsgSetAllDetailFolds) []Cmd {
+	return []Cmd{setAllDetailFoldsCmd{View: message.View, Collapsed: message.Collapsed}}
 }

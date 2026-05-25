@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -83,27 +81,27 @@ func (program *Program) browserCollapsedChangesThreadIDs(summary githubdomain.Pu
 	return collapsedThreadIDs
 }
 
-func (program *Program) toggleBrowserChangesVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, detailDocument detailDocument) error {
+func (program *Program) toggleBrowserChangesVisibility(summary githubdomain.PullRequest, detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok || result.err != nil {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
 	if _, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState); ok {
-		return program.toggleBrowserChangesThreadVisibility(gui, summary, result.data.Files, detailDocument)
+		return program.toggleBrowserChangesThreadVisibility(summary, result.data.Files, detailDocument)
 	}
 	filePath, ok := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
-	return program.toggleBrowserChangesFileVisibility(gui, summary, result.data.Files, detailDocument.width, filePath)
+	return program.toggleBrowserChangesFileVisibility(summary, result.data.Files, detailDocument.width, filePath)
 }
 
-func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, files []reviewDiffFile, width int, filePath string) error {
+func (program *Program) toggleBrowserChangesFileVisibility(summary githubdomain.PullRequest, files []reviewDiffFile, width int, filePath string) (detailViewSyncPlan, bool) {
 	trimmedFilePath := strings.TrimSpace(filePath)
 	if trimmedFilePath == "" {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	sectionID := browserChangesFileSectionID(summary, trimmedFilePath)
@@ -111,18 +109,20 @@ func (program *Program) toggleBrowserChangesFileVisibility(gui *gocui.Gui, summa
 	program.setBrowserDetailSectionCollapsed(sectionID, !collapsed)
 
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, width)
+	plan := detailViewSyncPlan{document: newReviewDiffDetailDocument(updatedRows, width)}
 	headerLineIndex := reviewDiffFileHeaderLineIndex(updatedRows, trimmedFilePath)
 	if headerLineIndex >= 0 {
-		program.placeDetailCursorAtLine(newReviewDiffDetailDocument(updatedRows, width), headerLineIndex)
+		plan.focusLine = headerLineIndex
+		plan.focusLineKnown = true
 	}
-	return nil
+	return plan, true
 }
 
-func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, summary githubdomain.PullRequest, files []reviewDiffFile, detailDocument detailDocument) error {
+func (program *Program) toggleBrowserChangesThreadVisibility(summary githubdomain.PullRequest, files []reviewDiffFile, detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
 	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	sectionID := browserChangesThreadSectionID(summary, thread)
@@ -130,11 +130,13 @@ func (program *Program) toggleBrowserChangesThreadVisibility(gui *gocui.Gui, sum
 	program.setBrowserDetailSectionCollapsed(sectionID, !collapsed)
 
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
+	plan := detailViewSyncPlan{document: newReviewDiffDetailDocument(updatedRows, detailDocument.width)}
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
-		program.placeDetailCursorAtLine(newReviewDiffDetailDocument(updatedRows, detailDocument.width), headerLineIndex)
+		plan.focusLine = headerLineIndex
+		plan.focusLineKnown = true
 	}
-	return nil
+	return plan, true
 }
 
 func reviewDiffFilePathAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (string, bool) {

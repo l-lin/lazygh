@@ -624,6 +624,8 @@ func TestRefactorGuard_GivenUpdateReviewInteractionFile_WhenScanning_ThenItDoesN
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,
 		`mutateDetailViewStateWithoutRefresh\(`,
+		`toggleInlineConversationVisibilityState\(`,
+		`setAllDetailFolds\(`,
 	}, "|"))
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
@@ -631,6 +633,23 @@ func TestRefactorGuard_GivenUpdateReviewInteractionFile_WhenScanning_ThenItDoesN
 	})
 	if len(actualMatches) != 0 {
 		t.Fatalf("expected update_review_interaction.go to stop at typed shell commands instead of direct detail-view mutation, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenDetailFoldFiles_WhenScanning_ThenTheyDoNotReachThroughLiveDetailViews(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`currentDetailDocument\(`,
+		`syncDetailViewState\(`,
+		`placeDetailCursorAtLine\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "detail_bulk_fold.go" || base == "review_inline_conversation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail fold files to stay on reducer selectors while explicit commands own live detail-view work, actual %v", actualMatches)
 	}
 }
 
@@ -662,6 +681,7 @@ func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecute
 		"actions_popup_async_cmd.go":            true,
 		"assignee_picker_search_cmd.go":         true,
 		"cmd_actions_popup_async_requests.go":   true,
+		"cmd_detail_fold.go":                    true,
 		"cmd_interaction.go":                    true,
 		"cmd_modal_editor_submit_requests.go":   true,
 		"cmd_popup_feature_request_requests.go": true,

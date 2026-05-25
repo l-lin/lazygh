@@ -16,150 +16,136 @@ func (program *Program) openAllDetailFolds(gui *gocui.Gui, view *gocui.View) err
 	return program.dispatch(gui, MsgSetAllDetailFolds{View: view, Collapsed: false})
 }
 
-func (program *Program) setAllDetailFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
+func (program *Program) setAllDetailFolds(detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		program.detailState.viewState.clearPendingPrefix()
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	if program.reviewModeActive() {
 		if program.reviewSessionShowsDescription() {
-			return program.setAllReviewDescriptionFolds(gui, view, collapsed)
+			return program.setAllReviewDescriptionFolds(detailDocument, collapsed)
 		}
-		return program.setAllReviewInlineConversationFolds(gui, view, collapsed)
+		return program.setAllReviewInlineConversationFolds(detailDocument, collapsed)
 	}
-	return program.setAllBrowserDetailFolds(gui, view, collapsed)
+	return program.setAllBrowserDetailFolds(detailDocument, collapsed)
 }
 
-func (program *Program) setAllReviewDescriptionFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
+func (program *Program) setAllReviewDescriptionFolds(detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
-
-	actualView := program.resolveView(gui, view, viewDetailName)
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-	return program.setAllBrowserOverviewFolds(gui, summary, detail, detailDocument, viewportHeight, collapsed)
+	return program.setAllBrowserOverviewFolds(summary, detail, detailDocument, collapsed)
 }
 
-func (program *Program) setAllReviewInlineConversationFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
+func (program *Program) setAllReviewInlineConversationFolds(detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	selectedFile, ok := program.selectedReviewSessionDiffFile()
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
-	actualView := program.resolveView(gui, view, viewDetailName)
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 
 	updatedReviewSession, changed := program.navigationState.reviewSession.withAllThreadsCollapsed(selectedFile.Threads, collapsed)
 	if !changed {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 	program.navigationState.reviewSession = updatedReviewSession
 	program.invalidateReviewDiffRenderCache()
 
-	updatedDocument := program.currentReviewDiffDocument(selectedFile, detailDocument.width)
+	plan := detailViewSyncPlan{document: program.currentReviewDiffDocument(selectedFile, detailDocument.width)}
 	if cursorOnThread {
 		headerLineIndex := reviewDiffThreadHeaderLineIndex(program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width), threadAtCursor.ID)
 		if headerLineIndex >= 0 {
-			program.placeDetailCursorAtLine(updatedDocument, headerLineIndex)
+			plan.focusLine = headerLineIndex
+			plan.focusLineKnown = true
 		}
 	}
-	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return nil
+	return plan, true
 }
 
-func (program *Program) setAllBrowserDetailFolds(gui *gocui.Gui, view *gocui.View, collapsed bool) error {
+func (program *Program) setAllBrowserDetailFolds(detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	if !program.shouldShowPullRequestDetailTabs() {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
-
-	actualView := program.resolveView(gui, view, viewDetailName)
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
 
 	switch program.detailState.activeTab {
 	case ChangesDetailTab:
-		return program.setAllBrowserChangesThreadFolds(gui, summary, detailDocument, viewportHeight, collapsed)
+		return program.setAllBrowserChangesThreadFolds(summary, detailDocument, collapsed)
 	case CommentsDetailTab:
-		return program.setAllBrowserConversationFolds(gui, summary, result.detail, detailDocument, viewportHeight, collapsed)
+		return program.setAllBrowserConversationFolds(summary, result.detail, detailDocument, collapsed)
 	default:
-		return program.setAllBrowserOverviewFolds(gui, summary, result.detail, detailDocument, viewportHeight, collapsed)
+		return program.setAllBrowserOverviewFolds(summary, result.detail, detailDocument, collapsed)
 	}
 }
 
-func (program *Program) setAllBrowserOverviewFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
+func (program *Program) setAllBrowserOverviewFolds(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	sections := program.currentPullRequestOverviewSections(summary, detail, detailDocument.width)
 	sectionAtCursor, cursorOnSection := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailState.viewState.cursor.line)
 	if !program.setBrowserDetailSectionsCollapsed(browserDetailSectionIDs(sections), collapsed) {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
-	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
+	plan := detailViewSyncPlan{document: program.buildCurrentDetailDocument(detailDocument.width)}
 	if cursorOnSection {
 		if headerFocusLine, ok := browserDetailSectionHeaderFocusLine(program.currentPullRequestOverviewSections(summary, detail, detailDocument.width), sectionAtCursor.section.id, false); ok {
-			program.placeDetailCursorAtLine(updatedDocument, browserDescriptionOverviewStartLine(summary, detail)+headerFocusLine)
+			plan.focusLine = browserDescriptionOverviewStartLine(summary, detail) + headerFocusLine
+			plan.focusLineKnown = true
 		}
 	}
-	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return nil
+	return plan, true
 }
 
-func (program *Program) setAllBrowserConversationFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
+func (program *Program) setAllBrowserConversationFolds(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	sections := program.currentPullRequestConversationSections(summary, detail, detailDocument.width)
 	sectionAtCursor, cursorOnSection := program.browserConversationSectionAtCursor(summary, detail, detailDocument.width, program.detailState.viewState.cursor.line)
 	if !program.setBrowserDetailSectionsCollapsed(browserDetailSectionIDs(sections), collapsed) {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
-	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
+	plan := detailViewSyncPlan{document: program.buildCurrentDetailDocument(detailDocument.width)}
 	if cursorOnSection {
 		if headerFocusLine, ok := browserDetailSectionHeaderFocusLine(program.currentPullRequestConversationSections(summary, detail, detailDocument.width), sectionAtCursor.section.id, false); ok {
-			program.placeDetailCursorAtLine(updatedDocument, headerFocusLine)
+			plan.focusLine = headerFocusLine
+			plan.focusLineKnown = true
 		}
 	}
-	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return nil
+	return plan, true
 }
 
-func (program *Program) setAllBrowserChangesThreadFolds(gui *gocui.Gui, summary githubdomain.PullRequest, detailDocument detailDocument, viewportHeight int, collapsed bool) error {
+func (program *Program) setAllBrowserChangesThreadFolds(summary githubdomain.PullRequest, detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	result, ok := program.pullRequestDiffForSummary(summary)
 	if !ok || result.err != nil {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
 	filePathAtCursor, cursorOnFile := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	sectionIDs := append(browserChangesFileSectionIDs(summary, result.data.Files), browserChangesThreadSectionIDs(summary, result.data.Files)...)
 	if !program.setBrowserDetailSectionsCollapsed(sectionIDs, collapsed) {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
-	updatedDocument := program.currentDetailDocument(program.resolveView(gui, nil, viewDetailName))
+	plan := detailViewSyncPlan{document: program.buildCurrentDetailDocument(detailDocument.width)}
 	if cursorOnFile {
 		headerLineIndex := reviewDiffFileHeaderLineIndex(program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width), filePathAtCursor)
 		if headerLineIndex >= 0 {
-			program.placeDetailCursorAtLine(updatedDocument, headerLineIndex)
+			plan.focusLine = headerLineIndex
+			plan.focusLineKnown = true
 		}
 	}
-	program.syncDetailViewState(updatedDocument, viewportHeight)
-	return nil
+	return plan, true
 }
 
 func browserDetailSectionIDs(sections []browserDetailSection) []string {

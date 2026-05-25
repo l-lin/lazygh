@@ -12,48 +12,38 @@ func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view 
 	return program.dispatch(gui, MsgToggleInlineConversationVisibility{View: view})
 }
 
-func (program *Program) toggleInlineConversationVisibilityState(view *gocui.View) error {
+func (program *Program) toggleInlineConversationVisibilityState(detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	program.detailState.viewState.clearPendingPrefix()
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 	if program.reviewModeActive() {
 		if program.reviewSessionShowsDescription() {
-			return program.toggleReviewDescriptionSectionVisibility(nil, view)
+			return program.toggleReviewDescriptionSectionVisibility(detailDocument)
 		}
-		return program.toggleReviewInlineConversationVisibility(nil, view)
+		return program.toggleReviewInlineConversationVisibility(detailDocument)
 	}
-	return program.toggleBrowserDetailSectionVisibility(nil, view)
+	return program.toggleBrowserDetailSectionVisibility(detailDocument)
 }
 
-func (program *Program) toggleReviewDescriptionSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
+func (program *Program) toggleReviewDescriptionSectionVisibility(detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
-	return program.toggleOverviewSectionVisibility(gui, view, summary, detail)
+	return program.toggleOverviewSectionVisibility(summary, detail, detailDocument)
 }
 
-func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
+func (program *Program) toggleReviewInlineConversationVisibility(detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	selectedFile, ok := program.selectedReviewSessionDiffFile()
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
-	actualView := view
-	if actualView == nil && gui != nil {
-		detailView, err := gui.View(viewDetailName)
-		if err == nil {
-			actualView = detailView
-		}
-	}
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	collapsed := reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs)
@@ -61,74 +51,52 @@ func (program *Program) toggleReviewInlineConversationVisibility(gui *gocui.Gui,
 	program.invalidateReviewDiffRenderCache()
 
 	updatedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
+	plan := detailViewSyncPlan{document: program.currentReviewDiffDocument(selectedFile, detailDocument.width)}
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
-		program.placeDetailCursorAtLine(detailDocument, headerLineIndex)
+		plan.focusLine = headerLineIndex
+		plan.focusLineKnown = true
 	}
-	return nil
+	return plan, true
 }
 
-func (program *Program) toggleBrowserDetailSectionVisibility(gui *gocui.Gui, view *gocui.View) error {
+func (program *Program) toggleBrowserDetailSectionVisibility(detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	if !program.shouldShowPullRequestDetailTabs() {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 
 	summary, ok := program.selectedPullRequestSummaryForDetail()
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 	result, ok := program.pullRequestDetailForSummary(summary)
 	if !ok || result.err != nil {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
-
-	actualView := view
-	if actualView == nil && gui != nil {
-		detailView, err := gui.View(viewDetailName)
-		if err == nil {
-			actualView = detailView
-		}
-	}
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
 
 	if program.detailState.activeTab == ChangesDetailTab {
-		return program.toggleBrowserChangesVisibility(gui, summary, detailDocument)
+		return program.toggleBrowserChangesVisibility(summary, detailDocument)
 	}
 
 	if program.detailState.activeTab == CommentsDetailTab {
 		sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, program.detailState.viewState.cursor.line)
 		if !ok {
-			return nil
+			return detailViewSyncPlan{}, false
 		}
 		program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-		program.placeDetailCursorAtLine(detailDocument, sectionAtCursor.headerFocusLine)
-		return nil
+		return detailViewSyncPlan{document: program.buildCurrentDetailDocument(detailDocument.width), focusLine: sectionAtCursor.headerFocusLine, focusLineKnown: true}, true
 	}
 
-	return program.toggleOverviewSectionVisibility(gui, view, summary, result.detail)
+	return program.toggleOverviewSectionVisibility(summary, result.detail, detailDocument)
 }
 
-func (program *Program) toggleOverviewSectionVisibility(gui *gocui.Gui, view *gocui.View, summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) error {
-	actualView := view
-	if actualView == nil && gui != nil {
-		detailView, err := gui.View(viewDetailName)
-		if err == nil {
-			actualView = detailView
-		}
-	}
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-
+func (program *Program) toggleOverviewSectionVisibility(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, detailDocument detailDocument) (detailViewSyncPlan, bool) {
 	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, detailDocument.width, program.detailState.viewState.cursor.line)
 	if !ok {
-		return nil
+		return detailViewSyncPlan{}, false
 	}
 	program.setBrowserDetailSectionCollapsed(sectionAtCursor.section.id, !sectionAtCursor.section.collapsed)
-	program.placeDetailCursorAtLine(detailDocument, sectionAtCursor.headerFocusLine)
-	return nil
+	return detailViewSyncPlan{document: program.buildCurrentDetailDocument(detailDocument.width), focusLine: sectionAtCursor.headerFocusLine, focusLineKnown: true}, true
 }
 
 func reviewDiffThreadCollapsed(thread reviewDiffThread, collapsedThreadIDs map[string]bool) bool {
