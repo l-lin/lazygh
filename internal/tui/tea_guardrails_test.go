@@ -716,6 +716,23 @@ func TestRefactorGuard_GivenCharacterMotionFiles_WhenScanning_ThenTheyDoNotReach
 	}
 }
 
+func TestRefactorGuard_GivenDetailCharacterMotionBindingsFile_WhenScanning_ThenItUsesSelectorSnapshotsInsteadOfLiveViews(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.gui`,
+		`resolveView\(`,
+		`viewPageSize\(`,
+		`syncDetailViewState\(`,
+		`syncPullRequestBuildRunPopupViewState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "detail_character_motion_bindings.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail_character_motion_bindings.go to derive target bindings from selector snapshots instead of live views, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenBuildPopupNavigationFiles_WhenScanning_ThenTheyUseExplicitPopupMotionCommands(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

@@ -96,7 +96,7 @@ Shell work now lives behind explicit command files.
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
-- `cmd_interaction.go`: popup reporting, clipboard work, link opening, page navigation, actions-popup page-size resolution and viewport placement, side/detail viewport placement, detail-search repeat/follow-up, review-comment focus, GUI reconfigure, and manual refresh registration
+- `cmd_interaction.go`: popup reporting, clipboard work, link opening, page navigation, read-only overlay scroll, actions-popup page-size resolution and viewport placement, side/detail viewport placement, detail-search repeat/follow-up, review-comment focus, GUI reconfigure, and manual refresh registration
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
 - `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport
@@ -132,14 +132,15 @@ What is already in good shape:
 - pure workflow planners
 - child reducers for detail and review state
 - read-only presenters, read models, and cursor/review selectors
-- detail/build-popup motion, actions-popup paging and placement, runtime shortcuts, and side/detail viewport placement now cross the shell boundary through explicit commands or shell hooks
+- detail/build-popup motion, dynamic character-motion target bindings, help-overlay paging, actions-popup paging and placement, runtime shortcuts, and side/detail viewport placement now cross the shell boundary through explicit commands, selectors, or shell hooks
 - cursor-dependent detail actions now reuse shared selectors instead of probing live detail views directly
 - update files no longer show direct GUI or live-view coupling in the audit
 
 What is still shell-heavy:
 
-- small read-only scroll glue in `help.go` and `program_navigation_support.go`
-- dynamic character-motion target binding specs in `detail_character_motion_bindings.go`, which still resolve live views through `program.gui`
+- build-popup render and link helpers in `pull_request_build_popup.go`, which still sync popup view state during render and query lookups
+- callback-backed actions-popup execution through `actionsPopupAction.execute` and `action.execute(gui)`
+- popup-driven modal-editor opens that still flow through `openModalEditorFromActionsPopup(...)`
 
 ## Start here
 
