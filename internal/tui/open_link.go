@@ -22,7 +22,7 @@ const (
 )
 
 func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgOpenLinkUnderCursorRequested{View: view})
+	return program.dispatch(gui, MsgOpenLinkUnderCursorRequested{})
 }
 
 func (program *Program) openCurrentLink(_ *gocui.View) error {

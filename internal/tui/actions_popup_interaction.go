@@ -32,31 +32,31 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 }
 
 func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindHalfDown})
+	return program.dispatch(gui, MsgActionsPopupPageRequested{Kind: pageNavigationKindHalfDown})
 }
 
 func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindHalfUp})
+	return program.dispatch(gui, MsgActionsPopupPageRequested{Kind: pageNavigationKindHalfUp})
 }
 
 func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindFullDown})
+	return program.dispatch(gui, MsgActionsPopupPageRequested{Kind: pageNavigationKindFullDown})
 }
 
 func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindFullUp})
+	return program.dispatch(gui, MsgActionsPopupPageRequested{Kind: pageNavigationKindFullUp})
 }
 
 func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupViewportRequested{View: view, Placement: viewportPlacementCenter})
+	return program.dispatch(gui, MsgActionsPopupViewportRequested{Placement: viewportPlacementCenter})
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupViewportRequested{View: view, Placement: viewportPlacementTop})
+	return program.dispatch(gui, MsgActionsPopupViewportRequested{Placement: viewportPlacementTop})
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgActionsPopupViewportRequested{View: view, Placement: viewportPlacementBottom})
+	return program.dispatch(gui, MsgActionsPopupViewportRequested{Placement: viewportPlacementBottom})
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {

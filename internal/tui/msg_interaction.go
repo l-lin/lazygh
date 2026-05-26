@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"github.com/jesseduffield/gocui"
-
-	githubdomain "github.com/l-lin/lazygh/internal/github"
-)
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type searchRepeatDirection int
 
@@ -104,7 +100,6 @@ type MsgAdjustFocusedPane struct {
 }
 
 type MsgLineNavigationRequested struct {
-	View  *gocui.View
 	Delta int
 }
 
@@ -118,12 +113,10 @@ const (
 )
 
 type MsgPageNavigationRequested struct {
-	View *gocui.View
 	Kind pageNavigationKind
 }
 
 type MsgSideListViewportRequested struct {
-	View      *gocui.View
 	Placement viewportPlacement
 }
 
@@ -138,7 +131,6 @@ const (
 )
 
 type MsgDetailViewportRequested struct {
-	View      *gocui.View
 	Operation detailViewportOperation
 }
 
@@ -176,25 +168,15 @@ type MsgPullRequestURLReadFromClipboard struct {
 	Err error
 }
 
-type MsgOpenLinkUnderCursorRequested struct {
-	View *gocui.View
-}
+type MsgOpenLinkUnderCursorRequested struct{}
 
-type MsgOpenPullRequestBuildRunPopupLinkRequested struct {
-	View *gocui.View
-}
+type MsgOpenPullRequestBuildRunPopupLinkRequested struct{}
 
-type MsgCopySelectedDetailTextRequested struct {
-	View *gocui.View
-}
+type MsgCopySelectedDetailTextRequested struct{}
 
-type MsgCopyPullRequestURLRequested struct {
-	View *gocui.View
-}
+type MsgCopyPullRequestURLRequested struct{}
 
-type MsgCopyPullRequestBuildRunPopupContentRequested struct {
-	View *gocui.View
-}
+type MsgCopyPullRequestBuildRunPopupContentRequested struct{}
 
 type MsgOpenNotificationInBrowserRequested struct{}
 
@@ -240,12 +222,10 @@ type MsgMoveReviewComment struct {
 }
 
 type MsgSearchWordUnderCursor struct {
-	View    *gocui.View
 	Reverse bool
 }
 
 type MsgRepeatDetailSearchRequested struct {
-	View      *gocui.View
 	Direction searchRepeatDirection
 }
 
@@ -254,12 +234,9 @@ type MsgDetailSearchWordResolved struct {
 	Reverse bool
 }
 
-type MsgToggleInlineConversationVisibility struct {
-	View *gocui.View
-}
+type MsgToggleInlineConversationVisibility struct{}
 
 type MsgSetAllDetailFolds struct {
-	View      *gocui.View
 	Collapsed bool
 }
 

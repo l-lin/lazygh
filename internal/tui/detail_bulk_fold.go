@@ -9,11 +9,11 @@ import (
 )
 
 func (program *Program) closeAllDetailFolds(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgSetAllDetailFolds{View: view, Collapsed: true})
+	return program.dispatch(gui, MsgSetAllDetailFolds{Collapsed: true})
 }
 
 func (program *Program) openAllDetailFolds(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgSetAllDetailFolds{View: view, Collapsed: false})
+	return program.dispatch(gui, MsgSetAllDetailFolds{Collapsed: false})
 }
 
 func (program *Program) setAllDetailFolds(detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {

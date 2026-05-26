@@ -25,9 +25,7 @@ func newDetailFoldCommandRuntime(program *Program) detailFoldCommandRuntime {
 	}
 }
 
-type toggleInlineConversationVisibilityCmd struct {
-	View *gocui.View
-}
+type toggleInlineConversationVisibilityCmd struct{}
 
 func (command toggleInlineConversationVisibilityCmd) execute(program *Program, gui *gocui.Gui) {
 	executeToggleInlineConversationVisibilityCommand(newDetailFoldCommandRuntime(program), gui, command)
@@ -38,9 +36,9 @@ func executeToggleInlineConversationVisibilityCommand(runtime detailFoldCommandR
 		return
 	}
 
-	actualView := command.View
+	actualView := (*gocui.View)(nil)
 	if runtime.resolveView != nil {
-		actualView = runtime.resolveView(gui, command.View, viewDetailName)
+		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
 	detailDocument := runtime.currentDetailDocument(actualView)
 	plan, ok := runtime.toggleInlineConversationVisibility(detailDocument)
@@ -51,7 +49,6 @@ func executeToggleInlineConversationVisibilityCommand(runtime detailFoldCommandR
 }
 
 type setAllDetailFoldsCmd struct {
-	View      *gocui.View
 	Collapsed bool
 }
 
@@ -64,9 +61,9 @@ func executeSetAllDetailFoldsCommand(runtime detailFoldCommandRuntime, gui *gocu
 		return
 	}
 
-	actualView := command.View
+	actualView := (*gocui.View)(nil)
 	if runtime.resolveView != nil {
-		actualView = runtime.resolveView(gui, command.View, viewDetailName)
+		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
 	detailDocument := runtime.currentDetailDocument(actualView)
 	plan, ok := runtime.setAllDetailFolds(detailDocument, command.Collapsed)

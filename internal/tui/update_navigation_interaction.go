@@ -212,7 +212,7 @@ func (program *Program) applyLineNavigationRequested(message MsgLineNavigationRe
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		return []Cmd{detailLineNavigationCmd{View: message.View, Delta: message.Delta}}
+		return []Cmd{detailLineNavigationCmd{Delta: message.Delta}}
 	}
 	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
@@ -230,7 +230,7 @@ func (program *Program) applyPageNavigationRequested(message MsgPageNavigationRe
 	if program.selectionChangeBlocked() {
 		return nil
 	}
-	return []Cmd{pageNavigationCmd{View: message.View, Kind: message.Kind}}
+	return []Cmd{pageNavigationCmd{Kind: message.Kind}}
 }
 
 func (program *Program) applySideListViewportRequested(message MsgSideListViewportRequested) []Cmd {
@@ -238,14 +238,14 @@ func (program *Program) applySideListViewportRequested(message MsgSideListViewpo
 	if program.selectionChangeBlocked() {
 		return nil
 	}
-	return []Cmd{sideListViewportCmd{View: message.View, Placement: message.Placement}}
+	return []Cmd{sideListViewportCmd{Placement: message.Placement}}
 }
 
 func (program *Program) applyDetailViewportRequested(message MsgDetailViewportRequested) []Cmd {
 	if !program.model.PaneVisible(FocusDetailView) {
 		return nil
 	}
-	return []Cmd{detailViewportCmd{View: message.View, Operation: message.Operation}}
+	return []Cmd{detailViewportCmd{Operation: message.Operation}}
 }
 
 func (program *Program) applyRepeatActionsPopupSearch(message MsgRepeatActionsPopupSearch) {
@@ -366,7 +366,7 @@ func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCur
 		return nil
 	}
 
-	return []Cmd{resolveDetailSearchWordCmd{View: message.View, Reverse: message.Reverse}}
+	return []Cmd{resolveDetailSearchWordCmd{Reverse: message.Reverse}}
 }
 
 func (program *Program) applyRepeatDetailSearchRequested(message MsgRepeatDetailSearchRequested) []Cmd {
@@ -381,7 +381,7 @@ func (program *Program) applyRepeatDetailSearchRequested(message MsgRepeatDetail
 	if program.searchWidget.detailReversed {
 		reverse = !reverse
 	}
-	return []Cmd{repeatDetailSearchCmd{View: message.View, Reverse: reverse}}
+	return []Cmd{repeatDetailSearchCmd{Reverse: reverse}}
 }
 
 func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWordResolved) []Cmd {

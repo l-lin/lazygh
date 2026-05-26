@@ -84,9 +84,9 @@ func (program *Program) applySetAllReviewTreeFolds(message MsgSetAllReviewTreeFo
 }
 
 func (program *Program) applyToggleInlineConversationVisibility(message MsgToggleInlineConversationVisibility) []Cmd {
-	return []Cmd{toggleInlineConversationVisibilityCmd{View: message.View}}
+	return []Cmd{toggleInlineConversationVisibilityCmd{}}
 }
 
 func (program *Program) applySetAllDetailFolds(message MsgSetAllDetailFolds) []Cmd {
-	return []Cmd{setAllDetailFoldsCmd{View: message.View, Collapsed: message.Collapsed}}
+	return []Cmd{setAllDetailFoldsCmd{Collapsed: message.Collapsed}}
 }

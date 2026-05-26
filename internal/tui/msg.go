@@ -1,7 +1,5 @@
 package tui
 
-import "github.com/jesseduffield/gocui"
-
 type Msg interface {
 	isMsg()
 }
@@ -61,7 +59,6 @@ type MsgMoveActionsPopupSelection struct {
 }
 
 type MsgActionsPopupPageRequested struct {
-	View *gocui.View
 	Kind pageNavigationKind
 }
 
@@ -71,7 +68,6 @@ type MsgActionsPopupPageResolved struct {
 }
 
 type MsgActionsPopupViewportRequested struct {
-	View      *gocui.View
 	Placement viewportPlacement
 }
 

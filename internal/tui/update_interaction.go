@@ -245,7 +245,7 @@ func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequ
 func (program *Program) applyOpenLinkUnderCursorRequested(message MsgOpenLinkUnderCursorRequested) []Cmd {
 	program.detailState.viewState.clearPendingPrefix()
 	program.closeActionsPopupForAcceptedRequest()
-	return []Cmd{openLinkUnderCursorCmd{View: message.View, Target: program.model.Focus()}}
+	return []Cmd{openLinkUnderCursorCmd{Target: program.model.Focus()}}
 }
 
 func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message MsgOpenPullRequestBuildRunPopupLinkRequested) []Cmd {
@@ -254,12 +254,12 @@ func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message M
 		return nil
 	}
 	popup.viewState.clearPendingPrefix()
-	return []Cmd{openPullRequestBuildRunPopupLinkCmd{View: message.View, Target: program.model.Focus()}}
+	return []Cmd{openPullRequestBuildRunPopupLinkCmd{Target: program.model.Focus()}}
 }
 
 func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequestURLRequested) []Cmd {
 	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
-		return []Cmd{prepareSelectedDetailClipboardWriteCmd{View: message.View, Target: program.model.Focus()}}
+		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
 	}
 
 	program.detailState.viewState.clearPendingPrefix()
@@ -280,7 +280,7 @@ func (program *Program) applyCopyPullRequestBuildRunPopupContentRequested(messag
 	if program.pullRequestBuildRunPopup == nil {
 		return nil
 	}
-	return []Cmd{preparePullRequestBuildRunPopupClipboardWriteCmd{View: message.View, Target: program.model.Focus()}}
+	return []Cmd{preparePullRequestBuildRunPopupClipboardWriteCmd{Target: program.model.Focus()}}
 }
 
 func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {

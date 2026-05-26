@@ -15,7 +15,7 @@ func TestReadOnlyScrollCommand_GivenHelpViewFullPageDown_WhenExecuting_ThenItScr
 	lineCount := len(helpView.BufferLines())
 	expected := clampInt(fullPageDelta(helpView.InnerHeight()), 0, maxInt(0, lineCount-helpView.InnerHeight()))
 
-	readOnlyScrollCmd{View: helpView, FallbackName: viewHelpName, Kind: pageNavigationKindFullDown}.execute(subject, gui)
+	readOnlyScrollCmd{FallbackName: viewHelpName, Kind: pageNavigationKindFullDown}.execute(subject, gui)
 
 	then_viewOriginYIs(t, helpView, expected)
 }

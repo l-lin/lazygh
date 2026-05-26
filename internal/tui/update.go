@@ -148,7 +148,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgOpenPullRequestBuildRunPopupLinkRequested:
 		return program.applyOpenPullRequestBuildRunPopupLinkRequested(actual)
 	case MsgCopySelectedDetailTextRequested:
-		return []Cmd{prepareSelectedDetailClipboardWriteCmd{View: actual.View, Target: program.model.Focus()}}
+		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
 	case MsgCopyPullRequestURLRequested:
 		return program.applyCopyPullRequestURLRequested(actual)
 	case MsgCopyPullRequestBuildRunPopupContentRequested:

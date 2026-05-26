@@ -23,11 +23,11 @@ func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) err
 	if program.overlayState.helpVisible || program.model.SearchActive() {
 		return nil
 	}
-	return program.dispatch(gui, MsgCopyPullRequestURLRequested{View: view})
+	return program.dispatch(gui, MsgCopyPullRequestURLRequested{})
 }
 
 func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgCopySelectedDetailTextRequested{View: view})
+	return program.dispatch(gui, MsgCopySelectedDetailTextRequested{})
 }
 
 func (program *Program) copySelectedPullRequestURL() error {

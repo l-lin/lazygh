@@ -5,7 +5,7 @@ func (program *Program) applyActionsPopupPageRequested(message MsgActionsPopupPa
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
-	return []Cmd{resolveActionsPopupPageSizeCmd{View: message.View, Kind: message.Kind}}
+	return []Cmd{resolveActionsPopupPageSizeCmd{Kind: message.Kind}}
 }
 
 func (program *Program) applyActionsPopupPageResolved(message MsgActionsPopupPageResolved) []Cmd {
@@ -36,5 +36,5 @@ func (program *Program) applyActionsPopupViewportRequested(message MsgActionsPop
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
-	return []Cmd{actionsPopupViewportCmd{View: message.View, Placement: message.Placement}}
+	return []Cmd{actionsPopupViewportCmd{Placement: message.Placement}}
 }

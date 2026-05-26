@@ -15,59 +15,59 @@ func (program *Program) previousSideView(gui *gocui.Gui, _ *gocui.View) error {
 }
 
 func (program *Program) moveSelectionDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgLineNavigationRequested{View: view, Delta: 1})
+	return program.dispatch(gui, MsgLineNavigationRequested{Delta: 1})
 }
 
 func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgLineNavigationRequested{View: view, Delta: -1})
+	return program.dispatch(gui, MsgLineNavigationRequested{Delta: -1})
 }
 
 func (program *Program) moveDetailViewDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationScrollDown})
+	return program.dispatch(gui, MsgDetailViewportRequested{Operation: detailViewportOperationScrollDown})
 }
 
 func (program *Program) moveDetailViewUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationScrollUp})
+	return program.dispatch(gui, MsgDetailViewportRequested{Operation: detailViewportOperationScrollUp})
 }
 
 func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindHalfDown})
+	return program.dispatch(gui, MsgPageNavigationRequested{Kind: pageNavigationKindHalfDown})
 }
 
 func (program *Program) pageUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindHalfUp})
+	return program.dispatch(gui, MsgPageNavigationRequested{Kind: pageNavigationKindHalfUp})
 }
 
 func (program *Program) fullPageDown(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindFullDown})
+	return program.dispatch(gui, MsgPageNavigationRequested{Kind: pageNavigationKindFullDown})
 }
 
 func (program *Program) fullPageUp(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgPageNavigationRequested{View: view, Kind: pageNavigationKindFullUp})
+	return program.dispatch(gui, MsgPageNavigationRequested{Kind: pageNavigationKindFullUp})
 }
 
 func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgSideListViewportRequested{View: view, Placement: viewportPlacementCenter})
+	return program.dispatch(gui, MsgSideListViewportRequested{Placement: viewportPlacementCenter})
 }
 
 func (program *Program) moveSideSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgSideListViewportRequested{View: view, Placement: viewportPlacementTop})
+	return program.dispatch(gui, MsgSideListViewportRequested{Placement: viewportPlacementTop})
 }
 
 func (program *Program) moveSideSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgSideListViewportRequested{View: view, Placement: viewportPlacementBottom})
+	return program.dispatch(gui, MsgSideListViewportRequested{Placement: viewportPlacementBottom})
 }
 
 func (program *Program) recenterDetailView(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationRecenter})
+	return program.dispatch(gui, MsgDetailViewportRequested{Operation: detailViewportOperationRecenter})
 }
 
 func (program *Program) moveDetailCursorToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationPlaceTop})
+	return program.dispatch(gui, MsgDetailViewportRequested{Operation: detailViewportOperationPlaceTop})
 }
 
 func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationPlaceBottom})
+	return program.dispatch(gui, MsgDetailViewportRequested{Operation: detailViewportOperationPlaceBottom})
 }
 
 func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {
@@ -87,72 +87,72 @@ func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View)
 }
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveLeft, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveLeft}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorRight(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveRight, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveRight}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToRowStart(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowStart, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowStart}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToRowEnd(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowEnd, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowEnd}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToTop(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToTop, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToTop}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToBottom(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBottom, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBottom}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToNextWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextWord, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextWord}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToWordEnd, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToWordEnd}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToNextBigWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextBigWord, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextBigWord}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToBigWordEnd(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBigWordEnd, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBigWordEnd}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousWord, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousWord}})
 	return nil
 }
 
 func (program *Program) moveDetailCursorToPreviousBigWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousBigWord, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousBigWord}})
 	return nil
 }
 
 func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterVisualMode, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterVisualMode}})
 	return nil
 }
 
 func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterLineVisualMode, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterLineVisualMode}})
 	return nil
 }
 
@@ -201,7 +201,7 @@ func (program *Program) searchWordUnderCursorBackward(gui *gocui.Gui, view *gocu
 }
 
 func (program *Program) searchWordUnderCursor(gui *gocui.Gui, view *gocui.View, reverse bool) error {
-	return program.dispatch(gui, MsgSearchWordUnderCursor{View: view, Reverse: reverse})
+	return program.dispatch(gui, MsgSearchWordUnderCursor{Reverse: reverse})
 }
 
 func (program *Program) openSearchWithInitialQuery(gui *gocui.Gui, query string) error {

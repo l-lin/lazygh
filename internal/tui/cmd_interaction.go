@@ -390,7 +390,6 @@ func executeFocusReviewCommentCommand(runtime interactionCommandRuntime, gui *go
 }
 
 type detailLineNavigationCmd struct {
-	View  *gocui.View
 	Delta int
 }
 
@@ -402,11 +401,10 @@ func executeDetailLineNavigationCommand(runtime interactionCommandRuntime, gui *
 	if runtime.handleDetailLineNavigation == nil {
 		return
 	}
-	runtime.handleDetailLineNavigation(gui, command.View, command.Delta)
+	runtime.handleDetailLineNavigation(gui, nil, command.Delta)
 }
 
 type pageNavigationCmd struct {
-	View *gocui.View
 	Kind pageNavigationKind
 }
 
@@ -418,11 +416,10 @@ func executePageNavigationCommand(runtime interactionCommandRuntime, gui *gocui.
 	if runtime.handlePageNavigation == nil {
 		return
 	}
-	runtime.handlePageNavigation(gui, command.View, command.Kind)
+	runtime.handlePageNavigation(gui, nil, command.Kind)
 }
 
 type readOnlyScrollCmd struct {
-	View         *gocui.View
 	FallbackName string
 	Kind         pageNavigationKind
 }
@@ -436,7 +433,7 @@ func executeReadOnlyScrollCommand(runtime interactionCommandRuntime, gui *gocui.
 		return
 	}
 
-	actualView := runtime.resolveView(gui, command.View, command.FallbackName)
+	actualView := runtime.resolveView(gui, nil, command.FallbackName)
 	if actualView == nil {
 		return
 	}
@@ -449,7 +446,6 @@ func executeReadOnlyScrollCommand(runtime interactionCommandRuntime, gui *gocui.
 }
 
 type sideListViewportCmd struct {
-	View      *gocui.View
 	Placement viewportPlacement
 }
 
@@ -461,11 +457,10 @@ func executeSideListViewportCommand(runtime interactionCommandRuntime, gui *gocu
 	if runtime.handleSideListViewport == nil {
 		return
 	}
-	runtime.handleSideListViewport(gui, command.View, command.Placement)
+	runtime.handleSideListViewport(gui, nil, command.Placement)
 }
 
 type resolveActionsPopupPageSizeCmd struct {
-	View *gocui.View
 	Kind pageNavigationKind
 }
 
@@ -477,12 +472,11 @@ func executeResolveActionsPopupPageSizeCommand(runtime interactionCommandRuntime
 	if runtime.dispatch == nil || runtime.resolveView == nil {
 		return
 	}
-	actualView := runtime.resolveView(gui, command.View, viewActionsPopupName)
+	actualView := runtime.resolveView(gui, nil, viewActionsPopupName)
 	_ = runtime.dispatch(gui, MsgActionsPopupPageResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
 }
 
 type actionsPopupViewportCmd struct {
-	View      *gocui.View
 	Placement viewportPlacement
 }
 
@@ -494,11 +488,10 @@ func executeActionsPopupViewportCommand(runtime interactionCommandRuntime, gui *
 	if runtime.handleActionsPopupViewport == nil {
 		return
 	}
-	runtime.handleActionsPopupViewport(gui, command.View, command.Placement)
+	runtime.handleActionsPopupViewport(gui, nil, command.Placement)
 }
 
 type detailViewportCmd struct {
-	View      *gocui.View
 	Operation detailViewportOperation
 }
 
@@ -510,7 +503,7 @@ func executeDetailViewportCommand(runtime interactionCommandRuntime, gui *gocui.
 	if runtime.handleDetailViewport == nil {
 		return
 	}
-	runtime.handleDetailViewport(gui, command.View, command.Operation)
+	runtime.handleDetailViewport(gui, nil, command.Operation)
 }
 
 func pageNavigationDelta(kind pageNavigationKind, pageSize int) int {
@@ -529,7 +522,6 @@ func pageNavigationDelta(kind pageNavigationKind, pageSize int) int {
 }
 
 type resolveDetailSearchWordCmd struct {
-	View    *gocui.View
 	Reverse bool
 }
 
@@ -542,7 +534,7 @@ func executeResolveDetailSearchWordCommand(runtime interactionCommandRuntime, gu
 		return
 	}
 
-	actualView := runtime.resolveView(gui, command.View, viewDetailName)
+	actualView := runtime.resolveView(gui, nil, viewDetailName)
 	document := runtime.currentDetailDocument(actualView)
 	runtime.syncDetailViewState(document, viewPageSize(actualView))
 	query, ok := document.wordAt(runtime.currentDetailCursor())
@@ -568,7 +560,6 @@ func executeFollowDetailSearchCommand(runtime interactionCommandRuntime, gui *go
 }
 
 type repeatDetailSearchCmd struct {
-	View    *gocui.View
 	Reverse bool
 }
 
@@ -580,11 +571,10 @@ func executeRepeatDetailSearchCommand(runtime interactionCommandRuntime, gui *go
 	if runtime.repeatDetailSearch == nil {
 		return
 	}
-	runtime.repeatDetailSearch(gui, command.View, command.Reverse)
+	runtime.repeatDetailSearch(gui, nil, command.Reverse)
 }
 
 type openLinkUnderCursorCmd struct {
-	View   *gocui.View
 	Target Focus
 }
 
@@ -597,7 +587,7 @@ func executeOpenLinkUnderCursorCommand(runtime interactionCommandRuntime, gui *g
 		return
 	}
 
-	actualView := runtime.resolveView(gui, command.View, viewDetailName)
+	actualView := runtime.resolveView(gui, nil, viewDetailName)
 	url, ok := runtime.currentDetailCursorLink(actualView)
 	switch {
 	case !ok:
@@ -612,7 +602,6 @@ func executeOpenLinkUnderCursorCommand(runtime interactionCommandRuntime, gui *g
 }
 
 type openPullRequestBuildRunPopupLinkCmd struct {
-	View   *gocui.View
 	Target Focus
 }
 
@@ -629,7 +618,7 @@ func executeOpenPullRequestBuildRunPopupLinkCommand(runtime interactionCommandRu
 		return
 	}
 
-	actualView := runtime.resolveView(gui, command.View, viewPullRequestBuildInfoName)
+	actualView := runtime.resolveView(gui, nil, viewPullRequestBuildInfoName)
 	url, ok := runtime.currentPullRequestBuildRunPopupLink(actualView)
 	if !ok {
 		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: openLinkUnavailableMessage})
@@ -640,7 +629,6 @@ func executeOpenPullRequestBuildRunPopupLinkCommand(runtime interactionCommandRu
 }
 
 type prepareSelectedDetailClipboardWriteCmd struct {
-	View   *gocui.View
 	Target Focus
 }
 
@@ -652,7 +640,7 @@ func executePrepareSelectedDetailClipboardWriteCommand(runtime interactionComman
 	if runtime.prepareSelectedDetailClipboardWrite == nil {
 		return
 	}
-	clipboardCommand, ok := runtime.prepareSelectedDetailClipboardWrite(gui, command.View, command.Target)
+	clipboardCommand, ok := runtime.prepareSelectedDetailClipboardWrite(gui, nil, command.Target)
 	if !ok {
 		return
 	}
@@ -660,7 +648,6 @@ func executePrepareSelectedDetailClipboardWriteCommand(runtime interactionComman
 }
 
 type preparePullRequestBuildRunPopupClipboardWriteCmd struct {
-	View   *gocui.View
 	Target Focus
 }
 
@@ -672,7 +659,7 @@ func executePreparePullRequestBuildRunPopupClipboardWriteCommand(runtime interac
 	if runtime.dispatch == nil || runtime.prepareBuildPopupClipboardWrite == nil {
 		return
 	}
-	clipboardCommand, ok := runtime.prepareBuildPopupClipboardWrite(gui, command.View, command.Target)
+	clipboardCommand, ok := runtime.prepareBuildPopupClipboardWrite(gui, nil, command.Target)
 	if !ok {
 		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: yankUnavailableMessage})
 		return

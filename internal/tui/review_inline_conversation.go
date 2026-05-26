@@ -9,7 +9,7 @@ import (
 )
 
 func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgToggleInlineConversationVisibility{View: view})
+	return program.dispatch(gui, MsgToggleInlineConversationVisibility{})
 }
 
 func (program *Program) toggleInlineConversationVisibilityState(detailDocument detailDocument) (detailViewSyncPlan, bool) {

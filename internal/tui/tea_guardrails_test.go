@@ -257,6 +257,16 @@ func TestRefactorGuard_GivenModalEditorFiles_WhenScanning_ThenTheyUseTypedSubmit
 	}
 }
 
+func TestRefactorGuard_GivenMsgAndCommandFiles_WhenScanning_ThenTheyDoNotExposeLiveViewPointersOnSurfaceTypes(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`^\s*View\s+\*gocui\.View`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go") && (strings.HasPrefix(base, "msg") || strings.HasPrefix(base, "cmd"))
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected msg and cmd surfaces to keep live gocui views out of their durable fields, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoPopupToModalEditorCallbackBridgeRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`openModalEditorFromActionsPopup\(`,

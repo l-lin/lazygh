@@ -51,10 +51,10 @@ func (program *Program) startDetailYank(gui *gocui.Gui, view *gocui.View) error 
 		return program.copySelectedDetailText(gui, view)
 	}
 	if program.detailState.viewState.hasPendingYank() {
-		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFinishPendingYank, View: view, SelectionKind: detailYankMotionLinewise}})
+		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFinishPendingYank, SelectionKind: detailYankMotionLinewise}})
 		return nil
 	}
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmPendingYank, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmPendingYank}})
 	return nil
 }
 
@@ -67,10 +67,10 @@ func (program *Program) startPullRequestBuildRunPopupYank(gui *gocui.Gui, view *
 		return program.copySelectedPullRequestBuildRunPopupText(gui, view)
 	}
 	if popup.viewState.hasPendingYank() {
-		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFinishPendingYank, View: view, SelectionKind: detailYankMotionLinewise}})
+		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFinishPendingYank, SelectionKind: detailYankMotionLinewise}})
 		return nil
 	}
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmPendingYank, View: view}})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmPendingYank}})
 	return nil
 }
 
@@ -87,7 +87,7 @@ func (program *Program) copySelectedText(state *detailViewState, document detail
 }
 
 func (program *Program) copySelectedPullRequestBuildRunPopupText(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgCopyPullRequestBuildRunPopupContentRequested{View: view})
+	return program.dispatch(gui, MsgCopyPullRequestBuildRunPopupContentRequested{})
 }
 
 func (program *Program) writeTextToClipboard(text string) error {
