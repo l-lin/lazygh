@@ -125,12 +125,17 @@ func TestPlanNotificationDetailLoad_GivenAnUnloadedIssueNotification_WhenPlannin
 }
 
 func TestPlanCurrentDetailImageHTMLLoads_GivenDuplicateRenderableSources_WhenPlanning_ThenItMarksOneExplicitLoadPerKey(t *testing.T) {
+	given_markdown := "![Architecture](./docs/diagram.png)"
 	source := detailImageHTMLSource{
 		key:          "acme/widgets#42:description",
 		repository:   "acme/widgets",
-		markdown:     "![Architecture](./docs/diagram.png)",
+		markdown:     given_markdown,
 		renderedHTML: "",
-		applyRenderedHTML: func(*Program, string) {
+		applyTarget: detailImageHTMLApplyTarget{
+			kind:             detailImageHTMLApplyKindPullRequestDescription,
+			cacheKey:         "acme/widgets#42",
+			markdownRevision: detailImageMarkdownRevision(given_markdown),
+			fallbackMarkdown: given_markdown,
 		},
 	}
 	actual := planCurrentDetailImageHTMLLoads(detailImageHTMLLoadPlanInput{hasMarkdownHTMLRenderer: true, sources: []detailImageHTMLSource{source, source}, loadInFlightByKey: map[string]bool{}, loadFailedByKey: map[string]bool{}})

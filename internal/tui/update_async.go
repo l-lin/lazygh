@@ -216,7 +216,9 @@ func (program *Program) applyCurrentDetailImageHTMLLoaded(message MsgCurrentDeta
 	}
 
 	delete(program.detailImageHTMLLoadFailed, message.Source.key)
-	message.Source.applyRenderedHTML(program, message.RenderedHTML)
+	if !program.applyDetailImageHTMLRendered(message.Source.applyTarget, message.RenderedHTML) {
+		return
+	}
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()
 }

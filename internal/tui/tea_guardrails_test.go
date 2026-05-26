@@ -272,6 +272,21 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyPopupFeatur
 	}
 }
 
+func TestRefactorGuard_GivenDetailImageHTMLFiles_WhenScanning_ThenTheyUseTypedApplyTargetsInsteadOfCallbacks(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`applyRenderedHTML\s+func\(\*Program,\s*string\)`,
+		`Source\.applyRenderedHTML\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "detail_image_loader.go" || base == "update_async.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail-image HTML load results to use typed apply targets instead of callbacks, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenStartupReviewAndStoryUrlEntrypoints_WhenScanning_ThenTheyOnlyParseValidateAndDispatch(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`startReviewSession\(`,

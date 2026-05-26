@@ -89,25 +89,31 @@ func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_Th
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{MarkdownHTMLRenderer: renderer})
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.startupState.appStarted = true
+	subject.issueDetailCache["acme/widgets#42"] = issueDetailResult{detail: githubdomain.IssueDetail{Body: "![Architecture](./docs/diagram.png)"}}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
-	applied := ""
 
+	given_markdown := "![Architecture](./docs/diagram.png)"
 	subject.loadCurrentDetailImageHTML(gui, detailImageHTMLSource{
-		key:        "detail#42",
-		repository: "acme/widgets",
-		markdown:   "![Architecture](./docs/diagram.png)",
-		applyRenderedHTML: func(_ *Program, renderedHTML string) {
-			applied = renderedHTML
+		key:          "detail#42",
+		repository:   "acme/widgets",
+		markdown:     given_markdown,
+		renderedHTML: "",
+		applyTarget: detailImageHTMLApplyTarget{
+			kind:             detailImageHTMLApplyKindIssue,
+			cacheKey:         "acme/widgets#42",
+			markdownRevision: detailImageMarkdownRevision(given_markdown),
 		},
 	})
 
 	if renderer.calls != 1 {
 		t.Fatalf("expected one markdown HTML render call, actual %d", renderer.calls)
 	}
-	if applied != "<p>resolved</p>" {
-		t.Fatalf("expected rendered HTML %q, actual %q", "<p>resolved</p>", applied)
+	actual := subject.issueDetailCache["acme/widgets#42"].detail.BodyHTML
+	expected := "<p>resolved</p>"
+	if actual != expected {
+		t.Fatalf("expected rendered HTML %q, actual %q", expected, actual)
 	}
 }
 

@@ -12,11 +12,11 @@ import (
 )
 
 type detailImageHTMLSource struct {
-	key               string
-	repository        string
-	markdown          string
-	renderedHTML      string
-	applyRenderedHTML func(*Program, string)
+	key          string
+	repository   string
+	markdown     string
+	renderedHTML string
+	applyTarget  detailImageHTMLApplyTarget
 }
 
 func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
@@ -138,13 +138,11 @@ func (program *Program) pullRequestDescriptionImageHTMLSource(summary githubdoma
 		repository:   pullRequestRepositoryName(summary.Repository),
 		markdown:     markdown,
 		renderedHTML: detail.BodyHTML,
-		applyRenderedHTML: func(program *Program, renderedHTML string) {
-			cachedResult, ok := program.pullRequestDetailCache[pullRequestKey]
-			if !ok || detailImageMarkdownRevision(detailBody(cachedResult.detail, summary)) != revision {
-				return
-			}
-			cachedResult.detail.BodyHTML = strings.TrimSpace(renderedHTML)
-			program.pullRequestDetailCache[pullRequestKey] = cachedResult
+		applyTarget: detailImageHTMLApplyTarget{
+			kind:             detailImageHTMLApplyKindPullRequestDescription,
+			cacheKey:         pullRequestKey,
+			markdownRevision: revision,
+			fallbackMarkdown: summary.Body,
 		},
 	}
 }
@@ -161,13 +159,11 @@ func (program *Program) pullRequestCommentsImageHTMLSources(summary githubdomain
 			repository:   repository,
 			markdown:     comment.Body,
 			renderedHTML: comment.BodyHTML,
-			applyRenderedHTML: func(program *Program, renderedHTML string) {
-				cachedResult, ok := program.pullRequestDetailCache[pullRequestKey]
-				if !ok || commentIndex >= len(cachedResult.detail.Comments) || detailImageMarkdownRevision(cachedResult.detail.Comments[commentIndex].Body) != revision {
-					return
-				}
-				cachedResult.detail.Comments[commentIndex].BodyHTML = strings.TrimSpace(renderedHTML)
-				program.pullRequestDetailCache[pullRequestKey] = cachedResult
+			applyTarget: detailImageHTMLApplyTarget{
+				kind:             detailImageHTMLApplyKindPullRequestComment,
+				cacheKey:         pullRequestKey,
+				markdownRevision: revision,
+				itemIndex:        commentIndex,
 			},
 		})
 	}
@@ -182,13 +178,12 @@ func (program *Program) pullRequestCommentsImageHTMLSources(summary githubdomain
 					repository:   repository,
 					markdown:     comment.Body,
 					renderedHTML: comment.BodyHTML,
-					applyRenderedHTML: func(program *Program, renderedHTML string) {
-						cachedResult, ok := program.pullRequestDetailCache[pullRequestKey]
-						if !ok || threadPosition >= len(cachedResult.detail.InlineCommentThreads) || commentPosition >= len(cachedResult.detail.InlineCommentThreads[threadPosition].Comments) || detailImageMarkdownRevision(cachedResult.detail.InlineCommentThreads[threadPosition].Comments[commentPosition].Body) != revision {
-							return
-						}
-						cachedResult.detail.InlineCommentThreads[threadPosition].Comments[commentPosition].BodyHTML = strings.TrimSpace(renderedHTML)
-						program.pullRequestDetailCache[pullRequestKey] = cachedResult
+					applyTarget: detailImageHTMLApplyTarget{
+						kind:             detailImageHTMLApplyKindPullRequestInlineThreadComment,
+						cacheKey:         pullRequestKey,
+						markdownRevision: revision,
+						threadIndex:      threadPosition,
+						commentIndex:     commentPosition,
 					},
 				})
 			}
@@ -203,13 +198,11 @@ func (program *Program) pullRequestCommentsImageHTMLSources(summary githubdomain
 			repository:   repository,
 			markdown:     inlineComment.Body,
 			renderedHTML: inlineComment.BodyHTML,
-			applyRenderedHTML: func(program *Program, renderedHTML string) {
-				cachedResult, ok := program.pullRequestDetailCache[pullRequestKey]
-				if !ok || inlineIndex >= len(cachedResult.detail.InlineComments) || detailImageMarkdownRevision(cachedResult.detail.InlineComments[inlineIndex].Body) != revision {
-					return
-				}
-				cachedResult.detail.InlineComments[inlineIndex].BodyHTML = strings.TrimSpace(renderedHTML)
-				program.pullRequestDetailCache[pullRequestKey] = cachedResult
+			applyTarget: detailImageHTMLApplyTarget{
+				kind:             detailImageHTMLApplyKindPullRequestInlineComment,
+				cacheKey:         pullRequestKey,
+				markdownRevision: revision,
+				itemIndex:        inlineIndex,
 			},
 		})
 	}
@@ -228,13 +221,11 @@ func (program *Program) pullRequestCommitImageHTMLSources(summary githubdomain.P
 			repository:   repository,
 			markdown:     commit.MessageBody,
 			renderedHTML: commit.MessageBodyHTML,
-			applyRenderedHTML: func(program *Program, renderedHTML string) {
-				cachedResult, ok := program.pullRequestDetailCache[pullRequestKey]
-				if !ok || commitIndex >= len(cachedResult.detail.Commits) || detailImageMarkdownRevision(cachedResult.detail.Commits[commitIndex].MessageBody) != revision {
-					return
-				}
-				cachedResult.detail.Commits[commitIndex].MessageBodyHTML = strings.TrimSpace(renderedHTML)
-				program.pullRequestDetailCache[pullRequestKey] = cachedResult
+			applyTarget: detailImageHTMLApplyTarget{
+				kind:             detailImageHTMLApplyKindPullRequestCommit,
+				cacheKey:         pullRequestKey,
+				markdownRevision: revision,
+				itemIndex:        commitIndex,
 			},
 		})
 	}
@@ -275,13 +266,13 @@ func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary any, fil
 				repository:   repository,
 				markdown:     comment.Body,
 				renderedHTML: comment.BodyHTML,
-				applyRenderedHTML: func(program *Program, renderedHTML string) {
-					cachedResult, ok := program.pullRequestDiffCache[diffKey]
-					if !ok || resolvedFileIndex < 0 || resolvedFileIndex >= len(cachedResult.data.Files) || threadPosition >= len(cachedResult.data.Files[resolvedFileIndex].Threads) || commentPosition >= len(cachedResult.data.Files[resolvedFileIndex].Threads[threadPosition].Comments) || detailImageMarkdownRevision(cachedResult.data.Files[resolvedFileIndex].Threads[threadPosition].Comments[commentPosition].Body) != revision {
-						return
-					}
-					cachedResult.data.Files[resolvedFileIndex].Threads[threadPosition].Comments[commentPosition].BodyHTML = strings.TrimSpace(renderedHTML)
-					program.pullRequestDiffCache[diffKey] = cachedResult
+				applyTarget: detailImageHTMLApplyTarget{
+					kind:             detailImageHTMLApplyKindPullRequestDiffThreadComment,
+					cacheKey:         diffKey,
+					markdownRevision: revision,
+					fileIndex:        resolvedFileIndex,
+					threadIndex:      threadPosition,
+					commentIndex:     commentPosition,
 				},
 			})
 		}
@@ -315,13 +306,10 @@ func (program *Program) currentIssueImageHTMLSources(repository string, number i
 		repository:   repository,
 		markdown:     markdown,
 		renderedHTML: result.detail.BodyHTML,
-		applyRenderedHTML: func(program *Program, renderedHTML string) {
-			cachedResult, ok := program.issueDetailCache[key]
-			if !ok || detailImageMarkdownRevision(cachedResult.detail.Body) != revision {
-				return
-			}
-			cachedResult.detail.BodyHTML = strings.TrimSpace(renderedHTML)
-			program.issueDetailCache[key] = cachedResult
+		applyTarget: detailImageHTMLApplyTarget{
+			kind:             detailImageHTMLApplyKindIssue,
+			cacheKey:         key,
+			markdownRevision: revision,
 		},
 	}}
 }
@@ -339,19 +327,16 @@ func (program *Program) currentReleaseImageHTMLSources(repository string, id int
 		repository:   repository,
 		markdown:     markdown,
 		renderedHTML: result.detail.BodyHTML,
-		applyRenderedHTML: func(program *Program, renderedHTML string) {
-			cachedResult, ok := program.releaseDetailCache[key]
-			if !ok || detailImageMarkdownRevision(cachedResult.detail.Body) != revision {
-				return
-			}
-			cachedResult.detail.BodyHTML = strings.TrimSpace(renderedHTML)
-			program.releaseDetailCache[key] = cachedResult
+		applyTarget: detailImageHTMLApplyTarget{
+			kind:             detailImageHTMLApplyKindRelease,
+			cacheKey:         key,
+			markdownRevision: revision,
 		},
 	}}
 }
 
 func (source detailImageHTMLSource) canLoadRenderedHTML() bool {
-	return source.applyRenderedHTML != nil && strings.TrimSpace(source.repository) != "" && strings.TrimSpace(source.markdown) != "" && strings.TrimSpace(source.renderedHTML) == "" && needsRenderedMarkdownHTML(source.markdown)
+	return source.applyTarget.canApply() && strings.TrimSpace(source.repository) != "" && strings.TrimSpace(source.markdown) != "" && strings.TrimSpace(source.renderedHTML) == "" && needsRenderedMarkdownHTML(source.markdown)
 }
 
 func needsRenderedMarkdownHTML(markdown string) bool {
