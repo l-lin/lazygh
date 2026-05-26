@@ -95,13 +95,6 @@ func (program *Program) addInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeAddInlineCommentAction(gui *gocui.Gui) error {
-	if program.reviewModeActive() {
-		return program.openInlineReviewCommentComposer(gui, nil)
-	}
-	return program.openBrowserChangesInlineCommentComposer(gui, nil)
-}
-
 func (program *Program) selectedReviewInlineCommentSelection() (pullRequestInlineCommentSelection, error) {
 	if !program.reviewModeActive() {
 		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable

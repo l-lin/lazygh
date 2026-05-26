@@ -42,10 +42,6 @@ func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopup
 	}
 }
 
-func (program *Program) executeOpenPullRequestCustomSearchAction(gui *gocui.Gui) error {
-	return program.openPullRequestCustomSearchEditor(gui)
-}
-
 func (program *Program) currentPullRequestSearchCriteria() string {
 	return formatPullRequestSearchCriteria(program.pullRequestSearch(program.model.ActivePullRequestTab()).Command)
 }

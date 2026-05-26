@@ -69,7 +69,3 @@ func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAct
 		}, openPullRequestByURLEditorHeight)},
 	}
 }
-
-func (program *Program) executeOpenPullRequestByURLAction(gui *gocui.Gui) error {
-	return program.openPullRequestByURLEditor(gui)
-}

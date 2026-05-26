@@ -64,18 +64,6 @@ func (program *Program) reviewCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeReviewCommentAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-
-	feedbackTarget := program.model.Focus()
-	return program.openModalEditorWithSubmitRequested(gui, pullRequestReviewCommentComposerTitle, "", func(body string) Msg {
-		return MsgPullRequestReviewCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
-	})
-}
-
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestActionTarget()
@@ -91,16 +79,4 @@ func (program *Program) reviewRequestChangesAction() actionsPopupAction {
 		icon:      actionsPopupReviewRequestChangesIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeRequestChangesAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-
-	feedbackTarget := program.model.Focus()
-	return program.openModalEditorWithSubmitRequested(gui, pullRequestRequestChangesComposerTitle, "", func(body string) Msg {
-		return MsgPullRequestRequestChangesSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
-	})
 }

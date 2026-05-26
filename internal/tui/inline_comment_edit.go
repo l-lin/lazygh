@@ -58,17 +58,6 @@ func (program *Program) deleteInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestReviewCommentActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-
-	return program.openMultilineModalEditorWithSubmitRequested(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) Msg {
-		return MsgInlineCommentUpdateRequested{Target: target, Body: body}
-	}, reviewInlineCommentModalHeight)
-}
-
 func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestReviewCommentActionTarget()
 	if !ok {

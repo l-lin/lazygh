@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -37,30 +35,6 @@ func (program *Program) pendingReviewSubmitAction(id string, title string, icon 
 		})}
 	}
 	return actionsPopupAction{id: id, title: title, icon: icon, requested: requested}
-}
-
-func (program *Program) executeSubmitPendingReviewCommentAction(gui *gocui.Gui) error {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewCommentComposerTitle, githubdomain.PullRequestReviewEventComment)
-}
-
-func (program *Program) executeSubmitPendingReviewApprovalAction(gui *gocui.Gui) error {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestReviewApprovalTitle, githubdomain.PullRequestReviewEventApprove)
-}
-
-func (program *Program) executeSubmitPendingReviewRequestChangesAction(gui *gocui.Gui) error {
-	return program.openPendingReviewSubmitComposer(gui, pullRequestRequestChangesComposerTitle, githubdomain.PullRequestReviewEventRequestChanges)
-}
-
-func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title string, event githubdomain.PullRequestReviewEvent) error {
-	target, ok := program.selectedPendingPullRequestReviewTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-
-	feedbackTarget := program.model.Focus()
-	return program.openModalEditorWithSubmitRequested(gui, title, "", func(body string) Msg {
-		return MsgPendingPullRequestReviewSubmitRequested{Target: target, Event: event, Body: body, FeedbackTarget: feedbackTarget}
-	})
 }
 
 func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullRequestReviewTarget, bool) {

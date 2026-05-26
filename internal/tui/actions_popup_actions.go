@@ -368,10 +368,6 @@ func (program *Program) commendOnPrAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) error {
-	return program.openPullRequestCommentComposer(gui, nil)
-}
-
 func (program *Program) executeYankPullRequestURLAction(gui *gocui.Gui) error {
 	err := program.copySelectedPullRequestURL()
 	switch {
