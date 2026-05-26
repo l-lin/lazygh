@@ -26,13 +26,15 @@ func (program *Program) currentReRequestPullRequestReviewAction() (actionsPopupA
 	}
 
 	trimmedLogin := strings.TrimSpace(target.reviewerLogin)
+	var requested Msg = MsgReRequestPullRequestReviewRequested{Target: target}
+	if !program.hasPullRequestMutations() {
+		requested = actionsPopupErrorRequested(errors.New("github loader is unavailable"))
+	}
 	return actionsPopupAction{
-		id:    "re-request-review-" + strings.ToLower(trimmedLogin),
-		title: reRequestPullRequestReviewActionTitle(trimmedLogin),
-		icon:  actionsPopupReRequestReviewIcon,
-		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
-			return program.executeReRequestPullRequestReviewAction(gui, target)
-		}),
+		id:        "re-request-review-" + strings.ToLower(trimmedLogin),
+		title:     reRequestPullRequestReviewActionTitle(trimmedLogin),
+		icon:      actionsPopupReRequestReviewIcon,
+		requested: requested,
 	}, true
 }
 

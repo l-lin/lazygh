@@ -52,6 +52,10 @@ type MsgFocusActionsPopupSearch struct{}
 
 type MsgFocusActionsPopupList struct{}
 
+type MsgActionsPopupActionRequested struct {
+	Action actionsPopupAction
+}
+
 type MsgMoveActionsPopupSelection struct {
 	Delta int
 }
@@ -94,6 +98,7 @@ func (MsgOpenActionsPopup) isMsg()                  {}
 func (MsgCloseActionsPopup) isMsg()                 {}
 func (MsgFocusActionsPopupSearch) isMsg()           {}
 func (MsgFocusActionsPopupList) isMsg()             {}
+func (MsgActionsPopupActionRequested) isMsg()       {}
 func (MsgMoveActionsPopupSelection) isMsg()         {}
 func (MsgActionsPopupPageRequested) isMsg()         {}
 func (MsgActionsPopupPageResolved) isMsg()          {}

@@ -30,20 +30,31 @@ func (program *Program) currentInlineCommentEditActions() []actionsPopupAction {
 }
 
 func (program *Program) updateInlineCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestReviewCommentActionTarget()
+	if ok {
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(inlineCommentUpdateEditorTitle, target.body, func(body string) Msg {
+			return MsgInlineCommentUpdateRequested{Target: target, Body: body}
+		}, reviewInlineCommentModalHeight)}
+	}
 	return actionsPopupAction{
-		id:      "update-inline-comment",
-		title:   inlineCommentUpdateEditorTitle,
-		icon:    actionsPopupEditPullRequestIcon,
-		execute: program.executeUpdateInlineCommentAction,
+		id:        "update-inline-comment",
+		title:     inlineCommentUpdateEditorTitle,
+		icon:      actionsPopupEditPullRequestIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) deleteInlineCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.selectedPullRequestReviewCommentActionTarget(); ok {
+		requested = MsgInlineCommentDeleteRequested{Target: target}
+	}
 	return actionsPopupAction{
-		id:      "delete-inline-comment",
-		title:   inlineCommentDeleteActionTitle,
-		icon:    actionsPopupDeleteInlineCommentIcon,
-		execute: program.executeDeleteInlineCommentAction,
+		id:        "delete-inline-comment",
+		title:     inlineCommentDeleteActionTitle,
+		icon:      actionsPopupDeleteInlineCommentIcon,
+		requested: requested,
 	}
 }
 
@@ -53,11 +64,9 @@ func (program *Program) executeUpdateInlineCommentAction(gui *gocui.Gui) error {
 		return errActionsPopupActionUnavailable
 	}
 
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openMultilineModalEditorWithSubmitRequested(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) Msg {
-			return MsgInlineCommentUpdateRequested{Target: target, Body: body}
-		}, reviewInlineCommentModalHeight)
-	})
+	return program.openMultilineModalEditorWithSubmitRequested(gui, inlineCommentUpdateEditorTitle, target.body, func(body string) Msg {
+		return MsgInlineCommentUpdateRequested{Target: target, Body: body}
+	}, reviewInlineCommentModalHeight)
 }
 
 func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) error {

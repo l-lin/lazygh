@@ -1,50 +1,29 @@
 package tui
 
-import (
-	"errors"
-	"testing"
+import "testing"
 
-	"github.com/jesseduffield/gocui"
-)
-
-func TestOpenModalEditorFromActionsPopup_GivenOpenerCreatesAModal_WhenOpening_ThenItClosesThePopup(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorOpenedWhileActionsPopupVisible_WhenApplying_ThenItClosesThePopupAndOpensTheEditor(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	subject.model.OpenActionsPopup(1)
+	expected := newLineModalEditorState("Title", "")
 
-	actualErr := subject.openModalEditorFromActionsPopup(nil, func(_ *gocui.Gui) error {
-		subject.overlayState.modalEditor = newLineModalEditorState("Title", "")
-		return nil
-	})
+	Update(subject, MsgModalEditorOpened{State: expected})
 
-	if actualErr != nil {
-		t.Fatalf("expected no error, actual %v", actualErr)
+	if subject.overlayState.modalEditor != expected {
+		t.Fatalf("expected modal editor state %p, actual %p", expected, subject.overlayState.modalEditor)
 	}
 	if subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to close after opening the modal editor")
 	}
 }
 
-func TestOpenModalEditorFromActionsPopup_GivenOpenerLeavesTheModalVisibilityUnchanged_WhenOpening_ThenItReturnsUnavailable(t *testing.T) {
-	subject := &Program{}
+func TestUpdate_GivenMsgModalEditorOpenedWithoutActionsPopup_WhenApplying_ThenItKeepsTheOpenedEditorState(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	expected := newLineModalEditorState("Title", "")
 
-	actualErr := subject.openModalEditorFromActionsPopup(nil, func(_ *gocui.Gui) error {
-		return nil
-	})
+	Update(subject, MsgModalEditorOpened{State: expected})
 
-	if !errors.Is(actualErr, errActionsPopupActionUnavailable) {
-		t.Fatalf("expected error %v, actual %v", errActionsPopupActionUnavailable, actualErr)
-	}
-}
-
-func TestOpenModalEditorFromActionsPopup_GivenOpenerFails_WhenOpening_ThenItReturnsTheFailure(t *testing.T) {
-	subject := &Program{}
-	expected := errors.New("boom")
-
-	actualErr := subject.openModalEditorFromActionsPopup(nil, func(_ *gocui.Gui) error {
-		return expected
-	})
-
-	if !errors.Is(actualErr, expected) {
-		t.Fatalf("expected error %v, actual %v", expected, actualErr)
+	if subject.overlayState.modalEditor != expected {
+		t.Fatalf("expected modal editor state %p, actual %p", expected, subject.overlayState.modalEditor)
 	}
 }

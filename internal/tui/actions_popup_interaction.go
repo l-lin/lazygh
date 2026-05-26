@@ -73,19 +73,11 @@ func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *goc
 		return nil
 	}
 
-	if program.assigneePickerVisible() {
-		action, ok := program.selectedActionsPopupAction()
-		if !ok {
-			return nil
-		}
-		return program.handleActionsPopupActionError(gui, action.execute(gui))
-	}
-
 	action, ok := program.selectedActionsPopupAction()
 	if !ok {
 		return nil
 	}
-	return program.handleActionsPopupActionError(gui, action.execute(gui))
+	return program.dispatch(gui, MsgActionsPopupActionRequested{Action: action})
 }
 
 func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {

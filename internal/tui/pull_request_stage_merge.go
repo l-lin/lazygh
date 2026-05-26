@@ -93,46 +93,46 @@ func (program *Program) currentPullRequestStageAndMergeStatus() (string, bool) {
 
 func (program *Program) markPullRequestReadyForReviewAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "mark-pull-request-ready-for-review",
-		title:   markPullRequestReadyForReviewActionTitle,
-		icon:    actionsPopupEditPullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeMarkPullRequestReadyForReviewAction),
+		id:        "mark-pull-request-ready-for-review",
+		title:     markPullRequestReadyForReviewActionTitle,
+		icon:      actionsPopupEditPullRequestIcon,
+		requested: program.requestedPullRequestLifecycleMutation(pullRequestLifecycleMutationReadyForReview, "OPEN", false, pullRequestMarkedReadyForReviewSuccessMessage),
 	}
 }
 
 func (program *Program) convertPullRequestToDraftAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "convert-pull-request-to-draft",
-		title:   convertPullRequestToDraftActionTitle,
-		icon:    actionsPopupEditPullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeConvertPullRequestToDraftAction),
+		id:        "convert-pull-request-to-draft",
+		title:     convertPullRequestToDraftActionTitle,
+		icon:      actionsPopupEditPullRequestIcon,
+		requested: program.requestedPullRequestLifecycleMutation(pullRequestLifecycleMutationConvertToDraft, "OPEN", true, pullRequestConvertedToDraftSuccessMessage),
 	}
 }
 
 func (program *Program) closePullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "close-pull-request",
-		title:   closePullRequestActionTitle,
-		icon:    actionsPopupClosePullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeClosePullRequestAction),
+		id:        "close-pull-request",
+		title:     closePullRequestActionTitle,
+		icon:      actionsPopupClosePullRequestIcon,
+		requested: program.requestedPullRequestLifecycleMutation(pullRequestLifecycleMutationClose, "CLOSED", program.currentPullRequestDraftState(), pullRequestClosedSuccessMessage),
 	}
 }
 
 func (program *Program) reopenPullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "reopen-pull-request",
-		title:   reopenPullRequestActionTitle,
-		icon:    actionsPopupReopenPullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeReopenPullRequestAction),
+		id:        "reopen-pull-request",
+		title:     reopenPullRequestActionTitle,
+		icon:      actionsPopupReopenPullRequestIcon,
+		requested: program.requestedPullRequestLifecycleMutation(pullRequestLifecycleMutationReopen, "OPEN", program.currentPullRequestDraftState(), pullRequestReopenedSuccessMessage),
 	}
 }
 
 func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "squash-merge-pull-request",
-		title:   squashMergePullRequestActionTitle,
-		icon:    actionsPopupReviewApproveIcon,
-		execute: actionsPopupExecuteErr(program.executeSquashMergePullRequestAction),
+		id:        "squash-merge-pull-request",
+		title:     squashMergePullRequestActionTitle,
+		icon:      actionsPopupReviewApproveIcon,
+		requested: program.requestedPullRequestSquashMerge(),
 	}
 }
 
@@ -145,29 +145,61 @@ func (program *Program) currentPullRequestAutoMergeAction() actionsPopupAction {
 
 func (program *Program) enablePullRequestAutoMergeAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "enable-pull-request-auto-merge",
-		title:   enablePullRequestAutoMergeActionTitle,
-		icon:    actionsPopupReviewApproveIcon,
-		execute: actionsPopupExecuteErr(program.executeEnablePullRequestAutoMergeAction),
+		id:        "enable-pull-request-auto-merge",
+		title:     enablePullRequestAutoMergeActionTitle,
+		icon:      actionsPopupReviewApproveIcon,
+		requested: program.requestedPullRequestAutoMergeMutation(pullRequestAutoMergeMutationEnable, true, pullRequestAutoMergeEnabledSuccessMessage),
 	}
 }
 
 func (program *Program) disablePullRequestAutoMergeAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "disable-pull-request-auto-merge",
-		title:   disablePullRequestAutoMergeActionTitle,
-		icon:    actionsPopupClosePullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeDisablePullRequestAutoMergeAction),
+		id:        "disable-pull-request-auto-merge",
+		title:     disablePullRequestAutoMergeActionTitle,
+		icon:      actionsPopupClosePullRequestIcon,
+		requested: program.requestedPullRequestAutoMergeMutation(pullRequestAutoMergeMutationDisable, false, pullRequestAutoMergeDisabledSuccessMessage),
 	}
 }
 
 func (program *Program) updatePullRequestBranchAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "update-pull-request-branch",
-		title:   updatePullRequestBranchActionTitle,
-		icon:    actionsPopupRefreshPullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeUpdatePullRequestBranchAction),
+		id:        "update-pull-request-branch",
+		title:     updatePullRequestBranchActionTitle,
+		icon:      actionsPopupRefreshPullRequestIcon,
+		requested: program.requestedPullRequestBranchUpdate(),
 	}
+}
+
+func (program *Program) requestedPullRequestLifecycleMutation(kind pullRequestLifecycleMutationKind, state string, isDraft bool, successMessage string) Msg {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupErrorRequested(err)
+	}
+	return MsgPullRequestLifecycleMutationRequested{Kind: kind, Target: target, Summary: summary, State: state, IsDraft: isDraft, SuccessMessage: successMessage}
+}
+
+func (program *Program) requestedPullRequestAutoMergeMutation(kind pullRequestAutoMergeMutationKind, enabled bool, successMessage string) Msg {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupErrorRequested(err)
+	}
+	return MsgPullRequestAutoMergeMutationRequested{Kind: kind, Target: target, Summary: summary, Enabled: enabled, SuccessMessage: successMessage}
+}
+
+func (program *Program) requestedPullRequestBranchUpdate() Msg {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupErrorRequested(err)
+	}
+	return MsgPullRequestBranchUpdateRequested{Target: target, Summary: summary}
+}
+
+func (program *Program) requestedPullRequestSquashMerge() Msg {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupErrorRequested(err)
+	}
+	return MsgPullRequestSquashMergeRequested{Target: target, Summary: summary}
 }
 
 func (program *Program) executeMarkPullRequestReadyForReviewAction(gui *gocui.Gui) error {

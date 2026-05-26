@@ -242,6 +242,21 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditor
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoPopupToModalEditorCallbackBridgeRemains(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`openModalEditorFromActionsPopup\(`,
+		`open\s+func\(\*gocui\.Gui\)\s+error`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected popup-triggered modal editor opens to use typed open requests instead of callback bridges, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyPopupFeatureWorkCallbacksRemain(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`Work\s+func\(\*Program\)\s+error`,
@@ -781,6 +796,22 @@ func TestRefactorGuard_GivenActionsPopupInteractionFile_WhenScanning_ThenItStops
 	})
 	if len(actualMatches) != 0 {
 		t.Fatalf("expected actions_popup_interaction.go to stop at popup-selection intent while explicit commands own page and viewport shell helpers, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenActionsPopupFiles_WhenScanning_ThenTheyUseTypedRequestsInsteadOfExecuteCallbacks(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`execute\s+func\(\*gocui\.Gui\) error`,
+		`actionsPopupExecuteErr\(`,
+		`action\.execute\(gui\)`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "actions_popup.go" || base == "actions_popup_interaction.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected actions popup surfaces to carry typed requests instead of execute callbacks, actual %v", actualMatches)
 	}
 }
 

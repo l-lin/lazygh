@@ -88,11 +88,15 @@ func (program *Program) detailCursorHasLink() bool {
 }
 
 func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupAction {
+	var requested Msg = MsgOpenLinkUnderCursorRequested{}
+	if program.linkOpener == nil {
+		requested = actionsPopupErrorRequested(errors.New(openLinkOpenerUnavailableMessage))
+	}
 	return actionsPopupAction{
-		id:      "open-link-under-cursor",
-		title:   "Open link under cursor",
-		icon:    actionsPopupOpenLinkIcon,
-		execute: actionsPopupExecuteErr(program.executeOpenLinkUnderCursorAction),
+		id:        "open-link-under-cursor",
+		title:     "Open link under cursor",
+		icon:      actionsPopupOpenLinkIcon,
+		requested: requested,
 	}
 }
 

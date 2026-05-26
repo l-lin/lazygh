@@ -36,10 +36,10 @@ func (program *Program) themePickerVisible() bool {
 
 func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "change-theme",
-		title:   themePickerActionTitle,
-		icon:    actionsPopupChangeThemeIcon,
-		execute: actionsPopupExecuteErr(program.executeOpenThemePickerAction),
+		id:        "change-theme",
+		title:     themePickerActionTitle,
+		icon:      actionsPopupChangeThemeIcon,
+		requested: MsgOpenThemePickerRequested{},
 	}
 }
 
@@ -62,12 +62,19 @@ func (program *Program) currentThemePickerActions() []actionsPopupAction {
 
 func (program *Program) themePickerAction(preset theme.Preset) actionsPopupAction {
 	normalizedName := theme.NormalizePresetName(preset.Name)
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	switch {
+	case !program.themePickerVisible():
+	case program.themePresetStore == nil:
+		requested = actionsPopupErrorRequested(errors.New("theme preset store is unavailable"))
+	case normalizedName == "":
+	default:
+		requested = MsgThemePresetSelected{NormalizedName: normalizedName, Label: strings.TrimSpace(preset.Label)}
+	}
 	return actionsPopupAction{
-		id:    "theme-" + normalizedName,
-		title: strings.TrimSpace(preset.Label),
-		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
-			return program.executeThemePickerPresetAction(gui, preset)
-		}),
+		id:        "theme-" + normalizedName,
+		title:     strings.TrimSpace(preset.Label),
+		requested: requested,
 	}
 }
 

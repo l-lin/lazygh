@@ -79,20 +79,28 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summa
 }
 
 func (program *Program) pullRequestBuildRunActionsPopupAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor(); ok {
+		requested = MsgPullRequestBuildRunLoadRequested{Target: target}
+	}
 	return actionsPopupAction{
-		id:      "view-build-run",
-		title:   pullRequestBuildRunActionTitle,
-		icon:    actionsPopupBuildRunIcon,
-		execute: actionsPopupExecuteErr(program.executePullRequestBuildRunAction),
+		id:        "view-build-run",
+		title:     pullRequestBuildRunActionTitle,
+		icon:      actionsPopupBuildRunIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) pullRequestBuildRunLogsActionsPopupAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor(); ok {
+		requested = MsgPullRequestBuildRunJobLogLoadRequested{Summary: target.summary, Check: target.check}
+	}
 	return actionsPopupAction{
-		id:      "view-build-run-job-logs",
-		title:   pullRequestBuildRunLogsActionTitle,
-		icon:    actionsPopupBuildRunLogsIcon,
-		execute: actionsPopupExecuteErr(program.executePullRequestBuildRunLogsAction),
+		id:        "view-build-run-job-logs",
+		title:     pullRequestBuildRunLogsActionTitle,
+		icon:      actionsPopupBuildRunLogsIcon,
+		requested: requested,
 	}
 }
 

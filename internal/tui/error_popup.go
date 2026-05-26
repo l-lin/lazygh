@@ -64,11 +64,20 @@ func (program *Program) currentRecentErrorsActionsPopupAction() (actionsPopupAct
 }
 
 func (program *Program) recentErrorsActionsPopupAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if program.hasRecordedErrors() {
+		requested = MsgPullRequestBuildRunPopupOpened{Content: pullRequestBuildRunPopupContent{
+			title:         recentErrorsPopupTitle,
+			body:          program.renderRecentErrorsPopupBody(),
+			widthPercent:  recentErrorsPopupWidthPercent,
+			heightPercent: recentErrorsPopupHeightPercent,
+		}}
+	}
 	return actionsPopupAction{
-		id:      "view-recent-errors",
-		title:   recentErrorsActionTitle,
-		icon:    actionsPopupRecentErrorsIcon,
-		execute: actionsPopupExecuteErr(program.executeRecentErrorsAction),
+		id:        "view-recent-errors",
+		title:     recentErrorsActionTitle,
+		icon:      actionsPopupRecentErrorsIcon,
+		requested: requested,
 	}
 }
 

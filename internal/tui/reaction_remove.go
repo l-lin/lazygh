@@ -28,12 +28,10 @@ func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool
 	reactionTitle := reactionPickerActionMetadata(target.content)
 	reactionID := strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(target.content)), "+", "plus"), "-", "minus")
 	return actionsPopupAction{
-		id:    "remove-reaction-" + reactionID,
-		title: "Remove reaction " + reactionTitle,
-		icon:  actionsPopupRemoveReactionIcon,
-		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
-			return program.executeRemoveReactionAction(gui, target)
-		}),
+		id:        "remove-reaction-" + reactionID,
+		title:     "Remove reaction " + reactionTitle,
+		icon:      actionsPopupRemoveReactionIcon,
+		requested: MsgReactionRemovalRequested{Target: target},
 	}.withGroup(target.popupGroup()), true
 }
 

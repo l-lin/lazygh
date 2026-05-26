@@ -77,21 +77,29 @@ func (program *Program) currentBrowserChangesInlineCommentAction() (actionsPopup
 }
 
 func (program *Program) addInlineCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errReviewThreadTargetUnavailable)
+	selection, err := program.selectedReviewInlineCommentSelection()
+	if err != nil {
+		selection, err = program.selectedBrowserChangesInlineCommentSelection()
+	}
+	if err == nil {
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) Msg {
+			return MsgReviewInlineCommentSubmitRequested{Target: selection.target, Body: body}
+		}, reviewInlineCommentModalHeight)}
+	}
 	return actionsPopupAction{
-		id:      "add-inline-comment",
-		title:   "Add inline comment",
-		icon:    actionsPopupCommentOnPullRequestIcon,
-		execute: program.executeAddInlineCommentAction,
+		id:        "add-inline-comment",
+		title:     "Add inline comment",
+		icon:      actionsPopupCommentOnPullRequestIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) executeAddInlineCommentAction(gui *gocui.Gui) error {
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		if program.reviewModeActive() {
-			return program.openInlineReviewCommentComposer(gui, nil)
-		}
-		return program.openBrowserChangesInlineCommentComposer(gui, nil)
-	})
+	if program.reviewModeActive() {
+		return program.openInlineReviewCommentComposer(gui, nil)
+	}
+	return program.openBrowserChangesInlineCommentComposer(gui, nil)
 }
 
 func (program *Program) selectedReviewInlineCommentSelection() (pullRequestInlineCommentSelection, error) {

@@ -38,11 +38,17 @@ func (generator commandReviewStoryGenerator) Generate(config story.Config, reque
 }
 
 func (program *Program) reviewStoryAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(newActionsPopupStatusLineError(program.model.Focus(), errActionsPopupActionUnavailable))
+	if actualErr := program.validateStoryReviewAvailability(); actualErr != nil {
+		requested = actionsPopupErrorRequested(newActionsPopupStatusLineError(program.model.Focus(), actualErr))
+	} else if summary, ok := program.currentPullRequestSummary(); ok {
+		requested = MsgReviewStoryRequested{Summary: summary}
+	}
 	return actionsPopupAction{
-		id:      "review-pr-as-story",
-		title:   reviewStoryActionTitle,
-		icon:    actionsPopupReviewStoryIcon,
-		execute: actionsPopupExecuteErr(program.executeReviewStoryAction),
+		id:        "review-pr-as-story",
+		title:     reviewStoryActionTitle,
+		icon:      actionsPopupReviewStoryIcon,
+		requested: requested,
 	}
 }
 

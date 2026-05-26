@@ -75,8 +75,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyActionsPopupClosedWithFeedback(actual)
 	case MsgActionsPopupActionErrorHandled:
 		return program.applyActionsPopupActionErrorHandled(actual)
+	case MsgActionsPopupActionRequested:
+		return program.applyActionsPopupActionRequested(actual)
 	case MsgModalEditorOpened:
-		program.openModalEditorState(actual.State)
+		program.applyModalEditorOpened(actual)
 	case MsgModalEditorClosed:
 		program.overlayState.modalEditor = nil
 	case MsgModalEditorSubmitRequested:

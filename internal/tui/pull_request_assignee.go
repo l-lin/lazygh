@@ -73,11 +73,20 @@ func (program *Program) currentAssignPullRequestAction() (actionsPopupAction, bo
 }
 
 func (program *Program) assignPullRequestAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestAssigneePickerTarget()
+	if ok {
+		if !program.hasPullRequestMutations() {
+			requested = actionsPopupErrorRequested(errors.New("github loader is unavailable"))
+		} else {
+			requested = MsgOpenAssigneePickerRequested{Target: target}
+		}
+	}
 	return actionsPopupAction{
-		id:      "assign-pull-request",
-		title:   assignPullRequestActionTitle,
-		icon:    actionsPopupEditPullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeOpenAssigneePickerAction),
+		id:        "assign-pull-request",
+		title:     assignPullRequestActionTitle,
+		icon:      actionsPopupEditPullRequestIcon,
+		requested: requested,
 	}
 }
 
@@ -246,12 +255,10 @@ func (program *Program) currentAssigneePickerActionsForQuery(query string) []act
 	for _, candidate := range candidates {
 		candidate := candidate
 		actions = append(actions, actionsPopupAction{
-			id:       "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
-			title:    program.assigneePickerLabel(candidate),
-			keywords: program.assigneePickerSearchKeywords(candidate),
-			execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
-				return program.dispatch(gui, MsgToggleAssigneePickerSelectionRequested{Candidate: candidate})
-			}),
+			id:        "assignee-" + strings.ToLower(strings.TrimSpace(candidate.Login)),
+			title:     program.assigneePickerLabel(candidate),
+			keywords:  program.assigneePickerSearchKeywords(candidate),
+			requested: MsgToggleAssigneePickerSelectionRequested{Candidate: candidate},
 		})
 	}
 	return actions

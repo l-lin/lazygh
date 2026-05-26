@@ -30,20 +30,28 @@ func (program *Program) currentInlineCommentResolutionAction() (actionsPopupActi
 }
 
 func (program *Program) resolveInlineCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.selectedPullRequestReviewThreadActionTarget(); ok {
+		requested = MsgInlineCommentResolutionRequested{Target: target, Resolved: true}
+	}
 	return actionsPopupAction{
-		id:      "resolve-inline-comment",
-		title:   "Mark inline comment as resolved",
-		icon:    actionsPopupResolveInlineCommentIcon,
-		execute: program.executeResolveInlineCommentAction,
+		id:        "resolve-inline-comment",
+		title:     "Mark inline comment as resolved",
+		icon:      actionsPopupResolveInlineCommentIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) unresolveInlineCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.selectedPullRequestReviewThreadActionTarget(); ok {
+		requested = MsgInlineCommentResolutionRequested{Target: target, Resolved: false}
+	}
 	return actionsPopupAction{
-		id:      "unresolve-inline-comment",
-		title:   "Mark inline comment as unresolved",
-		icon:    actionsPopupResolveInlineCommentIcon,
-		execute: program.executeUnresolveInlineCommentAction,
+		id:        "unresolve-inline-comment",
+		title:     "Mark inline comment as unresolved",
+		icon:      actionsPopupResolveInlineCommentIcon,
+		requested: requested,
 	}
 }
 

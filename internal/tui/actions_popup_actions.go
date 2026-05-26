@@ -321,36 +321,55 @@ func actionsPopupDefaultKeywords(action actionsPopupAction) []string {
 }
 
 func (program *Program) yankPullRequestURLActionsPopupAction() actionsPopupAction {
+	var requested Msg = MsgCopyPullRequestURLRequested{}
+	if _, ok := program.selectedPullRequestURL(); !ok {
+		requested = actionsPopupErrorRequested(errors.New(yankUnavailableMessage))
+	}
 	return actionsPopupAction{
-		id:      "yank-pull-request-url",
-		title:   "Yank URL to clipboard",
-		icon:    actionsPopupYankPullRequestURLIcon,
-		execute: actionsPopupExecuteErr(program.executeYankPullRequestURLAction),
+		id:        "yank-pull-request-url",
+		title:     "Yank URL to clipboard",
+		icon:      actionsPopupYankPullRequestURLIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) openPullRequestInBrowserActionsPopupAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestActionTarget()
+	if ok {
+		if !program.hasPullRequestMutations() {
+			requested = actionsPopupErrorRequested(errors.New("github loader is unavailable"))
+		} else {
+			requested = MsgOpenPullRequestInBrowserRequested{Target: target}
+		}
+	}
 	return actionsPopupAction{
-		id:      "open-pull-request-in-browser",
-		title:   "Open PR in browser",
-		icon:    actionsPopupOpenPullRequestBrowserIcon,
-		execute: actionsPopupExecuteErr(program.executeOpenPullRequestInBrowserAction),
+		id:        "open-pull-request-in-browser",
+		title:     "Open PR in browser",
+		icon:      actionsPopupOpenPullRequestBrowserIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) commendOnPrAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestCommentTarget()
+	if ok {
+		feedbackTarget := program.model.Focus()
+		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitRequested(pullRequestCommentComposerTitle, "", func(body string) Msg {
+			return MsgPullRequestCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+		})}
+	}
 	return actionsPopupAction{
-		id:      "comment-on-pr",
-		title:   pullRequestCommentComposerTitle,
-		icon:    actionsPopupCommentOnPullRequestIcon,
-		execute: actionsPopupExecuteErr(program.executeCommentOnPullRequestAction),
+		id:        "comment-on-pr",
+		title:     pullRequestCommentComposerTitle,
+		icon:      actionsPopupCommentOnPullRequestIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) executeCommentOnPullRequestAction(gui *gocui.Gui) error {
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openPullRequestCommentComposer(gui, nil)
-	})
+	return program.openPullRequestCommentComposer(gui, nil)
 }
 
 func (program *Program) executeYankPullRequestURLAction(gui *gocui.Gui) error {

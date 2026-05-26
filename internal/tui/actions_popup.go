@@ -8,12 +8,12 @@ import (
 )
 
 type actionsPopupAction struct {
-	id       string
-	group    string
-	title    string
-	icon     string
-	keywords []string
-	execute  func(*gocui.Gui) error
+	id        string
+	group     string
+	title     string
+	icon      string
+	keywords  []string
+	requested Msg
 }
 
 func (program *Program) closeActionsPopupIfVisible(gui *gocui.Gui) error {
@@ -35,8 +35,8 @@ func (action actionsPopupAction) label() string {
 	return action.icon + " " + action.title
 }
 
-func actionsPopupExecuteErr(execute func(*gocui.Gui) error) func(*gocui.Gui) error {
-	return execute
+func actionsPopupErrorRequested(err error) Msg {
+	return MsgActionsPopupActionErrorHandled{Err: err}
 }
 
 var errActionsPopupActionUnavailable = errors.New("action is unavailable")

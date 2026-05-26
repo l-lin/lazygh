@@ -137,47 +137,66 @@ func markAllNotificationsRead(notifications []githubdomain.Notification) {
 }
 
 func (program *Program) markNotificationReadAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.selectedNotificationActionTarget(); ok && target.threadID != "" {
+		requested = MsgNotificationReadRequested{Target: target}
+	}
 	return actionsPopupAction{
-		id:      "mark-notification-read",
-		title:   notificationMarkReadActionTitle,
-		icon:    actionsPopupMarkNotificationReadIcon,
-		execute: actionsPopupExecuteErr(program.executeMarkNotificationReadAction),
+		id:        "mark-notification-read",
+		title:     notificationMarkReadActionTitle,
+		icon:      actionsPopupMarkNotificationReadIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) markNotificationDoneAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.selectedNotificationActionTarget(); ok && target.threadID != "" {
+		requested = MsgNotificationDoneRequested{Target: target}
+	}
 	return actionsPopupAction{
-		id:      "mark-notification-done",
-		title:   notificationMarkDoneActionTitle,
-		icon:    actionsPopupMarkNotificationDoneIcon,
-		execute: actionsPopupExecuteErr(program.executeMarkNotificationDoneAction),
+		id:        "mark-notification-done",
+		title:     notificationMarkDoneActionTitle,
+		icon:      actionsPopupMarkNotificationDoneIcon,
+		requested: requested,
 	}
 }
 
 func (program *Program) markAllNotificationsReadAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "mark-all-notifications-read",
-		title:   notificationMarkAllReadActionTitle,
-		icon:    actionsPopupMarkAllNotificationsReadIcon,
-		execute: actionsPopupExecuteErr(program.executeMarkAllNotificationsReadAction),
+		id:        "mark-all-notifications-read",
+		title:     notificationMarkAllReadActionTitle,
+		icon:      actionsPopupMarkAllNotificationsReadIcon,
+		requested: MsgAllNotificationsReadRequested{},
 	}
 }
 
 func (program *Program) markAllNotificationsDoneAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "mark-all-notifications-done",
-		title:   notificationMarkAllDoneActionTitle,
-		icon:    actionsPopupMarkAllNotificationsDoneIcon,
-		execute: actionsPopupExecuteErr(program.executeMarkAllNotificationsDoneAction),
+		id:        "mark-all-notifications-done",
+		title:     notificationMarkAllDoneActionTitle,
+		icon:      actionsPopupMarkAllNotificationsDoneIcon,
+		requested: MsgAllNotificationsDoneRequested{},
 	}
 }
 
 func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	switch {
+	case program.linkOpener == nil:
+		requested = actionsPopupErrorRequested(ErrLinkOpenerUnavailable)
+	case !program.isNotificationContext():
+	case func() bool {
+		_, ok := program.selectedNotificationBrowserURL()
+		return ok
+	}():
+		requested = MsgOpenNotificationInBrowserRequested{}
+	}
 	return actionsPopupAction{
-		id:      "open-notification-in-browser",
-		title:   notificationOpenBrowserActionTitle,
-		icon:    actionsPopupOpenNotificationBrowserIcon,
-		execute: actionsPopupExecuteErr(program.executeOpenNotificationInBrowserAction),
+		id:        "open-notification-in-browser",
+		title:     notificationOpenBrowserActionTitle,
+		icon:      actionsPopupOpenNotificationBrowserIcon,
+		requested: requested,
 	}
 }
 

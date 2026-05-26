@@ -40,11 +40,16 @@ type reviewSessionState struct {
 }
 
 func (program *Program) startReviewAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	summary, ok := program.currentPullRequestSummary()
+	if ok && program.hasReviewMutations() {
+		requested = MsgStartPullRequestReviewRequested{Summary: summary}
+	}
 	return actionsPopupAction{
-		id:      "start-review",
-		title:   "Start review",
-		icon:    actionsPopupStartReviewIcon,
-		execute: actionsPopupExecuteErr(program.executeStartReviewAction),
+		id:        "start-review",
+		title:     "Start review",
+		icon:      actionsPopupStartReviewIcon,
+		requested: requested,
 	}
 }
 

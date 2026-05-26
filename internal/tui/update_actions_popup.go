@@ -17,6 +17,16 @@ func (program *Program) updateActionsPopupSearch(query string) {
 	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
 }
 
+func (program *Program) applyActionsPopupActionRequested(message MsgActionsPopupActionRequested) []Cmd {
+	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
+		return nil
+	}
+	if message.Action.requested == nil {
+		return program.applyActionsPopupActionErrorHandled(MsgActionsPopupActionErrorHandled{Err: errActionsPopupActionUnavailable})
+	}
+	return Update(program, message.Action.requested)
+}
+
 func (program *Program) applyClearCacheRequested() []Cmd {
 	if program.pullRequestCache == nil {
 		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()

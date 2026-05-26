@@ -16,30 +16,27 @@ type pendingPullRequestReviewTarget struct {
 }
 
 func (program *Program) submitPendingReviewCommentAction() actionsPopupAction {
-	return actionsPopupAction{
-		id:      "submit-pending-review-comment",
-		title:   pullRequestReviewCommentComposerTitle,
-		icon:    actionsPopupReviewCommentIcon,
-		execute: program.executeSubmitPendingReviewCommentAction,
-	}
+	return program.pendingReviewSubmitAction("submit-pending-review-comment", pullRequestReviewCommentComposerTitle, actionsPopupReviewCommentIcon, githubdomain.PullRequestReviewEventComment)
 }
 
 func (program *Program) submitPendingReviewApprovalAction() actionsPopupAction {
-	return actionsPopupAction{
-		id:      "submit-pending-review-approval",
-		title:   pullRequestReviewApprovalTitle,
-		icon:    actionsPopupReviewApproveIcon,
-		execute: program.executeSubmitPendingReviewApprovalAction,
-	}
+	return program.pendingReviewSubmitAction("submit-pending-review-approval", pullRequestReviewApprovalTitle, actionsPopupReviewApproveIcon, githubdomain.PullRequestReviewEventApprove)
 }
 
 func (program *Program) submitPendingReviewRequestChangesAction() actionsPopupAction {
-	return actionsPopupAction{
-		id:      "submit-pending-review-request-changes",
-		title:   pullRequestRequestChangesComposerTitle,
-		icon:    actionsPopupReviewRequestChangesIcon,
-		execute: program.executeSubmitPendingReviewRequestChangesAction,
+	return program.pendingReviewSubmitAction("submit-pending-review-request-changes", pullRequestRequestChangesComposerTitle, actionsPopupReviewRequestChangesIcon, githubdomain.PullRequestReviewEventRequestChanges)
+}
+
+func (program *Program) pendingReviewSubmitAction(id string, title string, icon string, event githubdomain.PullRequestReviewEvent) actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPendingPullRequestReviewTarget()
+	if ok {
+		feedbackTarget := program.model.Focus()
+		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitRequested(title, "", func(body string) Msg {
+			return MsgPendingPullRequestReviewSubmitRequested{Target: target, Event: event, Body: body, FeedbackTarget: feedbackTarget}
+		})}
 	}
+	return actionsPopupAction{id: id, title: title, icon: icon, requested: requested}
 }
 
 func (program *Program) executeSubmitPendingReviewCommentAction(gui *gocui.Gui) error {
@@ -61,10 +58,8 @@ func (program *Program) openPendingReviewSubmitComposer(gui *gocui.Gui, title st
 	}
 
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openModalEditorWithSubmitRequested(gui, title, "", func(body string) Msg {
-			return MsgPendingPullRequestReviewSubmitRequested{Target: target, Event: event, Body: body, FeedbackTarget: feedbackTarget}
-		})
+	return program.openModalEditorWithSubmitRequested(gui, title, "", func(body string) Msg {
+		return MsgPendingPullRequestReviewSubmitRequested{Target: target, Event: event, Body: body, FeedbackTarget: feedbackTarget}
 	})
 }
 

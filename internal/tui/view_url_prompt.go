@@ -61,13 +61,15 @@ func openPullRequestByClipboardFeedbackMessage(err error) string {
 
 func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "open-pull-request-by-url",
-		title:   openPullRequestByURLActionTitle,
-		icon:    actionsPopupOpenPullRequestByURLIcon,
-		execute: program.executeOpenPullRequestByURLAction,
+		id:    "open-pull-request-by-url",
+		title: openPullRequestByURLActionTitle,
+		icon:  actionsPopupOpenPullRequestByURLIcon,
+		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitRequested(openPullRequestByURLActionTitle, "", func(rawURL string) Msg {
+			return MsgOpenPullRequestByURLSubmitRequested{URL: rawURL}
+		}, openPullRequestByURLEditorHeight)},
 	}
 }
 
 func (program *Program) executeOpenPullRequestByURLAction(gui *gocui.Gui) error {
-	return program.openModalEditorFromActionsPopup(gui, program.openPullRequestByURLEditor)
+	return program.openPullRequestByURLEditor(gui)
 }

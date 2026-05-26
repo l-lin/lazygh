@@ -33,15 +33,17 @@ func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error 
 
 func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:      "custom-pull-request-search",
-		title:   pullRequestCustomSearchActionTitle,
-		icon:    actionsPopupCustomSearchIcon,
-		execute: program.executeOpenPullRequestCustomSearchAction,
+		id:    "custom-pull-request-search",
+		title: pullRequestCustomSearchActionTitle,
+		icon:  actionsPopupCustomSearchIcon,
+		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitRequested(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), func(criteria string) Msg {
+			return MsgPullRequestCustomSearchSubmitRequested{Criteria: criteria}
+		}, pullRequestCustomSearchEditorHeight)},
 	}
 }
 
 func (program *Program) executeOpenPullRequestCustomSearchAction(gui *gocui.Gui) error {
-	return program.openModalEditorFromActionsPopup(gui, program.openPullRequestCustomSearchEditor)
+	return program.openPullRequestCustomSearchEditor(gui)
 }
 
 func (program *Program) currentPullRequestSearchCriteria() string {

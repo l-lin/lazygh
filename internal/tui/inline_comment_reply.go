@@ -27,11 +27,18 @@ func (program *Program) currentInlineCommentReplyAction() (actionsPopupAction, b
 }
 
 func (program *Program) replyToInlineCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
+	if ok {
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(pullRequestInlineCommentReplyEditorTitle, "", func(body string) Msg {
+			return MsgInlineCommentReplySubmitRequested{Target: target, Body: body}
+		}, reviewInlineCommentModalHeight)}
+	}
 	return actionsPopupAction{
-		id:      "reply-to-inline-comment",
-		title:   pullRequestInlineCommentReplyEditorTitle,
-		icon:    actionsPopupCommentOnPullRequestIcon,
-		execute: program.executeReplyToInlineCommentAction,
+		id:        "reply-to-inline-comment",
+		title:     pullRequestInlineCommentReplyEditorTitle,
+		icon:      actionsPopupCommentOnPullRequestIcon,
+		requested: requested,
 	}
 }
 
@@ -41,9 +48,7 @@ func (program *Program) executeReplyToInlineCommentAction(gui *gocui.Gui) error 
 		return errActionsPopupActionUnavailable
 	}
 
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openInlineCommentReplyComposer(gui, target)
-	})
+	return program.openInlineCommentReplyComposer(gui, target)
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {

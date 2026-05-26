@@ -109,6 +109,13 @@ func (program *Program) applyReactionRemovalRequested(message MsgReactionRemoval
 }
 
 func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequestSquashMergeRequested) []Cmd {
+	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != squashMergePullRequestActionTitle {
+		program.actionsPopupWidget.pendingConfirmationActionID = squashMergePullRequestActionTitle
+		program.actionsPopupWidget.errorMessage = ""
+		return nil
+	}
+	program.clearActionsPopupPendingConfirmation()
+
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok || !popupPullRequestSummaryValid(message.Summary) {
 		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()

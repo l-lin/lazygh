@@ -13,11 +13,15 @@ const (
 )
 
 func (program *Program) clearCacheActionsPopupAction() actionsPopupAction {
+	var requested Msg = MsgClearCacheRequested{}
+	if program.pullRequestCache == nil {
+		requested = actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	}
 	return actionsPopupAction{
-		id:      "clear-cache",
-		title:   clearCacheActionTitle,
-		icon:    iconDelete,
-		execute: program.executeClearCacheAction,
+		id:        "clear-cache",
+		title:     clearCacheActionTitle,
+		icon:      iconDelete,
+		requested: requested,
 	}
 }
 

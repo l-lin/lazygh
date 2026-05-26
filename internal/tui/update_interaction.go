@@ -91,6 +91,13 @@ func (program *Program) applyModalEditorExternalEditFinished(message MsgModalEdi
 	program.setModalEditorTextFromExternalEditor(message.Text)
 }
 
+func (program *Program) applyModalEditorOpened(message MsgModalEditorOpened) {
+	program.openModalEditorState(message.State)
+	if program != nil && program.model != nil && program.model.ActionsPopupVisible() {
+		program.closeActionsPopupForAcceptedRequest()
+	}
+}
+
 func (program *Program) openModalEditorState(state *modalEditorState) {
 	if program == nil {
 		return
@@ -115,6 +122,7 @@ func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullReq
 	program.feedbackMessage = ""
 	program.pullRequestBuildRunPopup = nil
 	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunCommand(repository, target.check)}
+	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunLoadCmd{Repository: repository, Target: target}}
 }
 
@@ -130,11 +138,13 @@ func (program *Program) applyPullRequestBuildRunJobLogLoadRequested(message MsgP
 
 	program.feedbackMessage = ""
 	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunJobsCommand(repository, message.Check)}
+	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunJobLogLoadCmd{Repository: repository, Check: message.Check}}
 }
 
 func (program *Program) applyPullRequestBuildRunPopupOpened(message MsgPullRequestBuildRunPopupOpened) {
 	program.openPullRequestBuildRunPopupState(message.Content)
+	program.closeActionsPopupForAcceptedRequest()
 }
 
 func (program *Program) openPullRequestBuildRunPopupState(content pullRequestBuildRunPopupContent) {
@@ -233,6 +243,7 @@ func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequ
 
 func (program *Program) applyOpenLinkUnderCursorRequested(message MsgOpenLinkUnderCursorRequested) []Cmd {
 	program.detailState.viewState.clearPendingPrefix()
+	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{openLinkUnderCursorCmd{View: message.View, Target: program.model.Focus()}}
 }
 
@@ -253,9 +264,14 @@ func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequ
 	program.detailState.viewState.clearPendingPrefix()
 	url, ok := program.selectedPullRequestURL()
 	if !ok {
+		if program.model != nil && program.model.ActionsPopupVisible() {
+			program.actionsPopupWidget.errorMessage = yankUnavailableMessage
+			return nil
+		}
 		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
 		return nil
 	}
+	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{writeClipboardCmd{Text: url, SuccessMessage: yankSuccessMessage, FailureMessage: yankFailureMessage, Target: program.model.Focus()}}
 }
 
@@ -268,12 +284,21 @@ func (program *Program) applyCopyPullRequestBuildRunPopupContentRequested(messag
 
 func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	if program.linkOpener == nil {
+		if program.model != nil && program.model.ActionsPopupVisible() {
+			program.actionsPopupWidget.errorMessage = openLinkOpenerUnavailableMessage
+			return nil
+		}
 		return []Cmd{reportErrorCmd{Message: openLinkOpenerUnavailableMessage}}
 	}
 	browserURL, ok := program.selectedNotificationBrowserURL()
 	if !ok {
+		if program.model != nil && program.model.ActionsPopupVisible() {
+			program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+			return nil
+		}
 		return []Cmd{reportErrorCmd{Message: errActionsPopupActionUnavailable.Error()}}
 	}
+	program.closeActionsPopupForAcceptedRequest()
 	return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
 }
 

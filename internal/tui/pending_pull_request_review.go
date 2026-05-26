@@ -88,11 +88,20 @@ func (program *Program) currentCancelPendingPullRequestReviewAction() (actionsPo
 }
 
 func (program *Program) cancelPendingPullRequestReviewAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPendingPullRequestReviewActionTarget()
+	if ok {
+		if !program.hasReviewMutations() {
+			requested = actionsPopupErrorRequested(errors.New("github loader is unavailable"))
+		} else {
+			requested = MsgCancelPendingPullRequestReviewRequested{Target: target}
+		}
+	}
 	return actionsPopupAction{
-		id:      "cancel-pending-review",
-		title:   cancelPendingPullRequestReviewActionTitle,
-		icon:    actionsPopupCancelPendingReviewIcon,
-		execute: actionsPopupExecuteErr(program.executeCancelPendingPullRequestReviewAction),
+		id:        "cancel-pending-review",
+		title:     cancelPendingPullRequestReviewActionTitle,
+		icon:      actionsPopupCancelPendingReviewIcon,
+		requested: requested,
 	}
 }
 

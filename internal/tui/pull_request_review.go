@@ -15,11 +15,20 @@ const (
 )
 
 func (program *Program) reviewApproveAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestActionTarget()
+	if ok {
+		if !program.hasReviewMutations() {
+			requested = actionsPopupErrorRequested(errors.New("github loader is unavailable"))
+		} else {
+			requested = MsgApprovePullRequestRequested{Target: target}
+		}
+	}
 	return actionsPopupAction{
-		id:      "review-approve",
-		title:   pullRequestReviewApprovalTitle,
-		icon:    actionsPopupReviewApproveIcon,
-		execute: actionsPopupExecuteErr(program.executeApprovePullRequestAction),
+		id:        "review-approve",
+		title:     pullRequestReviewApprovalTitle,
+		icon:      actionsPopupReviewApproveIcon,
+		requested: requested,
 	}
 }
 
@@ -39,11 +48,19 @@ func approvePullRequestCommand(repository string, number int) string {
 }
 
 func (program *Program) reviewCommentAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestActionTarget()
+	if ok {
+		feedbackTarget := program.model.Focus()
+		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitRequested(pullRequestReviewCommentComposerTitle, "", func(body string) Msg {
+			return MsgPullRequestReviewCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+		})}
+	}
 	return actionsPopupAction{
-		id:      "review-comment",
-		title:   pullRequestReviewCommentComposerTitle,
-		icon:    actionsPopupReviewCommentIcon,
-		execute: actionsPopupExecuteErr(program.executeReviewCommentAction),
+		id:        "review-comment",
+		title:     pullRequestReviewCommentComposerTitle,
+		icon:      actionsPopupReviewCommentIcon,
+		requested: requested,
 	}
 }
 
@@ -54,19 +71,25 @@ func (program *Program) executeReviewCommentAction(gui *gocui.Gui) error {
 	}
 
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openModalEditorWithSubmitRequested(gui, pullRequestReviewCommentComposerTitle, "", func(body string) Msg {
-			return MsgPullRequestReviewCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
-		})
+	return program.openModalEditorWithSubmitRequested(gui, pullRequestReviewCommentComposerTitle, "", func(body string) Msg {
+		return MsgPullRequestReviewCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
 	})
 }
 
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	target, ok := program.selectedPullRequestActionTarget()
+	if ok {
+		feedbackTarget := program.model.Focus()
+		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitRequested(pullRequestRequestChangesComposerTitle, "", func(body string) Msg {
+			return MsgPullRequestRequestChangesSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
+		})}
+	}
 	return actionsPopupAction{
-		id:      "review-request-changes",
-		title:   pullRequestRequestChangesComposerTitle,
-		icon:    actionsPopupReviewRequestChangesIcon,
-		execute: actionsPopupExecuteErr(program.executeRequestChangesAction),
+		id:        "review-request-changes",
+		title:     pullRequestRequestChangesComposerTitle,
+		icon:      actionsPopupReviewRequestChangesIcon,
+		requested: requested,
 	}
 }
 
@@ -77,9 +100,7 @@ func (program *Program) executeRequestChangesAction(gui *gocui.Gui) error {
 	}
 
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorFromActionsPopup(gui, func(gui *gocui.Gui) error {
-		return program.openModalEditorWithSubmitRequested(gui, pullRequestRequestChangesComposerTitle, "", func(body string) Msg {
-			return MsgPullRequestRequestChangesSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
-		})
+	return program.openModalEditorWithSubmitRequested(gui, pullRequestRequestChangesComposerTitle, "", func(body string) Msg {
+		return MsgPullRequestRequestChangesSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
 	})
 }

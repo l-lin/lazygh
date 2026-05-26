@@ -27,11 +27,15 @@ func (program *Program) currentReactionAction() (actionsPopupAction, bool) {
 }
 
 func (program *Program) addReactionAction() actionsPopupAction {
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if target, ok := program.selectedPullRequestReactionActionTarget(); ok {
+		requested = MsgOpenReactionPickerRequested{Target: target}
+	}
 	return actionsPopupAction{
-		id:      "add-reaction",
-		title:   reactionPickerTitle,
-		icon:    actionsPopupAddReactionIcon,
-		execute: actionsPopupExecuteErr(program.executeOpenReactionPickerAction),
+		id:        "add-reaction",
+		title:     reactionPickerTitle,
+		icon:      actionsPopupAddReactionIcon,
+		requested: requested,
 	}
 }
 
@@ -57,12 +61,14 @@ func (program *Program) currentReactionPickerActions() []actionsPopupAction {
 
 func (program *Program) reactionPickerAction(content githubdomain.ReactionContent) actionsPopupAction {
 	title := reactionPickerActionMetadata(content)
+	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
+	if program.reactionPickerVisible() {
+		requested = MsgAddReactionRequested{Target: program.actionsPopupWidget.reactionPicker.target, Content: content}
+	}
 	return actionsPopupAction{
-		id:    "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
-		title: title,
-		execute: actionsPopupExecuteErr(func(gui *gocui.Gui) error {
-			return program.executeReactionPickerAction(gui, content)
-		}),
+		id:        "reaction-" + strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(content)), "+", "plus"), "-", "minus"),
+		title:     title,
+		requested: requested,
 	}
 }
 
