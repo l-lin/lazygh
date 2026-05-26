@@ -87,89 +87,73 @@ func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View)
 }
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveLeft(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveLeft, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorRight(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveRight(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveRight, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToRowStart(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToRowStart(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowStart, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToRowEnd(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToRowEnd(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowEnd, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToTop(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToTop(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToTop, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToBottom(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToBottom(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBottom, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToNextWord(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterExclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToNextWord(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextWord, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToWordEnd(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToWordEnd, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToNextBigWord(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterExclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToNextBigWord(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextBigWord, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToBigWordEnd(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToBigWordEnd(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBigWordEnd, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToPreviousWord(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousWord, View: view}})
+	return nil
 }
 
 func (program *Program) moveDetailCursorToPreviousBigWord(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.moveToPreviousBigWord(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousBigWord, View: view}})
+	return nil
 }
 
 func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.enterVisualMode()
-		program.syncCurrentDetailViewport(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterVisualMode, View: view}})
+	return nil
 }
 
 func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.enterLineVisualMode(document)
-		program.syncCurrentDetailViewport(document, viewportHeight)
-	})
+	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterLineVisualMode, View: view}})
+	return nil
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {

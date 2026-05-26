@@ -795,6 +795,21 @@ func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenViewportHandl
 	}
 }
 
+func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenRemainingDetailMotionHandlersUseDetailMotionCommands(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`mutateDetailViewStateForYankMotion\(`,
+		`mutateDetailViewState\(`,
+		`syncCurrentDetailViewport\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "program_navigation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected program_navigation.go remaining detail-motion handlers to dispatch shared detail-motion commands instead of mutating detail shell state inline, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationSupportAndDetailSearchFiles_WhenScanning_ThenTheyStopOwningPageOrSearchShellHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`func \(program \*Program\) handlePageChange\(`,
