@@ -754,6 +754,20 @@ func TestRefactorGuard_GivenBuildPopupNavigationFiles_WhenScanning_ThenTheyUseEx
 	}
 }
 
+func TestRefactorGuard_GivenPullRequestBuildPopupFile_WhenScanning_ThenRenderAndLinkHelpersUseRenderPrepOrSnapshotSelectors(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`viewState\.syncSearch\(`,
+		`syncPullRequestBuildRunPopupViewState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "pull_request_build_popup.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected pull_request_build_popup.go render and link helpers to stay on render prep or snapshot selectors instead of inline popup state sync, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenActionsPopupInteractionFile_WhenScanning_ThenItStopsOwningPopupPageAndViewportShellHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

@@ -79,8 +79,6 @@ func (program *Program) renderPullRequestBuildRunPopupView(view *gocui.View) {
 	}
 
 	document := program.currentPullRequestBuildRunPopupDocument(view)
-	program.pullRequestBuildRunPopup.viewState.syncSearch(document, program.pullRequestBuildRunPopup.searchQuery)
-	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
 	renderVisibleDetailDocumentView(view, document, program.pullRequestBuildRunPopup.viewState)
 }
 
@@ -110,22 +108,12 @@ func (program *Program) currentPullRequestBuildRunPopupDocument(view *gocui.View
 	return document
 }
 
-func (program *Program) syncPullRequestBuildRunPopupViewState(document detailDocument, viewportHeight int) {
-	if program.pullRequestBuildRunPopup == nil {
-		return
-	}
-	program.pullRequestBuildRunPopup.viewState.sync(document, viewportHeight)
-}
-
 func (program *Program) currentPullRequestBuildRunPopupLink(view *gocui.View) (string, bool) {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
+	document, state, ok := program.currentPullRequestBuildRunPopupLinkSnapshot(view)
+	if !ok {
 		return "", false
 	}
-
-	document := program.currentPullRequestBuildRunPopupDocument(view)
-	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
-	return document.linkAt(popup.viewState.cursor)
+	return document.linkAt(state.cursor)
 }
 
 func pullRequestBuildRunPopupTitle(checkTitle string) string {

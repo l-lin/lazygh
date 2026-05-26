@@ -8,5 +8,9 @@ func (program *Program) prepareViewRenderState(viewName string, view *gocui.View
 	}
 	if viewName == viewDetailName {
 		program.syncDetailViewRenderState(view)
+		return
+	}
+	if viewName == viewPullRequestBuildInfoName {
+		program.syncPullRequestBuildRunPopupRenderState(view)
 	}
 }
