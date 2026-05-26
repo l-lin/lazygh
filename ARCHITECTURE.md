@@ -96,7 +96,7 @@ Shell work now lives behind explicit command files.
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
-- `cmd_interaction.go`: popup reporting, clipboard work, link opening, page navigation, read-only overlay scroll, actions-popup page-size resolution and viewport placement, side/detail viewport placement, detail-search repeat/follow-up, review-comment focus, GUI reconfigure, and manual refresh registration
+- `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and manual refresh bookkeeping
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
 - `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport
@@ -126,10 +126,8 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 
 The repo is TEA-shaped, not strict TEA. The remaining pressure points are smaller now, and more specific.
 
-- interaction `Msg` and `Cmd` surfaces still carry live `*gocui.View` handles instead of pure view IDs or selector snapshots
-- overlay and widget state still store pointer-backed editor objects, and `MsgModalEditorOpened` still carries a `*modalEditorState`
-- `cmd_interaction.go` still concentrates a large closure-based runtime bundle that mixes navigation, viewport, clipboard, browser, and manual-refresh work
 - async result delivery still depends on the GUI-bound `dispatchAsync()` bridge, and a few legacy direct loader helpers still call that bridge from older helper files
+- editor callbacks still mutate durable editor models through `HandleKey(gocui.Key, ...)`, and modal-open messages still carry fully built `modalEditorState` values instead of typed edit intents and open descriptors
 
 ## Start here
 
@@ -143,6 +141,7 @@ If you need to rebuild the mental model fast, read these files in order:
 - `internal/tui/screen_state.go`
 - `internal/tui/deps.go`
 - `internal/tui/workflow_plans.go`
-- `internal/tui/cmd_interaction.go`
+- `internal/tui/cmd_interaction_navigation.go`
+- `internal/tui/cmd_interaction_link_clipboard.go`
 - `internal/github/doc.go`
 - `internal/githubcli/doc.go`

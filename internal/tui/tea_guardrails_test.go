@@ -194,7 +194,7 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDirectFeedbackAndEr
 	remainingMatches := make([]string, 0, len(actualMatches))
 	for _, match := range actualMatches {
 		base := filepath.Base(strings.Split(match, ":")[0])
-		if strings.HasPrefix(base, "update") || base == "cmd_interaction.go" {
+		if strings.HasPrefix(base, "update") || strings.HasPrefix(base, "cmd_interaction") {
 			continue
 		}
 		remainingMatches = append(remainingMatches, match)
@@ -283,6 +283,21 @@ func TestRefactorGuard_GivenEditorStateFiles_WhenScanning_ThenTheyDoNotStorePoin
 	})
 	if len(actualMatches) != 0 {
 		t.Fatalf("expected overlay, widget, and modal-open state to use value models instead of pointer-backed editor fields, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenCmdInteractionFile_WhenScanning_ThenItDoesNotOwnTheGiantRuntimeBundle(t *testing.T) {
+	contents, actualErr := os.ReadFile("cmd_interaction.go")
+	then_noError(t, actualErr)
+	actualSource := string(contents)
+
+	for _, forbiddenSnippet := range []string{
+		"type interactionCommandRuntime struct",
+		"func newInteractionCommandRuntime(program *Program) interactionCommandRuntime",
+	} {
+		if strings.Contains(actualSource, forbiddenSnippet) {
+			t.Fatalf("expected cmd_interaction.go to shed the old multi-domain runtime bundle, actual source:\n%s", actualSource)
+		}
 	}
 }
 
