@@ -96,7 +96,7 @@ Shell work now lives behind explicit command files.
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
-- `cmd_interaction.go`: popup reporting, clipboard work, link opening, page navigation, side/detail viewport placement, detail-search repeat/follow-up, review-comment focus, GUI reconfigure, and manual refresh registration
+- `cmd_interaction.go`: popup reporting, clipboard work, link opening, page navigation, actions-popup page-size resolution and viewport placement, side/detail viewport placement, detail-search repeat/follow-up, review-comment focus, GUI reconfigure, and manual refresh registration
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
 - `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport
@@ -132,27 +132,14 @@ What is already in good shape:
 - pure workflow planners
 - child reducers for detail and review state
 - read-only presenters, read models, and cursor/review selectors
-- line navigation, fold toggles, detail/build-popup motion, runtime shortcuts, and side/detail viewport placement now cross the shell boundary through explicit commands or shell hooks
+- detail/build-popup motion, actions-popup paging and placement, runtime shortcuts, and side/detail viewport placement now cross the shell boundary through explicit commands or shell hooks
 - cursor-dependent detail actions now reuse shared selectors instead of probing live detail views directly
 - update files no longer show direct GUI or live-view coupling in the audit
 
 What is still shell-heavy:
 
-- remaining detail motion and visual-mode entry helpers in `program_navigation.go`
-- popup navigation helpers such as `pull_request_build_popup_navigation.go`, `pull_request_build_popup_search*.go`, and `actions_popup_interaction.go`
 - small read-only scroll glue in `help.go` and `program_navigation_support.go`
-
-## Audit snapshot, 2026-05-26
-
-After finishing todos `030`-`032`, the main remaining gaps are:
-
-- `program_navigation.go`: still the largest non-command `*Program` pocket at 51 methods, but its direct shell hotspots are down to the remaining detail-motion cluster (14)
-- non-command shell hotspots by file: `pull_request_build_popup_navigation.go` (25), `program_navigation.go` (14), `actions_popup_interaction.go` (11), `program.go` (2), `program_view_state.go` (2), `program_navigation_support.go` (2), `help.go` (2)
-- runtime shortcut files no longer appear in the GUI shortcut audit
-- cursor-dependent detail action files no longer appear in the live-document audit
-- direct GitHub ports now sit in explicit loading or command files rather than feature helpers
-
-That means the next migration work should stay focused on build-popup navigation/search, the remaining detail-motion cluster in `program_navigation.go`, actions-popup navigation, and finally the low-signal help/read-only scroll glue.
+- dynamic character-motion target binding specs in `detail_character_motion_bindings.go`, which still resolve live views through `program.gui`
 
 ## Start here
 
