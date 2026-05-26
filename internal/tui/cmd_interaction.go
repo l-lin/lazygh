@@ -421,6 +421,33 @@ func executePageNavigationCommand(runtime interactionCommandRuntime, gui *gocui.
 	runtime.handlePageNavigation(gui, command.View, command.Kind)
 }
 
+type readOnlyScrollCmd struct {
+	View         *gocui.View
+	FallbackName string
+	Kind         pageNavigationKind
+}
+
+func (command readOnlyScrollCmd) execute(program *Program, gui *gocui.Gui) {
+	executeReadOnlyScrollCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeReadOnlyScrollCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command readOnlyScrollCmd) {
+	if runtime.resolveView == nil {
+		return
+	}
+
+	actualView := runtime.resolveView(gui, command.View, command.FallbackName)
+	if actualView == nil {
+		return
+	}
+
+	pageSize := viewPageSize(actualView)
+	delta := pageNavigationDelta(command.Kind, pageSize)
+	originX, originY := actualView.Origin()
+	maxOriginY := maxInt(0, len(actualView.BufferLines())-pageSize)
+	actualView.SetOrigin(originX, clampInt(originY+delta, 0, maxOriginY))
+}
+
 type sideListViewportCmd struct {
 	View      *gocui.View
 	Placement viewportPlacement
