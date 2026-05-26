@@ -132,15 +132,17 @@ What is already in good shape:
 - pure workflow planners
 - child reducers for detail and review state
 - read-only presenters, read models, and cursor/review selectors
-- detail/build-popup motion, dynamic character-motion target bindings, help-overlay paging, actions-popup paging and placement, runtime shortcuts, and side/detail viewport placement now cross the shell boundary through explicit commands, selectors, or shell hooks
+- detail/build-popup motion, dynamic character-motion target bindings, help-overlay paging, actions-popup paging and placement, runtime shortcuts, side/detail viewport placement, and build-popup render prep now cross the shell boundary through explicit commands, selectors, or shell hooks
 - cursor-dependent detail actions now reuse shared selectors instead of probing live detail views directly
+- actions-popup catalogs now carry typed requested messages instead of execute callbacks
+- popup-driven modal-editor opens now close through `MsgModalEditorOpened` and update-owned popup state changes instead of a callback bridge
 - update files no longer show direct GUI or live-view coupling in the audit
 
 What is still shell-heavy:
 
-- build-popup render and link helpers in `pull_request_build_popup.go`, which still sync popup view state during render and query lookups
-- callback-backed actions-popup execution through `actionsPopupAction.execute` and `action.execute(gui)`
-- popup-driven modal-editor opens that still flow through `openModalEditorFromActionsPopup(...)`
+- detail-image HTML sources in `detail_image_loader.go`, which still carry `applyRenderedHTML func(*Program, string)` callbacks that `update_async.go` invokes after worker results return
+- modal-editor state in `modal_editor.go`, which still stores `submitRequested func(string) Msg` function values instead of pure submit descriptors
+- legacy `execute*Action` helper methods that remain beside popup feature files even though typed requested messages now drive popup selection
 
 ## Start here
 
