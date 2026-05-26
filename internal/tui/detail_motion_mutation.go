@@ -19,6 +19,28 @@ func (program *Program) mutateDetailViewStateForYankMotion(gui *gocui.Gui, view 
 	return program.refreshShell(gui)
 }
 
+func (program *Program) mutatePullRequestBuildRunPopupViewState(gui *gocui.Gui, view *gocui.View, mutate func(*detailViewState, detailDocument, int)) error {
+	if err := program.mutatePullRequestBuildRunPopupViewStateWithoutRefresh(gui, view, mutate); err != nil {
+		return err
+	}
+	return program.refreshShell(gui)
+}
+
+func (program *Program) mutatePullRequestBuildRunPopupViewStateWithoutRefresh(gui *gocui.Gui, view *gocui.View, mutate func(*detailViewState, detailDocument, int)) error {
+	popup := program.pullRequestBuildRunPopup
+	if popup == nil {
+		return nil
+	}
+
+	actualView := program.resolveView(gui, view, viewPullRequestBuildInfoName)
+	document := program.currentPullRequestBuildRunPopupDocument(actualView)
+	viewportHeight := viewPageSize(actualView)
+	popup.viewState.sync(document, viewportHeight)
+	mutate(&popup.viewState, document, viewportHeight)
+	popup.viewState.sync(document, viewportHeight)
+	return nil
+}
+
 func (program *Program) mutatePullRequestBuildRunPopupViewStateForYankMotion(gui *gocui.Gui, view *gocui.View, selectionKind detailYankMotionSelectionKind, mutate func(*detailViewState, detailDocument, int)) error {
 	popup := program.pullRequestBuildRunPopup
 	if popup == nil {

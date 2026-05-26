@@ -199,8 +199,12 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applySetAllDetailFolds(actual)
 	case MsgSubmitSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
-			_ = program.submitPullRequestBuildRunPopupSearch(nil)
-			return nil
+			if popup := program.pullRequestBuildRunPopup; popup != nil {
+				popup.searchActive = false
+				popup.searchQuery = program.currentSearchText()
+			}
+			program.searchWidget.editor = nil
+			return []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFollowSubmittedSearch}}
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
 			program.applySubmitReviewFileTreeSearch()
@@ -226,7 +230,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		return commands
 	case MsgCancelSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
-			_ = program.cancelPullRequestBuildRunPopupSearch(nil)
+			if popup := program.pullRequestBuildRunPopup; popup != nil {
+				popup.searchActive = false
+			}
+			program.searchWidget.editor = nil
 			return nil
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {

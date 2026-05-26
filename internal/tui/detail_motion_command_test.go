@@ -1,6 +1,9 @@
 package tui
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestDetailMotionCommand_GivenPendingYank_WhenExecutingTheLinewiseFinish_ThenItCopiesTheCurrentLineWithoutMovingTheCursor(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha\nBeta"}}})
@@ -70,5 +73,47 @@ func TestDetailMotionCommand_GivenBuildPopupCharacterMotion_WhenExecutingTheTarg
 	}
 	if subject.pullRequestBuildRunPopup.viewState.hasPendingCharacterMotion() {
 		t.Fatal("expected the popup pending character motion to be consumed")
+	}
+}
+
+func TestDetailMotionCommand_GivenBuildPopupMoveDownOperation_WhenExecuting_ThenItMovesThePopupCursor(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "Alpha\nBeta"}))
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+
+	detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationMoveDown, View: popupView}.execute(subject, gui)
+
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != 1 {
+		t.Fatalf("expected popup cursor line %d, actual %d", 1, actual)
+	}
+}
+
+func TestDetailMotionCommand_GivenBuildPopupSubmittedSearchOperation_WhenExecuting_ThenItMovesThePopupCursorToTheFirstMatch(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
+		checkTitle: "CI / test",
+		body:       strings.Join([]string{"Alpha", "Target", "Omega"}, "\n"),
+	}))
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+	document := subject.currentPullRequestBuildRunPopupDocument(popupView)
+	expectedLineIndex, _ := given_detailDocumentLineContaining(t, document, "Target")
+	subject.pullRequestBuildRunPopup.searchQuery = "Target"
+
+	detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFollowSubmittedSearch, View: popupView}.execute(subject, gui)
+
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != expectedLineIndex {
+		t.Fatalf("expected popup cursor line %d after submitted search, actual %d", expectedLineIndex, actual)
 	}
 }

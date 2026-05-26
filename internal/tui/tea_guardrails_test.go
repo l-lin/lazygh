@@ -692,6 +692,27 @@ func TestRefactorGuard_GivenCharacterMotionFiles_WhenScanning_ThenTheyDoNotReach
 	}
 }
 
+func TestRefactorGuard_GivenBuildPopupNavigationFiles_WhenScanning_ThenTheyUseExplicitPopupMotionCommands(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`currentPullRequestBuildRunPopupDocument\(`,
+		`mutatePullRequestBuildRunPopupViewStateWithoutRefresh\(`,
+		`mutatePullRequestBuildRunPopupViewStateForYankMotion\(`,
+		`mutatePullRequestBuildRunPopupViewState\(`,
+		`refreshShell\(`,
+		`followSubmittedPullRequestBuildRunPopupSearch\(`,
+		`repeatPullRequestBuildRunPopupSearch\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "pull_request_build_popup_navigation.go" || base == "pull_request_build_popup_search.go" || base == "pull_request_build_popup_search_repeat.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected build-popup navigation and search files to defer live popup shell work to explicit commands, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCursorDependentDetailActionFiles_WhenScanning_ThenTheyDoNotReachThroughLiveDetailDocuments(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,
