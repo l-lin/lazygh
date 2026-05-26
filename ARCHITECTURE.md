@@ -122,27 +122,14 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 - Detail view `0` is read-only.
 - Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_commands.go`, `program_loading.go`, `notification_loading.go`, and `notification_detail_loader.go`.
 
-## Current posture
+## Remaining strict-TEA seams
 
-The repo is TEA-shaped, not strict TEA.
+The repo is TEA-shaped, not strict TEA. The remaining pressure points are smaller now, and more specific.
 
-What is already in good shape:
-
-- explicit `Msg`, `Update`, and `Cmd`
-- pure workflow planners
-- child reducers for detail and review state
-- read-only presenters, read models, and cursor/review selectors
-- detail/build-popup motion, dynamic character-motion target bindings, help-overlay paging, actions-popup paging and placement, runtime shortcuts, side/detail viewport placement, and build-popup render prep now cross the shell boundary through explicit commands, selectors, or shell hooks
-- cursor-dependent detail actions now reuse shared selectors instead of probing live detail views directly
-- actions-popup catalogs now carry typed requested messages instead of execute callbacks
-- popup-driven modal-editor opens now close through `MsgModalEditorOpened` and update-owned popup state changes instead of a callback bridge
-- update files no longer show direct GUI or live-view coupling in the audit
-
-What is still shell-heavy:
-
-- detail-image HTML sources in `detail_image_loader.go`, which still carry `applyRenderedHTML func(*Program, string)` callbacks that `update_async.go` invokes after worker results return
-- modal-editor state in `modal_editor.go`, which still stores `submitRequested func(string) Msg` function values instead of pure submit descriptors
-- legacy `execute*Action` helper methods that remain beside popup feature files even though typed requested messages now drive popup selection
+- interaction `Msg` and `Cmd` surfaces still carry live `*gocui.View` handles instead of pure view IDs or selector snapshots
+- overlay and widget state still store pointer-backed editor objects, and `MsgModalEditorOpened` still carries a `*modalEditorState`
+- `cmd_interaction.go` still concentrates a large closure-based runtime bundle that mixes navigation, viewport, clipboard, browser, and manual-refresh work
+- async result delivery still depends on the GUI-bound `dispatchAsync()` bridge, and a few legacy direct loader helpers still call that bridge from older helper files
 
 ## Start here
 
