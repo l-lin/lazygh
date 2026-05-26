@@ -99,8 +99,8 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 	if key == gocui.KeyEnter || key == gocui.KeyEsc {
 		return false
 	}
-	if program.actionsPopupWidget.searchEditor == nil {
-		program.actionsPopupWidget.searchEditor = newLineEditor(program.model.ActionsPopupSearchQuery())
+	if !program.actionsPopupWidget.hasSearchEditor() {
+		program.actionsPopupWidget.openSearchEditor(program.model.ActionsPopupSearchQuery())
 	}
 	if !program.actionsPopupWidget.searchEditor.HandleKey(key, ch, mod) {
 		return false

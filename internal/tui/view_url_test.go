@@ -149,7 +149,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingOpenPullRequestByURL_Th
 
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
+	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the PR URL prompt to use the single-line editor")
 	}
 	modalView, actualErr := gui.View(viewModalEditorName)
@@ -195,7 +195,7 @@ func TestOpenPullRequestByURL_GivenTheURLInputPopup_WhenPressingEnter_ThenItSubm
 
 	modalView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
-	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
+	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the PR URL prompt to use the single-line editor")
 	}
 	subject.overlayState.modalEditor.lineEditor.SetText("https://github.com/acme/widgets/pull/13")

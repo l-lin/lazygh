@@ -38,8 +38,8 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 	if key == gocui.KeyEnter || key == gocui.KeyCtrlJ || key == gocui.KeyEsc {
 		return false
 	}
-	if program.searchWidget.editor == nil {
-		program.searchWidget.editor = newLineEditor(program.model.SearchDraft())
+	if !program.searchWidget.hasEditor() {
+		program.searchWidget.openEditor(program.model.SearchDraft())
 	}
 	if !program.searchWidget.editor.HandleKey(key, ch, mod) {
 		return false

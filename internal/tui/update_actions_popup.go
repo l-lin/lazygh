@@ -206,7 +206,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 
 func (program *Program) applyOpenAssigneePickerRequested(message MsgOpenAssigneePickerRequested) []Cmd {
 	program.actionsPopupWidget.assigneePicker = newAssigneePickerState(message.Target, program.currentConnectedUserLogin(), program.currentConnectedUserName())
-	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.clearSearchEditor()
 	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(program.currentAssigneePickerActionCount())
 	program.updateActionsPopupSearch("")
@@ -263,7 +263,7 @@ func (program *Program) applySubmitAssigneePickerRequested(message MsgSubmitAssi
 
 func (program *Program) applyOpenReactionPickerRequested(message MsgOpenReactionPickerRequested) {
 	program.actionsPopupWidget.reactionPicker = &reactionPickerState{target: message.Target}
-	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.clearSearchEditor()
 	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
 }
@@ -280,7 +280,7 @@ func (program *Program) applyAddReactionRequested(message MsgAddReactionRequeste
 
 func (program *Program) applyOpenThemePickerRequested() {
 	program.actionsPopupWidget.themePicker = &themePickerState{}
-	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.clearSearchEditor()
 	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
 }

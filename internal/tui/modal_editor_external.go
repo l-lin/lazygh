@@ -11,16 +11,14 @@ func (program *Program) openModalEditorInExternalEditor(gui *gocui.Gui, _ *gocui
 }
 
 func (program *Program) setModalEditorTextFromExternalEditor(text string) {
-	if program == nil || program.overlayState.modalEditor == nil {
+	if program == nil || !program.modalEditorVisible() {
 		return
 	}
-	if program.overlayState.modalEditor.lineEditor != nil {
+	if program.overlayState.modalEditor.isLineEditor() {
 		program.overlayState.modalEditor.lineEditor.SetText(normalizeSingleLineExternalEditorText(text))
 		return
 	}
-	if program.overlayState.modalEditor.editor != nil {
-		program.overlayState.modalEditor.editor.SetText(text)
-	}
+	program.overlayState.modalEditor.editor.SetText(text)
 }
 
 func normalizeSingleLineExternalEditorText(text string) string {

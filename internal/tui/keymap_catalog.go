@@ -194,7 +194,7 @@ func closeKeybindingActionFor(scope string, viewNames []string, handler func(*go
 
 func (program *Program) modalEditorSubmitKeybindingAction() keybindingAction {
 	action := modalEditorSubmitAction
-	if program.overlayState.modalEditor != nil {
+	if program.modalEditorVisible() {
 		action = program.overlayState.modalEditor.submitAction()
 	}
 	return configuredKeybindingActionFor(keymapScopeModalEditor, action, []string{viewModalEditorName}, program.submitModalEditor)

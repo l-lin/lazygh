@@ -38,7 +38,7 @@ func TestUpdate_GivenSearchLifecycleMessages_WhenApplying_ThenItFlowsThroughTheC
 	if actual := subject.model.UserSearchQuery(); actual != "1" {
 		t.Fatalf("expected the applied user search query %q, actual %q", "1", actual)
 	}
-	if subject.searchWidget.editor != nil {
+	if subject.searchWidget.hasEditor() {
 		t.Fatal("expected the search editor to be cleared after submit")
 	}
 }
@@ -62,7 +62,7 @@ func TestUpdate_GivenActionsPopupLifecycleMessages_WhenApplying_ThenItResetsEphe
 	if actual := subject.model.ActionsPopupSelectedActionIndex(); actual != 0 {
 		t.Fatalf("expected the popup selection to reset after close, actual %d", actual)
 	}
-	if subject.actionsPopupWidget.searchEditor != nil {
+	if subject.actionsPopupWidget.hasSearchEditor() {
 		t.Fatal("expected the popup search editor to be cleared")
 	}
 	if subject.actionsPopupWidget.errorMessage != "" {

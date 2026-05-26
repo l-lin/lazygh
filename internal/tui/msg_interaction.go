@@ -27,7 +27,7 @@ type MsgActionsPopupActionErrorHandled struct {
 }
 
 type MsgModalEditorOpened struct {
-	State *modalEditorState
+	State modalEditorState
 }
 
 type MsgModalEditorClosed struct{}

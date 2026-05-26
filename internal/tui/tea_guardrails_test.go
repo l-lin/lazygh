@@ -267,6 +267,25 @@ func TestRefactorGuard_GivenMsgAndCommandFiles_WhenScanning_ThenTheyDoNotExposeL
 	}
 }
 
+func TestRefactorGuard_GivenEditorStateFiles_WhenScanning_ThenTheyDoNotStorePointerBackedEditorsOrModalPointerPayloads(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`modalEditor\s+\*modalEditorState`,
+		`editor\s+\*lineEditor`,
+		`searchEditor\s+\*lineEditor`,
+		`lineEditor\s+\*lineEditor`,
+		`editor\s+\*multilineEditor`,
+		`State\s+\*modalEditorState`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "program_state_models.go" || base == "widget_state.go" || base == "modal_editor.go" || base == "msg_interaction.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected overlay, widget, and modal-open state to use value models instead of pointer-backed editor fields, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoPopupToModalEditorCallbackBridgeRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`openModalEditorFromActionsPopup\(`,

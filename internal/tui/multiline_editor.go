@@ -8,8 +8,8 @@ type multilineEditor struct {
 	preferredColumn int
 }
 
-func newMultilineEditor(text string) *multilineEditor {
-	editor := &multilineEditor{preferredColumn: -1}
+func newMultilineEditor(text string) multilineEditor {
+	editor := multilineEditor{preferredColumn: -1}
 	editor.SetText(text)
 	return editor
 }
@@ -58,4 +58,9 @@ func (editor *multilineEditor) SetText(text string) {
 	editor.text = []rune(text)
 	editor.cursor = len(editor.text)
 	editor.preferredColumn = -1
+}
+
+func (editor multilineEditor) clone() multilineEditor {
+	editor.text = append([]rune(nil), editor.text...)
+	return editor
 }

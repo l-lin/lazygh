@@ -42,7 +42,7 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinished_WhenSuccessful_ThenIt
 	if subject.model.ActionsPopupVisible() {
 		t.Fatalf("expected the actions popup to close after a successful async gh command")
 	}
-	if subject.actionsPopupWidget.searchEditor != nil {
+	if subject.actionsPopupWidget.hasSearchEditor() {
 		t.Fatalf("expected the popup search editor to be cleared after success")
 	}
 	if actual := subject.actionsPopupWidget.errorMessage; actual != "" {

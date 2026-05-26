@@ -30,7 +30,7 @@ func TestUpdate_GivenMsgDetailSearchWordResolved_WhenApplying_ThenItAppliesTheSe
 	if subject.model.SearchActive() {
 		t.Fatal("expected the direct word search to leave the search prompt inactive")
 	}
-	if subject.searchWidget.editor != nil {
+	if subject.searchWidget.hasEditor() {
 		t.Fatal("expected the search editor to stay cleared after direct word search")
 	}
 	if !subject.searchWidget.detailReversed {
@@ -62,7 +62,7 @@ func TestUpdate_GivenMsgSubmitSearchForDetailTarget_WhenApplying_ThenItReturnsAT
 	if subject.model.SearchActive() {
 		t.Fatal("expected the search to be inactive after submit")
 	}
-	if subject.searchWidget.editor != nil {
+	if subject.searchWidget.hasEditor() {
 		t.Fatal("expected the search editor to be cleared after submit")
 	}
 	if len(actual) != 1 {

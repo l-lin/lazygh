@@ -55,7 +55,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpen
 
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
+	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the custom search popup to use the single-line editor")
 	}
 	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
@@ -75,7 +75,7 @@ func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefill
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	if subject.overlayState.modalEditor == nil || subject.overlayState.modalEditor.lineEditor == nil {
+	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the custom search popup to use the single-line editor")
 	}
 	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {

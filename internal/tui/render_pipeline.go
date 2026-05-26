@@ -178,7 +178,7 @@ func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) scree
 		}
 		totalWidth := boundedHalfWidth(maxX, modalEditorMinWidth, modalEditorFallbackWidth)
 		totalHeight := modalEditorTotalHeight
-		if renderer.program.overlayState.modalEditor != nil {
+		if renderer.program.modalEditorVisible() {
 			totalHeight = renderer.program.overlayState.modalEditor.Height()
 		}
 		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}

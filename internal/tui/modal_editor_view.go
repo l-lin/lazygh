@@ -9,14 +9,14 @@ import (
 
 func (program *Program) configureModalEditorView(view *gocui.View) {
 	configureFramedOverlayView(view, program.modalEditorTitle(), "")
-	view.Wrap = program.overlayState.modalEditor != nil && program.overlayState.modalEditor.lineEditor == nil
+	view.Wrap = program.modalEditorVisible() && !program.overlayState.modalEditor.isLineEditor()
 	view.Highlight = false
 	view.Editable = true
 	view.Editor = gocui.EditorFunc(program.editModalEditor)
 }
 
 func (program *Program) renderModalEditorView(view *gocui.View) {
-	if view == nil || program.overlayState.modalEditor == nil {
+	if view == nil || !program.modalEditorVisible() {
 		return
 	}
 
@@ -35,7 +35,7 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 	if key == gocui.KeyAltEnter || key == gocui.KeyEsc {
 		return false
 	}
-	if program.overlayState.modalEditor == nil {
+	if !program.modalEditorVisible() {
 		return false
 	}
 	if !program.overlayState.modalEditor.HandleKey(key, ch, mod) {
@@ -46,7 +46,7 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 }
 
 func (program *Program) modalEditorTitle() string {
-	if program.overlayState.modalEditor == nil {
+	if !program.modalEditorVisible() {
 		return ""
 	}
 

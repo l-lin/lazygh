@@ -16,7 +16,7 @@ func TestUpdate_GivenMsgActionsPopupClosedWithFeedback_WhenApplying_ThenItCloses
 	if subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to close after the success message")
 	}
-	if subject.actionsPopupWidget.searchEditor != nil {
+	if subject.actionsPopupWidget.hasSearchEditor() {
 		t.Fatal("expected the popup search editor to be cleared after the success message")
 	}
 	if actual := subject.actionsPopupWidget.errorMessage; actual != "" {

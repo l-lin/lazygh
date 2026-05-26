@@ -25,7 +25,7 @@ func TestUpdate_GivenMsgSubmitSearchForBuildPopup_WhenApplying_ThenItReturnsATyp
 	if subject.pullRequestBuildRunPopup.searchActive {
 		t.Fatal("expected the build popup search prompt to be inactive after submit")
 	}
-	if subject.searchWidget.editor != nil {
+	if subject.searchWidget.hasEditor() {
 		t.Fatal("expected the search editor to be cleared after popup search submit")
 	}
 	if len(actual) != 1 {

@@ -17,7 +17,7 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 		searchText = query
 		searchCursor = utf8.RuneCountInString(query)
 	}
-	if program.actionsPopupWidget.searchEditor != nil {
+	if program.actionsPopupWidget.hasSearchEditor() {
 		searchText = program.actionsPopupWidget.searchEditor.Text()
 		searchCursor = program.actionsPopupWidget.searchEditor.Cursor()
 	}

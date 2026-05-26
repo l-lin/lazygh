@@ -11,7 +11,7 @@ func (program *Program) closeActionsPopupState() {
 		return
 	}
 	program.model.CloseActionsPopup()
-	program.actionsPopupWidget.searchEditor = nil
+	program.actionsPopupWidget.clearSearchEditor()
 	program.clearActionsPopupPendingConfirmation()
 	program.actionsPopupWidget.errorMessage = ""
 	program.actionsPopupWidget.reactionPicker = nil

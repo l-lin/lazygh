@@ -15,7 +15,7 @@ func (program *Program) searchViewPresenter() searchViewPresenter {
 		searchCursor = utf8.RuneCountInString(searchText)
 		notificationRows = program.model.NotificationRows()
 	}
-	if program.searchWidget.editor != nil {
+	if program.searchWidget.hasEditor() {
 		searchText = program.searchWidget.editor.Text()
 		searchCursor = program.searchWidget.editor.Cursor()
 	}

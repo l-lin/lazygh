@@ -52,7 +52,7 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccess_WhenApplying_T
 		FeedbackTarget: FocusDetailView,
 	}})
 
-	if subject.overlayState.modalEditor != nil {
+	if subject.modalEditorVisible() {
 		t.Fatal("expected the modal editor to close after a successful typed submit")
 	}
 

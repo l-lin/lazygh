@@ -49,7 +49,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.clearPendingSelectionPrefix()
 		if program.pullRequestBuildRunPopupVisible() {
 			program.startPullRequestBuildRunPopupSearch()
-			program.searchWidget.editor = newLineEditor(actual.Query)
+			program.searchWidget.openEditor(actual.Query)
 			return nil
 		}
 		inputContext := program.inputContext()
@@ -66,7 +66,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.model.StartSearch()
 		program.applySearchDraftChanged(MsgSearchDraftChanged{Query: actual.Query})
-		program.searchWidget.editor = newLineEditor(actual.Query)
+		program.searchWidget.openEditor(actual.Query)
 	case MsgSearchDraftChanged:
 		program.applySearchDraftChanged(actual)
 	case MsgFeedbackSet:
@@ -80,7 +80,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgModalEditorOpened:
 		program.applyModalEditorOpened(actual)
 	case MsgModalEditorClosed:
-		program.overlayState.modalEditor = nil
+		program.overlayState.modalEditor = modalEditorState{}
 	case MsgModalEditorSubmitRequested:
 		return program.applyModalEditorSubmitRequested()
 	case MsgModalEditorSubmitFinished:
@@ -205,7 +205,7 @@ func Update(program *Program, msg Msg) []Cmd {
 				popup.searchActive = false
 				popup.searchQuery = program.currentSearchText()
 			}
-			program.searchWidget.editor = nil
+			program.searchWidget.clearEditor()
 			return []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFollowSubmittedSearch}}
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
@@ -220,7 +220,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		if target == FocusDetailView {
 			program.searchWidget.detailReversed = false
 		}
-		program.searchWidget.editor = nil
+		program.searchWidget.clearEditor()
 
 		commands := []Cmd(nil)
 		if target == FocusDetailView {
@@ -235,7 +235,7 @@ func Update(program *Program, msg Msg) []Cmd {
 			if popup := program.pullRequestBuildRunPopup; popup != nil {
 				popup.searchActive = false
 			}
-			program.searchWidget.editor = nil
+			program.searchWidget.clearEditor()
 			return nil
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
@@ -243,9 +243,9 @@ func Update(program *Program, msg Msg) []Cmd {
 			return nil
 		}
 		program.model.CancelSearch()
-		program.searchWidget.editor = nil
+		program.searchWidget.clearEditor()
 	case MsgCloseSearch:
-		program.searchWidget.editor = nil
+		program.searchWidget.clearEditor()
 	case MsgActionsPopupSearchEdited:
 		if !program.model.ActionsPopupVisible() {
 			return nil
@@ -419,7 +419,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.actionsPopupWidget.assigneePicker = nil
 		program.actionsPopupWidget.assigneePickerLoad = nil
 		program.model.OpenActionsPopup(actual.ActionCount)
-		program.actionsPopupWidget.searchEditor = nil
+		program.actionsPopupWidget.clearSearchEditor()
 		program.actionsPopupWidget.errorMessage = ""
 	case MsgCloseActionsPopup:
 		program.clearPendingSelectionPrefix()
@@ -431,7 +431,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.model.ClearPaneSearchQueries()
 		program.clearActionsPopupPendingConfirmation()
-		program.actionsPopupWidget.searchEditor = newLineEditor("")
+		program.actionsPopupWidget.openSearchEditor("")
 		program.updateActionsPopupSearch("")
 		program.model.FocusActionsPopupSearch()
 		program.actionsPopupWidget.errorMessage = ""
@@ -473,7 +473,7 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.model.MoveActionsPopupSelectionToBottom()
 		program.actionsPopupWidget.errorMessage = ""
 	case MsgModalEditorEdited:
-		if program.overlayState.modalEditor == nil {
+		if !program.modalEditorVisible() {
 			return nil
 		}
 		program.overlayState.modalEditor.errorMessage = ""

@@ -11,8 +11,8 @@ type lineEditor struct {
 	cursor int
 }
 
-func newLineEditor(text string) *lineEditor {
-	editor := &lineEditor{}
+func newLineEditor(text string) lineEditor {
+	editor := lineEditor{}
 	editor.SetText(text)
 	return editor
 }
@@ -239,4 +239,9 @@ func (editor *lineEditor) MoveCursorWordRight() {
 		cursor++
 	}
 	editor.cursor = cursor
+}
+
+func (editor lineEditor) clone() lineEditor {
+	editor.text = append([]rune(nil), editor.text...)
+	return editor
 }

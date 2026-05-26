@@ -28,7 +28,7 @@ func TestActionsPopup_GivenEditTitleActionSelected_WhenExecuting_ThenItOpensTheS
 	then_noError(t, actualErr)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
-	if subject.overlayState.modalEditor.lineEditor == nil {
+	if !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the title editor to use the line editor")
 	}
 	titleView, actualErr := gui.View(viewModalEditorName)

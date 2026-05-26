@@ -32,11 +32,11 @@ func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPo
 }
 
 func (program *Program) applyModalEditorSubmitRequested() []Cmd {
-	if program == nil || program.overlayState.modalEditor == nil {
+	if program == nil || !program.modalEditorVisible() {
 		return nil
 	}
 
-	editorState := program.overlayState.modalEditor
+	editorState := &program.overlayState.modalEditor
 	editorState.errorMessage = ""
 	requested := modalEditorSubmitRequestedMessage(editorState.submitDescriptor, editorState.Text())
 	if requested == nil {
@@ -46,7 +46,7 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 }
 
 func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) []Cmd {
-	if program == nil || program.overlayState.modalEditor == nil {
+	if program == nil || !program.modalEditorVisible() {
 		return nil
 	}
 
@@ -68,19 +68,19 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	if message.Success != nil {
 		commands = message.Success.apply(program)
 	}
-	program.overlayState.modalEditor = nil
+	program.overlayState.modalEditor = modalEditorState{}
 	return commands
 }
 
 func (program *Program) applyModalEditorExternalEditRequested() []Cmd {
-	if program == nil || program.overlayState.modalEditor == nil {
+	if program == nil || !program.modalEditorVisible() {
 		return nil
 	}
 	return []Cmd{modalEditorExternalEditCmd{Text: program.overlayState.modalEditor.Text()}}
 }
 
 func (program *Program) applyModalEditorExternalEditFinished(message MsgModalEditorExternalEditFinished) {
-	if program == nil || program.overlayState.modalEditor == nil {
+	if program == nil || !program.modalEditorVisible() {
 		return
 	}
 	if message.Err != nil {
@@ -99,11 +99,11 @@ func (program *Program) applyModalEditorOpened(message MsgModalEditorOpened) {
 	}
 }
 
-func (program *Program) openModalEditorState(state *modalEditorState) {
+func (program *Program) openModalEditorState(state modalEditorState) {
 	if program == nil {
 		return
 	}
-	program.overlayState.modalEditor = state
+	program.overlayState.modalEditor = state.clone()
 }
 
 func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullRequestBuildRunLoadRequested) []Cmd {

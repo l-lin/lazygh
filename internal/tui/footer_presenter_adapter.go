@@ -9,7 +9,7 @@ func (program *Program) footerPresenter() footerPresenter {
 
 	submitAction := modalEditorSubmitAction
 	submitFallback := "Alt+Enter"
-	if program.overlayState.modalEditor != nil {
+	if program.modalEditorVisible() {
 		submitAction = program.overlayState.modalEditor.submitAction()
 		submitFallback = program.overlayState.modalEditor.submitHintFallback()
 	}
