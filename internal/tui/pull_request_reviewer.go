@@ -63,21 +63,18 @@ func (program *Program) currentPullRequestReviewerRequestTargetAtDetailCursor() 
 		return pullRequestReviewerRequestTarget{}, false
 	}
 
-	summary, _, ok := program.currentPullRequestDescriptionSummaryAndDetail()
+	context, ok := program.currentPullRequestDescriptionCursorContext()
 	if !ok {
 		return pullRequestReviewerRequestTarget{}, false
 	}
 
-	actualView := program.resolveView(program.gui, nil, viewDetailName)
-	document := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(document, viewPageSize(actualView))
-	entry, ok := program.browserOverviewReviewerEntryAtDetailCursorDocument(document)
+	entry, ok := program.browserOverviewReviewerEntryAtDetailCursorDocument(context.selection.document)
 	if !ok {
 		return pullRequestReviewerRequestTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || repository == "-" || summary.Number <= 0 {
+	repository := strings.TrimSpace(pullRequestRepositoryName(context.summary.Repository))
+	if repository == "" || repository == "-" || context.summary.Number <= 0 {
 		return pullRequestReviewerRequestTarget{}, false
 	}
 	trimmedLogin := strings.TrimSpace(entry.ReviewerLogin)
@@ -87,7 +84,7 @@ func (program *Program) currentPullRequestReviewerRequestTargetAtDetailCursor() 
 
 	return pullRequestReviewerRequestTarget{
 		repository:    repository,
-		number:        summary.Number,
+		number:        context.summary.Number,
 		reviewerLogin: trimmedLogin,
 	}, true
 }

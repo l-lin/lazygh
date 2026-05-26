@@ -117,30 +117,23 @@ func (program *Program) selectedBrowserCommentsInlineCommentThreadActionTarget()
 }
 
 func (program *Program) selectedBrowserChangesInlineCommentThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {
-	summary, ok := program.selectedPullRequestSummaryForDetail()
+	context, ok := program.currentBrowserChangesCursorContext()
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
-	result, ok := program.pullRequestDiffForSummary(summary)
-	if !ok || result.err != nil {
-		return pullRequestReviewThreadActionTarget{}, false
-	}
-
-	detailDocument := program.currentDetailDocument(nil)
-	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
+	thread, ok := reviewDiffThreadAtCursor(context.renderedRows, context.selection.document, context.selection.state)
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
+	repository := strings.TrimSpace(pullRequestRepositoryName(context.summary.Repository))
+	if repository == "" || context.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
 	return pullRequestReviewThreadActionTarget{
 		repository: repository,
-		number:     summary.Number,
+		number:     context.summary.Number,
 		threadID:   strings.TrimSpace(thread.ID),
 		resolved:   thread.IsResolved,
 	}, true
@@ -151,25 +144,22 @@ func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullReques
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
-	selectedFile, ok := program.selectedReviewSessionDiffFile()
+	context, ok := program.currentReviewDiffCursorContext()
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
-
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailState.wrapWidth)
-	document := program.currentReviewDiffDocument(selectedFile, program.detailState.wrapWidth)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, document, program.detailState.viewState)
+	thread, ok := reviewDiffThreadAtCursor(context.renderedRows, context.selection.document, context.selection.state)
 	if !ok {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
-	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
+	repository := strings.TrimSpace(pullRequestRepositoryName(context.summary.Repository))
+	if repository == "" || context.summary.Number <= 0 || !hasUsablePullRequestMutationID(thread.ID) {
 		return pullRequestReviewThreadActionTarget{}, false
 	}
 
 	return pullRequestReviewThreadActionTarget{
 		repository: repository,
-		number:     program.navigationState.reviewSession.summary.Number,
+		number:     context.summary.Number,
 		threadID:   strings.TrimSpace(thread.ID),
 		resolved:   thread.IsResolved,
 	}, true

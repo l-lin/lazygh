@@ -673,6 +673,30 @@ func TestRefactorGuard_GivenCharacterMotionFiles_WhenScanning_ThenTheyDoNotReach
 	}
 }
 
+func TestRefactorGuard_GivenCursorDependentDetailActionFiles_WhenScanning_ThenTheyDoNotReachThroughLiveDetailDocuments(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`currentDetailDocument\(`,
+		`syncDetailViewState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "open_link.go" ||
+			base == "pull_request_build.go" ||
+			base == "pull_request_reviewer.go" ||
+			base == "review_inline_comment.go" ||
+			base == "reaction_target.go" ||
+			base == "reaction_remove.go" ||
+			base == "inline_comment_edit.go" ||
+			base == "inline_comment_reply.go" ||
+			base == "inline_comment_resolution.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cursor-dependent detail action files to reuse shared cursor selectors or commands instead of probing live detail documents directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenPageHandlersDispatchInsteadOfResolvingViews(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

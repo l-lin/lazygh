@@ -27,25 +27,22 @@ func (program *Program) detailCursorHasBuildLink() bool {
 }
 
 func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRequestBuildRunTarget, bool) {
-	summary, detail, ok := program.currentPullRequestDescriptionSummaryAndDetail()
+	context, ok := program.currentPullRequestDescriptionCursorContext()
 	if !ok {
 		return pullRequestBuildRunTarget{}, false
 	}
 
-	actualView := program.resolveView(program.gui, nil, viewDetailName)
-	document := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(document, viewPageSize(actualView))
-	entry, ok := program.browserOverviewBuildEntryAtDetailCursor(actualView)
+	entry, ok := program.browserOverviewBuildEntryAtDetailCursorDocument(context.selection.document)
 	if !ok || strings.TrimSpace(entry.Link) == "" {
 		return pullRequestBuildRunTarget{}, false
 	}
-	check, ok := pullRequestStatusCheckMatchingEntry(detail.StatusCheckRollup, entry)
+	check, ok := pullRequestStatusCheckMatchingEntry(context.detail.StatusCheckRollup, entry)
 	if !ok {
 		return pullRequestBuildRunTarget{}, false
 	}
-	repository := pullRequestRepositoryName(summary.Repository)
+	repository := pullRequestRepositoryName(context.summary.Repository)
 	return pullRequestBuildRunTarget{
-		summary: summary,
+		summary: context.summary,
 		check:   check,
 		popupContent: pullRequestBuildRunPopupContent{
 			checkTitle: checkTitleForPullRequestBuildRunPopup(check),
@@ -145,12 +142,6 @@ func pullRequestStatusCheckMatchingEntry(checks []githubdomain.PullRequestStatus
 
 func checkTitleForPullRequestBuildRunPopup(check githubdomain.PullRequestStatusCheck) string {
 	return pullRequestOverviewCheckDisplayName(check)
-}
-
-func (program *Program) browserOverviewBuildEntryAtDetailCursor(view *gocui.View) (pullRequestOverviewEntry, bool) {
-	document := program.currentDetailDocument(view)
-	program.syncDetailViewState(document, viewPageSize(view))
-	return program.browserOverviewBuildEntryAtDetailCursorDocument(document)
 }
 
 func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document detailDocument) (pullRequestOverviewEntry, bool) {

@@ -25,12 +25,12 @@ func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) er
 	return program.dispatch(gui, MsgOpenLinkUnderCursorRequested{View: view})
 }
 
-func (program *Program) openCurrentLink(view *gocui.View) error {
+func (program *Program) openCurrentLink(_ *gocui.View) error {
 	if program.linkOpener == nil {
 		return ErrLinkOpenerUnavailable
 	}
 
-	url, ok := program.currentDetailCursorLink(view)
+	url, ok := program.currentDetailCursorLink(nil)
 	if !ok {
 		return ErrNoLinkUnderCursor
 	}
@@ -38,13 +38,12 @@ func (program *Program) openCurrentLink(view *gocui.View) error {
 	return program.linkOpener.Open(url)
 }
 
-func (program *Program) currentDetailCursorLink(view *gocui.View) (string, bool) {
-	document := program.currentDetailDocument(view)
-	program.syncDetailViewState(document, viewPageSize(view))
-	if actual, ok := document.linkAt(program.detailState.viewState.cursor); ok {
+func (program *Program) currentDetailCursorLink(_ *gocui.View) (string, bool) {
+	selection := program.currentDetailCursorSelection()
+	if actual, ok := selection.document.linkAt(selection.state.cursor); ok {
 		return actual, true
 	}
-	return program.buildLinkUnderCursor(document)
+	return program.buildLinkUnderCursor(selection.document)
 }
 
 func (program *Program) buildLinkUnderCursor(document detailDocument) (string, bool) {
@@ -84,7 +83,7 @@ func pullRequestOverviewEntryAtBodyLine(section browserDetailSection, bodyLine i
 }
 
 func (program *Program) detailCursorHasLink() bool {
-	_, ok := program.currentDetailCursorLink(program.resolveView(program.gui, nil, viewDetailName))
+	_, ok := program.currentDetailCursorLink(nil)
 	return ok
 }
 
@@ -98,11 +97,10 @@ func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupActi
 }
 
 func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) error {
-	view := program.resolveView(gui, nil, viewDetailName)
 	if program.linkOpener == nil {
 		return errors.New(openLinkOpenerUnavailableMessage)
 	}
-	url, ok := program.currentDetailCursorLink(view)
+	url, ok := program.currentDetailCursorLink(nil)
 	if !ok {
 		return errors.New(openLinkUnavailableMessage)
 	}

@@ -28,16 +28,16 @@ type pullRequestInlineCommentSelection struct {
 	initialBody string
 }
 
-func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, view *gocui.View) error {
-	selection, err := program.selectedReviewInlineCommentSelection(gui, view)
+func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
+	selection, err := program.selectedReviewInlineCommentSelection()
 	if err != nil {
 		return program.handleInlineCommentSelectionError(gui, err)
 	}
 	return program.openPullRequestInlineCommentComposer(gui, selection)
 }
 
-func (program *Program) openBrowserChangesInlineCommentComposer(gui *gocui.Gui, view *gocui.View) error {
-	selection, err := program.selectedBrowserChangesInlineCommentSelection(gui, view)
+func (program *Program) openBrowserChangesInlineCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
+	selection, err := program.selectedBrowserChangesInlineCommentSelection()
 	if err != nil {
 		return program.handleInlineCommentSelectionError(gui, err)
 	}
@@ -58,7 +58,7 @@ func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, 
 	if !program.reviewModeActive() || program.model.Focus() != FocusDetailView {
 		return actionsPopupAction{}, false
 	}
-	if _, err := program.selectedReviewInlineCommentSelection(program.gui, nil); err != nil {
+	if _, err := program.selectedReviewInlineCommentSelection(); err != nil {
 		return actionsPopupAction{}, false
 	}
 
@@ -69,7 +69,7 @@ func (program *Program) currentBrowserChangesInlineCommentAction() (actionsPopup
 	if program.reviewModeActive() || program.model.Focus() != FocusDetailView || !program.browserChangesInlineCommentShortcutActive() {
 		return actionsPopupAction{}, false
 	}
-	if _, err := program.selectedBrowserChangesInlineCommentSelection(program.gui, nil); err != nil {
+	if _, err := program.selectedBrowserChangesInlineCommentSelection(); err != nil {
 		return actionsPopupAction{}, false
 	}
 
@@ -94,7 +94,7 @@ func (program *Program) executeAddInlineCommentAction(gui *gocui.Gui) error {
 	})
 }
 
-func (program *Program) selectedReviewInlineCommentSelection(gui *gocui.Gui, view *gocui.View) (pullRequestInlineCommentSelection, error) {
+func (program *Program) selectedReviewInlineCommentSelection() (pullRequestInlineCommentSelection, error) {
 	if !program.reviewModeActive() {
 		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
@@ -105,56 +105,32 @@ func (program *Program) selectedReviewInlineCommentSelection(gui *gocui.Gui, vie
 		return pullRequestInlineCommentSelection{}, errors.New("missing pull request review context")
 	}
 
-	detailDocument := program.inlineCommentDetailDocument(gui, view)
-	selectedFile, ok := program.selectedReviewSessionDiffFile()
+	context, ok := program.currentReviewDiffCursorContext()
 	if !ok {
 		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
-
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
-	return pullRequestInlineCommentSelectionFromRenderedRows(repository, program.navigationState.reviewSession.summary.Number, pendingReviewID, false, renderedRows, detailDocument, program.detailState.viewState)
+	return pullRequestInlineCommentSelectionFromRenderedRows(repository, context.summary.Number, pendingReviewID, false, context.renderedRows, context.selection.document, context.selection.state)
 }
 
-func (program *Program) selectedBrowserChangesInlineCommentSelection(gui *gocui.Gui, view *gocui.View) (pullRequestInlineCommentSelection, error) {
+func (program *Program) selectedBrowserChangesInlineCommentSelection() (pullRequestInlineCommentSelection, error) {
 	if program.reviewModeActive() || !program.browserChangesInlineCommentShortcutActive() {
 		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
 
-	summary, ok := program.selectedPullRequestSummaryForDetail()
+	context, ok := program.currentBrowserChangesCursorContext()
 	if !ok {
 		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable
 	}
-	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
-	if repository == "" || summary.Number <= 0 {
+	repository := strings.TrimSpace(pullRequestRepositoryName(context.summary.Repository))
+	if repository == "" || context.summary.Number <= 0 {
 		return pullRequestInlineCommentSelection{}, errors.New("missing pull request identity")
 	}
 
-	result, ok := program.pullRequestDiffForSummary(summary)
-	if !ok || result.err != nil {
-		return pullRequestInlineCommentSelection{}, errReviewThreadTargetUnavailable
-	}
-
 	pendingReviewID := ""
-	if pendingState, ok := program.pendingPullRequestReviewStateForSummary(summary); ok {
+	if pendingState, ok := program.pendingPullRequestReviewStateForSummary(context.summary); ok {
 		pendingReviewID = strings.TrimSpace(pendingState.id)
 	}
-	detailDocument := program.inlineCommentDetailDocument(gui, view)
-	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	return pullRequestInlineCommentSelectionFromRenderedRows(repository, summary.Number, pendingReviewID, true, renderedRows, detailDocument, program.detailState.viewState)
-}
-
-func (program *Program) inlineCommentDetailDocument(gui *gocui.Gui, view *gocui.View) detailDocument {
-	actualView := view
-	if actualView == nil && gui != nil {
-		detailView, err := gui.View(viewDetailName)
-		if err == nil {
-			actualView = detailView
-		}
-	}
-	viewportHeight := viewPageSize(actualView)
-	detailDocument := program.currentDetailDocument(actualView)
-	program.syncDetailViewState(detailDocument, viewportHeight)
-	return detailDocument
+	return pullRequestInlineCommentSelectionFromRenderedRows(repository, context.summary.Number, pendingReviewID, true, context.renderedRows, context.selection.document, context.selection.state)
 }
 
 func pullRequestInlineCommentSelectionFromRenderedRows(repository string, number int, pendingReviewID string, updateDetail bool, renderedRows []reviewDiffRenderedRow, detailDocument detailDocument, state detailViewState) (pullRequestInlineCommentSelection, error) {

@@ -163,14 +163,11 @@ func (program *Program) selectedBrowserChangesReactionActionTarget(summary githu
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	result, ok := program.pullRequestDiffForSummary(summary)
-	if !ok || result.err != nil {
+	context, ok := program.currentBrowserChangesCursorContext()
+	if !ok {
 		return pullRequestReactionActionTarget{}, false
 	}
-
-	detailDocument := program.currentDetailDocument(nil)
-	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, detailDocument, program.detailState.viewState)
+	_, comment, ok := reviewDiffCommentAtCursor(context.renderedRows, context.selection.document, context.selection.state)
 	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
@@ -194,26 +191,23 @@ func (program *Program) selectedReviewDiffReactionActionTarget() (pullRequestRea
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	selectedFile, ok := program.selectedReviewSessionDiffFile()
+	context, ok := program.currentReviewDiffCursorContext()
 	if !ok {
 		return pullRequestReactionActionTarget{}, false
 	}
-
-	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, program.detailState.wrapWidth)
-	document := program.currentReviewDiffDocument(selectedFile, program.detailState.wrapWidth)
-	_, comment, ok := reviewDiffCommentAtCursor(renderedRows, document, program.detailState.viewState)
+	_, comment, ok := reviewDiffCommentAtCursor(context.renderedRows, context.selection.document, context.selection.state)
 	if !ok || !hasUsablePullRequestMutationID(comment.ID) {
 		return pullRequestReactionActionTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
-	if repository == "" || program.navigationState.reviewSession.summary.Number <= 0 {
+	repository := strings.TrimSpace(pullRequestRepositoryName(context.summary.Repository))
+	if repository == "" || context.summary.Number <= 0 {
 		return pullRequestReactionActionTarget{}, false
 	}
 
 	return pullRequestReactionActionTarget{
 		repository:     repository,
-		number:         program.navigationState.reviewSession.summary.Number,
+		number:         context.summary.Number,
 		subjectID:      strings.TrimSpace(comment.ID),
 		reactionGroups: append([]githubdomain.ReactionGroup(nil), comment.ReactionGroups...),
 		invalidateDiff: true,
