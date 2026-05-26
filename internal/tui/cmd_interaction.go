@@ -25,8 +25,6 @@ type interactionCommandRuntime struct {
 	currentDetailCursor                 func() detailPosition
 	currentDetailCursorLink             func(*gocui.View) (string, bool)
 	currentPullRequestBuildRunPopupLink func(*gocui.View) (string, bool)
-	followSubmittedDetailSearch         func(*gocui.Gui) error
-	followReverseDetailSearch           func(*gocui.Gui) error
 	configureGUI                        func(*gocui.Gui)
 	hasPullRequestListQueries           func() bool
 	hasNotificationQueries              func() bool
@@ -41,6 +39,10 @@ type interactionCommandRuntime struct {
 	activePullRequestTab                func() PullRequestTab
 	handleDetailLineNavigation          func(*gocui.Gui, *gocui.View, int)
 	handlePageNavigation                func(*gocui.Gui, *gocui.View, pageNavigationKind)
+	handleSideListViewport              func(*gocui.Gui, *gocui.View, viewportPlacement)
+	handleDetailViewport                func(*gocui.Gui, *gocui.View, detailViewportOperation)
+	repeatDetailSearch                  func(*gocui.Gui, *gocui.View, bool)
+	followDetailSearch                  func(*gocui.Gui, bool)
 	focusDetailRenderedLine             func(*gocui.Gui, *gocui.View, int)
 	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
 	prepareBuildPopupClipboardWrite     func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
@@ -75,8 +77,6 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		},
 		currentDetailCursorLink:             program.currentDetailCursorLink,
 		currentPullRequestBuildRunPopupLink: program.currentPullRequestBuildRunPopupLink,
-		followSubmittedDetailSearch:         program.followSubmittedDetailSearch,
-		followReverseDetailSearch:           program.followReverseDetailSearch,
 		configureGUI:                        program.configureGUI,
 		hasPullRequestListQueries:           program.hasPullRequestListQueries,
 		hasNotificationQueries:              program.hasNotificationQueries,
@@ -109,24 +109,84 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 			actualView := program.resolveView(gui, view, program.currentViewName())
 			pageSize := viewPageSize(actualView)
 			delta := pageNavigationDelta(kind, pageSize)
-			switch kind {
-			case pageNavigationKindHalfDown:
-				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.pageDown(document, viewportHeight)
+			if program.model.Focus() == FocusDetailView {
+				_ = program.mutateDetailViewStateForYankMotion(gui, actualView, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
+					switch kind {
+					case pageNavigationKindHalfDown:
+						program.detailState.viewState.pageDown(document, viewportHeight)
+					case pageNavigationKindHalfUp:
+						program.detailState.viewState.pageUp(document, viewportHeight)
+					case pageNavigationKindFullDown:
+						program.detailState.viewState.fullPageDown(document, viewportHeight)
+					case pageNavigationKindFullUp:
+						program.detailState.viewState.fullPageUp(document, viewportHeight)
+					}
 				})
-			case pageNavigationKindHalfUp:
-				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.pageUp(document, viewportHeight)
+				return
+			}
+			if program.actionContext().IsReviewContext() {
+				if program.model.Focus() != FocusPullRequestsView {
+					return
+				}
+				program.applyMoveReviewSelection(MsgMoveReviewSelection{Delta: delta})
+			} else {
+				program.applyMoveSideSelection(MsgMoveSideSelection{Delta: delta})
+			}
+			viewName, selectedVisibleLine, lineCount := program.currentSideListState()
+			_ = program.recenterListSelection(gui, actualView, viewName, selectedVisibleLine, lineCount)
+		},
+		handleSideListViewport: func(gui *gocui.Gui, view *gocui.View, placement viewportPlacement) {
+			viewName, selectedVisibleLine, lineCount := program.currentSideListState()
+			if placement == viewportPlacementCenter {
+				_ = program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
+				return
+			}
+			_ = program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, placement)
+		},
+		handleDetailViewport: func(gui *gocui.Gui, view *gocui.View, operation detailViewportOperation) {
+			switch operation {
+			case detailViewportOperationScrollDown:
+				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.scrollDown(document, viewportHeight)
 				})
-			case pageNavigationKindFullDown:
-				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.fullPageDown(document, viewportHeight)
+			case detailViewportOperationScrollUp:
+				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.scrollUp(document, viewportHeight)
 				})
-			case pageNavigationKindFullUp:
-				_ = program.handlePageChange(gui, actualView, delta, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.fullPageUp(document, viewportHeight)
+			case detailViewportOperationRecenter:
+				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.recenter(document, viewportHeight)
+					program.detailState.viewState.preserveViewportSyncCount++
+				})
+			case detailViewportOperationPlaceTop:
+				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.placeCursorAtViewportTop(document, viewportHeight)
+					program.detailState.viewState.preserveViewportSyncCount++
+				})
+			case detailViewportOperationPlaceBottom:
+				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
+					program.detailState.viewState.placeCursorAtViewportBottom(document, viewportHeight)
+					program.detailState.viewState.preserveViewportSyncCount++
 				})
 			}
+		},
+		repeatDetailSearch: func(gui *gocui.Gui, view *gocui.View, reverse bool) {
+			_ = program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionCharacterInclusive, func(document detailDocument, viewportHeight int) {
+				if reverse {
+					program.detailState.viewState.followPreviousSearchMatch(document, program.model.DetailSearchQuery(), viewportHeight)
+					return
+				}
+				program.detailState.viewState.followNextSearchMatch(document, program.model.DetailSearchQuery(), viewportHeight)
+			})
+		},
+		followDetailSearch: func(gui *gocui.Gui, reverse bool) {
+			_ = program.mutateDetailViewStateWithoutRefresh(gui, nil, func(document detailDocument, viewportHeight int) {
+				if reverse {
+					program.detailState.viewState.followPreviousSearchMatch(document, program.model.DetailSearchQuery(), viewportHeight)
+					return
+				}
+				program.detailState.viewState.followSubmittedSearch(document, program.model.DetailSearchQuery(), viewportHeight)
+			})
 		},
 		focusDetailRenderedLine: func(gui *gocui.Gui, view *gocui.View, line int) {
 			_ = program.mutateDetailViewStateWithoutRefresh(gui, view, func(document detailDocument, viewportHeight int) {
@@ -352,6 +412,38 @@ func executePageNavigationCommand(runtime interactionCommandRuntime, gui *gocui.
 	runtime.handlePageNavigation(gui, command.View, command.Kind)
 }
 
+type sideListViewportCmd struct {
+	View      *gocui.View
+	Placement viewportPlacement
+}
+
+func (command sideListViewportCmd) execute(program *Program, gui *gocui.Gui) {
+	executeSideListViewportCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeSideListViewportCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command sideListViewportCmd) {
+	if runtime.handleSideListViewport == nil {
+		return
+	}
+	runtime.handleSideListViewport(gui, command.View, command.Placement)
+}
+
+type detailViewportCmd struct {
+	View      *gocui.View
+	Operation detailViewportOperation
+}
+
+func (command detailViewportCmd) execute(program *Program, gui *gocui.Gui) {
+	executeDetailViewportCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeDetailViewportCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command detailViewportCmd) {
+	if runtime.handleDetailViewport == nil {
+		return
+	}
+	runtime.handleDetailViewport(gui, command.View, command.Operation)
+}
+
 func pageNavigationDelta(kind pageNavigationKind, pageSize int) int {
 	switch kind {
 	case pageNavigationKindHalfDown:
@@ -400,15 +492,26 @@ func (command followDetailSearchCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeFollowDetailSearchCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command followDetailSearchCmd) {
-	if command.Reverse {
-		if runtime.followReverseDetailSearch != nil {
-			_ = runtime.followReverseDetailSearch(gui)
-		}
+	if runtime.followDetailSearch == nil {
 		return
 	}
-	if runtime.followSubmittedDetailSearch != nil {
-		_ = runtime.followSubmittedDetailSearch(gui)
+	runtime.followDetailSearch(gui, command.Reverse)
+}
+
+type repeatDetailSearchCmd struct {
+	View    *gocui.View
+	Reverse bool
+}
+
+func (command repeatDetailSearchCmd) execute(program *Program, gui *gocui.Gui) {
+	executeRepeatDetailSearchCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeRepeatDetailSearchCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command repeatDetailSearchCmd) {
+	if runtime.repeatDetailSearch == nil {
+		return
 	}
+	runtime.repeatDetailSearch(gui, command.View, command.Reverse)
 }
 
 type openLinkUnderCursorCmd struct {

@@ -125,6 +125,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyLineNavigationRequested(actual)
 	case MsgPageNavigationRequested:
 		return program.applyPageNavigationRequested(actual)
+	case MsgSideListViewportRequested:
+		return program.applySideListViewportRequested(actual)
+	case MsgDetailViewportRequested:
+		return program.applyDetailViewportRequested(actual)
 	case MsgOpenBrowserURLRequested:
 		return program.applyOpenBrowserURLRequested(actual)
 	case MsgOpenBrowserURLFinished:
@@ -185,6 +189,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applySetAllReviewTreeFolds(actual)
 	case MsgSearchWordUnderCursor:
 		return program.applySearchWordUnderCursor(actual)
+	case MsgRepeatDetailSearchRequested:
+		return program.applyRepeatDetailSearchRequested(actual)
 	case MsgDetailSearchWordResolved:
 		return program.applyDetailSearchWordResolved(actual)
 	case MsgToggleInlineConversationVisibility:

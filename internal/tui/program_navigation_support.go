@@ -2,27 +2,6 @@ package tui
 
 import "github.com/jesseduffield/gocui"
 
-func (program *Program) handlePageChange(gui *gocui.Gui, view *gocui.View, sideChange int, mutateDetail func(detailDocument, int)) error {
-	program.clearPendingSelectionPrefix()
-	if program.selectionChangeBlocked() {
-		return nil
-	}
-	if program.model.Focus() == FocusDetailView {
-		return program.mutateDetailViewStateForYankMotion(gui, view, detailYankMotionLinewise, mutateDetail)
-	}
-	if program.actionContext().IsReviewContext() {
-		if program.model.Focus() != FocusPullRequestsView {
-			return nil
-		}
-		program.adjustReviewSessionSelection(sideChange)
-	} else {
-		program.applyMoveSideSelection(MsgMoveSideSelection{Delta: sideChange})
-	}
-
-	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
-}
-
 func (program *Program) clearPendingSelectionPrefix() {
 	program.navigationState.pendingSelectionKeySequence.clear()
 }

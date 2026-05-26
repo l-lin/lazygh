@@ -122,6 +122,26 @@ type MsgPageNavigationRequested struct {
 	Kind pageNavigationKind
 }
 
+type MsgSideListViewportRequested struct {
+	View      *gocui.View
+	Placement viewportPlacement
+}
+
+type detailViewportOperation int
+
+const (
+	detailViewportOperationScrollDown detailViewportOperation = iota
+	detailViewportOperationScrollUp
+	detailViewportOperationRecenter
+	detailViewportOperationPlaceTop
+	detailViewportOperationPlaceBottom
+)
+
+type MsgDetailViewportRequested struct {
+	View      *gocui.View
+	Operation detailViewportOperation
+}
+
 type MsgOpenBrowserURLRequested struct {
 	URL            string
 	SuccessMessage string
@@ -224,6 +244,11 @@ type MsgSearchWordUnderCursor struct {
 	Reverse bool
 }
 
+type MsgRepeatDetailSearchRequested struct {
+	View      *gocui.View
+	Direction searchRepeatDirection
+}
+
 type MsgDetailSearchWordResolved struct {
 	Query   string
 	Reverse bool
@@ -265,6 +290,8 @@ func (MsgCloseHelp) isMsg()                                    {}
 func (MsgAdjustFocusedPane) isMsg()                            {}
 func (MsgLineNavigationRequested) isMsg()                      {}
 func (MsgPageNavigationRequested) isMsg()                      {}
+func (MsgSideListViewportRequested) isMsg()                    {}
+func (MsgDetailViewportRequested) isMsg()                      {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
@@ -290,6 +317,7 @@ func (MsgMoveReviewSelectionToBottom) isMsg()                  {}
 func (MsgMoveReviewFile) isMsg()                               {}
 func (MsgMoveReviewComment) isMsg()                            {}
 func (MsgSearchWordUnderCursor) isMsg()                        {}
+func (MsgRepeatDetailSearchRequested) isMsg()                  {}
 func (MsgDetailSearchWordResolved) isMsg()                     {}
 func (MsgToggleInlineConversationVisibility) isMsg()           {}
 func (MsgSetAllDetailFolds) isMsg()                            {}

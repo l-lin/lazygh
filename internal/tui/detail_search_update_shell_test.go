@@ -76,3 +76,20 @@ func TestUpdate_GivenMsgSubmitSearchForDetailTarget_WhenApplying_ThenItReturnsAT
 		t.Fatal("expected the submitted search follow command to stay forward")
 	}
 }
+
+func TestUpdate_GivenMsgRepeatDetailSearchRequested_WhenApplying_ThenItReturnsATypedRepeatDetailSearchCommand(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+
+	Update(subject, MsgOpenSearch{Query: "Alpha"})
+	Update(subject, MsgSubmitSearch{})
+	actual := Update(subject, MsgRepeatDetailSearchRequested{})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one repeat-detail-search command, actual %d", len(actual))
+	}
+	if _, ok := actual[0].(repeatDetailSearchCmd); !ok {
+		t.Fatalf("expected a repeatDetailSearchCmd, actual %T", actual[0])
+	}
+}

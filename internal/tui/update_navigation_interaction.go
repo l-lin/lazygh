@@ -233,6 +233,21 @@ func (program *Program) applyPageNavigationRequested(message MsgPageNavigationRe
 	return []Cmd{pageNavigationCmd{View: message.View, Kind: message.Kind}}
 }
 
+func (program *Program) applySideListViewportRequested(message MsgSideListViewportRequested) []Cmd {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return nil
+	}
+	return []Cmd{sideListViewportCmd{View: message.View, Placement: message.Placement}}
+}
+
+func (program *Program) applyDetailViewportRequested(message MsgDetailViewportRequested) []Cmd {
+	if !program.model.PaneVisible(FocusDetailView) {
+		return nil
+	}
+	return []Cmd{detailViewportCmd{View: message.View, Operation: message.Operation}}
+}
+
 func (program *Program) applyRepeatActionsPopupSearch(message MsgRepeatActionsPopupSearch) {
 	program.clearPendingSelectionPrefix()
 	if !program.model.ActionsPopupVisible() || program.model.ActionsPopupSearchActive() {
@@ -352,6 +367,21 @@ func (program *Program) applySearchWordUnderCursor(message MsgSearchWordUnderCur
 	}
 
 	return []Cmd{resolveDetailSearchWordCmd{View: message.View, Reverse: message.Reverse}}
+}
+
+func (program *Program) applyRepeatDetailSearchRequested(message MsgRepeatDetailSearchRequested) []Cmd {
+	if program.model.Focus() != FocusDetailView || program.detailState.viewState.mode != detailNormalMode {
+		return nil
+	}
+	if strings.TrimSpace(program.model.DetailSearchQuery()) == "" {
+		return nil
+	}
+
+	reverse := message.Direction == searchRepeatBackward
+	if program.searchWidget.detailReversed {
+		reverse = !reverse
+	}
+	return []Cmd{repeatDetailSearchCmd{View: message.View, Reverse: reverse}}
 }
 
 func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWordResolved) []Cmd {

@@ -22,24 +22,12 @@ func (program *Program) moveSelectionUp(gui *gocui.Gui, view *gocui.View) error 
 	return program.dispatch(gui, MsgLineNavigationRequested{View: view, Delta: -1})
 }
 
-func (program *Program) moveDetailViewDown(gui *gocui.Gui, _ *gocui.View) error {
-	if !program.model.PaneVisible(FocusDetailView) {
-		return nil
-	}
-
-	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.scrollDown(document, viewportHeight)
-	})
+func (program *Program) moveDetailViewDown(gui *gocui.Gui, view *gocui.View) error {
+	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationScrollDown})
 }
 
-func (program *Program) moveDetailViewUp(gui *gocui.Gui, _ *gocui.View) error {
-	if !program.model.PaneVisible(FocusDetailView) {
-		return nil
-	}
-
-	return program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.scrollUp(document, viewportHeight)
-	})
+func (program *Program) moveDetailViewUp(gui *gocui.Gui, view *gocui.View) error {
+	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationScrollUp})
 }
 
 func (program *Program) pageDown(gui *gocui.Gui, view *gocui.View) error {
@@ -59,51 +47,27 @@ func (program *Program) fullPageUp(gui *gocui.Gui, view *gocui.View) error {
 }
 
 func (program *Program) recenterSideSelection(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	return program.recenterListSelection(gui, view, viewName, selectedVisibleLine, lineCount)
+	return program.dispatch(gui, MsgSideListViewportRequested{View: view, Placement: viewportPlacementCenter})
 }
 
 func (program *Program) moveSideSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	return program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, viewportPlacementTop)
+	return program.dispatch(gui, MsgSideListViewportRequested{View: view, Placement: viewportPlacementTop})
 }
 
 func (program *Program) moveSideSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	if program.selectionChangeBlocked() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-	return program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, viewportPlacementBottom)
+	return program.dispatch(gui, MsgSideListViewportRequested{View: view, Placement: viewportPlacementBottom})
 }
 
 func (program *Program) recenterDetailView(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.recenter(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationRecenter})
 }
 
 func (program *Program) moveDetailCursorToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.placeCursorAtViewportTop(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationPlaceTop})
 }
 
 func (program *Program) moveDetailCursorToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	return program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-		program.detailState.viewState.placeCursorAtViewportBottom(document, viewportHeight)
-	})
+	return program.dispatch(gui, MsgDetailViewportRequested{View: view, Operation: detailViewportOperationPlaceBottom})
 }
 
 func (program *Program) moveSideSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {

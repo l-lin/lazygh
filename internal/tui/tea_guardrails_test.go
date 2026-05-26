@@ -739,6 +739,43 @@ func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenLineHandlersD
 	}
 }
 
+func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenViewportHandlersDispatchInsteadOfOwningViewportShellHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`recenterListSelection\(`,
+		`placeListSelection\(`,
+		`scrollDown\(`,
+		`scrollUp\(`,
+		`recenter\(`,
+		`placeCursorAtViewportTop\(`,
+		`placeCursorAtViewportBottom\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "program_navigation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected program_navigation.go viewport handlers to dispatch typed commands instead of mutating viewport shell state inline, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProgramNavigationSupportAndDetailSearchFiles_WhenScanning_ThenTheyStopOwningPageOrSearchShellHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`func \(program \*Program\) handlePageChange\(`,
+		`mutateDetailViewStateForYankMotion\(`,
+		`mutateDetailViewStateWithoutRefresh\(`,
+		`followSubmittedDetailSearch\(`,
+		`followReverseDetailSearch\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "program_navigation_support.go" || base == "program_detail_search.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected program_navigation_support.go and program_detail_search.go to leave page and detail-search shell helpers to explicit commands, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
 		"actions_popup_async_cmd.go":            true,
