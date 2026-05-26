@@ -84,6 +84,7 @@ The main read-only projection seams are:
 - `searchViewPresenter`
 - `reviewSessionReadModel`
 - `review_session_selectors.go`
+- `detail_cursor_selectors.go`
 
 Those snapshots keep footer, help, popup, title, and hot review/story selection derivation off the full `*Program` bag.
 
@@ -95,7 +96,7 @@ Shell work now lives behind explicit command files.
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
-- `cmd_interaction.go`: popup reporting, clipboard work, link opening, detail-search follow-up, review-comment focus, page navigation, GUI reconfigure, and manual refresh registration
+- `cmd_interaction.go`: popup reporting, clipboard work, link opening, page navigation, side/detail viewport placement, detail-search repeat/follow-up, review-comment focus, GUI reconfigure, and manual refresh registration
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
 - `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport
@@ -119,7 +120,7 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 - Palette values belong in `internal/theme`.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is read-only.
-- Direct GitHub port calls in `internal/tui` are confined to `workflow_commands.go`.
+- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_commands.go`, `program_loading.go`, `notification_loading.go`, and `notification_detail_loader.go`.
 
 ## Current posture
 
@@ -130,28 +131,28 @@ What is already in good shape:
 - explicit `Msg`, `Update`, and `Cmd`
 - pure workflow planners
 - child reducers for detail and review state
-- read-only presenters, read models, and review/session selectors
-- line navigation, fold toggles, and detail/build-popup motion now cross the shell boundary through explicit commands
+- read-only presenters, read models, and cursor/review selectors
+- line navigation, fold toggles, detail/build-popup motion, runtime shortcuts, and side/detail viewport placement now cross the shell boundary through explicit commands or shell hooks
+- cursor-dependent detail actions now reuse shared selectors instead of probing live detail views directly
 - update files no longer show direct GUI or live-view coupling in the audit
 
 What is still shell-heavy:
 
-- navigation helpers such as `program_navigation.go`, `program_navigation_support.go`, and `program_detail_search.go`
-- popup navigation helpers such as `pull_request_build_popup_navigation.go` and `actions_popup_interaction.go`
-- cursor-dependent detail action files such as `open_link.go`, `pull_request_build.go`, `pull_request_reviewer.go`, and `review_inline_comment.go`
-- runtime entrypoints such as `view_url.go`, `editor_dispatch.go`, `actions_popup_async_success.go`, and `refresh_active_view.go`
+- remaining detail motion and visual-mode entry helpers in `program_navigation.go`
+- popup navigation helpers such as `pull_request_build_popup_navigation.go`, `pull_request_build_popup_search*.go`, and `actions_popup_interaction.go`
+- small read-only scroll glue in `help.go` and `program_navigation_support.go`
 
-## Audit snapshot, 2026-05-25
+## Audit snapshot, 2026-05-26
 
-After finishing todos `027`-`029`, the main remaining gaps are:
+After finishing todos `030`-`032`, the main remaining gaps are:
 
-- `program_navigation.go`: 51 `func (program *Program)` methods, still the largest non-command `*Program` pocket
-- non-command shell hotspots by file: `pull_request_build_popup_navigation.go` (25), `program_navigation.go` (22), `actions_popup_interaction.go` (11), `pull_request_build.go` (5), `program_navigation_support.go` (5), `open_link.go` (4), `review_inline_comment.go` (4), `pull_request_reviewer.go` (3)
-- GUI-bound runtime shortcuts remain in `view_url.go`, `editor_dispatch.go`, `actions_popup_async_success.go`, and `refresh_active_view.go`
-- `update*.go` files still stay out of the GUI and live-view coupling report
-- direct GitHub ports in `internal/tui` remain confined to `workflow_commands.go`
+- `program_navigation.go`: still the largest non-command `*Program` pocket at 51 methods, but its direct shell hotspots are down to the remaining detail-motion cluster (14)
+- non-command shell hotspots by file: `pull_request_build_popup_navigation.go` (25), `program_navigation.go` (14), `actions_popup_interaction.go` (11), `program.go` (2), `program_view_state.go` (2), `program_navigation_support.go` (2), `help.go` (2)
+- runtime shortcut files no longer appear in the GUI shortcut audit
+- cursor-dependent detail action files no longer appear in the live-document audit
+- direct GitHub ports now sit in explicit loading or command files rather than feature helpers
 
-That means the next migration work should stay focused on the remaining non-command shell helpers and runtime shortcuts, not on the reducer layer that was already cleaned up.
+That means the next migration work should stay focused on build-popup navigation/search, the remaining detail-motion cluster in `program_navigation.go`, actions-popup navigation, and finally the low-signal help/read-only scroll glue.
 
 ## Start here
 
