@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "strings"
 
 const (
 	pullRequestCommentUpdateEditorTitle     = "Update PR comment"
@@ -52,14 +48,6 @@ func (program *Program) deletePullRequestCommentAction() actionsPopupAction {
 		icon:      actionsPopupDeleteInlineCommentIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeDeletePullRequestCommentAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestCommentEditActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgPullRequestCommentDeleteRequested{Target: target})
 }
 
 func (program *Program) selectedPullRequestCommentEditActionTarget() (pullRequestCommentEditActionTarget, bool) {

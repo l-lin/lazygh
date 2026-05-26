@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -43,10 +42,6 @@ func (program *Program) changeThemeActionsPopupAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeOpenThemePickerAction(gui *gocui.Gui) error {
-	return program.dispatch(gui, MsgOpenThemePickerRequested{})
-}
-
 func (program *Program) currentThemePickerActions() []actionsPopupAction {
 	if !program.themePickerVisible() {
 		return nil
@@ -76,19 +71,4 @@ func (program *Program) themePickerAction(preset theme.Preset) actionsPopupActio
 		title:     strings.TrimSpace(preset.Label),
 		requested: requested,
 	}
-}
-
-func (program *Program) executeThemePickerPresetAction(gui *gocui.Gui, preset theme.Preset) error {
-	if !program.themePickerVisible() {
-		return errActionsPopupActionUnavailable
-	}
-	if program.themePresetStore == nil {
-		return errors.New("theme preset store is unavailable")
-	}
-
-	normalizedName := theme.NormalizePresetName(preset.Name)
-	if normalizedName == "" {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgThemePresetSelected{NormalizedName: normalizedName, Label: strings.TrimSpace(preset.Label)})
 }

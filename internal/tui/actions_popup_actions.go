@@ -3,8 +3,6 @@ package tui
 import (
 	"errors"
 	"strings"
-
-	"github.com/jesseduffield/gocui"
 )
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
@@ -363,17 +361,5 @@ func (program *Program) commendOnPrAction() actionsPopupAction {
 		title:     pullRequestCommentComposerTitle,
 		icon:      actionsPopupCommentOnPullRequestIcon,
 		requested: requested,
-	}
-}
-
-func (program *Program) executeYankPullRequestURLAction(gui *gocui.Gui) error {
-	err := program.copySelectedPullRequestURL()
-	switch {
-	case err == nil:
-		return program.dispatch(gui, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: yankSuccessMessage})
-	case errors.Is(err, ErrNoPullRequestURL):
-		return errors.New(yankUnavailableMessage)
-	default:
-		return errors.New(yankFailureMessage)
 	}
 }

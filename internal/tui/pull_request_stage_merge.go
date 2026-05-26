@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -202,49 +200,6 @@ func (program *Program) requestedPullRequestSquashMerge() Msg {
 	return MsgPullRequestSquashMergeRequested{Target: target, Summary: summary}
 }
 
-func (program *Program) executeMarkPullRequestReadyForReviewAction(gui *gocui.Gui) error {
-	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationReadyForReview, "OPEN", false, pullRequestMarkedReadyForReviewSuccessMessage)
-}
-
-func (program *Program) executeConvertPullRequestToDraftAction(gui *gocui.Gui) error {
-	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationConvertToDraft, "OPEN", true, pullRequestConvertedToDraftSuccessMessage)
-}
-
-func (program *Program) executeClosePullRequestAction(gui *gocui.Gui) error {
-	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationClose, "CLOSED", program.currentPullRequestDraftState(), pullRequestClosedSuccessMessage)
-}
-
-func (program *Program) executeReopenPullRequestAction(gui *gocui.Gui) error {
-	return program.executePullRequestLifecycleMutation(gui, pullRequestLifecycleMutationReopen, "OPEN", program.currentPullRequestDraftState(), pullRequestReopenedSuccessMessage)
-}
-
-func (program *Program) executeSquashMergePullRequestAction(gui *gocui.Gui) error {
-	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != squashMergePullRequestActionTitle {
-		program.actionsPopupWidget.pendingConfirmationActionID = squashMergePullRequestActionTitle
-		program.actionsPopupWidget.errorMessage = ""
-		return nil
-	}
-
-	program.clearActionsPopupPendingConfirmation()
-	return program.startSquashMergePullRequestMutation(gui)
-}
-
-func (program *Program) executeEnablePullRequestAutoMergeAction(gui *gocui.Gui) error {
-	return program.executePullRequestAutoMergeMutation(gui, pullRequestAutoMergeMutationEnable, true, pullRequestAutoMergeEnabledSuccessMessage)
-}
-
-func (program *Program) executeDisablePullRequestAutoMergeAction(gui *gocui.Gui) error {
-	return program.executePullRequestAutoMergeMutation(gui, pullRequestAutoMergeMutationDisable, false, pullRequestAutoMergeDisabledSuccessMessage)
-}
-
-func (program *Program) executeUpdatePullRequestBranchAction(gui *gocui.Gui) error {
-	target, summary, err := program.selectedPullRequestMutationContext()
-	if err != nil {
-		return err
-	}
-	return program.dispatch(gui, MsgPullRequestBranchUpdateRequested{Target: target, Summary: summary})
-}
-
 func (program *Program) currentPullRequestDraftState() bool {
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
@@ -349,43 +304,6 @@ func (program *Program) selectedPullRequestMutationContext() (pullRequestActionT
 		return pullRequestActionTarget{}, githubdomain.PullRequest{}, errors.New("github loader is unavailable")
 	}
 	return target, summary, nil
-}
-
-func (program *Program) executePullRequestLifecycleMutation(gui *gocui.Gui, kind pullRequestLifecycleMutationKind, state string, isDraft bool, successMessage string) error {
-	target, summary, err := program.selectedPullRequestMutationContext()
-	if err != nil {
-		return err
-	}
-	return program.dispatch(gui, MsgPullRequestLifecycleMutationRequested{
-		Kind:           kind,
-		Target:         target,
-		Summary:        summary,
-		State:          state,
-		IsDraft:        isDraft,
-		SuccessMessage: successMessage,
-	})
-}
-
-func (program *Program) executePullRequestAutoMergeMutation(gui *gocui.Gui, kind pullRequestAutoMergeMutationKind, enabled bool, successMessage string) error {
-	target, summary, err := program.selectedPullRequestMutationContext()
-	if err != nil {
-		return err
-	}
-	return program.dispatch(gui, MsgPullRequestAutoMergeMutationRequested{
-		Kind:           kind,
-		Target:         target,
-		Summary:        summary,
-		Enabled:        enabled,
-		SuccessMessage: successMessage,
-	})
-}
-
-func (program *Program) startSquashMergePullRequestMutation(gui *gocui.Gui) error {
-	target, summary, err := program.selectedPullRequestMutationContext()
-	if err != nil {
-		return err
-	}
-	return program.dispatch(gui, MsgPullRequestSquashMergeRequested{Target: target, Summary: summary})
 }
 
 func pullRequestReadyCommand(repository string, number int, undo bool) string {

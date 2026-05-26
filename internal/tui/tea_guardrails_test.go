@@ -624,7 +624,7 @@ func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayO
 
 	remainingMatches := make([]string, 0, len(actualMatches))
 	for _, match := range actualMatches {
-		if strings.Contains(match, "startReviewAction(") || strings.Contains(match, "executeStartReviewAction(") || strings.Contains(match, "exitReviewMode(") || strings.Contains(match, "reviewModePaneLayoutSize(") {
+		if strings.Contains(match, "startReviewAction(") || strings.Contains(match, "exitReviewMode(") || strings.Contains(match, "reviewModePaneLayoutSize(") {
 			continue
 		}
 		remainingMatches = append(remainingMatches, match)
@@ -842,6 +842,24 @@ func TestRefactorGuard_GivenActionsPopupFiles_WhenScanning_ThenTheyUseTypedReque
 	})
 	if len(actualMatches) != 0 {
 		t.Fatalf("expected actions popup surfaces to carry typed requests instead of execute callbacks, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyTheActionsPopupSubmitEntrypointKeepsAnExecuteActionName(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\) execute[A-Za-z0-9]+Action\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		if strings.Contains(match, "executeSelectedActionsPopupAction(") {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected popup-only execute*Action helpers to be deleted or renamed, actual %v", remainingMatches)
 	}
 }
 

@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/story"
 )
@@ -50,18 +48,6 @@ func (program *Program) reviewStoryAction() actionsPopupAction {
 		icon:      actionsPopupReviewStoryIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeReviewStoryAction(gui *gocui.Gui) error {
-	if actualErr := program.validateStoryReviewAvailability(); actualErr != nil {
-		return newActionsPopupStatusLineError(program.model.Focus(), actualErr)
-	}
-
-	summary, ok := program.currentPullRequestSummary()
-	if !ok {
-		return newActionsPopupStatusLineError(program.model.Focus(), errActionsPopupActionUnavailable)
-	}
-	return program.dispatch(gui, MsgReviewStoryRequested{Summary: summary})
 }
 
 func (program *Program) validateStoryReviewAvailability() error {

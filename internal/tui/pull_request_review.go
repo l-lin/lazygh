@@ -3,8 +3,6 @@ package tui
 import (
 	"errors"
 	"fmt"
-
-	"github.com/jesseduffield/gocui"
 )
 
 const (
@@ -30,17 +28,6 @@ func (program *Program) reviewApproveAction() actionsPopupAction {
 		icon:      actionsPopupReviewApproveIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeApprovePullRequestAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	return program.dispatch(gui, MsgApprovePullRequestRequested{Target: target})
 }
 
 func approvePullRequestCommand(repository string, number int) string {

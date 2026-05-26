@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "strings"
 
 const (
 	clearCacheActionTitle               = "Clear cache"
@@ -23,13 +19,6 @@ func (program *Program) clearCacheActionsPopupAction() actionsPopupAction {
 		icon:      iconDelete,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeClearCacheAction(gui *gocui.Gui) error {
-	if program.pullRequestCache == nil {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgClearCacheRequested{})
 }
 
 func (program *Program) actionsPopupConfirmationMessage() string {

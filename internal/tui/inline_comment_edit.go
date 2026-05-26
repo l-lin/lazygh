@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -54,14 +52,6 @@ func (program *Program) deleteInlineCommentAction() actionsPopupAction {
 		icon:      actionsPopupDeleteInlineCommentIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeDeleteInlineCommentAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestReviewCommentActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgInlineCommentDeleteRequested{Target: target})
 }
 
 func (program *Program) selectedPullRequestReviewCommentActionTarget() (pullRequestReviewCommentActionTarget, bool) {

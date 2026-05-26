@@ -81,21 +81,6 @@ func (program *Program) recentErrorsActionsPopupAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeRecentErrorsAction(gui *gocui.Gui) error {
-	if !program.hasRecordedErrors() {
-		return errActionsPopupActionUnavailable
-	}
-	if err := program.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{
-		title:         recentErrorsPopupTitle,
-		body:          program.renderRecentErrorsPopupBody(),
-		widthPercent:  recentErrorsPopupWidthPercent,
-		heightPercent: recentErrorsPopupHeightPercent,
-	}); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
-}
-
 func (program *Program) renderRecentErrorsPopupBody() string {
 	if !program.hasRecordedErrors() {
 		return "No recent errors recorded."

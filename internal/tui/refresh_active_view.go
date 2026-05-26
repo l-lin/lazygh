@@ -15,19 +15,19 @@ func (program *Program) refreshActiveView(gui *gocui.Gui, _ *gocui.View) error {
 		if state.Mode != ScreenModeBrowser {
 			return nil
 		}
-		return program.handleActionsPopupActionError(gui, program.executeRefreshPullRequestListAction(gui))
+		return program.handleActionsPopupActionError(gui, program.requestRefreshPullRequestList(gui))
 	case sidePanelNotificationsViewNumber:
-		return program.handleActionsPopupActionError(gui, program.executeRefreshNotificationsAction(gui))
+		return program.handleActionsPopupActionError(gui, program.requestRefreshNotifications(gui))
 	case mainPanelViewNumber:
 		if !program.actionContext().IsPullRequestContext() {
 			return nil
 		}
-		return program.handleActionsPopupActionError(gui, program.executeRefreshPullRequestAction(gui))
+		return program.handleActionsPopupActionError(gui, program.requestRefreshCurrentPullRequest(gui))
 	default:
 		return nil
 	}
 }
 
-func (program *Program) executeRefreshNotificationsAction(gui *gocui.Gui) error {
+func (program *Program) requestRefreshNotifications(gui *gocui.Gui) error {
 	return program.dispatch(gui, MsgRefreshNotificationsRequested{})
 }

@@ -53,17 +53,6 @@ func (program *Program) startReviewAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeStartReviewAction(gui *gocui.Gui) error {
-	summary, ok := program.currentPullRequestSummary()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	if !program.hasReviewMutations() {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgStartPullRequestReviewRequested{Summary: summary})
-}
-
 func (program *Program) exitReviewMode(gui *gocui.Gui, _ *gocui.View) error {
 	return program.dispatch(gui, MsgExitReviewMode{})
 }

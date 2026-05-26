@@ -33,11 +33,11 @@ func (program *Program) refreshPullRequestListAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeRefreshPullRequestListAction(gui *gocui.Gui) error {
+func (program *Program) requestRefreshPullRequestList(gui *gocui.Gui) error {
 	return program.dispatch(gui, MsgRefreshPullRequestListRequested{})
 }
 
-func (program *Program) executeRefreshPullRequestAction(gui *gocui.Gui) error {
+func (program *Program) requestRefreshCurrentPullRequest(gui *gocui.Gui) error {
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
 		return errActionsPopupActionUnavailable

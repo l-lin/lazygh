@@ -88,7 +88,7 @@ func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocu
 	if !program.assigneePickerVisible() {
 		return program.executeSelectedActionsPopupAction(gui, nil)
 	}
-	return program.handleActionsPopupActionError(gui, program.executeSubmitAssigneePickerAction(gui))
+	return program.handleActionsPopupActionError(gui, program.submitAssigneePickerSelection(gui))
 }
 
 func (program *Program) handleActionsPopupActionError(gui *gocui.Gui, err error) error {

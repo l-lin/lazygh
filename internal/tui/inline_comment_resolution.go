@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "strings"
 
 const (
 	inlineCommentResolvedSuccessMessage   = "Inline comment resolved"
@@ -53,22 +49,6 @@ func (program *Program) unresolveInlineCommentAction() actionsPopupAction {
 		icon:      actionsPopupResolveInlineCommentIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeResolveInlineCommentAction(gui *gocui.Gui) error {
-	return program.executeInlineCommentResolutionAction(gui, true)
-}
-
-func (program *Program) executeUnresolveInlineCommentAction(gui *gocui.Gui) error {
-	return program.executeInlineCommentResolutionAction(gui, false)
-}
-
-func (program *Program) executeInlineCommentResolutionAction(gui *gocui.Gui, resolved bool) error {
-	target, ok := program.selectedPullRequestReviewThreadActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgInlineCommentResolutionRequested{Target: target, Resolved: resolved})
 }
 
 func (program *Program) selectedPullRequestReviewThreadActionTarget() (pullRequestReviewThreadActionTarget, bool) {

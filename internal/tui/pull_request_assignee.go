@@ -90,17 +90,6 @@ func (program *Program) assignPullRequestAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeOpenAssigneePickerAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestAssigneePickerTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	return program.dispatch(gui, MsgOpenAssigneePickerRequested{Target: target})
-}
-
 func (program *Program) currentAssigneePickerActionCount() int {
 	actionCount := len(program.currentActionsPopupActions())
 	if actionCount > 0 {
@@ -440,7 +429,7 @@ func (program *Program) assigneePickerLabel(candidate githubdomain.PullRequestAu
 	return checkbox + " " + identityLabel + " (" + trimmedName + ")"
 }
 
-func (program *Program) executeSubmitAssigneePickerAction(gui *gocui.Gui) error {
+func (program *Program) submitAssigneePickerSelection(gui *gocui.Gui) error {
 	if !program.assigneePickerVisible() {
 		return errActionsPopupActionUnavailable
 	}

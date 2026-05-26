@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -37,14 +35,6 @@ func (program *Program) addReactionAction() actionsPopupAction {
 		icon:      actionsPopupAddReactionIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executeOpenReactionPickerAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPullRequestReactionActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgOpenReactionPickerRequested{Target: target})
 }
 
 func (program *Program) currentReactionPickerActions() []actionsPopupAction {
@@ -93,13 +83,6 @@ func reactionPickerActionMetadata(content githubdomain.ReactionContent) string {
 	default:
 		return strings.TrimSpace(string(content))
 	}
-}
-
-func (program *Program) executeReactionPickerAction(gui *gocui.Gui, content githubdomain.ReactionContent) error {
-	if !program.reactionPickerVisible() {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgAddReactionRequested{Target: program.actionsPopupWidget.reactionPicker.target, Content: content})
 }
 
 func reactionGroupViewerHasReacted(groups []githubdomain.ReactionGroup, content githubdomain.ReactionContent) bool {

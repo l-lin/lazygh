@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -52,32 +50,6 @@ func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRe
 	}, true
 }
 
-func (program *Program) startPullRequestBuildRunLoad(gui *gocui.Gui, summary githubdomain.PullRequest, check githubdomain.PullRequestStatusCheck) error {
-	if !program.hasBuildQueries() || program.pullRequestBuildRunLoad != nil {
-		return nil
-	}
-
-	repository := pullRequestRepositoryName(summary.Repository)
-	target := pullRequestBuildRunTarget{
-		summary: summary,
-		check:   check,
-		popupContent: pullRequestBuildRunPopupContent{
-			checkTitle: checkTitleForPullRequestBuildRunPopup(check),
-			runURL:     strings.TrimSpace(check.Link),
-			repository: repository,
-		},
-	}
-	return program.dispatch(gui, MsgPullRequestBuildRunLoadRequested{Target: target})
-}
-
-func (program *Program) startPullRequestBuildRunJobLogLoad(gui *gocui.Gui, summary githubdomain.PullRequest, check githubdomain.PullRequestStatusCheck) error {
-	if !program.hasBuildQueries() || program.pullRequestBuildRunLoad != nil {
-		return nil
-	}
-
-	return program.dispatch(gui, MsgPullRequestBuildRunJobLogLoadRequested{Summary: summary, Check: check})
-}
-
 func (program *Program) pullRequestBuildRunActionsPopupAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	if target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor(); ok {
@@ -102,28 +74,6 @@ func (program *Program) pullRequestBuildRunLogsActionsPopupAction() actionsPopup
 		icon:      actionsPopupBuildRunLogsIcon,
 		requested: requested,
 	}
-}
-
-func (program *Program) executePullRequestBuildRunAction(gui *gocui.Gui) error {
-	target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	if err := program.startPullRequestBuildRunLoad(gui, target.summary, target.check); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
-}
-
-func (program *Program) executePullRequestBuildRunLogsAction(gui *gocui.Gui) error {
-	target, ok := program.currentPullRequestBuildRunTargetAtDetailCursor()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	if err := program.startPullRequestBuildRunJobLogLoad(gui, target.summary, target.check); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
 }
 
 func pullRequestStatusCheckMatchingEntry(checks []githubdomain.PullRequestStatusCheck, entry pullRequestOverviewEntry) (githubdomain.PullRequestStatusCheck, bool) {

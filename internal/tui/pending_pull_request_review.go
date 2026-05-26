@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/jesseduffield/gocui"
 )
 
 const (
@@ -132,15 +130,4 @@ func (program *Program) selectedPendingPullRequestReviewActionTarget() (pendingP
 		pendingReviewID: pendingReviewID,
 		sourceFocus:     program.model.Focus(),
 	}, true
-}
-
-func (program *Program) executeCancelPendingPullRequestReviewAction(gui *gocui.Gui) error {
-	target, ok := program.selectedPendingPullRequestReviewActionTarget()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	if !program.hasReviewMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	return program.dispatch(gui, MsgCancelPendingPullRequestReviewRequested{Target: target})
 }

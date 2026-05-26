@@ -200,29 +200,6 @@ func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) executeMarkNotificationReadAction(gui *gocui.Gui) error {
-	return program.markSelectedNotificationRead(gui)
-}
-
-func (program *Program) executeMarkNotificationDoneAction(gui *gocui.Gui) error {
-	return program.markSelectedNotificationDone(gui)
-}
-
-func (program *Program) executeMarkAllNotificationsReadAction(gui *gocui.Gui) error {
-	return program.markAllLoadedNotificationsRead(gui)
-}
-
-func (program *Program) executeMarkAllNotificationsDoneAction(gui *gocui.Gui) error {
-	return program.markAllLoadedNotificationsDone(gui)
-}
-
-func (program *Program) executeOpenNotificationInBrowserAction(gui *gocui.Gui) error {
-	if err := program.openSelectedNotificationInBrowser(gui); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
-}
-
 func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {
 	target, ok := program.selectedNotificationActionTarget()
 	if !ok || target.threadID == "" {

@@ -4,8 +4,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -33,13 +31,6 @@ func (program *Program) currentReactionRemovalAction() (actionsPopupAction, bool
 		icon:      actionsPopupRemoveReactionIcon,
 		requested: MsgReactionRemovalRequested{Target: target},
 	}.withGroup(target.popupGroup()), true
-}
-
-func (program *Program) executeRemoveReactionAction(gui *gocui.Gui, target pullRequestReactionRemovalTarget) error {
-	if strings.TrimSpace(target.subjectID) == "" {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgReactionRemovalRequested{Target: target})
 }
 
 func (program *Program) selectedPullRequestReactionRemovalTarget() (pullRequestReactionRemovalTarget, bool) {

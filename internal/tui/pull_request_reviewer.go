@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/jesseduffield/gocui"
 )
 
 const (
@@ -44,16 +42,6 @@ func reRequestPullRequestReviewActionTitle(reviewerLogin string) string {
 		label = "reviewer"
 	}
 	return reRequestPullRequestReviewActionTitlePrefix + " " + label
-}
-
-func (program *Program) executeReRequestPullRequestReviewAction(gui *gocui.Gui, target pullRequestReviewerRequestTarget) error {
-	if strings.TrimSpace(target.repository) == "" || target.number <= 0 || strings.TrimSpace(target.reviewerLogin) == "" {
-		return errActionsPopupActionUnavailable
-	}
-	if !program.hasPullRequestMutations() {
-		return errors.New("github loader is unavailable")
-	}
-	return program.dispatch(gui, MsgReRequestPullRequestReviewRequested{Target: target})
 }
 
 func requestPullRequestReviewerCommand(repository string, number int, reviewerLogin string) string {

@@ -100,20 +100,6 @@ func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupActi
 	}
 }
 
-func (program *Program) executeOpenLinkUnderCursorAction(gui *gocui.Gui) error {
-	if program.linkOpener == nil {
-		return errors.New(openLinkOpenerUnavailableMessage)
-	}
-	url, ok := program.currentDetailCursorLink(nil)
-	if !ok {
-		return errors.New(openLinkUnavailableMessage)
-	}
-	if err := program.dispatch(gui, MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()}); err != nil {
-		return err
-	}
-	return program.closeActionsPopupIfVisible(gui)
-}
-
 func (document detailDocument) linkAt(position detailPosition) (string, bool) {
 	position = document.clampPosition(position)
 	if target := strings.TrimSpace(document.hyperlinkTargetAt(position)); target != "" {
