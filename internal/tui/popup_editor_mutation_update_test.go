@@ -43,7 +43,7 @@ func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBui
 func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccess_WhenApplying_ThenItAppliesSuccessAndClosesTheModal(t *testing.T) {
 	summary := given_pullRequestMutationSummary("OPEN", false)
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
-	subject.overlayState.modalEditor = newModalEditorStateWithSubmitRequested("Comment", "Ship it", nil)
+	subject.overlayState.modalEditor = newModalEditorState("Comment", "Ship it")
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
 
 	actual := Update(subject, MsgModalEditorSubmitFinished{Success: pullRequestCommentSubmitSuccess{

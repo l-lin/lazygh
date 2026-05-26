@@ -33,9 +33,7 @@ func (program *Program) updateInlineCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestReviewCommentActionTarget()
 	if ok {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(inlineCommentUpdateEditorTitle, target.body, func(body string) Msg {
-			return MsgInlineCommentUpdateRequested{Target: target, Body: body}
-		}, reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(inlineCommentUpdateEditorTitle, target.body, newInlineCommentUpdateSubmitDescriptor(target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "update-inline-comment",

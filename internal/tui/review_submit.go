@@ -30,9 +30,7 @@ func (program *Program) pendingReviewSubmitAction(id string, title string, icon 
 	target, ok := program.selectedPendingPullRequestReviewTarget()
 	if ok {
 		feedbackTarget := program.model.Focus()
-		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitRequested(title, "", func(body string) Msg {
-			return MsgPendingPullRequestReviewSubmitRequested{Target: target, Event: event, Body: body, FeedbackTarget: feedbackTarget}
-		})}
+		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitDescriptor(title, "", newPendingPullRequestReviewSubmitDescriptor(target, event, feedbackTarget))}
 	}
 	return actionsPopupAction{id: id, title: title, icon: icon, requested: requested}
 }

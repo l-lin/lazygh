@@ -49,9 +49,7 @@ func (program *Program) handleInlineCommentSelectionError(gui *gocui.Gui, err er
 }
 
 func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, selection pullRequestInlineCommentSelection) error {
-	return program.openMultilineModalEditorWithSubmitRequested(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) Msg {
-		return MsgReviewInlineCommentSubmitRequested{Target: selection.target, Body: body}
-	}, reviewInlineCommentModalHeight)
+	return program.openMultilineModalEditorWithSubmitDescriptor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)
 }
 
 func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, bool) {
@@ -83,9 +81,7 @@ func (program *Program) addInlineCommentAction() actionsPopupAction {
 		selection, err = program.selectedBrowserChangesInlineCommentSelection()
 	}
 	if err == nil {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, func(body string) Msg {
-			return MsgReviewInlineCommentSubmitRequested{Target: selection.target, Body: body}
-		}, reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "add-inline-comment",

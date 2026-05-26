@@ -17,21 +17,21 @@ const (
 )
 
 type modalEditorState struct {
-	title           string
-	editor          *multilineEditor
-	lineEditor      *lineEditor
-	errorMessage    string
-	submitRequested func(string) Msg
-	totalHeight     int
+	title            string
+	editor           *multilineEditor
+	lineEditor       *lineEditor
+	errorMessage     string
+	submitDescriptor modalEditorSubmitDescriptor
+	totalHeight      int
 }
 
 func newModalEditorState(title string, initialText string) *modalEditorState {
 	return newMultilineModalEditorState(title, initialText, modalEditorTotalHeight)
 }
 
-func newModalEditorStateWithSubmitRequested(title string, initialText string, submitRequested func(string) Msg) *modalEditorState {
+func newModalEditorStateWithSubmitDescriptor(title string, initialText string, submitDescriptor modalEditorSubmitDescriptor) *modalEditorState {
 	state := newModalEditorState(title, initialText)
-	state.submitRequested = submitRequested
+	state.submitDescriptor = submitDescriptor
 	return state
 }
 
@@ -39,8 +39,8 @@ func newLineModalEditorState(title string, initialText string) *modalEditorState
 	return newLineModalEditorStateWithHeight(title, initialText, lineModalEditorTotalHeight)
 }
 
-func newLineModalEditorStateWithSubmitRequested(title string, initialText string, submitRequested func(string) Msg) *modalEditorState {
-	return newLineModalEditorStateWithHeightAndSubmitRequested(title, initialText, submitRequested, lineModalEditorTotalHeight)
+func newLineModalEditorStateWithSubmitDescriptor(title string, initialText string, submitDescriptor modalEditorSubmitDescriptor) *modalEditorState {
+	return newLineModalEditorStateWithHeightAndSubmitDescriptor(title, initialText, submitDescriptor, lineModalEditorTotalHeight)
 }
 
 func newLineModalEditorStateWithHeight(title string, initialText string, totalHeight int) *modalEditorState {
@@ -55,9 +55,9 @@ func newLineModalEditorStateWithHeight(title string, initialText string, totalHe
 	}
 }
 
-func newLineModalEditorStateWithHeightAndSubmitRequested(title string, initialText string, submitRequested func(string) Msg, totalHeight int) *modalEditorState {
+func newLineModalEditorStateWithHeightAndSubmitDescriptor(title string, initialText string, submitDescriptor modalEditorSubmitDescriptor, totalHeight int) *modalEditorState {
 	state := newLineModalEditorStateWithHeight(title, initialText, totalHeight)
-	state.submitRequested = submitRequested
+	state.submitDescriptor = submitDescriptor
 	return state
 }
 
@@ -69,9 +69,9 @@ func newMultilineModalEditorState(title string, initialText string, totalHeight 
 	}
 }
 
-func newMultilineModalEditorStateWithSubmitRequested(title string, initialText string, submitRequested func(string) Msg, totalHeight int) *modalEditorState {
+func newMultilineModalEditorStateWithSubmitDescriptor(title string, initialText string, submitDescriptor modalEditorSubmitDescriptor, totalHeight int) *modalEditorState {
 	state := newMultilineModalEditorState(title, initialText, totalHeight)
-	state.submitRequested = submitRequested
+	state.submitDescriptor = submitDescriptor
 	return state
 }
 

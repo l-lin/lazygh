@@ -27,9 +27,7 @@ func (program *Program) openPullRequestByClipboardShortcut(gui *gocui.Gui, _ *go
 }
 
 func (program *Program) openPullRequestByURLEditor(gui *gocui.Gui) error {
-	return program.openLineModalEditorWithHeightAndSubmitRequested(gui, openPullRequestByURLActionTitle, "", func(rawURL string) Msg {
-		return MsgOpenPullRequestByURLSubmitRequested{URL: rawURL}
-	}, openPullRequestByURLEditorHeight)
+	return program.openLineModalEditorWithHeightAndSubmitDescriptor(gui, openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)
 }
 
 func (program *Program) clipboardPullRequestURL() (string, error) {
@@ -61,11 +59,9 @@ func openPullRequestByClipboardFeedbackMessage(err error) string {
 
 func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:    "open-pull-request-by-url",
-		title: openPullRequestByURLActionTitle,
-		icon:  actionsPopupOpenPullRequestByURLIcon,
-		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitRequested(openPullRequestByURLActionTitle, "", func(rawURL string) Msg {
-			return MsgOpenPullRequestByURLSubmitRequested{URL: rawURL}
-		}, openPullRequestByURLEditorHeight)},
+		id:        "open-pull-request-by-url",
+		title:     openPullRequestByURLActionTitle,
+		icon:      actionsPopupOpenPullRequestByURLIcon,
+		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitDescriptor(openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)},
 	}
 }

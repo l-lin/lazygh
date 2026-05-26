@@ -10,32 +10,32 @@ func (program *Program) openModalEditor(gui *gocui.Gui, title string, initialTex
 	return program.dispatch(gui, MsgModalEditorOpened{State: newModalEditorState(title, initialText)})
 }
 
-func (program *Program) openModalEditorWithSubmitRequested(gui *gocui.Gui, title string, initialText string, submitRequested func(string) Msg) error {
-	return program.dispatch(gui, MsgModalEditorOpened{State: newModalEditorStateWithSubmitRequested(title, initialText, submitRequested)})
+func (program *Program) openModalEditorWithSubmitDescriptor(gui *gocui.Gui, title string, initialText string, submitDescriptor modalEditorSubmitDescriptor) error {
+	return program.dispatch(gui, MsgModalEditorOpened{State: newModalEditorStateWithSubmitDescriptor(title, initialText, submitDescriptor)})
 }
 
 func (program *Program) openMultilineModalEditor(gui *gocui.Gui, title string, initialText string, totalHeight int) error {
 	return program.dispatch(gui, MsgModalEditorOpened{State: newMultilineModalEditorState(title, initialText, totalHeight)})
 }
 
-func (program *Program) openMultilineModalEditorWithSubmitRequested(gui *gocui.Gui, title string, initialText string, submitRequested func(string) Msg, totalHeight int) error {
-	return program.dispatch(gui, MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(title, initialText, submitRequested, totalHeight)})
+func (program *Program) openMultilineModalEditorWithSubmitDescriptor(gui *gocui.Gui, title string, initialText string, submitDescriptor modalEditorSubmitDescriptor, totalHeight int) error {
+	return program.dispatch(gui, MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(title, initialText, submitDescriptor, totalHeight)})
 }
 
 func (program *Program) openLineModalEditor(gui *gocui.Gui, title string, initialText string) error {
 	return program.openLineModalEditorWithHeight(gui, title, initialText, lineModalEditorTotalHeight)
 }
 
-func (program *Program) openLineModalEditorWithSubmitRequested(gui *gocui.Gui, title string, initialText string, submitRequested func(string) Msg) error {
-	return program.openLineModalEditorWithHeightAndSubmitRequested(gui, title, initialText, submitRequested, lineModalEditorTotalHeight)
+func (program *Program) openLineModalEditorWithSubmitDescriptor(gui *gocui.Gui, title string, initialText string, submitDescriptor modalEditorSubmitDescriptor) error {
+	return program.openLineModalEditorWithHeightAndSubmitDescriptor(gui, title, initialText, submitDescriptor, lineModalEditorTotalHeight)
 }
 
 func (program *Program) openLineModalEditorWithHeight(gui *gocui.Gui, title string, initialText string, totalHeight int) error {
 	return program.dispatch(gui, MsgModalEditorOpened{State: newLineModalEditorStateWithHeight(title, initialText, totalHeight)})
 }
 
-func (program *Program) openLineModalEditorWithHeightAndSubmitRequested(gui *gocui.Gui, title string, initialText string, submitRequested func(string) Msg, totalHeight int) error {
-	return program.dispatch(gui, MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitRequested(title, initialText, submitRequested, totalHeight)})
+func (program *Program) openLineModalEditorWithHeightAndSubmitDescriptor(gui *gocui.Gui, title string, initialText string, submitDescriptor modalEditorSubmitDescriptor, totalHeight int) error {
+	return program.dispatch(gui, MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitDescriptor(title, initialText, submitDescriptor, totalHeight)})
 }
 
 func (program *Program) closeModalEditor(gui *gocui.Gui, _ *gocui.View) error {

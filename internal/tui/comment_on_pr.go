@@ -23,9 +23,7 @@ func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.
 	}
 
 	feedbackTarget := program.model.Focus()
-	return program.openModalEditorWithSubmitRequested(gui, pullRequestCommentComposerTitle, "", func(body string) Msg {
-		return MsgPullRequestCommentSubmitRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
-	})
+	return program.openModalEditorWithSubmitDescriptor(gui, pullRequestCommentComposerTitle, "", newPullRequestCommentSubmitDescriptor(target, feedbackTarget))
 }
 
 func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, view *gocui.View) error {

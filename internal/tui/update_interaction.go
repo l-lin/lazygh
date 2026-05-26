@@ -38,10 +38,11 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 
 	editorState := program.overlayState.modalEditor
 	editorState.errorMessage = ""
-	if editorState.submitRequested == nil {
+	requested := modalEditorSubmitRequestedMessage(editorState.submitDescriptor, editorState.Text())
+	if requested == nil {
 		return nil
 	}
-	return Update(program, editorState.submitRequested(editorState.Text()))
+	return Update(program, requested)
 }
 
 func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) []Cmd {

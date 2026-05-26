@@ -242,6 +242,21 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditor
 	}
 }
 
+func TestRefactorGuard_GivenModalEditorFiles_WhenScanning_ThenTheyUseTypedSubmitDescriptorsInsteadOfFunctionFields(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`submitRequested\s+func\(string\)\s+Msg`,
+		`WithSubmitRequested\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected modal editor state and open helpers to use typed submit descriptors instead of function fields, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoPopupToModalEditorCallbackBridgeRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`openModalEditorFromActionsPopup\(`,

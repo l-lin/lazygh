@@ -13,9 +13,7 @@ func (program *Program) editPullRequestTitleAction() actionsPopupAction {
 	target, ok := program.selectedPullRequestActionTarget()
 	if ok {
 		feedbackTarget := program.model.Focus()
-		requested = MsgModalEditorOpened{State: newLineModalEditorStateWithSubmitRequested(pullRequestTitleEditorTitle, target.title, func(title string) Msg {
-			return MsgPullRequestTitleEditRequested{Target: target, Title: title, FeedbackTarget: feedbackTarget}
-		})}
+		requested = MsgModalEditorOpened{State: newLineModalEditorStateWithSubmitDescriptor(pullRequestTitleEditorTitle, target.title, newPullRequestTitleEditSubmitDescriptor(target, feedbackTarget))}
 	}
 	return actionsPopupAction{
 		id:        "edit-pull-request-title",
@@ -30,9 +28,7 @@ func (program *Program) editPullRequestDescriptionAction() actionsPopupAction {
 	target, ok := program.selectedPullRequestActionTarget()
 	if ok {
 		feedbackTarget := program.model.Focus()
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(pullRequestDescriptionEditorTitle, target.body, func(body string) Msg {
-			return MsgPullRequestDescriptionEditRequested{Target: target, Body: body, FeedbackTarget: feedbackTarget}
-		}, pullRequestDescriptionEditorHeight)}
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(pullRequestDescriptionEditorTitle, target.body, newPullRequestDescriptionEditSubmitDescriptor(target, feedbackTarget), pullRequestDescriptionEditorHeight)}
 	}
 	return actionsPopupAction{
 		id:        "edit-pull-request-description",

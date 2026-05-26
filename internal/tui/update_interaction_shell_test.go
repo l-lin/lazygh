@@ -51,7 +51,7 @@ func TestUpdate_GivenMsgActionsPopupActionErrorHandledWithPopupError_WhenApplyin
 
 func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTransientPopupError_WhenApplying_ThenItReturnsATypedReportErrorCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
-	subject.overlayState.modalEditor = newModalEditorStateWithSubmitRequested("Comment", "Ship it", nil)
+	subject.overlayState.modalEditor = newModalEditorState("Comment", "Ship it")
 	subject.overlayState.modalEditor.errorMessage = "stale"
 
 	actual := Update(subject, MsgModalEditorSubmitFinished{Err: newTransientErrorPopupActionError(errors.New("boom"))})

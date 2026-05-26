@@ -26,19 +26,15 @@ func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.Vie
 }
 
 func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error {
-	return program.openLineModalEditorWithHeightAndSubmitRequested(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), func(criteria string) Msg {
-		return MsgPullRequestCustomSearchSubmitRequested{Criteria: criteria}
-	}, pullRequestCustomSearchEditorHeight)
+	return program.openLineModalEditorWithHeightAndSubmitDescriptor(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)
 }
 
 func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopupAction {
 	return actionsPopupAction{
-		id:    "custom-pull-request-search",
-		title: pullRequestCustomSearchActionTitle,
-		icon:  actionsPopupCustomSearchIcon,
-		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitRequested(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), func(criteria string) Msg {
-			return MsgPullRequestCustomSearchSubmitRequested{Criteria: criteria}
-		}, pullRequestCustomSearchEditorHeight)},
+		id:        "custom-pull-request-search",
+		title:     pullRequestCustomSearchActionTitle,
+		icon:      actionsPopupCustomSearchIcon,
+		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitDescriptor(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)},
 	}
 }
 

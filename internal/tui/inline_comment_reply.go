@@ -30,9 +30,7 @@ func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if ok {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitRequested(pullRequestInlineCommentReplyEditorTitle, "", func(body string) Msg {
-			return MsgInlineCommentReplySubmitRequested{Target: target, Body: body}
-		}, reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "reply-to-inline-comment",
@@ -43,9 +41,7 @@ func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 }
 
 func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {
-	return program.openMultilineModalEditorWithSubmitRequested(gui, pullRequestInlineCommentReplyEditorTitle, "", func(body string) Msg {
-		return MsgInlineCommentReplySubmitRequested{Target: target, Body: body}
-	}, reviewInlineCommentModalHeight)
+	return program.openMultilineModalEditorWithSubmitDescriptor(gui, pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)
 }
 
 func (program *Program) selectedPullRequestReviewThreadReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {

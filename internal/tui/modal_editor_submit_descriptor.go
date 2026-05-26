@@ -1,0 +1,113 @@
+package tui
+
+import githubdomain "github.com/l-lin/lazygh/internal/github"
+
+type modalEditorSubmitDescriptorKind int
+
+const (
+	modalEditorSubmitDescriptorKindNone modalEditorSubmitDescriptorKind = iota
+	modalEditorSubmitDescriptorKindOpenPullRequestByURL
+	modalEditorSubmitDescriptorKindPullRequestCustomSearch
+	modalEditorSubmitDescriptorKindPullRequestComment
+	modalEditorSubmitDescriptorKindPullRequestReviewComment
+	modalEditorSubmitDescriptorKindPullRequestRequestChanges
+	modalEditorSubmitDescriptorKindPullRequestTitleEdit
+	modalEditorSubmitDescriptorKindPullRequestDescriptionEdit
+	modalEditorSubmitDescriptorKindPullRequestCommentUpdate
+	modalEditorSubmitDescriptorKindInlineCommentUpdate
+	modalEditorSubmitDescriptorKindInlineCommentReply
+	modalEditorSubmitDescriptorKindReviewInlineComment
+	modalEditorSubmitDescriptorKindPendingPullRequestReview
+)
+
+type modalEditorSubmitDescriptor struct {
+	kind                           modalEditorSubmitDescriptorKind
+	feedbackTarget                 Focus
+	pullRequestCommentTarget       pullRequestCommentTarget
+	pullRequestActionTarget        pullRequestActionTarget
+	pullRequestCommentEditTarget   pullRequestCommentEditActionTarget
+	pullRequestReviewCommentTarget pullRequestReviewCommentActionTarget
+	pullRequestReviewThreadTarget  pullRequestReviewThreadReplyTarget
+	pullRequestInlineCommentTarget pullRequestInlineCommentTarget
+	pendingPullRequestReviewTarget pendingPullRequestReviewTarget
+	pendingPullRequestReviewEvent  githubdomain.PullRequestReviewEvent
+}
+
+func newOpenPullRequestByURLSubmitDescriptor() modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindOpenPullRequestByURL}
+}
+
+func newPullRequestCustomSearchSubmitDescriptor() modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestCustomSearch}
+}
+
+func newPullRequestCommentSubmitDescriptor(target pullRequestCommentTarget, feedbackTarget Focus) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestComment, pullRequestCommentTarget: target, feedbackTarget: feedbackTarget}
+}
+
+func newPullRequestReviewCommentSubmitDescriptor(target pullRequestActionTarget, feedbackTarget Focus) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestReviewComment, pullRequestActionTarget: target, feedbackTarget: feedbackTarget}
+}
+
+func newPullRequestRequestChangesSubmitDescriptor(target pullRequestActionTarget, feedbackTarget Focus) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestRequestChanges, pullRequestActionTarget: target, feedbackTarget: feedbackTarget}
+}
+
+func newPullRequestTitleEditSubmitDescriptor(target pullRequestActionTarget, feedbackTarget Focus) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestTitleEdit, pullRequestActionTarget: target, feedbackTarget: feedbackTarget}
+}
+
+func newPullRequestDescriptionEditSubmitDescriptor(target pullRequestActionTarget, feedbackTarget Focus) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestDescriptionEdit, pullRequestActionTarget: target, feedbackTarget: feedbackTarget}
+}
+
+func newPullRequestCommentUpdateSubmitDescriptor(target pullRequestCommentEditActionTarget) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPullRequestCommentUpdate, pullRequestCommentEditTarget: target}
+}
+
+func newInlineCommentUpdateSubmitDescriptor(target pullRequestReviewCommentActionTarget) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindInlineCommentUpdate, pullRequestReviewCommentTarget: target}
+}
+
+func newInlineCommentReplySubmitDescriptor(target pullRequestReviewThreadReplyTarget) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindInlineCommentReply, pullRequestReviewThreadTarget: target}
+}
+
+func newReviewInlineCommentSubmitDescriptor(target pullRequestInlineCommentTarget) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindReviewInlineComment, pullRequestInlineCommentTarget: target}
+}
+
+func newPendingPullRequestReviewSubmitDescriptor(target pendingPullRequestReviewTarget, event githubdomain.PullRequestReviewEvent, feedbackTarget Focus) modalEditorSubmitDescriptor {
+	return modalEditorSubmitDescriptor{kind: modalEditorSubmitDescriptorKindPendingPullRequestReview, pendingPullRequestReviewTarget: target, pendingPullRequestReviewEvent: event, feedbackTarget: feedbackTarget}
+}
+
+func modalEditorSubmitRequestedMessage(descriptor modalEditorSubmitDescriptor, text string) Msg {
+	switch descriptor.kind {
+	case modalEditorSubmitDescriptorKindOpenPullRequestByURL:
+		return MsgOpenPullRequestByURLSubmitRequested{URL: text}
+	case modalEditorSubmitDescriptorKindPullRequestCustomSearch:
+		return MsgPullRequestCustomSearchSubmitRequested{Criteria: text}
+	case modalEditorSubmitDescriptorKindPullRequestComment:
+		return MsgPullRequestCommentSubmitRequested{Target: descriptor.pullRequestCommentTarget, Body: text, FeedbackTarget: descriptor.feedbackTarget}
+	case modalEditorSubmitDescriptorKindPullRequestReviewComment:
+		return MsgPullRequestReviewCommentSubmitRequested{Target: descriptor.pullRequestActionTarget, Body: text, FeedbackTarget: descriptor.feedbackTarget}
+	case modalEditorSubmitDescriptorKindPullRequestRequestChanges:
+		return MsgPullRequestRequestChangesSubmitRequested{Target: descriptor.pullRequestActionTarget, Body: text, FeedbackTarget: descriptor.feedbackTarget}
+	case modalEditorSubmitDescriptorKindPullRequestTitleEdit:
+		return MsgPullRequestTitleEditRequested{Target: descriptor.pullRequestActionTarget, Title: text, FeedbackTarget: descriptor.feedbackTarget}
+	case modalEditorSubmitDescriptorKindPullRequestDescriptionEdit:
+		return MsgPullRequestDescriptionEditRequested{Target: descriptor.pullRequestActionTarget, Body: text, FeedbackTarget: descriptor.feedbackTarget}
+	case modalEditorSubmitDescriptorKindPullRequestCommentUpdate:
+		return MsgPullRequestCommentUpdateRequested{Target: descriptor.pullRequestCommentEditTarget, Body: text}
+	case modalEditorSubmitDescriptorKindInlineCommentUpdate:
+		return MsgInlineCommentUpdateRequested{Target: descriptor.pullRequestReviewCommentTarget, Body: text}
+	case modalEditorSubmitDescriptorKindInlineCommentReply:
+		return MsgInlineCommentReplySubmitRequested{Target: descriptor.pullRequestReviewThreadTarget, Body: text}
+	case modalEditorSubmitDescriptorKindReviewInlineComment:
+		return MsgReviewInlineCommentSubmitRequested{Target: descriptor.pullRequestInlineCommentTarget, Body: text}
+	case modalEditorSubmitDescriptorKindPendingPullRequestReview:
+		return MsgPendingPullRequestReviewSubmitRequested{Target: descriptor.pendingPullRequestReviewTarget, Event: descriptor.pendingPullRequestReviewEvent, Body: text, FeedbackTarget: descriptor.feedbackTarget}
+	default:
+		return nil
+	}
+}
