@@ -32,89 +32,31 @@ func (program *Program) moveActionsPopupSelectionUp(gui *gocui.Gui, _ *gocui.Vie
 }
 
 func (program *Program) pageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewActionsPopupName)
-	program.clearActionsPopupPendingConfirmation()
-	program.model.PageActionsPopupDown(viewPageSize(actualView))
-	program.actionsPopupWidget.errorMessage = ""
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
+	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindHalfDown})
 }
 
 func (program *Program) pageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewActionsPopupName)
-	program.clearActionsPopupPendingConfirmation()
-	program.model.PageActionsPopupUp(viewPageSize(actualView))
-	program.actionsPopupWidget.errorMessage = ""
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
+	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindHalfUp})
 }
 
 func (program *Program) fullPageActionsPopupDown(gui *gocui.Gui, view *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewActionsPopupName)
-	program.clearActionsPopupPendingConfirmation()
-	program.model.FullPageActionsPopupDown(viewPageSize(actualView))
-	program.actionsPopupWidget.errorMessage = ""
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
+	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindFullDown})
 }
 
 func (program *Program) fullPageActionsPopupUp(gui *gocui.Gui, view *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-
-	actualView := program.resolveView(gui, view, viewActionsPopupName)
-	program.clearActionsPopupPendingConfirmation()
-	program.model.FullPageActionsPopupUp(viewPageSize(actualView))
-	program.actionsPopupWidget.errorMessage = ""
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.recenterListSelection(gui, actualView, viewActionsPopupName, selectedLine, lineCount)
+	return program.dispatch(gui, MsgActionsPopupPageRequested{View: view, Kind: pageNavigationKindFullUp})
 }
 
 func (program *Program) recenterActionsPopupSelection(gui *gocui.Gui, view *gocui.View) error {
-	if !program.model.ActionsPopupVisible() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.recenterListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount)
+	return program.dispatch(gui, MsgActionsPopupViewportRequested{View: view, Placement: viewportPlacementCenter})
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportTop(gui *gocui.Gui, view *gocui.View) error {
-	if !program.model.ActionsPopupVisible() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, viewportPlacementTop)
+	return program.dispatch(gui, MsgActionsPopupViewportRequested{View: view, Placement: viewportPlacementTop})
 }
 
 func (program *Program) moveActionsPopupSelectionToViewportBottom(gui *gocui.Gui, view *gocui.View) error {
-	if !program.model.ActionsPopupVisible() {
-		program.clearPendingSelectionPrefix()
-		return nil
-	}
-
-	selectedLine, lineCount := program.actionsPopupSelectionLineState()
-	return program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, viewportPlacementBottom)
+	return program.dispatch(gui, MsgActionsPopupViewportRequested{View: view, Placement: viewportPlacementBottom})
 }
 
 func (program *Program) moveActionsPopupSelectionToTop(gui *gocui.Gui, _ *gocui.View) error {

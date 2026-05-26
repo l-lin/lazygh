@@ -440,6 +440,12 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.clearActionsPopupPendingConfirmation()
 		program.model.BlurActionsPopupSearch()
+	case MsgActionsPopupPageRequested:
+		return program.applyActionsPopupPageRequested(actual)
+	case MsgActionsPopupPageResolved:
+		return program.applyActionsPopupPageResolved(actual)
+	case MsgActionsPopupViewportRequested:
+		return program.applyActionsPopupViewportRequested(actual)
 	case MsgMoveActionsPopupSelection:
 		program.clearPendingSelectionPrefix()
 		if !program.model.ActionsPopupVisible() {

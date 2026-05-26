@@ -1,5 +1,7 @@
 package tui
 
+import "github.com/jesseduffield/gocui"
+
 type Msg interface {
 	isMsg()
 }
@@ -54,6 +56,21 @@ type MsgMoveActionsPopupSelection struct {
 	Delta int
 }
 
+type MsgActionsPopupPageRequested struct {
+	View *gocui.View
+	Kind pageNavigationKind
+}
+
+type MsgActionsPopupPageResolved struct {
+	Kind     pageNavigationKind
+	PageSize int
+}
+
+type MsgActionsPopupViewportRequested struct {
+	View      *gocui.View
+	Placement viewportPlacement
+}
+
 type MsgMoveActionsPopupSelectionToTop struct{}
 
 type MsgMoveActionsPopupSelectionToBottom struct{}
@@ -78,6 +95,9 @@ func (MsgCloseActionsPopup) isMsg()                 {}
 func (MsgFocusActionsPopupSearch) isMsg()           {}
 func (MsgFocusActionsPopupList) isMsg()             {}
 func (MsgMoveActionsPopupSelection) isMsg()         {}
+func (MsgActionsPopupPageRequested) isMsg()         {}
+func (MsgActionsPopupPageResolved) isMsg()          {}
+func (MsgActionsPopupViewportRequested) isMsg()     {}
 func (MsgMoveActionsPopupSelectionToTop) isMsg()    {}
 func (MsgMoveActionsPopupSelectionToBottom) isMsg() {}
 func (MsgModalEditorEdited) isMsg()                 {}

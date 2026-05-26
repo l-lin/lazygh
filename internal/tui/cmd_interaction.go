@@ -40,6 +40,7 @@ type interactionCommandRuntime struct {
 	handleDetailLineNavigation          func(*gocui.Gui, *gocui.View, int)
 	handlePageNavigation                func(*gocui.Gui, *gocui.View, pageNavigationKind)
 	handleSideListViewport              func(*gocui.Gui, *gocui.View, viewportPlacement)
+	handleActionsPopupViewport          func(*gocui.Gui, *gocui.View, viewportPlacement)
 	handleDetailViewport                func(*gocui.Gui, *gocui.View, detailViewportOperation)
 	repeatDetailSearch                  func(*gocui.Gui, *gocui.View, bool)
 	followDetailSearch                  func(*gocui.Gui, bool)
@@ -142,6 +143,14 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 				return
 			}
 			_ = program.placeListSelection(gui, view, viewName, selectedVisibleLine, lineCount, placement)
+		},
+		handleActionsPopupViewport: func(gui *gocui.Gui, view *gocui.View, placement viewportPlacement) {
+			selectedLine, lineCount := program.actionsPopupSelectionLineState()
+			if placement == viewportPlacementCenter {
+				_ = program.recenterListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount)
+				return
+			}
+			_ = program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, placement)
 		},
 		handleDetailViewport: func(gui *gocui.Gui, view *gocui.View, operation detailViewportOperation) {
 			switch operation {
@@ -426,6 +435,39 @@ func executeSideListViewportCommand(runtime interactionCommandRuntime, gui *gocu
 		return
 	}
 	runtime.handleSideListViewport(gui, command.View, command.Placement)
+}
+
+type resolveActionsPopupPageSizeCmd struct {
+	View *gocui.View
+	Kind pageNavigationKind
+}
+
+func (command resolveActionsPopupPageSizeCmd) execute(program *Program, gui *gocui.Gui) {
+	executeResolveActionsPopupPageSizeCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeResolveActionsPopupPageSizeCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command resolveActionsPopupPageSizeCmd) {
+	if runtime.dispatch == nil || runtime.resolveView == nil {
+		return
+	}
+	actualView := runtime.resolveView(gui, command.View, viewActionsPopupName)
+	_ = runtime.dispatch(gui, MsgActionsPopupPageResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
+}
+
+type actionsPopupViewportCmd struct {
+	View      *gocui.View
+	Placement viewportPlacement
+}
+
+func (command actionsPopupViewportCmd) execute(program *Program, gui *gocui.Gui) {
+	executeActionsPopupViewportCommand(newInteractionCommandRuntime(program), gui, command)
+}
+
+func executeActionsPopupViewportCommand(runtime interactionCommandRuntime, gui *gocui.Gui, command actionsPopupViewportCmd) {
+	if runtime.handleActionsPopupViewport == nil {
+		return
+	}
+	runtime.handleActionsPopupViewport(gui, command.View, command.Placement)
 }
 
 type detailViewportCmd struct {

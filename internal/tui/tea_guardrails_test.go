@@ -713,6 +713,22 @@ func TestRefactorGuard_GivenBuildPopupNavigationFiles_WhenScanning_ThenTheyUseEx
 	}
 }
 
+func TestRefactorGuard_GivenActionsPopupInteractionFile_WhenScanning_ThenItStopsOwningPopupPageAndViewportShellHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`resolveView\(`,
+		`recenterListSelection\(`,
+		`placeListSelection\(`,
+		`viewPageSize\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "actions_popup_interaction.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected actions_popup_interaction.go to stop at popup-selection intent while explicit commands own page and viewport shell helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCursorDependentDetailActionFiles_WhenScanning_ThenTheyDoNotReachThroughLiveDetailDocuments(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,
