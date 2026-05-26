@@ -149,6 +149,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyCopyPullRequestBuildRunPopupContentRequested(actual)
 	case MsgOpenNotificationInBrowserRequested:
 		return program.applyOpenNotificationInBrowserRequested()
+	case MsgRefreshNotificationsRequested:
+		return program.applyRefreshNotificationsRequested()
 	case MsgNotificationReadRequested:
 		return program.applyNotificationReadRequested(actual)
 	case MsgNotificationDoneRequested:

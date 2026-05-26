@@ -4,5 +4,5 @@ func (program *Program) dispatchEditorMessage(msg Msg) bool {
 	if program == nil || msg == nil {
 		return false
 	}
-	return program.dispatch(program.gui, msg) == nil
+	return program.dispatchRuntimeMessage(msg) == nil
 }

@@ -208,10 +208,7 @@ func (success actionsPopupAsyncThemeAppliedSuccess) apply(program *Program) []Cm
 	program.invalidateReviewDiffRenderCache()
 	program.actionsPopupWidget.errorMessage = ""
 	applyActionsPopupFeedback(program, program.model.Focus(), "Theme changed to "+success.Label)
-	if program.gui != nil {
-		program.configureGUI(program.gui)
-	}
-	return nil
+	return []Cmd{configureGUICmd{}}
 }
 
 type actionsPopupAsyncPendingReviewCanceledSuccess struct {

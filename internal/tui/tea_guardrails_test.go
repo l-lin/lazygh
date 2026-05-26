@@ -620,6 +620,25 @@ func TestRefactorGuard_GivenAsyncPopupAndRefreshUpdateFiles_WhenScanning_ThenThe
 	}
 }
 
+func TestRefactorGuard_GivenRuntimeShortcutFiles_WhenScanning_ThenTheyUseShellHooksOrTypedCommandsInsteadOfGuiBranches(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.gui`,
+		`dispatch\(program\.gui`,
+		`configureGUI\(`,
+		`markManualNotificationRefresh\(`,
+		`beginManualRefresh\(`,
+		`reloadNotifications\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "view_url.go" || base == "editor_dispatch.go" || base == "actions_popup_async_success.go" || base == "refresh_active_view.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected runtime shortcut files to defer gui ownership and manual refresh work to shell hooks or explicit commands, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenUpdateReviewInteractionFile_WhenScanning_ThenItDoesNotReachThroughDetailViewMutationHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

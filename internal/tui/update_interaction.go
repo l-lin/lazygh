@@ -276,3 +276,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	}
 	return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
 }
+
+func (program *Program) applyRefreshNotificationsRequested() []Cmd {
+	return []Cmd{refreshNotificationsCmd{}}
+}

@@ -29,7 +29,10 @@ type interactionCommandRuntime struct {
 	followReverseDetailSearch           func(*gocui.Gui) error
 	configureGUI                        func(*gocui.Gui)
 	hasPullRequestListQueries           func() bool
+	hasNotificationQueries              func() bool
 	hasDetailQueries                    func() bool
+	reloadNotifications                 func(*gocui.Gui)
+	markManualNotificationRefresh       func() bool
 	markManualPullRequestListRefresh    func(PullRequestTab) bool
 	markManualPullRequestDetailRefresh  func(githubdomain.PullRequest) bool
 	markManualPullRequestDiffRefresh    func(githubdomain.PullRequest) bool
@@ -76,7 +79,10 @@ func newInteractionCommandRuntime(program *Program) interactionCommandRuntime {
 		followReverseDetailSearch:           program.followReverseDetailSearch,
 		configureGUI:                        program.configureGUI,
 		hasPullRequestListQueries:           program.hasPullRequestListQueries,
+		hasNotificationQueries:              program.hasNotificationQueries,
 		hasDetailQueries:                    program.hasDetailQueries,
+		reloadNotifications:                 program.reloadNotifications,
+		markManualNotificationRefresh:       program.markManualNotificationRefresh,
 		markManualPullRequestListRefresh:    program.markManualPullRequestListRefresh,
 		markManualPullRequestDetailRefresh:  program.markManualPullRequestDetailRefresh,
 		markManualPullRequestDiffRefresh:    program.markManualPullRequestDiffRefresh,
@@ -276,6 +282,25 @@ func executeBeginManualPullRequestRefreshCommand(runtime interactionCommandRunti
 	}
 	if runtime.beginManualRefresh != nil {
 		runtime.beginManualRefresh(command.SuccessMessage, pendingOperations)
+	}
+}
+
+type refreshNotificationsCmd struct{}
+
+func (refreshNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
+	executeRefreshNotificationsCommand(newInteractionCommandRuntime(program), gui)
+}
+
+func executeRefreshNotificationsCommand(runtime interactionCommandRuntime, gui *gocui.Gui) {
+	pendingOperations := 0
+	if gui != nil && runtime.reviewModeActive != nil && !runtime.reviewModeActive() && runtime.hasNotificationQueries != nil && runtime.hasNotificationQueries() && runtime.markManualNotificationRefresh != nil && runtime.markManualNotificationRefresh() {
+		pendingOperations++
+	}
+	if runtime.beginManualRefresh != nil {
+		runtime.beginManualRefresh(notificationsRefreshSuccessMessage, pendingOperations)
+	}
+	if runtime.reloadNotifications != nil {
+		runtime.reloadNotifications(gui)
 	}
 }
 

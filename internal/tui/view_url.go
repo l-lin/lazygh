@@ -17,14 +17,7 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 }
 
 func (program *Program) dispatchStartupMessage(msg Msg) error {
-	if program == nil || msg == nil {
-		return nil
-	}
-	if program.gui != nil {
-		return program.dispatch(program.gui, msg)
-	}
-	program.executeCmds(nil, Update(program, msg))
-	return nil
+	return program.dispatchRuntimeMessage(msg)
 }
 
 func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {

@@ -178,6 +178,8 @@ type MsgCopyPullRequestBuildRunPopupContentRequested struct {
 
 type MsgOpenNotificationInBrowserRequested struct{}
 
+type MsgRefreshNotificationsRequested struct{}
+
 type MsgRepeatActionsPopupSearch struct {
 	Direction searchRepeatDirection
 }
@@ -275,6 +277,7 @@ func (MsgCopySelectedDetailTextRequested) isMsg()              {}
 func (MsgCopyPullRequestURLRequested) isMsg()                  {}
 func (MsgCopyPullRequestBuildRunPopupContentRequested) isMsg() {}
 func (MsgOpenNotificationInBrowserRequested) isMsg()           {}
+func (MsgRefreshNotificationsRequested) isMsg()                {}
 func (MsgRepeatActionsPopupSearch) isMsg()                     {}
 func (MsgRepeatSideSearch) isMsg()                             {}
 func (MsgRepeatPullRequestSearch) isMsg()                      {}
