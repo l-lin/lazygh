@@ -28,7 +28,7 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 
 	var commands []Cmd
 	if message.Success != nil {
-		commands = message.Success.apply(program)
+		commands = Update(program, message.Success)
 	}
 	if program.model != nil && program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
@@ -96,14 +96,14 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 	if message.Err != nil {
 		program.actionsPopupWidget.assigneePicker.searchResults = nil
 		program.actionsPopupWidget.errorMessage = ""
-		program.syncActionsPopupSearch()
+		program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 		return Update(program, MsgErrorReported{Message: strings.TrimSpace(normalizedAssigneePickerError(message.Err).Error())})
 	}
 
 	program.actionsPopupWidget.assigneePicker.rememberCandidates(message.Results)
 	program.actionsPopupWidget.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), message.Results...)
 	program.actionsPopupWidget.errorMessage = ""
-	program.syncActionsPopupSearch()
+	program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 	return nil
 }
 

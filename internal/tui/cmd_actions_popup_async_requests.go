@@ -17,7 +17,7 @@ type actionsPopupAsyncCommandDeps struct {
 type actionsPopupAsyncRequest interface {
 	statusCommand() string
 	asyncRequested() bool
-	run(actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error)
+	run(actionsPopupAsyncCommandDeps) (Msg, error)
 }
 
 func newActionsPopupAsyncCommandDeps(program *Program) actionsPopupAsyncCommandDeps {
@@ -47,17 +47,18 @@ func (startPullRequestReviewPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request startPullRequestReviewPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request startPullRequestReviewPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	pendingReviewID, err := startPendingPullRequestReview(deps, request.summary)
 	if err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncStartReviewSuccess{Summary: request.summary, PendingReviewID: pendingReviewID}, nil
+	return MsgReviewSessionStarted{Summary: request.summary, PendingReviewID: pendingReviewID}, nil
 }
 
 type openPullRequestInBrowserPopupRequest struct {
-	repository string
-	number     int
+	repository     string
+	number         int
+	feedbackTarget Focus
 }
 
 func (request openPullRequestInBrowserPopupRequest) statusCommand() string {
@@ -68,19 +69,20 @@ func (openPullRequestInBrowserPopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request openPullRequestInBrowserPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request openPullRequestInBrowserPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.pullRequestMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.pullRequestMutations.OpenPullRequestInBrowser(request.repository, request.number); err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncFeedbackSuccess{Message: pullRequestBrowserOpenSuccessMessage}, nil
+	return MsgFeedbackSet{Target: request.feedbackTarget, Message: pullRequestBrowserOpenSuccessMessage}, nil
 }
 
 type approvePullRequestPopupRequest struct {
-	repository string
-	number     int
+	repository     string
+	number         int
+	feedbackTarget Focus
 }
 
 func (request approvePullRequestPopupRequest) statusCommand() string {
@@ -91,25 +93,27 @@ func (approvePullRequestPopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request approvePullRequestPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request approvePullRequestPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.reviewMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.reviewMutations.ApprovePullRequest(request.repository, request.number); err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncInvalidatePullRequestSuccess{
+	return MsgPullRequestInvalidatedWithFeedback{
 		Repository:     request.repository,
 		Number:         request.number,
 		InvalidateDiff: true,
+		FeedbackTarget: request.feedbackTarget,
 		Message:        pullRequestReviewSuccessMessage,
 	}, nil
 }
 
 type reRequestPullRequestReviewPopupRequest struct {
-	repository    string
-	number        int
-	reviewerLogin string
+	repository     string
+	number         int
+	reviewerLogin  string
+	feedbackTarget Focus
 }
 
 func (request reRequestPullRequestReviewPopupRequest) statusCommand() string {
@@ -120,17 +124,18 @@ func (reRequestPullRequestReviewPopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request reRequestPullRequestReviewPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request reRequestPullRequestReviewPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.pullRequestMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.pullRequestMutations.RequestPullRequestReviewer(request.repository, request.number, request.reviewerLogin); err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncInvalidatePullRequestSuccess{
-		Repository: request.repository,
-		Number:     request.number,
-		Message:    pullRequestReviewReRequestedSuccessMessage,
+	return MsgPullRequestInvalidatedWithFeedback{
+		Repository:     request.repository,
+		Number:         request.number,
+		FeedbackTarget: request.feedbackTarget,
+		Message:        pullRequestReviewReRequestedSuccessMessage,
 	}, nil
 }
 
@@ -142,6 +147,7 @@ type pullRequestLifecycleMutationPopupRequest struct {
 	state          string
 	isDraft        bool
 	successMessage string
+	feedbackTarget Focus
 }
 
 func (request pullRequestLifecycleMutationPopupRequest) statusCommand() string {
@@ -152,15 +158,16 @@ func (pullRequestLifecycleMutationPopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request pullRequestLifecycleMutationPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request pullRequestLifecycleMutationPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if err := runPullRequestLifecycleMutation(deps, request.kind, request.repository, request.number); err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncPullRequestLifecycleSuccess{
-		Summary: request.summary,
-		State:   request.state,
-		IsDraft: request.isDraft,
-		Message: request.successMessage,
+	return MsgPullRequestLifecycleApplied{
+		Summary:        request.summary,
+		State:          request.state,
+		IsDraft:        request.isDraft,
+		FeedbackTarget: request.feedbackTarget,
+		Message:        request.successMessage,
 	}, nil
 }
 
@@ -171,6 +178,7 @@ type pullRequestAutoMergeMutationPopupRequest struct {
 	summary        githubdomain.PullRequest
 	enabled        bool
 	successMessage string
+	feedbackTarget Focus
 }
 
 func (request pullRequestAutoMergeMutationPopupRequest) statusCommand() string {
@@ -181,21 +189,23 @@ func (pullRequestAutoMergeMutationPopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request pullRequestAutoMergeMutationPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request pullRequestAutoMergeMutationPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if err := runPullRequestAutoMergeMutation(deps, request.kind, request.repository, request.number); err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncPullRequestAutoMergeSuccess{
-		Summary: request.summary,
-		Enabled: request.enabled,
-		Message: request.successMessage,
+	return MsgPullRequestAutoMergeApplied{
+		Summary:        request.summary,
+		Enabled:        request.enabled,
+		FeedbackTarget: request.feedbackTarget,
+		Message:        request.successMessage,
 	}, nil
 }
 
 type pullRequestBranchUpdatePopupRequest struct {
-	repository string
-	number     int
-	summary    githubdomain.PullRequest
+	repository     string
+	number         int
+	summary        githubdomain.PullRequest
+	feedbackTarget Focus
 }
 
 func (request pullRequestBranchUpdatePopupRequest) statusCommand() string {
@@ -206,21 +216,22 @@ func (pullRequestBranchUpdatePopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request pullRequestBranchUpdatePopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request pullRequestBranchUpdatePopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.pullRequestMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := normalizedPullRequestMutationError(deps.pullRequestMutations.UpdatePullRequestBranch(request.repository, request.number), "gh pr update-branch"); err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncPullRequestBranchUpdateSuccess{Summary: request.summary, Message: pullRequestBranchUpdatedSuccessMessage}, nil
+	return MsgPullRequestBranchUpdated{Summary: request.summary, FeedbackTarget: request.feedbackTarget, Message: pullRequestBranchUpdatedSuccessMessage}, nil
 }
 
 type updatePullRequestAssigneesPopupRequest struct {
-	repository   string
-	number       int
-	addLogins    []string
-	removeLogins []string
+	repository     string
+	number         int
+	addLogins      []string
+	removeLogins   []string
+	feedbackTarget Focus
 }
 
 func (request updatePullRequestAssigneesPopupRequest) statusCommand() string {
@@ -231,7 +242,7 @@ func (updatePullRequestAssigneesPopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request updatePullRequestAssigneesPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request updatePullRequestAssigneesPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.pullRequestMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
@@ -239,18 +250,20 @@ func (request updatePullRequestAssigneesPopupRequest) run(deps actionsPopupAsync
 	if err != nil {
 		return nil, err
 	}
-	return actionsPopupAsyncPullRequestAssigneesUpdatedSuccess{
-		Repository:   request.repository,
-		Number:       request.number,
-		AddLogins:    request.addLogins,
-		RemoveLogins: request.removeLogins,
-		Message:      pullRequestAssigneesUpdatedSuccessMessage,
+	return MsgPullRequestAssigneesUpdated{
+		Repository:     request.repository,
+		Number:         request.number,
+		AddLogins:      request.addLogins,
+		RemoveLogins:   request.removeLogins,
+		FeedbackTarget: request.feedbackTarget,
+		Message:        pullRequestAssigneesUpdatedSuccessMessage,
 	}, nil
 }
 
 type addReactionPopupRequest struct {
-	target  pullRequestReactionActionTarget
-	content githubdomain.ReactionContent
+	target         pullRequestReactionActionTarget
+	content        githubdomain.ReactionContent
+	feedbackTarget Focus
 }
 
 func (request addReactionPopupRequest) statusCommand() string {
@@ -261,14 +274,14 @@ func (addReactionPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request addReactionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request addReactionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.reactionMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.reactionMutations.AddReaction(request.target.subjectID, request.content); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncReactionAddedSuccess{Target: request.target, Content: request.content}, nil
+	return MsgReactionAdded{Target: request.target, Content: request.content, FeedbackTarget: request.feedbackTarget}, nil
 }
 
 type cancelPendingPullRequestReviewPopupRequest struct {
@@ -283,14 +296,14 @@ func (cancelPendingPullRequestReviewPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request cancelPendingPullRequestReviewPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request cancelPendingPullRequestReviewPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.reviewMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.reviewMutations.DeletePullRequestReview(request.target.pendingReviewID); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncPendingReviewCanceledSuccess{Target: request.target}, nil
+	return MsgPendingPullRequestReviewCanceled{Target: request.target}, nil
 }
 
 type deletePullRequestCommentPopupRequest struct {
@@ -305,14 +318,14 @@ func (deletePullRequestCommentPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request deletePullRequestCommentPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request deletePullRequestCommentPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.pullRequestMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.pullRequestMutations.DeletePullRequestComment(request.target.commentID); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncPullRequestCommentDeletedSuccess{Target: request.target}, nil
+	return MsgPullRequestCommentDeleted{Target: request.target}, nil
 }
 
 type deleteInlineCommentPopupRequest struct {
@@ -327,19 +340,20 @@ func (deleteInlineCommentPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request deleteInlineCommentPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request deleteInlineCommentPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.reviewMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.reviewMutations.DeletePullRequestReviewComment(request.target.commentID); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncInlineCommentDeletedSuccess{Target: request.target}, nil
+	return MsgInlineCommentDeleted{Target: request.target}, nil
 }
 
 type inlineCommentResolutionPopupRequest struct {
-	target   pullRequestReviewThreadActionTarget
-	resolved bool
+	target         pullRequestReviewThreadActionTarget
+	resolved       bool
+	feedbackTarget Focus
 }
 
 func (inlineCommentResolutionPopupRequest) statusCommand() string {
@@ -350,7 +364,7 @@ func (inlineCommentResolutionPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request inlineCommentResolutionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request inlineCommentResolutionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.reviewMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
@@ -363,11 +377,12 @@ func (request inlineCommentResolutionPopupRequest) run(deps actionsPopupAsyncCom
 	if err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncInlineCommentResolutionSuccess{Target: request.target, Resolved: request.resolved}, nil
+	return MsgInlineCommentResolutionApplied{Target: request.target, Resolved: request.resolved, FeedbackTarget: request.feedbackTarget}, nil
 }
 
 type removeReactionPopupRequest struct {
-	target pullRequestReactionRemovalTarget
+	target         pullRequestReactionRemovalTarget
+	feedbackTarget Focus
 }
 
 func (removeReactionPopupRequest) statusCommand() string {
@@ -378,20 +393,21 @@ func (removeReactionPopupRequest) asyncRequested() bool {
 	return false
 }
 
-func (request removeReactionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request removeReactionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.reactionMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := deps.reactionMutations.RemoveReaction(request.target.subjectID, request.target.content); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncReactionRemovedSuccess{Target: request.target}, nil
+	return MsgReactionRemoved{Target: request.target, FeedbackTarget: request.feedbackTarget}, nil
 }
 
 type pullRequestSquashMergePopupRequest struct {
-	repository string
-	number     int
-	summary    githubdomain.PullRequest
+	repository     string
+	number         int
+	summary        githubdomain.PullRequest
+	feedbackTarget Focus
 }
 
 func (request pullRequestSquashMergePopupRequest) statusCommand() string {
@@ -402,18 +418,19 @@ func (pullRequestSquashMergePopupRequest) asyncRequested() bool {
 	return true
 }
 
-func (request pullRequestSquashMergePopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncSuccess, error) {
+func (request pullRequestSquashMergePopupRequest) run(deps actionsPopupAsyncCommandDeps) (Msg, error) {
 	if deps.pullRequestMutations == nil {
 		return nil, errors.New("github loader is unavailable")
 	}
 	if err := normalizedPullRequestMutationError(deps.pullRequestMutations.SquashMergePullRequest(request.repository, request.number), "gh pr merge"); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return actionsPopupAsyncPullRequestLifecycleSuccess{
-		Summary: request.summary,
-		State:   "MERGED",
-		IsDraft: false,
-		Message: pullRequestSquashMergedSuccessMessage,
+	return MsgPullRequestLifecycleApplied{
+		Summary:        request.summary,
+		State:          "MERGED",
+		IsDraft:        false,
+		FeedbackTarget: request.feedbackTarget,
+		Message:        pullRequestSquashMergedSuccessMessage,
 	}, nil
 }
 

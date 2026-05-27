@@ -85,10 +85,10 @@ func TestUpdate_GivenMsgThemePresetSaved_WhenApplying_ThenItReturnsAConfigureGUI
 	}
 }
 
-func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithThemeSuccess_WhenApplying_ThenItReturnsAConfigureGUICommand(t *testing.T) {
+func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithTypedSuccessMessage_WhenApplying_ThenItReturnsTheNestedReducerCommands(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 
-	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Success: actionsPopupAsyncThemeAppliedSuccess{NormalizedName: "night", Label: "Night"}})
+	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Success: MsgThemePresetSaved{NormalizedName: "night", Label: "Night"}})
 
 	if len(actual) != 1 {
 		t.Fatalf("expected one configure-gui command, actual %d", len(actual))

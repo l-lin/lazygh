@@ -27,12 +27,17 @@ type pullRequestReviewCommentSubmitSuccess struct {
 }
 
 func (success pullRequestReviewCommentSubmitSuccess) apply(program *Program) []Cmd {
-	return actionsPopupAsyncInvalidatePullRequestSuccess{
+	if program == nil {
+		return nil
+	}
+	program.applyPullRequestInvalidatedWithFeedback(MsgPullRequestInvalidatedWithFeedback{
 		Repository:     success.Repository,
 		Number:         success.Number,
 		InvalidateDiff: true,
+		FeedbackTarget: program.model.Focus(),
 		Message:        pullRequestReviewSuccessMessage,
-	}.apply(program)
+	})
+	return nil
 }
 
 type pullRequestRequestChangesSubmitSuccess struct {
@@ -41,12 +46,17 @@ type pullRequestRequestChangesSubmitSuccess struct {
 }
 
 func (success pullRequestRequestChangesSubmitSuccess) apply(program *Program) []Cmd {
-	return actionsPopupAsyncInvalidatePullRequestSuccess{
+	if program == nil {
+		return nil
+	}
+	program.applyPullRequestInvalidatedWithFeedback(MsgPullRequestInvalidatedWithFeedback{
 		Repository:     success.Repository,
 		Number:         success.Number,
 		InvalidateDiff: true,
+		FeedbackTarget: program.model.Focus(),
 		Message:        pullRequestReviewSuccessMessage,
-	}.apply(program)
+	})
+	return nil
 }
 
 type pullRequestTitleEditSubmitSuccess struct {

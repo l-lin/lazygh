@@ -258,7 +258,7 @@ func (program *Program) applySubmitAssigneePickerRequested(message MsgSubmitAssi
 	number := message.Number
 	addLogins := append([]string(nil), message.AddLogins...)
 	removeLogins := append([]string(nil), message.RemoveLogins...)
-	return program.queueActionsPopupAsyncRequest(updatePullRequestAssigneesPopupRequest{repository: repository, number: number, addLogins: addLogins, removeLogins: removeLogins})
+	return program.queueActionsPopupAsyncRequest(updatePullRequestAssigneesPopupRequest{repository: repository, number: number, addLogins: addLogins, removeLogins: removeLogins, feedbackTarget: program.model.Focus()})
 }
 
 func (program *Program) applyOpenReactionPickerRequested(message MsgOpenReactionPickerRequested) {
@@ -275,7 +275,7 @@ func (program *Program) applyAddReactionRequested(message MsgAddReactionRequeste
 		return nil
 	}
 
-	return program.queueActionsPopupAsyncRequest(addReactionPopupRequest{target: message.Target, content: message.Content})
+	return program.queueActionsPopupAsyncRequest(addReactionPopupRequest{target: message.Target, content: message.Content, feedbackTarget: program.model.Focus()})
 }
 
 func (program *Program) applyOpenThemePickerRequested() {

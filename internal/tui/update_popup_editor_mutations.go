@@ -74,7 +74,7 @@ func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineC
 		return nil
 	}
 
-	return program.queueActionsPopupAsyncRequest(inlineCommentResolutionPopupRequest{target: message.Target, resolved: message.Resolved})
+	return program.queueActionsPopupAsyncRequest(inlineCommentResolutionPopupRequest{target: message.Target, resolved: message.Resolved, feedbackTarget: program.model.Focus()})
 }
 
 func (program *Program) applyReviewInlineCommentSubmitRequested(message MsgReviewInlineCommentSubmitRequested) []Cmd {
@@ -105,7 +105,7 @@ func (program *Program) applyReactionRemovalRequested(message MsgReactionRemoval
 		return nil
 	}
 
-	return program.queueActionsPopupAsyncRequest(removeReactionPopupRequest{target: message.Target})
+	return program.queueActionsPopupAsyncRequest(removeReactionPopupRequest{target: message.Target, feedbackTarget: program.model.Focus()})
 }
 
 func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequestSquashMergeRequested) []Cmd {
@@ -128,5 +128,5 @@ func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequ
 
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
-	return program.queueActionsPopupAsyncRequest(pullRequestSquashMergePopupRequest{repository: repository, number: number, summary: message.Summary})
+	return program.queueActionsPopupAsyncRequest(pullRequestSquashMergePopupRequest{repository: repository, number: number, summary: message.Summary, feedbackTarget: program.model.Focus()})
 }

@@ -284,6 +284,24 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPullRequestAutoMergeMutationRequested(actual)
 	case MsgPullRequestBranchUpdateRequested:
 		return program.applyPullRequestBranchUpdateRequested(actual)
+	case MsgPullRequestLifecycleApplied:
+		program.applyPullRequestLifecycleApplied(actual)
+	case MsgPullRequestAutoMergeApplied:
+		program.applyPullRequestAutoMergeApplied(actual)
+	case MsgPullRequestBranchUpdated:
+		program.applyPullRequestBranchUpdated(actual)
+	case MsgPullRequestInvalidatedWithFeedback:
+		program.applyPullRequestInvalidatedWithFeedback(actual)
+	case MsgPullRequestAssigneesUpdated:
+		program.applyPullRequestAssigneesUpdated(actual)
+	case MsgReviewSessionStarted:
+		program.applyReviewSessionStarted(actual)
+	case MsgReactionAdded:
+		program.applyReactionAdded(actual)
+	case MsgReactionRemoved:
+		program.applyReactionRemoved(actual)
+	case MsgPendingPullRequestReviewCanceled:
+		return program.applyPendingPullRequestReviewCanceled(actual)
 	case MsgPullRequestCustomSearchSubmitRequested:
 		return program.applyPullRequestCustomSearchSubmitRequested(actual)
 	case MsgPullRequestCustomSearchSubmitted:
@@ -312,6 +330,22 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPullRequestTitleEditApplied(actual)
 	case MsgPullRequestDescriptionEditApplied:
 		return program.applyPullRequestDescriptionEditApplied(actual)
+	case MsgPullRequestCommentSubmitted:
+		program.applyPullRequestCommentSubmitted(actual)
+	case MsgPullRequestCommentUpdated:
+		program.applyPullRequestCommentUpdated(actual)
+	case MsgInlineCommentUpdated:
+		program.applyInlineCommentUpdated(actual)
+	case MsgInlineCommentReplySubmitted:
+		program.applyInlineCommentReplySubmitted(actual)
+	case MsgReviewInlineCommentSubmitted:
+		program.applyReviewInlineCommentSubmitted(actual)
+	case MsgPullRequestCommentDeleted:
+		program.applyPullRequestCommentDeleted(actual)
+	case MsgInlineCommentDeleted:
+		program.applyInlineCommentDeleted(actual)
+	case MsgInlineCommentResolutionApplied:
+		program.applyInlineCommentResolutionApplied(actual)
 	case MsgPullRequestCommentSubmitRequested:
 		return program.applyPullRequestCommentSubmitRequested(actual)
 	case MsgPullRequestReviewCommentSubmitRequested:

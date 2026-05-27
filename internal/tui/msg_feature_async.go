@@ -4,7 +4,7 @@ import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type MsgActionsPopupAsyncGHCommandFinished struct {
 	Err     error
-	Success actionsPopupAsyncSuccess
+	Success Msg
 }
 
 type MsgPullRequestsCacheHydrated struct {
