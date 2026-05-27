@@ -3,10 +3,9 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 type detailFoldCommandRuntime struct {
+	dispatch                           func(*gocui.Gui, Msg) error
 	resolveView                        func(*gocui.Gui, *gocui.View, string) *gocui.View
 	currentDetailDocument              func(*gocui.View) detailDocument
-	syncDetailViewState                func(detailDocument, int)
-	placeDetailCursorAtLine            func(detailDocument, int)
 	toggleInlineConversationVisibility func(detailDocument) (detailViewSyncPlan, bool)
 	setAllDetailFolds                  func(detailDocument, bool) (detailViewSyncPlan, bool)
 }
@@ -16,10 +15,9 @@ func newDetailFoldCommandRuntime(program *Program) detailFoldCommandRuntime {
 		return detailFoldCommandRuntime{}
 	}
 	return detailFoldCommandRuntime{
+		dispatch:                           program.dispatch,
 		resolveView:                        program.resolveView,
 		currentDetailDocument:              program.currentDetailDocument,
-		syncDetailViewState:                program.syncDetailViewState,
-		placeDetailCursorAtLine:            program.placeDetailCursorAtLine,
 		toggleInlineConversationVisibility: program.toggleInlineConversationVisibilityState,
 		setAllDetailFolds:                  program.setAllDetailFolds,
 	}
@@ -32,7 +30,7 @@ func (command toggleInlineConversationVisibilityCmd) execute(program *Program, g
 }
 
 func executeToggleInlineConversationVisibilityCommand(runtime detailFoldCommandRuntime, gui *gocui.Gui, command toggleInlineConversationVisibilityCmd) {
-	if runtime.currentDetailDocument == nil || runtime.toggleInlineConversationVisibility == nil || runtime.syncDetailViewState == nil {
+	if runtime.dispatch == nil || runtime.currentDetailDocument == nil || runtime.toggleInlineConversationVisibility == nil {
 		return
 	}
 
@@ -45,7 +43,7 @@ func executeToggleInlineConversationVisibilityCommand(runtime detailFoldCommandR
 	if !ok {
 		return
 	}
-	applyDetailViewSyncPlan(runtime, plan, viewPageSize(actualView))
+	_ = runtime.dispatch(gui, MsgDetailViewSyncPlanResolved{Plan: plan, ViewportHeight: viewPageSize(actualView)})
 }
 
 type setAllDetailFoldsCmd struct {
@@ -57,7 +55,7 @@ func (command setAllDetailFoldsCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeSetAllDetailFoldsCommand(runtime detailFoldCommandRuntime, gui *gocui.Gui, command setAllDetailFoldsCmd) {
-	if runtime.currentDetailDocument == nil || runtime.setAllDetailFolds == nil || runtime.syncDetailViewState == nil {
+	if runtime.dispatch == nil || runtime.currentDetailDocument == nil || runtime.setAllDetailFolds == nil {
 		return
 	}
 
@@ -70,12 +68,5 @@ func executeSetAllDetailFoldsCommand(runtime detailFoldCommandRuntime, gui *gocu
 	if !ok {
 		return
 	}
-	applyDetailViewSyncPlan(runtime, plan, viewPageSize(actualView))
-}
-
-func applyDetailViewSyncPlan(runtime detailFoldCommandRuntime, plan detailViewSyncPlan, viewportHeight int) {
-	if plan.focusLineKnown && runtime.placeDetailCursorAtLine != nil {
-		runtime.placeDetailCursorAtLine(plan.document, plan.focusLine)
-	}
-	runtime.syncDetailViewState(plan.document, viewportHeight)
+	_ = runtime.dispatch(gui, MsgDetailViewSyncPlanResolved{Plan: plan, ViewportHeight: viewPageSize(actualView)})
 }

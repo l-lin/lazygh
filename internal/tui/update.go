@@ -144,6 +144,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyFocusDetailRenderedLineResolved(actual)
 	case MsgDetailMotionResolved:
 		return program.applyDetailMotionResolved(actual)
+	case MsgDetailViewSyncPlanResolved:
+		program.applyDetailViewSyncPlanResolved(actual)
 	case MsgOpenBrowserURLRequested:
 		return program.applyOpenBrowserURLRequested(actual)
 	case MsgOpenBrowserURLFinished:

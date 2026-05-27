@@ -85,6 +85,16 @@ func (program *Program) applyDetailMotionResolved(message MsgDetailMotionResolve
 	}
 }
 
+func (program *Program) applyDetailViewSyncPlanResolved(message MsgDetailViewSyncPlanResolved) {
+	searchQuery := program.model.DetailSearchQuery()
+	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Plan.document, message.ViewportHeight, searchQuery)
+	if message.Plan.focusLineKnown {
+		detailState = detailState.withFocusedLine(message.Plan.document, message.ViewportHeight, message.Plan.focusLine)
+		detailState.viewState.syncSearch(message.Plan.document, searchQuery)
+	}
+	program.detailState = detailState
+}
+
 func (program *Program) detailMotionClipboardCommands(target detailMotionTarget, clipboard *detailMotionClipboardResult) []Cmd {
 	if clipboard == nil {
 		return nil

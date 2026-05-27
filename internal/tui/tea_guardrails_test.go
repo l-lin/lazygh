@@ -950,6 +950,21 @@ func TestRefactorGuard_GivenDetailFoldFiles_WhenScanning_ThenTheyDoNotReachThrou
 	}
 }
 
+func TestRefactorGuard_GivenDetailFoldCommandFile_WhenScanning_ThenItDoesNotMutateDurableDetailState(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`syncDetailViewState\(`,
+		`placeDetailCursorAtLine\(`,
+		`applyDetailViewSyncPlan\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "cmd_detail_fold.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cmd_detail_fold.go to dispatch typed sync-plan messages instead of mutating durable detail state directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewCollapseAndBrowserSectionFiles_WhenScanning_ThenStateWritesStayOnReducerOwnedHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\s*=`,

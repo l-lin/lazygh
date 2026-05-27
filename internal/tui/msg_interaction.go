@@ -170,6 +170,11 @@ type MsgDetailMotionResolved struct {
 	ViewportHeight int
 }
 
+type MsgDetailViewSyncPlanResolved struct {
+	Plan           detailViewSyncPlan
+	ViewportHeight int
+}
+
 type MsgOpenBrowserURLRequested struct {
 	URL            string
 	SuccessMessage string
@@ -328,6 +333,7 @@ func (MsgDetailViewportRequested) isMsg()                      {}
 func (MsgDetailViewportResolved) isMsg()                       {}
 func (MsgFocusDetailRenderedLineResolved) isMsg()              {}
 func (MsgDetailMotionResolved) isMsg()                         {}
+func (MsgDetailViewSyncPlanResolved) isMsg()                   {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
