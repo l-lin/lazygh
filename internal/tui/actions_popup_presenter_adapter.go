@@ -16,7 +16,7 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 	searchCursor := 0
 	if program.model != nil {
 		query = program.model.ActionsPopupSearchQuery()
-		filteredActionCount = len(program.model.ActionsPopupFilteredActionIndexes())
+		filteredActionCount = len(program.currentActionsPopupFilteredIndexes())
 		searchText = query
 		searchCursor = utf8.RuneCountInString(query)
 	}

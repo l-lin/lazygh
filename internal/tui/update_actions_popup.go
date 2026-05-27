@@ -17,6 +17,13 @@ func (program *Program) updateActionsPopupSearch(query string) {
 	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
 }
 
+func (program *Program) resyncVisibleActionsPopupSearchInUpdate() {
+	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
+		return
+	}
+	program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
+}
+
 func (program *Program) applyActionsPopupActionRequested(message MsgActionsPopupActionRequested) []Cmd {
 	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
 		return nil

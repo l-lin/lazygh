@@ -34,7 +34,7 @@ func TestDetailYankHighlight_GivenMotionYank_WhenRendering_ThenItUsesSearchHighl
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewDetailName, lineIndex, "Alpha")
 }
 
-func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenItClearsFromTheDetailView(t *testing.T) {
+func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenTheLoadingSpinnerTickClearsItFromTheDetailView(t *testing.T) {
 	now := time.Date(2026, time.May, 19, 9, 0, 0, 0, time.UTC)
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha Beta"}}})
 	model.OpenDetail()
@@ -63,8 +63,8 @@ func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenItClear
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewDetailName, lineIndex, "Alpha")
 
 	now = now.Add(subject.timingState.yankHighlightDuration + time.Millisecond)
-	subject.clearExpiredYankHighlights()
-	then_noError(t, subject.afterStateChange(gui))
+	Update(subject, MsgLoadingSpinnerTick{})
+	then_noError(t, subject.refreshViews(gui))
 
 	then_viewLineRuneDoesNotHaveBackgroundColor(t, gui, viewDetailName, lineIndex, 0, given_searchHighlightColorHex(t), "expired yank highlight")
 }

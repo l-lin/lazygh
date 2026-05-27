@@ -235,6 +235,7 @@ func (program *Program) applyCurrentDetailImageLoaded(message MsgCurrentDetailIm
 }
 
 func (program *Program) applyLoadingSpinnerTick() {
+	program.clearExpiredYankHighlights()
 	if !program.shouldAnimateLoadingSpinner() {
 		return
 	}

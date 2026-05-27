@@ -59,3 +59,22 @@ func TestRefreshViews_GivenVisibleActionsPopup_WhenRefreshing_ThenItDoesNotMutat
 		t.Fatalf("expected refreshViews to keep popup search indexes %v, actual %v", expected, actual)
 	}
 }
+
+func TestAfterStateChange_GivenVisibleActionsPopup_WhenRefreshing_ThenItDoesNotMutateThePopupSearchState(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.startupState.appStarted = true
+	subject.model.OpenActionsPopup(3)
+	subject.model.UpdateActionsPopupSearch("stale", []int{99})
+	expected := []int{99}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+
+	actual := subject.model.ActionsPopupFilteredActionIndexes()
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected afterStateChange to keep popup search indexes %v, actual %v", expected, actual)
+	}
+}

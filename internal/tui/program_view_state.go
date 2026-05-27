@@ -11,11 +11,6 @@ func (program *Program) afterStateChange(gui *gocui.Gui) error {
 	}
 
 	program.gui = gui
-	program.clearExpiredYankHighlights()
-	program.clearExpiredTransientErrorPopup(program.currentTime())
-	if program.model.ActionsPopupVisible() {
-		program.syncActionsPopupSearch()
-	}
 	if program.startupState.appStarted {
 		program.executeWorkflowPlan(gui, program.plannedWorkflow())
 	}

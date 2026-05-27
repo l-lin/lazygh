@@ -60,9 +60,9 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 1. A keybinding, popup, editor-intent callback, or async result emits a `Msg`.
 2. `Update` mutates state and returns typed `Cmd` values.
-   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, and transient error popup state stay in `Update`.
+   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, transient error popup state, and async popup or modal-submit success handling stay in `Update`.
 3. `dispatch()` executes those commands.
-4. `afterStateChange()` runs workflow planning, shell sync, and redraw.
+4. `afterStateChange()` runs workflow planning, shell sync, and redraw only.
 
 `dispatchAsyncMessage()` is the shell bridge that hops worker results back onto the UI thread.
 
@@ -78,6 +78,7 @@ The read side is much cleaner than it used to be.
 The render layer is mostly read-only now. Expensive document building and cache mutation live outside the render entrypoints.
 
 `refreshViews()` now runs with a short-lived read cache so footer and popup presenters, popup action lists, keybinding label resolution, and review-session read models are computed once per redraw instead of several times.
+Actions-popup filtered matches are derived from current popup state during update or read-side projections instead of being repaired in the post-update shell hook.
 
 The main read-only projection seams are:
 

@@ -4,6 +4,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	if program == nil || msg == nil {
 		return nil
 	}
+	defer program.resyncVisibleActionsPopupSearchInUpdate()
 
 	switch actual := msg.(type) {
 	case MsgAppStarted:

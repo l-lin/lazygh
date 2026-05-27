@@ -112,6 +112,23 @@ func TestTransientErrorPopup_GivenAVisibleError_WhenItsLifetimeExpires_ThenItDis
 	then_viewDoesNotExist(t, gui, viewTransientErrorPopupName)
 }
 
+func TestAfterStateChange_GivenAnExpiredTransientErrorPopup_WhenRefreshing_ThenItKeepsThePopupVisibleUntilTheExpiryMessageArrives(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	currentTime := time.Date(2026, time.May, 20, 12, 0, 0, 0, time.UTC)
+	subject.timingState.now = func() time.Time { return currentTime }
+	gui := given_headlessGuiWithSize(t, 120, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	given_transientErrorReported(subject, gui, "boom")
+	currentTime = currentTime.Add(defaultTransientErrorPopupDuration + time.Millisecond)
+
+	then_noError(t, subject.afterStateChange(gui))
+
+	then_transientErrorPopupContains(t, gui, "boom")
+}
+
 func TestScreenLayout_GivenATransientErrorPopup_WhenPlanningOverlays_ThenItPinsThePopupAboveTheStatusLineAtTheBottomRight(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	given_transientErrorReported(subject, nil, "boom")

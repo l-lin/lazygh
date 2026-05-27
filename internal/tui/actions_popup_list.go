@@ -102,7 +102,7 @@ func (program *Program) buildCurrentActionsPopupVisibleLines() []actionsPopupVis
 	}
 
 	actions := program.currentActionsPopupActions()
-	return buildActionsPopupVisibleLines(actions, program.model.ActionsPopupFilteredActionIndexes())
+	return buildActionsPopupVisibleLines(actions, program.currentActionsPopupFilteredIndexes())
 }
 
 func (program *Program) currentAssigneePickerVisibleLines() []actionsPopupVisibleLine {

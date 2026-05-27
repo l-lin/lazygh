@@ -266,6 +266,45 @@ func TestRefactorGuard_GivenActionsPopupAsyncCommandFile_WhenScanning_ThenItAvoi
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoActionsPopupAsyncSuccessApplyPayloadsRemain(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`actionsPopupAsyncSuccess`,
+		`Success\.apply\(program\)`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected actions-popup async completions to carry typed reducer messages instead of apply payloads, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoModalEditorSubmitSuccessApplyPayloadsRemain(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`modalEditorSubmitSuccess`,
+		`Success\.apply\(program\)`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected modal-editor submit completions to carry typed reducer messages instead of apply payloads, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProgramViewStateFile_WhenScanning_ThenAfterStateChangeStaysShellOnly(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`clearExpiredYankHighlights\(`,
+		`clearExpiredTransientErrorPopup\(`,
+		`syncActionsPopupSearch\(`,
+	}, "|")), func(path string) bool {
+		return filepath.Base(path) == "program_view_state.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected afterStateChange to stay on workflow planning, shell sync, and redraw only, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditorSubmitCallbacksRemain(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`submit\s+func\(string\)\s+error`,
@@ -1466,29 +1505,4 @@ func given_guardFileUnderRoot(path string, scanRoot string) bool {
 		return true
 	}
 	return strings.HasPrefix(path, scanRoot+string(os.PathSeparator))
-}
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoActionsPopupAsyncSuccessApplyPayloadsRemain(t *testing.T) {
-	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
-		`actionsPopupAsyncSuccess`,
-		`Success\.apply\(program\)`,
-	}, "|")), func(path string) bool {
-		base := filepath.Base(path)
-		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
-	})
-	if len(actualMatches) != 0 {
-		t.Fatalf("expected actions-popup async completions to carry typed reducer messages instead of apply payloads, actual %v", actualMatches)
-	}
-}
-
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoModalEditorSubmitSuccessApplyPayloadsRemain(t *testing.T) {
-	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
-		`modalEditorSubmitSuccess`,
-		`Success\.apply\(program\)`,
-	}, "|")), func(path string) bool {
-		base := filepath.Base(path)
-		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
-	})
-	if len(actualMatches) != 0 {
-		t.Fatalf("expected modal-editor submit completions to carry typed reducer messages instead of apply payloads, actual %v", actualMatches)
-	}
 }

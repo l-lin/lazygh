@@ -15,7 +15,6 @@ func (program *Program) mutateDetailViewStateForYankMotion(gui *gocui.Gui, view 
 	if pendingYank {
 		program.finishPendingYank(document, &program.detailState.viewState, snapshot, selectionKind)
 	}
-	program.syncActionsPopupSearch()
 	return program.refreshShell(gui)
 }
 
