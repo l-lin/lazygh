@@ -141,12 +141,22 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyOpenBrowserURLFinished(actual)
 	case MsgClipboardWriteFinished:
 		program.applyClipboardWriteFinished(actual)
+	case MsgOpenPullRequestByURLPromptRequested:
+		program.applyOpenPullRequestByURLPromptRequested()
 	case MsgReadPullRequestURLFromClipboardRequested:
-		return []Cmd{readPullRequestURLFromClipboardCmd{}}
+		return program.applyReadPullRequestURLFromClipboardRequested()
 	case MsgOpenPullRequestByURLSubmitRequested:
 		return program.applyOpenPullRequestByURLSubmitRequested(actual)
 	case MsgPullRequestURLReadFromClipboard:
 		program.applyPullRequestURLReadFromClipboard(actual)
+	case MsgOpenPullRequestCustomSearchEditorRequested:
+		program.applyOpenPullRequestCustomSearchEditorRequested()
+	case MsgOpenPullRequestCommentComposerRequested:
+		program.applyOpenPullRequestCommentComposerRequested()
+	case MsgOpenDetailPullRequestCommentRequested:
+		program.applyOpenDetailPullRequestCommentRequested()
+	case MsgOpenInlineCommentReplyRequested:
+		program.applyOpenInlineCommentReplyRequested()
 	case MsgOpenLinkUnderCursorRequested:
 		return program.applyOpenLinkUnderCursorRequested(actual)
 	case MsgOpenPullRequestBuildRunPopupLinkRequested:
@@ -159,6 +169,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyCopyPullRequestBuildRunPopupContentRequested(actual)
 	case MsgOpenNotificationInBrowserRequested:
 		return program.applyOpenNotificationInBrowserRequested()
+	case MsgRefreshActiveViewRequested:
+		return program.applyRefreshActiveViewRequested()
 	case MsgRefreshNotificationsRequested:
 		return program.applyRefreshNotificationsRequested()
 	case MsgNotificationReadRequested:
@@ -434,6 +446,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		}
 		program.clearActionsPopupPendingConfirmation()
 		program.model.BlurActionsPopupSearch()
+	case MsgExecuteSelectedActionsPopupActionRequested:
+		return program.applyExecuteSelectedActionsPopupActionRequested()
+	case MsgSubmitSelectedActionsPopupActionRequested:
+		return program.applySubmitSelectedActionsPopupActionRequested()
 	case MsgActionsPopupPageRequested:
 		return program.applyActionsPopupPageRequested(actual)
 	case MsgActionsPopupPageResolved:

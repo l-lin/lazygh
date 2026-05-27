@@ -1220,6 +1220,30 @@ func TestRefactorGuard_GivenEditorIntentAndModalOpenFiles_WhenScanning_ThenTheyA
 	}
 }
 
+func TestRefactorGuard_GivenRemainingShortcutEntrypointFiles_WhenScanning_ThenTheyDispatchWithoutReducerPreflightOrDirectModalOpen(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`clearPendingSelectionPrefix\(`,
+		`detailState\.viewState\.clearPendingPrefix\(`,
+		`open(?:Line|Multiline)?ModalEditor(?:WithHeightAndSubmitDescriptor|WithSubmitDescriptor)?\(`,
+		`dispatch\(gui,\s*MsgModalEditorOpened\{`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "view_url_prompt.go" ||
+			base == "pull_request_custom_search.go" ||
+			base == "comment_on_pr.go" ||
+			base == "review_inline_comment.go" ||
+			base == "inline_comment_reply.go" ||
+			base == "refresh_active_view.go" ||
+			base == "actions_popup_interaction.go" ||
+			base == "yank_url.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the remaining shortcut entrypoint files to stay on dispatch-only behavior while update owns prefixes and modal-open descriptors, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndCacheApplyFilesWritePullRequestDetailOrDiffCaches(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestDetailCache|pullRequestDiffCache)\[[^]]+\]\s*=`), func(path string) bool {
 		base := filepath.Base(path)

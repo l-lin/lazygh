@@ -68,27 +68,11 @@ func (program *Program) moveActionsPopupSelectionToBottom(gui *gocui.Gui, _ *goc
 }
 
 func (program *Program) executeSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() || program.ghCommandLoading() {
-		return nil
-	}
-
-	action, ok := program.selectedActionsPopupAction()
-	if !ok {
-		return nil
-	}
-	return program.dispatch(gui, MsgActionsPopupActionRequested{Action: action})
+	return program.dispatch(gui, MsgExecuteSelectedActionsPopupActionRequested{})
 }
 
 func (program *Program) submitSelectedActionsPopupAction(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if !program.model.ActionsPopupVisible() {
-		return nil
-	}
-	if !program.assigneePickerVisible() {
-		return program.executeSelectedActionsPopupAction(gui, nil)
-	}
-	return program.handleActionsPopupActionError(gui, program.submitAssigneePickerSelection(gui))
+	return program.dispatch(gui, MsgSubmitSelectedActionsPopupActionRequested{})
 }
 
 func (program *Program) handleActionsPopupActionError(gui *gocui.Gui, err error) error {

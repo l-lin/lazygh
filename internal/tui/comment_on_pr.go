@@ -13,36 +13,15 @@ type pullRequestCommentTarget struct {
 }
 
 func (program *Program) openPullRequestCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
-	if program.pullRequestCommentComposerBlocked() {
-		return nil
-	}
-
-	target, ok := program.selectedPullRequestCommentTarget()
-	if !ok {
-		return nil
-	}
-
-	feedbackTarget := program.model.Focus()
-	return program.openModalEditorWithSubmitDescriptor(gui, pullRequestCommentComposerTitle, "", newPullRequestCommentSubmitDescriptor(target, feedbackTarget))
+	return program.dispatch(gui, MsgOpenPullRequestCommentComposerRequested{})
 }
 
-func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, view *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
-	if program.pullRequestCommentComposerBlocked() {
-		return nil
-	}
+func (program *Program) openDetailPullRequestCommentShortcut(gui *gocui.Gui, _ *gocui.View) error {
+	return program.dispatch(gui, MsgOpenDetailPullRequestCommentRequested{})
+}
 
-	switch program.inputContext().DetailInputMode {
-	case DetailInputModeReviewInlineComment:
-		return program.openInlineReviewCommentComposer(gui, view)
-	case DetailInputModeBrowserChangesInlineComment:
-		return program.openBrowserChangesInlineCommentComposer(gui, view)
-	case DetailInputModePullRequestComment:
-		return program.openPullRequestCommentComposer(gui, nil)
-	default:
-		return nil
-	}
+func newPullRequestCommentComposerOpenDescriptor(target pullRequestCommentTarget, feedbackTarget Focus) modalEditorOpenDescriptor {
+	return newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestCommentComposerTitle, "", newPullRequestCommentSubmitDescriptor(target, feedbackTarget))
 }
 
 func (program *Program) pullRequestCommentComposerBlocked() bool {

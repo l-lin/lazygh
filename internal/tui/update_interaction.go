@@ -297,6 +297,14 @@ func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message M
 }
 
 func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequestURLRequested) []Cmd {
+	if program == nil {
+		return nil
+	}
+
+	program.clearPendingSelectionPrefix()
+	if program.overlayState.helpVisible || program.model.SearchActive() {
+		return nil
+	}
 	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
 		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
 	}

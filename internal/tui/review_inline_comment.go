@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -28,28 +26,8 @@ type pullRequestInlineCommentSelection struct {
 	initialBody string
 }
 
-func (program *Program) openInlineReviewCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
-	selection, err := program.selectedReviewInlineCommentSelection()
-	if err != nil {
-		return program.handleInlineCommentSelectionError(gui, err)
-	}
-	return program.openPullRequestInlineCommentComposer(gui, selection)
-}
-
-func (program *Program) openBrowserChangesInlineCommentComposer(gui *gocui.Gui, _ *gocui.View) error {
-	selection, err := program.selectedBrowserChangesInlineCommentSelection()
-	if err != nil {
-		return program.handleInlineCommentSelectionError(gui, err)
-	}
-	return program.openPullRequestInlineCommentComposer(gui, selection)
-}
-
-func (program *Program) handleInlineCommentSelectionError(gui *gocui.Gui, err error) error {
-	return program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: strings.TrimSpace(err.Error())})
-}
-
-func (program *Program) openPullRequestInlineCommentComposer(gui *gocui.Gui, selection pullRequestInlineCommentSelection) error {
-	return program.openMultilineModalEditorWithSubmitDescriptor(gui, pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)
+func newReviewInlineCommentOpenDescriptor(selection pullRequestInlineCommentSelection) modalEditorOpenDescriptor {
+	return newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)
 }
 
 func (program *Program) currentReviewInlineCommentAction() (actionsPopupAction, bool) {
@@ -81,7 +59,7 @@ func (program *Program) addInlineCommentAction() actionsPopupAction {
 		selection, err = program.selectedBrowserChangesInlineCommentSelection()
 	}
 	if err == nil {
-		requested = MsgModalEditorOpened{Descriptor: newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{Descriptor: newReviewInlineCommentOpenDescriptor(selection)}
 	}
 	return actionsPopupAction{
 		id:        "add-inline-comment",

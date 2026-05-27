@@ -30,7 +30,7 @@ func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if ok {
-		requested = MsgModalEditorOpened{Descriptor: newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{Descriptor: newInlineCommentReplyOpenDescriptor(target)}
 	}
 	return actionsPopupAction{
 		id:        "reply-to-inline-comment",
@@ -40,8 +40,8 @@ func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) openInlineCommentReplyComposer(gui *gocui.Gui, target pullRequestReviewThreadReplyTarget) error {
-	return program.openMultilineModalEditorWithSubmitDescriptor(gui, pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)
+func newInlineCommentReplyOpenDescriptor(target pullRequestReviewThreadReplyTarget) modalEditorOpenDescriptor {
+	return newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)
 }
 
 func (program *Program) selectedPullRequestReviewThreadReplyTarget() (pullRequestReviewThreadReplyTarget, bool) {
@@ -147,21 +147,7 @@ func (program *Program) selectedReviewInlineCommentReplyTarget() (pullRequestRev
 }
 
 func (program *Program) replyToInlineCommentShortcut(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
-	if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
-		return nil
-	}
-	if !program.inlineCommentReplyShortcutContextActive() {
-		return nil
-	}
-
-	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
-	if !ok {
-		return program.dispatch(gui, MsgFeedbackSet{Target: FocusDetailView, Message: inlineCommentReplyUnavailableMessage})
-	}
-
-	return program.openInlineCommentReplyComposer(gui, target)
+	return program.dispatch(gui, MsgOpenInlineCommentReplyRequested{})
 }
 
 func (program *Program) inlineCommentReplyShortcutContextActive() bool {

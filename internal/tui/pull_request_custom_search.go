@@ -17,16 +17,15 @@ const (
 )
 
 func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	if program.mainPaneActionBlocked() || program.actionContext().IsReviewContext() {
-		return nil
-	}
-
-	return program.openPullRequestCustomSearchEditor(gui)
+	return program.dispatch(gui, MsgOpenPullRequestCustomSearchEditorRequested{})
 }
 
 func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error {
-	return program.openLineModalEditorWithHeightAndSubmitDescriptor(gui, pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)
+	return program.dispatch(gui, MsgOpenPullRequestCustomSearchEditorRequested{})
+}
+
+func (program *Program) pullRequestCustomSearchEditorDescriptor() modalEditorOpenDescriptor {
+	return newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)
 }
 
 func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopupAction {
@@ -34,7 +33,7 @@ func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopup
 		id:        "custom-pull-request-search",
 		title:     pullRequestCustomSearchActionTitle,
 		icon:      actionsPopupCustomSearchIcon,
-		requested: MsgModalEditorOpened{Descriptor: newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)},
+		requested: MsgModalEditorOpened{Descriptor: program.pullRequestCustomSearchEditorDescriptor()},
 	}
 }
 

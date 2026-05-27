@@ -17,17 +17,15 @@ const (
 )
 
 func (program *Program) openPullRequestByClipboardShortcut(gui *gocui.Gui, _ *gocui.View) error {
-	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
-	if program.mainPaneActionBlocked() || program.actionContext().IsReviewContext() {
-		return nil
-	}
-
 	return program.dispatch(gui, MsgReadPullRequestURLFromClipboardRequested{})
 }
 
 func (program *Program) openPullRequestByURLEditor(gui *gocui.Gui) error {
-	return program.openLineModalEditorWithHeightAndSubmitDescriptor(gui, openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)
+	return program.dispatch(gui, MsgOpenPullRequestByURLPromptRequested{})
+}
+
+func openPullRequestByURLPromptDescriptor() modalEditorOpenDescriptor {
+	return newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)
 }
 
 func (program *Program) clipboardPullRequestURL() (string, error) {
@@ -62,6 +60,6 @@ func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAct
 		id:        "open-pull-request-by-url",
 		title:     openPullRequestByURLActionTitle,
 		icon:      actionsPopupOpenPullRequestByURLIcon,
-		requested: MsgModalEditorOpened{Descriptor: newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)},
+		requested: MsgModalEditorOpened{Descriptor: openPullRequestByURLPromptDescriptor()},
 	}
 }

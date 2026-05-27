@@ -165,6 +165,8 @@ type MsgClipboardWriteFinished struct {
 	SelectionTarget clipboardWriteSelectionTarget
 }
 
+type MsgOpenPullRequestByURLPromptRequested struct{}
+
 type MsgReadPullRequestURLFromClipboardRequested struct{}
 
 type MsgOpenPullRequestByURLSubmitRequested struct {
@@ -175,6 +177,14 @@ type MsgPullRequestURLReadFromClipboard struct {
 	URL string
 	Err error
 }
+
+type MsgOpenPullRequestCustomSearchEditorRequested struct{}
+
+type MsgOpenPullRequestCommentComposerRequested struct{}
+
+type MsgOpenDetailPullRequestCommentRequested struct{}
+
+type MsgOpenInlineCommentReplyRequested struct{}
 
 type MsgOpenLinkUnderCursorRequested struct{}
 
@@ -188,7 +198,13 @@ type MsgCopyPullRequestBuildRunPopupContentRequested struct{}
 
 type MsgOpenNotificationInBrowserRequested struct{}
 
+type MsgRefreshActiveViewRequested struct{}
+
 type MsgRefreshNotificationsRequested struct{}
+
+type MsgExecuteSelectedActionsPopupActionRequested struct{}
+
+type MsgSubmitSelectedActionsPopupActionRequested struct{}
 
 type MsgRepeatActionsPopupSearch struct {
 	Direction searchRepeatDirection
@@ -282,16 +298,24 @@ func (MsgDetailViewportRequested) isMsg()                      {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
+func (MsgOpenPullRequestByURLPromptRequested) isMsg()          {}
 func (MsgReadPullRequestURLFromClipboardRequested) isMsg()     {}
 func (MsgOpenPullRequestByURLSubmitRequested) isMsg()          {}
 func (MsgPullRequestURLReadFromClipboard) isMsg()              {}
+func (MsgOpenPullRequestCustomSearchEditorRequested) isMsg()   {}
+func (MsgOpenPullRequestCommentComposerRequested) isMsg()      {}
+func (MsgOpenDetailPullRequestCommentRequested) isMsg()        {}
+func (MsgOpenInlineCommentReplyRequested) isMsg()              {}
 func (MsgOpenLinkUnderCursorRequested) isMsg()                 {}
 func (MsgOpenPullRequestBuildRunPopupLinkRequested) isMsg()    {}
 func (MsgCopySelectedDetailTextRequested) isMsg()              {}
 func (MsgCopyPullRequestURLRequested) isMsg()                  {}
 func (MsgCopyPullRequestBuildRunPopupContentRequested) isMsg() {}
 func (MsgOpenNotificationInBrowserRequested) isMsg()           {}
+func (MsgRefreshActiveViewRequested) isMsg()                   {}
 func (MsgRefreshNotificationsRequested) isMsg()                {}
+func (MsgExecuteSelectedActionsPopupActionRequested) isMsg()   {}
+func (MsgSubmitSelectedActionsPopupActionRequested) isMsg()    {}
 func (MsgRepeatActionsPopupSearch) isMsg()                     {}
 func (MsgRepeatSideSearch) isMsg()                             {}
 func (MsgRepeatPullRequestSearch) isMsg()                      {}
