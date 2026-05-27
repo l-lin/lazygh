@@ -7,6 +7,67 @@ func (program *Program) setReviewSessionSelectedFileTreeRow(row int) {
 	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(row)
 }
 
+func (program *Program) clampReviewSessionSelection() {
+	if program == nil {
+		return
+	}
+
+	readModel := program.reviewSessionReadModel()
+	selectableRows, ok := readModel.selectableRows()
+	if !ok {
+		program.navigationState.reviewSession = program.navigationState.reviewSession.clampedSelection(nil, nil)
+		return
+	}
+
+	fileRows, fileRowsOK := readModel.fileRows()
+	if !fileRowsOK {
+		fileRows = nil
+	}
+	program.navigationState.reviewSession = program.navigationState.reviewSession.clampedSelection(selectableRows, fileRows)
+}
+
+func (program *Program) adjustReviewSessionSelection(change int) {
+	if program == nil {
+		return
+	}
+
+	selectableRows, ok := program.reviewSessionReadModel().selectableRows()
+	if !ok {
+		program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(nil, change)
+		return
+	}
+
+	program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(selectableRows, change)
+}
+
+func (program *Program) moveReviewSessionSelectionToTop() {
+	if program == nil {
+		return
+	}
+
+	selectableRows, ok := program.reviewSessionReadModel().selectableRows()
+	if !ok {
+		program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtTop(nil)
+		return
+	}
+
+	program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtTop(selectableRows)
+}
+
+func (program *Program) moveReviewSessionSelectionToBottom() {
+	if program == nil {
+		return
+	}
+
+	selectableRows, ok := program.reviewSessionReadModel().selectableRows()
+	if !ok {
+		program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtBottom(nil)
+		return
+	}
+
+	program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtBottom(selectableRows)
+}
+
 func (program *Program) setReviewSessionThreadCollapsed(threadID string, collapsed bool) {
 	if program == nil {
 		return

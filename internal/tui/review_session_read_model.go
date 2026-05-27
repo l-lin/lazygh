@@ -200,10 +200,19 @@ func (model reviewSessionReadModel) files() []Item {
 }
 
 func (model reviewSessionReadModel) selectedVisibleLine() int {
-	if !model.diffResultKnown || model.diffResult.err != nil {
+	selectableRows, ok := model.selectableRows()
+	if !ok || len(selectableRows) == 0 {
 		return 0
 	}
-	return model.selectedFileTreeRow
+	if model.selectedFileTreeRow < 0 {
+		if model.mode != reviewSessionModeStory {
+			if fileRows, fileRowsOK := model.fileRows(); fileRowsOK && len(fileRows) > 0 {
+				return fileRows[0]
+			}
+		}
+		return selectableRows[0]
+	}
+	return adjustVisibleSelection(model.selectedFileTreeRow, selectableRows, 0)
 }
 
 func (model reviewSessionReadModel) selectedDiffFile() (reviewDiffFile, bool) {

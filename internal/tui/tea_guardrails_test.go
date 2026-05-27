@@ -768,6 +768,15 @@ func TestRefactorGuard_GivenReviewSessionReadModelAdapter_WhenScanning_ThenItAvo
 	}
 }
 
+func TestRefactorGuard_GivenReviewSessionReadModelAdapter_WhenScanning_ThenItDoesNotMutateDurableReviewSelectionState(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.navigationState\.reviewSession\s*=\s*`), func(path string) bool {
+		return filepath.Base(path) == "review_session_read_model_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected review_session_read_model_adapter.go to stay read-only and leave durable review selection mutation to child-state helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenUpdateInteractionFile_WhenScanning_ThenItDoesNotReachThroughGuiOrResolveViews(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.gui`,

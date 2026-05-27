@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
+	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
 func TestReviewSessionReadModel_GivenStoryReviewChapterSelection_WhenDerivingDetailContent_ThenItRendersTheChapterNarrative(t *testing.T) {
@@ -59,5 +60,28 @@ func TestReviewSessionReadModel_GivenSelectedDirectoryRow_WhenSelectingDiffFile_
 	}
 	if actual.Path != "internal/tui/render.go" {
 		t.Fatalf("expected selected diff file %q, actual %q", "internal/tui/render.go", actual.Path)
+	}
+}
+
+func TestReviewSessionReadModelAdapter_GivenOutOfBoundsSelection_WhenReadingFilesAndVisibleLine_ThenItKeepsDurableSelectionUntouched(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(given_reviewSessionPullRequestDiff())}
+	subject.startReviewSession(githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}, "PRR_pending")
+	subject.navigationState.reviewSession.selectedFileTreeRow = 99
+
+	expectedSelectableRows, ok := subject.reviewSessionSelectableRows()
+	if !ok || len(expectedSelectableRows) == 0 {
+		t.Fatalf("expected selectable review rows, actual %v", expectedSelectableRows)
+	}
+	expectedVisibleLine := adjustVisibleSelection(99, expectedSelectableRows, 0)
+
+	_ = subject.reviewSessionFiles()
+	actualVisibleLine := subject.reviewSessionSelectedVisibleLine()
+
+	if actualVisibleLine != expectedVisibleLine {
+		t.Fatalf("expected selected visible line %d, actual %d", expectedVisibleLine, actualVisibleLine)
+	}
+	if actual := subject.navigationState.reviewSession.selectedFileTreeRow; actual != 99 {
+		t.Fatalf("expected durable selected file tree row %d to stay untouched by read access, actual %d", 99, actual)
 	}
 }
