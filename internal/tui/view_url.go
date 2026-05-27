@@ -20,48 +20,6 @@ func (program *Program) dispatchStartupMessage(msg Msg) error {
 	return program.dispatchRuntimeMessage(msg)
 }
 
-func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {
-	summaryCopy := summary
-	program.navigationState.openedPullRequestSummary = &summaryCopy
-	program.navigationState.openedPullRequestTab = tab
-}
-
-func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (githubdomain.PullRequest, bool) {
-	if program.navigationState.openedPullRequestSummary == nil || program.navigationState.openedPullRequestTab != tab {
-		return githubdomain.PullRequest{}, false
-	}
-	return *program.navigationState.openedPullRequestSummary, true
-}
-
-func (program *Program) pullRequestsWithOpenedPullRequestSummary(tab PullRequestTab, pullRequests []githubdomain.PullRequest) []githubdomain.PullRequest {
-	openedSummary, ok := program.openedPullRequestSummaryForTab(tab)
-	if !ok {
-		return pullRequests
-	}
-
-	updatedPullRequests := append([]githubdomain.PullRequest(nil), pullRequests...)
-	for index, pullRequest := range updatedPullRequests {
-		if !samePullRequestIdentity(pullRequest, openedSummary) {
-			continue
-		}
-		program.pinOpenedPullRequestSummary(tab, pullRequest)
-		updatedPullRequests[index] = pullRequest
-		return updatedPullRequests
-	}
-
-	return append([]githubdomain.PullRequest{openedSummary}, updatedPullRequests...)
-}
-
-func pullRequestSummaryRowCount(rows []PullRequestRow) int {
-	count := 0
-	for _, row := range rows {
-		if row.Summary != nil {
-			count++
-		}
-	}
-	return count
-}
-
 func samePullRequestIdentity(left any, right any) bool {
 	leftSummary, ok := toDomainPullRequestSummary(left)
 	if !ok {

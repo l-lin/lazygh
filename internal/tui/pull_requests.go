@@ -219,6 +219,16 @@ func pullRequestStateRows(state pullRequestListState, pullRequests []githubdomai
 	return rows
 }
 
+func pullRequestSummaryRowCount(rows []PullRequestRow) int {
+	count := 0
+	for _, row := range rows {
+		if row.Summary != nil {
+			count++
+		}
+	}
+	return count
+}
+
 func pullRequestRow(pullRequest any) PullRequestRow {
 	pullRequestValue, ok := toDomainPullRequestSummary(pullRequest)
 	if !ok {

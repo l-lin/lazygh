@@ -41,13 +41,6 @@ func (program *Program) listPullRequests(tab PullRequestTab) ([]githubdomain.Pul
 	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
 }
 
-func (program *Program) pullRequestRowsForTab(tab PullRequestTab, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
-	if err == nil {
-		pullRequests = program.pullRequestsWithOpenedPullRequestSummary(tab, pullRequests)
-	}
-	return pullRequestStateRows(program.pullRequestListState(tab), pullRequests, err)
-}
-
 func (store *pullRequestListStore) pullRequestsLoadStarted(tab PullRequestTab) bool {
 	switch tab {
 	case MyPullRequestsTab:

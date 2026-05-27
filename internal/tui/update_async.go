@@ -3,8 +3,8 @@ package tui
 import "strings"
 
 func (program *Program) applyPullRequestsCacheHydrated(message MsgPullRequestsCacheHydrated) {
-	program.setPullRequestsCount(message.Tab, len(message.PullRequests), true)
-	program.model.SetPullRequestRows(message.Tab, program.pullRequestRowsForTab(message.Tab, message.PullRequests, nil))
+	program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
+	program.selectOpenedPullRequestRow(message.Tab)
 }
 
 func (program *Program) applyNotificationsCacheHydrated(message MsgNotificationsCacheHydrated) {
@@ -43,9 +43,7 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
 		program.cachePullRequests(message.Tab, message.PullRequests)
-		rows := program.pullRequestRowsForTab(message.Tab, message.PullRequests, nil)
-		program.setPullRequestsCount(message.Tab, pullRequestSummaryRowCount(rows), true)
-		program.model.SetPullRequestRows(message.Tab, rows)
+		program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
 		program.selectOpenedPullRequestRow(message.Tab)
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
@@ -55,7 +53,7 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
-		program.model.SetPullRequestRows(message.Tab, program.pullRequestRowsForTab(message.Tab, nil, message.Err))
+		program.model.SetPullRequestRows(message.Tab, pullRequestStateRows(program.pullRequestListState(message.Tab), nil, message.Err))
 	}
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)

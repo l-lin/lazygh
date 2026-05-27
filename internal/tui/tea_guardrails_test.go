@@ -579,6 +579,32 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateFilesAndT
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOpenedPullRequestPinningStaysInUpdateOwnedHelpers(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"update_pull_request_navigation_state.go": true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`program\.navigationState\.openedPullRequestSummary\s*=\s*[^=]`,
+		`program\.navigationState\.openedPullRequestTab\s*=\s*[^=]`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected opened pull request summary pinning to stay in update-owned navigation helpers, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDirectDetailAndReviewChildStateFieldMutationRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\.selectedFileTreeRow\s*=\s*[^=]`,

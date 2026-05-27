@@ -468,6 +468,77 @@ func TestOpenPullRequestByURL_GivenAValidGitHubPRURLBeforeLayout_WhenRefreshingF
 	}
 }
 
+func TestUpdate_GivenOpenedPullRequestByURLAndCachedRowsMissingThatSummary_WhenApplyingPullRequestsCacheHydrated_ThenItKeepsTheOpenedSummaryVisibleAndCountsTheVisibleRows(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+
+	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	Update(subject, MsgPullRequestsCacheHydrated{Tab: MyPullRequestsTab, PullRequests: []githubdomain.PullRequest{
+		githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+			Title:      "Unrelated cached PR",
+			Number:     13,
+			Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+			URL:        "https://github.com/acme/widgets/pull/13",
+			Body:       "Cached body",
+			State:      "OPEN",
+		}),
+	}})
+
+	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
+	if len(actualRows) != 2 {
+		t.Fatalf("expected two pull request rows, actual %+v", actualRows)
+	}
+	if actualRows[0].Summary == nil || actualRows[0].Summary.Repository.NameWithOwner != "acme/rocket" || actualRows[0].Summary.Number != 77 {
+		t.Fatalf("expected the opened pull request summary to stay first, actual %+v", actualRows[0])
+	}
+	if actualRows[1].Summary == nil || actualRows[1].Summary.Repository.NameWithOwner != "acme/widgets" || actualRows[1].Summary.Number != 13 {
+		t.Fatalf("expected the hydrated cached pull request summary to stay visible, actual %+v", actualRows[1])
+	}
+
+	actualCount, actualKnown := subject.pullRequestsCount(MyPullRequestsTab)
+	if !actualKnown || actualCount != 2 {
+		t.Fatalf("expected visible pull request count (%d, %t), actual (%d, %t)", 2, true, actualCount, actualKnown)
+	}
+}
+
+func TestUpdate_GivenOpenedPullRequestByURLAndHydratedListContainingThatSummaryLater_WhenApplyingPullRequestsCacheHydrated_ThenItKeepsTheOpenedPullRequestSelected(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+
+	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/rocket/pull/77")
+	then_noError(t, actualErr)
+
+	Update(subject, MsgPullRequestsCacheHydrated{Tab: MyPullRequestsTab, PullRequests: []githubdomain.PullRequest{
+		githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+			Title:      "Unrelated cached PR",
+			Number:     13,
+			Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+			URL:        "https://github.com/acme/widgets/pull/13",
+			Body:       "Cached body",
+			State:      "OPEN",
+		}),
+		githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+			Title:      "Hydrated Rocket PR",
+			Number:     77,
+			Repository: githubcli.Repository{NameWithOwner: "acme/rocket"},
+			URL:        "https://github.com/acme/rocket/pull/77",
+			Body:       "Hydrated body",
+			State:      "OPEN",
+			UpdatedAt:  "2026-05-27T13:45:00Z",
+		}),
+	}})
+
+	actualSelectedSummary, ok := subject.model.SelectedPullRequestSummary()
+	if !ok {
+		t.Fatal("expected a selected pull request summary")
+	}
+	if actualSelectedSummary.Repository.NameWithOwner != "acme/rocket" || actualSelectedSummary.Number != 77 || actualSelectedSummary.Title != "Hydrated Rocket PR" {
+		t.Fatalf("expected the hydrated opened pull request summary to stay selected, actual %+v", actualSelectedSummary)
+	}
+}
+
 func given_pullRequestByURLProgram(model *Model, loader *fakePullRequestDetailLoader) *Program {
 	subject := given_programWithTestGitHubDeps(model, loader)
 	subject.connectedUserLoadStarted = true
