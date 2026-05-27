@@ -224,6 +224,37 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyActionsPopu
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyActionsPopupAsyncPreflightHelpersInstantiateTheAsyncCommand(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`actionsPopupAsyncCmd\s*\{\s*request\s*:`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if base == "update_actions_popup_async.go" {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected actions-popup async commands to be queued only through the reducer-owned preflight helper, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenActionsPopupAsyncCommandFile_WhenScanning_ThenItAvoidsReducerOwnedPopupPreflightStateMutation(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`actionsPopupWidget\.errorMessage\s*=`,
+		`startGHCommandLoading\(`,
+	}, "|")), func(path string) bool {
+		return filepath.Base(path) == "actions_popup_async_cmd.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected actions_popup_async_cmd.go to stay on IO plus finish dispatch, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditorSubmitCallbacksRemain(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`submit\s+func\(string\)\s+error`,

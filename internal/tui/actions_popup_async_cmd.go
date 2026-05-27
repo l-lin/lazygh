@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/jesseduffield/gocui"
 )
@@ -22,10 +21,6 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 	}
 
 	capturedGUI := program.captureGUI(gui)
-	program.actionsPopupWidget.errorMessage = ""
-	if statusCommand := strings.TrimSpace(command.request.statusCommand()); statusCommand != "" {
-		program.startGHCommandLoading(statusCommand)
-	}
 	deps := newActionsPopupAsyncCommandDeps(program)
 	run := func() {
 		success, err := command.request.run(deps)

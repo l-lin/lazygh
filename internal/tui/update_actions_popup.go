@@ -85,7 +85,7 @@ func (program *Program) applyStartPullRequestReviewRequested(message MsgStartPul
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: startPullRequestReviewPopupRequest{summary: summary}}}
+	return program.queueActionsPopupAsyncRequest(startPullRequestReviewPopupRequest{summary: summary})
 }
 
 func (program *Program) startReviewSession(summary any, pendingReviewID string) {
@@ -258,7 +258,7 @@ func (program *Program) applySubmitAssigneePickerRequested(message MsgSubmitAssi
 	number := message.Number
 	addLogins := append([]string(nil), message.AddLogins...)
 	removeLogins := append([]string(nil), message.RemoveLogins...)
-	return []Cmd{actionsPopupAsyncCmd{request: updatePullRequestAssigneesPopupRequest{repository: repository, number: number, addLogins: addLogins, removeLogins: removeLogins}}}
+	return program.queueActionsPopupAsyncRequest(updatePullRequestAssigneesPopupRequest{repository: repository, number: number, addLogins: addLogins, removeLogins: removeLogins})
 }
 
 func (program *Program) applyOpenReactionPickerRequested(message MsgOpenReactionPickerRequested) {
@@ -275,7 +275,7 @@ func (program *Program) applyAddReactionRequested(message MsgAddReactionRequeste
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: addReactionPopupRequest{target: message.Target, content: message.Content}}}
+	return program.queueActionsPopupAsyncRequest(addReactionPopupRequest{target: message.Target, content: message.Content})
 }
 
 func (program *Program) applyOpenThemePickerRequested() {
@@ -405,5 +405,5 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 }
 
 func (program *Program) applyCancelPendingPullRequestReviewRequested(message MsgCancelPendingPullRequestReviewRequested) []Cmd {
-	return []Cmd{actionsPopupAsyncCmd{request: cancelPendingPullRequestReviewPopupRequest{target: message.Target}}}
+	return program.queueActionsPopupAsyncRequest(cancelPendingPullRequestReviewPopupRequest{target: message.Target})
 }

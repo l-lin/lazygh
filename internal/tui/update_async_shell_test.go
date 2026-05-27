@@ -22,6 +22,43 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying
 	}
 }
 
+func TestUpdate_GivenMsgApprovePullRequestRequested_WhenApplying_ThenItClearsPopupErrorStartsGHLoadingAndQueuesAnAsyncRequestCmd(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.actionsPopupWidget.errorMessage = "stale"
+
+	actual := Update(subject, MsgApprovePullRequestRequested{Target: pullRequestActionTarget{repository: "acme/widgets", number: 42}})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(actual))
+	}
+	if actualMessage := subject.actionsPopupWidget.errorMessage; actualMessage != "" {
+		t.Fatalf("expected popup error message %q, actual %q", "", actualMessage)
+	}
+	if actualMessage := subject.ghCommandLoadingMessage; actualMessage != formatRunningCommandStatus(approvePullRequestCommand("acme/widgets", 42)) {
+		t.Fatalf("expected gh command loading message %q, actual %q", formatRunningCommandStatus(approvePullRequestCommand("acme/widgets", 42)), actualMessage)
+	}
+	given_actionsPopupAsyncCommand(t, actual)
+}
+
+func TestUpdate_GivenMsgPullRequestCommentDeleteRequested_WhenApplying_ThenItClearsPopupErrorAndQueuesAnAsyncRequestCmdWithoutGHLoading(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.actionsPopupWidget.errorMessage = "stale"
+	subject.ghCommandLoadingMessage = "Running `gh pr ready`."
+
+	actual := Update(subject, MsgPullRequestCommentDeleteRequested{Target: pullRequestCommentEditActionTarget{commentID: "comment-123"}})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(actual))
+	}
+	if actualMessage := subject.actionsPopupWidget.errorMessage; actualMessage != "" {
+		t.Fatalf("expected popup error message %q, actual %q", "", actualMessage)
+	}
+	if actualMessage := subject.ghCommandLoadingMessage; actualMessage != "Running `gh pr ready`." {
+		t.Fatalf("expected gh command loading message %q, actual %q", "Running `gh pr ready`.", actualMessage)
+	}
+	given_actionsPopupAsyncCommand(t, actual)
+}
+
 func TestUpdate_GivenMsgThemePresetSaved_WhenApplying_ThenItReturnsAConfigureGUICommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.model.OpenActionsPopup(1)

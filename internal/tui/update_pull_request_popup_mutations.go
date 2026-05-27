@@ -13,7 +13,7 @@ func (program *Program) applyOpenPullRequestInBrowserRequested(message MsgOpenPu
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: openPullRequestInBrowserPopupRequest{repository: repository, number: number}}}
+	return program.queueActionsPopupAsyncRequest(openPullRequestInBrowserPopupRequest{repository: repository, number: number})
 }
 
 func (program *Program) applyApprovePullRequestRequested(message MsgApprovePullRequestRequested) []Cmd {
@@ -23,7 +23,7 @@ func (program *Program) applyApprovePullRequestRequested(message MsgApprovePullR
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: approvePullRequestPopupRequest{repository: repository, number: number}}}
+	return program.queueActionsPopupAsyncRequest(approvePullRequestPopupRequest{repository: repository, number: number})
 }
 
 func (program *Program) applyReRequestPullRequestReviewRequested(message MsgReRequestPullRequestReviewRequested) []Cmd {
@@ -33,7 +33,7 @@ func (program *Program) applyReRequestPullRequestReviewRequested(message MsgReRe
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: reRequestPullRequestReviewPopupRequest{repository: repository, number: number, reviewerLogin: reviewerLogin}}}
+	return program.queueActionsPopupAsyncRequest(reRequestPullRequestReviewPopupRequest{repository: repository, number: number, reviewerLogin: reviewerLogin})
 }
 
 func (program *Program) applyPullRequestLifecycleMutationRequested(message MsgPullRequestLifecycleMutationRequested) []Cmd {
@@ -49,7 +49,7 @@ func (program *Program) applyPullRequestLifecycleMutationRequested(message MsgPu
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: pullRequestLifecycleMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, state: message.State, isDraft: message.IsDraft, successMessage: message.SuccessMessage}}}
+	return program.queueActionsPopupAsyncRequest(pullRequestLifecycleMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, state: message.State, isDraft: message.IsDraft, successMessage: message.SuccessMessage})
 }
 
 func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPullRequestAutoMergeMutationRequested) []Cmd {
@@ -65,7 +65,7 @@ func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPu
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: pullRequestAutoMergeMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, enabled: message.Enabled, successMessage: message.SuccessMessage}}}
+	return program.queueActionsPopupAsyncRequest(pullRequestAutoMergeMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, enabled: message.Enabled, successMessage: message.SuccessMessage})
 }
 
 func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullRequestBranchUpdateRequested) []Cmd {
@@ -75,7 +75,7 @@ func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullReq
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: pullRequestBranchUpdatePopupRequest{repository: repository, number: number, summary: message.Summary}}}
+	return program.queueActionsPopupAsyncRequest(pullRequestBranchUpdatePopupRequest{repository: repository, number: number, summary: message.Summary})
 }
 
 func (program *Program) applyPendingPullRequestReviewSubmitted(message MsgPendingPullRequestReviewSubmitted) {

@@ -40,7 +40,7 @@ func (program *Program) applyPullRequestCommentDeleteRequested(message MsgPullRe
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: deletePullRequestCommentPopupRequest{target: message.Target}}}
+	return program.queueActionsPopupAsyncRequest(deletePullRequestCommentPopupRequest{target: message.Target})
 }
 
 func (program *Program) applyInlineCommentUpdateRequested(message MsgInlineCommentUpdateRequested) []Cmd {
@@ -57,7 +57,7 @@ func (program *Program) applyInlineCommentDeleteRequested(message MsgInlineComme
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: deleteInlineCommentPopupRequest{target: message.Target}}}
+	return program.queueActionsPopupAsyncRequest(deleteInlineCommentPopupRequest{target: message.Target})
 }
 
 func (program *Program) applyInlineCommentReplySubmitRequested(message MsgInlineCommentReplySubmitRequested) []Cmd {
@@ -74,7 +74,7 @@ func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineC
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: inlineCommentResolutionPopupRequest{target: message.Target, resolved: message.Resolved}}}
+	return program.queueActionsPopupAsyncRequest(inlineCommentResolutionPopupRequest{target: message.Target, resolved: message.Resolved})
 }
 
 func (program *Program) applyReviewInlineCommentSubmitRequested(message MsgReviewInlineCommentSubmitRequested) []Cmd {
@@ -105,7 +105,7 @@ func (program *Program) applyReactionRemovalRequested(message MsgReactionRemoval
 		return nil
 	}
 
-	return []Cmd{actionsPopupAsyncCmd{request: removeReactionPopupRequest{target: message.Target}}}
+	return program.queueActionsPopupAsyncRequest(removeReactionPopupRequest{target: message.Target})
 }
 
 func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequestSquashMergeRequested) []Cmd {
@@ -128,5 +128,5 @@ func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequ
 
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
-	return []Cmd{actionsPopupAsyncCmd{request: pullRequestSquashMergePopupRequest{repository: repository, number: number, summary: message.Summary}}}
+	return program.queueActionsPopupAsyncRequest(pullRequestSquashMergePopupRequest{repository: repository, number: number, summary: message.Summary})
 }
