@@ -71,6 +71,7 @@ func runActionsPopupModalEditorManualVisualSequence(t *testing.T, gui *gocui.Gui
 
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
+	typedModalEditor := false
 
 	for {
 		select {
@@ -111,7 +112,28 @@ func runActionsPopupModalEditorManualVisualSequence(t *testing.T, gui *gocui.Gui
 					errCh <- nil
 					return nil
 				}
-				if !strings.Contains(modalView.Title, pullRequestTitleEditorTitle) || strings.TrimSpace(modalView.Buffer()) != "First PR" {
+				if !strings.Contains(modalView.Title, pullRequestTitleEditorTitle) {
+					ready <- false
+					errCh <- nil
+					return nil
+				}
+				if !typedModalEditor {
+					if strings.TrimSpace(modalView.Buffer()) != "First PR" {
+						ready <- false
+						errCh <- nil
+						return nil
+					}
+					if actual := subject.editModalEditor(modalView, 0, '!', gocui.ModNone); !actual {
+						ready <- false
+						errCh <- errors.New("expected modal editor typing to be handled")
+						return nil
+					}
+					typedModalEditor = true
+					ready <- false
+					errCh <- nil
+					return nil
+				}
+				if strings.TrimSpace(modalView.Buffer()) != "First PR!" {
 					ready <- false
 					errCh <- nil
 					return nil
