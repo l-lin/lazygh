@@ -61,11 +61,10 @@ func (program *Program) validateStoryReviewAvailability() error {
 }
 
 func (program *Program) applyPreparedStoryReview(prepared preparedStoryReview) {
-	key := pullRequestDetailKey(prepared.summary.Repository, prepared.summary.Number)
-	program.pullRequestDiffCache[key] = pullRequestDiffResult{data: prepared.diffData}
+	repository := pullRequestRepositoryName(prepared.summary.Repository)
+	program.applyPullRequestDiffCacheResult(repository, prepared.summary.Number, pullRequestDiffResult{data: prepared.diffData}, pullRequestDiffCacheApplyOptions{})
 	if prepared.detailOK {
-		program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: clonePullRequestDetail(prepared.detail)}
-		program.invalidatePullRequestDetailDocumentCache()
+		program.applyPullRequestDetailCacheResult(repository, prepared.summary.Number, pullRequestDetailResult{detail: clonePullRequestDetail(prepared.detail)}, pullRequestDetailCacheApplyOptions{invalidateDocuments: true})
 	}
 	program.startStoryReviewSession(prepared.summary, prepared.pendingReviewID, prepared.storyData)
 }

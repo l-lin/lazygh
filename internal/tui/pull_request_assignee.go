@@ -515,9 +515,7 @@ func (program *Program) optimisticallyUpdatePullRequestAssignees(repository stri
 	result.detail.Assignees = updatedAssignees
 	result.sourceUpdatedAt = ""
 	result.needsRefresh = true
-	program.pullRequestDetailCache[key] = result
-	program.invalidatePullRequestDetailDocumentCache()
-	program.invalidatePersistentPullRequest(repository, number)
+	program.applyPullRequestDetailCacheResult(repository, number, result, pullRequestDetailCacheApplyOptions{invalidateDocuments: true, invalidatePersistent: true})
 }
 
 func (state *assigneePickerState) selectedDiff() ([]string, []string) {

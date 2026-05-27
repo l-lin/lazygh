@@ -139,9 +139,7 @@ func (program *Program) markPullRequestDetailNeedsRefresh(summary githubdomain.P
 	result.sourceUpdatedAt = ""
 	result.needsRefresh = true
 	result.err = nil
-	program.pullRequestDetailCache[key] = result
-	delete(program.pullRequestDetailLoadInFlight, key)
-	program.invalidatePullRequestDetailDocumentCache()
+	program.applyPullRequestDetailCacheResult(pullRequestRepositoryName(summary.Repository), summary.Number, result, pullRequestDetailCacheApplyOptions{clearInFlight: true, invalidateDocuments: true})
 }
 
 func (program *Program) markPullRequestDiffNeedsRefresh(summary githubdomain.PullRequest) {
@@ -161,8 +159,5 @@ func (program *Program) markPullRequestDiffNeedsRefresh(summary githubdomain.Pul
 	result.sourceUpdatedAt = ""
 	result.needsRefresh = true
 	result.err = nil
-	program.pullRequestDiffCache[key] = result
-	delete(program.pullRequestDiffLoadInFlight, key)
-	program.invalidateReviewDiffRenderCache()
-	program.invalidatePullRequestDetailDocumentCache()
+	program.applyPullRequestDiffCacheResult(pullRequestRepositoryName(summary.Repository), summary.Number, result, pullRequestDiffCacheApplyOptions{clearInFlight: true, invalidateReviewRender: true, invalidateDetailDocs: true})
 }

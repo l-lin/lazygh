@@ -180,61 +180,6 @@ func newOptimisticPullRequestReviewThread(target githubdomain.PullRequestReviewT
 	return thread
 }
 
-func (program *Program) mutatePullRequestDetailOptimistically(repository string, number int, mutate func(*githubdomain.PullRequestDetail) bool) bool {
-	if program == nil || mutate == nil {
-		return false
-	}
-
-	key := pullRequestMutationCacheKey(repository, number)
-	if key == "" {
-		return false
-	}
-	result, ok := program.pullRequestDetailCache[key]
-	if !ok || result.err != nil {
-		return false
-	}
-
-	detail := result.detail
-	if !mutate(&detail) {
-		return false
-	}
-
-	result.detail = detail
-	result.needsRefresh = true
-	program.pullRequestDetailCache[key] = result
-	program.invalidatePullRequestDetailDocumentCache()
-	program.invalidatePersistentPullRequest(repository, number)
-	return true
-}
-
-func (program *Program) mutatePullRequestDiffOptimistically(repository string, number int, mutate func(*reviewDiffData) bool) bool {
-	if program == nil || mutate == nil {
-		return false
-	}
-
-	key := pullRequestMutationCacheKey(repository, number)
-	if key == "" {
-		return false
-	}
-	result, ok := program.pullRequestDiffCache[key]
-	if !ok || result.err != nil {
-		return false
-	}
-
-	data := result.data
-	if !mutate(&data) {
-		return false
-	}
-
-	result.data = data
-	result.needsRefresh = true
-	program.pullRequestDiffCache[key] = result
-	program.invalidateReviewDiffRenderCache()
-	program.invalidatePullRequestDetailDocumentCache()
-	program.invalidatePersistentPullRequest(repository, number)
-	return true
-}
-
 func appendReplyToPullRequestDetail(detail *githubdomain.PullRequestDetail, threadID string, reply githubdomain.PullRequestComment) bool {
 	if detail == nil || !hasUsablePullRequestMutationID(threadID) {
 		return false

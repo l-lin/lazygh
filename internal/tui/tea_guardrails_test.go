@@ -1133,6 +1133,25 @@ func TestRefactorGuard_GivenEditorIntentAndModalOpenFiles_WhenScanning_ThenTheyA
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndCacheApplyFilesWritePullRequestDetailOrDiffCaches(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestDetailCache|pullRequestDiffCache)\[[^]]+\]\s*=`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if strings.HasPrefix(base, "update") || base == "detail_image_html_apply.go" || base == "pull_request_cache_apply.go" {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected pull-request detail and diff cache writes to stay in update or dedicated cache-apply files, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

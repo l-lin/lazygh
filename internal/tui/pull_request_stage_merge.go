@@ -419,8 +419,7 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullR
 	}
 	result.sourceUpdatedAt = ""
 	result.needsRefresh = true
-	program.pullRequestDetailCache[key] = result
-	delete(program.pullRequestDetailLoadInFlight, key)
+	program.applyPullRequestDetailCacheResult(pullRequestRepositoryName(summary.Repository), summary.Number, result, pullRequestDetailCacheApplyOptions{clearInFlight: true})
 }
 
 func (program *Program) applyVisiblePullRequestAutoMergeMutation(summary githubdomain.PullRequest, enabled bool) {
@@ -443,8 +442,8 @@ func (program *Program) applyVisiblePullRequestAutoMergeMutation(summary githubd
 		result.detail.AutoMergeRequest = clonePullRequestAutoMergeRequest(autoMergeRequest)
 		result.sourceUpdatedAt = ""
 		result.needsRefresh = true
-		program.pullRequestDetailCache[key] = result
-		delete(program.pullRequestDetailLoadInFlight, key)
+		program.applyPullRequestDetailCacheResult(pullRequestRepositoryName(summary.Repository), summary.Number, result, pullRequestDetailCacheApplyOptions{clearInFlight: true, invalidateDocuments: true, invalidatePersistent: true})
+		return
 	}
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidatePersistentPullRequest(pullRequestRepositoryName(summary.Repository), summary.Number)
@@ -460,8 +459,7 @@ func (program *Program) applyVisiblePullRequestBranchUpdate(summary githubdomain
 			}
 			result.sourceUpdatedAt = ""
 			result.needsRefresh = true
-			program.pullRequestDetailCache[key] = result
-			delete(program.pullRequestDetailLoadInFlight, key)
+			program.applyPullRequestDetailCacheResult(pullRequestRepositoryName(summary.Repository), summary.Number, result, pullRequestDetailCacheApplyOptions{clearInFlight: true})
 		}
 	}
 

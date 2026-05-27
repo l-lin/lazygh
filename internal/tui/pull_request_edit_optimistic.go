@@ -49,9 +49,7 @@ func (program *Program) optimisticallyUpdatePullRequestFields(repository string,
 	mutate(&identity, &result.detail)
 	result.sourceUpdatedAt = ""
 	result.needsRefresh = true
-	program.pullRequestDetailCache[key] = result
-	program.invalidatePullRequestDetailDocumentCache()
-	program.invalidatePersistentPullRequest(repository, number)
+	program.applyPullRequestDetailCacheResult(repository, number, result, pullRequestDetailCacheApplyOptions{invalidateDocuments: true, invalidatePersistent: true})
 }
 
 func (program *Program) optimisticPullRequestDetailSeed(identity githubdomain.PullRequest) githubdomain.PullRequestDetail {
