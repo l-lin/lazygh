@@ -503,7 +503,11 @@ func TestRefactorGuard_GivenPhase2PopupFeatureFiles_WhenScanning_ThenTheyDoNotCa
 
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyWorkflowCommandsCallGitHubPortsDirectly(t *testing.T) {
 	allowedFiles := map[string]bool{
-		"workflow_commands.go": true,
+		"workflow_session_commands.go":             true,
+		"workflow_pull_request_list_commands.go":   true,
+		"workflow_pull_request_detail_commands.go": true,
+		"workflow_notification_commands.go":        true,
+		"workflow_detail_image_commands.go":        true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestMutations|reviewMutations|reactionMutations|notificationMutations|detailQueries|buildQueries)\.[A-Za-z0-9_]+\(`), func(path string) bool {
@@ -521,6 +525,16 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyWorkflowCommand
 	}
 	if len(remainingMatches) != 0 {
 		t.Fatalf("expected direct GitHub ports to stay confined to update-owned files and explicit command files, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenWorkflowCommandRuntimesAvoidTheSharedCrossDomainDepsBag(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`type workflowCommandDeps struct|newWorkflowCommandDeps\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected workflow command runtimes to use domain-scoped bundles instead of the shared workflowCommandDeps bag, actual %v", actualMatches)
 	}
 }
 
@@ -1039,16 +1053,21 @@ func TestRefactorGuard_GivenProgramNavigationSupportAndDetailSearchFiles_WhenSca
 
 func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecuteAndBundleBuildersAcceptProgram(t *testing.T) {
 	commandExecutorFiles := map[string]bool{
-		"actions_popup_async_cmd.go":            true,
-		"assignee_picker_search_cmd.go":         true,
-		"cmd_actions_popup_async_requests.go":   true,
-		"cmd_detail_fold.go":                    true,
-		"cmd_detail_motion.go":                  true,
-		"cmd_interaction.go":                    true,
-		"cmd_modal_editor_submit_requests.go":   true,
-		"cmd_popup_feature_request_requests.go": true,
-		"cmd_popup_feature_requests.go":         true,
-		"workflow_commands.go":                  true,
+		"actions_popup_async_cmd.go":               true,
+		"assignee_picker_search_cmd.go":            true,
+		"cmd_actions_popup_async_requests.go":      true,
+		"cmd_detail_fold.go":                       true,
+		"cmd_detail_motion.go":                     true,
+		"cmd_interaction.go":                       true,
+		"cmd_modal_editor_submit_requests.go":      true,
+		"cmd_popup_feature_request_requests.go":    true,
+		"cmd_popup_feature_requests.go":            true,
+		"workflow_command_runtime.go":              true,
+		"workflow_session_commands.go":             true,
+		"workflow_pull_request_list_commands.go":   true,
+		"workflow_pull_request_detail_commands.go": true,
+		"workflow_notification_commands.go":        true,
+		"workflow_detail_image_commands.go":        true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`\*Program`), func(path string) bool {
@@ -1082,7 +1101,7 @@ func TestRefactorGuard_GivenAsyncCommandAndLoaderFiles_WhenScanning_ThenTheyAvoi
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
 		base := filepath.Base(path)
 		switch base {
-		case "actions_popup_async_cmd.go", "assignee_picker_search_cmd.go", "cmd_interaction_build.go", "cmd_popup_feature_requests.go", "detail_image_loader.go", "dispatch.go", "error_popup.go", "loading_spinner.go", "notification_detail_loader.go", "notification_loading.go", "program_loading.go", "workflow_commands.go":
+		case "actions_popup_async_cmd.go", "assignee_picker_search_cmd.go", "cmd_interaction_build.go", "cmd_popup_feature_requests.go", "detail_image_loader.go", "dispatch.go", "error_popup.go", "loading_spinner.go", "notification_detail_loader.go", "notification_loading.go", "program_loading.go", "workflow_command_runtime.go", "workflow_session_commands.go", "workflow_pull_request_list_commands.go", "workflow_pull_request_detail_commands.go", "workflow_notification_commands.go", "workflow_detail_image_commands.go":
 			return true
 		default:
 			return false

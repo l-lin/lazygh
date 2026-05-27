@@ -92,7 +92,11 @@ Those snapshots keep footer, help, popup, title, and hot review/story selection 
 
 Shell work now lives behind explicit command files.
 
-- `workflow_commands.go`: detail, diff, cache hydration, notifications, and image loading
+- `workflow_session_commands.go`: connected-user load
+- `workflow_pull_request_list_commands.go`: pull-request list load, reload, and cache hydration
+- `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
+- `workflow_notification_commands.go`: notifications plus issue and release detail loads
+- `workflow_detail_image_commands.go`: markdown HTML and detail-image loads
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
@@ -120,7 +124,7 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 - Palette values belong in `internal/theme`.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is read-only.
-- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_commands.go`, `program_loading.go`, `notification_loading.go`, and `notification_detail_loader.go`.
+- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_pull_request_detail_commands.go`, `workflow_notification_commands.go`, `program_loading.go`, `notification_loading.go`, and `notification_detail_loader.go`.
 
 ## Start here
 
