@@ -10,6 +10,39 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
+func TestUpdate_GivenMsgErrorReported_WhenApplying_ThenItRecordsTheMessageShowsThePopupAndReturnsATypedExpiryCommand(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+
+	actual := Update(subject, MsgErrorReported{Message: "boom"})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
+	}
+	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
+		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
+	}
+	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
+		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
+	}
+	if len(subject.overlayState.errorMessages) != 1 || subject.overlayState.errorMessages[0] != "boom" {
+		t.Fatalf("expected recorded errors %v, actual %v", []string{"boom"}, subject.overlayState.errorMessages)
+	}
+}
+
+func TestUpdate_GivenMsgErrorReportedWithZeroDuration_WhenApplying_ThenItShowsThePopupWithoutSchedulingExpiry(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.timingState.transientErrorPopupDuration = 0
+
+	actual := Update(subject, MsgErrorReported{Message: "boom"})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no expiry commands, actual %d", len(actual))
+	}
+	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
+		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
+	}
+}
+
 func TestActionsPopup_GivenApprovePullRequestFailure_WhenRendering_ThenItShowsATransientErrorPopupAtTheBottomRight(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{approveErr: errors.New("GitHub rejected the approval because a reviewer cannot approve their own pull request")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
@@ -62,7 +95,7 @@ func TestTransientErrorPopup_GivenAVisibleError_WhenItsLifetimeExpires_ThenItDis
 	subject.configureGUI(gui)
 
 	then_noError(t, subject.layout(gui))
-	subject.reportError(gui, "boom")
+	given_transientErrorReported(subject, gui, "boom")
 	then_noError(t, subject.afterStateChange(gui))
 
 	if len(asyncRunner.runs) != 1 {
@@ -81,7 +114,7 @@ func TestTransientErrorPopup_GivenAVisibleError_WhenItsLifetimeExpires_ThenItDis
 
 func TestScreenLayout_GivenATransientErrorPopup_WhenPlanningOverlays_ThenItPinsThePopupAboveTheStatusLineAtTheBottomRight(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
-	subject.reportError(nil, "boom")
+	given_transientErrorReported(subject, nil, "boom")
 
 	actual := subject.screenLayoutForSize(100, 30)
 	frame, ok := actual.OverlayFrame(viewTransientErrorPopupName)
@@ -101,7 +134,7 @@ func TestScreenLayout_GivenATransientErrorPopup_WhenPlanningOverlays_ThenItPinsT
 
 func TestActionsPopup_GivenRecordedErrors_WhenOpening_ThenItShowsTheRecentErrorsAction(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
-	subject.reportError(nil, "First error")
+	given_transientErrorReported(subject, nil, "First error")
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -118,8 +151,8 @@ func TestActionsPopup_GivenRecordedErrors_WhenOpening_ThenItShowsTheRecentErrors
 
 func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_ThenItOpensTheHistoryPopupWithNewestErrorsFirst(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
-	subject.reportError(nil, "First error")
-	subject.reportError(nil, "Second error")
+	given_transientErrorReported(subject, nil, "First error")
+	given_transientErrorReported(subject, nil, "Second error")
 	gui := given_headlessGuiWithSize(t, 120, 30)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -144,6 +177,10 @@ func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_The
 		t.Fatalf("expected the newest error to render first, actual %q", popupView.Buffer())
 	}
 	then_viewOccupiesAtLeastPercentOfScreen(t, gui, viewPullRequestBuildInfoName, 90, 90)
+}
+
+func given_transientErrorReported(subject *Program, gui *gocui.Gui, message string) {
+	subject.executeCmds(gui, Update(subject, MsgErrorReported{Message: message}))
 }
 
 func then_transientErrorPopupIsBottomRightAboveStatusLine(t *testing.T, gui *gocui.Gui) {

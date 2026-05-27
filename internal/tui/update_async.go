@@ -33,7 +33,7 @@ func (program *Program) applyManualRefreshCompletion(err error) []Cmd {
 		program.setFeedback(FocusDetailView, completion.successMessage)
 	}
 	if completion.popupError != "" {
-		return []Cmd{reportErrorCmd{Message: completion.popupError}}
+		return Update(program, MsgErrorReported{Message: completion.popupError})
 	}
 	return nil
 }

@@ -71,6 +71,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applySearchEditorInputRequested(actual)
 	case MsgFeedbackSet:
 		program.applyFeedbackSet(actual)
+	case MsgErrorReported:
+		return program.applyErrorReported(actual)
 	case MsgActionsPopupClosedWithFeedback:
 		program.applyActionsPopupClosedWithFeedback(actual)
 	case MsgActionsPopupActionErrorHandled:

@@ -60,7 +60,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 1. A keybinding, popup, editor-intent callback, or async result emits a `Msg`.
 2. `Update` mutates state and returns typed `Cmd` values.
-   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers.
+   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, and transient error popup state stay in `Update`.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, shell sync, and redraw.
 
@@ -104,6 +104,7 @@ Shell work now lives behind explicit command files.
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
 - `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and forced refresh execution
+- `cmd_transient_error_popup.go`: transient error popup expiry scheduling
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
 - `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport

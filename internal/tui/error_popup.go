@@ -26,30 +26,30 @@ type transientErrorPopupState struct {
 	generation uint64
 }
 
-func (program *Program) reportError(gui *gocui.Gui, message string) {
-	if program == nil {
-		return
-	}
-
+func recordedErrorMessagesWithAppended(existing []string, message string) []string {
 	trimmedMessage := strings.TrimSpace(message)
 	if trimmedMessage == "" {
-		return
+		return append([]string(nil), existing...)
 	}
 
-	program.appendRecordedErrorMessage(trimmedMessage)
-	program.showTransientErrorPopup(gui, trimmedMessage)
+	updated := append(append([]string(nil), existing...), trimmedMessage)
+	if len(updated) <= maxRecordedErrorMessages {
+		return updated
+	}
+	return append([]string(nil), updated[len(updated)-maxRecordedErrorMessages:]...)
 }
 
-func (program *Program) appendRecordedErrorMessage(message string) {
-	if program == nil {
-		return
+func newTransientErrorPopupState(previous transientErrorPopupState, message string, now time.Time, duration time.Duration) transientErrorPopupState {
+	trimmedMessage := strings.TrimSpace(message)
+	if trimmedMessage == "" {
+		return previous
 	}
 
-	program.overlayState.errorMessages = append(program.overlayState.errorMessages, message)
-	if len(program.overlayState.errorMessages) <= maxRecordedErrorMessages {
-		return
+	popup := transientErrorPopupState{message: trimmedMessage, generation: previous.generation + 1}
+	if duration > 0 {
+		popup.expiresAt = now.Add(duration)
 	}
-	program.overlayState.errorMessages = append([]string(nil), program.overlayState.errorMessages[len(program.overlayState.errorMessages)-maxRecordedErrorMessages:]...)
+	return popup
 }
 
 func (program *Program) hasRecordedErrors() bool {
@@ -90,36 +90,6 @@ func (program *Program) renderRecentErrorsPopupBody() string {
 		messages = append(messages, program.overlayState.errorMessages[index])
 	}
 	return strings.Join(messages, "\n\n")
-}
-
-func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) {
-	if program == nil {
-		return
-	}
-
-	trimmedMessage := strings.TrimSpace(message)
-	if trimmedMessage == "" {
-		return
-	}
-
-	capturedGUI := program.captureGUI(gui)
-	generation := program.overlayState.transientErrorPopup.generation + 1
-	popup := transientErrorPopupState{message: trimmedMessage, generation: generation}
-	if program.timingState.transientErrorPopupDuration > 0 {
-		popup.expiresAt = program.currentTime().Add(program.timingState.transientErrorPopupDuration)
-	}
-	program.overlayState.transientErrorPopup = popup
-	if capturedGUI == nil || program.timingState.transientErrorPopupDuration <= 0 || program.timingState.after == nil {
-		return
-	}
-
-	delay := program.timingState.after(program.timingState.transientErrorPopupDuration)
-	program.asyncRunner.Go(func() {
-		if delay != nil {
-			<-delay
-		}
-		program.dispatchAsyncMessage(MsgTransientErrorPopupExpired{Generation: generation})
-	})
 }
 
 func (program *Program) clearExpiredTransientErrorPopup(now time.Time) bool {

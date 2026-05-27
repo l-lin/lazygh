@@ -13,7 +13,7 @@ func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPo
 	}
 	if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 		program.actionsPopupWidget.errorMessage = ""
-		return []Cmd{reportErrorCmd{Message: popupMessage}}
+		return Update(program, MsgErrorReported{Message: popupMessage})
 	}
 	var feedbackErr actionsPopupStatusLineError
 	if errors.As(message.Err, &feedbackErr) {
@@ -22,7 +22,7 @@ func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPo
 		return nil
 	}
 	program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
-	return []Cmd{reportErrorCmd{Message: program.actionsPopupWidget.errorMessage}}
+	return Update(program, MsgErrorReported{Message: program.actionsPopupWidget.errorMessage})
 }
 
 func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPopupClosedWithFeedback) {
@@ -78,7 +78,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 			program.overlayState.modalEditor.errorMessage = ""
-			return []Cmd{reportErrorCmd{Message: popupMessage}}
+			return Update(program, MsgErrorReported{Message: popupMessage})
 		}
 		var feedbackErr modalEditorStatusLineError
 		if errors.As(message.Err, &feedbackErr) {
@@ -336,7 +336,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 			program.actionsPopupWidget.errorMessage = openLinkOpenerUnavailableMessage
 			return nil
 		}
-		return []Cmd{reportErrorCmd{Message: openLinkOpenerUnavailableMessage}}
+		return Update(program, MsgErrorReported{Message: openLinkOpenerUnavailableMessage})
 	}
 	browserURL, ok := program.selectedNotificationBrowserURL()
 	if !ok {
@@ -344,7 +344,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 			program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
 			return nil
 		}
-		return []Cmd{reportErrorCmd{Message: errActionsPopupActionUnavailable.Error()}}
+		return Update(program, MsgErrorReported{Message: errActionsPopupActionUnavailable.Error()})
 	}
 	program.closeActionsPopupForAcceptedRequest()
 	return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})

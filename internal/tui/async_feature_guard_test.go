@@ -53,7 +53,7 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinished_WhenSuccessful_ThenIt
 	}
 }
 
-func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresTheSnapshotClearsLoadingAndReturnsAReportErrorCommand(t *testing.T) {
+func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresTheSnapshotClearsLoadingAndUpdatesThePopupState(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	snapshot := notificationMutationSnapshot{
 		rows:          []NotificationRow{{Item: Item{Title: "before-1"}}, {Item: Item{Title: "before-2"}}},
@@ -80,10 +80,13 @@ func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresT
 		t.Fatalf("expected restored selected notification index %d, actual %d", 1, actualIndex)
 	}
 	if len(actual) != 1 {
-		t.Fatalf("expected one report-error command, actual %d", len(actual))
+		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(reportErrorCmd); !ok {
-		t.Fatalf("expected a reportErrorCmd, actual %T", actual[0])
+	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
+		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
+	}
+	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
+		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
 	}
 }
 

@@ -90,14 +90,3 @@ func executeReadPullRequestURLFromClipboardCommand(runtime browserClipboardComma
 	url, err := runtime.clipboardReader.ReadText()
 	_ = runtime.dispatch(gui, MsgPullRequestURLReadFromClipboard{URL: url, Err: err})
 }
-
-type reportErrorCmd struct {
-	Message string
-}
-
-func (command reportErrorCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil {
-		return
-	}
-	program.reportError(gui, command.Message)
-}

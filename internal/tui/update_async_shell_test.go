@@ -7,20 +7,23 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying_ThenItReturnsATypedReportErrorCommand(t *testing.T) {
+func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying_ThenItUpdatesThePopupStateAndReturnsATypedExpiryCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.ghCommandLoadingMessage = "Running `gh pr ready`."
 
 	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Err: errors.New("boom")})
 
 	if len(actual) != 1 {
-		t.Fatalf("expected one report-error command, actual %d", len(actual))
+		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(reportErrorCmd); !ok {
-		t.Fatalf("expected a reportErrorCmd, actual %T", actual[0])
+	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
+		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
 	}
 	if actualMessage := subject.ghCommandLoadingMessage; actualMessage != "" {
 		t.Fatalf("expected gh command loading message %q, actual %q", "", actualMessage)
+	}
+	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
+		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
 	}
 }
 
@@ -212,7 +215,7 @@ func TestUpdate_GivenMsgRefreshNotificationsRequested_WhenApplying_ThenItRegiste
 	}
 }
 
-func TestUpdate_GivenMsgPullRequestsLoadedAfterManualRefreshFailure_WhenApplying_ThenItReturnsATypedReportErrorCommand(t *testing.T) {
+func TestUpdate_GivenMsgPullRequestsLoadedAfterManualRefreshFailure_WhenApplying_ThenItUpdatesThePopupStateAndReturnsATypedExpiryCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.markManualPullRequestListRefresh(subject.model.ActivePullRequestTab())
 	subject.beginManualRefresh(pullRequestListRefreshSuccessMessage, 1)
@@ -220,9 +223,12 @@ func TestUpdate_GivenMsgPullRequestsLoadedAfterManualRefreshFailure_WhenApplying
 	actual := Update(subject, MsgPullRequestsLoaded{Tab: subject.model.ActivePullRequestTab(), Err: errors.New("boom")})
 
 	if len(actual) != 1 {
-		t.Fatalf("expected one report-error command, actual %d", len(actual))
+		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(reportErrorCmd); !ok {
-		t.Fatalf("expected a reportErrorCmd, actual %T", actual[0])
+	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
+		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
+	}
+	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
+		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
 	}
 }

@@ -41,7 +41,7 @@ func (program *Program) applyClearCacheRequested() []Cmd {
 	program.clearActionsPopupPendingConfirmation()
 	if err := program.clearCachedData(); err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(err.Error())
-		return []Cmd{reportErrorCmd{Message: program.actionsPopupWidget.errorMessage}}
+		return Update(program, MsgErrorReported{Message: program.actionsPopupWidget.errorMessage})
 	}
 	program.closeActionsPopupState()
 	program.setFeedback(program.model.Focus(), clearCacheSuccessMessage)
@@ -310,7 +310,7 @@ func (program *Program) restylePullRequestRows() {
 func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd {
 	if message.Err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
-		return []Cmd{reportErrorCmd{Message: program.actionsPopupWidget.errorMessage}}
+		return Update(program, MsgErrorReported{Message: program.actionsPopupWidget.errorMessage})
 	}
 
 	theme.ApplyPalette(theme.ResolvePaletteWithPreset(strings.TrimSpace(message.NormalizedName), theme.Palette{}))

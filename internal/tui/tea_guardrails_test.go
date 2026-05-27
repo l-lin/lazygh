@@ -205,6 +205,16 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDirectFeedbackAndEr
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyReportErrorCommandOrShellMutationHelperRemains(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`reportErrorCmd|program\.reportError\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected transient error popup reporting to flow through typed update messages instead of reportErrorCmd or program.reportError(...), actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyAsyncPopupBridgeRemains(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`startActionsPopupAsyncGHCommand\(`), func(path string) bool {
 		base := filepath.Base(path)

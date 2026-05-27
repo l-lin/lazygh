@@ -22,6 +22,10 @@ type MsgFeedbackSet struct {
 	Message string
 }
 
+type MsgErrorReported struct {
+	Message string
+}
+
 type MsgActionsPopupActionErrorHandled struct {
 	Err error
 }
@@ -265,6 +269,7 @@ type MsgSetAllDetailFolds struct {
 }
 
 func (MsgFeedbackSet) isMsg()                                  {}
+func (MsgErrorReported) isMsg()                                {}
 func (MsgActionsPopupActionErrorHandled) isMsg()               {}
 func (MsgModalEditorOpened) isMsg()                            {}
 func (MsgModalEditorLineInputRequested) isMsg()                {}
