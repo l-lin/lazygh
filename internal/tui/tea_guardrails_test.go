@@ -617,6 +617,15 @@ func TestRefactorGuard_GivenFooterFile_WhenScanning_ThenOnlyViewGlueStillDepends
 	}
 }
 
+func TestRefactorGuard_GivenFooterPresenterAdapter_WhenScanning_ThenItAvoidsResolvingFullActionsPopupLists(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`currentActionsPopupActions\(`), func(path string) bool {
+		return filepath.Base(path) == "footer_presenter_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected footer_presenter_adapter.go to stay on cheap action availability hints instead of resolving the full popup action list, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenOnlyViewGlueStillDependsOnProgram(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		return filepath.Base(path) == "help.go"
@@ -721,6 +730,15 @@ func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayO
 	}
 	if len(remainingMatches) != 0 {
 		t.Fatalf("expected review-session read helpers to live on the focused read model instead of review_session*.go, actual %v", remainingMatches)
+	}
+}
+
+func TestRefactorGuard_GivenReviewSessionReadModelAdapter_WhenScanning_ThenItAvoidsEagerReviewDescriptionOverviewRendering(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`renderCurrentPullRequestOverview\(`), func(path string) bool {
+		return filepath.Base(path) == "review_session_read_model_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected review_session_read_model_adapter.go to keep overview rendering on lazy read-model helpers instead of eager adapter construction, actual %v", actualMatches)
 	}
 }
 

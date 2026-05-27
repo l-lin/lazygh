@@ -8,24 +8,24 @@ import (
 )
 
 type reviewSessionReadModel struct {
-	active                 bool
-	mode                   reviewSessionMode
-	mainContentKind        MainContentKind
-	summary                githubdomain.PullRequest
-	pendingReviewID        string
-	selectedFileTreeRow    int
-	collapsedTreeRowIDs    map[string]bool
-	collapsedThreadIDs     map[string]bool
-	story                  reviewStoryData
-	detailWrapWidth        int
-	markdownRenderer       MarkdownRenderer
-	connectedUserLogin     string
-	loadingSpinner         string
-	descriptionResult      pullRequestDetailResult
-	descriptionResultKnown bool
-	descriptionOverview    string
-	diffResult             pullRequestDiffResult
-	diffResultKnown        bool
+	active                        bool
+	mode                          reviewSessionMode
+	mainContentKind               MainContentKind
+	summary                       githubdomain.PullRequest
+	pendingReviewID               string
+	selectedFileTreeRow           int
+	collapsedTreeRowIDs           map[string]bool
+	collapsedThreadIDs            map[string]bool
+	story                         reviewStoryData
+	detailWrapWidth               int
+	markdownRenderer              MarkdownRenderer
+	connectedUserLogin            string
+	loadingSpinner                string
+	descriptionResult             pullRequestDetailResult
+	descriptionResultKnown        bool
+	browserCollapsedSectionStates map[string]bool
+	diffResult                    pullRequestDiffResult
+	diffResultKnown               bool
 }
 
 func (model reviewSessionReadModel) metadataContent() string {
@@ -64,11 +64,19 @@ func (model reviewSessionReadModel) descriptionContent() string {
 		}
 
 		header := renderPullRequestBrowserHeader(summary, model.descriptionResult.detail)
+		overview := model.descriptionOverview()
 		content := renderPullRequestDescription(summary, model.descriptionResult.detail, model.markdownRenderer, model.detailWrapWidth)
-		return renderPullRequestBrowserDetailContent(header, model.descriptionOverview, content, model.detailWrapWidth)
+		return renderPullRequestBrowserDetailContent(header, overview, content, model.detailWrapWidth)
 	}
 
 	return renderPullRequestDetailLoading(summary, model.loadingSpinner)
+}
+
+func (model reviewSessionReadModel) descriptionOverview() string {
+	if !model.descriptionResultKnown || model.descriptionResult.err != nil {
+		return ""
+	}
+	return renderBrowserDetailSections(buildPullRequestOverviewSections(model.summary, model.descriptionResult.detail, model.detailWrapWidth, model.browserCollapsedSectionStates), false)
 }
 
 func (model reviewSessionReadModel) storyChapterContent() string {

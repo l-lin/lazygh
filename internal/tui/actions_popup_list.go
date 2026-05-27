@@ -84,6 +84,19 @@ func (program *Program) currentActionsPopupVisibleLines() []actionsPopupVisibleL
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
+	if program != nil && program.refreshReadCache.enabled && program.refreshReadCache.actionsPopupVisibleKnown {
+		return program.refreshReadCache.actionsPopupVisibleLines
+	}
+
+	visibleLines := program.buildCurrentActionsPopupVisibleLines()
+	if program != nil && program.refreshReadCache.enabled {
+		program.refreshReadCache.actionsPopupVisibleLines = visibleLines
+		program.refreshReadCache.actionsPopupVisibleKnown = true
+	}
+	return visibleLines
+}
+
+func (program *Program) buildCurrentActionsPopupVisibleLines() []actionsPopupVisibleLine {
 	if program.assigneePickerVisible() {
 		return program.currentAssigneePickerVisibleLines()
 	}

@@ -6,6 +6,19 @@ import (
 )
 
 func (program *Program) currentActionsPopupActions() []actionsPopupAction {
+	if program != nil && program.refreshReadCache.enabled && program.refreshReadCache.actionsPopupActionsKnown {
+		return program.refreshReadCache.actionsPopupActions
+	}
+
+	actions := program.buildCurrentActionsPopupActions()
+	if program != nil && program.refreshReadCache.enabled {
+		program.refreshReadCache.actionsPopupActions = actions
+		program.refreshReadCache.actionsPopupActionsKnown = true
+	}
+	return actions
+}
+
+func (program *Program) buildCurrentActionsPopupActions() []actionsPopupAction {
 	if program.assigneePickerVisible() {
 		return program.currentAssigneePickerActions()
 	}

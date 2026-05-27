@@ -6,6 +6,9 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 	if program == nil {
 		return actionsPopupPresenter{}
 	}
+	if program.refreshReadCache.enabled && program.refreshReadCache.actionsPopupPresenterSet {
+		return program.refreshReadCache.actionsPopupPresenter
+	}
 
 	query := ""
 	filteredActionCount := 0
@@ -22,7 +25,7 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 		searchCursor = program.actionsPopupWidget.searchEditor.Cursor()
 	}
 
-	return actionsPopupPresenter{
+	presenter := actionsPopupPresenter{
 		assigneePickerVisible: program.assigneePickerVisible(),
 		themePickerVisible:    program.themePickerVisible(),
 		reactionPickerVisible: program.reactionPickerVisible(),
@@ -35,6 +38,11 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 		totalActionCount:      len(program.currentActionsPopupActions()),
 		renderedLineCount:     program.currentActionsPopupRenderedLineCount(),
 	}
+	if program.refreshReadCache.enabled {
+		program.refreshReadCache.actionsPopupPresenter = presenter
+		program.refreshReadCache.actionsPopupPresenterSet = true
+	}
+	return presenter
 }
 
 func (program *Program) actionsPopupFrame(maxX int, maxY int) paneFrame {

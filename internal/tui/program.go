@@ -78,6 +78,7 @@ type programShellRuntime struct {
 	gui                *gocui.Gui
 	timingState        timingStateModel
 	manualRefreshState manualRefreshStateModel
+	refreshReadCache   refreshReadCacheState
 }
 
 type Program struct {

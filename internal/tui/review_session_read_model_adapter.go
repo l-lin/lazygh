@@ -11,21 +11,38 @@ func (program *Program) reviewSessionReadModel() reviewSessionReadModel {
 	if program == nil {
 		return reviewSessionReadModel{}
 	}
+	if program.refreshReadCache.enabled && program.refreshReadCache.reviewSessionReadModelSet {
+		return program.refreshReadCache.reviewSessionReadModel
+	}
+
+	model := program.buildReviewSessionReadModel()
+	if program.refreshReadCache.enabled {
+		program.refreshReadCache.reviewSessionReadModel = model
+		program.refreshReadCache.reviewSessionReadModelSet = true
+	}
+	return model
+}
+
+func (program *Program) buildReviewSessionReadModel() reviewSessionReadModel {
+	if program == nil {
+		return reviewSessionReadModel{}
+	}
 
 	state := program.navigationState.reviewSession
 	model := reviewSessionReadModel{
-		active:              state.active,
-		mode:                state.mode,
-		summary:             state.summary,
-		pendingReviewID:     strings.TrimSpace(state.pendingReviewID),
-		selectedFileTreeRow: state.selectedFileTreeRow,
-		collapsedTreeRowIDs: state.collapsedTreeRowIDs,
-		collapsedThreadIDs:  state.collapsedThreadIDs,
-		story:               state.story,
-		detailWrapWidth:     program.detailState.wrapWidth,
-		markdownRenderer:    program.markdownRenderer,
-		connectedUserLogin:  program.currentConnectedUserLogin(),
-		loadingSpinner:      program.loadingSpinnerFrame(),
+		active:                        state.active,
+		mode:                          state.mode,
+		summary:                       state.summary,
+		pendingReviewID:               strings.TrimSpace(state.pendingReviewID),
+		selectedFileTreeRow:           state.selectedFileTreeRow,
+		collapsedTreeRowIDs:           state.collapsedTreeRowIDs,
+		collapsedThreadIDs:            state.collapsedThreadIDs,
+		story:                         state.story,
+		detailWrapWidth:               program.detailState.wrapWidth,
+		markdownRenderer:              program.markdownRenderer,
+		connectedUserLogin:            program.currentConnectedUserLogin(),
+		loadingSpinner:                program.loadingSpinnerFrame(),
+		browserCollapsedSectionStates: program.browserCollapsedSectionStates,
 	}
 	if !model.active {
 		return model
@@ -35,9 +52,6 @@ func (program *Program) reviewSessionReadModel() reviewSessionReadModel {
 	if result, ok := program.pullRequestDetailForSummary(model.summary); ok {
 		model.descriptionResult = result
 		model.descriptionResultKnown = true
-		if result.err == nil && model.mainContentKind == MainContentKindReviewDescription {
-			model.descriptionOverview = program.renderCurrentPullRequestOverview(model.summary, result.detail, model.detailWrapWidth)
-		}
 	}
 	if result, ok := program.pullRequestDiffForSummary(model.summary); ok {
 		model.diffResult = result

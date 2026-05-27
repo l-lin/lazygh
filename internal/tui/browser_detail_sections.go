@@ -106,25 +106,46 @@ func browserDetailSectionID(pullRequestKey string, prefix string, index int, sta
 	return strings.TrimSpace(pullRequestKey) + ":" + strings.TrimSpace(prefix) + ":" + trimmedStableID
 }
 
-func (program *Program) browserDetailSectionCollapsed(sectionID string, collapsedByDefault bool) bool {
-	if program.browserCollapsedSectionStates != nil {
-		if collapsed, ok := program.browserCollapsedSectionStates[strings.TrimSpace(sectionID)]; ok {
+func browserDetailSectionCollapsed(collapsedSectionStates map[string]bool, sectionID string, collapsedByDefault bool) bool {
+	if collapsedSectionStates != nil {
+		if collapsed, ok := collapsedSectionStates[strings.TrimSpace(sectionID)]; ok {
 			return collapsed
 		}
 	}
 	return collapsedByDefault
 }
 
-func (program *Program) setBrowserDetailSectionCollapsed(sectionID string, collapsed bool) {
-	trimmedSectionID := strings.TrimSpace(sectionID)
-	if trimmedSectionID == "" {
-		return
+func (program *Program) browserDetailSectionCollapsed(sectionID string, collapsedByDefault bool) bool {
+	if program == nil {
+		return collapsedByDefault
 	}
-	if program.browserCollapsedSectionStates == nil {
-		program.browserCollapsedSectionStates = map[string]bool{}
+	return browserDetailSectionCollapsed(program.browserCollapsedSectionStates, sectionID, collapsedByDefault)
+}
+
+func buildPullRequestOverviewSections(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, width int, collapsedSectionStates map[string]bool) []browserDetailSection {
+	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+	overview := buildPullRequestOverviewSection(detail)
+	blocks := []pullRequestOverviewBlock{overview.Reviewers, overview.MergeChecks, overview.Builds}
+	sections := make([]browserDetailSection, 0, len(blocks))
+	for index, block := range blocks {
+		entries := renderPullRequestOverviewEntries(block.Entries)
+		if strings.TrimSpace(entries) == "" {
+			continue
+		}
+
+		sectionID := browserDetailSectionID(pullRequestKey, "overview", index, strings.ToLower(strings.ReplaceAll(strings.TrimSpace(block.Title), " ", "-")))
+		collapsedByDefault := pullRequestOverviewBlockCollapsedByDefault(block)
+		collapsed := browserDetailSectionCollapsed(collapsedSectionStates, sectionID, collapsedByDefault)
+		sections = append(sections, browserDetailSection{
+			id:                 sectionID,
+			header:             renderBrowserDetailSectionHeader(pullRequestOverviewBlockHeadingText(block), collapsed, pullRequestOverviewStatusHex(block.Status)),
+			body:               renderRoundedCommentBox(entries, width),
+			collapsed:          collapsed,
+			overviewBlockTitle: block.Title,
+			overviewEntries:    append([]pullRequestOverviewEntry(nil), block.Entries...),
+		})
 	}
-	program.browserCollapsedSectionStates[trimmedSectionID] = collapsed
-	program.invalidatePullRequestDetailDocumentCache()
+	return sections
 }
 
 func (program *Program) currentPullRequestOverviewSections(summary any, detail any, width int) []browserDetailSection {
@@ -136,29 +157,7 @@ func (program *Program) currentPullRequestOverviewSections(summary any, detail a
 	if !ok {
 		return nil
 	}
-	pullRequestKey := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
-	overview := buildPullRequestOverviewSection(detailValue)
-	blocks := []pullRequestOverviewBlock{overview.Reviewers, overview.MergeChecks, overview.Builds}
-	sections := make([]browserDetailSection, 0, len(blocks))
-	for index, block := range blocks {
-		entries := renderPullRequestOverviewEntries(block.Entries)
-		if strings.TrimSpace(entries) == "" {
-			continue
-		}
-
-		sectionID := browserDetailSectionID(pullRequestKey, "overview", index, strings.ToLower(strings.ReplaceAll(strings.TrimSpace(block.Title), " ", "-")))
-		collapsedByDefault := pullRequestOverviewBlockCollapsedByDefault(block)
-		collapsed := program.browserDetailSectionCollapsed(sectionID, collapsedByDefault)
-		sections = append(sections, browserDetailSection{
-			id:                 sectionID,
-			header:             renderBrowserDetailSectionHeader(pullRequestOverviewBlockHeadingText(block), collapsed, pullRequestOverviewStatusHex(block.Status)),
-			body:               renderRoundedCommentBox(entries, width),
-			collapsed:          collapsed,
-			overviewBlockTitle: block.Title,
-			overviewEntries:    append([]pullRequestOverviewEntry(nil), block.Entries...),
-		})
-	}
-	return sections
+	return buildPullRequestOverviewSections(summaryValue, detailValue, width, program.browserCollapsedSectionStates)
 }
 
 func pullRequestOverviewBlockCollapsedByDefault(block pullRequestOverviewBlock) bool {

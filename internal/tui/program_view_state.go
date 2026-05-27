@@ -27,12 +27,16 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		return nil
 	}
 
-	program.gui = gui
-	maxX, maxY := gui.Size()
-	if actualErr := program.applyScreenCompositionAndSyncView(gui, program.screenCompositionForSize(maxX, maxY)); actualErr != nil {
-		return actualErr
-	}
-	return program.syncShellState(gui)
+	var actualErr error
+	program.withRefreshReadCache(func() {
+		program.gui = gui
+		maxX, maxY := gui.Size()
+		if actualErr = program.applyScreenCompositionAndSyncView(gui, program.screenCompositionForSize(maxX, maxY)); actualErr != nil {
+			return
+		}
+		actualErr = program.syncShellState(gui)
+	})
+	return actualErr
 }
 
 func (program *Program) refreshExistingView(gui *gocui.Gui, viewName string, configure viewConfigurator, render viewRenderer) error {

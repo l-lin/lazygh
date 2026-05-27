@@ -6,6 +6,9 @@ func (program *Program) footerPresenter() footerPresenter {
 	if program == nil {
 		return footerPresenter{}
 	}
+	if program.refreshReadCache.enabled && program.refreshReadCache.footerPresenterSet {
+		return program.refreshReadCache.footerPresenter
+	}
 
 	submitAction := modalEditorSubmitAction
 	submitFallback := "Alt+Enter"
@@ -15,7 +18,7 @@ func (program *Program) footerPresenter() footerPresenter {
 	}
 
 	_, notificationSelectionVisible := program.selectedNotificationActionTarget()
-	return footerPresenter{
+	presenter := footerPresenter{
 		model:                        program.model,
 		screenState:                  program.screenState(),
 		keyResolver:                  program.keybindingLabelResolver(),
@@ -25,11 +28,24 @@ func (program *Program) footerPresenter() footerPresenter {
 		pullRequestBuildPopupVisible: program.pullRequestBuildRunPopupVisible(),
 		assigneePickerVisible:        program.assigneePickerVisible(),
 		notificationSelectionVisible: notificationSelectionVisible,
-		actionsPopupActionCount:      len(program.currentActionsPopupActions()),
+		actionsPopupAvailable:        program.paneFooterActionsAvailable(),
 		modalEditorSubmitAction:      submitAction,
 		modalEditorSubmitFallback:    submitFallback,
 		paneSearchSummaries:          program.paneSearchSummaries(),
 	}
+	if program.refreshReadCache.enabled {
+		program.refreshReadCache.footerPresenter = presenter
+		program.refreshReadCache.footerPresenterSet = true
+	}
+	return presenter
+}
+
+func (program *Program) paneFooterActionsAvailable() bool {
+	if program == nil || program.model == nil {
+		return false
+	}
+	_, ok := paneFooterActionsActionID(program.screenState().ActiveView().Focus)
+	return ok
 }
 
 func (program *Program) paneSearchSummaries() map[Focus]string {

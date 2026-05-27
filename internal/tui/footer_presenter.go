@@ -12,7 +12,7 @@ type footerPresenter struct {
 	pullRequestBuildPopupVisible bool
 	assigneePickerVisible        bool
 	notificationSelectionVisible bool
-	actionsPopupActionCount      int
+	actionsPopupAvailable        bool
 	modalEditorSubmitAction      string
 	modalEditorSubmitFallback    string
 	paneSearchSummaries          map[Focus]string
@@ -238,7 +238,7 @@ func (presenter footerPresenter) paneFooterKeyHint(label string, actionIDs ...ke
 
 func (presenter footerPresenter) paneFooterActionsHint(focus Focus) string {
 	actionID, ok := paneFooterActionsActionID(focus)
-	if !ok || presenter.actionsPopupActionCount == 0 {
+	if !ok || !presenter.actionsPopupAvailable {
 		return ""
 	}
 	return presenter.paneFooterKeyHint("action", actionID)

@@ -76,6 +76,8 @@ The read side is much cleaner than it used to be.
 
 The render layer is mostly read-only now. Expensive document building and cache mutation live outside the render entrypoints.
 
+`refreshViews()` now runs with a short-lived read cache so footer and popup presenters, popup action lists, keybinding label resolution, and review-session read models are computed once per redraw instead of several times.
+
 The main read-only projection seams are:
 
 - `footerPresenter`
@@ -100,7 +102,7 @@ Shell work now lives behind explicit command files.
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
-- `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and manual refresh bookkeeping
+- `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and forced refresh execution
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view sync
 - `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport

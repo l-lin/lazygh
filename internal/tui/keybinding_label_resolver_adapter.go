@@ -16,5 +16,14 @@ func (program *Program) keybindingLabelResolver() keybindingLabelResolver {
 	if program == nil {
 		return keybindingLabelResolver{}
 	}
-	return newKeybindingLabelResolver(program.resolvedKeybindingActions())
+	if program.refreshReadCache.enabled && program.refreshReadCache.keybindingResolverSet {
+		return program.refreshReadCache.keybindingResolver
+	}
+
+	resolver := newKeybindingLabelResolver(program.resolvedKeybindingActions())
+	if program.refreshReadCache.enabled {
+		program.refreshReadCache.keybindingResolver = resolver
+		program.refreshReadCache.keybindingResolverSet = true
+	}
+	return resolver
 }

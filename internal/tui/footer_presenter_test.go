@@ -25,10 +25,10 @@ func TestFooterPresenter_GivenFocusedPullRequestsPaneAndResolvedBindings_WhenRes
 	model.FocusPullRequestsView()
 
 	subject := footerPresenter{
-		model:                   model,
-		screenState:             model.ScreenState(),
-		keyResolver:             newKeybindingLabelResolver(given_footerResolvedActions()),
-		actionsPopupActionCount: 1,
+		model:                 model,
+		screenState:           model.ScreenState(),
+		keyResolver:           newKeybindingLabelResolver(given_footerResolvedActions()),
+		actionsPopupAvailable: true,
 	}
 
 	actual := subject.statusLineKeyHintsText()
