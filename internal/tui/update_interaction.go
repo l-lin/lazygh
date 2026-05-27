@@ -343,5 +343,6 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 }
 
 func (program *Program) applyRefreshNotificationsRequested() []Cmd {
+	program.beginManualNotificationsRefresh()
 	return []Cmd{refreshNotificationsCmd{}}
 }

@@ -816,6 +816,23 @@ func TestRefactorGuard_GivenRuntimeShortcutFiles_WhenScanning_ThenTheyUseShellHo
 	}
 }
 
+func TestRefactorGuard_GivenRefreshCommandFile_WhenScanning_ThenItAvoidsReducerOwnedManualRefreshPreflightMutation(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`markManualPullRequestListRefresh\(`,
+		`markManualPullRequestDetailRefresh\(`,
+		`markManualPullRequestDiffRefresh\(`,
+		`markManualNotificationRefresh\(`,
+		`beginManualRefresh\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "cmd_interaction_refresh.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cmd_interaction_refresh.go to stay on reload execution instead of reducer-owned manual refresh preflight mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenUpdateReviewInteractionFile_WhenScanning_ThenItDoesNotReachThroughDetailViewMutationHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

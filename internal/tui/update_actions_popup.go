@@ -326,12 +326,10 @@ func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd
 
 func (program *Program) applyRefreshPullRequestListRequested() []Cmd {
 	tab := program.model.ActivePullRequestTab()
+	program.beginManualPullRequestListRefresh(tab, pullRequestListRefreshSuccessMessage)
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
-	return []Cmd{
-		beginManualPullRequestListRefreshCmd{Tab: tab, SuccessMessage: pullRequestListRefreshSuccessMessage},
-		reloadPullRequestsTabCmd{tab: tab},
-	}
+	return []Cmd{reloadPullRequestsTabCmd{tab: tab}}
 }
 
 func (program *Program) applyRefreshPullRequestRequested(message MsgRefreshPullRequestRequested) []Cmd {
@@ -344,14 +342,14 @@ func (program *Program) applyRefreshPullRequestRequested(message MsgRefreshPullR
 		}
 	}
 	program.invalidatePersistentPullRequest(target.repository, target.number)
+	program.beginManualPullRequestRefresh(summary, program.model.ActivePullRequestTab())
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()
 
-	commands := []Cmd{beginManualPullRequestRefreshCmd{Summary: summary, SuccessMessage: pullRequestRefreshSuccessMessage}}
-	if !program.reviewModeActive() {
-		commands = append(commands, reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()})
+	if program.reviewModeActive() {
+		return nil
 	}
-	return commands
+	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
 }
 
 func (program *Program) applyPullRequestTitleEditApplied(message MsgPullRequestTitleEditApplied) []Cmd {
