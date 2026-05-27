@@ -1,7 +1,10 @@
 package tui
 
 func given_programWithTestGitHubDeps(model *Model, githubLoader any) *Program {
-	return NewProgramWithModelAndDeps(model, given_testAppDeps(githubLoader))
+	subject := NewProgramWithModelAndDeps(model, given_testAppDeps(githubLoader))
+	subject.timingState.transientErrorPopupDuration = 0
+	subject.actionsPopupWidget.assigneePickerSearchDebounceDelay = 0
+	return subject
 }
 
 func given_testAppDeps(loader any) AppDeps {

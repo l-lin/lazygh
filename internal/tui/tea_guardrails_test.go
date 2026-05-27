@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -1261,47 +1262,88 @@ func given_isRenderLayerFile(path string) bool {
 	return strings.HasPrefix(base, "render") || strings.HasSuffix(base, "_view.go")
 }
 
+type guardSourceFile struct {
+	path         string
+	relativePath string
+	lines        []string
+}
+
+var (
+	guardSourceFilesOnce sync.Once
+	guardSourceFiles     []guardSourceFile
+	guardSourceFilesErr  error
+)
+
 func given_regexpLineMatchesInGoFiles(t *testing.T, root string, pattern *regexp.Regexp, include func(string) bool) []string {
 	t.Helper()
 
-	packageRoot := given_guardPackageRoot(t)
 	scanRoot := given_guardScanRoot(t, root)
 	actualMatches := make([]string, 0)
-	actualErr := filepath.WalkDir(scanRoot, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+	for _, file := range given_guardSourceFiles(t) {
+		if !given_guardFileUnderRoot(file.path, scanRoot) {
+			continue
 		}
-		if entry.IsDir() {
-			name := entry.Name()
-			if name == ".git" || name == "testdata" {
-				return filepath.SkipDir
-			}
-			return nil
+		if include != nil && !include(file.path) {
+			continue
 		}
-		if include != nil && !include(path) {
-			return nil
-		}
-
-		contents, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return readErr
-		}
-		relativePath, relErr := filepath.Rel(packageRoot, path)
-		if relErr != nil {
-			return relErr
-		}
-		for lineIndex, line := range strings.Split(string(contents), "\n") {
+		for lineIndex, line := range file.lines {
 			if !pattern.MatchString(line) {
 				continue
 			}
-			actualMatches = append(actualMatches, fmt.Sprintf("%s:%d contains %q", filepath.ToSlash(relativePath), lineIndex+1, strings.TrimSpace(line)))
+			actualMatches = append(actualMatches, fmt.Sprintf("%s:%d contains %q", file.relativePath, lineIndex+1, strings.TrimSpace(line)))
 		}
-		return nil
-	})
-	if actualErr != nil {
-		t.Fatalf("walk go files: %v", actualErr)
 	}
 
 	slices.Sort(actualMatches)
 	return actualMatches
+}
+
+func given_guardSourceFiles(t *testing.T) []guardSourceFile {
+	t.Helper()
+
+	packageRoot := given_guardPackageRoot(t)
+	guardSourceFilesOnce.Do(func() {
+		guardSourceFiles = make([]guardSourceFile, 0)
+		guardSourceFilesErr = filepath.WalkDir(packageRoot, func(path string, entry os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if entry.IsDir() {
+				name := entry.Name()
+				if name == ".git" || name == "testdata" {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if !strings.HasSuffix(entry.Name(), ".go") {
+				return nil
+			}
+
+			contents, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			relativePath, relErr := filepath.Rel(packageRoot, path)
+			if relErr != nil {
+				return relErr
+			}
+			guardSourceFiles = append(guardSourceFiles, guardSourceFile{
+				path:         path,
+				relativePath: filepath.ToSlash(relativePath),
+				lines:        strings.Split(string(contents), "\n"),
+			})
+			return nil
+		})
+	})
+	if guardSourceFilesErr != nil {
+		t.Fatalf("walk go files: %v", guardSourceFilesErr)
+	}
+	return guardSourceFiles
+}
+
+func given_guardFileUnderRoot(path string, scanRoot string) bool {
+	if path == scanRoot {
+		return true
+	}
+	return strings.HasPrefix(path, scanRoot+string(os.PathSeparator))
 }
