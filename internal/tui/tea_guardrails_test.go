@@ -849,6 +849,22 @@ func TestRefactorGuard_GivenDetailFoldFiles_WhenScanning_ThenTheyDoNotReachThrou
 	}
 }
 
+func TestRefactorGuard_GivenReviewCollapseAndBrowserSectionFiles_WhenScanning_ThenStateWritesStayOnReducerOwnedHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.navigationState\.reviewSession\s*=`,
+		`program\.browserCollapsedSectionStates\s*=`,
+		`program\.browserCollapsedSectionStates\[[^\]]+\]\s*=`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "review_inline_conversation.go" || base == "detail_bulk_fold.go" || base == "review_file_tree_search.go" || base == "browser_detail_sections.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected review collapse and browser section feature files to stop mutating reducer-owned state directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenCharacterMotionFiles_WhenScanning_ThenTheyDoNotReachThroughDetailShellHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

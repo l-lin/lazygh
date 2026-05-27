@@ -48,11 +48,9 @@ func (program *Program) setAllReviewInlineConversationFolds(detailDocument detai
 	renderedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)
 	threadAtCursor, cursorOnThread := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
 
-	updatedReviewSession, changed := program.navigationState.reviewSession.withAllThreadsCollapsed(selectedFile.Threads, collapsed)
-	if !changed {
+	if !program.setAllReviewSessionThreadsCollapsed(selectedFile.Threads, collapsed) {
 		return detailViewSyncPlan{}, false
 	}
-	program.navigationState.reviewSession = updatedReviewSession
 	program.invalidateReviewDiffRenderCache()
 
 	plan := detailViewSyncPlan{document: program.currentReviewDiffDocument(selectedFile, detailDocument.width)}
@@ -180,31 +178,6 @@ func browserChangesThreadSectionIDs(summary githubdomain.PullRequest, files []re
 		}
 	}
 	return sectionIDs
-}
-
-func (program *Program) setBrowserDetailSectionsCollapsed(sectionIDs []string, collapsed bool) bool {
-	if len(sectionIDs) == 0 {
-		return false
-	}
-	if program.browserCollapsedSectionStates == nil {
-		program.browserCollapsedSectionStates = map[string]bool{}
-	}
-
-	changed := false
-	for _, sectionID := range sectionIDs {
-		trimmedSectionID := strings.TrimSpace(sectionID)
-		if trimmedSectionID == "" {
-			continue
-		}
-		if actualCollapsed, ok := program.browserCollapsedSectionStates[trimmedSectionID]; !ok || actualCollapsed != collapsed {
-			changed = true
-		}
-		program.browserCollapsedSectionStates[trimmedSectionID] = collapsed
-	}
-	if changed {
-		program.invalidatePullRequestDetailDocumentCache()
-	}
-	return changed
 }
 
 func browserDetailSectionHeaderFocusLine(sections []browserDetailSection, sectionID string, includeBlankLines bool) (int, bool) {

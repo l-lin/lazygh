@@ -47,7 +47,7 @@ func (program *Program) toggleReviewInlineConversationVisibility(detailDocument 
 	}
 
 	collapsed := reviewDiffThreadCollapsed(thread, program.navigationState.reviewSession.collapsedThreadIDs)
-	program.navigationState.reviewSession = program.navigationState.reviewSession.withThreadCollapsed(thread.ID, !collapsed)
+	program.setReviewSessionThreadCollapsed(thread.ID, !collapsed)
 	program.invalidateReviewDiffRenderCache()
 
 	updatedRows := program.currentReviewDiffRenderedRows(selectedFile, detailDocument.width)

@@ -49,7 +49,7 @@ func (program *Program) followReviewFileTreeSearch(query string, choose searchMa
 		return false
 	}
 
-	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(matchRows[matchIndex])
+	program.setReviewSessionSelectedFileTreeRow(matchRows[matchIndex])
 	return true
 }
 
