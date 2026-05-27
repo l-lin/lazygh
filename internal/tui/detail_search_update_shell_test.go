@@ -17,12 +17,13 @@ func TestUpdate_GivenMsgSearchWordUnderCursor_WhenApplying_ThenItReturnsATypedRe
 	}
 }
 
-func TestUpdate_GivenMsgDetailSearchWordResolved_WhenApplying_ThenItAppliesTheSearchStateAndReturnsATypedFollowCommand(t *testing.T) {
-	model := given_model()
+func TestUpdate_GivenMsgDetailSearchWordResolvedContext_WhenApplying_ThenItAppliesTheSearchStateAndReturnsATypedDetailMotionCommand(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha Beta"}}})
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
+	subject.detailState.viewState.cursor = detailPosition{line: 0, column: 0}
 
-	actual := Update(subject, MsgDetailSearchWordResolved{Query: "Alpha", Reverse: true})
+	actual := Update(subject, MsgDetailSearchWordResolved{Document: newDetailDocument("Alpha Beta", 40), ViewportHeight: 3, Reverse: true})
 
 	if actualQuery := subject.model.DetailSearchQuery(); actualQuery != "Alpha" {
 		t.Fatalf("expected detail search query %q, actual %q", "Alpha", actualQuery)
@@ -37,18 +38,21 @@ func TestUpdate_GivenMsgDetailSearchWordResolved_WhenApplying_ThenItAppliesTheSe
 		t.Fatal("expected the detail search direction to stay reversed")
 	}
 	if len(actual) != 1 {
-		t.Fatalf("expected one follow-detail-search command, actual %d", len(actual))
+		t.Fatalf("expected one follow-detail-motion command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(followDetailSearchCmd)
+	command, ok := actual[0].(detailMotionCmd)
 	if !ok {
-		t.Fatalf("expected a followDetailSearchCmd, actual %T", actual[0])
+		t.Fatalf("expected a detailMotionCmd, actual %T", actual[0])
+	}
+	if command.Target != detailMotionTargetDetail || command.Operation != detailMotionOperationFollowSubmittedSearch {
+		t.Fatalf("expected a detail follow-search motion command, actual %+v", command)
 	}
 	if !command.Reverse {
 		t.Fatal("expected the follow command to stay reversed")
 	}
 }
 
-func TestUpdate_GivenMsgSubmitSearchForDetailTarget_WhenApplying_ThenItReturnsATypedFollowDetailSearchCommand(t *testing.T) {
+func TestUpdate_GivenMsgSubmitSearchForDetailTarget_WhenApplying_ThenItReturnsATypedDetailMotionCommand(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -66,18 +70,21 @@ func TestUpdate_GivenMsgSubmitSearchForDetailTarget_WhenApplying_ThenItReturnsAT
 		t.Fatal("expected the search editor to be cleared after submit")
 	}
 	if len(actual) != 1 {
-		t.Fatalf("expected one follow-detail-search command, actual %d", len(actual))
+		t.Fatalf("expected one follow-detail-motion command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(followDetailSearchCmd)
+	command, ok := actual[0].(detailMotionCmd)
 	if !ok {
-		t.Fatalf("expected a followDetailSearchCmd, actual %T", actual[0])
+		t.Fatalf("expected a detailMotionCmd, actual %T", actual[0])
+	}
+	if command.Target != detailMotionTargetDetail || command.Operation != detailMotionOperationFollowSubmittedSearch {
+		t.Fatalf("expected a detail follow-search motion command, actual %+v", command)
 	}
 	if command.Reverse {
 		t.Fatal("expected the submitted search follow command to stay forward")
 	}
 }
 
-func TestUpdate_GivenMsgRepeatDetailSearchRequested_WhenApplying_ThenItReturnsATypedRepeatDetailSearchCommand(t *testing.T) {
+func TestUpdate_GivenMsgRepeatDetailSearchRequested_WhenApplying_ThenItReturnsATypedDetailMotionCommand(t *testing.T) {
 	model := given_model()
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -87,9 +94,13 @@ func TestUpdate_GivenMsgRepeatDetailSearchRequested_WhenApplying_ThenItReturnsAT
 	actual := Update(subject, MsgRepeatDetailSearchRequested{})
 
 	if len(actual) != 1 {
-		t.Fatalf("expected one repeat-detail-search command, actual %d", len(actual))
+		t.Fatalf("expected one repeat-detail-motion command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(repeatDetailSearchCmd); !ok {
-		t.Fatalf("expected a repeatDetailSearchCmd, actual %T", actual[0])
+	command, ok := actual[0].(detailMotionCmd)
+	if !ok {
+		t.Fatalf("expected a detailMotionCmd, actual %T", actual[0])
+	}
+	if command.Target != detailMotionTargetDetail || command.Operation != detailMotionOperationRepeatSearch {
+		t.Fatalf("expected a detail repeat-search motion command, actual %+v", command)
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestUpdate_GivenMsgLineNavigationRequestedWithDetailFocus_WhenApplying_ThenItReturnsATypedDetailLineNavigationCommand(t *testing.T) {
+func TestUpdate_GivenMsgLineNavigationRequestedWithDetailFocus_WhenApplying_ThenItReturnsATypedDetailMotionCommand(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "user-1", Detail: given_multilineDetail(4)}}})
 	model.OpenDetail()
 	subject := NewProgramWithModel(model)
@@ -16,12 +16,12 @@ func TestUpdate_GivenMsgLineNavigationRequestedWithDetailFocus_WhenApplying_Then
 	if len(actual) != 1 {
 		t.Fatalf("expected one line-navigation command, actual %d", len(actual))
 	}
-	command, ok := actual[0].(detailLineNavigationCmd)
+	command, ok := actual[0].(detailMotionCmd)
 	if !ok {
-		t.Fatalf("expected a detailLineNavigationCmd, actual %T", actual[0])
+		t.Fatalf("expected a detailMotionCmd, actual %T", actual[0])
 	}
-	if command.Delta != 1 {
-		t.Fatalf("expected detail line-navigation delta %d, actual %d", 1, command.Delta)
+	if command.Target != detailMotionTargetDetail || command.Operation != detailMotionOperationMoveDown {
+		t.Fatalf("expected a detail move-down motion command, actual %+v", command)
 	}
 }
 

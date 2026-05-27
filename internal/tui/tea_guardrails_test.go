@@ -1314,6 +1314,26 @@ func TestRefactorGuard_GivenNotificationShortcutEntrypoints_WhenScanning_ThenThe
 	}
 }
 
+func TestRefactorGuard_GivenDetailMotionAndNavigationCommandFiles_WhenScanning_ThenTheyDoNotMutateDurableDetailOrBuildPopupState(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.detailState\.viewState\.`,
+		`program\.pullRequestBuildRunPopup\.viewState\.`,
+		`popup\.viewState\.`,
+		`mutateDetailViewState`,
+		`mutatePullRequestBuildRunPopupViewState`,
+		`syncDetailViewState\(`,
+		`focusDetailLine\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "cmd_detail_motion.go" || base == "cmd_interaction_navigation.go" || base == "cmd_interaction_detail_search.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail-motion and navigation command executors to resolve live context then dispatch typed reducer messages instead of mutating durable detail/build-popup state directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndCacheApplyFilesWritePullRequestDetailOrDiffCaches(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestDetailCache|pullRequestDiffCache)\[[^]]+\]\s*=`), func(path string) bool {
 		base := filepath.Base(path)

@@ -6,12 +6,10 @@ type navigationCommandRuntime struct {
 	dispatch                   func(*gocui.Gui, Msg) error
 	resolveView                func(*gocui.Gui, *gocui.View, string) *gocui.View
 	configureGUI               func(*gocui.Gui)
-	focusDetailRenderedLine    func(*gocui.Gui, *gocui.View, int)
-	handleDetailLineNavigation func(*gocui.Gui, *gocui.View, int)
+	currentDetailDocument      func(*gocui.View) detailDocument
 	handlePageNavigation       func(*gocui.Gui, *gocui.View, pageNavigationKind)
 	handleSideListViewport     func(*gocui.Gui, *gocui.View, viewportPlacement)
 	handleActionsPopupViewport func(*gocui.Gui, *gocui.View, viewportPlacement)
-	handleDetailViewport       func(*gocui.Gui, *gocui.View, detailViewportOperation)
 }
 
 func newNavigationCommandRuntime(program *Program) navigationCommandRuntime {
@@ -19,49 +17,14 @@ func newNavigationCommandRuntime(program *Program) navigationCommandRuntime {
 		return navigationCommandRuntime{}
 	}
 	return navigationCommandRuntime{
-		dispatch:     program.dispatch,
-		resolveView:  program.resolveView,
-		configureGUI: program.configureGUI,
-		focusDetailRenderedLine: func(gui *gocui.Gui, view *gocui.View, line int) {
-			_ = program.mutateDetailViewStateWithoutRefresh(gui, view, func(document detailDocument, viewportHeight int) {
-				program.focusDetailLine(document, viewportHeight, line)
-			})
-		},
-		handleDetailLineNavigation: func(gui *gocui.Gui, view *gocui.View, delta int) {
-			actualView := program.resolveView(gui, view, viewDetailName)
-			steps := delta
-			if steps < 0 {
-				steps = -steps
-			}
-			_ = program.mutateDetailViewStateForYankMotion(gui, actualView, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
-				for range steps {
-					if delta > 0 {
-						program.detailState.viewState.moveDown(document, viewportHeight)
-						continue
-					}
-					program.detailState.viewState.moveUp(document, viewportHeight)
-				}
-			})
-		},
+		dispatch:              program.dispatch,
+		resolveView:           program.resolveView,
+		configureGUI:          program.configureGUI,
+		currentDetailDocument: program.currentDetailDocument,
 		handlePageNavigation: func(gui *gocui.Gui, view *gocui.View, kind pageNavigationKind) {
 			actualView := program.resolveView(gui, view, program.currentViewName())
 			pageSize := viewPageSize(actualView)
 			delta := pageNavigationDelta(kind, pageSize)
-			if program.model.Focus() == FocusDetailView {
-				_ = program.mutateDetailViewStateForYankMotion(gui, actualView, detailYankMotionLinewise, func(document detailDocument, viewportHeight int) {
-					switch kind {
-					case pageNavigationKindHalfDown:
-						program.detailState.viewState.pageDown(document, viewportHeight)
-					case pageNavigationKindHalfUp:
-						program.detailState.viewState.pageUp(document, viewportHeight)
-					case pageNavigationKindFullDown:
-						program.detailState.viewState.fullPageDown(document, viewportHeight)
-					case pageNavigationKindFullUp:
-						program.detailState.viewState.fullPageUp(document, viewportHeight)
-					}
-				})
-				return
-			}
 			if program.actionContext().IsReviewContext() {
 				if program.model.Focus() != FocusPullRequestsView {
 					return
@@ -89,33 +52,6 @@ func newNavigationCommandRuntime(program *Program) navigationCommandRuntime {
 			}
 			_ = program.placeListSelection(gui, view, viewActionsPopupName, selectedLine, lineCount, placement)
 		},
-		handleDetailViewport: func(gui *gocui.Gui, view *gocui.View, operation detailViewportOperation) {
-			switch operation {
-			case detailViewportOperationScrollDown:
-				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.scrollDown(document, viewportHeight)
-				})
-			case detailViewportOperationScrollUp:
-				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.scrollUp(document, viewportHeight)
-				})
-			case detailViewportOperationRecenter:
-				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.recenter(document, viewportHeight)
-					program.detailState.viewState.preserveViewportSyncCount++
-				})
-			case detailViewportOperationPlaceTop:
-				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.placeCursorAtViewportTop(document, viewportHeight)
-					program.detailState.viewState.preserveViewportSyncCount++
-				})
-			case detailViewportOperationPlaceBottom:
-				_ = program.mutateDetailViewState(gui, view, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.placeCursorAtViewportBottom(document, viewportHeight)
-					program.detailState.viewState.preserveViewportSyncCount++
-				})
-			}
-		},
 	}
 }
 
@@ -141,26 +77,15 @@ func (command focusReviewCommentCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeFocusReviewCommentCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command focusReviewCommentCmd) {
-	if runtime.resolveView == nil || runtime.focusDetailRenderedLine == nil {
+	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
 		return
 	}
-	actualView := runtime.resolveView(gui, nil, viewDetailName)
-	runtime.focusDetailRenderedLine(gui, actualView, command.RenderedLine)
-}
 
-type detailLineNavigationCmd struct {
-	Delta int
-}
-
-func (command detailLineNavigationCmd) execute(program *Program, gui *gocui.Gui) {
-	executeDetailLineNavigationCommand(newNavigationCommandRuntime(program), gui, command)
-}
-
-func executeDetailLineNavigationCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command detailLineNavigationCmd) {
-	if runtime.handleDetailLineNavigation == nil {
-		return
+	actualView := (*gocui.View)(nil)
+	if runtime.resolveView != nil {
+		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
-	runtime.handleDetailLineNavigation(gui, nil, command.Delta)
+	_ = runtime.dispatch(gui, MsgFocusDetailRenderedLineResolved{RenderedLine: command.RenderedLine, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
 
 type pageNavigationCmd struct {
@@ -259,10 +184,15 @@ func (command detailViewportCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeDetailViewportCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command detailViewportCmd) {
-	if runtime.handleDetailViewport == nil {
+	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
 		return
 	}
-	runtime.handleDetailViewport(gui, nil, command.Operation)
+
+	actualView := (*gocui.View)(nil)
+	if runtime.resolveView != nil {
+		actualView = runtime.resolveView(gui, nil, viewDetailName)
+	}
+	_ = runtime.dispatch(gui, MsgDetailViewportResolved{Operation: command.Operation, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
 
 func pageNavigationDelta(kind pageNavigationKind, pageSize int) int {

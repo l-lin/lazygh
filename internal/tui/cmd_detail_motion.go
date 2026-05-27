@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 type detailMotionTarget int
 
@@ -56,8 +52,10 @@ type detailMotionCmd struct {
 }
 
 type detailMotionCommandRuntime struct {
-	executeDetail     func(*gocui.Gui, detailMotionCmd)
-	executeBuildPopup func(*gocui.Gui, detailMotionCmd)
+	dispatch                                func(*gocui.Gui, Msg) error
+	resolveView                             func(*gocui.Gui, *gocui.View, string) *gocui.View
+	currentDetailDocument                   func(*gocui.View) detailDocument
+	currentPullRequestBuildRunPopupDocument func(*gocui.View) detailDocument
 }
 
 func newDetailMotionCommandRuntime(program *Program) detailMotionCommandRuntime {
@@ -65,119 +63,10 @@ func newDetailMotionCommandRuntime(program *Program) detailMotionCommandRuntime 
 		return detailMotionCommandRuntime{}
 	}
 	return detailMotionCommandRuntime{
-		executeDetail: func(gui *gocui.Gui, command detailMotionCmd) {
-			switch command.Operation {
-			case detailMotionOperationArmCharacter:
-				_ = program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.armCharacterMotion(command.Direction, command.Mode)
-				})
-			case detailMotionOperationConsumePendingCharacter:
-				_ = program.mutateDetailViewStateForYankMotion(gui, nil, command.SelectionKind, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.consumePendingCharacterMotion(document, viewportHeight, command.Rune)
-				})
-			case detailMotionOperationRepeatCharacter:
-				if !program.detailState.viewState.hasLastCharacterMotion {
-					return
-				}
-				_ = program.mutateDetailViewStateForYankMotion(gui, nil, command.SelectionKind, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.repeatCharacterMotion(document, viewportHeight, command.Reverse)
-				})
-			case detailMotionOperationArmPendingYank:
-				_ = program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.armPendingYank()
-				})
-			case detailMotionOperationFinishPendingYank:
-				_ = program.mutateDetailViewStateForYankMotion(gui, nil, command.SelectionKind, func(detailDocument, int) {})
-			case detailMotionOperationEnterVisualMode:
-				_ = program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.enterVisualMode()
-					program.syncCurrentDetailViewport(document, viewportHeight)
-				})
-			case detailMotionOperationEnterLineVisualMode:
-				_ = program.mutateDetailViewState(gui, nil, func(document detailDocument, viewportHeight int) {
-					program.detailState.viewState.enterLineVisualMode(document)
-					program.syncCurrentDetailViewport(document, viewportHeight)
-				})
-			default:
-				selectionKind, ok := detailMotionSelectionKindForOperation(command.Operation)
-				if !ok {
-					return
-				}
-				_ = program.mutateDetailViewStateForYankMotion(gui, nil, selectionKind, func(document detailDocument, viewportHeight int) {
-					applyDetailMotionStateOperation(&program.detailState.viewState, document, viewportHeight, command.Operation)
-				})
-			}
-		},
-		executeBuildPopup: func(gui *gocui.Gui, command detailMotionCmd) {
-			popup := program.pullRequestBuildRunPopup
-			if popup == nil {
-				return
-			}
-
-			switch command.Operation {
-			case detailMotionOperationArmCharacter:
-				_ = program.mutatePullRequestBuildRunPopupViewState(gui, nil, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					state.armCharacterMotion(command.Direction, command.Mode)
-				})
-			case detailMotionOperationConsumePendingCharacter:
-				_ = program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, nil, command.SelectionKind, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					state.consumePendingCharacterMotion(document, viewportHeight, command.Rune)
-				})
-			case detailMotionOperationRepeatCharacter:
-				if !popup.viewState.hasLastCharacterMotion {
-					return
-				}
-				_ = program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, nil, command.SelectionKind, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					state.repeatCharacterMotion(document, viewportHeight, command.Reverse)
-				})
-			case detailMotionOperationArmPendingYank:
-				_ = program.mutatePullRequestBuildRunPopupViewState(gui, nil, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					state.armPendingYank()
-				})
-			case detailMotionOperationFinishPendingYank:
-				_ = program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, nil, command.SelectionKind, func(*detailViewState, detailDocument, int) {})
-			case detailMotionOperationEnterVisualMode:
-				_ = program.mutatePullRequestBuildRunPopupViewState(gui, nil, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					state.enterVisualMode()
-					state.sync(document, viewportHeight)
-				})
-			case detailMotionOperationEnterLineVisualMode:
-				_ = program.mutatePullRequestBuildRunPopupViewState(gui, nil, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					state.enterLineVisualMode(document)
-					state.sync(document, viewportHeight)
-				})
-			case detailMotionOperationFollowSubmittedSearch:
-				_ = program.mutatePullRequestBuildRunPopupViewState(gui, nil, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					if strings.TrimSpace(popup.searchQuery) == "" {
-						state.syncSearch(document, "")
-						return
-					}
-					state.followSubmittedSearch(document, popup.searchQuery, viewportHeight)
-				})
-			case detailMotionOperationRepeatSearch:
-				if popup.searchActive || popup.viewState.mode != detailNormalMode {
-					return
-				}
-				if strings.TrimSpace(popup.searchQuery) == "" {
-					return
-				}
-				_ = program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, nil, detailYankMotionCharacterInclusive, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					if command.Reverse {
-						state.followPreviousSearchMatch(document, popup.searchQuery, viewportHeight)
-						return
-					}
-					state.followNextSearchMatch(document, popup.searchQuery, viewportHeight)
-				})
-			default:
-				selectionKind, ok := detailMotionSelectionKindForOperation(command.Operation)
-				if !ok {
-					return
-				}
-				_ = program.mutatePullRequestBuildRunPopupViewStateForYankMotion(gui, nil, selectionKind, func(state *detailViewState, document detailDocument, viewportHeight int) {
-					applyDetailMotionStateOperation(state, document, viewportHeight, command.Operation)
-				})
-			}
-		},
+		dispatch:                                program.dispatch,
+		resolveView:                             program.resolveView,
+		currentDetailDocument:                   program.currentDetailDocument,
+		currentPullRequestBuildRunPopupDocument: program.currentPullRequestBuildRunPopupDocument,
 	}
 }
 
@@ -255,14 +144,45 @@ func (command detailMotionCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeDetailMotionCommand(runtime detailMotionCommandRuntime, gui *gocui.Gui, command detailMotionCmd) {
+	if runtime.dispatch == nil {
+		return
+	}
+
+	actualView := (*gocui.View)(nil)
+	document := detailDocument{}
 	switch command.Target {
 	case detailMotionTargetBuildPopup:
-		if runtime.executeBuildPopup != nil {
-			runtime.executeBuildPopup(gui, command)
+		if runtime.currentPullRequestBuildRunPopupDocument == nil {
+			return
 		}
+		if runtime.resolveView != nil {
+			actualView = runtime.resolveView(gui, nil, viewPullRequestBuildInfoName)
+		}
+		document = runtime.currentPullRequestBuildRunPopupDocument(actualView)
 	default:
-		if runtime.executeDetail != nil {
-			runtime.executeDetail(gui, command)
+		if runtime.currentDetailDocument == nil {
+			return
 		}
+		if runtime.resolveView != nil {
+			actualView = runtime.resolveView(gui, nil, viewDetailName)
+		}
+		document = runtime.currentDetailDocument(actualView)
 	}
+
+	selectionKind := command.SelectionKind
+	if actualSelectionKind, ok := detailMotionSelectionKindForOperation(command.Operation); ok {
+		selectionKind = actualSelectionKind
+	}
+
+	_ = runtime.dispatch(gui, MsgDetailMotionResolved{
+		Target:         command.Target,
+		Operation:      command.Operation,
+		Direction:      command.Direction,
+		Mode:           command.Mode,
+		Reverse:        command.Reverse,
+		SelectionKind:  selectionKind,
+		Rune:           command.Rune,
+		Document:       document,
+		ViewportHeight: viewPageSize(actualView),
+	})
 }

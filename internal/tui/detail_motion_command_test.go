@@ -5,6 +5,39 @@ import (
 	"testing"
 )
 
+func TestUpdate_GivenMsgDetailMotionResolvedWithPendingLinewiseYank_WhenApplying_ThenItRestoresTheCursorAndReturnsAClipboardWriteCommand(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha\nBeta"}}})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	document := newDetailDocument("Alpha\nBeta", 40)
+	subject.detailState = subject.detailState.synced(subject.currentDetailIdentity(), document, 2, subject.model.DetailSearchQuery())
+	subject.detailState.viewState.cursor = detailPosition{line: 0, column: 0}
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.armPendingYank()
+
+	actual := Update(subject, MsgDetailMotionResolved{Target: detailMotionTargetDetail, Operation: detailMotionOperationFinishPendingYank, SelectionKind: detailYankMotionLinewise, Document: document, ViewportHeight: 2})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one clipboard command, actual %d", len(actual))
+	}
+	command, ok := actual[0].(writeClipboardCmd)
+	if !ok {
+		t.Fatalf("expected a writeClipboardCmd, actual %T", actual[0])
+	}
+	if actual := command.Text; actual != "Alpha" {
+		t.Fatalf("expected clipboard text %q, actual %q", "Alpha", actual)
+	}
+	if actual := command.SelectionTarget; actual != clipboardWriteSelectionDetail {
+		t.Fatalf("expected clipboard selection target %v, actual %v", clipboardWriteSelectionDetail, actual)
+	}
+	if subject.detailState.viewState.cursor != (detailPosition{line: 0, column: 0}) {
+		t.Fatalf("expected cursor %+v after linewise yank, actual %+v", detailPosition{line: 0, column: 0}, subject.detailState.viewState.cursor)
+	}
+	if subject.detailState.viewState.hasPendingYank() {
+		t.Fatal("expected the pending yank to clear after returning the clipboard command")
+	}
+}
+
 func TestDetailMotionCommand_GivenPendingYank_WhenExecutingTheLinewiseFinish_ThenItCopiesTheCurrentLineWithoutMovingTheCursor(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha\nBeta"}}})
 	model.OpenDetail()

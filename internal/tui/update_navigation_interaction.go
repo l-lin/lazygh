@@ -222,7 +222,7 @@ func (program *Program) applyLineNavigationRequested(message MsgLineNavigationRe
 		return nil
 	}
 	if program.model.Focus() == FocusDetailView {
-		return []Cmd{detailLineNavigationCmd{Delta: message.Delta}}
+		return detailMotionCommandsForLineDelta(message.Delta)
 	}
 	if program.actionContext().IsReviewContext() {
 		if program.model.Focus() != FocusPullRequestsView {
@@ -238,6 +238,12 @@ func (program *Program) applyLineNavigationRequested(message MsgLineNavigationRe
 func (program *Program) applyPageNavigationRequested(message MsgPageNavigationRequested) []Cmd {
 	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() {
+		return nil
+	}
+	if program.model.Focus() == FocusDetailView {
+		if operation, ok := detailMotionOperationForPageNavigationKind(message.Kind); ok {
+			return []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: operation}}
+		}
 		return nil
 	}
 	return []Cmd{pageNavigationCmd{Kind: message.Kind}}
@@ -391,11 +397,16 @@ func (program *Program) applyRepeatDetailSearchRequested(message MsgRepeatDetail
 	if program.searchWidget.detailReversed {
 		reverse = !reverse
 	}
-	return []Cmd{repeatDetailSearchCmd{Reverse: reverse}}
+	return []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationRepeatSearch, Reverse: reverse}}
 }
 
 func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWordResolved) []Cmd {
-	query := strings.TrimSpace(message.Query)
+	program.detailState = program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, program.model.DetailSearchQuery())
+	query, ok := message.Document.wordAt(program.detailState.viewState.cursor)
+	if !ok {
+		return nil
+	}
+	query = strings.TrimSpace(query)
 	if query == "" {
 		return nil
 	}
@@ -410,5 +421,39 @@ func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWor
 	program.model.SubmitSearch()
 	program.searchWidget.detailReversed = message.Reverse
 	program.searchWidget.clearEditor()
-	return []Cmd{followDetailSearchCmd{Reverse: message.Reverse}}
+	return []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFollowSubmittedSearch, Reverse: message.Reverse}}
+}
+
+func detailMotionCommandsForLineDelta(delta int) []Cmd {
+	if delta == 0 {
+		return nil
+	}
+
+	operation := detailMotionOperationMoveDown
+	steps := delta
+	if delta < 0 {
+		operation = detailMotionOperationMoveUp
+		steps = -delta
+	}
+
+	actual := make([]Cmd, 0, steps)
+	for range steps {
+		actual = append(actual, detailMotionCmd{Target: detailMotionTargetDetail, Operation: operation})
+	}
+	return actual
+}
+
+func detailMotionOperationForPageNavigationKind(kind pageNavigationKind) (detailMotionOperation, bool) {
+	switch kind {
+	case pageNavigationKindHalfDown:
+		return detailMotionOperationPageDown, true
+	case pageNavigationKindHalfUp:
+		return detailMotionOperationPageUp, true
+	case pageNavigationKindFullDown:
+		return detailMotionOperationFullPageDown, true
+	case pageNavigationKindFullUp:
+		return detailMotionOperationFullPageUp, true
+	default:
+		return detailMotionOperationMoveDown, false
+	}
 }

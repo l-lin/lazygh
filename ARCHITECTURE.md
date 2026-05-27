@@ -60,7 +60,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 1. A keybinding, popup, editor-intent callback, or async result emits a `Msg`.
 2. `Update` mutates state and returns typed `Cmd` values.
-   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, transient error popup state, and async popup or modal-submit success handling stay in `Update`.
+   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit success handling, and detail/build-popup cursor/search transitions stay in `Update`.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, shell sync, and redraw only.
 

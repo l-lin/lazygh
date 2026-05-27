@@ -138,6 +138,12 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applySideListViewportRequested(actual)
 	case MsgDetailViewportRequested:
 		return program.applyDetailViewportRequested(actual)
+	case MsgDetailViewportResolved:
+		program.applyDetailViewportResolved(actual)
+	case MsgFocusDetailRenderedLineResolved:
+		program.applyFocusDetailRenderedLineResolved(actual)
+	case MsgDetailMotionResolved:
+		return program.applyDetailMotionResolved(actual)
 	case MsgOpenBrowserURLRequested:
 		return program.applyOpenBrowserURLRequested(actual)
 	case MsgOpenBrowserURLFinished:
@@ -243,7 +249,7 @@ func Update(program *Program, msg Msg) []Cmd {
 
 		commands := []Cmd(nil)
 		if target == FocusDetailView {
-			commands = append(commands, followDetailSearchCmd{Reverse: false})
+			commands = append(commands, detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFollowSubmittedSearch})
 		}
 		if target == FocusPullRequestsView {
 			program.followSubmittedPullRequestSearch(targetPullRequestTab, targetPullRequestIndex)

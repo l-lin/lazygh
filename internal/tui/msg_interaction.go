@@ -146,6 +146,30 @@ type MsgDetailViewportRequested struct {
 	Operation detailViewportOperation
 }
 
+type MsgDetailViewportResolved struct {
+	Operation      detailViewportOperation
+	Document       detailDocument
+	ViewportHeight int
+}
+
+type MsgFocusDetailRenderedLineResolved struct {
+	RenderedLine   int
+	Document       detailDocument
+	ViewportHeight int
+}
+
+type MsgDetailMotionResolved struct {
+	Target         detailMotionTarget
+	Operation      detailMotionOperation
+	Direction      detailCharacterMotionDirection
+	Mode           detailCharacterMotionMode
+	Reverse        bool
+	SelectionKind  detailYankMotionSelectionKind
+	Rune           rune
+	Document       detailDocument
+	ViewportHeight int
+}
+
 type MsgOpenBrowserURLRequested struct {
 	URL            string
 	SuccessMessage string
@@ -258,8 +282,9 @@ type MsgRepeatDetailSearchRequested struct {
 }
 
 type MsgDetailSearchWordResolved struct {
-	Query   string
-	Reverse bool
+	Document       detailDocument
+	ViewportHeight int
+	Reverse        bool
 }
 
 type MsgToggleInlineConversationVisibility struct{}
@@ -300,6 +325,9 @@ func (MsgLineNavigationRequested) isMsg()                      {}
 func (MsgPageNavigationRequested) isMsg()                      {}
 func (MsgSideListViewportRequested) isMsg()                    {}
 func (MsgDetailViewportRequested) isMsg()                      {}
+func (MsgDetailViewportResolved) isMsg()                       {}
+func (MsgFocusDetailRenderedLineResolved) isMsg()              {}
+func (MsgDetailMotionResolved) isMsg()                         {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
