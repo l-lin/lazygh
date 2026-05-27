@@ -965,6 +965,22 @@ func TestRefactorGuard_GivenDetailFoldCommandFile_WhenScanning_ThenItDoesNotMuta
 	}
 }
 
+func TestRefactorGuard_GivenLinkClipboardCommandFile_WhenScanning_ThenItDoesNotMutateDetailOrBuildPopupState(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`syncDetailViewState\(`,
+		`program\.detailState\.viewState\.`,
+		`popup\.viewState\.`,
+		`syncPullRequestBuildRunPopupViewState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "cmd_interaction_link_clipboard.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cmd_interaction_link_clipboard.go to resolve live documents only and leave detail/build-popup state mutation to update, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewCollapseAndBrowserSectionFiles_WhenScanning_ThenStateWritesStayOnReducerOwnedHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\s*=`,

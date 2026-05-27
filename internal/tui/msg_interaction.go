@@ -198,6 +198,18 @@ type MsgClipboardWriteFinished struct {
 	SelectionTarget clipboardWriteSelectionTarget
 }
 
+type MsgSelectedDetailClipboardPrepared struct {
+	Target         Focus
+	Document       detailDocument
+	ViewportHeight int
+}
+
+type MsgPullRequestBuildRunPopupClipboardPrepared struct {
+	Target         Focus
+	Document       detailDocument
+	ViewportHeight int
+}
+
 type MsgOpenPullRequestByURLPromptRequested struct{}
 
 type MsgReadPullRequestURLFromClipboardRequested struct{}
@@ -337,6 +349,8 @@ func (MsgDetailViewSyncPlanResolved) isMsg()                   {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}
 func (MsgOpenBrowserURLFinished) isMsg()                       {}
 func (MsgClipboardWriteFinished) isMsg()                       {}
+func (MsgSelectedDetailClipboardPrepared) isMsg()              {}
+func (MsgPullRequestBuildRunPopupClipboardPrepared) isMsg()    {}
 func (MsgOpenPullRequestByURLPromptRequested) isMsg()          {}
 func (MsgReadPullRequestURLFromClipboardRequested) isMsg()     {}
 func (MsgOpenPullRequestByURLSubmitRequested) isMsg()          {}

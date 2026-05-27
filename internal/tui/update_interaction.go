@@ -263,6 +263,56 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 	program.setFeedback(message.Target, message.FailureMessage)
 }
 
+func (program *Program) applySelectedDetailClipboardPrepared(message MsgSelectedDetailClipboardPrepared) []Cmd {
+	searchQuery := program.model.DetailSearchQuery()
+	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
+	selection, _ := detailSelectionForCurrentMode(detailState.viewState, message.Document)
+	text := detailState.viewState.selectedText(message.Document)
+	detailState.viewState.exitVisualMode()
+	program.detailState = detailState
+	return []Cmd{writeClipboardCmd{
+		Text:            text,
+		SuccessMessage:  detailYankSuccessMessage,
+		FailureMessage:  detailYankFailureMessage,
+		Target:          message.Target,
+		Selection:       selection,
+		SelectionTarget: clipboardWriteSelectionDetail,
+	}}
+}
+
+func (program *Program) applyPullRequestBuildRunPopupClipboardPrepared(message MsgPullRequestBuildRunPopupClipboardPrepared) []Cmd {
+	popup := program.pullRequestBuildRunPopup
+	if popup == nil {
+		return nil
+	}
+
+	viewState := popup.viewState
+	viewState.sync(message.Document, message.ViewportHeight)
+	viewState.clearPendingPrefix()
+	if viewState.mode.isVisual() {
+		selection, _ := detailSelectionForCurrentMode(viewState, message.Document)
+		text := viewState.selectedText(message.Document)
+		viewState.exitVisualMode()
+		popup.viewState = viewState
+		return []Cmd{writeClipboardCmd{
+			Text:            text,
+			SuccessMessage:  detailYankSuccessMessage,
+			FailureMessage:  detailYankFailureMessage,
+			Target:          message.Target,
+			Selection:       selection,
+			SelectionTarget: clipboardWriteSelectionBuildPopup,
+		}}
+	}
+
+	popup.viewState = viewState
+	runURL := strings.TrimSpace(popup.runURL)
+	if runURL == "" {
+		program.setFeedback(message.Target, yankUnavailableMessage)
+		return nil
+	}
+	return []Cmd{writeClipboardCmd{Text: runURL, SuccessMessage: yankSuccessMessage, FailureMessage: yankFailureMessage, Target: message.Target}}
+}
+
 func (program *Program) applyOpenPullRequestByURLSubmitRequested(message MsgOpenPullRequestByURLSubmitRequested) []Cmd {
 	return []Cmd{modalEditorSubmitCmd{request: openPullRequestByURLSubmitRequest{rawURL: message.URL}}}
 }

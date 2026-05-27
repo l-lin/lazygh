@@ -152,6 +152,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyOpenBrowserURLFinished(actual)
 	case MsgClipboardWriteFinished:
 		program.applyClipboardWriteFinished(actual)
+	case MsgSelectedDetailClipboardPrepared:
+		return program.applySelectedDetailClipboardPrepared(actual)
+	case MsgPullRequestBuildRunPopupClipboardPrepared:
+		return program.applyPullRequestBuildRunPopupClipboardPrepared(actual)
 	case MsgOpenPullRequestByURLPromptRequested:
 		program.applyOpenPullRequestByURLPromptRequested()
 	case MsgReadPullRequestURLFromClipboardRequested:

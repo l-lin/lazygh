@@ -1,20 +1,16 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "github.com/jesseduffield/gocui"
 
 type linkClipboardCommandRuntime struct {
-	linkOpener                          LinkOpener
-	clipboardWriter                     ClipboardWriter
-	dispatch                            func(*gocui.Gui, Msg) error
-	resolveView                         func(*gocui.Gui, *gocui.View, string) *gocui.View
-	currentDetailCursorLink             func(*gocui.View) (string, bool)
-	currentPullRequestBuildRunPopupLink func(*gocui.View) (string, bool)
-	prepareSelectedDetailClipboardWrite func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
-	prepareBuildPopupClipboardWrite     func(*gocui.Gui, *gocui.View, Focus) (writeClipboardCmd, bool)
+	linkOpener                              LinkOpener
+	clipboardWriter                         ClipboardWriter
+	dispatch                                func(*gocui.Gui, Msg) error
+	resolveView                             func(*gocui.Gui, *gocui.View, string) *gocui.View
+	currentDetailCursorLink                 func(*gocui.View) (string, bool)
+	currentPullRequestBuildRunPopupLink     func(*gocui.View) (string, bool)
+	currentDetailDocument                   func(*gocui.View) detailDocument
+	currentPullRequestBuildRunPopupDocument func(*gocui.View) detailDocument
 }
 
 func newLinkClipboardCommandRuntime(program *Program) linkClipboardCommandRuntime {
@@ -22,42 +18,14 @@ func newLinkClipboardCommandRuntime(program *Program) linkClipboardCommandRuntim
 		return linkClipboardCommandRuntime{}
 	}
 	return linkClipboardCommandRuntime{
-		linkOpener:                          program.linkOpener,
-		clipboardWriter:                     program.clipboardWriter,
-		dispatch:                            program.dispatch,
-		resolveView:                         program.resolveView,
-		currentDetailCursorLink:             program.currentDetailCursorLink,
-		currentPullRequestBuildRunPopupLink: program.currentPullRequestBuildRunPopupLink,
-		prepareSelectedDetailClipboardWrite: func(gui *gocui.Gui, view *gocui.View, target Focus) (writeClipboardCmd, bool) {
-			actualView := program.resolveView(gui, view, viewDetailName)
-			detailDocument := program.currentDetailDocument(actualView)
-			program.syncDetailViewState(detailDocument, viewPageSize(actualView))
-			selection, _ := detailSelectionForCurrentMode(program.detailState.viewState, detailDocument)
-			text := program.detailState.viewState.selectedText(detailDocument)
-			program.detailState.viewState.exitVisualMode()
-			return writeClipboardCmd{Text: text, SuccessMessage: detailYankSuccessMessage, FailureMessage: detailYankFailureMessage, Target: target, Selection: selection, SelectionTarget: clipboardWriteSelectionDetail}, true
-		},
-		prepareBuildPopupClipboardWrite: func(gui *gocui.Gui, view *gocui.View, target Focus) (writeClipboardCmd, bool) {
-			popup := program.pullRequestBuildRunPopup
-			if popup == nil {
-				return writeClipboardCmd{}, false
-			}
-			actualView := program.resolveView(gui, view, viewPullRequestBuildInfoName)
-			document := program.currentPullRequestBuildRunPopupDocument(actualView)
-			popup.viewState.sync(document, viewPageSize(actualView))
-			popup.viewState.clearPendingPrefix()
-			if popup.viewState.mode.isVisual() {
-				selection, _ := detailSelectionForCurrentMode(popup.viewState, document)
-				text := popup.viewState.selectedText(document)
-				popup.viewState.exitVisualMode()
-				return writeClipboardCmd{Text: text, SuccessMessage: detailYankSuccessMessage, FailureMessage: detailYankFailureMessage, Target: target, Selection: selection, SelectionTarget: clipboardWriteSelectionBuildPopup}, true
-			}
-			trimmedRunURL := strings.TrimSpace(popup.runURL)
-			if trimmedRunURL == "" {
-				return writeClipboardCmd{}, false
-			}
-			return writeClipboardCmd{Text: trimmedRunURL, SuccessMessage: yankSuccessMessage, FailureMessage: yankFailureMessage, Target: target}, true
-		},
+		linkOpener:                              program.linkOpener,
+		clipboardWriter:                         program.clipboardWriter,
+		dispatch:                                program.dispatch,
+		resolveView:                             program.resolveView,
+		currentDetailCursorLink:                 program.currentDetailCursorLink,
+		currentPullRequestBuildRunPopupLink:     program.currentPullRequestBuildRunPopupLink,
+		currentDetailDocument:                   program.currentDetailDocument,
+		currentPullRequestBuildRunPopupDocument: program.currentPullRequestBuildRunPopupDocument,
 	}
 }
 
@@ -132,14 +100,15 @@ func (command prepareSelectedDetailClipboardWriteCmd) execute(program *Program, 
 }
 
 func executePrepareSelectedDetailClipboardWriteCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command prepareSelectedDetailClipboardWriteCmd) {
-	if runtime.prepareSelectedDetailClipboardWrite == nil {
+	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
 		return
 	}
-	clipboardCommand, ok := runtime.prepareSelectedDetailClipboardWrite(gui, nil, command.Target)
-	if !ok {
-		return
+
+	actualView := (*gocui.View)(nil)
+	if runtime.resolveView != nil {
+		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
-	executeWriteClipboardCommand(runtime.browserClipboardRuntime(), gui, clipboardCommand)
+	_ = runtime.dispatch(gui, MsgSelectedDetailClipboardPrepared{Target: command.Target, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
 
 type preparePullRequestBuildRunPopupClipboardWriteCmd struct {
@@ -151,13 +120,13 @@ func (command preparePullRequestBuildRunPopupClipboardWriteCmd) execute(program 
 }
 
 func executePreparePullRequestBuildRunPopupClipboardWriteCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command preparePullRequestBuildRunPopupClipboardWriteCmd) {
-	if runtime.dispatch == nil || runtime.prepareBuildPopupClipboardWrite == nil {
+	if runtime.dispatch == nil || runtime.currentPullRequestBuildRunPopupDocument == nil {
 		return
 	}
-	clipboardCommand, ok := runtime.prepareBuildPopupClipboardWrite(gui, nil, command.Target)
-	if !ok {
-		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: yankUnavailableMessage})
-		return
+
+	actualView := (*gocui.View)(nil)
+	if runtime.resolveView != nil {
+		actualView = runtime.resolveView(gui, nil, viewPullRequestBuildInfoName)
 	}
-	executeWriteClipboardCommand(runtime.browserClipboardRuntime(), gui, clipboardCommand)
+	_ = runtime.dispatch(gui, MsgPullRequestBuildRunPopupClipboardPrepared{Target: command.Target, Document: runtime.currentPullRequestBuildRunPopupDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
