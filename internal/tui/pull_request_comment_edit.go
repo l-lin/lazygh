@@ -27,7 +27,7 @@ func (program *Program) updatePullRequestCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestCommentEditActionTarget()
 	if ok {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(pullRequestCommentUpdateEditorTitle, target.body, newPullRequestCommentUpdateSubmitDescriptor(target), reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{Descriptor: newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestCommentUpdateEditorTitle, target.body, newPullRequestCommentUpdateSubmitDescriptor(target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "update-pull-request-comment",

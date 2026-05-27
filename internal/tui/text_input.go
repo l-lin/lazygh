@@ -6,6 +6,30 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
+type lineEditorIntentKind int
+
+const (
+	lineEditorIntentKindNone lineEditorIntentKind = iota
+	lineEditorIntentKindMoveCursorLeft
+	lineEditorIntentKindMoveCursorRight
+	lineEditorIntentKindMoveCursorToStart
+	lineEditorIntentKindMoveCursorToEnd
+	lineEditorIntentKindDeleteBackwardChar
+	lineEditorIntentKindDeleteForwardChar
+	lineEditorIntentKindDeleteBackwardWord
+	lineEditorIntentKindDeleteToStart
+	lineEditorIntentKindDeleteToEnd
+	lineEditorIntentKindDeleteForwardWord
+	lineEditorIntentKindMoveCursorWordLeft
+	lineEditorIntentKindMoveCursorWordRight
+	lineEditorIntentKindInsertRune
+)
+
+type lineEditorIntent struct {
+	kind lineEditorIntentKind
+	ch   rune
+}
+
 type lineEditor struct {
 	text   []rune
 	cursor int
@@ -15,6 +39,45 @@ func newLineEditor(text string) lineEditor {
 	editor := lineEditor{}
 	editor.SetText(text)
 	return editor
+}
+
+func newLineEditorInsertRuneIntent(ch rune) lineEditorIntent {
+	return lineEditorIntent{kind: lineEditorIntentKindInsertRune, ch: ch}
+}
+
+func lineEditorIntentFromKey(key gocui.Key, ch rune, mod gocui.Modifier) (lineEditorIntent, bool) {
+	switch {
+	case key == gocui.KeyArrowLeft || key == gocui.KeyCtrlB:
+		return lineEditorIntent{kind: lineEditorIntentKindMoveCursorLeft}, true
+	case key == gocui.KeyArrowRight || key == gocui.KeyCtrlF:
+		return lineEditorIntent{kind: lineEditorIntentKindMoveCursorRight}, true
+	case key == gocui.KeyHome || key == gocui.KeyCtrlA:
+		return lineEditorIntent{kind: lineEditorIntentKindMoveCursorToStart}, true
+	case key == gocui.KeyEnd || key == gocui.KeyCtrlE:
+		return lineEditorIntent{kind: lineEditorIntentKindMoveCursorToEnd}, true
+	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2 || key == gocui.KeyCtrlH:
+		return lineEditorIntent{kind: lineEditorIntentKindDeleteBackwardChar}, true
+	case key == gocui.KeyCtrlD:
+		return lineEditorIntent{kind: lineEditorIntentKindDeleteForwardChar}, true
+	case key == gocui.KeyCtrlW:
+		return lineEditorIntent{kind: lineEditorIntentKindDeleteBackwardWord}, true
+	case key == gocui.KeyCtrlU:
+		return lineEditorIntent{kind: lineEditorIntentKindDeleteToStart}, true
+	case key == gocui.KeyCtrlK:
+		return lineEditorIntent{kind: lineEditorIntentKindDeleteToEnd}, true
+	case (ch == 'd' || ch == 'D') && (mod&gocui.ModAlt) != 0:
+		return lineEditorIntent{kind: lineEditorIntentKindDeleteForwardWord}, true
+	case (ch == 'b' || ch == 'B') && (mod&gocui.ModAlt) != 0:
+		return lineEditorIntent{kind: lineEditorIntentKindMoveCursorWordLeft}, true
+	case (ch == 'f' || ch == 'F') && (mod&gocui.ModAlt) != 0:
+		return lineEditorIntent{kind: lineEditorIntentKindMoveCursorWordRight}, true
+	case key == gocui.KeySpace:
+		return newLineEditorInsertRuneIntent(' '), true
+	case ch != 0 && mod == gocui.ModNone:
+		return newLineEditorInsertRuneIntent(ch), true
+	default:
+		return lineEditorIntent{}, false
+	}
 }
 
 func (editor *lineEditor) Text() string {
@@ -42,53 +105,50 @@ func (editor *lineEditor) SetText(text string) {
 	editor.cursor = len(editor.text)
 }
 
-func (editor *lineEditor) HandleKey(key gocui.Key, ch rune, mod gocui.Modifier) bool {
+func (editor *lineEditor) ApplyIntent(intent lineEditorIntent) bool {
 	if editor == nil {
 		return false
 	}
 
-	switch {
-	case key == gocui.KeyArrowLeft || key == gocui.KeyCtrlB:
+	switch intent.kind {
+	case lineEditorIntentKindMoveCursorLeft:
 		editor.MoveCursorLeft()
 		return true
-	case key == gocui.KeyArrowRight || key == gocui.KeyCtrlF:
+	case lineEditorIntentKindMoveCursorRight:
 		editor.MoveCursorRight()
 		return true
-	case key == gocui.KeyHome || key == gocui.KeyCtrlA:
+	case lineEditorIntentKindMoveCursorToStart:
 		editor.MoveCursorToStart()
 		return true
-	case key == gocui.KeyEnd || key == gocui.KeyCtrlE:
+	case lineEditorIntentKindMoveCursorToEnd:
 		editor.MoveCursorToEnd()
 		return true
-	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2 || key == gocui.KeyCtrlH:
+	case lineEditorIntentKindDeleteBackwardChar:
 		editor.DeleteBackwardChar()
 		return true
-	case key == gocui.KeyCtrlD:
+	case lineEditorIntentKindDeleteForwardChar:
 		editor.DeleteForwardChar()
 		return true
-	case key == gocui.KeyCtrlW:
+	case lineEditorIntentKindDeleteBackwardWord:
 		editor.DeleteBackwardWord()
 		return true
-	case key == gocui.KeyCtrlU:
+	case lineEditorIntentKindDeleteToStart:
 		editor.DeleteToStart()
 		return true
-	case key == gocui.KeyCtrlK:
+	case lineEditorIntentKindDeleteToEnd:
 		editor.DeleteToEnd()
 		return true
-	case (ch == 'd' || ch == 'D') && (mod&gocui.ModAlt) != 0:
+	case lineEditorIntentKindDeleteForwardWord:
 		editor.DeleteForwardWord()
 		return true
-	case (ch == 'b' || ch == 'B') && (mod&gocui.ModAlt) != 0:
+	case lineEditorIntentKindMoveCursorWordLeft:
 		editor.MoveCursorWordLeft()
 		return true
-	case (ch == 'f' || ch == 'F') && (mod&gocui.ModAlt) != 0:
+	case lineEditorIntentKindMoveCursorWordRight:
 		editor.MoveCursorWordRight()
 		return true
-	case key == gocui.KeySpace:
-		editor.InsertRune(' ')
-		return true
-	case ch != 0 && mod == gocui.ModNone:
-		editor.InsertRune(ch)
+	case lineEditorIntentKindInsertRune:
+		editor.InsertRune(intent.ch)
 		return true
 	default:
 		return false

@@ -354,7 +354,7 @@ func (program *Program) commendOnPrAction() actionsPopupAction {
 	target, ok := program.selectedPullRequestCommentTarget()
 	if ok {
 		feedbackTarget := program.model.Focus()
-		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitDescriptor(pullRequestCommentComposerTitle, "", newPullRequestCommentSubmitDescriptor(target, feedbackTarget))}
+		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestCommentComposerTitle, "", newPullRequestCommentSubmitDescriptor(target, feedbackTarget))}
 	}
 	return actionsPopupAction{
 		id:        "comment-on-pr",

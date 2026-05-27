@@ -31,7 +31,7 @@ func (program *Program) updateInlineCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestReviewCommentActionTarget()
 	if ok {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(inlineCommentUpdateEditorTitle, target.body, newInlineCommentUpdateSubmitDescriptor(target), reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{Descriptor: newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(inlineCommentUpdateEditorTitle, target.body, newInlineCommentUpdateSubmitDescriptor(target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "update-inline-comment",

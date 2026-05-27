@@ -62,6 +62,6 @@ func (program *Program) openPullRequestByURLActionsPopupAction() actionsPopupAct
 		id:        "open-pull-request-by-url",
 		title:     openPullRequestByURLActionTitle,
 		icon:      actionsPopupOpenPullRequestByURLIcon,
-		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitDescriptor(openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)},
+		requested: MsgModalEditorOpened{Descriptor: newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)},
 	}
 }

@@ -1062,6 +1062,27 @@ func TestRefactorGuard_GivenAsyncCommandAndLoaderFiles_WhenScanning_ThenTheyAvoi
 	}
 }
 
+func TestRefactorGuard_GivenEditorIntentAndModalOpenFiles_WhenScanning_ThenTheyAvoidHandleKeyCallbacksAndFullStateModalPayloads(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`HandleKey\(`,
+		`State modalEditorState`,
+		`MsgModalEditorOpened\{State:`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		switch base {
+		case "actions_popup_actions.go", "actions_popup_interaction.go", "inline_comment_edit.go", "inline_comment_reply.go", "modal_editor.go", "modal_editor_lifecycle.go", "modal_editor_view.go", "msg_interaction.go", "multiline_editor_input.go", "pull_request_comment_edit.go", "pull_request_custom_search.go", "pull_request_edit.go", "pull_request_review.go", "review_inline_comment.go", "review_submit.go", "search_view.go", "text_input.go", "view_url_prompt.go":
+			return true
+		default:
+			return false
+		}
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected editor callback and modal-open files to use typed input intents and open descriptors instead of HandleKey(...) or full modal state payloads, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

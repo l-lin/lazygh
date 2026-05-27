@@ -81,7 +81,7 @@ func (program *Program) addInlineCommentAction() actionsPopupAction {
 		selection, err = program.selectedBrowserChangesInlineCommentSelection()
 	}
 	if err == nil {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{Descriptor: newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestReviewInlineCommentComposerTitle, selection.initialBody, newReviewInlineCommentSubmitDescriptor(selection.target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "add-inline-comment",

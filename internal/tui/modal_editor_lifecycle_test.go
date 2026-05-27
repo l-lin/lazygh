@@ -2,26 +2,26 @@ package tui
 
 import "testing"
 
-func TestUpdate_GivenMsgModalEditorOpenedWhileActionsPopupVisible_WhenApplying_ThenItClosesThePopupAndOpensTheEditor(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorOpenedWithDescriptorWhileActionsPopupVisible_WhenApplying_ThenItClosesThePopupAndBuildsTheEditorState(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	subject.model.OpenActionsPopup(1)
-	expected := newLineModalEditorState("Title", "")
+	expected := newLineModalEditorOpenDescriptor("Title", "")
 
-	Update(subject, MsgModalEditorOpened{State: expected})
+	Update(subject, MsgModalEditorOpened{Descriptor: expected})
 
-	then_modalEditorStateMatches(t, subject.overlayState.modalEditor, expected)
+	then_modalEditorStateMatches(t, subject.overlayState.modalEditor, expected.state())
 	if subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to close after opening the modal editor")
 	}
 }
 
-func TestUpdate_GivenMsgModalEditorOpenedWithoutActionsPopup_WhenApplying_ThenItKeepsTheOpenedEditorState(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorOpenedWithDescriptorWithoutActionsPopup_WhenApplying_ThenItKeepsTheOpenedEditorState(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
-	expected := newLineModalEditorState("Title", "")
+	expected := newLineModalEditorOpenDescriptor("Title", "")
 
-	Update(subject, MsgModalEditorOpened{State: expected})
+	Update(subject, MsgModalEditorOpened{Descriptor: expected})
 
-	then_modalEditorStateMatches(t, subject.overlayState.modalEditor, expected)
+	then_modalEditorStateMatches(t, subject.overlayState.modalEditor, expected.state())
 }
 
 func then_modalEditorStateMatches(t *testing.T, actual modalEditorState, expected modalEditorState) {

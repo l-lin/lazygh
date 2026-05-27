@@ -99,12 +99,10 @@ func (program *Program) editActionsPopupSearch(view *gocui.View, key gocui.Key, 
 	if key == gocui.KeyEnter || key == gocui.KeyEsc {
 		return false
 	}
-	if !program.actionsPopupWidget.hasSearchEditor() {
-		program.actionsPopupWidget.openSearchEditor(program.model.ActionsPopupSearchQuery())
-	}
-	if !program.actionsPopupWidget.searchEditor.HandleKey(key, ch, mod) {
+	intent, ok := lineEditorIntentFromKey(key, ch, mod)
+	if !ok {
 		return false
 	}
 
-	return program.dispatchEditorMessage(MsgActionsPopupSearchEdited{Query: program.actionsPopupWidget.searchEditor.Text()})
+	return program.dispatchEditorMessage(MsgActionsPopupSearchInputRequested{Intent: intent})
 }

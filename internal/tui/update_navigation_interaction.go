@@ -90,6 +90,16 @@ func (program *Program) applySearchDraftChanged(message MsgSearchDraftChanged) {
 	program.model.UpdateSearchDraft(message.Query)
 }
 
+func (program *Program) applySearchEditorInputRequested(message MsgSearchEditorInputRequested) {
+	if !program.searchWidget.hasEditor() {
+		program.searchWidget.openEditor(program.model.SearchDraft())
+	}
+	if !program.searchWidget.editor.ApplyIntent(message.Intent) {
+		return
+	}
+	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
+}
+
 func (program *Program) applyStartReviewFileTreeSearch(message MsgStartReviewFileTreeSearch) {
 	inputContext := program.inputContext()
 	if program.mainPaneActionBlocked() || !inputContext.SearchUsesReviewTree || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {

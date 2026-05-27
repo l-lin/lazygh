@@ -27,7 +27,15 @@ type MsgActionsPopupActionErrorHandled struct {
 }
 
 type MsgModalEditorOpened struct {
-	State modalEditorState
+	Descriptor modalEditorOpenDescriptor
+}
+
+type MsgModalEditorLineInputRequested struct {
+	Intent lineEditorIntent
+}
+
+type MsgModalEditorMultilineInputRequested struct {
+	Intent multilineEditorIntent
 }
 
 type MsgModalEditorClosed struct{}
@@ -243,6 +251,8 @@ type MsgSetAllDetailFolds struct {
 func (MsgFeedbackSet) isMsg()                                  {}
 func (MsgActionsPopupActionErrorHandled) isMsg()               {}
 func (MsgModalEditorOpened) isMsg()                            {}
+func (MsgModalEditorLineInputRequested) isMsg()                {}
+func (MsgModalEditorMultilineInputRequested) isMsg()           {}
 func (MsgModalEditorClosed) isMsg()                            {}
 func (MsgModalEditorSubmitRequested) isMsg()                   {}
 func (MsgModalEditorSubmitFinished) isMsg()                    {}

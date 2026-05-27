@@ -6,65 +6,133 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func (editor *multilineEditor) HandleKey(key gocui.Key, ch rune, mod gocui.Modifier) bool {
+type multilineEditorIntentKind int
+
+const (
+	multilineEditorIntentKindNone multilineEditorIntentKind = iota
+	multilineEditorIntentKindMoveCursorLeft
+	multilineEditorIntentKindMoveCursorRight
+	multilineEditorIntentKindMoveCursorUp
+	multilineEditorIntentKindMoveCursorDown
+	multilineEditorIntentKindMoveCursorToLineStart
+	multilineEditorIntentKindMoveCursorToLineEnd
+	multilineEditorIntentKindDeleteBackwardChar
+	multilineEditorIntentKindDeleteForwardChar
+	multilineEditorIntentKindDeleteBackwardWord
+	multilineEditorIntentKindDeleteToLineStart
+	multilineEditorIntentKindDeleteToLineEnd
+	multilineEditorIntentKindDeleteForwardWord
+	multilineEditorIntentKindMoveCursorWordLeft
+	multilineEditorIntentKindMoveCursorWordRight
+	multilineEditorIntentKindInsertCodeFence
+	multilineEditorIntentKindInsertRune
+)
+
+type multilineEditorIntent struct {
+	kind multilineEditorIntentKind
+	ch   rune
+}
+
+func newMultilineEditorInsertRuneIntent(ch rune) multilineEditorIntent {
+	return multilineEditorIntent{kind: multilineEditorIntentKindInsertRune, ch: ch}
+}
+
+func multilineEditorIntentFromKey(key gocui.Key, ch rune, mod gocui.Modifier) (multilineEditorIntent, bool) {
+	switch {
+	case key == gocui.KeyArrowLeft || key == gocui.KeyCtrlB:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorLeft}, true
+	case key == gocui.KeyArrowRight || key == gocui.KeyCtrlF:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorRight}, true
+	case key == gocui.KeyArrowUp:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorUp}, true
+	case key == gocui.KeyArrowDown:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorDown}, true
+	case key == gocui.KeyHome || key == gocui.KeyCtrlA:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorToLineStart}, true
+	case key == gocui.KeyEnd || key == gocui.KeyCtrlE:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorToLineEnd}, true
+	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2 || key == gocui.KeyCtrlH:
+		return multilineEditorIntent{kind: multilineEditorIntentKindDeleteBackwardChar}, true
+	case key == gocui.KeyCtrlD:
+		return multilineEditorIntent{kind: multilineEditorIntentKindDeleteForwardChar}, true
+	case key == gocui.KeyCtrlW:
+		return multilineEditorIntent{kind: multilineEditorIntentKindDeleteBackwardWord}, true
+	case key == gocui.KeyCtrlU:
+		return multilineEditorIntent{kind: multilineEditorIntentKindDeleteToLineStart}, true
+	case key == gocui.KeyCtrlK:
+		return multilineEditorIntent{kind: multilineEditorIntentKindDeleteToLineEnd}, true
+	case (ch == 'd' || ch == 'D') && (mod&gocui.ModAlt) != 0:
+		return multilineEditorIntent{kind: multilineEditorIntentKindDeleteForwardWord}, true
+	case (ch == 'b' || ch == 'B') && (mod&gocui.ModAlt) != 0:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorWordLeft}, true
+	case (ch == 'f' || ch == 'F') && (mod&gocui.ModAlt) != 0:
+		return multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorWordRight}, true
+	case (ch == 'c' || ch == 'C') && (mod&gocui.ModAlt) != 0:
+		return multilineEditorIntent{kind: multilineEditorIntentKindInsertCodeFence}, true
+	case key == gocui.KeyEnter || key == gocui.KeyCtrlJ:
+		return newMultilineEditorInsertRuneIntent('\n'), true
+	case key == gocui.KeySpace:
+		return newMultilineEditorInsertRuneIntent(' '), true
+	case ch != 0 && mod == gocui.ModNone:
+		return newMultilineEditorInsertRuneIntent(ch), true
+	default:
+		return multilineEditorIntent{}, false
+	}
+}
+
+func (editor *multilineEditor) ApplyIntent(intent multilineEditorIntent) bool {
 	if editor == nil {
 		return false
 	}
 
-	switch {
-	case key == gocui.KeyArrowLeft || key == gocui.KeyCtrlB:
+	switch intent.kind {
+	case multilineEditorIntentKindMoveCursorLeft:
 		editor.MoveCursorLeft()
 		return true
-	case key == gocui.KeyArrowRight || key == gocui.KeyCtrlF:
+	case multilineEditorIntentKindMoveCursorRight:
 		editor.MoveCursorRight()
 		return true
-	case key == gocui.KeyArrowUp:
+	case multilineEditorIntentKindMoveCursorUp:
 		editor.MoveCursorUp()
 		return true
-	case key == gocui.KeyArrowDown:
+	case multilineEditorIntentKindMoveCursorDown:
 		editor.MoveCursorDown()
 		return true
-	case key == gocui.KeyHome || key == gocui.KeyCtrlA:
+	case multilineEditorIntentKindMoveCursorToLineStart:
 		editor.MoveCursorToLineStart()
 		return true
-	case key == gocui.KeyEnd || key == gocui.KeyCtrlE:
+	case multilineEditorIntentKindMoveCursorToLineEnd:
 		editor.MoveCursorToLineEnd()
 		return true
-	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2 || key == gocui.KeyCtrlH:
+	case multilineEditorIntentKindDeleteBackwardChar:
 		editor.DeleteBackwardChar()
 		return true
-	case key == gocui.KeyCtrlD:
+	case multilineEditorIntentKindDeleteForwardChar:
 		editor.DeleteForwardChar()
 		return true
-	case key == gocui.KeyCtrlW:
+	case multilineEditorIntentKindDeleteBackwardWord:
 		editor.DeleteBackwardWord()
 		return true
-	case key == gocui.KeyCtrlU:
+	case multilineEditorIntentKindDeleteToLineStart:
 		editor.DeleteToLineStart()
 		return true
-	case key == gocui.KeyCtrlK:
+	case multilineEditorIntentKindDeleteToLineEnd:
 		editor.DeleteToLineEnd()
 		return true
-	case (ch == 'd' || ch == 'D') && (mod&gocui.ModAlt) != 0:
+	case multilineEditorIntentKindDeleteForwardWord:
 		editor.DeleteForwardWord()
 		return true
-	case (ch == 'b' || ch == 'B') && (mod&gocui.ModAlt) != 0:
+	case multilineEditorIntentKindMoveCursorWordLeft:
 		editor.MoveCursorWordLeft()
 		return true
-	case (ch == 'f' || ch == 'F') && (mod&gocui.ModAlt) != 0:
+	case multilineEditorIntentKindMoveCursorWordRight:
 		editor.MoveCursorWordRight()
 		return true
-	case (ch == 'c' || ch == 'C') && (mod&gocui.ModAlt) != 0:
+	case multilineEditorIntentKindInsertCodeFence:
 		editor.InsertCodeFence()
 		return true
-	case key == gocui.KeyEnter || key == gocui.KeyCtrlJ:
-		editor.InsertRune('\n')
-		return true
-	case key == gocui.KeySpace:
-		editor.InsertRune(' ')
-		return true
-	case ch != 0 && mod == gocui.ModNone:
-		editor.InsertRune(ch)
+	case multilineEditorIntentKindInsertRune:
+		editor.InsertRune(intent.ch)
 		return true
 	default:
 		return false

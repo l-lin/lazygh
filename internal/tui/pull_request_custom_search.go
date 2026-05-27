@@ -34,7 +34,7 @@ func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopup
 		id:        "custom-pull-request-search",
 		title:     pullRequestCustomSearchActionTitle,
 		icon:      actionsPopupCustomSearchIcon,
-		requested: MsgModalEditorOpened{State: newLineModalEditorStateWithHeightAndSubmitDescriptor(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)},
+		requested: MsgModalEditorOpened{Descriptor: newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)},
 	}
 }
 

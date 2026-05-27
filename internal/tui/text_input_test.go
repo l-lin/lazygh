@@ -11,11 +11,11 @@ func TestLineEditor_GivenCursorInMiddle_WhenInsertingText_ThenTextIsInsertedAtTh
 	subject.MoveCursorLeft()
 	subject.MoveCursorLeft()
 
-	actual := subject.HandleKey(0, 'c', gocui.ModNone)
+	actual := when_applyingLineEditorKeyIntent(t, &subject, 0, 'c', gocui.ModNone)
 	if !actual {
 		t.Fatal("expected key handling to report success")
 	}
-	actual = subject.HandleKey(0, 'd', gocui.ModNone)
+	actual = when_applyingLineEditorKeyIntent(t, &subject, 0, 'd', gocui.ModNone)
 	if !actual {
 		t.Fatal("expected key handling to report success")
 	}
@@ -32,28 +32,28 @@ func TestLineEditor_GivenCursorInMiddle_WhenInsertingText_ThenTextIsInsertedAtTh
 func TestLineEditor_GivenCursorMovementKeys_WhenMovingAround_ThenTheCursorStaysWithinBounds(t *testing.T) {
 	subject := newLineEditor("search")
 
-	subject.HandleKey(gocui.KeyCtrlA, 0, gocui.ModNone)
+	when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlA, 0, gocui.ModNone)
 	if subject.Cursor() != 0 {
 		t.Fatalf("expected cursor 0 after ctrl-a, actual %d", subject.Cursor())
 	}
 
-	subject.HandleKey(gocui.KeyCtrlB, 0, gocui.ModNone)
+	when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlB, 0, gocui.ModNone)
 	if subject.Cursor() != 0 {
 		t.Fatalf("expected cursor to stay at 0 after ctrl-b, actual %d", subject.Cursor())
 	}
 
-	subject.HandleKey(gocui.KeyArrowRight, 0, gocui.ModNone)
-	subject.HandleKey(gocui.KeyCtrlF, 0, gocui.ModNone)
+	when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyArrowRight, 0, gocui.ModNone)
+	when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlF, 0, gocui.ModNone)
 	if subject.Cursor() != 2 {
 		t.Fatalf("expected cursor 2 after right and ctrl-f, actual %d", subject.Cursor())
 	}
 
-	subject.HandleKey(gocui.KeyCtrlE, 0, gocui.ModNone)
+	when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlE, 0, gocui.ModNone)
 	if subject.Cursor() != len([]rune("search")) {
 		t.Fatalf("expected cursor at end, actual %d", subject.Cursor())
 	}
 
-	subject.HandleKey(gocui.KeyArrowRight, 0, gocui.ModNone)
+	when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyArrowRight, 0, gocui.ModNone)
 	if subject.Cursor() != len([]rune("search")) {
 		t.Fatalf("expected cursor to stay at end, actual %d", subject.Cursor())
 	}
@@ -62,7 +62,7 @@ func TestLineEditor_GivenCursorMovementKeys_WhenMovingAround_ThenTheCursorStaysW
 func TestLineEditor_GivenWordsAndSpaces_WhenDeletingPreviousWord_ThenItDeletesTheWordToTheLeft(t *testing.T) {
 	subject := newLineEditor("alpha beta gamma")
 
-	actual := subject.HandleKey(gocui.KeyCtrlW, 0, gocui.ModNone)
+	actual := when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlW, 0, gocui.ModNone)
 	if !actual {
 		t.Fatal("expected ctrl-w to be handled")
 	}
@@ -81,7 +81,7 @@ func TestLineEditor_GivenCursorAfterCharacter_WhenDeletingBackwardCharacter_Then
 	subject.MoveCursorLeft()
 	subject.MoveCursorLeft()
 
-	actual := subject.HandleKey(gocui.KeyCtrlH, 0, gocui.ModNone)
+	actual := when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlH, 0, gocui.ModNone)
 	if !actual {
 		t.Fatal("expected ctrl-h to be handled")
 	}
@@ -100,7 +100,7 @@ func TestLineEditor_GivenCursorBeforeCharacter_WhenDeletingForwardCharacter_Then
 	subject.MoveCursorToStart()
 	subject.MoveCursorRight()
 
-	actual := subject.HandleKey(gocui.KeyCtrlD, 0, gocui.ModNone)
+	actual := when_applyingLineEditorKeyIntent(t, &subject, gocui.KeyCtrlD, 0, gocui.ModNone)
 	if !actual {
 		t.Fatal("expected ctrl-d to be handled")
 	}
@@ -118,7 +118,7 @@ func TestLineEditor_GivenCursorAtStartOfLastWord_WhenDeletingForwardWord_ThenItD
 	subject := newLineEditor("alpha beta gamma")
 	subject.cursor = len([]rune("alpha beta "))
 
-	actual := subject.HandleKey(0, 'd', gocui.ModAlt)
+	actual := when_applyingLineEditorKeyIntent(t, &subject, 0, 'd', gocui.ModAlt)
 	if !actual {
 		t.Fatal("expected alt-d to be handled")
 	}
@@ -135,7 +135,7 @@ func TestLineEditor_GivenCursorAtStartOfLastWord_WhenDeletingForwardWord_ThenItD
 func TestLineEditor_GivenAltWordMovement_WhenMovingByWord_ThenTheCursorJumpsAcrossWords(t *testing.T) {
 	subject := newLineEditor("alpha beta gamma")
 
-	actual := subject.HandleKey(0, 'b', gocui.ModAlt)
+	actual := when_applyingLineEditorKeyIntent(t, &subject, 0, 'b', gocui.ModAlt)
 	if !actual {
 		t.Fatal("expected alt-b to be handled")
 	}
@@ -143,11 +143,21 @@ func TestLineEditor_GivenAltWordMovement_WhenMovingByWord_ThenTheCursorJumpsAcro
 		t.Fatalf("expected cursor at %d, actual %d", len([]rune("alpha beta ")), subject.Cursor())
 	}
 
-	actual = subject.HandleKey(0, 'f', gocui.ModAlt)
+	actual = when_applyingLineEditorKeyIntent(t, &subject, 0, 'f', gocui.ModAlt)
 	if !actual {
 		t.Fatal("expected alt-f to be handled")
 	}
 	if subject.Cursor() != len([]rune("alpha beta gamma")) {
 		t.Fatalf("expected cursor at end, actual %d", subject.Cursor())
 	}
+}
+
+func when_applyingLineEditorKeyIntent(t *testing.T, editor *lineEditor, key gocui.Key, ch rune, mod gocui.Modifier) bool {
+	t.Helper()
+
+	intent, ok := lineEditorIntentFromKey(key, ch, mod)
+	if !ok {
+		return false
+	}
+	return editor.ApplyIntent(intent)
 }

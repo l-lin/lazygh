@@ -30,7 +30,7 @@ func (program *Program) replyToInlineCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if ok {
-		requested = MsgModalEditorOpened{State: newMultilineModalEditorStateWithSubmitDescriptor(pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)}
+		requested = MsgModalEditorOpened{Descriptor: newMultilineModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestInlineCommentReplyEditorTitle, "", newInlineCommentReplySubmitDescriptor(target), reviewInlineCommentModalHeight)}
 	}
 	return actionsPopupAction{
 		id:        "reply-to-inline-comment",

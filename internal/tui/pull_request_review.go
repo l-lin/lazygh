@@ -39,7 +39,7 @@ func (program *Program) reviewCommentAction() actionsPopupAction {
 	target, ok := program.selectedPullRequestActionTarget()
 	if ok {
 		feedbackTarget := program.model.Focus()
-		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitDescriptor(pullRequestReviewCommentComposerTitle, "", newPullRequestReviewCommentSubmitDescriptor(target, feedbackTarget))}
+		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestReviewCommentComposerTitle, "", newPullRequestReviewCommentSubmitDescriptor(target, feedbackTarget))}
 	}
 	return actionsPopupAction{
 		id:        "review-comment",
@@ -54,7 +54,7 @@ func (program *Program) reviewRequestChangesAction() actionsPopupAction {
 	target, ok := program.selectedPullRequestActionTarget()
 	if ok {
 		feedbackTarget := program.model.Focus()
-		requested = MsgModalEditorOpened{State: newModalEditorStateWithSubmitDescriptor(pullRequestRequestChangesComposerTitle, "", newPullRequestRequestChangesSubmitDescriptor(target, feedbackTarget))}
+		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestRequestChangesComposerTitle, "", newPullRequestRequestChangesSubmitDescriptor(target, feedbackTarget))}
 	}
 	return actionsPopupAction{
 		id:        "review-request-changes",

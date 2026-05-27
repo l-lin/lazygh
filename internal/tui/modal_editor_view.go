@@ -38,11 +38,18 @@ func (program *Program) editModalEditor(view *gocui.View, key gocui.Key, ch rune
 	if !program.modalEditorVisible() {
 		return false
 	}
-	if !program.overlayState.modalEditor.HandleKey(key, ch, mod) {
+	if program.overlayState.modalEditor.isLineEditor() {
+		intent, ok := lineEditorIntentFromKey(key, ch, mod)
+		if !ok {
+			return false
+		}
+		return program.dispatchEditorMessage(MsgModalEditorLineInputRequested{Intent: intent})
+	}
+	intent, ok := multilineEditorIntentFromKey(key, ch, mod)
+	if !ok {
 		return false
 	}
-
-	return program.dispatchEditorMessage(MsgModalEditorEdited{})
+	return program.dispatchEditorMessage(MsgModalEditorMultilineInputRequested{Intent: intent})
 }
 
 func (program *Program) modalEditorTitle() string {

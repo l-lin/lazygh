@@ -1,7 +1,5 @@
 package tui
 
-import "strings"
-
 func Update(program *Program, msg Msg) []Cmd {
 	if program == nil || msg == nil {
 		return nil
@@ -69,6 +67,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.searchWidget.openEditor(actual.Query)
 	case MsgSearchDraftChanged:
 		program.applySearchDraftChanged(actual)
+	case MsgSearchEditorInputRequested:
+		program.applySearchEditorInputRequested(actual)
 	case MsgFeedbackSet:
 		program.applyFeedbackSet(actual)
 	case MsgActionsPopupClosedWithFeedback:
@@ -79,6 +79,10 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyActionsPopupActionRequested(actual)
 	case MsgModalEditorOpened:
 		program.applyModalEditorOpened(actual)
+	case MsgModalEditorLineInputRequested:
+		program.applyModalEditorLineInputRequested(actual)
+	case MsgModalEditorMultilineInputRequested:
+		program.applyModalEditorMultilineInputRequested(actual)
 	case MsgModalEditorClosed:
 		program.overlayState.modalEditor = modalEditorState{}
 	case MsgModalEditorSubmitRequested:
@@ -246,20 +250,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.searchWidget.clearEditor()
 	case MsgCloseSearch:
 		program.searchWidget.clearEditor()
-	case MsgActionsPopupSearchEdited:
-		if !program.model.ActionsPopupVisible() {
-			return nil
-		}
-		program.clearActionsPopupPendingConfirmation()
-		requestID := 0
-		if program.assigneePickerVisible() {
-			requestID = program.resetAssigneePickerSearch(actual.Query)
-		}
-		program.updateActionsPopupSearch(actual.Query)
-		program.actionsPopupWidget.errorMessage = ""
-		if program.assigneePickerVisible() && requestID > 0 && strings.TrimSpace(actual.Query) != "" {
-			return []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: actual.Query, Delay: program.actionsPopupWidget.assigneePickerSearchDebounceDelay, DispatchLoading: true}}
-		}
+	case MsgActionsPopupSearchInputRequested:
+		return program.applyActionsPopupSearchInputRequested(actual)
 	case MsgPullRequestSearchesApplied:
 		program.applyPullRequestSearchesApplied(actual)
 	case MsgClearCacheRequested:
@@ -472,11 +464,6 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToBottom()
 		program.actionsPopupWidget.errorMessage = ""
-	case MsgModalEditorEdited:
-		if !program.modalEditorVisible() {
-			return nil
-		}
-		program.overlayState.modalEditor.errorMessage = ""
 	}
 
 	return nil

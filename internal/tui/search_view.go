@@ -38,14 +38,12 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 	if key == gocui.KeyEnter || key == gocui.KeyCtrlJ || key == gocui.KeyEsc {
 		return false
 	}
-	if !program.searchWidget.hasEditor() {
-		program.searchWidget.openEditor(program.model.SearchDraft())
-	}
-	if !program.searchWidget.editor.HandleKey(key, ch, mod) {
+	intent, ok := lineEditorIntentFromKey(key, ch, mod)
+	if !ok {
 		return false
 	}
 
-	return program.dispatchEditorMessage(MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
+	return program.dispatchEditorMessage(MsgSearchEditorInputRequested{Intent: intent})
 }
 
 func pluralize(count int, singular string, plural string) string {

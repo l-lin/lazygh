@@ -31,6 +31,31 @@ func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPo
 	program.setFeedback(message.Target, strings.TrimSpace(message.Message))
 }
 
+func (program *Program) applyActionsPopupSearchInputRequested(message MsgActionsPopupSearchInputRequested) []Cmd {
+	if !program.model.ActionsPopupVisible() {
+		return nil
+	}
+	if !program.actionsPopupWidget.hasSearchEditor() {
+		program.actionsPopupWidget.openSearchEditor(program.model.ActionsPopupSearchQuery())
+	}
+	if !program.actionsPopupWidget.searchEditor.ApplyIntent(message.Intent) {
+		return nil
+	}
+
+	query := program.actionsPopupWidget.searchEditor.Text()
+	program.clearActionsPopupPendingConfirmation()
+	requestID := 0
+	if program.assigneePickerVisible() {
+		requestID = program.resetAssigneePickerSearch(query)
+	}
+	program.updateActionsPopupSearch(query)
+	program.actionsPopupWidget.errorMessage = ""
+	if program.assigneePickerVisible() && requestID > 0 && strings.TrimSpace(query) != "" {
+		return []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: query, Delay: program.actionsPopupWidget.assigneePickerSearchDebounceDelay, DispatchLoading: true}}
+	}
+	return nil
+}
+
 func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 	if program == nil || !program.modalEditorVisible() {
 		return nil
@@ -92,8 +117,22 @@ func (program *Program) applyModalEditorExternalEditFinished(message MsgModalEdi
 	program.setModalEditorTextFromExternalEditor(message.Text)
 }
 
+func (program *Program) applyModalEditorLineInputRequested(message MsgModalEditorLineInputRequested) {
+	if program == nil || !program.overlayState.modalEditor.applyLineEditorIntent(message.Intent) {
+		return
+	}
+	program.overlayState.modalEditor.errorMessage = ""
+}
+
+func (program *Program) applyModalEditorMultilineInputRequested(message MsgModalEditorMultilineInputRequested) {
+	if program == nil || !program.overlayState.modalEditor.applyMultilineEditorIntent(message.Intent) {
+		return
+	}
+	program.overlayState.modalEditor.errorMessage = ""
+}
+
 func (program *Program) applyModalEditorOpened(message MsgModalEditorOpened) {
-	program.openModalEditorState(message.State)
+	program.openModalEditorState(message.Descriptor.state())
 	if program != nil && program.model != nil && program.model.ActionsPopupVisible() {
 		program.closeActionsPopupForAcceptedRequest()
 	}

@@ -9,11 +9,11 @@ import (
 func TestMultilineEditor_GivenEnterAndControlJ_WhenHandlingInput_ThenTheyInsertNewlines(t *testing.T) {
 	subject := newMultilineEditor("first line")
 
-	actual := subject.HandleKey(gocui.KeyEnter, 0, gocui.ModNone)
+	actual := when_applyingMultilineEditorKeyIntent(t, &subject, gocui.KeyEnter, 0, gocui.ModNone)
 	if !actual {
 		t.Fatal("expected enter to be handled")
 	}
-	actual = subject.HandleKey(gocui.KeyCtrlJ, 0, gocui.ModNone)
+	actual = when_applyingMultilineEditorKeyIntent(t, &subject, gocui.KeyCtrlJ, 0, gocui.ModNone)
 	if !actual {
 		t.Fatal("expected ctrl-j to be handled")
 	}
@@ -30,7 +30,7 @@ func TestMultilineEditor_GivenEnterAndControlJ_WhenHandlingInput_ThenTheyInsertN
 func TestMultilineEditor_GivenAltC_WhenHandlingInput_ThenItInsertsTheFenceSnippetAndLeavesTheCursorAfterTheOpeningFence(t *testing.T) {
 	subject := newMultilineEditor("")
 
-	actual := subject.HandleKey(0, 'c', gocui.ModAlt)
+	actual := when_applyingMultilineEditorKeyIntent(t, &subject, 0, 'c', gocui.ModAlt)
 	if !actual {
 		t.Fatal("expected alt-c to be handled")
 	}
@@ -49,7 +49,7 @@ func TestMultilineEditor_GivenCursorBeforeCharacter_WhenDeletingForwardCharacter
 	subject.MoveCursorToLineStart()
 	subject.MoveCursorRight()
 
-	actual := subject.HandleKey(gocui.KeyCtrlD, 0, gocui.ModNone)
+	actual := when_applyingMultilineEditorKeyIntent(t, &subject, gocui.KeyCtrlD, 0, gocui.ModNone)
 	if !actual {
 		t.Fatal("expected ctrl-d to be handled")
 	}
@@ -67,7 +67,7 @@ func TestMultilineEditor_GivenCursorAtStartOfLastWord_WhenDeletingForwardWord_Th
 	subject := newMultilineEditor("alpha beta gamma")
 	subject.cursor = len([]rune("alpha beta "))
 
-	actual := subject.HandleKey(0, 'd', gocui.ModAlt)
+	actual := when_applyingMultilineEditorKeyIntent(t, &subject, 0, 'd', gocui.ModAlt)
 	if !actual {
 		t.Fatal("expected alt-d to be handled")
 	}
@@ -114,4 +114,14 @@ func TestMultilineEditor_GivenMultipleLines_WhenDeletingToLineBoundaries_ThenItO
 	if actual := subject.Text(); actual != "alpha beta\n" {
 		t.Fatalf("expected text %q after deleting to line end, actual %q", "alpha beta\n", actual)
 	}
+}
+
+func when_applyingMultilineEditorKeyIntent(t *testing.T, editor *multilineEditor, key gocui.Key, ch rune, mod gocui.Modifier) bool {
+	t.Helper()
+
+	intent, ok := multilineEditorIntentFromKey(key, ch, mod)
+	if !ok {
+		return false
+	}
+	return editor.ApplyIntent(intent)
 }

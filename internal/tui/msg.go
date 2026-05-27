@@ -30,14 +30,18 @@ type MsgSearchDraftChanged struct {
 	Query string
 }
 
+type MsgSearchEditorInputRequested struct {
+	Intent lineEditorIntent
+}
+
 type MsgSubmitSearch struct{}
 
 type MsgCancelSearch struct{}
 
 type MsgCloseSearch struct{}
 
-type MsgActionsPopupSearchEdited struct {
-	Query string
+type MsgActionsPopupSearchInputRequested struct {
+	Intent lineEditorIntent
 }
 
 type MsgOpenActionsPopup struct {
@@ -75,8 +79,6 @@ type MsgMoveActionsPopupSelectionToTop struct{}
 
 type MsgMoveActionsPopupSelectionToBottom struct{}
 
-type MsgModalEditorEdited struct{}
-
 func (MsgAppStarted) isMsg()                        {}
 func (MsgNextSideView) isMsg()                      {}
 func (MsgPreviousSideView) isMsg()                  {}
@@ -86,10 +88,11 @@ func (MsgMoveSideSelectionToTop) isMsg()            {}
 func (MsgMoveSideSelectionToBottom) isMsg()         {}
 func (MsgOpenSearch) isMsg()                        {}
 func (MsgSearchDraftChanged) isMsg()                {}
+func (MsgSearchEditorInputRequested) isMsg()        {}
 func (MsgSubmitSearch) isMsg()                      {}
 func (MsgCancelSearch) isMsg()                      {}
 func (MsgCloseSearch) isMsg()                       {}
-func (MsgActionsPopupSearchEdited) isMsg()          {}
+func (MsgActionsPopupSearchInputRequested) isMsg()  {}
 func (MsgOpenActionsPopup) isMsg()                  {}
 func (MsgCloseActionsPopup) isMsg()                 {}
 func (MsgFocusActionsPopupSearch) isMsg()           {}
@@ -101,4 +104,3 @@ func (MsgActionsPopupPageResolved) isMsg()          {}
 func (MsgActionsPopupViewportRequested) isMsg()     {}
 func (MsgMoveActionsPopupSelectionToTop) isMsg()    {}
 func (MsgMoveActionsPopupSelectionToBottom) isMsg() {}
-func (MsgModalEditorEdited) isMsg()                 {}

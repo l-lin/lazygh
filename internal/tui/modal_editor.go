@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	"github.com/jesseduffield/gocui"
-)
+import "strings"
 
 const (
 	viewModalEditorName         = "modal-editor"
@@ -137,14 +133,18 @@ func (state *modalEditorState) CursorXY() (int, int) {
 	return state.editor.CursorXY()
 }
 
-func (state *modalEditorState) HandleKey(key gocui.Key, ch rune, mod gocui.Modifier) bool {
-	if state == nil || !state.visible() {
+func (state *modalEditorState) applyLineEditorIntent(intent lineEditorIntent) bool {
+	if state == nil || !state.visible() || !state.isLineEditor() {
 		return false
 	}
-	if state.isLineEditor() {
-		return state.lineEditor.HandleKey(key, ch, mod)
+	return state.lineEditor.ApplyIntent(intent)
+}
+
+func (state *modalEditorState) applyMultilineEditorIntent(intent multilineEditorIntent) bool {
+	if state == nil || !state.visible() || state.isLineEditor() {
+		return false
 	}
-	return state.editor.HandleKey(key, ch, mod)
+	return state.editor.ApplyIntent(intent)
 }
 
 func (state *modalEditorState) Height() int {
