@@ -61,3 +61,30 @@ func TestRefactorGuard_GivenProgramType_WhenInspecting_ThenDurableUIStateLivesIn
 		t.Fatalf("expected Program direct field count <= %d after shell decomposition, actual %d", len(expectedDirectFieldNames), actual)
 	}
 }
+
+func TestRefactorGuard_GivenNavigationStateModel_WhenInspecting_ThenItKeepsOnlyDurableNavigationFacts(t *testing.T) {
+	navigationStateType := reflect.TypeOf(navigationStateModel{})
+
+	for _, fieldName := range []string{"pendingListViewportPlacements", "registeredKeybindingFingerprint"} {
+		if _, exists := navigationStateType.FieldByName(fieldName); exists {
+			t.Fatalf("expected navigationStateModel to avoid shell bookkeeping field %q", fieldName)
+		}
+	}
+
+	expectedDirectFieldNames := []string{"reviewSession", "openedPullRequestSummary", "openedPullRequestTab", "pendingSelectionKeySequence"}
+	actualDirectFieldNames := make([]string, 0, navigationStateType.NumField())
+	for index := range navigationStateType.NumField() {
+		actualDirectFieldNames = append(actualDirectFieldNames, navigationStateType.Field(index).Name)
+	}
+	if !reflect.DeepEqual(actualDirectFieldNames, expectedDirectFieldNames) {
+		t.Fatalf("expected navigationStateModel fields %v, actual %v", expectedDirectFieldNames, actualDirectFieldNames)
+	}
+}
+
+func TestNewProgramWithModel_GivenFreshProgram_WhenInspecting_ThenItInitializesViewRuntimeListViewportPlacements(t *testing.T) {
+	subject := NewProgramWithModel(defaultProgramModel())
+
+	if subject.listViewportRuntime.pendingPlacements == nil {
+		t.Fatal("expected pending list viewport placements to live in view runtime and be initialized")
+	}
+}

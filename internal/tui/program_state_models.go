@@ -28,12 +28,10 @@ type overlayStateModel struct {
 }
 
 type navigationStateModel struct {
-	reviewSession                   reviewSessionState
-	openedPullRequestSummary        *githubdomain.PullRequest
-	openedPullRequestTab            PullRequestTab
-	pendingSelectionKeySequence     keySequenceState
-	pendingListViewportPlacements   map[string]viewportPlacement
-	registeredKeybindingFingerprint string
+	reviewSession               reviewSessionState
+	openedPullRequestSummary    *githubdomain.PullRequest
+	openedPullRequestTab        PullRequestTab
+	pendingSelectionKeySequence keySequenceState
 }
 
 type runtimeConfigState struct {

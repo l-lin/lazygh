@@ -56,7 +56,7 @@ func TestProgramStart_GivenFreshProgram_WhenStarting_ThenItMarksStartedAndSyncsT
 	if !subject.startupState.appStarted {
 		t.Fatal("expected the program to be marked as started during startup")
 	}
-	if actual := subject.navigationState.registeredKeybindingFingerprint; actual == "" {
+	if actual := subject.keybindingRuntime.registeredFingerprint; actual == "" {
 		t.Fatal("expected startup to register the initial keybindings")
 	}
 	expected := len(subject.registeredKeybindingSpecs())

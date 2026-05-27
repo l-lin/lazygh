@@ -62,20 +62,30 @@ type programStores struct {
 	*imageLoadCoordinator
 }
 
+type listViewportRuntimeState struct {
+	pendingPlacements map[string]viewportPlacement
+}
+
+type keybindingRuntimeState struct {
+	registeredFingerprint string
+}
+
 type programViewRuntime struct {
-	startupState       startupStateModel
-	detailState        detailStateModel
-	overlayState       overlayStateModel
-	searchWidget       searchWidgetState
-	actionsPopupWidget actionsPopupWidgetState
-	navigationState    navigationStateModel
-	runtimeConfig      runtimeConfigState
+	startupState        startupStateModel
+	detailState         detailStateModel
+	overlayState        overlayStateModel
+	searchWidget        searchWidgetState
+	actionsPopupWidget  actionsPopupWidgetState
+	navigationState     navigationStateModel
+	listViewportRuntime listViewportRuntimeState
+	runtimeConfig       runtimeConfigState
 }
 
 type programShellRuntime struct {
 	asyncRunner        asyncRunner
 	uiUpdater          uiUpdater
 	gui                *gocui.Gui
+	keybindingRuntime  keybindingRuntimeState
 	timingState        timingStateModel
 	manualRefreshState manualRefreshStateModel
 	refreshReadCache   refreshReadCacheState
@@ -152,11 +162,12 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 			imageLoadCoordinator:          imageCoordinator,
 		},
 		programViewRuntime: programViewRuntime{
-			startupState:       startupStateModel{},
-			detailState:        detailStateModel{viewState: newDetailViewState(), wrapWidth: defaultDetailWrapWidth},
-			actionsPopupWidget: actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
-			navigationState:    navigationStateModel{pendingListViewportPlacements: map[string]viewportPlacement{}},
-			runtimeConfig:      runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},
+			startupState:        startupStateModel{},
+			detailState:         detailStateModel{viewState: newDetailViewState(), wrapWidth: defaultDetailWrapWidth},
+			actionsPopupWidget:  actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
+			navigationState:     navigationStateModel{},
+			listViewportRuntime: listViewportRuntimeState{pendingPlacements: map[string]viewportPlacement{}},
+			runtimeConfig:       runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},
 		},
 		programShellRuntime: programShellRuntime{
 			asyncRunner:        goroutineAsyncRunner{},

@@ -127,7 +127,7 @@ func (program *Program) setKeybindings(gui *gocui.Gui) error {
 
 	specs := program.registeredKeybindingSpecs()
 	fingerprint := fingerprintKeybindingSpecs(specs)
-	if fingerprint == program.navigationState.registeredKeybindingFingerprint {
+	if fingerprint == program.keybindingRuntime.registeredFingerprint {
 		return nil
 	}
 
@@ -137,7 +137,7 @@ func (program *Program) setKeybindings(gui *gocui.Gui) error {
 			return err
 		}
 	}
-	program.navigationState.registeredKeybindingFingerprint = fingerprint
+	program.keybindingRuntime.registeredFingerprint = fingerprint
 	return nil
 }
 
@@ -148,7 +148,7 @@ func (program *Program) reloadRegisteredKeybindings(gui *gocui.Gui) error {
 
 	specs := program.registeredKeybindingSpecs()
 	fingerprint := fingerprintKeybindingSpecs(specs)
-	if fingerprint == program.navigationState.registeredKeybindingFingerprint {
+	if fingerprint == program.keybindingRuntime.registeredFingerprint {
 		return nil
 	}
 
@@ -158,7 +158,7 @@ func (program *Program) reloadRegisteredKeybindings(gui *gocui.Gui) error {
 			return err
 		}
 	}
-	program.navigationState.registeredKeybindingFingerprint = fingerprint
+	program.keybindingRuntime.registeredFingerprint = fingerprint
 	return nil
 }
 
