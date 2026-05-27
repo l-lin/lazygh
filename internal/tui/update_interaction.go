@@ -91,7 +91,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 
 	var commands []Cmd
 	if message.Success != nil {
-		commands = message.Success.apply(program)
+		commands = Update(program, message.Success)
 	}
 	program.overlayState.modalEditor = modalEditorState{}
 	return commands

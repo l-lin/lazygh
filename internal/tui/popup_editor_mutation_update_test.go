@@ -40,13 +40,13 @@ func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBui
 	}
 }
 
-func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccess_WhenApplying_ThenItAppliesSuccessAndClosesTheModal(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccessMessage_WhenApplying_ThenItAppliesTheNestedReducerMessageAndClosesTheModal(t *testing.T) {
 	summary := given_pullRequestMutationSummary("OPEN", false)
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.overlayState.modalEditor = newModalEditorState("Comment", "Ship it")
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
 
-	actual := Update(subject, MsgModalEditorSubmitFinished{Success: pullRequestCommentSubmitSuccess{
+	actual := Update(subject, MsgModalEditorSubmitFinished{Success: MsgPullRequestCommentSubmitted{
 		Target:         pullRequestCommentTarget{repository: "acme/widgets", number: 42},
 		Body:           "Ship it",
 		FeedbackTarget: FocusDetailView,
@@ -71,5 +71,26 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccess_WhenApplying_T
 	}
 	if len(actual) != 0 {
 		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+}
+
+func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccessMessageReturningCommands_WhenApplying_ThenItReturnsTheNestedReducerCommands(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.overlayState.modalEditor = newModalEditorState("Rename", "Retitle")
+
+	actual := Update(subject, MsgModalEditorSubmitFinished{Success: MsgPullRequestTitleEditApplied{
+		Target:         pullRequestActionTarget{repository: "acme/widgets", number: 42},
+		Title:          "Retitle",
+		FeedbackTarget: FocusDetailView,
+	}})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one nested reducer command, actual %d", len(actual))
+	}
+	if _, ok := actual[0].(reloadPullRequestsTabCmd); !ok {
+		t.Fatalf("expected a reloadPullRequestsTabCmd, actual %T", actual[0])
+	}
+	if subject.modalEditorVisible() {
+		t.Fatal("expected the modal editor to close after a successful typed submit")
 	}
 }

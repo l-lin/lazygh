@@ -11,11 +11,11 @@ func (program *Program) applyPullRequestCommentSubmitRequested(message MsgPullRe
 }
 
 func (program *Program) applyPullRequestReviewCommentSubmitRequested(message MsgPullRequestReviewCommentSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestReviewCommentSubmitRequest{target: message.Target, body: message.Body}}}
+	return []Cmd{modalEditorSubmitCmd{request: pullRequestReviewCommentSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
 }
 
 func (program *Program) applyPullRequestRequestChangesSubmitRequested(message MsgPullRequestRequestChangesSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestRequestChangesSubmitRequest{target: message.Target, body: message.Body}}}
+	return []Cmd{modalEditorSubmitCmd{request: pullRequestRequestChangesSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
 }
 
 func (program *Program) applyPullRequestTitleEditRequested(message MsgPullRequestTitleEditRequested) []Cmd {
