@@ -383,6 +383,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyInlineCommentResolutionRequested(actual)
 	case MsgReviewInlineCommentSubmitRequested:
 		return program.applyReviewInlineCommentSubmitRequested(actual)
+	case MsgReviewInlineCommentPendingReviewPrepared:
+		return program.applyReviewInlineCommentPendingReviewPrepared(actual)
 	case MsgPendingPullRequestReviewSubmitRequested:
 		return program.applyPendingPullRequestReviewSubmitRequested(actual)
 	case MsgReactionRemovalRequested:

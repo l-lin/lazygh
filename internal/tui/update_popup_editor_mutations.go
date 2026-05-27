@@ -81,6 +81,11 @@ func (program *Program) applyReviewInlineCommentSubmitRequested(message MsgRevie
 	return []Cmd{modalEditorSubmitCmd{request: reviewInlineCommentSubmitRequest{target: message.Target, body: message.Body}}}
 }
 
+func (program *Program) applyReviewInlineCommentPendingReviewPrepared(message MsgReviewInlineCommentPendingReviewPrepared) []Cmd {
+	program.setPendingPullRequestReviewStateByIdentity(message.Target.repository, message.Target.number, message.Target.pendingReview)
+	return []Cmd{modalEditorSubmitCmd{request: preparedReviewInlineCommentSubmitRequest{target: message.Target, body: message.Body}}}
+}
+
 func (program *Program) applyPendingPullRequestReviewSubmitRequested(message MsgPendingPullRequestReviewSubmitRequested) []Cmd {
 	return []Cmd{modalEditorSubmitCmd{request: pendingPullRequestReviewSubmitRequest{target: message.Target, event: message.Event, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
 }

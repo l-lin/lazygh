@@ -8,11 +8,10 @@ import (
 )
 
 type modalEditorSubmitCommandDeps struct {
-	detailQueries                  DetailQueries
-	pullRequestListQueries         PullRequestListQueries
-	pullRequestMutations           PullRequestMutations
-	reviewMutations                ReviewMutations
-	recordPendingPullRequestReview func(string, int, string)
+	detailQueries          DetailQueries
+	pullRequestListQueries PullRequestListQueries
+	pullRequestMutations   PullRequestMutations
+	reviewMutations        ReviewMutations
 }
 
 type modalEditorSubmitRequest interface {
@@ -24,11 +23,10 @@ func newModalEditorSubmitCommandDeps(program *Program) modalEditorSubmitCommandD
 		return modalEditorSubmitCommandDeps{}
 	}
 	return modalEditorSubmitCommandDeps{
-		detailQueries:                  program.detailQueries,
-		pullRequestListQueries:         program.pullRequestListQueries,
-		pullRequestMutations:           program.pullRequestMutations,
-		reviewMutations:                program.reviewMutations,
-		recordPendingPullRequestReview: program.setPendingPullRequestReviewStateByIdentity,
+		detailQueries:          program.detailQueries,
+		pullRequestListQueries: program.pullRequestListQueries,
+		pullRequestMutations:   program.pullRequestMutations,
+		reviewMutations:        program.reviewMutations,
 	}
 }
 
@@ -220,16 +218,35 @@ func (request reviewInlineCommentSubmitRequest) run(deps modalEditorSubmitComman
 		return nil, errors.New("github loader is unavailable")
 	}
 
-	submittedTarget := request.target
-	pendingReviewID, err := pendingReviewIDForInlineCommentMutation(deps, submittedTarget)
+	preparedTarget := request.target
+	pendingReviewID, err := pendingReviewIDForInlineCommentMutation(deps, preparedTarget)
 	if err != nil {
 		return nil, err
 	}
-	if err := deps.reviewMutations.AddPullRequestReviewThread(pendingReviewID, request.body, submittedTarget.threadTarget); err != nil {
+	preparedTarget.pendingReview = pendingReviewID
+	return MsgReviewInlineCommentPendingReviewPrepared{Target: preparedTarget, Body: request.body}, nil
+}
+
+type preparedReviewInlineCommentSubmitRequest struct {
+	target pullRequestInlineCommentTarget
+	body   string
+}
+
+func (request preparedReviewInlineCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
+		return nil, errors.New("missing pull request identity")
+	}
+	pendingReviewID := strings.TrimSpace(request.target.pendingReview)
+	if pendingReviewID == "" {
+		return nil, errors.New("missing pull request review context")
+	}
+	if deps.reviewMutations == nil {
+		return nil, errors.New("github loader is unavailable")
+	}
+	if err := deps.reviewMutations.AddPullRequestReviewThread(pendingReviewID, request.body, request.target.threadTarget); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	submittedTarget.pendingReview = pendingReviewID
-	return MsgReviewInlineCommentSubmitted{Target: submittedTarget, Body: request.body}, nil
+	return MsgReviewInlineCommentSubmitted{Target: request.target, Body: request.body}, nil
 }
 
 type pendingPullRequestReviewSubmitRequest struct {
@@ -257,9 +274,6 @@ func pendingReviewIDForInlineCommentMutation(deps modalEditorSubmitCommandDeps, 
 		return "", errors.New("missing pull request identity")
 	}
 	if strings.TrimSpace(target.pendingReview) != "" {
-		if deps.recordPendingPullRequestReview != nil {
-			deps.recordPendingPullRequestReview(target.repository, target.number, target.pendingReview)
-		}
 		return strings.TrimSpace(target.pendingReview), nil
 	}
 	if deps.reviewMutations == nil {
@@ -273,9 +287,6 @@ func pendingReviewIDForInlineCommentMutation(deps modalEditorSubmitCommandDeps, 
 	pendingReviewID = strings.TrimSpace(pendingReviewID)
 	if pendingReviewID == "" {
 		return "", errors.New("missing pull request review context")
-	}
-	if deps.recordPendingPullRequestReview != nil {
-		deps.recordPendingPullRequestReview(target.repository, target.number, pendingReviewID)
 	}
 	return pendingReviewID, nil
 }

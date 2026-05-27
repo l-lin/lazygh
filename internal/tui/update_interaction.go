@@ -90,11 +90,24 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	}
 
 	var commands []Cmd
+	keepOpen := false
 	if message.Success != nil {
 		commands = Update(program, message.Success)
+		keepOpen = modalEditorRemainsOpenAfterSubmitSuccess(message.Success)
 	}
-	program.overlayState.modalEditor = modalEditorState{}
+	if !keepOpen {
+		program.overlayState.modalEditor = modalEditorState{}
+	}
 	return commands
+}
+
+func modalEditorRemainsOpenAfterSubmitSuccess(success Msg) bool {
+	switch success.(type) {
+	case MsgReviewInlineCommentPendingReviewPrepared:
+		return true
+	default:
+		return false
+	}
 }
 
 func (program *Program) applyModalEditorExternalEditRequested() []Cmd {

@@ -981,6 +981,20 @@ func TestRefactorGuard_GivenLinkClipboardCommandFile_WhenScanning_ThenItDoesNotM
 	}
 }
 
+func TestRefactorGuard_GivenModalEditorSubmitRequestFile_WhenScanning_ThenItDoesNotWirePendingReviewStoreMutation(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`recordPendingPullRequestReview`,
+		`setPendingPullRequestReviewStateByIdentity`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "cmd_modal_editor_submit_requests.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cmd_modal_editor_submit_requests.go to stop wiring pending-review store mutation directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewCollapseAndBrowserSectionFiles_WhenScanning_ThenStateWritesStayOnReducerOwnedHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\s*=`,

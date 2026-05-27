@@ -95,25 +95,31 @@ type MsgInlineCommentReplySubmitted struct {
 	Body   string
 }
 
+type MsgReviewInlineCommentPendingReviewPrepared struct {
+	Target pullRequestInlineCommentTarget
+	Body   string
+}
+
 type MsgReviewInlineCommentSubmitted struct {
 	Target pullRequestInlineCommentTarget
 	Body   string
 }
 
-func (MsgPullRequestLifecycleApplied) isMsg()        {}
-func (MsgPullRequestAutoMergeApplied) isMsg()        {}
-func (MsgPullRequestBranchUpdated) isMsg()           {}
-func (MsgPullRequestInvalidatedWithFeedback) isMsg() {}
-func (MsgPullRequestAssigneesUpdated) isMsg()        {}
-func (MsgPullRequestCommentDeleted) isMsg()          {}
-func (MsgInlineCommentDeleted) isMsg()               {}
-func (MsgInlineCommentResolutionApplied) isMsg()     {}
-func (MsgReviewSessionStarted) isMsg()               {}
-func (MsgReactionAdded) isMsg()                      {}
-func (MsgReactionRemoved) isMsg()                    {}
-func (MsgPendingPullRequestReviewCanceled) isMsg()   {}
-func (MsgPullRequestCommentSubmitted) isMsg()        {}
-func (MsgPullRequestCommentUpdated) isMsg()          {}
-func (MsgInlineCommentUpdated) isMsg()               {}
-func (MsgInlineCommentReplySubmitted) isMsg()        {}
-func (MsgReviewInlineCommentSubmitted) isMsg()       {}
+func (MsgPullRequestLifecycleApplied) isMsg()              {}
+func (MsgPullRequestAutoMergeApplied) isMsg()              {}
+func (MsgPullRequestBranchUpdated) isMsg()                 {}
+func (MsgPullRequestInvalidatedWithFeedback) isMsg()       {}
+func (MsgPullRequestAssigneesUpdated) isMsg()              {}
+func (MsgPullRequestCommentDeleted) isMsg()                {}
+func (MsgInlineCommentDeleted) isMsg()                     {}
+func (MsgInlineCommentResolutionApplied) isMsg()           {}
+func (MsgReviewSessionStarted) isMsg()                     {}
+func (MsgReactionAdded) isMsg()                            {}
+func (MsgReactionRemoved) isMsg()                          {}
+func (MsgPendingPullRequestReviewCanceled) isMsg()         {}
+func (MsgPullRequestCommentSubmitted) isMsg()              {}
+func (MsgPullRequestCommentUpdated) isMsg()                {}
+func (MsgInlineCommentUpdated) isMsg()                     {}
+func (MsgInlineCommentReplySubmitted) isMsg()              {}
+func (MsgReviewInlineCommentPendingReviewPrepared) isMsg() {}
+func (MsgReviewInlineCommentSubmitted) isMsg()             {}
