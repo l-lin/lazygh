@@ -58,12 +58,12 @@ This keeps the composition root in one place, but it is still broader than a str
 
 The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
-1. A keybinding, popup, editor, or async result emits a `Msg`.
+1. A keybinding, popup, editor-intent callback, or async result emits a `Msg`.
 2. `Update` mutates state and returns typed `Cmd` values.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, shell sync, and redraw.
 
-`dispatchAsync()` is still the one production bridge that hops worker results back onto the UI thread.
+`dispatchAsyncMessage()` is the shell bridge that hops worker results back onto the UI thread.
 
 ## Read side and render side
 
@@ -121,13 +121,6 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is read-only.
 - Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_commands.go`, `program_loading.go`, `notification_loading.go`, and `notification_detail_loader.go`.
-
-## Remaining strict-TEA seams
-
-The repo is TEA-shaped, not strict TEA. The remaining pressure points are smaller now, and more specific.
-
-- async result delivery still depends on the GUI-bound `dispatchAsync()` bridge, and a few legacy direct loader helpers still call that bridge from older helper files
-- editor callbacks still mutate durable editor models through `HandleKey(gocui.Key, ...)`, and modal-open messages still carry fully built `modalEditorState` values instead of typed edit intents and open descriptors
 
 ## Start here
 
