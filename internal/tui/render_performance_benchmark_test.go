@@ -111,6 +111,10 @@ func given_reviewDescriptionBenchmarkProgram(tb testing.TB) (*Program, *gocui.Gu
 		gui.Close()
 		tb.Fatalf("expected no review-mode startup error, actual %v", actualErr)
 	}
+	if actualErr := subject.focusUserView(gui, nil); actualErr != nil {
+		gui.Close()
+		tb.Fatalf("expected no user-view focus error, actual %v", actualErr)
+	}
 	if actualErr := subject.focusDetailView(gui, nil); actualErr != nil {
 		gui.Close()
 		tb.Fatalf("expected no detail focus error, actual %v", actualErr)
