@@ -201,19 +201,11 @@ func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
 }
 
 func (program *Program) markSelectedNotificationRead(gui *gocui.Gui) error {
-	target, ok := program.selectedNotificationActionTarget()
-	if !ok || target.threadID == "" {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgNotificationReadRequested{Target: target})
+	return program.dispatch(gui, MsgNotificationReadRequested{})
 }
 
 func (program *Program) markSelectedNotificationDone(gui *gocui.Gui) error {
-	target, ok := program.selectedNotificationActionTarget()
-	if !ok || target.threadID == "" {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgNotificationDoneRequested{Target: target})
+	return program.dispatch(gui, MsgNotificationDoneRequested{})
 }
 
 func (program *Program) markAllLoadedNotificationsRead(gui *gocui.Gui) error {
@@ -225,15 +217,7 @@ func (program *Program) markAllLoadedNotificationsDone(gui *gocui.Gui) error {
 }
 
 func (program *Program) openSelectedNotificationInBrowser(gui *gocui.Gui) error {
-	if program.linkOpener == nil {
-		return ErrLinkOpenerUnavailable
-	}
-
-	browserURL, ok := program.selectedNotificationBrowserURL()
-	if !ok {
-		return errActionsPopupActionUnavailable
-	}
-	return program.dispatch(gui, MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
+	return program.dispatch(gui, MsgOpenNotificationInBrowserRequested{})
 }
 
 func (program *Program) selectedNotificationBrowserURL() (string, bool) {
@@ -275,18 +259,11 @@ func (program *Program) selectedNotificationBrowserURL() (string, bool) {
 }
 
 func (program *Program) markNotificationRead(gui *gocui.Gui, _ *gocui.View) error {
-	return program.handleNotificationKeyAction(gui, program.markSelectedNotificationRead)
+	return program.markSelectedNotificationRead(gui)
 }
 
 func (program *Program) markNotificationDone(gui *gocui.Gui, _ *gocui.View) error {
-	return program.handleNotificationKeyAction(gui, program.markSelectedNotificationDone)
-}
-
-func (program *Program) handleNotificationKeyAction(gui *gocui.Gui, action func(*gocui.Gui) error) error {
-	if err := action(gui); err != nil {
-		return program.dispatch(gui, MsgFeedbackSet{Target: program.model.Focus(), Message: err.Error()})
-	}
-	return nil
+	return program.markSelectedNotificationDone(gui)
 }
 
 func normalizedNotificationMutationError(err error) error {

@@ -6,7 +6,7 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOptimisticMutationAndReturnsATypedRequestCommand(t *testing.T) {
+func TestUpdate_GivenMsgNotificationReadRequestedWithoutExplicitTarget_WhenApplying_ThenItStartsTheOptimisticMutationAndReturnsATypedRequestCommand(t *testing.T) {
 	notifications := []githubcli.Notification{
 		given_notificationValue(t, given_pullRequestNotificationRow()),
 		given_notificationValue(t, given_issueNotificationRow()),
@@ -17,7 +17,7 @@ func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOp
 		t.Fatal("expected a selected notification target")
 	}
 
-	actual := Update(subject, MsgNotificationReadRequested{Target: target})
+	actual := Update(subject, MsgNotificationReadRequested{})
 
 	if len(actual) != 1 {
 		t.Fatalf("expected one notification mutation command, actual %d", len(actual))
@@ -42,6 +42,51 @@ func TestUpdate_GivenMsgNotificationReadRequested_WhenApplying_ThenItStartsTheOp
 	actualRows := subject.model.NotificationRows()
 	if actualRows[0].Notification == nil || actualRows[0].Notification.Unread {
 		t.Fatalf("expected the selected notification row to become read optimistically, actual %+v", actualRows[0].Notification)
+	}
+}
+
+func TestUpdate_GivenMsgNotificationDoneRequestedWithoutExplicitTarget_WhenApplying_ThenItStartsTheOptimisticMutationAndReturnsATypedRequestCommand(t *testing.T) {
+	notifications := []githubcli.Notification{
+		given_notificationValue(t, given_pullRequestNotificationRow()),
+		given_notificationValue(t, given_issueNotificationRow()),
+	}
+	subject := given_notificationActionProgram(notifications, &fakePullRequestDetailLoader{})
+	target, ok := subject.selectedNotificationActionTarget()
+	if !ok {
+		t.Fatal("expected a selected notification target")
+	}
+
+	actual := Update(subject, MsgNotificationDoneRequested{})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one notification mutation command, actual %d", len(actual))
+	}
+	command, ok := actual[0].(notificationMutationCmd)
+	if !ok {
+		t.Fatalf("expected a notificationMutationCmd, actual %T", actual[0])
+	}
+	request, ok := command.request.(notificationDoneMutationRequest)
+	if !ok {
+		t.Fatalf("expected a notificationDoneMutationRequest, actual %T", command.request)
+	}
+	if actual := request.threadID; actual != target.threadID {
+		t.Fatalf("expected request thread id %q, actual %q", target.threadID, actual)
+	}
+	if actual := request.notification.ID; actual != target.notification.ID {
+		t.Fatalf("expected request notification id %q, actual %q", target.notification.ID, actual)
+	}
+	if actual := command.SuccessFeedbackMessage; actual != notificationMarkedDoneMessage {
+		t.Fatalf("expected success feedback %q, actual %q", notificationMarkedDoneMessage, actual)
+	}
+	if !subject.notificationsLoading {
+		t.Fatal("expected notifications loading to start immediately")
+	}
+	actualRows := subject.model.NotificationRows()
+	if len(actualRows) != 1 {
+		t.Fatalf("expected one remaining notification row, actual %d", len(actualRows))
+	}
+	if actualRows[0].Notification == nil || actualRows[0].Notification.ID != "n-issue" {
+		t.Fatalf("expected the selected notification row to disappear optimistically, actual %+v", actualRows)
 	}
 }
 

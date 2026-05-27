@@ -8,8 +8,8 @@ import (
 )
 
 func (program *Program) applyNotificationReadRequested(message MsgNotificationReadRequested) []Cmd {
-	target := message.Target
-	if strings.TrimSpace(target.threadID) == "" {
+	target, ok := program.resolveNotificationRequestTarget(message.Target)
+	if !ok {
 		return program.handleNotificationRequestUnavailable(errActionsPopupActionUnavailable.Error())
 	}
 	if !target.notification.Unread {
@@ -24,8 +24,8 @@ func (program *Program) applyNotificationReadRequested(message MsgNotificationRe
 }
 
 func (program *Program) applyNotificationDoneRequested(message MsgNotificationDoneRequested) []Cmd {
-	target := message.Target
-	if strings.TrimSpace(target.threadID) == "" {
+	target, ok := program.resolveNotificationRequestTarget(message.Target)
+	if !ok {
 		return program.handleNotificationRequestUnavailable(errActionsPopupActionUnavailable.Error())
 	}
 
@@ -34,6 +34,13 @@ func (program *Program) applyNotificationDoneRequested(message MsgNotificationDo
 		return program.handleNotificationRequestUnavailable(errActionsPopupActionUnavailable.Error())
 	}
 	return program.beginNotificationMutation(notificationRows(optimisticNotifications), notificationDoneLoadingMessage, notificationMarkedDoneMessage, notificationDoneMutationRequest{threadID: target.threadID, notification: target.notification})
+}
+
+func (program *Program) resolveNotificationRequestTarget(target notificationActionTarget) (notificationActionTarget, bool) {
+	if strings.TrimSpace(target.threadID) != "" {
+		return target, true
+	}
+	return program.selectedNotificationActionTarget()
 }
 
 func (program *Program) applyAllNotificationsReadRequested() []Cmd {

@@ -1293,6 +1293,27 @@ func TestRefactorGuard_GivenRemainingShortcutEntrypointFiles_WhenScanning_ThenTh
 	}
 }
 
+func TestRefactorGuard_GivenNotificationShortcutEntrypoints_WhenScanning_ThenTheyDispatchWithoutLocalPreflightOrFeedback(t *testing.T) {
+	contents, actualErr := os.ReadFile("notification_actions.go")
+	if actualErr != nil {
+		t.Fatalf("read notification_actions.go: %v", actualErr)
+	}
+
+	forbiddenPatterns := map[string]*regexp.Regexp{
+		"markSelectedNotificationRead":       regexp.MustCompile(`func \(program \*Program\) markSelectedNotificationRead\(gui \*gocui\.Gui\) error \{[^}]*selectedNotificationActionTarget\(`),
+		"markSelectedNotificationDone":       regexp.MustCompile(`func \(program \*Program\) markSelectedNotificationDone\(gui \*gocui\.Gui\) error \{[^}]*selectedNotificationActionTarget\(`),
+		"openSelectedNotificationInBrowser":  regexp.MustCompile(`func \(program \*Program\) openSelectedNotificationInBrowser\(gui \*gocui\.Gui\) error \{[^}]*(?:selectedNotificationBrowserURL\(|ErrLinkOpenerUnavailable|MsgOpenBrowserURLRequested\{)`),
+		"handleNotificationKeyAction":        regexp.MustCompile(`func \(program \*Program\) handleNotificationKeyAction\(`),
+		"directNotificationFeedbackDispatch": regexp.MustCompile(`dispatch\(gui, MsgFeedbackSet\{Target: program\.model\.Focus\(\), Message: err\.Error\(\)\}\)`),
+	}
+
+	for name, pattern := range forbiddenPatterns {
+		if pattern.Match(contents) {
+			t.Fatalf("expected notification shortcut entrypoints to avoid local preflight or feedback in %s", name)
+		}
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateAndCacheApplyFilesWritePullRequestDetailOrDiffCaches(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.(?:pullRequestDetailCache|pullRequestDiffCache)\[[^]]+\]\s*=`), func(path string) bool {
 		base := filepath.Base(path)
