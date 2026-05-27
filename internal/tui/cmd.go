@@ -10,6 +10,7 @@ func (program *Program) executeCmds(gui *gocui.Gui, cmds []Cmd) {
 	if program == nil || len(cmds) == 0 {
 		return
 	}
+	gui = program.captureGUI(gui)
 	for _, cmd := range cmds {
 		if cmd == nil {
 			continue

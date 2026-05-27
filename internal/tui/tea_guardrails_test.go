@@ -1036,6 +1036,32 @@ func TestRefactorGuard_GivenCommandExecutorFiles_WhenScanning_ThenOnlyCmdExecute
 	}
 }
 
+func TestRefactorGuard_GivenAsyncCommandAndLoaderFiles_WhenScanning_ThenTheyAvoidGuiBoundDispatchAsyncAndLegacyDirectLoaders(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`dispatchAsync\(`,
+		`func \(program \*Program\) loadConnectedUser\(`,
+		`func \(program \*Program\) loadPullRequests\(`,
+		`func \(program \*Program\) loadNotifications\(`,
+		`func \(program \*Program\) loadIssueDetail\(`,
+		`func \(program \*Program\) loadReleaseDetail\(`,
+		`func \(program \*Program\) loadCurrentDetailImageHTML\(`,
+		`func \(program \*Program\) loadCurrentDetailImage\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		switch base {
+		case "actions_popup_async_cmd.go", "assignee_picker_search_cmd.go", "cmd_interaction_build.go", "cmd_popup_feature_requests.go", "detail_image_loader.go", "dispatch.go", "error_popup.go", "loading_spinner.go", "notification_detail_loader.go", "notification_loading.go", "program_loading.go", "workflow_commands.go":
+			return true
+		default:
+			return false
+		}
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected async command and loader files to use the gui-free async message bridge and explicit command surfaces instead of dispatchAsync(...) or direct loader helpers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

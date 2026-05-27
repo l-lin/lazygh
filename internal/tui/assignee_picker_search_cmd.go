@@ -20,14 +20,15 @@ type assigneePickerSearchCommandDeps struct {
 	pullRequestMutations PullRequestMutations
 	requestCurrent       func(int, string) bool
 	runAsync             func(func())
-	dispatchAsync        func(*gocui.Gui, Msg)
+	dispatchAsyncMessage func(Msg)
 }
 
-func newAssigneePickerSearchCommandDeps(program *Program) assigneePickerSearchCommandDeps {
+func newAssigneePickerSearchCommandDeps(program *Program, gui *gocui.Gui) assigneePickerSearchCommandDeps {
 	if program == nil {
 		return assigneePickerSearchCommandDeps{}
 	}
 
+	program.captureGUI(gui)
 	repository := ""
 	if program.actionsPopupWidget.assigneePicker != nil {
 		repository = program.actionsPopupWidget.assigneePicker.target.repository
@@ -38,15 +39,15 @@ func newAssigneePickerSearchCommandDeps(program *Program) assigneePickerSearchCo
 		pullRequestMutations: program.pullRequestMutations,
 		requestCurrent:       program.assigneePickerSearchRequestCurrent,
 		runAsync:             program.runAsync,
-		dispatchAsync:        program.dispatchAsync,
+		dispatchAsyncMessage: program.dispatchAsyncMessage,
 	}
 }
 
 func (command assigneePickerSearchCmd) execute(program *Program, gui *gocui.Gui) {
-	executeAssigneePickerSearchCommand(newAssigneePickerSearchCommandDeps(program), gui, command)
+	executeAssigneePickerSearchCommand(newAssigneePickerSearchCommandDeps(program, gui), command)
 }
 
-func executeAssigneePickerSearchCommand(deps assigneePickerSearchCommandDeps, gui *gocui.Gui, command assigneePickerSearchCmd) {
+func executeAssigneePickerSearchCommand(deps assigneePickerSearchCommandDeps, command assigneePickerSearchCmd) {
 	if command.RequestID <= 0 || !deps.visible || deps.pullRequestMutations == nil {
 		return
 	}
@@ -59,15 +60,15 @@ func executeAssigneePickerSearchCommand(deps assigneePickerSearchCommandDeps, gu
 			<-timer.C
 		}
 
-		if command.DispatchLoading && deps.dispatchAsync != nil {
-			deps.dispatchAsync(gui, MsgAssigneePickerSearchLoadingStarted{RequestID: command.RequestID, Query: trimmedQuery})
+		if command.DispatchLoading && deps.dispatchAsyncMessage != nil {
+			deps.dispatchAsyncMessage(MsgAssigneePickerSearchLoadingStarted{RequestID: command.RequestID, Query: trimmedQuery})
 		}
 		if deps.requestCurrent == nil || !deps.requestCurrent(command.RequestID, trimmedQuery) {
 			return
 		}
 		results, err := deps.pullRequestMutations.SearchAssignableUsers(deps.repository, trimmedQuery)
-		if deps.dispatchAsync != nil {
-			deps.dispatchAsync(gui, MsgAssigneePickerSearchLoaded{RequestID: command.RequestID, Query: trimmedQuery, Results: results, Err: err})
+		if deps.dispatchAsyncMessage != nil {
+			deps.dispatchAsyncMessage(MsgAssigneePickerSearchLoaded{RequestID: command.RequestID, Query: trimmedQuery, Results: results, Err: err})
 		}
 	}
 	if deps.runAsync != nil {

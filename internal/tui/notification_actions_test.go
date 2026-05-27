@@ -190,7 +190,8 @@ func TestNotificationsView_GivenNotificationMarkedDone_WhenClearingCacheAndReloa
 	then_noError(t, actualErr)
 	actualErr = subject.clearCachedData()
 	then_noError(t, actualErr)
-	subject.loadNotifications(gui)
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.executeWorkflowCommands(gui, []Cmd{loadNotificationsCmd{}})
 
 	actualRows := subject.model.NotificationRows()
 	if len(actualRows) != 1 {

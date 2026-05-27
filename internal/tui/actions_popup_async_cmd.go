@@ -21,6 +21,7 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 		return
 	}
 
+	capturedGUI := program.captureGUI(gui)
 	program.actionsPopupWidget.errorMessage = ""
 	if statusCommand := strings.TrimSpace(command.request.statusCommand()); statusCommand != "" {
 		program.startGHCommandLoading(statusCommand)
@@ -29,10 +30,10 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 	run := func() {
 		success, err := command.request.run(deps)
 		if command.request.asyncRequested() {
-			program.dispatchAsync(gui, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
+			program.dispatchAsyncMessage(MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 			return
 		}
-		program.executeCmds(gui, Update(program, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success}))
+		program.executeCmds(capturedGUI, Update(program, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success}))
 	}
 	if command.request.asyncRequested() {
 		program.runAsync(run)

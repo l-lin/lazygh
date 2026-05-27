@@ -10,11 +10,6 @@ func (program *Program) maybeLoadNotifications(gui *gocui.Gui) {
 	program.executeWorkflowPlan(gui, program.notificationLoadPlan())
 }
 
-func (program *Program) loadNotifications(gui *gocui.Gui) {
-	notifications, err := program.notificationQueries.ListNotifications()
-	program.dispatchAsync(gui, MsgNotificationsLoaded{Notifications: notifications, Err: err})
-}
-
 func notificationRows(notifications []githubdomain.Notification) []NotificationRow {
 	return notificationsStateRows(notifications, nil)
 }

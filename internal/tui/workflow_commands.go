@@ -10,9 +10,9 @@ import (
 
 type workflowCommandDeps struct {
 	runAsync                             func(func())
-	dispatchAsync                        func(*gocui.Gui, Msg)
-	executeUpdate                        func(*gocui.Gui, Msg)
-	executeWorkflowPlan                  func(*gocui.Gui, workflowPlan)
+	dispatchAsyncMessage                 func(Msg)
+	executeUpdate                        func(Msg)
+	executeWorkflowPlan                  func(workflowPlan)
 	pullRequestListReloadPlan            func(PullRequestTab) workflowPlan
 	pullRequestsFromCache                func(PullRequestTab) ([]githubdomain.PullRequest, bool)
 	notificationsFromCache               func() ([]githubdomain.Notification, bool)
@@ -86,18 +86,21 @@ type loadCurrentDetailImageCmd struct {
 
 type hydrateNotificationsFromCacheCmd struct{}
 
-func newWorkflowCommandDeps(program *Program) workflowCommandDeps {
+func newWorkflowCommandDeps(program *Program, gui *gocui.Gui) workflowCommandDeps {
 	if program == nil {
 		return workflowCommandDeps{}
 	}
 
+	capturedGUI := program.captureGUI(gui)
 	deps := workflowCommandDeps{
-		runAsync:      program.runAsync,
-		dispatchAsync: program.dispatchAsync,
-		executeUpdate: func(gui *gocui.Gui, msg Msg) {
-			program.executeCmds(gui, Update(program, msg))
+		runAsync:             program.runAsync,
+		dispatchAsyncMessage: program.dispatchAsyncMessage,
+		executeUpdate: func(msg Msg) {
+			program.executeCmds(capturedGUI, Update(program, msg))
 		},
-		executeWorkflowPlan:                  program.executeWorkflowPlan,
+		executeWorkflowPlan: func(plan workflowPlan) {
+			program.executeWorkflowPlan(capturedGUI, plan)
+		},
 		pullRequestListReloadPlan:            program.pullRequestListReloadPlan,
 		pullRequestsFromCache:                program.pullRequestsFromCache,
 		notificationsFromCache:               program.notificationsFromCache,
@@ -175,29 +178,29 @@ func newWorkflowCommandDeps(program *Program) workflowCommandDeps {
 }
 
 func (loadConnectedUserCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.getConnectedUser == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.getConnectedUser == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	runWorkflowCommandAsync(deps, func() {
 		user, err := deps.getConnectedUser()
-		deps.dispatchAsync(gui, MsgConnectedUserLoaded{User: user, Err: err})
+		deps.dispatchAsyncMessage(MsgConnectedUserLoaded{User: user, Err: err})
 	})
 }
 
 func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.listPullRequests == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.listPullRequests == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	runWorkflowCommandAsync(deps, func() {
 		pullRequests, err := deps.listPullRequests(command.tab)
-		deps.dispatchAsync(gui, MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err})
+		deps.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err})
 	})
 }
 
 func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
+	deps := newWorkflowCommandDeps(program, gui)
 	if deps.pullRequestsFromCache == nil || deps.executeUpdate == nil {
 		return
 	}
@@ -205,30 +208,30 @@ func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *go
 	if !ok {
 		return
 	}
-	deps.executeUpdate(gui, MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests})
+	deps.executeUpdate(MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests})
 }
 
 func (command reloadPullRequestsTabCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
+	deps := newWorkflowCommandDeps(program, gui)
 	if deps.executeWorkflowPlan == nil || deps.pullRequestListReloadPlan == nil {
 		return
 	}
-	deps.executeWorkflowPlan(gui, deps.pullRequestListReloadPlan(command.tab))
+	deps.executeWorkflowPlan(deps.pullRequestListReloadPlan(command.tab))
 }
 
 func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.listNotifications == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.listNotifications == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	runWorkflowCommandAsync(deps, func() {
 		notifications, err := deps.listNotifications()
-		deps.dispatchAsync(gui, MsgNotificationsLoaded{Notifications: notifications, Err: err})
+		deps.dispatchAsyncMessage(MsgNotificationsLoaded{Notifications: notifications, Err: err})
 	})
 }
 
 func (command hydratePullRequestDetailFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
+	deps := newWorkflowCommandDeps(program, gui)
 	if deps.pullRequestDetailCached == nil || deps.pullRequestDetailFromPersistentCache == nil || deps.executeUpdate == nil {
 		return
 	}
@@ -239,18 +242,18 @@ func (command hydratePullRequestDetailFromCacheCmd) execute(program *Program, gu
 	if !ok {
 		return
 	}
-	deps.executeUpdate(gui, MsgPullRequestDetailCacheHydrated{Summary: command.summary, Result: result})
+	deps.executeUpdate(MsgPullRequestDetailCacheHydrated{Summary: command.summary, Result: result})
 }
 
 func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.getPullRequestDetail == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.getPullRequestDetail == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 
 	summary := command.summary
 	runWorkflowCommandAsync(deps, func() {
-		deps.dispatchAsync(gui, loadPullRequestDetailResult(deps, summary))
+		deps.dispatchAsyncMessage(loadPullRequestDetailResult(deps, summary))
 	})
 }
 
@@ -271,7 +274,7 @@ func loadPullRequestDetailResult(deps workflowCommandDeps, summary githubdomain.
 }
 
 func (command hydratePullRequestDiffFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
+	deps := newWorkflowCommandDeps(program, gui)
 	if deps.pullRequestDiffCached == nil || deps.pullRequestDiffFromPersistentCache == nil || deps.executeUpdate == nil {
 		return
 	}
@@ -282,18 +285,18 @@ func (command hydratePullRequestDiffFromCacheCmd) execute(program *Program, gui 
 	if !ok {
 		return
 	}
-	deps.executeUpdate(gui, MsgPullRequestDiffCacheHydrated{Summary: command.summary, Result: result})
+	deps.executeUpdate(MsgPullRequestDiffCacheHydrated{Summary: command.summary, Result: result})
 }
 
 func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.getPullRequestDiff == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.getPullRequestDiff == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 
 	summary := command.summary
 	runWorkflowCommandAsync(deps, func() {
-		deps.dispatchAsync(gui, loadPullRequestDiffResult(deps, summary))
+		deps.dispatchAsyncMessage(loadPullRequestDiffResult(deps, summary))
 	})
 }
 
@@ -323,57 +326,57 @@ func loadPullRequestDiffFileTeamOwners(deps workflowCommandDeps, repository stri
 }
 
 func (command loadIssueDetailCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.getIssueDetail == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.getIssueDetail == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	repository := command.repository
 	number := command.number
 	runWorkflowCommandAsync(deps, func() {
 		detail, err := deps.getIssueDetail(repository, number)
-		deps.dispatchAsync(gui, MsgIssueDetailLoaded{Repository: repository, Number: number, Detail: detail, Err: err})
+		deps.dispatchAsyncMessage(MsgIssueDetailLoaded{Repository: repository, Number: number, Detail: detail, Err: err})
 	})
 }
 
 func (command loadReleaseDetailCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.getReleaseDetail == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.getReleaseDetail == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	repository := command.repository
 	id := command.id
 	runWorkflowCommandAsync(deps, func() {
 		detail, err := deps.getReleaseDetail(repository, id)
-		deps.dispatchAsync(gui, MsgReleaseDetailLoaded{Repository: repository, ID: id, Detail: detail, Err: err})
+		deps.dispatchAsyncMessage(MsgReleaseDetailLoaded{Repository: repository, ID: id, Detail: detail, Err: err})
 	})
 }
 
 func (command loadCurrentDetailImageHTMLCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.renderMarkdownHTML == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.renderMarkdownHTML == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	source := command.source
 	runWorkflowCommandAsync(deps, func() {
 		renderedHTML, err := deps.renderMarkdownHTML(source.repository, source.markdown)
-		deps.dispatchAsync(gui, MsgCurrentDetailImageHTMLLoaded{Source: source, RenderedHTML: renderedHTML, Err: err})
+		deps.dispatchAsyncMessage(MsgCurrentDetailImageHTMLLoaded{Source: source, RenderedHTML: renderedHTML, Err: err})
 	})
 }
 
 func (command loadCurrentDetailImageCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
-	if deps.loadDetailImage == nil || deps.dispatchAsync == nil {
+	deps := newWorkflowCommandDeps(program, gui)
+	if deps.loadDetailImage == nil || deps.dispatchAsyncMessage == nil {
 		return
 	}
 	imageURL := command.imageURL
 	runWorkflowCommandAsync(deps, func() {
 		loadedImage, err := deps.loadDetailImage(imageURL)
-		deps.dispatchAsync(gui, MsgCurrentDetailImageLoaded{ImageURL: imageURL, Image: loadedImage, Err: err})
+		deps.dispatchAsyncMessage(MsgCurrentDetailImageLoaded{ImageURL: imageURL, Image: loadedImage, Err: err})
 	})
 }
 
 func (hydrateNotificationsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {
-	deps := newWorkflowCommandDeps(program)
+	deps := newWorkflowCommandDeps(program, gui)
 	if deps.notificationsFromCache == nil || deps.executeUpdate == nil {
 		return
 	}
@@ -381,7 +384,7 @@ func (hydrateNotificationsFromCacheCmd) execute(program *Program, gui *gocui.Gui
 	if !ok {
 		return
 	}
-	deps.executeUpdate(gui, MsgNotificationsCacheHydrated{Notifications: notifications})
+	deps.executeUpdate(MsgNotificationsCacheHydrated{Notifications: notifications})
 }
 
 func runWorkflowCommandAsync(deps workflowCommandDeps, run func()) {

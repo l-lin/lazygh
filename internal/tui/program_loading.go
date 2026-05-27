@@ -37,16 +37,6 @@ func (program *Program) reloadNotifications(gui *gocui.Gui) {
 	_ = program.afterStateChange(gui)
 }
 
-func (program *Program) loadConnectedUser(gui *gocui.Gui) {
-	user, err := program.sessionQueries.GetConnectedUser()
-	program.dispatchAsync(gui, MsgConnectedUserLoaded{User: user, Err: err})
-}
-
-func (program *Program) loadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
-	pullRequests, err := program.listPullRequests(tab)
-	program.dispatchAsync(gui, MsgPullRequestsLoaded{Tab: tab, PullRequests: pullRequests, Err: err})
-}
-
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubdomain.PullRequest, error) {
 	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
 }

@@ -51,12 +51,13 @@ func TestNewProgram_GivenFocusedGitHubCapabilityAdapters_WhenCreating_ThenItWire
 	}
 }
 
-func TestLoadConnectedUser_GivenSessionQueriesOnly_WhenLoading_ThenItUsesTheSessionPort(t *testing.T) {
+func TestLoadConnectedUserCommand_GivenSessionQueriesOnly_WhenExecuting_ThenItUsesTheSessionPort(t *testing.T) {
 	loader := &fakeSessionQueries{user: githubdomain.ConnectedUser{Login: "octocat"}}
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{SessionQueries: loader})
+	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 
-	subject.loadConnectedUser(nil)
+	subject.executeWorkflowCommands(nil, []Cmd{loadConnectedUserCmd{}})
 
 	if loader.calls != 1 {
 		t.Fatalf("expected one session query call, actual %d", loader.calls)
@@ -66,14 +67,15 @@ func TestLoadConnectedUser_GivenSessionQueriesOnly_WhenLoading_ThenItUsesTheSess
 	}
 }
 
-func TestLoadPullRequests_GivenPullRequestListQueriesOnly_WhenLoading_ThenItUsesTheListPort(t *testing.T) {
+func TestLoadPullRequestsCommand_GivenPullRequestListQueriesOnly_WhenExecuting_ThenItUsesTheListPort(t *testing.T) {
 	loader := &fakePullRequestListQueries{pullRequests: []githubdomain.PullRequestSummary{{Title: "Ship notifications", Number: 42, Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", State: "OPEN"}}}
 	model := NewModel(DefaultSeedData())
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModelAndDeps(model, AppDeps{PullRequestList: loader})
+	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 
-	subject.loadPullRequests(nil, MyPullRequestsTab)
+	subject.executeWorkflowCommands(nil, []Cmd{loadPullRequestsCmd{tab: MyPullRequestsTab}})
 
 	if loader.calls != 1 {
 		t.Fatalf("expected one pull request list call, actual %d", loader.calls)
@@ -84,9 +86,10 @@ func TestLoadPullRequests_GivenPullRequestListQueriesOnly_WhenLoading_ThenItUses
 	}
 }
 
-func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_ThenItUsesThatPort(t *testing.T) {
+func TestLoadCurrentDetailImageHTMLCommand_GivenMarkdownHTMLRendererOnly_WhenExecuting_ThenItUsesThatPort(t *testing.T) {
 	renderer := &fakeMarkdownHTMLRenderer{renderedHTML: "<p>resolved</p>"}
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{MarkdownHTMLRenderer: renderer})
+	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	subject.startupState.appStarted = true
 	subject.issueDetailCache["acme/widgets#42"] = issueDetailResult{detail: githubdomain.IssueDetail{Body: "![Architecture](./docs/diagram.png)"}}
@@ -95,7 +98,7 @@ func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_Th
 	subject.configureGUI(gui)
 
 	given_markdown := "![Architecture](./docs/diagram.png)"
-	subject.loadCurrentDetailImageHTML(gui, detailImageHTMLSource{
+	subject.executeWorkflowCommands(gui, []Cmd{loadCurrentDetailImageHTMLCmd{source: detailImageHTMLSource{
 		key:          "detail#42",
 		repository:   "acme/widgets",
 		markdown:     given_markdown,
@@ -105,7 +108,7 @@ func TestLoadCurrentDetailImageHTML_GivenMarkdownHTMLRendererOnly_WhenLoading_Th
 			cacheKey:         "acme/widgets#42",
 			markdownRevision: detailImageMarkdownRevision(given_markdown),
 		},
-	})
+	}}})
 
 	if renderer.calls != 1 {
 		t.Fatalf("expected one markdown HTML render call, actual %d", renderer.calls)

@@ -66,18 +66,19 @@ func TestLayout_GivenCachedNotificationsAndBackgroundRefreshFailure_WhenRenderin
 	}
 }
 
-func TestLoadNotifications_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
+func TestLoadNotificationsCommand_GivenAFreshLiveResult_WhenExecuting_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	expected := []githubcli.Notification{given_cachedNotification("n-fresh", "Fresh notification")}
 	loader := &fakePullRequestDetailLoader{notifications: expected}
 	cache := &fakePersistentPullRequestCache{}
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
+	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
-	subject.loadNotifications(gui)
+	subject.executeWorkflowCommands(gui, []Cmd{loadNotificationsCmd{}})
 
 	if !reflect.DeepEqual(cache.savedNotifications, expected) {
 		t.Fatalf("expected cached notifications %+v, actual %+v", expected, cache.savedNotifications)

@@ -23,22 +23,8 @@ func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
 	program.executeWorkflowPlan(gui, program.currentDetailImageHTMLLoadsPlan())
 }
 
-func (program *Program) loadCurrentDetailImageHTML(gui *gocui.Gui, source detailImageHTMLSource) {
-	renderedHTML, err := program.markdownHTMLRenderer.RenderMarkdownHTML(source.repository, source.markdown)
-	program.dispatchAsync(gui, MsgCurrentDetailImageHTMLLoaded{Source: source, RenderedHTML: renderedHTML, Err: err})
-}
-
 func (program *Program) maybeLoadCurrentDetailImages(gui *gocui.Gui) {
 	program.executeWorkflowPlan(gui, program.currentDetailImageLoadsPlan())
-}
-
-func (program *Program) loadCurrentDetailImage(gui *gocui.Gui, imageURL string) {
-	githubToken := ""
-	if isGitHubImageSource(imageURL) {
-		githubToken = program.detailImageAuthToken()
-	}
-	loadedImage, err := loadDetailImage(imageURL, program.imageHTTPClient, githubToken)
-	program.dispatchAsync(gui, MsgCurrentDetailImageLoaded{ImageURL: imageURL, Image: loadedImage, Err: err})
 }
 
 func (program *Program) detailImageAuthToken() string {

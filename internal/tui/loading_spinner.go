@@ -17,6 +17,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 		return func() {}
 	}
 
+	program.captureGUI(gui)
 	done := make(chan struct{})
 	ticker := time.NewTicker(loadingSpinnerTickInterval)
 	go func() {
@@ -26,7 +27,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 			case <-done:
 				return
 			case <-ticker.C:
-				program.dispatchAsync(gui, MsgLoadingSpinnerTick{})
+				program.dispatchAsyncMessage(MsgLoadingSpinnerTick{})
 			}
 		}
 	}()

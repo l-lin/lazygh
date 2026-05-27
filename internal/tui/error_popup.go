@@ -102,13 +102,14 @@ func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) 
 		return
 	}
 
+	capturedGUI := program.captureGUI(gui)
 	generation := program.overlayState.transientErrorPopup.generation + 1
 	popup := transientErrorPopupState{message: trimmedMessage, generation: generation}
 	if program.timingState.transientErrorPopupDuration > 0 {
 		popup.expiresAt = program.currentTime().Add(program.timingState.transientErrorPopupDuration)
 	}
 	program.overlayState.transientErrorPopup = popup
-	if gui == nil || program.timingState.transientErrorPopupDuration <= 0 || program.timingState.after == nil {
+	if capturedGUI == nil || program.timingState.transientErrorPopupDuration <= 0 || program.timingState.after == nil {
 		return
 	}
 
@@ -117,7 +118,7 @@ func (program *Program) showTransientErrorPopup(gui *gocui.Gui, message string) 
 		if delay != nil {
 			<-delay
 		}
-		program.dispatchAsync(gui, MsgTransientErrorPopupExpired{Generation: generation})
+		program.dispatchAsyncMessage(MsgTransientErrorPopupExpired{Generation: generation})
 	})
 }
 

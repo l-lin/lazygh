@@ -55,16 +55,17 @@ func (command notificationMutationCmd) execute(program *Program, gui *gocui.Gui)
 		return
 	}
 
+	capturedGUI := program.captureGUI(gui)
 	deps := newNotificationMutationCommandDeps(program)
 	run := func() {
 		err := command.request.run(deps)
-		if gui == nil {
-			program.executeCmds(gui, Update(program, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err}))
+		if capturedGUI == nil {
+			program.executeCmds(nil, Update(program, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err}))
 			return
 		}
-		program.dispatchAsync(gui, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err})
+		program.dispatchAsyncMessage(MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err})
 	}
-	if gui == nil {
+	if capturedGUI == nil {
 		run()
 		return
 	}
@@ -76,16 +77,17 @@ func (command storyReviewPrepareCmd) execute(program *Program, gui *gocui.Gui) {
 		return
 	}
 
+	capturedGUI := program.captureGUI(gui)
 	deps := newStoryReviewPrepareCommandDeps(program)
 	run := func() {
 		prepared, err := command.request.run(deps)
-		if gui == nil {
-			program.executeCmds(gui, Update(program, MsgStoryReviewPrepared{Prepared: prepared, Err: err}))
+		if capturedGUI == nil {
+			program.executeCmds(nil, Update(program, MsgStoryReviewPrepared{Prepared: prepared, Err: err}))
 			return
 		}
-		program.dispatchAsync(gui, MsgStoryReviewPrepared{Prepared: prepared, Err: err})
+		program.dispatchAsyncMessage(MsgStoryReviewPrepared{Prepared: prepared, Err: err})
 	}
-	if gui == nil {
+	if capturedGUI == nil {
 		run()
 		return
 	}

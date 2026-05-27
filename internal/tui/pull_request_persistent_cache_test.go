@@ -146,19 +146,20 @@ func TestLayout_GivenCachedPullRequestsAndLiveResultsInSearchOrder_WhenRendering
 		t.Fatalf("expected the live rows to keep their search order, actual %q", actualBuffer)
 	}
 }
-func TestLoadPullRequests_GivenAFreshLiveResult_WhenLoading_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
+func TestLoadPullRequestsCommand_GivenAFreshLiveResult_WhenExecuting_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
 	expected := []githubcli.PullRequest{{Title: "Fresh PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Fresh body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{myPullRequests: expected}}
 	cache := &fakePersistentPullRequestCache{}
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
 
-	subject.loadPullRequests(gui, MyPullRequestsTab)
+	subject.executeWorkflowCommands(gui, []Cmd{loadPullRequestsCmd{tab: MyPullRequestsTab}})
 
 	actual := cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(appconfig.DefaultPullRequestSearches()[0])]
 	if !reflect.DeepEqual(actual, expected) {
@@ -512,7 +513,7 @@ func TestUpdate_GivenLoadedPullRequestDiffResult_WhenApplying_ThenItStoresTheRes
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
 	subject.pullRequestCache = cache
 
-	Update(subject, loadPullRequestDiffResult(newWorkflowCommandDeps(subject), githubcli.ToDomainPullRequestSummary(summary)))
+	Update(subject, loadPullRequestDiffResult(newWorkflowCommandDeps(subject, nil), githubcli.ToDomainPullRequestSummary(summary)))
 
 	actual := cache.savedDiffs["acme/widgets#42"]
 	if !reflect.DeepEqual(actual.Diff, expected) || actual.SourceUpdatedAt != summary.UpdatedAt {

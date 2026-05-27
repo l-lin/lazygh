@@ -7,19 +7,20 @@ import (
 )
 
 type buildCommandRuntime struct {
-	buildQueries  BuildQueries
-	runAsync      func(func())
-	dispatchAsync func(*gocui.Gui, Msg)
+	buildQueries         BuildQueries
+	runAsync             func(func())
+	dispatchAsyncMessage func(Msg)
 }
 
-func newBuildCommandRuntime(program *Program) buildCommandRuntime {
+func newBuildCommandRuntime(program *Program, gui *gocui.Gui) buildCommandRuntime {
 	if program == nil {
 		return buildCommandRuntime{}
 	}
+	program.captureGUI(gui)
 	return buildCommandRuntime{
-		buildQueries:  program.buildQueries,
-		runAsync:      program.runAsync,
-		dispatchAsync: program.dispatchAsync,
+		buildQueries:         program.buildQueries,
+		runAsync:             program.runAsync,
+		dispatchAsyncMessage: program.dispatchAsyncMessage,
 	}
 }
 
@@ -29,11 +30,11 @@ type pullRequestBuildRunLoadCmd struct {
 }
 
 func (command pullRequestBuildRunLoadCmd) execute(program *Program, gui *gocui.Gui) {
-	executePullRequestBuildRunLoadCommand(newBuildCommandRuntime(program), gui, command)
+	executePullRequestBuildRunLoadCommand(newBuildCommandRuntime(program, gui), command)
 }
 
-func executePullRequestBuildRunLoadCommand(runtime buildCommandRuntime, gui *gocui.Gui, command pullRequestBuildRunLoadCmd) {
-	if runtime.buildQueries == nil || runtime.dispatchAsync == nil {
+func executePullRequestBuildRunLoadCommand(runtime buildCommandRuntime, command pullRequestBuildRunLoadCmd) {
+	if runtime.buildQueries == nil || runtime.dispatchAsyncMessage == nil {
 		return
 	}
 
@@ -44,7 +45,7 @@ func executePullRequestBuildRunLoadCommand(runtime buildCommandRuntime, gui *goc
 		if err == nil {
 			jobs, jobsErr = runtime.buildQueries.GetPullRequestBuildRunJobs(command.Repository, command.Target.check)
 		}
-		runtime.dispatchAsync(gui, MsgPullRequestBuildRunLoaded{Target: command.Target, RawRunOutput: rawRunOutput, Jobs: jobs, JobsErr: jobsErr, Err: err})
+		runtime.dispatchAsyncMessage(MsgPullRequestBuildRunLoaded{Target: command.Target, RawRunOutput: rawRunOutput, Jobs: jobs, JobsErr: jobsErr, Err: err})
 	}
 	if runtime.runAsync != nil {
 		runtime.runAsync(run)
@@ -59,17 +60,17 @@ type pullRequestBuildRunJobLogLoadCmd struct {
 }
 
 func (command pullRequestBuildRunJobLogLoadCmd) execute(program *Program, gui *gocui.Gui) {
-	executePullRequestBuildRunJobLogLoadCommand(newBuildCommandRuntime(program), gui, command)
+	executePullRequestBuildRunJobLogLoadCommand(newBuildCommandRuntime(program, gui), command)
 }
 
-func executePullRequestBuildRunJobLogLoadCommand(runtime buildCommandRuntime, gui *gocui.Gui, command pullRequestBuildRunJobLogLoadCmd) {
-	if runtime.buildQueries == nil || runtime.dispatchAsync == nil {
+func executePullRequestBuildRunJobLogLoadCommand(runtime buildCommandRuntime, command pullRequestBuildRunJobLogLoadCmd) {
+	if runtime.buildQueries == nil || runtime.dispatchAsyncMessage == nil {
 		return
 	}
 
 	run := func() {
 		job, rawLogOutput, err := runtime.buildQueries.GetPullRequestBuildRunJobLogForCheck(command.Repository, command.Check)
-		runtime.dispatchAsync(gui, MsgPullRequestBuildRunJobLogLoaded{Repository: command.Repository, Job: job, RawLogOutput: rawLogOutput, Err: err})
+		runtime.dispatchAsyncMessage(MsgPullRequestBuildRunJobLogLoaded{Repository: command.Repository, Job: job, RawLogOutput: rawLogOutput, Err: err})
 	}
 	if runtime.runAsync != nil {
 		runtime.runAsync(run)
