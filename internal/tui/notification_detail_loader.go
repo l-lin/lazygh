@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -17,10 +15,6 @@ type issueDetailResult struct {
 type releaseDetailResult struct {
 	detail githubdomain.ReleaseDetail
 	err    error
-}
-
-func (program *Program) maybeLoadSelectedNotificationDetail(gui *gocui.Gui) {
-	program.executeWorkflowPlan(gui, program.selectedNotificationDetailLoadPlan())
 }
 
 func (program *Program) issueDetailLoaded(key string) bool {

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -15,10 +13,6 @@ type pullRequestDiffResult struct {
 	sourceUpdatedAt         string
 	needsRefresh            bool
 	fileTeamOwnersAttempted bool
-}
-
-func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
-	program.executeWorkflowPlan(gui, program.selectedPullRequestDiffLoadPlan())
 }
 
 func (program *Program) selectedPullRequestSummaryForDiff() (githubdomain.PullRequest, bool) {

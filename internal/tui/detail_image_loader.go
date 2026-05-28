@@ -6,8 +6,6 @@ import (
 	urlpkg "net/url"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
@@ -17,14 +15,6 @@ type detailImageHTMLSource struct {
 	markdown     string
 	renderedHTML string
 	applyTarget  detailImageHTMLApplyTarget
-}
-
-func (program *Program) maybeLoadCurrentDetailImageHTML(gui *gocui.Gui) {
-	program.executeWorkflowPlan(gui, program.currentDetailImageHTMLLoadsPlan())
-}
-
-func (program *Program) maybeLoadCurrentDetailImages(gui *gocui.Gui) {
-	program.executeWorkflowPlan(gui, program.currentDetailImageLoadsPlan())
 }
 
 func (program *Program) detailImageAuthToken() string {

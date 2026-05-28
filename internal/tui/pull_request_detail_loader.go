@@ -4,14 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
-
-func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
-	program.executeWorkflowPlan(gui, program.selectedPullRequestDetailLoadPlan())
-}
 
 func (program *Program) selectedPullRequestSummaryForDetail() (githubdomain.PullRequest, bool) {
 	actionContext := program.actionContext()

@@ -37,3 +37,11 @@ func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
 	program.executeWorkflowPlan(gui, program.pullRequestListReloadPlan(program.model.ActivePullRequestTab()))
 	_ = program.afterStateChange(gui)
 }
+
+func (program *Program) maybeLoadSelectedPullRequestDetail(gui *gocui.Gui) {
+	program.executeWorkflowPlan(gui, program.selectedPullRequestDetailLoadPlan())
+}
+
+func (program *Program) maybeLoadSelectedPullRequestDiff(gui *gocui.Gui) {
+	program.executeWorkflowPlan(gui, program.selectedPullRequestDiffLoadPlan())
+}
