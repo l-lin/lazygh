@@ -337,6 +337,39 @@ func TestRefactorGuard_GivenUpdateHelperFiles_WhenScanning_ThenTheyDoNotReenterU
 	}
 }
 
+func TestRefactorGuard_GivenUpdateRouter_WhenScanning_ThenTopLevelRoutingStaysGroupedByNamedCategories(t *testing.T) {
+	contents, actualErr := os.ReadFile("update.go")
+	then_noError(t, actualErr)
+	actualSource := string(contents)
+
+	expectedOrder := []string{
+		`if result := program.routeLifecycleAndEditorMessages(msg); result.handled {`,
+		`if result := program.routeNavigationAndDetailMessages(msg); result.handled {`,
+		`if result := program.routeBrowserClipboardAndLinkMessages(msg); result.handled {`,
+		`if result := program.routeNotificationAndSearchMessages(msg); result.handled {`,
+		`if result := program.routeMutationMessages(msg); result.handled {`,
+		`if result := program.routeWorkflowMessages(msg); result.handled {`,
+		`if result := program.routeActionsPopupMessages(msg); result.handled {`,
+	}
+
+	missing := make([]string, 0)
+	lastIndex := -1
+	for _, fragment := range expectedOrder {
+		actualIndex := strings.Index(actualSource, fragment)
+		if actualIndex < 0 {
+			missing = append(missing, fragment)
+			continue
+		}
+		if actualIndex <= lastIndex {
+			t.Fatalf("expected update.go route categories to stay in order %v", expectedOrder)
+		}
+		lastIndex = actualIndex
+	}
+	if len(missing) != 0 {
+		t.Fatalf("expected update.go to route through named message categories, missing %v", missing)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditorSubmitCallbacksRemain(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`submit\s+func\(string\)\s+error`,
