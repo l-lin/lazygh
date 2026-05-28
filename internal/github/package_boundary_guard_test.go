@@ -18,6 +18,21 @@ func TestArchitectureGuard_GivenGithubDomainFiles_WhenScanning_ThenTheyDoNotImpo
 	}
 }
 
+func TestArchitectureGuard_GivenGithubReviewDomainFile_WhenScanning_ThenItDoesNotKeepGraphQLThreadParsingLeftovers(t *testing.T) {
+	actualMatches := given_forbiddenTextMatchesInGithubDomainGoFiles(t, "review.go", []string{
+		"Transport adapters still decode GraphQL thread payloads",
+		"reviewThreadsResponse",
+		"ParseReviewThreadsPage",
+		"reviewThreadCommentsResponse",
+		"ParseReviewThreadCommentsPage",
+		"ParseLineNumber",
+	})
+
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected github review domain file to keep transport parsing in githubcli, actual %v", actualMatches)
+	}
+}
+
 func given_forbiddenTextMatchesInGithubDomainGoFiles(t *testing.T, root string, forbidden []string) []string {
 	t.Helper()
 
