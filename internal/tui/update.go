@@ -1,599 +1,75 @@
 package tui
 
+type updateResult struct {
+	handled  bool
+	commands []Cmd
+}
+
+func handledUpdate(commands []Cmd) updateResult {
+	return updateResult{handled: true, commands: commands}
+}
+
+func ignoredUpdate() updateResult {
+	return updateResult{}
+}
+
 func Update(program *Program, msg Msg) []Cmd {
 	if program == nil || msg == nil {
 		return nil
 	}
 	defer program.resyncVisibleActionsPopupSearchInUpdate()
 
-	switch actual := msg.(type) {
-	// Bootstrap, focus, and side-pane selection.
-	case MsgAppStarted:
-		program.startupState.appStarted = true
-	case MsgNextSideView:
-		program.clearPendingSelectionPrefix()
-		program.detailState.viewState.clearPendingPrefix()
-		if program.sideViewCyclingBlocked() {
-			return nil
-		}
-		program.applyProjectedScreenState(program.screenState().NextSideView())
-	case MsgPreviousSideView:
-		program.clearPendingSelectionPrefix()
-		program.detailState.viewState.clearPendingPrefix()
-		if program.sideViewCyclingBlocked() {
-			return nil
-		}
-		program.applyProjectedScreenState(program.screenState().PreviousSideView())
-	case MsgFocusPanelView:
-		program.clearPendingSelectionPrefix()
-		if program.mainPaneActionBlocked() {
-			return nil
-		}
-		program.detailState.viewState.clearPendingPrefix()
-		state := program.screenState()
-		targetView, ok := state.ViewByNumber(actual.Number)
-		if !ok {
-			return nil
-		}
-		if program.model.PaneLayoutSize() == PaneLayoutFullscreen && program.model.FullscreenPane() != targetView.Focus {
-			return nil
-		}
-		program.applyProjectedScreenState(state.FocusViewNumber(actual.Number))
-	case MsgMoveSideSelection:
-		program.applyMoveSideSelection(actual)
-	case MsgMoveSideSelectionToTop:
-		program.applyMoveSideSelectionToTop()
-	case MsgMoveSideSelectionToBottom:
-		program.applyMoveSideSelectionToBottom()
-
-	// Search prompt opening and draft updates.
-	case MsgOpenSearch:
-		program.clearPendingSelectionPrefix()
-		if program.pullRequestBuildRunPopupVisible() {
-			program.startPullRequestBuildRunPopupSearch()
-			program.searchWidget.openEditor(actual.Query)
-			return nil
-		}
-		inputContext := program.inputContext()
-		if inputContext.SearchUsesReviewTree {
-			program.applyStartReviewFileTreeSearch(MsgStartReviewFileTreeSearch{Query: actual.Query})
-			return nil
-		}
-		if program.mainPaneActionBlocked() || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
-			return nil
-		}
-		program.detailState.viewState.clearPendingPrefix()
-		if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
-			program.model.ClearReviewTreeSearchQuery()
-		}
-		program.model.StartSearch()
-		program.applySearchDraftChanged(MsgSearchDraftChanged{Query: actual.Query})
-		program.searchWidget.openEditor(actual.Query)
-	case MsgSearchDraftChanged:
-		program.applySearchDraftChanged(actual)
-	case MsgSearchEditorInputRequested:
-		program.applySearchEditorInputRequested(actual)
-
-	// Feedback, error reporting, and modal-editor lifecycle.
-	case MsgFeedbackSet:
-		program.applyFeedbackSet(actual)
-	case MsgErrorReported:
-		return program.applyErrorReported(actual)
-	case MsgActionsPopupClosedWithFeedback:
-		program.applyActionsPopupClosedWithFeedback(actual)
-	case MsgActionsPopupActionErrorHandled:
-		return program.applyActionsPopupActionErrorHandled(actual)
-	case MsgActionsPopupActionRequested:
-		return program.applyActionsPopupActionRequested(actual)
-	case MsgModalEditorOpened:
-		program.applyModalEditorOpened(actual)
-	case MsgModalEditorLineInputRequested:
-		program.applyModalEditorLineInputRequested(actual)
-	case MsgModalEditorMultilineInputRequested:
-		program.applyModalEditorMultilineInputRequested(actual)
-	case MsgModalEditorClosed:
-		program.overlayState.modalEditor = modalEditorState{}
-	case MsgModalEditorSubmitRequested:
-		return program.applyModalEditorSubmitRequested()
-	case MsgModalEditorSubmitFinished:
-		return program.applyModalEditorSubmitFinished(actual)
-	case MsgModalEditorExternalEditRequested:
-		return program.applyModalEditorExternalEditRequested()
-	case MsgModalEditorExternalEditFinished:
-		program.applyModalEditorExternalEditFinished(actual)
-
-	// Build-popup loading and overlay lifecycle.
-	case MsgPullRequestBuildRunLoadRequested:
-		return program.applyPullRequestBuildRunLoadRequested(actual)
-	case MsgPullRequestBuildRunJobLogLoadRequested:
-		return program.applyPullRequestBuildRunJobLogLoadRequested(actual)
-	case MsgPullRequestBuildRunPopupOpened:
-		program.applyPullRequestBuildRunPopupOpened(actual)
-	case MsgPullRequestBuildRunPopupClosed:
-		program.applyPullRequestBuildRunPopupClosed()
-
-	// Browser/review navigation and viewport routing.
-	case MsgAdvanceDetailTab:
-		program.applyAdvanceDetailTab(actual)
-	case MsgAdvancePullRequestTab:
-		return program.applyAdvancePullRequestTab(actual)
-	case MsgOpenDetailRequested:
-		program.applyOpenDetailRequested()
-	case MsgCloseDetailRequested:
-		program.applyCloseDetailRequested()
-	case MsgStartReviewFileTreeSearch:
-		program.applyStartReviewFileTreeSearch(actual)
-	case MsgSubmitReviewFileTreeSearch:
-		program.applySubmitReviewFileTreeSearch()
-	case MsgCancelReviewFileTreeSearch:
-		program.applyCancelReviewFileTreeSearch()
-	case MsgOpenPullRequestInBrowserView:
-		program.applyOpenPullRequestInBrowserView(actual)
-	case MsgOpenPullRequestInDetailFullscreen:
-		program.applyOpenPullRequestInDetailFullscreen(actual)
-	case MsgExitReviewMode:
-		program.applyExitReviewMode()
-	case MsgToggleHelp:
-		program.applyToggleHelp()
-	case MsgCloseHelp:
-		program.applyCloseHelp()
-	case MsgAdjustFocusedPane:
-		program.applyAdjustFocusedPane(actual)
-	case MsgLineNavigationRequested:
-		return program.applyLineNavigationRequested(actual)
-	case MsgPageNavigationRequested:
-		return program.applyPageNavigationRequested(actual)
-	case MsgPageNavigationResolved:
-		return program.applyPageNavigationResolved(actual)
-	case MsgSideListViewportRequested:
-		return program.applySideListViewportRequested(actual)
-
-	// Detail/build-popup motion, yank, folds, and live sync resolution.
-	case MsgDetailViewportRequested:
-		return program.applyDetailViewportRequested(actual)
-	case MsgDetailViewportResolved:
-		program.applyDetailViewportResolved(actual)
-	case MsgFocusDetailRenderedLineResolved:
-		program.applyFocusDetailRenderedLineResolved(actual)
-	case MsgDetailMotionRequested:
-		return program.applyDetailMotionRequested(actual)
-	case MsgDetailYankRequested:
-		return program.applyDetailYankRequested(actual)
-	case MsgDetailMotionResolved:
-		return program.applyDetailMotionResolved(actual)
-	case MsgToggleInlineConversationVisibilityResolved:
-		program.applyToggleInlineConversationVisibilityResolved(actual)
-	case MsgSetAllDetailFoldsResolved:
-		program.applySetAllDetailFoldsResolved(actual)
-	case MsgDetailViewSyncPlanResolved:
-		program.applyDetailViewSyncPlanResolved(actual)
-
-	// Browser-open and clipboard completion after detail/build-popup resolution.
-	case MsgOpenBrowserURLRequested:
-		return program.applyOpenBrowserURLRequested(actual)
-	case MsgOpenBrowserURLFinished:
-		program.applyOpenBrowserURLFinished(actual)
-	case MsgClipboardWriteFinished:
-		program.applyClipboardWriteFinished(actual)
-	case MsgSelectedDetailClipboardPrepared:
-		return program.applySelectedDetailClipboardPrepared(actual)
-	case MsgPullRequestBuildRunPopupClipboardPrepared:
-		return program.applyPullRequestBuildRunPopupClipboardPrepared(actual)
-
-	// URL entry, clipboard, browser-open, and link follow-ups.
-	case MsgOpenPullRequestByURLPromptRequested:
-		program.applyOpenPullRequestByURLPromptRequested()
-	case MsgReadPullRequestURLFromClipboardRequested:
-		return program.applyReadPullRequestURLFromClipboardRequested()
-	case MsgOpenPullRequestByURLSubmitRequested:
-		return program.applyOpenPullRequestByURLSubmitRequested(actual)
-	case MsgPullRequestURLReadFromClipboard:
-		program.applyPullRequestURLReadFromClipboard(actual)
-	case MsgOpenPullRequestCustomSearchEditorRequested:
-		program.applyOpenPullRequestCustomSearchEditorRequested()
-	case MsgOpenPullRequestCommentComposerRequested:
-		program.applyOpenPullRequestCommentComposerRequested()
-	case MsgOpenDetailPullRequestCommentRequested:
-		program.applyOpenDetailPullRequestCommentRequested()
-	case MsgOpenInlineCommentReplyRequested:
-		program.applyOpenInlineCommentReplyRequested()
-	case MsgOpenLinkUnderCursorRequested:
-		return program.applyOpenLinkUnderCursorRequested(actual)
-	case MsgOpenLinkUnderCursorResolved:
-		return program.applyOpenLinkUnderCursorResolved(actual)
-	case MsgOpenPullRequestBuildRunPopupLinkRequested:
-		return program.applyOpenPullRequestBuildRunPopupLinkRequested(actual)
-	case MsgOpenPullRequestBuildRunPopupLinkResolved:
-		return program.applyOpenPullRequestBuildRunPopupLinkResolved(actual)
-	case MsgCopySelectedDetailTextRequested:
-		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
-	case MsgCopyPullRequestURLRequested:
-		return program.applyCopyPullRequestURLRequested(actual)
-	case MsgCopyPullRequestBuildRunPopupContentRequested:
-		return program.applyCopyPullRequestBuildRunPopupContentRequested(actual)
-	case MsgOpenNotificationInBrowserRequested:
-		return program.applyOpenNotificationInBrowserRequested()
-	case MsgRefreshActiveViewRequested:
-		return program.applyRefreshActiveViewRequested()
-	case MsgRefreshNotificationsRequested:
-		return program.applyRefreshNotificationsRequested()
-
-	// Notification actions, review-tree navigation, and in-pane search navigation.
-	case MsgNotificationReadRequested:
-		return program.applyNotificationReadRequested(actual)
-	case MsgNotificationDoneRequested:
-		return program.applyNotificationDoneRequested(actual)
-	case MsgAllNotificationsReadRequested:
-		return program.applyAllNotificationsReadRequested()
-	case MsgAllNotificationsDoneRequested:
-		return program.applyAllNotificationsDoneRequested()
-	case MsgReviewStoryRequested:
-		return program.applyReviewStoryRequested(actual)
-	case MsgRepeatActionsPopupSearch:
-		program.applyRepeatActionsPopupSearch(actual)
-	case MsgRepeatSideSearch:
-		program.applyRepeatSideSearch(actual)
-	case MsgRepeatPullRequestSearch:
-		program.applyRepeatPullRequestSearch(actual)
-	case MsgRepeatReviewFileTreeSearch:
-		program.applyRepeatReviewFileTreeSearch(actual)
-	case MsgMoveReviewSelection:
-		program.applyMoveReviewSelection(actual)
-	case MsgMoveReviewSelectionToTop:
-		program.applyMoveReviewSelectionToTop()
-	case MsgMoveReviewSelectionToBottom:
-		program.applyMoveReviewSelectionToBottom()
-	case MsgMoveReviewFile:
-		program.applyMoveReviewFile(actual)
-	case MsgMoveReviewComment:
-		return program.applyMoveReviewComment(actual)
-	case MsgToggleReviewTreeRowVisibility:
-		program.applyToggleReviewTreeRowVisibility()
-	case MsgSetAllReviewTreeFolds:
-		program.applySetAllReviewTreeFolds(actual)
-	case MsgSearchWordUnderCursor:
-		return program.applySearchWordUnderCursor(actual)
-	case MsgRepeatDetailSearchRequested:
-		return program.applyRepeatDetailSearchRequested(actual)
-	case MsgDetailSearchWordResolved:
-		return program.applyDetailSearchWordResolved(actual)
-	case MsgToggleInlineConversationVisibility:
-		return program.applyToggleInlineConversationVisibility(actual)
-	case MsgSetAllDetailFolds:
-		return program.applySetAllDetailFolds(actual)
-
-	// Search submission, cancelation, and popup search editor state.
-	case MsgSubmitSearch:
-		if program.pullRequestBuildRunPopupSearchActive() {
-			if popup := program.pullRequestBuildRunPopup; popup != nil {
-				popup.searchActive = false
-				popup.searchQuery = program.currentSearchText()
-			}
-			program.searchWidget.clearEditor()
-			return []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFollowSubmittedSearch}}
-		}
-		if program.activeSearchIsReviewFileTreeSearch() {
-			program.applySubmitReviewFileTreeSearch()
-			return nil
-		}
-
-		target := program.model.SearchTarget()
-		targetPullRequestTab := program.model.SearchTargetPullRequestTab()
-		targetPullRequestIndex := program.model.SelectedPullRequestIndex(targetPullRequestTab)
-		program.model.SubmitSearch()
-		if target == FocusDetailView {
-			program.searchWidget.detailReversed = false
-		}
-		program.searchWidget.clearEditor()
-
-		commands := []Cmd(nil)
-		if target == FocusDetailView {
-			commands = append(commands, detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFollowSubmittedSearch})
-		}
-		if target == FocusPullRequestsView {
-			program.followSubmittedPullRequestSearch(targetPullRequestTab, targetPullRequestIndex)
-		}
-		return commands
-	case MsgCancelSearch:
-		if program.pullRequestBuildRunPopupSearchActive() {
-			if popup := program.pullRequestBuildRunPopup; popup != nil {
-				popup.searchActive = false
-			}
-			program.searchWidget.clearEditor()
-			return nil
-		}
-		if program.activeSearchIsReviewFileTreeSearch() {
-			program.applyCancelReviewFileTreeSearch()
-			return nil
-		}
-		program.model.CancelSearch()
-		program.searchWidget.clearEditor()
-	case MsgCloseSearch:
-		program.searchWidget.clearEditor()
-	case MsgActionsPopupSearchInputRequested:
-		return program.applyActionsPopupSearchInputRequested(actual)
-	case MsgPullRequestSearchesApplied:
-		program.applyPullRequestSearchesApplied(actual)
-
-	// Pull-request feature requests from popup actions.
-	case MsgClearCacheRequested:
-		return program.applyClearCacheRequested()
-	case MsgStartPullRequestReviewRequested:
-		return program.applyStartPullRequestReviewRequested(actual)
-	case MsgOpenPullRequestInBrowserRequested:
-		return program.applyOpenPullRequestInBrowserRequested(actual)
-	case MsgApprovePullRequestRequested:
-		return program.applyApprovePullRequestRequested(actual)
-	case MsgReRequestPullRequestReviewRequested:
-		return program.applyReRequestPullRequestReviewRequested(actual)
-	case MsgPullRequestLifecycleMutationRequested:
-		return program.applyPullRequestLifecycleMutationRequested(actual)
-	case MsgPullRequestAutoMergeMutationRequested:
-		return program.applyPullRequestAutoMergeMutationRequested(actual)
-	case MsgPullRequestBranchUpdateRequested:
-		return program.applyPullRequestBranchUpdateRequested(actual)
-
-	// Mutation apply results and optimistic follow-up state.
-	case MsgPullRequestLifecycleApplied:
-		program.applyPullRequestLifecycleApplied(actual)
-	case MsgPullRequestAutoMergeApplied:
-		program.applyPullRequestAutoMergeApplied(actual)
-	case MsgPullRequestBranchUpdated:
-		program.applyPullRequestBranchUpdated(actual)
-	case MsgPullRequestInvalidatedWithFeedback:
-		program.applyPullRequestInvalidatedWithFeedback(actual)
-	case MsgPullRequestAssigneesUpdated:
-		program.applyPullRequestAssigneesUpdated(actual)
-	case MsgReviewSessionStarted:
-		program.applyReviewSessionStarted(actual)
-	case MsgReactionAdded:
-		program.applyReactionAdded(actual)
-	case MsgReactionRemoved:
-		program.applyReactionRemoved(actual)
-	case MsgPendingPullRequestReviewCanceled:
-		return program.applyPendingPullRequestReviewCanceled(actual)
-	case MsgPullRequestCustomSearchSubmitRequested:
-		return program.applyPullRequestCustomSearchSubmitRequested(actual)
-	case MsgPullRequestCustomSearchSubmitted:
-		return program.applyPullRequestCustomSearchSubmitted(actual)
-	case MsgOpenAssigneePickerRequested:
-		return program.applyOpenAssigneePickerRequested(actual)
-	case MsgToggleAssigneePickerSelectionRequested:
-		program.applyToggleAssigneePickerSelectionRequested(actual)
-	case MsgSubmitAssigneePickerRequested:
-		return program.applySubmitAssigneePickerRequested(actual)
-	case MsgOpenReactionPickerRequested:
-		program.applyOpenReactionPickerRequested(actual)
-	case MsgAddReactionRequested:
-		return program.applyAddReactionRequested(actual)
-	case MsgOpenThemePickerRequested:
-		program.applyOpenThemePickerRequested()
-	case MsgThemePresetSelected:
-		return program.applyThemePresetSelected(actual)
-	case MsgThemePresetSaved:
-		return program.applyThemePresetSaved(actual)
-	case MsgRefreshPullRequestListRequested:
-		return program.applyRefreshPullRequestListRequested()
-	case MsgRefreshPullRequestRequested:
-		return program.applyRefreshPullRequestRequested(actual)
-	case MsgPullRequestTitleEditApplied:
-		return program.applyPullRequestTitleEditApplied(actual)
-	case MsgPullRequestDescriptionEditApplied:
-		return program.applyPullRequestDescriptionEditApplied(actual)
-	case MsgPullRequestCommentSubmitted:
-		program.applyPullRequestCommentSubmitted(actual)
-	case MsgPullRequestCommentUpdated:
-		program.applyPullRequestCommentUpdated(actual)
-	case MsgInlineCommentUpdated:
-		program.applyInlineCommentUpdated(actual)
-	case MsgInlineCommentReplySubmitted:
-		program.applyInlineCommentReplySubmitted(actual)
-	case MsgReviewInlineCommentSubmitted:
-		program.applyReviewInlineCommentSubmitted(actual)
-	case MsgPullRequestCommentDeleted:
-		program.applyPullRequestCommentDeleted(actual)
-	case MsgInlineCommentDeleted:
-		program.applyInlineCommentDeleted(actual)
-	case MsgInlineCommentResolutionApplied:
-		program.applyInlineCommentResolutionApplied(actual)
-
-	// Popup-editor submission and mutation requests.
-	case MsgPullRequestCommentSubmitRequested:
-		return program.applyPullRequestCommentSubmitRequested(actual)
-	case MsgPullRequestReviewCommentSubmitRequested:
-		return program.applyPullRequestReviewCommentSubmitRequested(actual)
-	case MsgPullRequestRequestChangesSubmitRequested:
-		return program.applyPullRequestRequestChangesSubmitRequested(actual)
-	case MsgPullRequestTitleEditRequested:
-		return program.applyPullRequestTitleEditRequested(actual)
-	case MsgPullRequestDescriptionEditRequested:
-		return program.applyPullRequestDescriptionEditRequested(actual)
-	case MsgPullRequestCommentUpdateRequested:
-		return program.applyPullRequestCommentUpdateRequested(actual)
-	case MsgPullRequestCommentDeleteRequested:
-		return program.applyPullRequestCommentDeleteRequested(actual)
-	case MsgInlineCommentUpdateRequested:
-		return program.applyInlineCommentUpdateRequested(actual)
-	case MsgInlineCommentDeleteRequested:
-		return program.applyInlineCommentDeleteRequested(actual)
-	case MsgInlineCommentReplySubmitRequested:
-		return program.applyInlineCommentReplySubmitRequested(actual)
-	case MsgInlineCommentResolutionRequested:
-		return program.applyInlineCommentResolutionRequested(actual)
-	case MsgReviewInlineCommentSubmitRequested:
-		return program.applyReviewInlineCommentSubmitRequested(actual)
-	case MsgReviewInlineCommentPendingReviewPrepared:
-		return program.applyReviewInlineCommentPendingReviewPrepared(actual)
-	case MsgPendingPullRequestReviewSubmitRequested:
-		return program.applyPendingPullRequestReviewSubmitRequested(actual)
-	case MsgReactionRemovalRequested:
-		return program.applyReactionRemovalRequested(actual)
-	case MsgPullRequestSquashMergeRequested:
-		return program.applyPullRequestSquashMergeRequested(actual)
-	case MsgCancelPendingPullRequestReviewRequested:
-		return program.applyCancelPendingPullRequestReviewRequested(actual)
-	case MsgPendingPullRequestReviewSubmitted:
-		program.applyPendingPullRequestReviewSubmitted(actual)
-
-	// Workflow planning and cache-hydration messages.
-	case MsgConnectedUserLoadPlanned:
-		program.applyConnectedUserLoadPlanned()
-	case MsgPullRequestsLoadPlanned:
-		program.applyPullRequestsLoadPlanned(actual)
-	case MsgNotificationsLoadPlanned:
-		program.applyNotificationsLoadPlanned()
-	case MsgPullRequestDetailLoadPlanned:
-		program.applyPullRequestDetailLoadPlanned(actual)
-	case MsgPullRequestDiffLoadPlanned:
-		program.applyPullRequestDiffLoadPlanned(actual)
-	case MsgIssueDetailLoadPlanned:
-		program.applyIssueDetailLoadPlanned(actual)
-	case MsgReleaseDetailLoadPlanned:
-		program.applyReleaseDetailLoadPlanned(actual)
-	case MsgCurrentDetailImageHTMLLoadPlanned:
-		program.applyCurrentDetailImageHTMLLoadPlanned(actual)
-	case MsgCurrentDetailImageLoadPlanned:
-		program.applyCurrentDetailImageLoadPlanned(actual)
-	case MsgPullRequestsCacheHydrated:
-		program.applyPullRequestsCacheHydrated(actual)
-	case MsgNotificationsCacheHydrated:
-		program.applyNotificationsCacheHydrated(actual)
-	case MsgPullRequestDetailCacheHydrated:
-		program.applyPullRequestDetailCacheHydrated(actual)
-	case MsgPullRequestDiffCacheHydrated:
-		program.applyPullRequestDiffCacheHydrated(actual)
-
-	// Async load results and timer ticks.
-	case MsgConnectedUserLoaded:
-		program.applyConnectedUserLoaded(actual)
-	case MsgPullRequestsLoaded:
-		return program.applyPullRequestsLoaded(actual)
-	case MsgNotificationsLoaded:
-		return program.applyNotificationsLoaded(actual)
-	case MsgPullRequestDetailLoaded:
-		return program.applyPullRequestDetailLoaded(actual)
-	case MsgPullRequestDiffLoaded:
-		return program.applyPullRequestDiffLoaded(actual)
-	case MsgIssueDetailLoaded:
-		program.applyIssueDetailLoaded(actual)
-	case MsgReleaseDetailLoaded:
-		program.applyReleaseDetailLoaded(actual)
-	case MsgCurrentDetailImageHTMLLoaded:
-		program.applyCurrentDetailImageHTMLLoaded(actual)
-	case MsgCurrentDetailImageLoaded:
-		program.applyCurrentDetailImageLoaded(actual)
-	case MsgLoadingSpinnerTick:
-		program.applyLoadingSpinnerTick()
-	case MsgTransientErrorPopupExpired:
-		program.applyTransientErrorPopupExpired(actual)
-
-	// Async feature completions.
-	case MsgActionsPopupAsyncGHCommandFinished:
-		return program.applyActionsPopupAsyncGHCommandFinished(actual)
-	case MsgNotificationMutationStarted:
-		program.applyNotificationMutationStarted(actual)
-	case MsgNotificationMutationFinished:
-		return program.applyNotificationMutationFinished(actual)
-	case MsgStoryReviewPrepared:
-		return program.applyStoryReviewPrepared(actual)
-	case MsgAssigneePickerSearchLoadingStarted:
-		program.applyAssigneePickerSearchLoadingStarted(actual)
-	case MsgAssigneePickerSearchLoaded:
-		return program.applyAssigneePickerSearchLoaded(actual)
-	case MsgPullRequestBuildRunLoaded:
-		return program.applyPullRequestBuildRunLoaded(actual)
-	case MsgPullRequestBuildRunJobLogLoaded:
-		return program.applyPullRequestBuildRunJobLogLoaded(actual)
-
-	// Actions-popup chrome lifecycle and list navigation.
-	case MsgOpenActionsPopup:
-		program.clearPendingSelectionPrefix()
-		program.detailState.viewState.clearPendingPrefix()
-		program.clearActionsPopupPendingConfirmation()
-		if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
-			return nil
-		}
-		if actual.ActionCount <= 0 {
-			return nil
-		}
-		program.actionsPopupWidget.reactionPicker = nil
-		program.actionsPopupWidget.themePicker = nil
-		program.actionsPopupWidget.assigneePicker = nil
-		program.actionsPopupWidget.assigneePickerLoad = nil
-		program.model.OpenActionsPopup(actual.ActionCount)
-		program.actionsPopupWidget.clearSearchEditor()
-		program.actionsPopupWidget.errorMessage = ""
-	case MsgCloseActionsPopup:
-		program.clearPendingSelectionPrefix()
-		program.closeActionsPopupState()
-	case MsgFocusActionsPopupSearch:
-		program.clearPendingSelectionPrefix()
-		if !program.model.ActionsPopupVisible() {
-			return nil
-		}
-		program.model.ClearPaneSearchQueries()
-		program.clearActionsPopupPendingConfirmation()
-		program.actionsPopupWidget.openSearchEditor("")
-		program.updateActionsPopupSearch("")
-		program.model.FocusActionsPopupSearch()
-		program.actionsPopupWidget.errorMessage = ""
-	case MsgFocusActionsPopupList:
-		program.clearPendingSelectionPrefix()
-		if !program.model.ActionsPopupVisible() {
-			return nil
-		}
-		program.clearActionsPopupPendingConfirmation()
-		program.model.BlurActionsPopupSearch()
-	case MsgExecuteSelectedActionsPopupActionRequested:
-		return program.applyExecuteSelectedActionsPopupActionRequested()
-	case MsgSubmitSelectedActionsPopupActionRequested:
-		return program.applySubmitSelectedActionsPopupActionRequested()
-	case MsgActionsPopupPageRequested:
-		return program.applyActionsPopupPageRequested(actual)
-	case MsgActionsPopupPageResolved:
-		return program.applyActionsPopupPageResolved(actual)
-	case MsgActionsPopupViewportRequested:
-		return program.applyActionsPopupViewportRequested(actual)
-	case MsgMoveActionsPopupSelection:
-		program.clearPendingSelectionPrefix()
-		if !program.model.ActionsPopupVisible() {
-			return nil
-		}
-		program.clearActionsPopupPendingConfirmation()
-		program.moveActionsPopupSelection(actual.Delta)
-		program.actionsPopupWidget.errorMessage = ""
-	case MsgMoveActionsPopupSelectionToTop:
-		program.clearPendingSelectionPrefix()
-		if !program.model.ActionsPopupVisible() {
-			return nil
-		}
-		program.clearActionsPopupPendingConfirmation()
-		program.model.MoveActionsPopupSelectionToTop()
-		program.actionsPopupWidget.errorMessage = ""
-	case MsgMoveActionsPopupSelectionToBottom:
-		program.clearPendingSelectionPrefix()
-		if !program.model.ActionsPopupVisible() {
-			return nil
-		}
-		program.clearActionsPopupPendingConfirmation()
-		program.model.MoveActionsPopupSelectionToBottom()
-		program.actionsPopupWidget.errorMessage = ""
+	if result := program.routeBootstrapFocusAndSidePaneSelection(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeSearchPromptAndDraftUpdate(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeFeedbackErrorAndModalEditorLifecycle(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeBuildRunPopupLifecycle(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeBrowserAndReviewNavigation(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeDetailMotionAndLiveSync(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeBrowserAndClipboardCompletions(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeURLClipboardBrowserAndLinkFollowUps(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeNotificationReviewTreeAndSearchNavigation(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeSearchSubmissionAndPopupSearchEditor(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routePullRequestFeatureRequests(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeMutationApplyResultsAndOptimisticFollowUp(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routePopupEditorSubmissionAndMutationRequests(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeWorkflowPlanningAndCacheHydration(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeAsyncLoadResultsAndTimerTicks(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeAsyncFeatureCompletions(msg); result.handled {
+		return result.commands
+	}
+	if result := program.routeActionsPopupChromeLifecycle(msg); result.handled {
+		return result.commands
 	}
 
 	return nil
-}
-
-func (program *Program) moveActionsPopupSelection(delta int) {
-	if program == nil || delta == 0 {
-		return
-	}
-	if delta > 0 {
-		for range delta {
-			program.model.MoveActionsPopupSelectionDown()
-		}
-		return
-	}
-	for range -delta {
-		program.model.MoveActionsPopupSelectionUp()
-	}
 }
