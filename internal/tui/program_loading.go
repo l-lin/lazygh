@@ -1,41 +1,6 @@
 package tui
 
-import (
-	"github.com/jesseduffield/gocui"
-
-	githubdomain "github.com/l-lin/lazygh/internal/github"
-)
-
-func (program *Program) maybeLoadConnectedUser(gui *gocui.Gui) {
-	program.executeWorkflowPlan(gui, program.sessionLoadPlan())
-}
-
-func (program *Program) maybeLoadActivePullRequests(gui *gocui.Gui) {
-	program.maybeLoadPullRequests(gui, program.model.ActivePullRequestTab())
-}
-
-func (program *Program) maybeLoadPullRequests(gui *gocui.Gui, tab PullRequestTab) {
-	program.executeWorkflowPlan(gui, program.pullRequestListLoadPlan(tab))
-}
-
-func (program *Program) reloadActivePullRequestsTab(gui *gocui.Gui) {
-	if gui == nil {
-		return
-	}
-
-	tab := program.model.ActivePullRequestTab()
-	program.executeWorkflowPlan(gui, program.pullRequestListReloadPlan(tab))
-	_ = program.afterStateChange(gui)
-}
-
-func (program *Program) reloadNotifications(gui *gocui.Gui) {
-	if gui == nil {
-		return
-	}
-
-	program.executeWorkflowPlan(gui, program.notificationReloadPlan())
-	_ = program.afterStateChange(gui)
-}
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubdomain.PullRequest, error) {
 	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)

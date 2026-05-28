@@ -215,6 +215,26 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyReportError
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDeadShellRefreshOrLoadingHelpersRemain(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`refreshShell\(`,
+		`refreshDetailView\(`,
+		`mutateDetailViewState\(`,
+		`mutateDetailViewStateWithoutRefresh\(`,
+		`maybeLoadConnectedUser\(`,
+		`maybeLoadActivePullRequests\(`,
+		`maybeLoadPullRequests\(`,
+		`reloadActivePullRequestsTab\(`,
+		`reloadNotifications\(`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected dead shell refresh and loading helper leftovers to be removed from production code, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyAsyncPopupBridgeRemains(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`startActionsPopupAsyncGHCommand\(`), func(path string) bool {
 		base := filepath.Base(path)
