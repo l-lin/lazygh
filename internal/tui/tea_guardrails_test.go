@@ -974,6 +974,23 @@ func TestRefactorGuard_GivenDetailAndReviewChildReducerFiles_WhenScanning_ThenTh
 	}
 }
 
+func TestRefactorGuard_GivenAssigneePickerFiles_WhenScanning_ThenNestedStateWritesStayOnTheChildStateAdapter(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.actionsPopupWidget\.assigneePicker\.[A-Za-z0-9_]+\s*=\s*[^=]`,
+		`delete\(program\.actionsPopupWidget\.assigneePicker\.selectedLogins`,
+		`program\.actionsPopupWidget\.assigneePicker\.rememberCandidates\(`,
+		`program\.actionsPopupWidget\.assigneePicker\s*=\s*newAssigneePickerState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "update_actions_popup.go" || base == "update_feature_async.go" || base == "pull_request_assignee.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected assignee-picker state writes to stay on a dedicated child-state adapter instead of nested reducer mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)

@@ -133,29 +133,6 @@ func newAssigneePickerState(target pullRequestAssigneePickerTarget, viewerLogin 
 	}
 }
 
-func (program *Program) resetAssigneePickerSearch(query string) int {
-	if !program.assigneePickerVisible() {
-		return 0
-	}
-
-	trimmedQuery := strings.TrimSpace(query)
-	program.actionsPopupWidget.assigneePicker.searchRequestID++
-	program.actionsPopupWidget.assigneePicker.searchQuery = trimmedQuery
-	program.actionsPopupWidget.assigneePicker.searchResults = nil
-	program.actionsPopupWidget.assigneePicker.searchLoading = false
-	program.actionsPopupWidget.assigneePicker.searchCommand = ""
-	return program.actionsPopupWidget.assigneePicker.searchRequestID
-}
-
-func (program *Program) markAssigneePickerSearchLoading(query string) {
-	if !program.assigneePickerVisible() {
-		return
-	}
-
-	program.actionsPopupWidget.assigneePicker.searchLoading = true
-	program.actionsPopupWidget.assigneePicker.searchCommand = formatAssigneeSearchCommand(program.actionsPopupWidget.assigneePicker.target.repository, query)
-}
-
 func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query string) bool {
 	if !program.assigneePickerVisible() {
 		return false
@@ -164,33 +141,6 @@ func (program *Program) assigneePickerSearchRequestCurrent(requestID int, query 
 		return false
 	}
 	return strings.TrimSpace(program.model.ActionsPopupSearchQuery()) == strings.TrimSpace(query)
-}
-
-func (state *assigneePickerState) rememberCandidates(candidates []githubdomain.PullRequestAuthor) {
-	if state == nil {
-		return
-	}
-	if state.knownCandidates == nil {
-		state.knownCandidates = map[string]githubdomain.PullRequestAuthor{}
-	}
-
-	for _, candidate := range candidates {
-		normalizedCandidate := normalizedAssigneePickerCandidate(candidate)
-		if normalizedCandidate.Login == "" {
-			continue
-		}
-		existing := state.knownCandidates[normalizedCandidate.Login]
-		if normalizedCandidate.Name == "" {
-			normalizedCandidate.Name = existing.Name
-		}
-		if normalizedCandidate.Name == "" && normalizedCandidate.Login == state.viewerLogin {
-			normalizedCandidate.Name = state.viewerName
-		}
-		state.knownCandidates[normalizedCandidate.Login] = normalizedCandidate
-		if normalizedCandidate.Login == state.viewerLogin && normalizedCandidate.Name != "" {
-			state.viewerName = normalizedCandidate.Name
-		}
-	}
 }
 
 func (program *Program) selectedPullRequestAssigneePickerTarget() (pullRequestAssigneePickerTarget, bool) {

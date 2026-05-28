@@ -296,7 +296,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 }
 
 func (program *Program) applyOpenAssigneePickerRequested(message MsgOpenAssigneePickerRequested) []Cmd {
-	program.actionsPopupWidget.assigneePicker = newAssigneePickerState(message.Target, program.currentConnectedUserLogin(), program.currentConnectedUserName())
+	program.openAssigneePicker(message.Target)
 	program.actionsPopupWidget.clearSearchEditor()
 	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(program.currentAssigneePickerActionCount())
@@ -314,17 +314,10 @@ func (program *Program) applyToggleAssigneePickerSelectionRequested(message MsgT
 	if !program.assigneePickerVisible() {
 		return
 	}
-
-	trimmedLogin := strings.TrimSpace(message.Candidate.Login)
-	if trimmedLogin == "" {
+	if strings.TrimSpace(message.Candidate.Login) == "" {
 		return
 	}
-	if program.actionsPopupWidget.assigneePicker.selectedLogins[trimmedLogin] {
-		delete(program.actionsPopupWidget.assigneePicker.selectedLogins, trimmedLogin)
-	} else {
-		program.actionsPopupWidget.assigneePicker.selectedLogins[trimmedLogin] = true
-	}
-	program.actionsPopupWidget.assigneePicker.rememberCandidates([]githubdomain.PullRequestAuthor{message.Candidate})
+	program.toggleAssigneePickerSelectionState(message.Candidate)
 }
 
 func (program *Program) toggleAssigneePickerSelection(candidate githubdomain.PullRequestAuthor) error {

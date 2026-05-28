@@ -86,19 +86,14 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 		return nil
 	}
 
-	trimmedQuery := strings.TrimSpace(message.Query)
-	program.actionsPopupWidget.assigneePicker.searchLoading = false
-	program.actionsPopupWidget.assigneePicker.searchCommand = ""
-	program.actionsPopupWidget.assigneePicker.searchQuery = trimmedQuery
 	if message.Err != nil {
-		program.actionsPopupWidget.assigneePicker.searchResults = nil
+		program.applyAssigneePickerSearchLoadedState(message.Query, nil)
 		program.actionsPopupWidget.errorMessage = ""
 		program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 		return program.applyErrorReportedMessage(normalizedAssigneePickerError(message.Err).Error())
 	}
 
-	program.actionsPopupWidget.assigneePicker.rememberCandidates(message.Results)
-	program.actionsPopupWidget.assigneePicker.searchResults = append([]githubdomain.PullRequestAuthor(nil), message.Results...)
+	program.applyAssigneePickerSearchLoadedState(message.Query, message.Results)
 	program.actionsPopupWidget.errorMessage = ""
 	program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 	return nil
