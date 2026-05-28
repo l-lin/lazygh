@@ -12,6 +12,82 @@ type detailMotionApplyResult struct {
 	clipboard *detailMotionClipboardResult
 }
 
+func (program *Program) applyDetailMotionRequested(message MsgDetailMotionRequested) []Cmd {
+	state, searchQuery, searchActive, ok := program.detailMotionRequestState(message.Target)
+	if !ok {
+		return nil
+	}
+
+	switch message.Operation {
+	case detailMotionOperationConsumePendingCharacter:
+		if !state.hasPendingCharacterMotion() {
+			return nil
+		}
+	case detailMotionOperationRepeatCharacter:
+		if !state.hasLastCharacterMotion {
+			return nil
+		}
+	case detailMotionOperationRepeatSearch:
+		if state.mode != detailNormalMode || searchActive || strings.TrimSpace(searchQuery) == "" {
+			return nil
+		}
+	}
+
+	return []Cmd{detailMotionCmd{
+		Target:        message.Target,
+		Operation:     message.Operation,
+		Direction:     message.Direction,
+		Mode:          message.Mode,
+		Reverse:       message.Reverse,
+		SelectionKind: message.SelectionKind,
+		Rune:          message.Rune,
+	}}
+}
+
+func (program *Program) applyDetailYankRequested(message MsgDetailYankRequested) []Cmd {
+	switch message.Target {
+	case detailMotionTargetBuildPopup:
+		if program.pullRequestBuildRunPopup == nil {
+			return nil
+		}
+		if program.pullRequestBuildRunPopup.viewState.mode.isVisual() {
+			return program.applyCopyPullRequestBuildRunPopupContentRequested(MsgCopyPullRequestBuildRunPopupContentRequested{})
+		}
+		operation := detailMotionOperationArmPendingYank
+		if program.pullRequestBuildRunPopup.viewState.hasPendingYank() {
+			operation = detailMotionOperationFinishPendingYank
+		}
+		return []Cmd{detailMotionCmd{Target: message.Target, Operation: operation, SelectionKind: detailYankMotionLinewise}}
+	default:
+		if program.model == nil || program.model.Focus() != FocusDetailView || !program.model.PaneVisible(FocusDetailView) {
+			return nil
+		}
+		if program.detailState.viewState.mode.isVisual() {
+			return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
+		}
+		operation := detailMotionOperationArmPendingYank
+		if program.detailState.viewState.hasPendingYank() {
+			operation = detailMotionOperationFinishPendingYank
+		}
+		return []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: operation, SelectionKind: detailYankMotionLinewise}}
+	}
+}
+
+func (program *Program) detailMotionRequestState(target detailMotionTarget) (detailViewState, string, bool, bool) {
+	switch target {
+	case detailMotionTargetBuildPopup:
+		if program.pullRequestBuildRunPopup == nil {
+			return detailViewState{}, "", false, false
+		}
+		return program.pullRequestBuildRunPopup.viewState, program.pullRequestBuildRunPopup.searchQuery, program.pullRequestBuildRunPopup.searchActive, true
+	default:
+		if program.model == nil || program.model.Focus() != FocusDetailView || !program.model.PaneVisible(FocusDetailView) {
+			return detailViewState{}, "", false, false
+		}
+		return program.detailState.viewState, program.model.DetailSearchQuery(), false, true
+	}
+}
+
 func (program *Program) applyFocusDetailRenderedLineResolved(message MsgFocusDetailRenderedLineResolved) {
 	searchQuery := program.model.DetailSearchQuery()
 	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)

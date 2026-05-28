@@ -99,15 +99,13 @@ func characterMotionTargetRunes(line []rune) []rune {
 
 func (program *Program) detailCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationConsumePendingCharacter, SelectionKind: detailYankMotionCharacterInclusive, Rune: target}})
-		return nil
+		return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationConsumePendingCharacter, SelectionKind: detailYankMotionCharacterInclusive, Rune: target})
 	}
 }
 
 func (program *Program) pullRequestBuildRunPopupCharacterMotionTargetHandler(target rune) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationConsumePendingCharacter, SelectionKind: detailYankMotionCharacterInclusive, Rune: target}})
-		return nil
+		return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationConsumePendingCharacter, SelectionKind: detailYankMotionCharacterInclusive, Rune: target})
 	}
 }
 
@@ -136,16 +134,11 @@ func (program *Program) repeatDetailCharacterMotionBackward(gui *gocui.Gui, view
 }
 
 func (program *Program) armDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmCharacter, Direction: direction, Mode: mode}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmCharacter, Direction: direction, Mode: mode})
 }
 
 func (program *Program) repeatDetailCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
-	if !program.detailState.viewState.hasLastCharacterMotion {
-		return nil
-	}
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationRepeatCharacter, Reverse: reverse, SelectionKind: detailYankMotionCharacterInclusive}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationRepeatCharacter, Reverse: reverse, SelectionKind: detailYankMotionCharacterInclusive})
 }
 
 func (program *Program) startPullRequestBuildRunPopupCharacterFindForward(gui *gocui.Gui, view *gocui.View) error {
@@ -173,14 +166,9 @@ func (program *Program) repeatPullRequestBuildRunPopupCharacterMotionBackward(gu
 }
 
 func (program *Program) armPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, direction detailCharacterMotionDirection, mode detailCharacterMotionMode) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmCharacter, Direction: direction, Mode: mode}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmCharacter, Direction: direction, Mode: mode})
 }
 
 func (program *Program) repeatPullRequestBuildRunPopupCharacterMotion(gui *gocui.Gui, view *gocui.View, reverse bool) error {
-	if program.pullRequestBuildRunPopup == nil || !program.pullRequestBuildRunPopup.viewState.hasLastCharacterMotion {
-		return nil
-	}
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationRepeatCharacter, Reverse: reverse, SelectionKind: detailYankMotionCharacterInclusive}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationRepeatCharacter, Reverse: reverse, SelectionKind: detailYankMotionCharacterInclusive})
 }

@@ -1261,6 +1261,25 @@ func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenRemainingDeta
 	}
 }
 
+func TestRefactorGuard_GivenAuditedDetailMotionShortcutFiles_WhenScanning_ThenTheyDispatchTypedRequestsInsteadOfExecutingDetailMotionCommands(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.executeCmds\(gui, \[]Cmd\{detailMotionCmd\{`,
+		`detailMotionCmd\{`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		switch filepath.Base(path) {
+		case "program_navigation.go", "pull_request_build_popup_navigation.go", "program_character_motion.go", "pull_request_build_popup_search_repeat.go", "yank_motion.go":
+			return true
+		default:
+			return false
+		}
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the audited detail-motion shortcut files to dispatch typed request messages instead of executing detailMotionCmd directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationSupportAndDetailSearchFiles_WhenScanning_ThenTheyStopOwningPageOrSearchShellHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`func \(program \*Program\) handlePageChange\(`,

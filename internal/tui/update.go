@@ -7,7 +7,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	defer program.resyncVisibleActionsPopupSearchInUpdate()
 
 	switch actual := msg.(type) {
-	// App bootstrap, pane focus, and side-list movement.
+	// Bootstrap, focus, and side-pane selection.
 	case MsgAppStarted:
 		program.startupState.appStarted = true
 	case MsgNextSideView:
@@ -45,6 +45,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyMoveSideSelectionToTop()
 	case MsgMoveSideSelectionToBottom:
 		program.applyMoveSideSelectionToBottom()
+
+	// Search prompt opening and draft updates.
 	case MsgOpenSearch:
 		program.clearPendingSelectionPrefix()
 		if program.pullRequestBuildRunPopupVisible() {
@@ -72,7 +74,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgSearchEditorInputRequested:
 		program.applySearchEditorInputRequested(actual)
 
-	// Search prompt, popup search, and shared feedback reporting.
+	// Feedback, error reporting, and modal-editor lifecycle.
 	case MsgFeedbackSet:
 		program.applyFeedbackSet(actual)
 	case MsgErrorReported:
@@ -100,7 +102,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgModalEditorExternalEditFinished:
 		program.applyModalEditorExternalEditFinished(actual)
 
-	// Overlay lifecycle plus build-popup loading.
+	// Build-popup loading and overlay lifecycle.
 	case MsgPullRequestBuildRunLoadRequested:
 		return program.applyPullRequestBuildRunLoadRequested(actual)
 	case MsgPullRequestBuildRunJobLogLoadRequested:
@@ -110,7 +112,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgPullRequestBuildRunPopupClosed:
 		program.applyPullRequestBuildRunPopupClosed()
 
-	// Browser/review panel navigation and live detail sync resolution.
+	// Browser/review navigation and viewport routing.
 	case MsgAdvanceDetailTab:
 		program.applyAdvanceDetailTab(actual)
 	case MsgAdvancePullRequestTab:
@@ -145,12 +147,18 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyPageNavigationResolved(actual)
 	case MsgSideListViewportRequested:
 		return program.applySideListViewportRequested(actual)
+
+	// Detail/build-popup motion, yank, folds, and live sync resolution.
 	case MsgDetailViewportRequested:
 		return program.applyDetailViewportRequested(actual)
 	case MsgDetailViewportResolved:
 		program.applyDetailViewportResolved(actual)
 	case MsgFocusDetailRenderedLineResolved:
 		program.applyFocusDetailRenderedLineResolved(actual)
+	case MsgDetailMotionRequested:
+		return program.applyDetailMotionRequested(actual)
+	case MsgDetailYankRequested:
+		return program.applyDetailYankRequested(actual)
 	case MsgDetailMotionResolved:
 		return program.applyDetailMotionResolved(actual)
 	case MsgToggleInlineConversationVisibilityResolved:
@@ -159,6 +167,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applySetAllDetailFoldsResolved(actual)
 	case MsgDetailViewSyncPlanResolved:
 		program.applyDetailViewSyncPlanResolved(actual)
+
+	// Browser-open and clipboard completion after detail/build-popup resolution.
 	case MsgOpenBrowserURLRequested:
 		return program.applyOpenBrowserURLRequested(actual)
 	case MsgOpenBrowserURLFinished:
@@ -170,7 +180,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgPullRequestBuildRunPopupClipboardPrepared:
 		return program.applyPullRequestBuildRunPopupClipboardPrepared(actual)
 
-	// Clipboard, browser-open, URL-entry, and link-open follow-ups.
+	// URL entry, clipboard, browser-open, and link follow-ups.
 	case MsgOpenPullRequestByURLPromptRequested:
 		program.applyOpenPullRequestByURLPromptRequested()
 	case MsgReadPullRequestURLFromClipboardRequested:
@@ -208,7 +218,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgRefreshNotificationsRequested:
 		return program.applyRefreshNotificationsRequested()
 
-	// Notification actions, story review requests, and review-tree navigation.
+	// Notification actions, review-tree navigation, and in-pane search navigation.
 	case MsgNotificationReadRequested:
 		return program.applyNotificationReadRequested(actual)
 	case MsgNotificationDoneRequested:
@@ -252,7 +262,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgSetAllDetailFolds:
 		return program.applySetAllDetailFolds(actual)
 
-	// Search submission and popup search/editor state.
+	// Search submission, cancelation, and popup search editor state.
 	case MsgSubmitSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
 			if popup := program.pullRequestBuildRunPopup; popup != nil {
@@ -305,7 +315,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgPullRequestSearchesApplied:
 		program.applyPullRequestSearchesApplied(actual)
 
-	// Pull-request actions popup features and mutation requests.
+	// Pull-request feature requests from popup actions.
 	case MsgClearCacheRequested:
 		return program.applyClearCacheRequested()
 	case MsgStartPullRequestReviewRequested:
@@ -323,7 +333,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgPullRequestBranchUpdateRequested:
 		return program.applyPullRequestBranchUpdateRequested(actual)
 
-	// Applied mutation results and optimistic follow-up state.
+	// Mutation apply results and optimistic follow-up state.
 	case MsgPullRequestLifecycleApplied:
 		program.applyPullRequestLifecycleApplied(actual)
 	case MsgPullRequestAutoMergeApplied:
@@ -387,7 +397,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgInlineCommentResolutionApplied:
 		program.applyInlineCommentResolutionApplied(actual)
 
-	// Popup-editor mutation requests.
+	// Popup-editor submission and mutation requests.
 	case MsgPullRequestCommentSubmitRequested:
 		return program.applyPullRequestCommentSubmitRequested(actual)
 	case MsgPullRequestReviewCommentSubmitRequested:
@@ -477,7 +487,7 @@ func Update(program *Program, msg Msg) []Cmd {
 	case MsgTransientErrorPopupExpired:
 		program.applyTransientErrorPopupExpired(actual)
 
-	// Feature-async completions.
+	// Async feature completions.
 	case MsgActionsPopupAsyncGHCommandFinished:
 		return program.applyActionsPopupAsyncGHCommandFinished(actual)
 	case MsgNotificationMutationStarted:

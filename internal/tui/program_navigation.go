@@ -87,73 +87,59 @@ func (program *Program) moveSideSelectionToBottom(gui *gocui.Gui, _ *gocui.View)
 }
 
 func (program *Program) moveDetailCursorLeft(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveLeft}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveLeft})
 }
 
 func (program *Program) moveDetailCursorRight(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveRight}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveRight})
 }
 
 func (program *Program) moveDetailCursorToRowStart(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowStart}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowStart})
 }
 
 func (program *Program) moveDetailCursorToRowEnd(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowEnd}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToRowEnd})
 }
 
 func (program *Program) moveDetailCursorToTop(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToTop}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToTop})
 }
 
 func (program *Program) moveDetailCursorToBottom(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBottom}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBottom})
 }
 
 func (program *Program) moveDetailCursorToNextWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextWord}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextWord})
 }
 
 func (program *Program) moveDetailCursorToWordEnd(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToWordEnd}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToWordEnd})
 }
 
 func (program *Program) moveDetailCursorToNextBigWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextBigWord}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToNextBigWord})
 }
 
 func (program *Program) moveDetailCursorToBigWordEnd(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBigWordEnd}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToBigWordEnd})
 }
 
 func (program *Program) moveDetailCursorToPreviousWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousWord}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousWord})
 }
 
 func (program *Program) moveDetailCursorToPreviousBigWord(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousBigWord}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToPreviousBigWord})
 }
 
 func (program *Program) enterDetailVisualMode(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterVisualMode}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterVisualMode})
 }
 
 func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterLineVisualMode}})
-	return nil
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterLineVisualMode})
 }
 
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {

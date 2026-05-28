@@ -163,6 +163,20 @@ type MsgFocusDetailRenderedLineResolved struct {
 	ViewportHeight int
 }
 
+type MsgDetailMotionRequested struct {
+	Target        detailMotionTarget
+	Operation     detailMotionOperation
+	Direction     detailCharacterMotionDirection
+	Mode          detailCharacterMotionMode
+	Reverse       bool
+	SelectionKind detailYankMotionSelectionKind
+	Rune          rune
+}
+
+type MsgDetailYankRequested struct {
+	Target detailMotionTarget
+}
+
 type MsgDetailMotionResolved struct {
 	Target         detailMotionTarget
 	Operation      detailMotionOperation
@@ -375,6 +389,8 @@ func (MsgSideListViewportRequested) isMsg()                    {}
 func (MsgDetailViewportRequested) isMsg()                      {}
 func (MsgDetailViewportResolved) isMsg()                       {}
 func (MsgFocusDetailRenderedLineResolved) isMsg()              {}
+func (MsgDetailMotionRequested) isMsg()                        {}
+func (MsgDetailYankRequested) isMsg()                          {}
 func (MsgDetailMotionResolved) isMsg()                         {}
 func (MsgDetailViewSyncPlanResolved) isMsg()                   {}
 func (MsgOpenBrowserURLRequested) isMsg()                      {}

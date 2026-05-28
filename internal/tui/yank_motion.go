@@ -47,31 +47,11 @@ func (state *detailViewState) armPendingYank() {
 }
 
 func (program *Program) startDetailYank(gui *gocui.Gui, view *gocui.View) error {
-	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
-		return program.copySelectedDetailText(gui, view)
-	}
-	if program.detailState.viewState.hasPendingYank() {
-		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFinishPendingYank, SelectionKind: detailYankMotionLinewise}})
-		return nil
-	}
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationArmPendingYank}})
-	return nil
+	return program.dispatch(gui, MsgDetailYankRequested{Target: detailMotionTargetDetail})
 }
 
 func (program *Program) startPullRequestBuildRunPopupYank(gui *gocui.Gui, view *gocui.View) error {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
-		return nil
-	}
-	if popup.viewState.mode.isVisual() {
-		return program.copySelectedPullRequestBuildRunPopupText(gui, view)
-	}
-	if popup.viewState.hasPendingYank() {
-		program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFinishPendingYank, SelectionKind: detailYankMotionLinewise}})
-		return nil
-	}
-	program.executeCmds(gui, []Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationArmPendingYank}})
-	return nil
+	return program.dispatch(gui, MsgDetailYankRequested{Target: detailMotionTargetBuildPopup})
 }
 
 func (program *Program) copySelectedText(state *detailViewState, document detailDocument) {
