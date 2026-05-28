@@ -2,6 +2,10 @@ package tui
 
 import "strings"
 
+func (program *Program) applyErrorReportedMessage(message string) []Cmd {
+	return program.applyErrorReported(MsgErrorReported{Message: strings.TrimSpace(message)})
+}
+
 func (program *Program) applyErrorReported(message MsgErrorReported) []Cmd {
 	if program == nil {
 		return nil

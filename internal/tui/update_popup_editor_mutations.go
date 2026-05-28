@@ -103,7 +103,8 @@ func (program *Program) applyReactionRemovalRequested(message MsgReactionRemoval
 		return nil
 	}
 	if !reactionGroupViewerHasReacted(message.Target.reactionGroups, message.Target.content) {
-		return Update(program, MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionAlreadyRemovedMessage})
+		program.applyActionsPopupClosedWithFeedback(MsgActionsPopupClosedWithFeedback{Target: program.model.Focus(), Message: pullRequestReactionAlreadyRemovedMessage})
+		return nil
 	}
 	if !program.hasReactionMutations() {
 		program.actionsPopupWidget.errorMessage = "github loader is unavailable"

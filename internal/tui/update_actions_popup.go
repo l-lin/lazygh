@@ -24,6 +24,90 @@ func (program *Program) resyncVisibleActionsPopupSearchInUpdate() {
 	program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 }
 
+func (program *Program) applyActionsPopupRequestedMessage(requested Msg) []Cmd {
+	switch actual := requested.(type) {
+	case nil:
+		return nil
+	case MsgActionsPopupActionErrorHandled:
+		return program.applyActionsPopupActionErrorHandled(actual)
+	case MsgOpenPullRequestInBrowserRequested:
+		return program.applyOpenPullRequestInBrowserRequested(actual)
+	case MsgModalEditorOpened:
+		program.applyModalEditorOpened(actual)
+		return nil
+	case MsgCopyPullRequestURLRequested:
+		return program.applyCopyPullRequestURLRequested(actual)
+	case MsgOpenLinkUnderCursorRequested:
+		return program.applyOpenLinkUnderCursorRequested(actual)
+	case MsgOpenAssigneePickerRequested:
+		return program.applyOpenAssigneePickerRequested(actual)
+	case MsgToggleAssigneePickerSelectionRequested:
+		program.applyToggleAssigneePickerSelectionRequested(actual)
+		return nil
+	case MsgPullRequestBuildRunLoadRequested:
+		return program.applyPullRequestBuildRunLoadRequested(actual)
+	case MsgPullRequestBuildRunJobLogLoadRequested:
+		return program.applyPullRequestBuildRunJobLogLoadRequested(actual)
+	case MsgPullRequestBuildRunPopupOpened:
+		program.applyPullRequestBuildRunPopupOpened(actual)
+		return nil
+	case MsgPullRequestCommentDeleteRequested:
+		return program.applyPullRequestCommentDeleteRequested(actual)
+	case MsgInlineCommentDeleteRequested:
+		return program.applyInlineCommentDeleteRequested(actual)
+	case MsgInlineCommentResolutionRequested:
+		return program.applyInlineCommentResolutionRequested(actual)
+	case MsgOpenThemePickerRequested:
+		program.applyOpenThemePickerRequested()
+		return nil
+	case MsgThemePresetSelected:
+		return program.applyThemePresetSelected(actual)
+	case MsgAddReactionRequested:
+		return program.applyAddReactionRequested(actual)
+	case MsgReactionRemovalRequested:
+		return program.applyReactionRemovalRequested(actual)
+	case MsgOpenReactionPickerRequested:
+		program.applyOpenReactionPickerRequested(actual)
+		return nil
+	case MsgNotificationReadRequested:
+		return program.applyNotificationReadRequested(actual)
+	case MsgNotificationDoneRequested:
+		return program.applyNotificationDoneRequested(actual)
+	case MsgAllNotificationsReadRequested:
+		return program.applyAllNotificationsReadRequested()
+	case MsgAllNotificationsDoneRequested:
+		return program.applyAllNotificationsDoneRequested()
+	case MsgOpenNotificationInBrowserRequested:
+		return program.applyOpenNotificationInBrowserRequested()
+	case MsgClearCacheRequested:
+		return program.applyClearCacheRequested()
+	case MsgStartPullRequestReviewRequested:
+		return program.applyStartPullRequestReviewRequested(actual)
+	case MsgApprovePullRequestRequested:
+		return program.applyApprovePullRequestRequested(actual)
+	case MsgReRequestPullRequestReviewRequested:
+		return program.applyReRequestPullRequestReviewRequested(actual)
+	case MsgReviewStoryRequested:
+		return program.applyReviewStoryRequested(actual)
+	case MsgRefreshPullRequestRequested:
+		return program.applyRefreshPullRequestRequested(actual)
+	case MsgRefreshPullRequestListRequested:
+		return program.applyRefreshPullRequestListRequested()
+	case MsgPullRequestLifecycleMutationRequested:
+		return program.applyPullRequestLifecycleMutationRequested(actual)
+	case MsgPullRequestAutoMergeMutationRequested:
+		return program.applyPullRequestAutoMergeMutationRequested(actual)
+	case MsgPullRequestBranchUpdateRequested:
+		return program.applyPullRequestBranchUpdateRequested(actual)
+	case MsgPullRequestSquashMergeRequested:
+		return program.applyPullRequestSquashMergeRequested(actual)
+	case MsgCancelPendingPullRequestReviewRequested:
+		return program.applyCancelPendingPullRequestReviewRequested(actual)
+	default:
+		return program.applyActionsPopupActionErrorHandled(MsgActionsPopupActionErrorHandled{Err: errActionsPopupActionUnavailable})
+	}
+}
+
 func (program *Program) applyActionsPopupActionRequested(message MsgActionsPopupActionRequested) []Cmd {
 	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
 		return nil
@@ -31,7 +115,7 @@ func (program *Program) applyActionsPopupActionRequested(message MsgActionsPopup
 	if message.Action.requested == nil {
 		return program.applyActionsPopupActionErrorHandled(MsgActionsPopupActionErrorHandled{Err: errActionsPopupActionUnavailable})
 	}
-	return Update(program, message.Action.requested)
+	return program.applyActionsPopupRequestedMessage(message.Action.requested)
 }
 
 func (program *Program) applyClearCacheRequested() []Cmd {
@@ -48,7 +132,7 @@ func (program *Program) applyClearCacheRequested() []Cmd {
 	program.clearActionsPopupPendingConfirmation()
 	if err := program.clearCachedData(); err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(err.Error())
-		return Update(program, MsgErrorReported{Message: program.actionsPopupWidget.errorMessage})
+		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
 	}
 	program.closeActionsPopupState()
 	program.setFeedback(program.model.Focus(), clearCacheSuccessMessage)
@@ -317,7 +401,7 @@ func (program *Program) restylePullRequestRows() {
 func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd {
 	if message.Err != nil {
 		program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
-		return Update(program, MsgErrorReported{Message: program.actionsPopupWidget.errorMessage})
+		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
 	}
 
 	theme.ApplyPalette(theme.ResolvePaletteWithPreset(strings.TrimSpace(message.NormalizedName), theme.Palette{}))

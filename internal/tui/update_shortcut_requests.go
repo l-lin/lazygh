@@ -128,9 +128,9 @@ func (program *Program) applyRefreshActiveViewRequested() []Cmd {
 		if state.Mode != ScreenModeBrowser {
 			return nil
 		}
-		return Update(program, MsgRefreshPullRequestListRequested{})
+		return program.applyRefreshPullRequestListRequested()
 	case sidePanelNotificationsViewNumber:
-		return Update(program, MsgRefreshNotificationsRequested{})
+		return program.applyRefreshNotificationsRequested()
 	case mainPanelViewNumber:
 		if !program.actionContext().IsPullRequestContext() {
 			return nil
@@ -143,7 +143,7 @@ func (program *Program) applyRefreshActiveViewRequested() []Cmd {
 		if !ok {
 			return nil
 		}
-		return Update(program, MsgRefreshPullRequestRequested{Target: target, Summary: summary})
+		return program.applyRefreshPullRequestRequested(MsgRefreshPullRequestRequested{Target: target, Summary: summary})
 	default:
 		return nil
 	}
@@ -163,7 +163,7 @@ func (program *Program) applyExecuteSelectedActionsPopupActionRequested() []Cmd 
 	if !ok {
 		return nil
 	}
-	return Update(program, MsgActionsPopupActionRequested{Action: action})
+	return program.applyActionsPopupActionRequested(MsgActionsPopupActionRequested{Action: action})
 }
 
 func (program *Program) applySubmitSelectedActionsPopupActionRequested() []Cmd {
@@ -176,11 +176,11 @@ func (program *Program) applySubmitSelectedActionsPopupActionRequested() []Cmd {
 		return nil
 	}
 	if !program.assigneePickerVisible() {
-		return Update(program, MsgExecuteSelectedActionsPopupActionRequested{})
+		return program.applyExecuteSelectedActionsPopupActionRequested()
 	}
 
 	repository := program.actionsPopupWidget.assigneePicker.target.repository
 	number := program.actionsPopupWidget.assigneePicker.target.number
 	addLogins, removeLogins := program.actionsPopupWidget.assigneePicker.selectedDiff()
-	return Update(program, MsgSubmitAssigneePickerRequested{Repository: repository, Number: number, AddLogins: addLogins, RemoveLogins: removeLogins})
+	return program.applySubmitAssigneePickerRequested(MsgSubmitAssigneePickerRequested{Repository: repository, Number: number, AddLogins: addLogins, RemoveLogins: removeLogins})
 }

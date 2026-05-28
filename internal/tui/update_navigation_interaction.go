@@ -145,7 +145,7 @@ func (program *Program) applyOpenPullRequestInBrowserView(message MsgOpenPullReq
 	program.detailState.viewState.clearPendingPrefix()
 	program.clearPendingSelectionPrefix()
 	program.invalidatePullRequestDetailDocumentCache()
-	Update(program, MsgOpenPullRequestInDetailFullscreen{SideFocus: FocusPullRequestsView})
+	program.applyOpenPullRequestInDetailFullscreen(MsgOpenPullRequestInDetailFullscreen{SideFocus: FocusPullRequestsView})
 }
 
 func (program *Program) applyOpenPullRequestInDetailFullscreen(message MsgOpenPullRequestInDetailFullscreen) {

@@ -307,6 +307,16 @@ func TestRefactorGuard_GivenProgramViewStateFile_WhenScanning_ThenAfterStateChan
 	}
 }
 
+func TestRefactorGuard_GivenUpdateHelperFiles_WhenScanning_ThenTheyDoNotReenterUpdateForLocalFollowUp(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`\bUpdate\(program,`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasPrefix(base, "update") && strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go") && base != "update.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected update helper files to stop re-entering Update(program, ...) for local follow-up behavior, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyModalEditorSubmitCallbacksRemain(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`submit\s+func\(string\)\s+error`,

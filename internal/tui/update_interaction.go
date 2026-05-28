@@ -13,7 +13,7 @@ func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPo
 	}
 	if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 		program.actionsPopupWidget.errorMessage = ""
-		return Update(program, MsgErrorReported{Message: popupMessage})
+		return program.applyErrorReportedMessage(popupMessage)
 	}
 	var feedbackErr actionsPopupStatusLineError
 	if errors.As(message.Err, &feedbackErr) {
@@ -22,7 +22,40 @@ func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPo
 		return nil
 	}
 	program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
-	return Update(program, MsgErrorReported{Message: program.actionsPopupWidget.errorMessage})
+	return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
+}
+
+func (program *Program) applyModalEditorSubmitRequestMessage(requested Msg) []Cmd {
+	switch actual := requested.(type) {
+	case nil:
+		return nil
+	case MsgOpenPullRequestByURLSubmitRequested:
+		return program.applyOpenPullRequestByURLSubmitRequested(actual)
+	case MsgPullRequestCustomSearchSubmitRequested:
+		return program.applyPullRequestCustomSearchSubmitRequested(actual)
+	case MsgPullRequestCommentSubmitRequested:
+		return program.applyPullRequestCommentSubmitRequested(actual)
+	case MsgPullRequestReviewCommentSubmitRequested:
+		return program.applyPullRequestReviewCommentSubmitRequested(actual)
+	case MsgPullRequestRequestChangesSubmitRequested:
+		return program.applyPullRequestRequestChangesSubmitRequested(actual)
+	case MsgPullRequestTitleEditRequested:
+		return program.applyPullRequestTitleEditRequested(actual)
+	case MsgPullRequestDescriptionEditRequested:
+		return program.applyPullRequestDescriptionEditRequested(actual)
+	case MsgPullRequestCommentUpdateRequested:
+		return program.applyPullRequestCommentUpdateRequested(actual)
+	case MsgInlineCommentUpdateRequested:
+		return program.applyInlineCommentUpdateRequested(actual)
+	case MsgInlineCommentReplySubmitRequested:
+		return program.applyInlineCommentReplySubmitRequested(actual)
+	case MsgReviewInlineCommentSubmitRequested:
+		return program.applyReviewInlineCommentSubmitRequested(actual)
+	case MsgPendingPullRequestReviewSubmitRequested:
+		return program.applyPendingPullRequestReviewSubmitRequested(actual)
+	default:
+		return nil
+	}
 }
 
 func (program *Program) applyActionsPopupClosedWithFeedback(message MsgActionsPopupClosedWithFeedback) {
@@ -67,7 +100,7 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 	if requested == nil {
 		return nil
 	}
-	return Update(program, requested)
+	return program.applyModalEditorSubmitRequestMessage(requested)
 }
 
 func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) []Cmd {
@@ -78,7 +111,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 			program.overlayState.modalEditor.errorMessage = ""
-			return Update(program, MsgErrorReported{Message: popupMessage})
+			return program.applyErrorReportedMessage(popupMessage)
 		}
 		var feedbackErr modalEditorStatusLineError
 		if errors.As(message.Err, &feedbackErr) {
@@ -406,7 +439,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 			program.actionsPopupWidget.errorMessage = openLinkOpenerUnavailableMessage
 			return nil
 		}
-		return Update(program, MsgErrorReported{Message: openLinkOpenerUnavailableMessage})
+		return program.applyErrorReportedMessage(openLinkOpenerUnavailableMessage)
 	}
 	browserURL, ok := program.selectedNotificationBrowserURL()
 	if !ok {
@@ -414,7 +447,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 			program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
 			return nil
 		}
-		return Update(program, MsgErrorReported{Message: errActionsPopupActionUnavailable.Error()})
+		return program.applyErrorReportedMessage(errActionsPopupActionUnavailable.Error())
 	}
 	program.closeActionsPopupForAcceptedRequest()
 	return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: browserURL, SuccessMessage: notificationOpenBrowserSuccessMessage, FailureMessage: openLinkFailureMessage, Target: program.model.Focus()})
