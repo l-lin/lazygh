@@ -44,6 +44,7 @@ func (program *Program) refreshExistingView(gui *gocui.Gui, viewName string, con
 	}
 
 	configure(view)
+	program.syncViewShellState(viewName, view)
 	program.prepareViewRenderState(viewName, view)
 	render(view)
 	return nil

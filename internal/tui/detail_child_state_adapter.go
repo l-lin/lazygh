@@ -44,7 +44,7 @@ func (program *Program) syncDetailViewState(detailDocument detailDocument, viewp
 	program.detailState = program.detailState.synced(program.currentDetailIdentity(), detailDocument, viewportHeight, program.model.DetailSearchQuery())
 }
 
-func (program *Program) syncDetailViewRenderState(view *gocui.View) {
+func (program *Program) syncDetailViewShellState(view *gocui.View) {
 	if program == nil || view == nil {
 		return
 	}

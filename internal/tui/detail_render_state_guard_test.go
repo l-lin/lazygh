@@ -21,7 +21,7 @@ func TestViewDerivation_GivenRenderGo_WhenInspecting_ThenItDoesNotMutateDetailSh
 	}
 }
 
-func TestDetailViewRenderState_GivenDetailView_WhenPreparing_ThenItUpdatesWrapWidthAndSyncsDetailState(t *testing.T) {
+func TestDetailViewRenderState_GivenDetailView_WhenPreparing_ThenItLeavesDurableDetailStateUntouched(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	gui := given_headlessGuiWithSize(t, 120, 40)
 	defer gui.Close()
@@ -34,7 +34,33 @@ func TestDetailViewRenderState_GivenDetailView_WhenPreparing_ThenItUpdatesWrapWi
 	subject.detailState.viewState.cursor = detailPosition{line: 999}
 	subject.detailState.lastIdentity = "stale"
 
-	subject.syncDetailViewRenderState(view)
+	subject.prepareViewRenderState(viewDetailName, view)
+
+	if actual := subject.detailState.wrapWidth; actual != defaultDetailWrapWidth {
+		t.Fatalf("expected durable detail wrap width %d, actual %d", defaultDetailWrapWidth, actual)
+	}
+	if actual := subject.detailState.lastIdentity; actual != "stale" {
+		t.Fatalf("expected durable detail identity %q, actual %q", "stale", actual)
+	}
+	if actual := subject.detailState.viewState.cursor.line; actual != 999 {
+		t.Fatalf("expected the durable detail cursor line %d, actual %d", 999, actual)
+	}
+}
+
+func TestDetailViewRenderState_GivenDetailView_WhenSyncingViewShellState_ThenItUpdatesWrapWidthAndClampsDetailStateBeforeRender(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGuiWithSize(t, 120, 40)
+	defer gui.Close()
+
+	view, actualErr := gui.SetView(viewDetailName, 0, 0, 79, 19, 0)
+	if actualErr != nil && !isUnknownViewError(actualErr) {
+		then_noError(t, actualErr)
+	}
+	subject.detailState.wrapWidth = defaultDetailWrapWidth
+	subject.detailState.viewState.cursor = detailPosition{line: 999}
+	subject.detailState.lastIdentity = "stale"
+
+	subject.syncViewShellState(viewDetailName, view)
 
 	expectedWrapWidth := effectiveMarkdownWidth(view.InnerWidth())
 	if actual := subject.detailState.wrapWidth; actual != expectedWrapWidth {
@@ -44,6 +70,6 @@ func TestDetailViewRenderState_GivenDetailView_WhenPreparing_ThenItUpdatesWrapWi
 		t.Fatalf("expected detail identity to sync away from %q", "stale")
 	}
 	if actual := subject.detailState.viewState.cursor.line; actual >= 999 {
-		t.Fatalf("expected the detail cursor to be clamped during render-state prep, actual line %d", actual)
+		t.Fatalf("expected the detail cursor to be clamped during shell sync, actual line %d", actual)
 	}
 }

@@ -1116,6 +1116,38 @@ func TestRefactorGuard_GivenPullRequestBuildPopupFile_WhenScanning_ThenRenderAnd
 	}
 }
 
+func TestRefactorGuard_GivenDetailRenderPrepFiles_WhenScanning_ThenPrepareViewRenderStateStaysReadOnly(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`syncDetailViewShellState\(`,
+		`syncPullRequestBuildRunPopupShellState\(`,
+		`program\.detailState\s*=\s*[^=]`,
+		`pullRequestBuildRunPopup\.viewState\.sync\(`,
+		`pullRequestBuildRunPopup\.viewState\.syncSearch\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "detail_render_state.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail_render_state.go to stay read-only while shell sync owns durable detail/build-popup clamping, actual %v", actualMatches)
+	}
+}
+
+func TestRefactorGuard_GivenRenderRefreshFiles_WhenScanning_ThenTheyReuseSyncViewShellStateInsteadOfDirectRenderStateSync(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`syncDetailViewShellState\(`,
+		`syncPullRequestBuildRunPopupShellState\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "render_pipeline.go" || base == "program_view_state.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected render refresh files to funnel detail/build-popup shell sync through syncViewShellState(...), actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenActionsPopupInteractionFile_WhenScanning_ThenItStopsOwningPopupPageAndViewportShellHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

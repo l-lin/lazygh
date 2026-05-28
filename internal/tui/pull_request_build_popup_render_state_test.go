@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPullRequestBuildRunPopupRenderState_GivenPopupView_WhenPreparing_ThenItSyncsPopupViewportAndSearchOutsideRender(t *testing.T) {
+func TestPullRequestBuildRunPopupRenderState_GivenPopupView_WhenPreparing_ThenItKeepsDurablePopupStateUntouched(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGuiWithSize(t, 120, 40)
 	defer gui.Close()
@@ -18,16 +18,42 @@ func TestPullRequestBuildRunPopupRenderState_GivenPopupView_WhenPreparing_ThenIt
 	subject.pullRequestBuildRunPopup.searchQuery = "Target"
 	subject.pullRequestBuildRunPopup.viewState.cursor = detailPosition{line: 999, column: 0}
 
-	subject.syncPullRequestBuildRunPopupRenderState(view)
+	subject.prepareViewRenderState(viewPullRequestBuildInfoName, view)
+
+	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual != 999 {
+		t.Fatalf("expected the durable popup cursor line %d, actual %d", 999, actual)
+	}
+	if actual := strings.TrimSpace(subject.pullRequestBuildRunPopup.viewState.searchCacheQuery); actual != "" {
+		t.Fatalf("expected popup render prep to leave the durable search cache untouched, actual %q", actual)
+	}
+	if actual := len(subject.pullRequestBuildRunPopup.viewState.searchMatches); actual != 0 {
+		t.Fatalf("expected popup render prep to leave durable search matches untouched, actual %d", actual)
+	}
+}
+
+func TestPullRequestBuildRunPopupRenderState_GivenPopupView_WhenSyncingViewShellState_ThenItClampsPopupViewportAndSearchBeforeRender(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	gui := given_headlessGuiWithSize(t, 120, 40)
+	defer gui.Close()
+
+	view, actualErr := gui.SetView(viewPullRequestBuildInfoName, 0, 0, 79, 19, 0)
+	if actualErr != nil && !isUnknownViewError(actualErr) {
+		then_noError(t, actualErr)
+	}
+	subject.pullRequestBuildRunPopup = newPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "Alpha\nTarget\nOmega"})
+	subject.pullRequestBuildRunPopup.searchQuery = "Target"
+	subject.pullRequestBuildRunPopup.viewState.cursor = detailPosition{line: 999, column: 0}
+
+	subject.syncViewShellState(viewPullRequestBuildInfoName, view)
 
 	if actual := subject.pullRequestBuildRunPopup.viewState.cursor.line; actual >= 999 {
-		t.Fatalf("expected the popup cursor to be clamped during render-state prep, actual line %d", actual)
+		t.Fatalf("expected the popup cursor to be clamped during shell sync, actual line %d", actual)
 	}
 	if actual := subject.pullRequestBuildRunPopup.viewState.searchCacheQuery; actual != "Target" {
 		t.Fatalf("expected popup search cache query %q, actual %q", "Target", actual)
 	}
 	if actual := len(subject.pullRequestBuildRunPopup.viewState.searchMatches); actual != 1 {
-		t.Fatalf("expected one popup search match after render-state prep, actual %d", actual)
+		t.Fatalf("expected one popup search match after shell sync, actual %d", actual)
 	}
 }
 

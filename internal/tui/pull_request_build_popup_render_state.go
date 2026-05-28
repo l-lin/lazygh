@@ -9,7 +9,7 @@ func (program *Program) syncPullRequestBuildRunPopupViewState(document detailDoc
 	program.pullRequestBuildRunPopup.viewState.sync(document, viewportHeight)
 }
 
-func (program *Program) syncPullRequestBuildRunPopupRenderState(view *gocui.View) {
+func (program *Program) syncPullRequestBuildRunPopupShellState(view *gocui.View) {
 	if program == nil || view == nil || program.pullRequestBuildRunPopup == nil {
 		return
 	}
