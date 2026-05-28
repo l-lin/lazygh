@@ -828,6 +828,23 @@ func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenOnlyViewGlueStillDependsOn
 	}
 }
 
+func TestRefactorGuard_GivenStatusLineFiles_WhenScanning_ThenTheyUseSnapshotPresenterValuesInsteadOfProgramBackedStatusSelection(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`type StatusLinePresenter struct`,
+		`func \(program \*Program\) statusLineText\(`,
+		`func \(program \*Program\) loadingStatusText\(`,
+		`presenter\.program\.statusLineText\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "status_line.go" || base == "render_pipeline.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected status-line text selection to flow through snapshot presenter values instead of full Program coupling, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenHelpPagingDispatchesTypedRequests(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,

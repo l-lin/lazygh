@@ -224,22 +224,6 @@ func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) scree
 	}
 }
 
-type StatusLinePresenter struct {
-	program *Program
-}
-
-func (program *Program) statusLinePresenter() StatusLinePresenter {
-	return StatusLinePresenter{program: program}
-}
-
-func (presenter StatusLinePresenter) Text() string {
-	return strings.TrimSpace(presenter.program.statusLineText())
-}
-
-func (presenter StatusLinePresenter) Renderer() ViewRenderer {
-	return viewRendererFuncs{configure: presenter.program.configureStatusLineView, render: presenter.program.renderStatusLineView}
-}
-
 type KeyHintPresenter struct {
 	program *Program
 	footer  footerPresenter
@@ -368,7 +352,7 @@ func (program *Program) screenCompositionForSize(maxX int, maxY int) screenCompo
 			renderers[frame.ViewName] = renderer
 		}
 	}
-	renderers[viewStatusLineName] = program.statusLinePresenter().Renderer()
+	renderers[viewStatusLineName] = viewRendererFuncs{configure: program.configureStatusLineView, render: program.renderStatusLineView}
 	if renderer, ok := program.keyHintPresenter().Renderer(); ok {
 		renderers[viewStatusLineKeyHintsName] = renderer
 	}

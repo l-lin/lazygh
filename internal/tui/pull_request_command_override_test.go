@@ -35,7 +35,7 @@ func TestStatusLineText_GivenCustomAuthoredSearchWhileLoading_WhenReadingTheStat
 	}})
 	subject.myPullRequestsLoading = true
 
-	actual := subject.statusLineText()
+	actual := subject.statusLinePresenter().Text()
 
 	expected := string(loadingSpinnerFrames[0]) + " Running `gh pr list --search author:@me status:open --json title,number,repository,url,body,state,isDraft,updatedAt,id` to load authored pull requests."
 	if actual != expected {
