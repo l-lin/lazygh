@@ -9,8 +9,9 @@ import (
 
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyShellGlueCallsLayoutOrRefreshHelpers(t *testing.T) {
 	allowedFiles := map[string]bool{
-		"dispatch.go":      true,
-		"shell_refresh.go": true,
+		"dispatch.go":         true,
+		"runtime_dispatch.go": true,
+		"shell_refresh.go":    true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`return program\.(?:layout|refreshViewsIfGUI|afterStateChange)\(gui\)`), func(path string) bool {

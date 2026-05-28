@@ -20,7 +20,7 @@ func newWorkflowShellRuntime(program *Program, gui *gocui.Gui) workflowShellRunt
 		runAsync:             program.runAsync,
 		dispatchAsyncMessage: program.dispatchAsyncMessage,
 		executeUpdate: func(msg Msg) {
-			program.executeCmds(capturedGUI, Update(program, msg))
+			_ = program.executeRuntimeMessage(capturedGUI, msg)
 		},
 		executeWorkflowPlan: func(plan workflowPlan) {
 			program.executeWorkflowPlan(capturedGUI, plan)

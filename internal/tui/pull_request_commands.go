@@ -8,7 +8,7 @@ type pullRequestCountState struct {
 }
 
 func (program *Program) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
-	Update(program, MsgPullRequestSearchesApplied{Searches: appconfig.ResolvePullRequestSearches(searches)})
+	_ = program.dispatchRuntimeMessage(MsgPullRequestSearchesApplied{Searches: appconfig.ResolvePullRequestSearches(searches)})
 }
 
 func pullRequestTabSeedsForSearches(searches []appconfig.PullRequestSearch) []PullRequestTabSeed {

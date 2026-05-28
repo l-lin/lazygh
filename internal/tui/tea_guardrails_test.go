@@ -984,6 +984,36 @@ func TestRefactorGuard_GivenLinkClipboardCommandFile_WhenScanning_ThenItDoesNotM
 	}
 }
 
+func TestRefactorGuard_GivenAuditedShellBridgeFiles_WhenScanning_ThenOnlyRuntimeDispatchKeepsDirectUpdateCalls(t *testing.T) {
+	auditedFiles := map[string]bool{
+		"actions_popup_async_cmd.go":    true,
+		"cmd_popup_feature_requests.go": true,
+		"workflow_command_runtime.go":   true,
+		"pull_request_commands.go":      true,
+		"runtime_dispatch.go":           true,
+	}
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`Update\(program, Msg`,
+		`executeCmds\([^\n]*Update\(program, msg\)`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return auditedFiles[filepath.Base(path)]
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if base == "runtime_dispatch.go" {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected audited shell-side message hops to route through the runtime dispatch bridge instead of inline Update(...) calls, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenModalEditorSubmitRequestFile_WhenScanning_ThenItDoesNotWirePendingReviewStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`recordPendingPullRequestReview`,

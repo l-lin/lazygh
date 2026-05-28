@@ -52,6 +52,24 @@ func TestApplyPullRequestSearches_GivenConfiguredSearches_WhenRendering_ThenItUs
 	then_tabsAre(t, pullRequestsView, []string{"Mine", "Requested", "Escalated"}, 0)
 }
 
+func TestApplyPullRequestSearches_GivenConfiguredGUI_WhenApplying_ThenItRefreshesThePullRequestTabsThroughTheRuntimeBridge(t *testing.T) {
+	subject := NewProgramWithModel(NewModel(DefaultSeedData()))
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	then_noError(t, subject.layout(gui))
+
+	subject.ApplyPullRequestSearches([]appconfig.PullRequestSearch{
+		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "Escalated", Command: []string{"search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"}},
+	})
+
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	then_tabsAre(t, pullRequestsView, []string{"Mine", "Requested", "Escalated"}, 0)
+}
+
 func TestApplyPullRequestSearches_GivenAConfiguredReplacementList_WhenApplying_ThenItReplacesTheDefaultLoadingTabs(t *testing.T) {
 	subject := NewProgramWithModel(NewModel(DefaultSeedData()))
 	expected := []appconfig.PullRequestSearch{

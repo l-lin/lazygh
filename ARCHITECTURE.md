@@ -60,11 +60,11 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 1. A keybinding, popup, editor-intent callback, or async result emits a `Msg`.
 2. `Update` mutates state and returns typed `Cmd` values.
-   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit success handling, detail/build-popup cursor/search transitions, detail-fold sync plans, clipboard-preflight teardown, and pending-review cache recording stay in `Update`.
+   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit success handling, detail/build-popup cursor/search transitions, detail-fold collapse plus sync-plan derivation, link-open feedback preflight, clipboard-preflight teardown, and pending-review cache recording stay in `Update`.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, shell sync, and redraw only.
 
-`dispatchAsyncMessage()` is the shell bridge that hops worker results back onto the UI thread.
+`dispatchRuntimeMessage(...)` is the explicit shell bridge for runtime entrypoints that need `Update` plus `afterStateChange()`. `executeRuntimeMessage(...)` is the low-level shell bridge for command/runtime re-entry that should apply a message without another post-update pass. `dispatchAsyncMessage()` still hops worker results back onto the UI thread.
 
 ## Read side and render side
 

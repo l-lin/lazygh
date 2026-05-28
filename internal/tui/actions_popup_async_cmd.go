@@ -28,7 +28,7 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 			program.dispatchAsyncMessage(MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 			return
 		}
-		program.executeCmds(capturedGUI, Update(program, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success}))
+		_ = program.executeRuntimeMessage(capturedGUI, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
 	}
 	if command.request.asyncRequested() {
 		program.runAsync(run)
@@ -49,5 +49,5 @@ func (command saveThemePresetCmd) execute(program *Program, gui *gocui.Gui) {
 	if program.themePresetStore == nil {
 		err = errors.New("theme preset store is unavailable")
 	}
-	program.executeCmds(gui, Update(program, MsgThemePresetSaved{NormalizedName: command.NormalizedName, Label: command.Label, Err: err}))
+	_ = program.executeRuntimeMessage(gui, MsgThemePresetSaved{NormalizedName: command.NormalizedName, Label: command.Label, Err: err})
 }

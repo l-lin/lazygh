@@ -60,7 +60,7 @@ func (command notificationMutationCmd) execute(program *Program, gui *gocui.Gui)
 	run := func() {
 		err := command.request.run(deps)
 		if capturedGUI == nil {
-			program.executeCmds(nil, Update(program, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err}))
+			_ = program.executeRuntimeMessage(nil, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err})
 			return
 		}
 		program.dispatchAsyncMessage(MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err})
@@ -82,7 +82,7 @@ func (command storyReviewPrepareCmd) execute(program *Program, gui *gocui.Gui) {
 	run := func() {
 		prepared, err := command.request.run(deps)
 		if capturedGUI == nil {
-			program.executeCmds(nil, Update(program, MsgStoryReviewPrepared{Prepared: prepared, Err: err}))
+			_ = program.executeRuntimeMessage(nil, MsgStoryReviewPrepared{Prepared: prepared, Err: err})
 			return
 		}
 		program.dispatchAsyncMessage(MsgStoryReviewPrepared{Prepared: prepared, Err: err})
