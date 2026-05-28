@@ -85,12 +85,22 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDispatchUsesUiU
 	}
 }
 
-func TestRefactorGuard_GivenModalInteractionCommandFile_WhenScanning_ThenItUsesTheRuntimeBridgeInsteadOfNestedProgramDispatch(t *testing.T) {
+func TestRefactorGuard_GivenSynchronousInteractionCommandFiles_WhenScanning_ThenTheyUseTheRuntimeBridgeInsteadOfNestedProgramDispatch(t *testing.T) {
+	auditedFiles := map[string]bool{
+		"cmd_interaction_modal.go":          true,
+		"cmd_interaction_navigation.go":     true,
+		"cmd_interaction_detail_search.go":  true,
+		"cmd_detail_fold.go":                true,
+		"cmd_detail_motion.go":              true,
+		"cmd_interaction_link_clipboard.go": true,
+		"cmd_interaction_io.go":             true,
+	}
+
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.dispatch`), func(path string) bool {
-		return filepath.Base(path) == "cmd_interaction_modal.go"
+		return auditedFiles[filepath.Base(path)]
 	})
 	if len(actualMatches) != 0 {
-		t.Fatalf("expected modal-editor command re-entry to use executeRuntimeMessage(...) instead of nested program.dispatch(...), actual %v", actualMatches)
+		t.Fatalf("expected synchronous interaction command re-entry to use executeRuntimeMessage(...) instead of nested program.dispatch(...), actual %v", actualMatches)
 	}
 }
 

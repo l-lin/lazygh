@@ -62,7 +62,7 @@ func TestOpenLinkUnderCursorCommand_GivenResolvedLinkState_WhenExecuting_ThenItD
 	actualDispatched := []Msg(nil)
 
 	executeOpenLinkUnderCursorCommand(linkClipboardCommandRuntime{
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},
@@ -94,7 +94,7 @@ func TestOpenPullRequestBuildRunPopupLinkCommand_GivenResolvedLinkState_WhenExec
 
 	executeOpenPullRequestBuildRunPopupLinkCommand(linkClipboardCommandRuntime{
 		linkOpener: &fakeLinkOpener{},
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},

@@ -100,7 +100,7 @@ func TestPageNavigationCommand_GivenAResolvedPageSize_WhenExecuting_ThenItDispat
 	actualDispatched := []Msg(nil)
 
 	executePageNavigationCommand(navigationCommandRuntime{
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},

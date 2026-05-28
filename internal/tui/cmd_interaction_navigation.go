@@ -3,7 +3,7 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 type navigationCommandRuntime struct {
-	dispatch                   func(*gocui.Gui, Msg) error
+	executeMessage             func(*gocui.Gui, Msg) error
 	resolveView                func(*gocui.Gui, *gocui.View, string) *gocui.View
 	configureGUI               func(*gocui.Gui)
 	currentViewName            func() string
@@ -17,7 +17,7 @@ func newNavigationCommandRuntime(program *Program) navigationCommandRuntime {
 		return navigationCommandRuntime{}
 	}
 	return navigationCommandRuntime{
-		dispatch:              program.dispatch,
+		executeMessage:        program.executeRuntimeMessage,
 		resolveView:           program.resolveView,
 		configureGUI:          program.configureGUI,
 		currentViewName:       program.currentViewName,
@@ -63,7 +63,7 @@ func (command focusReviewCommentCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeFocusReviewCommentCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command focusReviewCommentCmd) {
-	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
+	if runtime.executeMessage == nil || runtime.currentDetailDocument == nil {
 		return
 	}
 
@@ -71,7 +71,7 @@ func executeFocusReviewCommentCommand(runtime navigationCommandRuntime, gui *goc
 	if runtime.resolveView != nil {
 		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
-	_ = runtime.dispatch(gui, MsgFocusDetailRenderedLineResolved{RenderedLine: command.RenderedLine, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
+	_ = runtime.executeMessage(gui, MsgFocusDetailRenderedLineResolved{RenderedLine: command.RenderedLine, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
 
 type pageNavigationCmd struct {
@@ -83,7 +83,7 @@ func (command pageNavigationCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executePageNavigationCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command pageNavigationCmd) {
-	if runtime.dispatch == nil {
+	if runtime.executeMessage == nil {
 		return
 	}
 
@@ -95,7 +95,7 @@ func executePageNavigationCommand(runtime navigationCommandRuntime, gui *gocui.G
 	if runtime.resolveView != nil {
 		actualView = runtime.resolveView(gui, nil, fallbackName)
 	}
-	_ = runtime.dispatch(gui, MsgPageNavigationResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
+	_ = runtime.executeMessage(gui, MsgPageNavigationResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
 }
 
 type readOnlyScrollCmd struct {
@@ -148,11 +148,11 @@ func (command resolveActionsPopupPageSizeCmd) execute(program *Program, gui *goc
 }
 
 func executeResolveActionsPopupPageSizeCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command resolveActionsPopupPageSizeCmd) {
-	if runtime.dispatch == nil || runtime.resolveView == nil {
+	if runtime.executeMessage == nil || runtime.resolveView == nil {
 		return
 	}
 	actualView := runtime.resolveView(gui, nil, viewActionsPopupName)
-	_ = runtime.dispatch(gui, MsgActionsPopupPageResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
+	_ = runtime.executeMessage(gui, MsgActionsPopupPageResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
 }
 
 type actionsPopupViewportCmd struct {
@@ -179,7 +179,7 @@ func (command detailViewportCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeDetailViewportCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command detailViewportCmd) {
-	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
+	if runtime.executeMessage == nil || runtime.currentDetailDocument == nil {
 		return
 	}
 
@@ -187,7 +187,7 @@ func executeDetailViewportCommand(runtime navigationCommandRuntime, gui *gocui.G
 	if runtime.resolveView != nil {
 		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
-	_ = runtime.dispatch(gui, MsgDetailViewportResolved{Operation: command.Operation, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
+	_ = runtime.executeMessage(gui, MsgDetailViewportResolved{Operation: command.Operation, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
 
 func pageNavigationDelta(kind pageNavigationKind, pageSize int) int {

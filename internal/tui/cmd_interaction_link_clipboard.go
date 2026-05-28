@@ -5,7 +5,7 @@ import "github.com/jesseduffield/gocui"
 type linkClipboardCommandRuntime struct {
 	linkOpener                              LinkOpener
 	clipboardWriter                         ClipboardWriter
-	dispatch                                func(*gocui.Gui, Msg) error
+	executeMessage                          func(*gocui.Gui, Msg) error
 	resolveView                             func(*gocui.Gui, *gocui.View, string) *gocui.View
 	currentDetailCursorLink                 func() (string, bool)
 	currentPullRequestBuildRunPopupLink     func(*gocui.View) (string, bool)
@@ -20,7 +20,7 @@ func newLinkClipboardCommandRuntime(program *Program) linkClipboardCommandRuntim
 	return linkClipboardCommandRuntime{
 		linkOpener:                              program.linkOpener,
 		clipboardWriter:                         program.clipboardWriter,
-		dispatch:                                program.dispatch,
+		executeMessage:                          program.executeRuntimeMessage,
 		resolveView:                             program.resolveView,
 		currentDetailCursorLink:                 program.currentDetailCursorLink,
 		currentPullRequestBuildRunPopupLink:     program.currentPullRequestBuildRunPopupLink,
@@ -33,7 +33,7 @@ func (runtime linkClipboardCommandRuntime) browserClipboardRuntime() browserClip
 	return browserClipboardCommandRuntime{
 		linkOpener:      runtime.linkOpener,
 		clipboardWriter: runtime.clipboardWriter,
-		dispatch:        runtime.dispatch,
+		executeMessage:  runtime.executeMessage,
 	}
 }
 
@@ -46,12 +46,12 @@ func (command openLinkUnderCursorCmd) execute(program *Program, gui *gocui.Gui) 
 }
 
 func executeOpenLinkUnderCursorCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command openLinkUnderCursorCmd) {
-	if runtime.dispatch == nil || runtime.currentDetailCursorLink == nil {
+	if runtime.executeMessage == nil || runtime.currentDetailCursorLink == nil {
 		return
 	}
 
 	url, ok := runtime.currentDetailCursorLink()
-	_ = runtime.dispatch(gui, MsgOpenLinkUnderCursorResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
+	_ = runtime.executeMessage(gui, MsgOpenLinkUnderCursorResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
 }
 
 type openPullRequestBuildRunPopupLinkCmd struct {
@@ -63,13 +63,13 @@ func (command openPullRequestBuildRunPopupLinkCmd) execute(program *Program, gui
 }
 
 func executeOpenPullRequestBuildRunPopupLinkCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command openPullRequestBuildRunPopupLinkCmd) {
-	if runtime.dispatch == nil || runtime.resolveView == nil || runtime.currentPullRequestBuildRunPopupLink == nil {
+	if runtime.executeMessage == nil || runtime.resolveView == nil || runtime.currentPullRequestBuildRunPopupLink == nil {
 		return
 	}
 
 	actualView := runtime.resolveView(gui, nil, viewPullRequestBuildInfoName)
 	url, ok := runtime.currentPullRequestBuildRunPopupLink(actualView)
-	_ = runtime.dispatch(gui, MsgOpenPullRequestBuildRunPopupLinkResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
+	_ = runtime.executeMessage(gui, MsgOpenPullRequestBuildRunPopupLinkResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
 }
 
 type prepareSelectedDetailClipboardWriteCmd struct {
@@ -81,7 +81,7 @@ func (command prepareSelectedDetailClipboardWriteCmd) execute(program *Program, 
 }
 
 func executePrepareSelectedDetailClipboardWriteCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command prepareSelectedDetailClipboardWriteCmd) {
-	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
+	if runtime.executeMessage == nil || runtime.currentDetailDocument == nil {
 		return
 	}
 
@@ -89,7 +89,7 @@ func executePrepareSelectedDetailClipboardWriteCommand(runtime linkClipboardComm
 	if runtime.resolveView != nil {
 		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
-	_ = runtime.dispatch(gui, MsgSelectedDetailClipboardPrepared{Target: command.Target, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
+	_ = runtime.executeMessage(gui, MsgSelectedDetailClipboardPrepared{Target: command.Target, Document: runtime.currentDetailDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }
 
 type preparePullRequestBuildRunPopupClipboardWriteCmd struct {
@@ -101,7 +101,7 @@ func (command preparePullRequestBuildRunPopupClipboardWriteCmd) execute(program 
 }
 
 func executePreparePullRequestBuildRunPopupClipboardWriteCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command preparePullRequestBuildRunPopupClipboardWriteCmd) {
-	if runtime.dispatch == nil || runtime.currentPullRequestBuildRunPopupDocument == nil {
+	if runtime.executeMessage == nil || runtime.currentPullRequestBuildRunPopupDocument == nil {
 		return
 	}
 
@@ -109,5 +109,5 @@ func executePreparePullRequestBuildRunPopupClipboardWriteCommand(runtime linkCli
 	if runtime.resolveView != nil {
 		actualView = runtime.resolveView(gui, nil, viewPullRequestBuildInfoName)
 	}
-	_ = runtime.dispatch(gui, MsgPullRequestBuildRunPopupClipboardPrepared{Target: command.Target, Document: runtime.currentPullRequestBuildRunPopupDocument(actualView), ViewportHeight: viewPageSize(actualView)})
+	_ = runtime.executeMessage(gui, MsgPullRequestBuildRunPopupClipboardPrepared{Target: command.Target, Document: runtime.currentPullRequestBuildRunPopupDocument(actualView), ViewportHeight: viewPageSize(actualView)})
 }

@@ -52,7 +52,7 @@ type detailMotionCmd struct {
 }
 
 type detailMotionCommandRuntime struct {
-	dispatch                                func(*gocui.Gui, Msg) error
+	executeMessage                          func(*gocui.Gui, Msg) error
 	resolveView                             func(*gocui.Gui, *gocui.View, string) *gocui.View
 	currentDetailDocument                   func(*gocui.View) detailDocument
 	currentPullRequestBuildRunPopupDocument func(*gocui.View) detailDocument
@@ -63,7 +63,7 @@ func newDetailMotionCommandRuntime(program *Program) detailMotionCommandRuntime 
 		return detailMotionCommandRuntime{}
 	}
 	return detailMotionCommandRuntime{
-		dispatch:                                program.dispatch,
+		executeMessage:                          program.executeRuntimeMessage,
 		resolveView:                             program.resolveView,
 		currentDetailDocument:                   program.currentDetailDocument,
 		currentPullRequestBuildRunPopupDocument: program.currentPullRequestBuildRunPopupDocument,
@@ -144,7 +144,7 @@ func (command detailMotionCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeDetailMotionCommand(runtime detailMotionCommandRuntime, gui *gocui.Gui, command detailMotionCmd) {
-	if runtime.dispatch == nil {
+	if runtime.executeMessage == nil {
 		return
 	}
 
@@ -174,7 +174,7 @@ func executeDetailMotionCommand(runtime detailMotionCommandRuntime, gui *gocui.G
 		selectionKind = actualSelectionKind
 	}
 
-	_ = runtime.dispatch(gui, MsgDetailMotionResolved{
+	_ = runtime.executeMessage(gui, MsgDetailMotionResolved{
 		Target:         command.Target,
 		Operation:      command.Operation,
 		Direction:      command.Direction,

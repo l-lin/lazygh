@@ -6,7 +6,7 @@ type browserClipboardCommandRuntime struct {
 	linkOpener      LinkOpener
 	clipboardWriter ClipboardWriter
 	clipboardReader ClipboardReader
-	dispatch        func(*gocui.Gui, Msg) error
+	executeMessage  func(*gocui.Gui, Msg) error
 }
 
 func newBrowserClipboardCommandRuntime(program *Program) browserClipboardCommandRuntime {
@@ -17,7 +17,7 @@ func newBrowserClipboardCommandRuntime(program *Program) browserClipboardCommand
 		linkOpener:      program.linkOpener,
 		clipboardWriter: program.clipboardWriter,
 		clipboardReader: program.clipboardReader,
-		dispatch:        program.dispatch,
+		executeMessage:  program.executeRuntimeMessage,
 	}
 }
 
@@ -37,8 +37,8 @@ func executeOpenBrowserURLCommand(runtime browserClipboardCommandRuntime, gui *g
 	if runtime.linkOpener != nil {
 		err = runtime.linkOpener.Open(command.URL)
 	}
-	if runtime.dispatch != nil {
-		_ = runtime.dispatch(gui, MsgOpenBrowserURLFinished{SuccessMessage: command.SuccessMessage, FailureMessage: command.FailureMessage, Target: command.Target, Err: err})
+	if runtime.executeMessage != nil {
+		_ = runtime.executeMessage(gui, MsgOpenBrowserURLFinished{SuccessMessage: command.SuccessMessage, FailureMessage: command.FailureMessage, Target: command.Target, Err: err})
 	}
 }
 
@@ -60,8 +60,8 @@ func executeWriteClipboardCommand(runtime browserClipboardCommandRuntime, gui *g
 	if runtime.clipboardWriter != nil {
 		err = runtime.clipboardWriter.WriteText(command.Text)
 	}
-	if runtime.dispatch != nil {
-		_ = runtime.dispatch(gui, MsgClipboardWriteFinished{
+	if runtime.executeMessage != nil {
+		_ = runtime.executeMessage(gui, MsgClipboardWriteFinished{
 			SuccessMessage:  command.SuccessMessage,
 			FailureMessage:  command.FailureMessage,
 			Target:          command.Target,
@@ -79,14 +79,14 @@ func (readPullRequestURLFromClipboardCmd) execute(program *Program, gui *gocui.G
 }
 
 func executeReadPullRequestURLFromClipboardCommand(runtime browserClipboardCommandRuntime, gui *gocui.Gui) {
-	if runtime.dispatch == nil {
+	if runtime.executeMessage == nil {
 		return
 	}
 	if runtime.clipboardReader == nil {
-		_ = runtime.dispatch(gui, MsgPullRequestURLReadFromClipboard{Err: ErrClipboardUnavailable})
+		_ = runtime.executeMessage(gui, MsgPullRequestURLReadFromClipboard{Err: ErrClipboardUnavailable})
 		return
 	}
 
 	url, err := runtime.clipboardReader.ReadText()
-	_ = runtime.dispatch(gui, MsgPullRequestURLReadFromClipboard{URL: url, Err: err})
+	_ = runtime.executeMessage(gui, MsgPullRequestURLReadFromClipboard{URL: url, Err: err})
 }

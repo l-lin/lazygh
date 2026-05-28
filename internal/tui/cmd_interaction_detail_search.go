@@ -3,7 +3,7 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 type detailSearchCommandRuntime struct {
-	dispatch              func(*gocui.Gui, Msg) error
+	executeMessage        func(*gocui.Gui, Msg) error
 	resolveView           func(*gocui.Gui, *gocui.View, string) *gocui.View
 	currentDetailDocument func(*gocui.View) detailDocument
 }
@@ -13,7 +13,7 @@ func newDetailSearchCommandRuntime(program *Program) detailSearchCommandRuntime 
 		return detailSearchCommandRuntime{}
 	}
 	return detailSearchCommandRuntime{
-		dispatch:              program.dispatch,
+		executeMessage:        program.executeRuntimeMessage,
 		resolveView:           program.resolveView,
 		currentDetailDocument: program.currentDetailDocument,
 	}
@@ -28,7 +28,7 @@ func (command resolveDetailSearchWordCmd) execute(program *Program, gui *gocui.G
 }
 
 func executeResolveDetailSearchWordCommand(runtime detailSearchCommandRuntime, gui *gocui.Gui, command resolveDetailSearchWordCmd) {
-	if runtime.dispatch == nil || runtime.currentDetailDocument == nil {
+	if runtime.executeMessage == nil || runtime.currentDetailDocument == nil {
 		return
 	}
 
@@ -36,7 +36,7 @@ func executeResolveDetailSearchWordCommand(runtime detailSearchCommandRuntime, g
 	if runtime.resolveView != nil {
 		actualView = runtime.resolveView(gui, nil, viewDetailName)
 	}
-	_ = runtime.dispatch(gui, MsgDetailSearchWordResolved{
+	_ = runtime.executeMessage(gui, MsgDetailSearchWordResolved{
 		Document:       runtime.currentDetailDocument(actualView),
 		ViewportHeight: viewPageSize(actualView),
 		Reverse:        command.Reverse,

@@ -101,7 +101,7 @@ func TestPrepareSelectedDetailClipboardWriteCommand_GivenResolvedDocument_WhenEx
 	actualDispatched := []Msg(nil)
 
 	executePrepareSelectedDetailClipboardWriteCommand(linkClipboardCommandRuntime{
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},
@@ -133,7 +133,7 @@ func TestPreparePullRequestBuildRunPopupClipboardWriteCommand_GivenResolvedDocum
 	actualDispatched := []Msg(nil)
 
 	executePreparePullRequestBuildRunPopupClipboardWriteCommand(linkClipboardCommandRuntime{
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},

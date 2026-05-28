@@ -234,7 +234,7 @@ func TestToggleInlineConversationVisibilityCommand_GivenAResolvedDetailDocument_
 	actualDispatched := []Msg(nil)
 
 	executeToggleInlineConversationVisibilityCommand(detailFoldCommandRuntime{
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},
@@ -263,7 +263,7 @@ func TestSetAllDetailFoldsCommand_GivenAResolvedDetailDocument_WhenExecuting_The
 	actualDispatched := []Msg(nil)
 
 	executeSetAllDetailFoldsCommand(detailFoldCommandRuntime{
-		dispatch: func(gui *gocui.Gui, msg Msg) error {
+		executeMessage: func(gui *gocui.Gui, msg Msg) error {
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},
