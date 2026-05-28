@@ -43,6 +43,11 @@ Two child models now own the hot detail and review transitions:
 - `detailStateModel` owns wrap width, cursor placement, viewport sync, and search sync.
 - `reviewSessionState` owns file-tree selection and collapsed file or thread state.
 
+Smaller state bags follow the same value-transition rule:
+
+- `assigneePickerState` owns popup assignee selection plus search request/result bookkeeping.
+- `manualRefreshStateModel` owns pending refresh targets and completion-feedback counting.
+
 ### Shell
 
 `internal/tui/program.go` defines `Program`, the shell object. It is grouped into four bundles instead of one flat bag:

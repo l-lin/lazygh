@@ -991,6 +991,23 @@ func TestRefactorGuard_GivenAssigneePickerFiles_WhenScanning_ThenNestedStateWrit
 	}
 }
 
+func TestRefactorGuard_GivenManualRefreshFiles_WhenScanning_ThenNestedStateWritesStayOnValueTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.manualRefreshState\.(?:pullRequestListPending|pullRequestDetailPending|pullRequestDiffPending|notificationPending|feedback)\s*=\s*[^=]`,
+		`program\.manualRefreshState\.(?:pullRequestListPending|pullRequestDetailPending|pullRequestDiffPending)\[[^\]]+\]\s*=`,
+		`delete\(program\.manualRefreshState\.(?:pullRequestListPending|pullRequestDetailPending|pullRequestDiffPending)`,
+		`program\.feedbackMessage\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "manual_refresh_notifications.go" || base == "manual_refresh_preflight.go" || base == "pull_request_refresh_reporting.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected manual-refresh bookkeeping to use value transitions plus whole-state replacement instead of nested state writes, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)

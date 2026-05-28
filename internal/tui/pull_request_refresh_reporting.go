@@ -1,10 +1,6 @@
 package tui
 
-import (
-	"strings"
-
-	githubdomain "github.com/l-lin/lazygh/internal/github"
-)
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type manualRefreshFeedbackState struct {
 	successMessage    string
@@ -18,41 +14,28 @@ type manualRefreshFeedbackCompletion struct {
 }
 
 func (program *Program) beginManualRefresh(successMessage string, pendingOperations int) {
-	if program == nil || pendingOperations <= 0 {
+	if program == nil {
 		return
 	}
 
-	program.feedbackMessage = ""
-	program.manualRefreshState.feedback = &manualRefreshFeedbackState{
-		successMessage:    strings.TrimSpace(successMessage),
-		pendingOperations: pendingOperations,
+	updatedState, started := program.manualRefreshState.withFeedbackBegun(successMessage, pendingOperations)
+	if !started {
+		return
 	}
+	program.clearFeedbackMessage()
+	program.manualRefreshState = updatedState
 }
 
 func (program *Program) completeManualRefreshOperation(err error) manualRefreshFeedbackCompletion {
-	if program == nil || program.manualRefreshState.feedback == nil {
+	if program == nil {
 		return manualRefreshFeedbackCompletion{}
 	}
 
-	state := program.manualRefreshState.feedback
-	completion := manualRefreshFeedbackCompletion{}
-	if err != nil {
-		if !state.failed {
-			program.feedbackMessage = ""
-			completion.popupError = strings.TrimSpace(normalizeGHCommandError(err).Error())
-		}
-		state.failed = true
+	updatedState, completion, clearFeedback := program.manualRefreshState.withCompletedOperation(err)
+	if clearFeedback {
+		program.clearFeedbackMessage()
 	}
-	if state.pendingOperations > 0 {
-		state.pendingOperations--
-	}
-	if state.pendingOperations > 0 {
-		return completion
-	}
-	if !state.failed && state.successMessage != "" {
-		completion.successMessage = state.successMessage
-	}
-	program.manualRefreshState.feedback = nil
+	program.manualRefreshState = updatedState
 	return completion
 }
 
@@ -60,66 +43,72 @@ func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) boo
 	if program == nil {
 		return false
 	}
-	if program.manualRefreshState.pullRequestListPending == nil {
-		program.manualRefreshState.pullRequestListPending = map[PullRequestTab]bool{}
+	updatedState, marked := program.manualRefreshState.withPullRequestListPending(tab)
+	if !marked {
+		return false
 	}
-	program.manualRefreshState.pullRequestListPending[tab] = true
+	program.manualRefreshState = updatedState
 	return true
 }
 
 func (program *Program) consumeManualPullRequestListRefresh(tab PullRequestTab) bool {
-	if program == nil || program.manualRefreshState.pullRequestListPending == nil {
+	if program == nil {
 		return false
 	}
-	pending := program.manualRefreshState.pullRequestListPending[tab]
-	delete(program.manualRefreshState.pullRequestListPending, tab)
-	return pending
+	updatedState, pending := program.manualRefreshState.withoutPullRequestListPending(tab)
+	if !pending {
+		return false
+	}
+	program.manualRefreshState = updatedState
+	return true
 }
 
 func (program *Program) markManualPullRequestDetailRefresh(summary githubdomain.PullRequest) bool {
 	if program == nil {
 		return false
 	}
-	if program.manualRefreshState.pullRequestDetailPending == nil {
-		program.manualRefreshState.pullRequestDetailPending = map[string]bool{}
+	updatedState, marked := program.manualRefreshState.withPullRequestDetailPending(summary)
+	if !marked {
+		return false
 	}
-	if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-		program.manualRefreshState.pullRequestDetailPending[key] = true
-		return true
-	}
-	return false
+	program.manualRefreshState = updatedState
+	return true
 }
 
 func (program *Program) consumeManualPullRequestDetailRefresh(key string) bool {
-	if program == nil || program.manualRefreshState.pullRequestDetailPending == nil || key == "" {
+	if program == nil {
 		return false
 	}
-	pending := program.manualRefreshState.pullRequestDetailPending[key]
-	delete(program.manualRefreshState.pullRequestDetailPending, key)
-	return pending
+	updatedState, pending := program.manualRefreshState.withoutPullRequestDetailPending(key)
+	if !pending {
+		return false
+	}
+	program.manualRefreshState = updatedState
+	return true
 }
 
 func (program *Program) markManualPullRequestDiffRefresh(summary githubdomain.PullRequest) bool {
 	if program == nil {
 		return false
 	}
-	if program.manualRefreshState.pullRequestDiffPending == nil {
-		program.manualRefreshState.pullRequestDiffPending = map[string]bool{}
+	updatedState, marked := program.manualRefreshState.withPullRequestDiffPending(summary)
+	if !marked {
+		return false
 	}
-	if key := pullRequestDetailKey(summary.Repository, summary.Number); key != "" {
-		program.manualRefreshState.pullRequestDiffPending[key] = true
-		return true
-	}
-	return false
+	program.manualRefreshState = updatedState
+	return true
 }
 
 func (program *Program) consumeManualPullRequestDiffRefresh(key string) bool {
-	if program == nil || program.manualRefreshState.pullRequestDiffPending == nil || key == "" {
+	if program == nil {
 		return false
 	}
-	pending := program.manualRefreshState.pullRequestDiffPending[key]
-	delete(program.manualRefreshState.pullRequestDiffPending, key)
-	return pending
+	updatedState, pending := program.manualRefreshState.withoutPullRequestDiffPending(key)
+	if !pending {
+		return false
+	}
+	program.manualRefreshState = updatedState
+	return true
 }
 
 func (program *Program) markPullRequestDetailNeedsRefresh(summary githubdomain.PullRequest) {
