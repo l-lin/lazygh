@@ -20,6 +20,27 @@ func TestUpdate_GivenMsgPageNavigationRequested_WhenApplying_ThenItReturnsATyped
 	}
 }
 
+func TestUpdate_GivenMsgHelpPageNavigationRequested_WhenApplying_ThenItReturnsATypedReadOnlyScrollCommand(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	subject.overlayState.helpVisible = true
+
+	actual := Update(subject, MsgHelpPageNavigationRequested{Kind: pageNavigationKindFullDown})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one read-only scroll command, actual %d", len(actual))
+	}
+	command, ok := actual[0].(readOnlyScrollCmd)
+	if !ok {
+		t.Fatalf("expected a readOnlyScrollCmd, actual %T", actual[0])
+	}
+	if actual := command.FallbackName; actual != viewHelpName {
+		t.Fatalf("expected fallback view name %q, actual %q", viewHelpName, actual)
+	}
+	if actual := command.Kind; actual != pageNavigationKindFullDown {
+		t.Fatalf("expected page navigation kind %v, actual %v", pageNavigationKindFullDown, actual)
+	}
+}
+
 func TestUpdate_GivenMsgPageNavigationResolvedInBrowserContext_WhenApplying_ThenItMovesSideSelectionAndReturnsAViewportCommand(t *testing.T) {
 	subject := NewProgramWithModel(NewModel(SeedData{Users: given_manyItems("user", 20)}))
 

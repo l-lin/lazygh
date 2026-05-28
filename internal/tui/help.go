@@ -44,13 +44,11 @@ func (program *Program) renderHelpView(view *gocui.View) {
 }
 
 func (program *Program) fullPageHelpDown(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{readOnlyScrollCmd{FallbackName: viewHelpName, Kind: pageNavigationKindFullDown}})
-	return nil
+	return program.dispatch(gui, MsgHelpPageNavigationRequested{Kind: pageNavigationKindFullDown})
 }
 
 func (program *Program) fullPageHelpUp(gui *gocui.Gui, view *gocui.View) error {
-	program.executeCmds(gui, []Cmd{readOnlyScrollCmd{FallbackName: viewHelpName, Kind: pageNavigationKindFullUp}})
-	return nil
+	return program.dispatch(gui, MsgHelpPageNavigationRequested{Kind: pageNavigationKindFullUp})
 }
 
 func formattedKeySequenceLabelsForDisplay(labels []string) []string {

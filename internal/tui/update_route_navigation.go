@@ -37,6 +37,8 @@ func (program *Program) routeBrowserAndReviewNavigation(msg Msg) updateResult {
 	case MsgCloseHelp:
 		program.applyCloseHelp()
 		return handledUpdate(nil)
+	case MsgHelpPageNavigationRequested:
+		return handledUpdate(program.applyHelpPageNavigationRequested(actual))
 	case MsgAdjustFocusedPane:
 		program.applyAdjustFocusedPane(actual)
 		return handledUpdate(nil)

@@ -203,6 +203,13 @@ func (program *Program) applyCloseHelp() {
 	program.overlayState.helpVisible = false
 }
 
+func (program *Program) applyHelpPageNavigationRequested(message MsgHelpPageNavigationRequested) []Cmd {
+	if !program.overlayState.helpVisible {
+		return nil
+	}
+	return []Cmd{readOnlyScrollCmd{FallbackName: viewHelpName, Kind: message.Kind}}
+}
+
 func (program *Program) applyAdjustFocusedPane(message MsgAdjustFocusedPane) {
 	if program.overlayState.helpVisible || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return

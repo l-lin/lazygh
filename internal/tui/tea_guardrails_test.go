@@ -718,18 +718,20 @@ func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenOnlyViewGlueStillDependsOn
 	}
 }
 
-func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenHelpPagingUsesTypedReadOnlyScrollCommands(t *testing.T) {
+func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenHelpPagingDispatchesTypedRequests(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`resolveView\(`,
 		`scrollReadOnlyView\(`,
 		`viewPageSize\(`,
+		`executeCmds\(`,
+		`readOnlyScrollCmd\s*\{`,
 	}, "|"))
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
 		return filepath.Base(path) == "help.go"
 	})
 	if len(actualMatches) != 0 {
-		t.Fatalf("expected help.go paging handlers to dispatch typed read-only scroll commands instead of resolving views inline, actual %v", actualMatches)
+		t.Fatalf("expected help.go paging handlers to dispatch typed help-scroll requests instead of executing read-only scroll commands inline, actual %v", actualMatches)
 	}
 }
 

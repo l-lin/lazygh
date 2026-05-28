@@ -107,6 +107,10 @@ type MsgToggleHelp struct{}
 
 type MsgCloseHelp struct{}
 
+type MsgHelpPageNavigationRequested struct {
+	Kind pageNavigationKind
+}
+
 type MsgAdjustFocusedPane struct {
 	Delta int
 }
@@ -381,6 +385,7 @@ func (MsgOpenPullRequestInDetailFullscreen) isMsg()            {}
 func (MsgExitReviewMode) isMsg()                               {}
 func (MsgToggleHelp) isMsg()                                   {}
 func (MsgCloseHelp) isMsg()                                    {}
+func (MsgHelpPageNavigationRequested) isMsg()                  {}
 func (MsgAdjustFocusedPane) isMsg()                            {}
 func (MsgLineNavigationRequested) isMsg()                      {}
 func (MsgPageNavigationRequested) isMsg()                      {}
