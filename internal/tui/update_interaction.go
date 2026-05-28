@@ -359,6 +359,27 @@ func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message M
 	return []Cmd{openPullRequestBuildRunPopupLinkCmd{Target: program.model.Focus()}}
 }
 
+func (program *Program) applyOpenLinkUnderCursorResolved(message MsgOpenLinkUnderCursorResolved) []Cmd {
+	return program.applyResolvedLinkOpen(message.Target, message.URL, message.LinkAvailable, message.OpenerAvailable)
+}
+
+func (program *Program) applyOpenPullRequestBuildRunPopupLinkResolved(message MsgOpenPullRequestBuildRunPopupLinkResolved) []Cmd {
+	return program.applyResolvedLinkOpen(message.Target, message.URL, message.LinkAvailable, message.OpenerAvailable)
+}
+
+func (program *Program) applyResolvedLinkOpen(target Focus, url string, linkAvailable bool, openerAvailable bool) []Cmd {
+	switch {
+	case !linkAvailable:
+		program.setFeedback(target, openLinkUnavailableMessage)
+		return nil
+	case !openerAvailable:
+		program.setFeedback(target, openLinkOpenerUnavailableMessage)
+		return nil
+	default:
+		return program.applyOpenBrowserURLRequested(MsgOpenBrowserURLRequested{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: target})
+	}
+}
+
 func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequestURLRequested) []Cmd {
 	if program == nil {
 		return nil

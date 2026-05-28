@@ -233,7 +233,21 @@ type MsgOpenInlineCommentReplyRequested struct{}
 
 type MsgOpenLinkUnderCursorRequested struct{}
 
+type MsgOpenLinkUnderCursorResolved struct {
+	Target          Focus
+	URL             string
+	LinkAvailable   bool
+	OpenerAvailable bool
+}
+
 type MsgOpenPullRequestBuildRunPopupLinkRequested struct{}
+
+type MsgOpenPullRequestBuildRunPopupLinkResolved struct {
+	Target          Focus
+	URL             string
+	LinkAvailable   bool
+	OpenerAvailable bool
+}
 
 type MsgCopySelectedDetailTextRequested struct{}
 
@@ -371,7 +385,9 @@ func (MsgOpenPullRequestCommentComposerRequested) isMsg()      {}
 func (MsgOpenDetailPullRequestCommentRequested) isMsg()        {}
 func (MsgOpenInlineCommentReplyRequested) isMsg()              {}
 func (MsgOpenLinkUnderCursorRequested) isMsg()                 {}
+func (MsgOpenLinkUnderCursorResolved) isMsg()                  {}
 func (MsgOpenPullRequestBuildRunPopupLinkRequested) isMsg()    {}
+func (MsgOpenPullRequestBuildRunPopupLinkResolved) isMsg()     {}
 func (MsgCopySelectedDetailTextRequested) isMsg()              {}
 func (MsgCopyPullRequestURLRequested) isMsg()                  {}
 func (MsgCopyPullRequestBuildRunPopupContentRequested) isMsg() {}

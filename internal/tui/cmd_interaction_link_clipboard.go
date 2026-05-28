@@ -52,16 +52,7 @@ func executeOpenLinkUnderCursorCommand(runtime linkClipboardCommandRuntime, gui 
 
 	actualView := runtime.resolveView(gui, nil, viewDetailName)
 	url, ok := runtime.currentDetailCursorLink(actualView)
-	switch {
-	case !ok:
-		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: openLinkUnavailableMessage})
-		return
-	case runtime.linkOpener == nil:
-		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: openLinkOpenerUnavailableMessage})
-		return
-	default:
-		executeOpenBrowserURLCommand(runtime.browserClipboardRuntime(), gui, openBrowserURLCmd{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: command.Target})
-	}
+	_ = runtime.dispatch(gui, MsgOpenLinkUnderCursorResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
 }
 
 type openPullRequestBuildRunPopupLinkCmd struct {
@@ -76,19 +67,10 @@ func executeOpenPullRequestBuildRunPopupLinkCommand(runtime linkClipboardCommand
 	if runtime.dispatch == nil || runtime.resolveView == nil || runtime.currentPullRequestBuildRunPopupLink == nil {
 		return
 	}
-	if runtime.linkOpener == nil {
-		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: openLinkOpenerUnavailableMessage})
-		return
-	}
 
 	actualView := runtime.resolveView(gui, nil, viewPullRequestBuildInfoName)
 	url, ok := runtime.currentPullRequestBuildRunPopupLink(actualView)
-	if !ok {
-		_ = runtime.dispatch(gui, MsgFeedbackSet{Target: command.Target, Message: openLinkUnavailableMessage})
-		return
-	}
-
-	executeOpenBrowserURLCommand(runtime.browserClipboardRuntime(), gui, openBrowserURLCmd{URL: url, SuccessMessage: openLinkSuccessMessage, FailureMessage: openLinkFailureMessage, Target: command.Target})
+	_ = runtime.dispatch(gui, MsgOpenPullRequestBuildRunPopupLinkResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
 }
 
 type prepareSelectedDetailClipboardWriteCmd struct {

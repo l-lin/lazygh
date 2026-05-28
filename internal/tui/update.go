@@ -178,8 +178,12 @@ func Update(program *Program, msg Msg) []Cmd {
 		program.applyOpenInlineCommentReplyRequested()
 	case MsgOpenLinkUnderCursorRequested:
 		return program.applyOpenLinkUnderCursorRequested(actual)
+	case MsgOpenLinkUnderCursorResolved:
+		return program.applyOpenLinkUnderCursorResolved(actual)
 	case MsgOpenPullRequestBuildRunPopupLinkRequested:
 		return program.applyOpenPullRequestBuildRunPopupLinkRequested(actual)
+	case MsgOpenPullRequestBuildRunPopupLinkResolved:
+		return program.applyOpenPullRequestBuildRunPopupLinkResolved(actual)
 	case MsgCopySelectedDetailTextRequested:
 		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
 	case MsgCopyPullRequestURLRequested:
