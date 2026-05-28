@@ -14,6 +14,7 @@ func (program *Program) applyActionsPopupPageResolved(message MsgActionsPopupPag
 		return nil
 	}
 
+	program.syncVisibleActionsPopupSearchSelection()
 	program.clearActionsPopupPendingConfirmation()
 	switch message.Kind {
 	case pageNavigationKindHalfDown:

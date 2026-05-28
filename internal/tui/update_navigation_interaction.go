@@ -301,6 +301,7 @@ func (program *Program) applyRepeatActionsPopupSearch(message MsgRepeatActionsPo
 	if strings.TrimSpace(program.model.ActionsPopupSearchQuery()) == "" {
 		return
 	}
+	program.syncVisibleActionsPopupSearchSelection()
 	program.clearActionsPopupPendingConfirmation()
 	if !program.model.followActionsPopupSearchMatch(searchMatchChooserForDirection(message.Direction)) {
 		return

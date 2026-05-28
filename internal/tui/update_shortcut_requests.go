@@ -158,6 +158,7 @@ func (program *Program) applyExecuteSelectedActionsPopupActionRequested() []Cmd 
 	if !program.model.ActionsPopupVisible() || program.ghCommandLoading() {
 		return nil
 	}
+	program.syncVisibleActionsPopupSearchSelection()
 
 	action, ok := program.selectedActionsPopupAction()
 	if !ok {
@@ -175,6 +176,7 @@ func (program *Program) applySubmitSelectedActionsPopupActionRequested() []Cmd {
 	if !program.model.ActionsPopupVisible() {
 		return nil
 	}
+	program.syncVisibleActionsPopupSearchSelection()
 	if !program.assigneePickerVisible() {
 		return program.applyExecuteSelectedActionsPopupActionRequested()
 	}

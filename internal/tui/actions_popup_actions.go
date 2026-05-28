@@ -181,6 +181,23 @@ func appendActionsPopupActionToMatchingGroup(reviewActions []actionsPopupAction,
 	return append(reviewActions, action.withGroup(actionsPopupGroupReview)), pullRequestActions
 }
 
+func (program *Program) currentActionsPopupSelectedActionIndex() int {
+	if program == nil || program.model == nil {
+		return 0
+	}
+
+	filteredIndexes := program.currentActionsPopupFilteredIndexes()
+	if len(filteredIndexes) == 0 {
+		return 0
+	}
+
+	selectedIndex := program.model.ActionsPopupSelectedActionIndex()
+	if indexOfInt(filteredIndexes, selectedIndex) >= 0 {
+		return selectedIndex
+	}
+	return filteredIndexes[0]
+}
+
 func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) {
 	actions := program.currentActionsPopupActions()
 	filteredIndexes := program.currentActionsPopupFilteredIndexes()
@@ -188,11 +205,8 @@ func (program *Program) selectedActionsPopupAction() (actionsPopupAction, bool) 
 		return actionsPopupAction{}, false
 	}
 
-	selectedIndex := program.model.ActionsPopupSelectedActionIndex()
+	selectedIndex := program.currentActionsPopupSelectedActionIndex()
 	if selectedIndex < 0 || selectedIndex >= len(actions) {
-		return actionsPopupAction{}, false
-	}
-	if indexOfInt(filteredIndexes, selectedIndex) < 0 {
 		return actionsPopupAction{}, false
 	}
 

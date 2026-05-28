@@ -132,7 +132,7 @@ func (program *Program) currentAssigneePickerVisibleLines() []actionsPopupVisibl
 }
 
 func (program *Program) currentActionsPopupSelectedRenderedLine() int {
-	selectedActionIndex := program.model.ActionsPopupSelectedActionIndex()
+	selectedActionIndex := program.currentActionsPopupSelectedActionIndex()
 	visibleLines := program.currentActionsPopupVisibleLines()
 	for index, line := range visibleLines {
 		if line.selectable && line.actionIndex == selectedActionIndex {

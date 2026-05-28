@@ -94,6 +94,19 @@ func TestRefactorGuard_GivenModalInteractionCommandFile_WhenScanning_ThenItUsesT
 	}
 }
 
+func TestRefactorGuard_GivenUpdateFiles_WhenScanning_ThenTheyDoNotUseTheGlobalActionsPopupResyncDefer(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`defer program\.resyncVisibleActionsPopupSearchInUpdate\(`,
+		`func \(program \*Program\) resyncVisibleActionsPopupSearchInUpdate\(`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return base == "update.go" || base == "update_actions_popup.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected popup-search filtered-index maintenance to stay on explicit reducer/read-side seams instead of the global update defer, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1NavigationFiles_WhenScanning_ThenTheyDoNotMutateProgramModelOrCallDirectShellRefreshHelpers(t *testing.T) {
 	phase1Files := map[string]bool{
 		"program_navigation.go":         true,

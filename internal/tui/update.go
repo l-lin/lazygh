@@ -80,7 +80,6 @@ func Update(program *Program, msg Msg) []Cmd {
 	if program == nil || msg == nil {
 		return nil
 	}
-	defer program.resyncVisibleActionsPopupSearchInUpdate()
 
 	if result := program.routeLifecycleAndEditorMessages(msg); result.handled {
 		return result.commands

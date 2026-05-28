@@ -17,7 +17,7 @@ func (program *Program) updateActionsPopupSearch(query string) {
 	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
 }
 
-func (program *Program) resyncVisibleActionsPopupSearchInUpdate() {
+func (program *Program) syncVisibleActionsPopupSearchSelection() {
 	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
 		return
 	}

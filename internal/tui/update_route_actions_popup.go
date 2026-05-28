@@ -59,6 +59,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		if !program.model.ActionsPopupVisible() {
 			return handledUpdate(nil)
 		}
+		program.syncVisibleActionsPopupSearchSelection()
 		program.clearActionsPopupPendingConfirmation()
 		program.moveActionsPopupSelection(actual.Delta)
 		program.actionsPopupWidget.errorMessage = ""
@@ -68,6 +69,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		if !program.model.ActionsPopupVisible() {
 			return handledUpdate(nil)
 		}
+		program.syncVisibleActionsPopupSearchSelection()
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToTop()
 		program.actionsPopupWidget.errorMessage = ""
@@ -77,6 +79,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		if !program.model.ActionsPopupVisible() {
 			return handledUpdate(nil)
 		}
+		program.syncVisibleActionsPopupSearchSelection()
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToBottom()
 		program.actionsPopupWidget.errorMessage = ""
