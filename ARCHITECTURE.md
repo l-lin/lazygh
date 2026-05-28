@@ -25,8 +25,8 @@ internal/tui
 - `internal/app`: tiny wrapper around the configured runner.
 - `internal/config`: config loading, defaults, keymaps, cache paths, links, story-review settings, and pull-request searches.
 - `internal/theme`: palette presets and exported runtime color variables.
-- `internal/github`: provider-neutral GitHub models, enums, errors, and URL parsing.
-- `internal/githubcli`: the only transport-aware GitHub adapter layer.
+- `internal/github`: provider-neutral GitHub models, enums, errors, URL parsing, and shared normalization helpers.
+- `internal/githubcli`: the only transport-aware GitHub adapter layer for `gh` command wiring, payload parsing, and adapter-to-domain mapping.
 - `internal/cache`: SQLite persistence for pull requests, notifications, detail, and diff data.
 - `internal/story`: prompt building, agent execution, and story-review parsing.
 - `internal/clipboard`: clipboard interface and system implementation.
@@ -127,7 +127,7 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 ## Boundaries that matter
 
 - GitHub shelling belongs in `internal/githubcli`.
-- Provider-neutral models belong in `internal/github`.
+- Provider-neutral models and shared GitHub normalization rules belong in `internal/github`.
 - Palette values belong in `internal/theme`.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is read-only.

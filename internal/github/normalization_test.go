@@ -169,6 +169,24 @@ func TestPullRequestDiffFile_GivenWindowsPatchAndDuplicateOwners_WhenNormalizing
 	}
 }
 
+func TestNormalizePullRequestDiffText_GivenCRLFAndTrailingBlankLines_WhenNormalizing_ThenItReturnsCanonicalLFText(t *testing.T) {
+	actual := NormalizePullRequestDiffText("@@ -1 +1 @@\r\n-old\r\n+new\r\n\r\n")
+
+	expected := "@@ -1 +1 @@\n-old\n+new"
+	if actual != expected {
+		t.Fatalf("expected normalized diff text %q, actual %q", expected, actual)
+	}
+}
+
+func TestNormalizePullRequestDiffFileTeamOwners_GivenWhitespaceAndDuplicates_WhenNormalizing_ThenItTrimsAndDeduplicatesOwners(t *testing.T) {
+	actual := NormalizePullRequestDiffFileTeamOwners([]string{" @acme/reviewers ", "", "@acme/reviewers", " @acme/docs "})
+
+	expected := []string{"@acme/reviewers", "@acme/docs"}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected normalized team owners %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestPullRequestReviewRequest_GivenWhitespaceReviewerAndOrganization_WhenNormalizing_ThenItTrimsNestedFields(t *testing.T) {
 	subject := PullRequestReviewRequest{RequestedReviewer: PullRequestRequestedReviewer{
 		TypeName:     " User ",

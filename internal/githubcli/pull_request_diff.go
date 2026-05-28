@@ -3,6 +3,8 @@ package githubcli
 import (
 	"fmt"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 var ErrInvalidPullRequestDiffFilesResponse = fmt.Errorf("invalid pull request diff files response")
@@ -60,28 +62,9 @@ func (file PullRequestDiffFile) normalized() PullRequestDiffFile {
 }
 
 func normalizePullRequestDiffFileTeamOwners(teamOwners []string) []string {
-	if len(teamOwners) == 0 {
-		return nil
-	}
-
-	normalizedOwners := make([]string, 0, len(teamOwners))
-	seenOwners := map[string]bool{}
-	for _, teamOwner := range teamOwners {
-		trimmedTeamOwner := strings.TrimSpace(teamOwner)
-		if trimmedTeamOwner == "" || seenOwners[trimmedTeamOwner] {
-			continue
-		}
-		seenOwners[trimmedTeamOwner] = true
-		normalizedOwners = append(normalizedOwners, trimmedTeamOwner)
-	}
-	if len(normalizedOwners) == 0 {
-		return nil
-	}
-	return normalizedOwners
+	return githubdomain.NormalizePullRequestDiffFileTeamOwners(teamOwners)
 }
 
 func normalizePullRequestDiffText(text string) string {
-	normalizedText := strings.ReplaceAll(text, "\r\n", "\n")
-	normalizedText = strings.ReplaceAll(normalizedText, "\r", "\n")
-	return strings.TrimRight(normalizedText, "\n")
+	return githubdomain.NormalizePullRequestDiffText(text)
 }

@@ -3,10 +3,12 @@ package githubcli
 import (
 	"errors"
 	"strconv"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 var (
-	ErrMissingPullRequestIdentity = errors.New("missing pull request identity")
+	ErrMissingPullRequestIdentity = githubdomain.ErrMissingPullRequestIdentity
 	ErrEmptyPullRequestComment    = errors.New("empty pull request comment")
 )
 

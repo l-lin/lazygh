@@ -57,27 +57,6 @@ func TestListNotifications_GivenPagedNotificationFixtures_WhenListing_ThenItFlat
 		}
 	}
 
-	pullRequestSummary, ok := actual[0].PullRequestSummary()
-	if !ok {
-		t.Fatal("expected pull request notification to resolve a pull request summary")
-	}
-	if pullRequestSummary.Repository.NameWithOwner != "acme/widgets" || pullRequestSummary.Number != 42 {
-		t.Fatalf("expected pull request summary acme/widgets#42, actual %+v", pullRequestSummary)
-	}
-	issueRepository, issueNumber, ok := actual[1].IssueIdentity()
-	if !ok {
-		t.Fatal("expected issue notification to resolve an issue identity")
-	}
-	if issueRepository != "acme/opencode" || issueNumber != 3235 {
-		t.Fatalf("expected issue identity acme/opencode#3235, actual %s#%d", issueRepository, issueNumber)
-	}
-	releaseRepository, releaseID, ok := actual[2].ReleaseIdentity()
-	if !ok {
-		t.Fatal("expected release notification to resolve a release identity")
-	}
-	if releaseRepository != "acme/doctoboot" || releaseID != 317927281 {
-		t.Fatalf("expected release identity acme/doctoboot#317927281, actual %s#%d", releaseRepository, releaseID)
-	}
 }
 
 func TestListNotifications_GivenDoneThreadsInFixture_WhenListing_ThenItOmitsDoneNotifications(t *testing.T) {

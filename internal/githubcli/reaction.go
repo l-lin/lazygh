@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type ReactionContent string
@@ -62,27 +64,7 @@ func (group *ReactionGroup) UnmarshalJSON(data []byte) error {
 }
 
 func normalizeReactionContent(value string) ReactionContent {
-	trimmedValue := strings.TrimSpace(value)
-	switch strings.ToUpper(trimmedValue) {
-	case "THUMBS_UP", "+1":
-		return ReactionContentThumbsUp
-	case "THUMBS_DOWN", "-1":
-		return ReactionContentThumbsDown
-	case "LAUGH":
-		return ReactionContentLaugh
-	case "HOORAY":
-		return ReactionContentHooray
-	case "CONFUSED":
-		return ReactionContentConfused
-	case "HEART":
-		return ReactionContentHeart
-	case "ROCKET":
-		return ReactionContentRocket
-	case "EYES":
-		return ReactionContentEyes
-	default:
-		return ReactionContent(strings.ToLower(trimmedValue))
-	}
+	return ReactionContentFromDomain(githubdomain.NormalizeReactionContent(value))
 }
 
 func normalizeReactionGroups(groups []ReactionGroup) []ReactionGroup {

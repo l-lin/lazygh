@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const submitPullRequestReviewMutation = `mutation($pullRequestReviewId:ID,$event:PullRequestReviewEvent!,$body:String){submitPullRequestReview(input:{pullRequestReviewId:$pullRequestReviewId,event:$event,body:$body}){pullRequestReview{id}}}`
 
-var ErrInvalidPullRequestReviewSubmission = errors.New("invalid pull request review submission")
+var ErrInvalidPullRequestReviewSubmission = githubdomain.ErrInvalidReviewEvent
 var ErrInvalidSubmittedPullRequestReviewResponse = errors.New("invalid submitted pull request review response")
 
 type PullRequestReviewEvent string
@@ -45,13 +47,11 @@ func (client *ReviewService) SubmitPullRequestReview(pullRequestReviewID string,
 }
 
 func normalizePullRequestReviewEvent(event PullRequestReviewEvent) (PullRequestReviewEvent, error) {
-	normalizedEvent := PullRequestReviewEvent(strings.ToUpper(strings.TrimSpace(string(event))))
-	switch normalizedEvent {
-	case PullRequestReviewEventComment, PullRequestReviewEventApprove, PullRequestReviewEventRequestChanges:
-		return normalizedEvent, nil
-	default:
-		return "", ErrInvalidPullRequestReviewSubmission
+	normalizedEvent, err := githubdomain.NormalizeReviewEvent(ToDomainPullRequestReviewEvent(event))
+	if err != nil {
+		return "", err
 	}
+	return PullRequestReviewEventFromDomain(normalizedEvent), nil
 }
 
 type submitPullRequestReviewResponse struct {

@@ -23,12 +23,12 @@ func (file PullRequestDiffFile) normalized() PullRequestDiffFile {
 	file.Path = strings.TrimSpace(file.Path)
 	file.PreviousPath = strings.TrimSpace(file.PreviousPath)
 	file.ChangeType = strings.ToLower(strings.TrimSpace(file.ChangeType))
-	file.Patch = normalizePullRequestDiffText(file.Patch)
-	file.TeamOwners = normalizePullRequestDiffFileTeamOwners(file.TeamOwners)
+	file.Patch = NormalizePullRequestDiffText(file.Patch)
+	file.TeamOwners = NormalizePullRequestDiffFileTeamOwners(file.TeamOwners)
 	return file
 }
 
-func normalizePullRequestDiffFileTeamOwners(teamOwners []string) []string {
+func NormalizePullRequestDiffFileTeamOwners(teamOwners []string) []string {
 	if len(teamOwners) == 0 {
 		return nil
 	}
@@ -49,7 +49,7 @@ func normalizePullRequestDiffFileTeamOwners(teamOwners []string) []string {
 	return normalizedOwners
 }
 
-func normalizePullRequestDiffText(text string) string {
+func NormalizePullRequestDiffText(text string) string {
 	normalizedText := strings.ReplaceAll(text, "\r\n", "\n")
 	normalizedText = strings.ReplaceAll(normalizedText, "\r", "\n")
 	return strings.TrimRight(normalizedText, "\n")

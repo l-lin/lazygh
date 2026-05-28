@@ -3,20 +3,16 @@ package githubcli
 import (
 	"errors"
 	"fmt"
-	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 var (
-	ErrMissingPullRequestBuildLink    = errors.New("missing pull request build link")
-	ErrInvalidPullRequestBuildLink    = errors.New("invalid pull request build link")
+	ErrMissingPullRequestBuildLink    = githubdomain.ErrMissingPullRequestBuildLink
+	ErrInvalidPullRequestBuildLink    = githubdomain.ErrInvalidPullRequestBuildLink
 	ErrPullRequestBuildRunJobNotFound = errors.New("pull request build run job not found")
-
-	pullRequestBuildRunIDPattern      = regexp.MustCompile(`(?i)(?:^|/)actions/runs/(\d+)(?:/|$)`)
-	pullRequestBuildRunAttemptPattern = regexp.MustCompile(`(?i)/attempts/(\d+)(?:/|$)`)
-	pullRequestBuildRunJobIDPattern   = regexp.MustCompile(`(?i)(?:^|/)job/(\d+)(?:/|$)`)
 )
 
 type pullRequestBuildRunReference struct {
@@ -217,44 +213,17 @@ func (job PullRequestBuildRunJob) normalized() PullRequestBuildRunJob {
 }
 
 func pullRequestBuildRunReferenceFromLink(raw string) (pullRequestBuildRunReference, error) {
-	trimmedLink := strings.TrimSpace(raw)
-	if trimmedLink == "" {
-		return pullRequestBuildRunReference{}, ErrMissingPullRequestBuildLink
+	reference, err := githubdomain.ParseBuildRunReferenceFromURL(raw)
+	if err != nil {
+		return pullRequestBuildRunReference{}, err
 	}
-
-	path := pullRequestBuildRunPathFromLink(trimmedLink)
-	matches := pullRequestBuildRunIDPattern.FindStringSubmatch(path)
-	if len(matches) < 2 {
-		return pullRequestBuildRunReference{}, ErrInvalidPullRequestBuildLink
-	}
-
-	reference := pullRequestBuildRunReference{id: strings.TrimSpace(matches[1])}
-	if attemptMatches := pullRequestBuildRunAttemptPattern.FindStringSubmatch(path); len(attemptMatches) >= 2 {
-		if attempt, err := strconv.Atoi(strings.TrimSpace(attemptMatches[1])); err == nil && attempt > 0 {
-			reference.attempt = attempt
-		}
-	}
-	return reference, nil
+	return pullRequestBuildRunReference{id: reference.ID, attempt: reference.Attempt}, nil
 }
 
 func pullRequestBuildRunJobIDFromLink(raw string) (int, bool) {
-	matches := pullRequestBuildRunJobIDPattern.FindStringSubmatch(pullRequestBuildRunPathFromLink(raw))
-	if len(matches) < 2 {
-		return 0, false
-	}
-
-	jobDatabaseID, err := strconv.Atoi(strings.TrimSpace(matches[1]))
-	if err != nil || jobDatabaseID <= 0 {
-		return 0, false
-	}
-	return jobDatabaseID, true
+	return githubdomain.BuildRunJobIDFromURL(raw)
 }
 
 func pullRequestBuildRunPathFromLink(raw string) string {
-	trimmedLink := strings.TrimSpace(raw)
-	path := trimmedLink
-	if parsedURL, err := url.Parse(trimmedLink); err == nil && strings.TrimSpace(parsedURL.Path) != "" {
-		path = parsedURL.Path
-	}
-	return path
+	return githubdomain.BuildRunPathFromURL(raw)
 }

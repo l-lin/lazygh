@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const addPullRequestReviewThreadMutation = `mutation($pullRequestReviewId:ID!,$path:String!,$line:Int!,$side:DiffSide!,$body:String!,$startLine:Int,$startSide:DiffSide,$subjectType:PullRequestReviewThreadSubjectType!){addPullRequestReviewThread(input:{pullRequestReviewId:$pullRequestReviewId,path:$path,line:$line,side:$side,body:$body,startLine:$startLine,startSide:$startSide,subjectType:$subjectType}){thread{id}}}`
 
 var ErrInvalidPullRequestReviewThreadResponse = errors.New("invalid pull request review thread response")
-var ErrInvalidPullRequestReviewThreadTarget = errors.New("invalid pull request review thread target")
+var ErrInvalidPullRequestReviewThreadTarget = githubdomain.ErrInvalidReviewThreadTarget
 
 type PullRequestReviewThreadTarget struct {
 	Path        string
@@ -59,38 +61,11 @@ func (client *ReviewService) AddPullRequestReviewThread(pullRequestReviewID stri
 }
 
 func normalizePullRequestReviewThreadTarget(target PullRequestReviewThreadTarget) (PullRequestReviewThreadTarget, error) {
-	normalized := PullRequestReviewThreadTarget{
-		Path:        strings.TrimSpace(target.Path),
-		Line:        target.Line,
-		Side:        strings.ToUpper(strings.TrimSpace(target.Side)),
-		StartLine:   target.StartLine,
-		StartSide:   strings.ToUpper(strings.TrimSpace(target.StartSide)),
-		SubjectType: strings.ToUpper(strings.TrimSpace(target.SubjectType)),
+	normalizedTarget, err := githubdomain.NormalizeReviewThreadTarget(ToDomainPullRequestReviewThreadTarget(target))
+	if err != nil {
+		return PullRequestReviewThreadTarget{}, err
 	}
-	if normalized.Path == "" || normalized.Line <= 0 || normalized.SubjectType == "" {
-		return PullRequestReviewThreadTarget{}, ErrInvalidPullRequestReviewThreadTarget
-	}
-	if normalized.Side != "LEFT" && normalized.Side != "RIGHT" {
-		return PullRequestReviewThreadTarget{}, ErrInvalidPullRequestReviewThreadTarget
-	}
-	if normalized.SubjectType != "LINE" && normalized.SubjectType != "FILE" {
-		return PullRequestReviewThreadTarget{}, ErrInvalidPullRequestReviewThreadTarget
-	}
-	if normalized.StartLine < 0 {
-		return PullRequestReviewThreadTarget{}, ErrInvalidPullRequestReviewThreadTarget
-	}
-	if normalized.StartLine == 0 {
-		normalized.StartSide = ""
-		return normalized, nil
-	}
-	if normalized.StartSide != "LEFT" && normalized.StartSide != "RIGHT" {
-		return PullRequestReviewThreadTarget{}, ErrInvalidPullRequestReviewThreadTarget
-	}
-	if normalized.StartLine > normalized.Line {
-		return PullRequestReviewThreadTarget{}, ErrInvalidPullRequestReviewThreadTarget
-	}
-
-	return normalized, nil
+	return PullRequestReviewThreadTargetFromDomain(normalizedTarget), nil
 }
 
 type addPullRequestReviewThreadResponse struct {

@@ -2,24 +2,24 @@ package githubcli
 
 import (
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const notificationsListAPIPath = "/notifications?all=true&per_page=100"
 
 const (
-	NotificationSubjectTypePullRequest = "PullRequest"
-	NotificationSubjectTypeIssue       = "Issue"
-	NotificationSubjectTypeRelease     = "Release"
+	NotificationSubjectTypePullRequest = githubdomain.NotificationSubjectTypePullRequest
+	NotificationSubjectTypeIssue       = githubdomain.NotificationSubjectTypeIssue
+	NotificationSubjectTypeRelease     = githubdomain.NotificationSubjectTypeRelease
 )
 
 var (
 	ErrInvalidNotificationResponse      = fmt.Errorf("invalid notification response")
 	ErrInvalidIssueDetailResponse       = fmt.Errorf("invalid issue detail response")
 	ErrInvalidReleaseDetailResponse     = fmt.Errorf("invalid release detail response")
-	ErrMissingNotificationSubjectTarget = fmt.Errorf("missing notification subject target")
+	ErrMissingNotificationSubjectTarget = githubdomain.ErrMissingNotificationSubjectTarget
 )
 
 type Notification struct {
@@ -138,87 +138,8 @@ func (subject NotificationSubject) normalized() NotificationSubject {
 	return subject
 }
 
-func (notification Notification) PullRequestSummary() (PullRequest, bool) {
-	if notification.Subject.Type != NotificationSubjectTypePullRequest {
-		return PullRequest{}, false
-	}
-
-	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
-	number, ok := subjectTrailingID(notification.Subject.URL, "/pulls/")
-	if repository == "" || !ok {
-		return PullRequest{}, false
-	}
-
-	return PullRequest{
-		Title:      notification.Subject.Title,
-		Number:     number,
-		Repository: notification.Repository,
-		URL:        pullRequestHTMLURL(repository, number),
-	}, true
-}
-
-func (notification Notification) IssueIdentity() (string, int, bool) {
-	if notification.Subject.Type != NotificationSubjectTypeIssue {
-		return "", 0, false
-	}
-
-	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
-	number, ok := subjectTrailingID(notification.Subject.URL, "/issues/")
-	if repository == "" || !ok {
-		return "", 0, false
-	}
-	return repository, number, true
-}
-
-func (notification Notification) ReleaseIdentity() (string, int, bool) {
-	if notification.Subject.Type != NotificationSubjectTypeRelease {
-		return "", 0, false
-	}
-
-	repository := strings.TrimSpace(notification.Repository.NameWithOwner)
-	id, ok := subjectTrailingID(notification.Subject.URL, "/releases/")
-	if repository == "" || !ok {
-		return "", 0, false
-	}
-	return repository, id, true
-}
-
-func subjectTrailingID(rawURL string, expectedPathFragment string) (int, bool) {
-	trimmedURL := strings.TrimSpace(rawURL)
-	if trimmedURL == "" || !strings.Contains(trimmedURL, expectedPathFragment) {
-		return 0, false
-	}
-
-	parsedURL, err := url.Parse(trimmedURL)
-	if err != nil {
-		return 0, false
-	}
-	pathSegments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
-	if len(pathSegments) == 0 {
-		return 0, false
-	}
-
-	actual, err := strconv.Atoi(strings.TrimSpace(pathSegments[len(pathSegments)-1]))
-	if err != nil || actual <= 0 {
-		return 0, false
-	}
-	return actual, true
-}
-
 func normalizeNotificationSubjectTarget(repository string, id int) (string, error) {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || trimmedRepository == "-" || id <= 0 {
-		return "", ErrMissingNotificationSubjectTarget
-	}
-	return trimmedRepository, nil
-}
-
-func pullRequestHTMLURL(repository string, number int) string {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || number <= 0 {
-		return ""
-	}
-	return fmt.Sprintf("https://github.com/%s/pull/%d", trimmedRepository, number)
+	return githubdomain.NormalizeNotificationSubjectTarget(repository, id)
 }
 
 func (detail IssueDetail) normalized() IssueDetail {

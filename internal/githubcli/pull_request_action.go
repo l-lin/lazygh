@@ -1,11 +1,15 @@
 package githubcli
 
-import "strings"
+import (
+	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func normalizePullRequestIdentity(repository string, number int) (string, error) {
-	trimmedRepository := strings.TrimSpace(repository)
-	if trimmedRepository == "" || trimmedRepository == "-" || number <= 0 {
-		return "", ErrMissingPullRequestIdentity
+	trimmedRepository, _, err := githubdomain.NormalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return "", err
 	}
 	return trimmedRepository, nil
 }
