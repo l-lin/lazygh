@@ -39,6 +39,40 @@ func TestUpdate_GivenMsgSetAllDetailFolds_WhenApplying_ThenItReturnsATypedBulkDe
 	}
 }
 
+func TestUpdate_GivenMsgToggleInlineConversationVisibilityResolved_WhenDetailFoldingIsBlocked_ThenItClearsThePendingPrefix(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	model.StartSearch()
+	subject := NewProgramWithModel(model)
+	subject.detailState.viewState.armCharacterMotion(detailCharacterMotionDirectionForward, detailCharacterMotionMatch)
+
+	actual := Update(subject, MsgToggleInlineConversationVisibilityResolved{Document: newDetailDocument("Alpha", 40), ViewportHeight: 3})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if subject.detailState.viewState.hasPendingCharacterMotion() {
+		t.Fatal("expected the blocked inline-conversation toggle to clear the pending detail prefix")
+	}
+}
+
+func TestUpdate_GivenMsgSetAllDetailFoldsResolved_WhenDetailFoldingIsBlocked_ThenItClearsThePendingPrefix(t *testing.T) {
+	model := given_model()
+	model.OpenDetail()
+	model.StartSearch()
+	subject := NewProgramWithModel(model)
+	subject.detailState.viewState.armPendingYank()
+
+	actual := Update(subject, MsgSetAllDetailFoldsResolved{Collapsed: true, Document: newDetailDocument("Alpha", 40), ViewportHeight: 3})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if subject.detailState.viewState.hasPendingYank() {
+		t.Fatal("expected the blocked bulk detail fold to clear the pending detail prefix")
+	}
+}
+
 func TestUpdate_GivenMsgToggleInlineConversationVisibilityResolved_WhenApplying_ThenItCollapsesTheSelectedBrowserConversationAndKeepsTheCursorOnTheThreadHeader(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

@@ -1062,6 +1062,16 @@ func TestRefactorGuard_GivenDetailFoldFiles_WhenScanning_ThenTheyDoNotReachThrou
 	}
 }
 
+func TestRefactorGuard_GivenDetailFoldHelperFiles_WhenScanning_ThenTheyDoNotClearPendingPrefixesDirectly(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`detailState\.viewState\.clearPendingPrefix\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return base == "detail_bulk_fold.go" || base == "review_inline_conversation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail-fold helper files to leave pending-prefix teardown to update-owned handlers, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenDetailFoldCommandFile_WhenScanning_ThenItDoesNotMutateDurableDetailStateOrWireReducerOwnedCollapseHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`syncDetailViewState\(`,

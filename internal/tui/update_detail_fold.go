@@ -1,6 +1,7 @@
 package tui
 
 func (program *Program) applyToggleInlineConversationVisibilityResolved(message MsgToggleInlineConversationVisibilityResolved) {
+	program.detailState.viewState.clearPendingPrefix()
 	plan, ok := program.toggleInlineConversationVisibilityState(message.Document)
 	if !ok {
 		return
@@ -9,6 +10,7 @@ func (program *Program) applyToggleInlineConversationVisibilityResolved(message 
 }
 
 func (program *Program) applySetAllDetailFoldsResolved(message MsgSetAllDetailFoldsResolved) {
+	program.detailState.viewState.clearPendingPrefix()
 	plan, ok := program.setAllDetailFolds(message.Document, message.Collapsed)
 	if !ok {
 		return

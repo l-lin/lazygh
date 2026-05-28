@@ -18,7 +18,6 @@ func (program *Program) openAllDetailFolds(gui *gocui.Gui, view *gocui.View) err
 
 func (program *Program) setAllDetailFolds(detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
-		program.detailState.viewState.clearPendingPrefix()
 		return detailViewSyncPlan{}, false
 	}
 

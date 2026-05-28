@@ -13,7 +13,6 @@ func (program *Program) toggleInlineConversationVisibility(gui *gocui.Gui, view 
 }
 
 func (program *Program) toggleInlineConversationVisibilityState(detailDocument detailDocument) (detailViewSyncPlan, bool) {
-	program.detailState.viewState.clearPendingPrefix()
 	if program.model.Focus() != FocusDetailView || program.model.SearchActive() || program.model.ActionsPopupVisible() || program.modalEditorVisible() {
 		return detailViewSyncPlan{}, false
 	}
