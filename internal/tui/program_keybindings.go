@@ -79,10 +79,6 @@ type keybindingSequenceTarget struct {
 	secondMod gocui.Modifier
 }
 
-func bindingsForView(viewName string, definitions ...keybindingDefinition) []keybindingSpec {
-	return bindingsForViews([]string{viewName}, definitions...)
-}
-
 func bindingsForViews(viewNames []string, definitions ...keybindingDefinition) []keybindingSpec {
 	specs := make([]keybindingSpec, 0, len(viewNames)*len(definitions))
 	for _, viewName := range viewNames {
