@@ -44,8 +44,8 @@ func (program *Program) currentReviewCommentPosition() (int, int) {
 	return currentFileTreeRow, document.rows[currentRowIndex].line
 }
 
-func (program *Program) reviewSessionCommentTarget(detailView *gocui.View, currentFileTreeRow int, currentRenderedLine int, direction reviewNavigationDirection) (reviewCommentLocation, bool) {
-	locations := program.reviewSessionCommentLocations(detailView)
+func (program *Program) reviewSessionCommentTarget(currentFileTreeRow int, currentRenderedLine int, direction reviewNavigationDirection) (reviewCommentLocation, bool) {
+	locations := program.reviewSessionCommentLocations()
 	if len(locations) == 0 {
 		return reviewCommentLocation{}, false
 	}
@@ -68,7 +68,7 @@ func (program *Program) reviewSessionCommentTarget(detailView *gocui.View, curre
 	return reviewCommentLocation{}, false
 }
 
-func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []reviewCommentLocation {
+func (program *Program) reviewSessionCommentLocations() []reviewCommentLocation {
 	tree, files, ok := program.reviewSessionCurrentTree()
 	if !ok {
 		return nil
@@ -82,11 +82,7 @@ func (program *Program) reviewSessionCommentLocations(detailView *gocui.View) []
 		fileTreeRows[row.FileIndex] = row.VisibleRowIndex
 	}
 
-	width := program.detailState.wrapWidth
-	if detailView != nil && detailView.InnerWidth() > 0 {
-		width = max(detailView.InnerWidth(), 1)
-	}
-
+	width := maxInt(program.detailState.wrapWidth, 1)
 	locations := make([]reviewCommentLocation, 0)
 	for fileIndex, file := range files {
 		fileTreeRow, ok := fileTreeRows[fileIndex]

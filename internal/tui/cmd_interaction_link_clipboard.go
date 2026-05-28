@@ -7,7 +7,7 @@ type linkClipboardCommandRuntime struct {
 	clipboardWriter                         ClipboardWriter
 	dispatch                                func(*gocui.Gui, Msg) error
 	resolveView                             func(*gocui.Gui, *gocui.View, string) *gocui.View
-	currentDetailCursorLink                 func(*gocui.View) (string, bool)
+	currentDetailCursorLink                 func() (string, bool)
 	currentPullRequestBuildRunPopupLink     func(*gocui.View) (string, bool)
 	currentDetailDocument                   func(*gocui.View) detailDocument
 	currentPullRequestBuildRunPopupDocument func(*gocui.View) detailDocument
@@ -46,12 +46,11 @@ func (command openLinkUnderCursorCmd) execute(program *Program, gui *gocui.Gui) 
 }
 
 func executeOpenLinkUnderCursorCommand(runtime linkClipboardCommandRuntime, gui *gocui.Gui, command openLinkUnderCursorCmd) {
-	if runtime.dispatch == nil || runtime.resolveView == nil || runtime.currentDetailCursorLink == nil {
+	if runtime.dispatch == nil || runtime.currentDetailCursorLink == nil {
 		return
 	}
 
-	actualView := runtime.resolveView(gui, nil, viewDetailName)
-	url, ok := runtime.currentDetailCursorLink(actualView)
+	url, ok := runtime.currentDetailCursorLink()
 	_ = runtime.dispatch(gui, MsgOpenLinkUnderCursorResolved{Target: command.Target, URL: url, LinkAvailable: ok, OpenerAvailable: runtime.linkOpener != nil})
 }
 

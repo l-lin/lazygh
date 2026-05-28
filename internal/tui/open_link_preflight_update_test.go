@@ -66,10 +66,7 @@ func TestOpenLinkUnderCursorCommand_GivenResolvedLinkState_WhenExecuting_ThenItD
 			actualDispatched = append(actualDispatched, msg)
 			return nil
 		},
-		resolveView: func(gui *gocui.Gui, current *gocui.View, name string) *gocui.View {
-			return current
-		},
-		currentDetailCursorLink: func(view *gocui.View) (string, bool) {
+		currentDetailCursorLink: func() (string, bool) {
 			return "https://example.com/docs", true
 		},
 	}, nil, openLinkUnderCursorCmd{Target: FocusDetailView})

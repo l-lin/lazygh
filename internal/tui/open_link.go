@@ -25,7 +25,7 @@ func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) er
 	return program.dispatch(gui, MsgOpenLinkUnderCursorRequested{})
 }
 
-func (program *Program) currentDetailCursorLink(_ *gocui.View) (string, bool) {
+func (program *Program) currentDetailCursorLink() (string, bool) {
 	selection := program.currentDetailCursorSelection()
 	if actual, ok := selection.document.linkAt(selection.state.cursor); ok {
 		return actual, true
@@ -70,7 +70,7 @@ func pullRequestOverviewEntryAtBodyLine(section browserDetailSection, bodyLine i
 }
 
 func (program *Program) detailCursorHasLink() bool {
-	_, ok := program.currentDetailCursorLink(nil)
+	_, ok := program.currentDetailCursorLink()
 	return ok
 }
 

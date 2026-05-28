@@ -380,6 +380,20 @@ func TestRefactorGuard_GivenMsgAndCommandFiles_WhenScanning_ThenTheyDoNotExposeL
 	}
 }
 
+func TestRefactorGuard_GivenAuditedReadHelpers_WhenScanning_ThenTheyDoNotKeepStaleLiveViewParameters(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`reviewSessionCommentTarget\(detailView \*gocui\.View`,
+		`reviewSessionCommentLocations\(detailView \*gocui\.View`,
+		`currentDetailCursorLink\(_ \*gocui\.View`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return base == "review_navigation.go" || base == "open_link.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the audited read helpers to stop advertising stale live-view parameters, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenEditorStateFiles_WhenScanning_ThenTheyDoNotStorePointerBackedEditorsOrModalPointerPayloads(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`modalEditor\s+\*modalEditorState`,

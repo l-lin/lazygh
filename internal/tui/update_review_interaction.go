@@ -23,7 +23,7 @@ func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) []C
 	}
 
 	currentFileTreeRow, currentRenderedLine := program.currentReviewCommentPosition()
-	target, ok := program.reviewSessionCommentTarget(nil, currentFileTreeRow, currentRenderedLine, message.Direction)
+	target, ok := program.reviewSessionCommentTarget(currentFileTreeRow, currentRenderedLine, message.Direction)
 	if !ok {
 		return nil
 	}
