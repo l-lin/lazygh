@@ -60,7 +60,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 
 1. A keybinding, popup, editor-intent callback, or async result emits a `Msg`.
 2. `Update` mutates state and returns typed `Cmd` values.
-   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so prefix clearing, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit success handling, detail/build-popup cursor/search transitions, detail-fold collapse plus sync-plan derivation, link-open feedback preflight, clipboard-preflight teardown, and pending-review cache recording stay in `Update`.
+   Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so page-navigation selection, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit success handling, detail/build-popup motion or yank request routing, detail-fold collapse plus sync-plan derivation, link-open feedback preflight, clipboard-preflight teardown, and pending-review cache recording stay in `Update`.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, shell sync, and redraw only.
 
@@ -75,7 +75,7 @@ The read side is much cleaner than it used to be.
 - `screenComposition` binds frames to renderers.
 - `applyScreenComposition()` applies the result to `gocui`.
 
-The render layer is mostly read-only now. Expensive document building and cache mutation live outside the render entrypoints.
+The render layer is mostly read-only now. Expensive document building and cache mutation live outside the render entrypoints. Detail and build-popup cursor or search clamping now runs through the explicit pre-render shell-sync seam `syncViewShellState(...)`, while `prepareViewRenderState(...)` stays read-only.
 
 `refreshViews()` now runs with a short-lived read cache so footer and popup presenters, popup action lists, keybinding label resolution, and review-session read models are computed once per redraw instead of several times.
 Actions-popup filtered matches are derived from current popup state during update or read-side projections instead of being repaired in the post-update shell hook.
@@ -107,7 +107,7 @@ Shell work now lives behind explicit command files.
 - `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and forced refresh execution
 - `cmd_transient_error_popup.go`: transient error popup expiry scheduling
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view lookup
-- `cmd_detail_motion.go`: detail/build-popup motion and pending-yank live-view sync
+- `cmd_detail_motion.go`: detail/build-popup motion, repeat-search, and pending-yank live-view sync
 - `assignee_picker_search_cmd.go`: assignee search transport
 
 These command files still live in `internal/tui`, but they now build focused runtime bundles at the `Cmd.execute(...)` boundary instead of passing the full shell bag deep into helpers.
