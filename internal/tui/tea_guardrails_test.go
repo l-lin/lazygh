@@ -252,6 +252,20 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDeadMaybeLoadWork
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDeadRepeatSearchHelpersRemain(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`func \(program \*Program\) repeatActionsPopupSearch\(`,
+		`func \(program \*Program\) repeatSideSearch\(`,
+		`func \(program \*Program\) repeatReviewFileTreeSearch\(`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected dead repeat-search helpers to be removed from production code, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoLegacyAsyncPopupBridgeRemains(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`startActionsPopupAsyncGHCommand\(`), func(path string) bool {
 		base := filepath.Base(path)

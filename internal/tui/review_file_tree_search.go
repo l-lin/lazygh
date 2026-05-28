@@ -22,22 +22,6 @@ func (program *Program) previousReviewFileTreeSearchMatch(gui *gocui.Gui, _ *goc
 	return program.dispatch(gui, MsgRepeatReviewFileTreeSearch{Direction: searchRepeatBackward})
 }
 
-func (program *Program) repeatReviewFileTreeSearch(gui *gocui.Gui, choose searchMatchIndexChooser) error {
-	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView {
-		return nil
-	}
-
-	query := program.model.ReviewTreeSearchQuery()
-	if strings.TrimSpace(query) == "" {
-		return nil
-	}
-	if !program.followReviewFileTreeSearch(query, choose) {
-		return nil
-	}
-
-	return nil
-}
-
 func (program *Program) followSubmittedReviewFileTreeSearch(query string) bool {
 	return program.followReviewFileTreeSearch(query, searchMatchIndexAtOrAfter)
 }
