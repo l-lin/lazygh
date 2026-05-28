@@ -306,8 +306,19 @@ type MsgDetailSearchWordResolved struct {
 
 type MsgToggleInlineConversationVisibility struct{}
 
+type MsgToggleInlineConversationVisibilityResolved struct {
+	Document       detailDocument
+	ViewportHeight int
+}
+
 type MsgSetAllDetailFolds struct {
 	Collapsed bool
+}
+
+type MsgSetAllDetailFoldsResolved struct {
+	Collapsed      bool
+	Document       detailDocument
+	ViewportHeight int
 }
 
 func (MsgFeedbackSet) isMsg()                                  {}
@@ -384,4 +395,6 @@ func (MsgSearchWordUnderCursor) isMsg()                        {}
 func (MsgRepeatDetailSearchRequested) isMsg()                  {}
 func (MsgDetailSearchWordResolved) isMsg()                     {}
 func (MsgToggleInlineConversationVisibility) isMsg()           {}
+func (MsgToggleInlineConversationVisibilityResolved) isMsg()   {}
 func (MsgSetAllDetailFolds) isMsg()                            {}
+func (MsgSetAllDetailFoldsResolved) isMsg()                    {}

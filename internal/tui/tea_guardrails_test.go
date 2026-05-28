@@ -950,18 +950,20 @@ func TestRefactorGuard_GivenDetailFoldFiles_WhenScanning_ThenTheyDoNotReachThrou
 	}
 }
 
-func TestRefactorGuard_GivenDetailFoldCommandFile_WhenScanning_ThenItDoesNotMutateDurableDetailState(t *testing.T) {
+func TestRefactorGuard_GivenDetailFoldCommandFile_WhenScanning_ThenItDoesNotMutateDurableDetailStateOrWireReducerOwnedCollapseHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`syncDetailViewState\(`,
 		`placeDetailCursorAtLine\(`,
 		`applyDetailViewSyncPlan\(`,
+		`toggleInlineConversationVisibilityState\(`,
+		`setAllDetailFolds\(`,
 	}, "|"))
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
 		return filepath.Base(path) == "cmd_detail_fold.go"
 	})
 	if len(actualMatches) != 0 {
-		t.Fatalf("expected cmd_detail_fold.go to dispatch typed sync-plan messages instead of mutating durable detail state directly, actual %v", actualMatches)
+		t.Fatalf("expected cmd_detail_fold.go to stay on live detail lookup plus typed resolved-message dispatch instead of reducer-owned collapse helpers, actual %v", actualMatches)
 	}
 }
 
