@@ -3,8 +3,8 @@ package tui
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type MsgActionsPopupAsyncGHCommandFinished struct {
-	Err     error
-	Success Msg
+	Err        error
+	Completion actionsPopupAsyncCompletion
 }
 
 type MsgPullRequestsCacheHydrated struct {

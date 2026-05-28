@@ -15,7 +15,7 @@ type modalEditorSubmitCommandDeps struct {
 }
 
 type modalEditorSubmitRequest interface {
-	run(modalEditorSubmitCommandDeps) (Msg, error)
+	run(modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error)
 }
 
 func newModalEditorSubmitCommandDeps(program *Program) modalEditorSubmitCommandDeps {
@@ -34,23 +34,23 @@ type openPullRequestByURLSubmitRequest struct {
 	rawURL string
 }
 
-func (request openPullRequestByURLSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request openPullRequestByURLSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	summary, err := pullRequestSummaryForURL(deps, request.rawURL)
 	if err != nil {
 		return nil, err
 	}
-	return MsgOpenPullRequestInBrowserView{Summary: summary}, nil
+	return openPullRequestInBrowserViewCompletion{Summary: summary}, nil
 }
 
 type pullRequestCustomSearchSubmitRequest struct {
 	criteria string
 }
 
-func (request pullRequestCustomSearchSubmitRequest) run(modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestCustomSearchSubmitRequest) run(modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if len(pullRequestCustomSearchCommand(request.criteria)) == 0 {
 		return nil, errors.New("search criteria cannot be empty")
 	}
-	return MsgPullRequestCustomSearchSubmitted{Criteria: request.criteria}, nil
+	return pullRequestCustomSearchSubmittedCompletion{Criteria: request.criteria}, nil
 }
 
 type pullRequestCommentSubmitRequest struct {
@@ -59,7 +59,7 @@ type pullRequestCommentSubmitRequest struct {
 	feedbackTarget Focus
 }
 
-func (request pullRequestCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -69,7 +69,7 @@ func (request pullRequestCommentSubmitRequest) run(deps modalEditorSubmitCommand
 	if err := deps.pullRequestMutations.CommentOnPullRequest(request.target.repository, request.target.number, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgPullRequestCommentSubmitted{Target: request.target, Body: request.body, FeedbackTarget: request.feedbackTarget}, nil
+	return pullRequestCommentSubmittedCompletion{Target: request.target, Body: request.body, FeedbackTarget: request.feedbackTarget}, nil
 }
 
 type pullRequestReviewCommentSubmitRequest struct {
@@ -78,7 +78,7 @@ type pullRequestReviewCommentSubmitRequest struct {
 	feedbackTarget Focus
 }
 
-func (request pullRequestReviewCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestReviewCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -88,7 +88,7 @@ func (request pullRequestReviewCommentSubmitRequest) run(deps modalEditorSubmitC
 	if err := deps.reviewMutations.ReviewPullRequestWithComment(request.target.repository, request.target.number, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgPullRequestInvalidatedWithFeedback{Repository: request.target.repository, Number: request.target.number, InvalidateDiff: true, FeedbackTarget: request.feedbackTarget, Message: pullRequestReviewSuccessMessage}, nil
+	return pullRequestInvalidatedWithFeedbackCompletion{Repository: request.target.repository, Number: request.target.number, InvalidateDiff: true, FeedbackTarget: request.feedbackTarget, Message: pullRequestReviewSuccessMessage}, nil
 }
 
 type pullRequestRequestChangesSubmitRequest struct {
@@ -97,7 +97,7 @@ type pullRequestRequestChangesSubmitRequest struct {
 	feedbackTarget Focus
 }
 
-func (request pullRequestRequestChangesSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestRequestChangesSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -107,7 +107,7 @@ func (request pullRequestRequestChangesSubmitRequest) run(deps modalEditorSubmit
 	if err := deps.reviewMutations.RequestChangesOnPullRequest(request.target.repository, request.target.number, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgPullRequestInvalidatedWithFeedback{Repository: request.target.repository, Number: request.target.number, InvalidateDiff: true, FeedbackTarget: request.feedbackTarget, Message: pullRequestReviewSuccessMessage}, nil
+	return pullRequestInvalidatedWithFeedbackCompletion{Repository: request.target.repository, Number: request.target.number, InvalidateDiff: true, FeedbackTarget: request.feedbackTarget, Message: pullRequestReviewSuccessMessage}, nil
 }
 
 type pullRequestTitleEditSubmitRequest struct {
@@ -116,7 +116,7 @@ type pullRequestTitleEditSubmitRequest struct {
 	feedbackTarget Focus
 }
 
-func (request pullRequestTitleEditSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestTitleEditSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -126,7 +126,7 @@ func (request pullRequestTitleEditSubmitRequest) run(deps modalEditorSubmitComma
 	if err := deps.pullRequestMutations.EditPullRequestTitle(request.target.repository, request.target.number, request.title); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgPullRequestTitleEditApplied{Target: request.target, Title: request.title, FeedbackTarget: request.feedbackTarget}, nil
+	return pullRequestTitleEditAppliedCompletion{Target: request.target, Title: request.title, FeedbackTarget: request.feedbackTarget}, nil
 }
 
 type pullRequestDescriptionEditSubmitRequest struct {
@@ -135,7 +135,7 @@ type pullRequestDescriptionEditSubmitRequest struct {
 	feedbackTarget Focus
 }
 
-func (request pullRequestDescriptionEditSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestDescriptionEditSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -145,7 +145,7 @@ func (request pullRequestDescriptionEditSubmitRequest) run(deps modalEditorSubmi
 	if err := deps.pullRequestMutations.EditPullRequestDescription(request.target.repository, request.target.number, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgPullRequestDescriptionEditApplied{Target: request.target, Body: request.body, FeedbackTarget: request.feedbackTarget}, nil
+	return pullRequestDescriptionEditAppliedCompletion{Target: request.target, Body: request.body, FeedbackTarget: request.feedbackTarget}, nil
 }
 
 type pullRequestCommentUpdateSubmitRequest struct {
@@ -153,7 +153,7 @@ type pullRequestCommentUpdateSubmitRequest struct {
 	body   string
 }
 
-func (request pullRequestCommentUpdateSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pullRequestCommentUpdateSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.commentID) == "" {
 		return nil, errors.New("missing pull request comment identity")
 	}
@@ -163,7 +163,7 @@ func (request pullRequestCommentUpdateSubmitRequest) run(deps modalEditorSubmitC
 	if err := deps.pullRequestMutations.UpdatePullRequestComment(request.target.commentID, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgPullRequestCommentUpdated{Target: request.target, Body: request.body}, nil
+	return pullRequestCommentUpdatedCompletion{Target: request.target, Body: request.body}, nil
 }
 
 type inlineCommentUpdateSubmitRequest struct {
@@ -171,7 +171,7 @@ type inlineCommentUpdateSubmitRequest struct {
 	body   string
 }
 
-func (request inlineCommentUpdateSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request inlineCommentUpdateSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.commentID) == "" {
 		return nil, errors.New("missing inline comment identity")
 	}
@@ -181,7 +181,7 @@ func (request inlineCommentUpdateSubmitRequest) run(deps modalEditorSubmitComman
 	if err := deps.reviewMutations.UpdatePullRequestReviewComment(request.target.commentID, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgInlineCommentUpdated{Target: request.target, Body: request.body}, nil
+	return inlineCommentUpdatedCompletion{Target: request.target, Body: request.body}, nil
 }
 
 type inlineCommentReplySubmitRequest struct {
@@ -189,7 +189,7 @@ type inlineCommentReplySubmitRequest struct {
 	body   string
 }
 
-func (request inlineCommentReplySubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request inlineCommentReplySubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.threadID) == "" {
 		return nil, errors.New("missing inline comment thread identity")
 	}
@@ -202,7 +202,7 @@ func (request inlineCommentReplySubmitRequest) run(deps modalEditorSubmitCommand
 	if err := deps.reviewMutations.AddPullRequestReviewThreadReply(request.target.pendingReview, request.target.threadID, request.body); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgInlineCommentReplySubmitted{Target: request.target, Body: request.body}, nil
+	return inlineCommentReplySubmittedCompletion{Target: request.target, Body: request.body}, nil
 }
 
 type reviewInlineCommentSubmitRequest struct {
@@ -210,7 +210,7 @@ type reviewInlineCommentSubmitRequest struct {
 	body   string
 }
 
-func (request reviewInlineCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request reviewInlineCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -224,7 +224,7 @@ func (request reviewInlineCommentSubmitRequest) run(deps modalEditorSubmitComman
 		return nil, err
 	}
 	preparedTarget.pendingReview = pendingReviewID
-	return MsgReviewInlineCommentPendingReviewPrepared{Target: preparedTarget, Body: request.body}, nil
+	return reviewInlineCommentPendingReviewPreparedCompletion{Target: preparedTarget, Body: request.body}, nil
 }
 
 type preparedReviewInlineCommentSubmitRequest struct {
@@ -232,7 +232,7 @@ type preparedReviewInlineCommentSubmitRequest struct {
 	body   string
 }
 
-func (request preparedReviewInlineCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request preparedReviewInlineCommentSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 {
 		return nil, errors.New("missing pull request identity")
 	}
@@ -246,7 +246,7 @@ func (request preparedReviewInlineCommentSubmitRequest) run(deps modalEditorSubm
 	if err := deps.reviewMutations.AddPullRequestReviewThread(pendingReviewID, request.body, request.target.threadTarget); err != nil {
 		return nil, newTransientErrorPopupActionError(err)
 	}
-	return MsgReviewInlineCommentSubmitted{Target: request.target, Body: request.body}, nil
+	return reviewInlineCommentSubmittedCompletion{Target: request.target, Body: request.body}, nil
 }
 
 type pendingPullRequestReviewSubmitRequest struct {
@@ -256,7 +256,7 @@ type pendingPullRequestReviewSubmitRequest struct {
 	feedbackTarget Focus
 }
 
-func (request pendingPullRequestReviewSubmitRequest) run(deps modalEditorSubmitCommandDeps) (Msg, error) {
+func (request pendingPullRequestReviewSubmitRequest) run(deps modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {
 	if strings.TrimSpace(request.target.repository) == "" || request.target.number <= 0 || strings.TrimSpace(request.target.pendingReviewID) == "" {
 		return nil, pendingReviewSubmitError(request.event, request.feedbackTarget, errors.New("missing pull request review context"))
 	}
@@ -266,7 +266,7 @@ func (request pendingPullRequestReviewSubmitRequest) run(deps modalEditorSubmitC
 	if err := deps.reviewMutations.SubmitPullRequestReview(request.target.pendingReviewID, request.event, request.body); err != nil {
 		return nil, pendingReviewSubmitError(request.event, request.feedbackTarget, newTransientErrorPopupActionError(err))
 	}
-	return MsgPendingPullRequestReviewSubmitted{Target: request.target}, nil
+	return pendingPullRequestReviewSubmittedCompletion{Target: request.target}, nil
 }
 
 func pendingReviewIDForInlineCommentMutation(deps modalEditorSubmitCommandDeps, target pullRequestInlineCommentTarget) (string, error) {

@@ -26,10 +26,7 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 		return Update(program, MsgErrorReported{Message: strings.TrimSpace(message.Err.Error())})
 	}
 
-	var commands []Cmd
-	if message.Success != nil {
-		commands = Update(program, message.Success)
-	}
+	commands := program.applyActionsPopupAsyncCompletion(message.Completion)
 	if program.model != nil && program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
 		program.closeActionsPopupState()

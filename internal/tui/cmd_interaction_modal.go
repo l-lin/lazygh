@@ -57,6 +57,6 @@ func executeModalEditorSubmitCommand(runtime modalEditorCommandRuntime, gui *goc
 		return
 	}
 
-	success, err := command.request.run(runtime.submitDeps)
-	_ = runtime.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, Success: success})
+	completion, err := command.request.run(runtime.submitDeps)
+	_ = runtime.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, Completion: completion})
 }

@@ -23,12 +23,12 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 	capturedGUI := program.captureGUI(gui)
 	deps := newActionsPopupAsyncCommandDeps(program)
 	run := func() {
-		success, err := command.request.run(deps)
+		completion, err := command.request.run(deps)
 		if command.request.asyncRequested() {
-			program.dispatchAsyncMessage(MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
+			program.dispatchAsyncMessage(MsgActionsPopupAsyncGHCommandFinished{Err: err, Completion: completion})
 			return
 		}
-		_ = program.executeRuntimeMessage(capturedGUI, MsgActionsPopupAsyncGHCommandFinished{Err: err, Success: success})
+		_ = program.executeRuntimeMessage(capturedGUI, MsgActionsPopupAsyncGHCommandFinished{Err: err, Completion: completion})
 	}
 	if command.request.asyncRequested() {
 		program.runAsync(run)

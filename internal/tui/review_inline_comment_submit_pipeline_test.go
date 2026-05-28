@@ -33,9 +33,9 @@ func TestReviewInlineCommentSubmitRequest_GivenNewPendingReview_WhenRunning_Then
 	if len(loader.reviewThreadReviewIDs) != 0 {
 		t.Fatalf("expected no thread submit calls before the reducer records the pending review, actual %v", loader.reviewThreadReviewIDs)
 	}
-	message, ok := actual.(MsgReviewInlineCommentPendingReviewPrepared)
+	message, ok := actual.(reviewInlineCommentPendingReviewPreparedCompletion)
 	if !ok {
-		t.Fatalf("expected a MsgReviewInlineCommentPendingReviewPrepared, actual %T", actual)
+		t.Fatalf("expected a reviewInlineCommentPendingReviewPreparedCompletion, actual %T", actual)
 	}
 	if actual := message.Target.pendingReview; actual != "PRR_new" {
 		t.Fatalf("expected prepared pending review id %q, actual %q", "PRR_new", actual)
@@ -71,19 +71,19 @@ func TestPreparedReviewInlineCommentSubmitRequest_GivenPreparedTarget_WhenRunnin
 	if len(loader.reviewThreadBodies) != 1 || loader.reviewThreadBodies[0] != "Please add context" {
 		t.Fatalf("expected one thread body %q, actual %v", "Please add context", loader.reviewThreadBodies)
 	}
-	message, ok := actual.(MsgReviewInlineCommentSubmitted)
+	message, ok := actual.(reviewInlineCommentSubmittedCompletion)
 	if !ok {
-		t.Fatalf("expected a MsgReviewInlineCommentSubmitted, actual %T", actual)
+		t.Fatalf("expected a reviewInlineCommentSubmittedCompletion, actual %T", actual)
 	}
 	if actual := message.Target.pendingReview; actual != "PRR_pending" {
 		t.Fatalf("expected submitted pending review id %q, actual %q", "PRR_pending", actual)
 	}
 }
 
-func TestUpdate_GivenMsgModalEditorSubmitFinishedWithPreparedReviewInlineCommentSuccess_WhenApplying_ThenItKeepsTheModalOpenRecordsThePendingReviewAndReturnsAFollowUpSubmitCommand(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorSubmitFinishedWithPreparedReviewInlineCommentCompletion_WhenApplying_ThenItKeepsTheModalOpenRecordsThePendingReviewAndReturnsAFollowUpSubmitCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.overlayState.modalEditor = newModalEditorState("Inline comment", "Please add context")
-	prepared := MsgReviewInlineCommentPendingReviewPrepared{
+	prepared := reviewInlineCommentPendingReviewPreparedCompletion{
 		Target: pullRequestInlineCommentTarget{
 			repository:    "acme/widgets",
 			number:        42,
@@ -98,7 +98,7 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithPreparedReviewInlineComment
 		Body: "Please add context",
 	}
 
-	actual := Update(subject, MsgModalEditorSubmitFinished{Success: prepared})
+	actual := Update(subject, MsgModalEditorSubmitFinished{Completion: prepared})
 
 	if !subject.modalEditorVisible() {
 		t.Fatal("expected the modal editor to stay open until the follow-up inline-comment submit finishes")

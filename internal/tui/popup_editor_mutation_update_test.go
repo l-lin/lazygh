@@ -40,13 +40,13 @@ func TestUpdate_GivenMsgPullRequestCommentSubmitRequested_WhenApplying_ThenItBui
 	}
 }
 
-func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccessMessage_WhenApplying_ThenItAppliesTheNestedReducerMessageAndClosesTheModal(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedCompletion_WhenApplying_ThenItAppliesTheCompletionAndClosesTheModal(t *testing.T) {
 	summary := given_pullRequestMutationSummary("OPEN", false)
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.overlayState.modalEditor = newModalEditorState("Comment", "Ship it")
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
 
-	actual := Update(subject, MsgModalEditorSubmitFinished{Success: MsgPullRequestCommentSubmitted{
+	actual := Update(subject, MsgModalEditorSubmitFinished{Completion: pullRequestCommentSubmittedCompletion{
 		Target:         pullRequestCommentTarget{repository: "acme/widgets", number: 42},
 		Body:           "Ship it",
 		FeedbackTarget: FocusDetailView,
@@ -74,18 +74,18 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccessMessage_WhenApp
 	}
 }
 
-func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedSuccessMessageReturningCommands_WhenApplying_ThenItReturnsTheNestedReducerCommands(t *testing.T) {
+func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedCompletionReturningCommands_WhenApplying_ThenItReturnsTheCompletionCommands(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.overlayState.modalEditor = newModalEditorState("Rename", "Retitle")
 
-	actual := Update(subject, MsgModalEditorSubmitFinished{Success: MsgPullRequestTitleEditApplied{
+	actual := Update(subject, MsgModalEditorSubmitFinished{Completion: pullRequestTitleEditAppliedCompletion{
 		Target:         pullRequestActionTarget{repository: "acme/widgets", number: 42},
 		Title:          "Retitle",
 		FeedbackTarget: FocusDetailView,
 	}})
 
 	if len(actual) != 1 {
-		t.Fatalf("expected one nested reducer command, actual %d", len(actual))
+		t.Fatalf("expected one completion command, actual %d", len(actual))
 	}
 	if _, ok := actual[0].(reloadPullRequestsTabCmd); !ok {
 		t.Fatalf("expected a reloadPullRequestsTabCmd, actual %T", actual[0])

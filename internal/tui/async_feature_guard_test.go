@@ -34,7 +34,7 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinished_WhenSuccessful_ThenIt
 	subject.actionsPopupWidget.errorMessage = "stale"
 	subject.ghCommandLoadingMessage = "Running `gh pr ready`."
 
-	Update(subject, MsgActionsPopupAsyncGHCommandFinished{Success: MsgFeedbackSet{Target: subject.model.Focus(), Message: "done"}})
+	Update(subject, MsgActionsPopupAsyncGHCommandFinished{Completion: feedbackSetCompletion{Target: subject.model.Focus(), Message: "done"}})
 
 	if actual := subject.ghCommandLoadingMessage; actual != "" {
 		t.Fatalf("expected gh command loading message %q, actual %q", "", actual)

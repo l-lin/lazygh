@@ -32,12 +32,12 @@ func TestUpdate_GivenMsgOpenPullRequestInBrowserRequested_WhenApplying_ThenItQue
 	if len(loader.openBrowserCalls) != 1 || loader.openBrowserCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected open browser calls %v, actual %v", []string{"acme/widgets#42"}, loader.openBrowserCalls)
 	}
-	feedbackSuccess, ok := actualSuccess.(MsgFeedbackSet)
+	feedbackSuccess, ok := actualSuccess.(feedbackSetCompletion)
 	if !ok {
-		t.Fatalf("expected feedback message, actual %T", actualSuccess)
+		t.Fatalf("expected feedback completion, actual %T", actualSuccess)
 	}
 	if feedbackSuccess.Target != subject.model.Focus() || feedbackSuccess.Message != pullRequestBrowserOpenSuccessMessage {
-		t.Fatalf("expected feedback message %+v, actual %+v", MsgFeedbackSet{Target: subject.model.Focus(), Message: pullRequestBrowserOpenSuccessMessage}, feedbackSuccess)
+		t.Fatalf("expected feedback completion %+v, actual %+v", feedbackSetCompletion{Target: subject.model.Focus(), Message: pullRequestBrowserOpenSuccessMessage}, feedbackSuccess)
 	}
 }
 
@@ -67,13 +67,13 @@ func TestUpdate_GivenMsgApprovePullRequestRequested_WhenApplying_ThenItQueuesAnA
 	if len(loader.approveCalls) != 1 || loader.approveCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected approve calls %v, actual %v", []string{"acme/widgets#42"}, loader.approveCalls)
 	}
-	invalidateSuccess, ok := actualSuccess.(MsgPullRequestInvalidatedWithFeedback)
+	invalidateSuccess, ok := actualSuccess.(pullRequestInvalidatedWithFeedbackCompletion)
 	if !ok {
-		t.Fatalf("expected invalidate message, actual %T", actualSuccess)
+		t.Fatalf("expected invalidate completion, actual %T", actualSuccess)
 	}
-	expected := MsgPullRequestInvalidatedWithFeedback{Repository: "acme/widgets", Number: 42, InvalidateDiff: true, FeedbackTarget: subject.model.Focus(), Message: pullRequestReviewSuccessMessage}
+	expected := pullRequestInvalidatedWithFeedbackCompletion{Repository: "acme/widgets", Number: 42, InvalidateDiff: true, FeedbackTarget: subject.model.Focus(), Message: pullRequestReviewSuccessMessage}
 	if invalidateSuccess != expected {
-		t.Fatalf("expected invalidate message %+v, actual %+v", expected, invalidateSuccess)
+		t.Fatalf("expected invalidate completion %+v, actual %+v", expected, invalidateSuccess)
 	}
 }
 
@@ -106,13 +106,13 @@ func TestUpdate_GivenMsgReRequestPullRequestReviewRequested_WhenApplying_ThenItQ
 	if len(loader.requestReviewerLogins) != 1 || loader.requestReviewerLogins[0] != "reviewer-approved" {
 		t.Fatalf("expected reviewer request logins %v, actual %v", []string{"reviewer-approved"}, loader.requestReviewerLogins)
 	}
-	invalidateSuccess, ok := actualSuccess.(MsgPullRequestInvalidatedWithFeedback)
+	invalidateSuccess, ok := actualSuccess.(pullRequestInvalidatedWithFeedbackCompletion)
 	if !ok {
-		t.Fatalf("expected invalidate message, actual %T", actualSuccess)
+		t.Fatalf("expected invalidate completion, actual %T", actualSuccess)
 	}
-	expected := MsgPullRequestInvalidatedWithFeedback{Repository: "acme/widgets", Number: 42, FeedbackTarget: subject.model.Focus(), Message: pullRequestReviewReRequestedSuccessMessage}
+	expected := pullRequestInvalidatedWithFeedbackCompletion{Repository: "acme/widgets", Number: 42, FeedbackTarget: subject.model.Focus(), Message: pullRequestReviewReRequestedSuccessMessage}
 	if invalidateSuccess != expected {
-		t.Fatalf("expected invalidate message %+v, actual %+v", expected, invalidateSuccess)
+		t.Fatalf("expected invalidate completion %+v, actual %+v", expected, invalidateSuccess)
 	}
 }
 
@@ -150,12 +150,12 @@ func TestUpdate_GivenMsgPullRequestLifecycleMutationRequested_WhenApplyingMarkRe
 	if len(loader.markReadyForReviewCalls) != 1 || loader.markReadyForReviewCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected ready-for-review calls %v, actual %v", []string{"acme/widgets#42"}, loader.markReadyForReviewCalls)
 	}
-	lifecycleSuccess, ok := actualSuccess.(MsgPullRequestLifecycleApplied)
+	lifecycleSuccess, ok := actualSuccess.(pullRequestLifecycleAppliedCompletion)
 	if !ok {
-		t.Fatalf("expected lifecycle message, actual %T", actualSuccess)
+		t.Fatalf("expected lifecycle completion, actual %T", actualSuccess)
 	}
 	if !samePullRequestIdentity(lifecycleSuccess.Summary, summary) || lifecycleSuccess.State != "OPEN" || lifecycleSuccess.IsDraft || lifecycleSuccess.FeedbackTarget != subject.model.Focus() || lifecycleSuccess.Message != pullRequestMarkedReadyForReviewSuccessMessage {
-		t.Fatalf("expected lifecycle message for %v with OPEN/non-draft/%q, actual %+v", summary, pullRequestMarkedReadyForReviewSuccessMessage, lifecycleSuccess)
+		t.Fatalf("expected lifecycle completion for %v with OPEN/non-draft/%q, actual %+v", summary, pullRequestMarkedReadyForReviewSuccessMessage, lifecycleSuccess)
 	}
 }
 
@@ -192,12 +192,12 @@ func TestUpdate_GivenMsgPullRequestAutoMergeMutationRequested_WhenApplyingEnable
 	if len(loader.enableAutoMergeCalls) != 1 || loader.enableAutoMergeCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected enable auto-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.enableAutoMergeCalls)
 	}
-	autoMergeSuccess, ok := actualSuccess.(MsgPullRequestAutoMergeApplied)
+	autoMergeSuccess, ok := actualSuccess.(pullRequestAutoMergeAppliedCompletion)
 	if !ok {
-		t.Fatalf("expected auto-merge message, actual %T", actualSuccess)
+		t.Fatalf("expected auto-merge completion, actual %T", actualSuccess)
 	}
 	if !samePullRequestIdentity(autoMergeSuccess.Summary, summary) || !autoMergeSuccess.Enabled || autoMergeSuccess.FeedbackTarget != subject.model.Focus() || autoMergeSuccess.Message != pullRequestAutoMergeEnabledSuccessMessage {
-		t.Fatalf("expected auto-merge message for %v with enabled/%q, actual %+v", summary, pullRequestAutoMergeEnabledSuccessMessage, autoMergeSuccess)
+		t.Fatalf("expected auto-merge completion for %v with enabled/%q, actual %+v", summary, pullRequestAutoMergeEnabledSuccessMessage, autoMergeSuccess)
 	}
 }
 
@@ -228,12 +228,12 @@ func TestUpdate_GivenMsgPullRequestBranchUpdateRequested_WhenApplying_ThenItQueu
 	if len(loader.updateBranchCalls) != 1 || loader.updateBranchCalls[0] != "acme/widgets#42" {
 		t.Fatalf("expected branch update calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
 	}
-	branchSuccess, ok := actualSuccess.(MsgPullRequestBranchUpdated)
+	branchSuccess, ok := actualSuccess.(pullRequestBranchUpdatedCompletion)
 	if !ok {
-		t.Fatalf("expected branch update message, actual %T", actualSuccess)
+		t.Fatalf("expected branch update completion, actual %T", actualSuccess)
 	}
 	if !samePullRequestIdentity(branchSuccess.Summary, summary) || branchSuccess.FeedbackTarget != subject.model.Focus() || branchSuccess.Message != pullRequestBranchUpdatedSuccessMessage {
-		t.Fatalf("expected branch update message for %v with %q, actual %+v", summary, pullRequestBranchUpdatedSuccessMessage, branchSuccess)
+		t.Fatalf("expected branch update completion for %v with %q, actual %+v", summary, pullRequestBranchUpdatedSuccessMessage, branchSuccess)
 	}
 }
 

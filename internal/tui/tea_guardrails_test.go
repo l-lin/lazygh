@@ -266,29 +266,31 @@ func TestRefactorGuard_GivenActionsPopupAsyncCommandFile_WhenScanning_ThenItAvoi
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoActionsPopupAsyncSuccessApplyPayloadsRemain(t *testing.T) {
+func TestRefactorGuard_GivenAsyncCompletionFiles_WhenScanning_ThenTheyDoNotEmbedSuccessMessagesOrNestedReducerRecursion(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
-		`actionsPopupAsyncSuccess`,
-		`Success\.apply\(program\)`,
+		`Success\s+Msg`,
+		`Success:`,
+		`Update\(program,\s*message\.Success\)`,
 	}, "|")), func(path string) bool {
 		base := filepath.Base(path)
-		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+		return base == "msg_feature_async.go" || base == "actions_popup_async_cmd.go" || base == "update_feature_async.go"
 	})
 	if len(actualMatches) != 0 {
-		t.Fatalf("expected actions-popup async completions to carry typed reducer messages instead of apply payloads, actual %v", actualMatches)
+		t.Fatalf("expected async completion wrappers to carry typed completion data instead of nested success messages or recursive Update calls, actual %v", actualMatches)
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoModalEditorSubmitSuccessApplyPayloadsRemain(t *testing.T) {
+func TestRefactorGuard_GivenModalCompletionFiles_WhenScanning_ThenTheyDoNotEmbedSuccessMessagesOrNestedReducerRecursion(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
-		`modalEditorSubmitSuccess`,
-		`Success\.apply\(program\)`,
+		`Success\s+Msg`,
+		`Success:`,
+		`Update\(program,\s*message\.Success\)`,
 	}, "|")), func(path string) bool {
 		base := filepath.Base(path)
-		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+		return base == "msg_interaction.go" || base == "cmd_interaction_modal.go" || base == "update_interaction.go"
 	})
 	if len(actualMatches) != 0 {
-		t.Fatalf("expected modal-editor submit completions to carry typed reducer messages instead of apply payloads, actual %v", actualMatches)
+		t.Fatalf("expected modal submit completion wrappers to carry typed completion data instead of nested success messages or recursive Update calls, actual %v", actualMatches)
 	}
 }
 

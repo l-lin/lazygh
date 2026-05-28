@@ -85,19 +85,19 @@ func TestUpdate_GivenMsgThemePresetSaved_WhenApplying_ThenItReturnsAConfigureGUI
 	}
 }
 
-func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithTypedSuccessMessage_WhenApplying_ThenItReturnsTheNestedReducerCommands(t *testing.T) {
+func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithTypedCompletionReturningCommands_WhenApplying_ThenItReturnsTheCompletionCommands(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 
-	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Success: MsgThemePresetSaved{NormalizedName: "night", Label: "Night"}})
+	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Completion: pendingPullRequestReviewCanceledCompletion{Target: pendingPullRequestReviewActionTarget{repository: "acme/widgets", number: 42, sourceFocus: FocusDetailView}}})
 
 	if len(actual) != 1 {
-		t.Fatalf("expected one configure-gui command, actual %d", len(actual))
+		t.Fatalf("expected one completion command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(configureGUICmd); !ok {
-		t.Fatalf("expected a configureGUICmd, actual %T", actual[0])
+	if _, ok := actual[0].(reloadPullRequestsTabCmd); !ok {
+		t.Fatalf("expected a reloadPullRequestsTabCmd, actual %T", actual[0])
 	}
-	if actualMessage := subject.feedbackMessage; actualMessage != "Theme changed to Night" {
-		t.Fatalf("expected feedback %q, actual %q", "Theme changed to Night", actualMessage)
+	if actualMessage := subject.feedbackMessage; actualMessage != pendingPullRequestReviewCanceledMessage {
+		t.Fatalf("expected feedback %q, actual %q", pendingPullRequestReviewCanceledMessage, actualMessage)
 	}
 }
 
