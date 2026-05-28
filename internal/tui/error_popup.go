@@ -137,17 +137,21 @@ func (program *Program) renderTransientErrorPopupView(view *gocui.View) {
 }
 
 func (program *Program) transientErrorPopupFrame(maxX int, maxY int) paneFrame {
-	message := strings.TrimSpace(program.overlayState.transientErrorPopup.message)
+	return transientErrorPopupFrameForMessage(program.overlayState.transientErrorPopup.message, maxX, maxY)
+}
+
+func transientErrorPopupFrameForMessage(message string, maxX int, maxY int) paneFrame {
+	trimmedMessage := strings.TrimSpace(message)
 	maxWidth := boundedHalfWidth(maxX, transientErrorPopupMinWidth, transientErrorPopupFallbackWidth)
 	longestLineWidth := transientErrorPopupMinWidth
-	for _, line := range strings.Split(message, "\n") {
+	for _, line := range strings.Split(trimmedMessage, "\n") {
 		lineWidth := runeCountInt(strings.TrimRight(line, "\r"))
 		if lineWidth > longestLineWidth {
 			longestLineWidth = lineWidth
 		}
 	}
 	contentWidth := clampInt(longestLineWidth+2, transientErrorPopupMinWidth, maxWidth)
-	lines := transientErrorPopupLinesForMessage(message, maxInt(1, contentWidth-2))
+	lines := transientErrorPopupLinesForMessage(trimmedMessage, maxInt(1, contentWidth-2))
 	totalHeight := len(lines) + 2
 	if totalHeight < 3 {
 		totalHeight = 3

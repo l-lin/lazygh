@@ -73,6 +73,7 @@ The read side is much cleaner than it used to be.
 - `ScreenState` describes logical browser, review, and story-review state.
 - `ScreenLayout` turns that state plus terminal size into frames.
 - `screenComposition` binds frames to renderers.
+- `render_pipeline_adapter.go` builds the snapshot inputs and renderer catalog from `Program`; `render_pipeline.go` stays on snapshot-driven frame planning, composition, and shell-only application.
 - `applyScreenComposition()` applies the result to `gocui`.
 
 The render layer is mostly read-only now. Expensive document building and cache mutation live outside the render entrypoints. Detail and build-popup cursor or search clamping now runs through the explicit pre-render shell-sync seam `syncViewShellState(...)`, while `prepareViewRenderState(...)` stays read-only.
@@ -86,6 +87,7 @@ The main read-only projection seams are:
 - `helpPresenter`
 - `actionsPopupPresenter`
 - `searchViewPresenter`
+- `statusLinePresenter`
 - `reviewSessionReadModel`
 - `review_session_selectors.go`
 - `detail_cursor_selectors.go`

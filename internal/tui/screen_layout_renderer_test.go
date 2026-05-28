@@ -45,17 +45,12 @@ func TestScreenLayout_GivenSearchAndKeyHints_WhenPlanningOverlays_ThenTheSearchP
 	}
 }
 
-func TestMainPanelRenderer_GivenBrowserPullRequestDetail_WhenConfiguring_ThenItUsesViewZeroTabsWithoutAStandaloneTitle(t *testing.T) {
+func TestScreenComposition_GivenBrowserPullRequestDetail_WhenConfiguringTheDetailRenderer_ThenItUsesViewZeroTabsWithoutAStandaloneTitle(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
-	layout := subject.screenLayoutForSize(100, 30)
-	frame, ok := layout.PanelFrameByViewNumber(int(mainPanelViewZero))
+	composition := subject.screenCompositionForSize(100, 30)
+	renderer, ok := composition.Renderers[viewDetailName]
 	if !ok {
-		t.Fatalf("expected panel frame %d", mainPanelViewZero)
-	}
-
-	renderer, ok := subject.mainPanelRenderer().Renderer(frame)
-	if !ok {
-		t.Fatalf("expected a renderer for view %d", mainPanelViewZero)
+		t.Fatalf("expected a renderer for %q", viewDetailName)
 	}
 
 	gui := given_headlessGui(t)
@@ -80,17 +75,12 @@ func TestMainPanelRenderer_GivenBrowserPullRequestDetail_WhenConfiguring_ThenItU
 	}
 }
 
-func TestSidePanelRenderer_GivenBrowserPullRequestsView_WhenConfiguring_ThenItUsesTheVisibleNumberTabsAndSelectionHighlight(t *testing.T) {
+func TestScreenComposition_GivenBrowserPullRequestsView_WhenConfiguringTheSideRenderer_ThenItUsesTheVisibleNumberTabsAndSelectionHighlight(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
-	layout := subject.screenLayoutForSize(100, 30)
-	frame, ok := layout.PanelFrameByViewNumber(int(sidePanelViewTwo))
+	composition := subject.screenCompositionForSize(100, 30)
+	renderer, ok := composition.Renderers[viewPullRequestsName]
 	if !ok {
-		t.Fatalf("expected panel frame %d", sidePanelViewTwo)
-	}
-
-	renderer, ok := subject.sidePanelRenderer().Renderer(frame)
-	if !ok {
-		t.Fatalf("expected a renderer for view %d", sidePanelViewTwo)
+		t.Fatalf("expected a renderer for %q", viewPullRequestsName)
 	}
 
 	gui := given_headlessGui(t)

@@ -87,175 +87,45 @@ type screenComposition struct {
 	Renderers map[string]ViewRenderer
 }
 
-type MainPanelRenderer struct {
-	program *Program
+type modalEditorLayoutState struct {
+	visible     bool
+	totalHeight int
 }
 
-func (program *Program) mainPanelRenderer() MainPanelRenderer {
-	return MainPanelRenderer{program: program}
+type pullRequestBuildRunPopupLayoutState struct {
+	visible       bool
+	body          string
+	widthPercent  int
+	heightPercent int
 }
 
-func (renderer MainPanelRenderer) Renderer(frame PanelFrame) (ViewRenderer, bool) {
-	if frame.View.Focus != FocusDetailView {
-		return nil, false
-	}
-	return viewRendererFuncs{configure: renderer.program.configureDetailView, render: renderer.program.renderDetailView}, true
+type transientErrorPopupLayoutState struct {
+	message string
 }
 
-type SidePanelRenderer struct {
-	program *Program
+type screenLayoutInput struct {
+	screenState               ScreenState
+	contentMaxY               int
+	paneLayoutSize            PaneLayoutSize
+	fullscreenPane            Focus
+	sidebarTopPaneHeight      int
+	footer                    footerPresenter
+	help                      helpPresenter
+	helpVisible               bool
+	searchPromptVisible       bool
+	modalEditor               modalEditorLayoutState
+	buildPopup                pullRequestBuildRunPopupLayoutState
+	transientErrorPopup       transientErrorPopupLayoutState
+	actionsPopupVisible       bool
+	actionsPopupSearchVisible bool
+	actionsPopup              actionsPopupPresenter
 }
 
-func (program *Program) sidePanelRenderer() SidePanelRenderer {
-	return SidePanelRenderer{program: program}
-}
-
-func (renderer SidePanelRenderer) Renderer(frame PanelFrame) (ViewRenderer, bool) {
-	switch frame.View.Focus {
-	case FocusUserView:
-		return viewRendererFuncs{configure: renderer.program.configureUserView, render: renderer.program.renderUserView}, true
-	case FocusPullRequestsView:
-		return viewRendererFuncs{configure: renderer.program.configurePullRequestsView, render: renderer.program.renderPullRequestsView}, true
-	case FocusNotificationsView:
-		return viewRendererFuncs{configure: renderer.program.configureNotificationsView, render: renderer.program.renderNotificationsView}, true
-	default:
-		return nil, false
-	}
-}
-
-type OverlayRenderer struct {
-	program *Program
-}
-
-func (program *Program) overlayRenderer() OverlayRenderer {
-	return OverlayRenderer{program: program}
-}
-
-func (renderer OverlayRenderer) Renderer(viewName string) (ViewRenderer, bool) {
-	switch viewName {
-	case viewHelpName:
-		return viewRendererFuncs{configure: renderer.program.configureHelpView, render: renderer.program.renderHelpView}, true
-	case viewSearchName:
-		return viewRendererFuncs{configure: renderer.program.configureSearchView, render: renderer.program.renderSearchView}, true
-	case viewModalEditorName:
-		return viewRendererFuncs{configure: renderer.program.configureModalEditorView, render: renderer.program.renderModalEditorView}, true
-	case viewPullRequestBuildInfoName:
-		return viewRendererFuncs{configure: renderer.program.configurePullRequestBuildRunPopupView, render: renderer.program.renderPullRequestBuildRunPopupView}, true
-	case viewTransientErrorPopupName:
-		return viewRendererFuncs{configure: renderer.program.configureTransientErrorPopupView, render: renderer.program.renderTransientErrorPopupView}, true
-	case viewActionsPopupChromeName:
-		return viewRendererFuncs{configure: renderer.program.configureActionsPopupChromeView, render: renderer.program.renderActionsPopupChromeView}, true
-	case viewActionsPopupName:
-		return viewRendererFuncs{configure: renderer.program.configureActionsPopupView, render: renderer.program.renderActionsPopupView}, true
-	case viewActionsPopupSearchName:
-		return viewRendererFuncs{configure: renderer.program.configureActionsPopupSearchView, render: renderer.program.renderActionsPopupSearchView}, true
-	case viewUserFooterName, viewPullRequestsFooterName, viewNotificationsFooterName, viewDetailFooterName:
-		text := renderer.program.paneFooterTextForView(viewName)
-		return viewRendererFuncs{
-			configure: renderer.program.configurePaneFooterView,
-			render: func(view *gocui.View) {
-				renderer.program.renderPaneFooterView(view, text)
-			},
-		}, true
-	default:
-		return nil, false
-	}
-}
-
-func (renderer OverlayRenderer) Frame(viewName string, maxX int, maxY int) screenViewFrame {
-	switch viewName {
-	case viewHelpName:
-		if !renderer.program.overlayState.helpVisible {
-			return screenViewFrame{ViewName: viewName}
-		}
-		innerWidth, innerHeight := renderer.program.helpViewSize(maxX, maxY)
-		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, innerWidth+2, innerHeight+2), Visible: true, OnTop: true}
-	case viewSearchName:
-		return screenViewFrame{ViewName: viewName, Frame: bottomPromptFrame(maxX, maxY), Visible: renderer.program.searchPromptVisible(), OnTop: true}
-	case viewModalEditorName:
-		if !renderer.program.modalEditorVisible() {
-			return screenViewFrame{ViewName: viewName}
-		}
-		totalWidth := boundedHalfWidth(maxX, modalEditorMinWidth, modalEditorFallbackWidth)
-		totalHeight := modalEditorTotalHeight
-		if renderer.program.modalEditorVisible() {
-			totalHeight = renderer.program.overlayState.modalEditor.Height()
-		}
-		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
-	case viewPullRequestBuildInfoName:
-		if !renderer.program.pullRequestBuildRunPopupVisible() {
-			return screenViewFrame{ViewName: viewName}
-		}
-		totalWidth := boundedHalfWidth(maxX, pullRequestBuildRunPopupMinWidth, pullRequestBuildRunPopupFallbackWidth)
-		totalHeight := pullRequestBuildRunPopupMinHeight
-		if popup := renderer.program.pullRequestBuildRunPopup; popup != nil {
-			if popup.widthPercent > 0 {
-				totalWidth = maxInt(10, (maxX*popup.widthPercent)/100)
-			}
-			if popup.heightPercent > 0 {
-				totalHeight = maxInt(3, (maxY*popup.heightPercent)/100)
-			} else {
-				totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(popup.body))+2)
-				if totalHeight > maxY-2 {
-					totalHeight = maxInt(3, maxY-2)
-				}
-			}
-		}
-		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
-	case viewTransientErrorPopupName:
-		if !renderer.program.transientErrorPopupVisible() {
-			return screenViewFrame{ViewName: viewName}
-		}
-		return screenViewFrame{ViewName: viewName, Frame: renderer.program.transientErrorPopupFrame(maxX, maxY), Visible: true, OnTop: true}
-	case viewActionsPopupChromeName:
-		if !renderer.program.model.ActionsPopupVisible() {
-			return screenViewFrame{ViewName: viewName}
-		}
-		return screenViewFrame{ViewName: viewName, Frame: renderer.program.actionsPopupFrame(maxX, maxY), Visible: true, OnTop: true}
-	case viewActionsPopupName:
-		if !renderer.program.model.ActionsPopupVisible() {
-			return screenViewFrame{ViewName: viewName}
-		}
-		return screenViewFrame{ViewName: viewName, Frame: renderer.program.actionsPopupListFrame(maxX, maxY), Visible: true, OnTop: true}
-	case viewActionsPopupSearchName:
-		return screenViewFrame{ViewName: viewName, Frame: renderer.program.actionsPopupSearchFrame(maxX, maxY), Visible: renderer.program.model.ActionsPopupSearchActive(), OnTop: true}
-	default:
-		return screenViewFrame{ViewName: viewName}
-	}
-}
-
-type KeyHintPresenter struct {
-	program *Program
-	footer  footerPresenter
-}
-
-func (program *Program) keyHintPresenter() KeyHintPresenter {
-	return KeyHintPresenter{program: program, footer: program.footerPresenter()}
-}
-
-func (presenter KeyHintPresenter) Text() string {
-	return strings.TrimSpace(presenter.footer.statusLineKeyHintsText())
-}
-
-func (presenter KeyHintPresenter) Renderer() (ViewRenderer, bool) {
-	text := presenter.Text()
-	if text == "" {
-		return nil, false
-	}
-	return viewRendererFuncs{
-		configure: presenter.program.configureStatusLineKeyHintsView,
-		render: func(view *gocui.View) {
-			presenter.program.renderStatusLineKeyHintsView(view, text)
-		},
-	}, true
-}
-
-func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
-	state := program.screenState()
-	contentMaxY := program.layoutContentHeight(maxY)
+func buildScreenLayout(input screenLayoutInput, maxX int, maxY int) ScreenLayout {
+	state := input.screenState
 	sideFocus := state.ActiveSideView().Focus
 	_, showNotifications := state.ViewByNumber(sidePanelNotificationsViewNumber)
-	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, contentMaxY, program.model.PaneLayoutSize(), program.model.FullscreenPane(), sideFocus, program.sidebarTopPaneHeight(), showNotifications)
+	mainPaneLayout := calculateMainPaneLayoutWithSidebarState(maxX, input.contentMaxY, input.paneLayoutSize, input.fullscreenPane, sideFocus, input.sidebarTopPaneHeight, showNotifications)
 
 	layout := ScreenLayout{
 		PanelFrames:  make([]PanelFrame, 0, 4),
@@ -271,23 +141,17 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 	}
 
 	panelFramesByName := map[string]PanelFrame{}
-	appendPanelFrame := func(view ViewState, frame paneFrame, visible bool) {
-		panelFrame := PanelFrame{View: view, screenViewFrame: screenViewFrame{ViewName: paneViewName(view.Focus), Frame: frame, Visible: visible}}
-		layout.PanelFrames = append(layout.PanelFrames, panelFrame)
-		panelFramesByName[panelFrame.ViewName] = panelFrame
-	}
-
 	if view, ok := state.ViewByNumber(mainPanelViewNumber); ok {
-		appendPanelFrame(view, mainPaneLayout.detail, mainPaneLayout.detailVisible)
+		appendScreenPanelFrame(&layout, panelFramesByName, view, mainPaneLayout.detail, mainPaneLayout.detailVisible)
 	}
 	if view, ok := state.ViewByNumber(sidePanelUserViewNumber); ok {
-		appendPanelFrame(view, mainPaneLayout.user, mainPaneLayout.userVisible)
+		appendScreenPanelFrame(&layout, panelFramesByName, view, mainPaneLayout.user, mainPaneLayout.userVisible)
 	}
 	if view, ok := state.ViewByNumber(sidePanelPullRequestsViewNumber); ok {
-		appendPanelFrame(view, mainPaneLayout.pullRequests, mainPaneLayout.pullRequestsVisible)
+		appendScreenPanelFrame(&layout, panelFramesByName, view, mainPaneLayout.pullRequests, mainPaneLayout.pullRequestsVisible)
 	}
 	if view, ok := state.ViewByNumber(sidePanelNotificationsViewNumber); ok {
-		appendPanelFrame(view, mainPaneLayout.notifications, mainPaneLayout.notificationsVisible)
+		appendScreenPanelFrame(&layout, panelFramesByName, view, mainPaneLayout.notifications, mainPaneLayout.notificationsVisible)
 	}
 
 	for _, viewName := range []string{viewUserName, viewPullRequestsName, viewNotificationsName, viewDetailName} {
@@ -297,25 +161,22 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 		layout.HiddenFrames = append(layout.HiddenFrames, screenViewFrame{ViewName: viewName})
 	}
 
-	footerPresenter := program.footerPresenter()
 	for index, footerName := range []string{viewUserFooterName, viewPullRequestsFooterName, viewNotificationsFooterName, viewDetailFooterName} {
 		focus := focusForFooterName(footerName)
-		parentName := paneViewName(focus)
-		parentFrame, ok := panelFramesByName[parentName]
+		parentFrame, ok := panelFramesByName[paneViewName(focus)]
 		if !ok || !parentFrame.Visible {
 			layout.FooterFrames[index] = screenViewFrame{ViewName: footerName, Visible: false, OnTop: true}
 			continue
 		}
-		text := strings.TrimSpace(footerPresenter.paneFooterStateFor(focus).Text())
+		text := strings.TrimSpace(input.footer.paneFooterStateFor(focus).Text())
 		layout.FooterFrames[index] = screenViewFrame{ViewName: footerName, Frame: paneBottomOverlayFrame(parentFrame.Frame), Visible: text != "", OnTop: true}
 	}
 
-	overlayRenderer := program.overlayRenderer()
 	for _, overlayViewName := range []string{viewHelpName, viewSearchName, viewModalEditorName, viewPullRequestBuildInfoName, viewActionsPopupChromeName, viewActionsPopupName, viewActionsPopupSearchName, viewTransientErrorPopupName} {
-		layout.OverlayFrames = append(layout.OverlayFrames, overlayRenderer.Frame(overlayViewName, maxX, maxY))
+		layout.OverlayFrames = append(layout.OverlayFrames, overlayFrameForView(input, overlayViewName, maxX, maxY))
 	}
 
-	keyHintsText := strings.TrimSpace(footerPresenter.statusLineKeyHintsText())
+	keyHintsText := strings.TrimSpace(input.footer.statusLineKeyHintsText())
 	layout.StatusLineKeyHints = screenViewFrame{ViewName: viewStatusLineKeyHintsName, Visible: false, OnTop: true}
 	if keyHintsText != "" {
 		layout.StatusLineKeyHints = screenViewFrame{ViewName: viewStatusLineKeyHintsName, Frame: statusLineKeyHintsFrame(maxX, maxY, keyHintsText), Visible: true, OnTop: true}
@@ -324,40 +185,77 @@ func (program *Program) screenLayoutForSize(maxX int, maxY int) ScreenLayout {
 	return layout
 }
 
-func (program *Program) screenCompositionForSize(maxX int, maxY int) screenComposition {
-	layout := program.screenLayoutForSize(maxX, maxY)
-	renderers := map[string]ViewRenderer{}
-	mainPanelRenderer := program.mainPanelRenderer()
-	sidePanelRenderer := program.sidePanelRenderer()
-	overlayRenderer := program.overlayRenderer()
+func appendScreenPanelFrame(layout *ScreenLayout, panelFramesByName map[string]PanelFrame, view ViewState, frame paneFrame, visible bool) {
+	if layout == nil {
+		return
+	}
+	panelFrame := PanelFrame{View: view, screenViewFrame: screenViewFrame{ViewName: paneViewName(view.Focus), Frame: frame, Visible: visible}}
+	layout.PanelFrames = append(layout.PanelFrames, panelFrame)
+	panelFramesByName[panelFrame.ViewName] = panelFrame
+}
 
-	for _, frame := range layout.PanelFrames {
-		if frame.View.Number == mainPanelViewNumber {
-			if renderer, ok := mainPanelRenderer.Renderer(frame); ok {
-				renderers[frame.ViewName] = renderer
-			}
-			continue
+func overlayFrameForView(input screenLayoutInput, viewName string, maxX int, maxY int) screenViewFrame {
+	switch viewName {
+	case viewHelpName:
+		if !input.helpVisible {
+			return screenViewFrame{ViewName: viewName}
 		}
-		if renderer, ok := sidePanelRenderer.Renderer(frame); ok {
-			renderers[frame.ViewName] = renderer
+		innerWidth, innerHeight := input.help.viewSize(maxX, maxY)
+		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, innerWidth+2, innerHeight+2), Visible: true, OnTop: true}
+	case viewSearchName:
+		return screenViewFrame{ViewName: viewName, Frame: bottomPromptFrame(maxX, maxY), Visible: input.searchPromptVisible, OnTop: true}
+	case viewModalEditorName:
+		if !input.modalEditor.visible {
+			return screenViewFrame{ViewName: viewName}
 		}
-	}
-	for _, frame := range layout.FooterFrames {
-		if renderer, ok := overlayRenderer.Renderer(frame.ViewName); ok {
-			renderers[frame.ViewName] = renderer
+		totalWidth := boundedHalfWidth(maxX, modalEditorMinWidth, modalEditorFallbackWidth)
+		totalHeight := input.modalEditor.totalHeight
+		if totalHeight < 1 {
+			totalHeight = modalEditorTotalHeight
 		}
-	}
-	for _, frame := range layout.OverlayFrames {
-		if renderer, ok := overlayRenderer.Renderer(frame.ViewName); ok {
-			renderers[frame.ViewName] = renderer
+		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
+	case viewPullRequestBuildInfoName:
+		if !input.buildPopup.visible {
+			return screenViewFrame{ViewName: viewName}
 		}
+		return screenViewFrame{ViewName: viewName, Frame: pullRequestBuildRunPopupOverlayFrame(input.buildPopup, maxX, maxY), Visible: true, OnTop: true}
+	case viewTransientErrorPopupName:
+		if strings.TrimSpace(input.transientErrorPopup.message) == "" {
+			return screenViewFrame{ViewName: viewName}
+		}
+		return screenViewFrame{ViewName: viewName, Frame: transientErrorPopupFrameForMessage(input.transientErrorPopup.message, maxX, maxY), Visible: true, OnTop: true}
+	case viewActionsPopupChromeName:
+		if !input.actionsPopupVisible {
+			return screenViewFrame{ViewName: viewName}
+		}
+		return screenViewFrame{ViewName: viewName, Frame: input.actionsPopup.frame(maxX, input.contentMaxY), Visible: true, OnTop: true}
+	case viewActionsPopupName:
+		if !input.actionsPopupVisible {
+			return screenViewFrame{ViewName: viewName}
+		}
+		return screenViewFrame{ViewName: viewName, Frame: input.actionsPopup.listFrame(maxX, input.contentMaxY), Visible: true, OnTop: true}
+	case viewActionsPopupSearchName:
+		return screenViewFrame{ViewName: viewName, Frame: input.actionsPopup.searchFrame(maxX, input.contentMaxY), Visible: input.actionsPopupSearchVisible, OnTop: true}
+	default:
+		return screenViewFrame{ViewName: viewName}
 	}
-	renderers[viewStatusLineName] = viewRendererFuncs{configure: program.configureStatusLineView, render: program.renderStatusLineView}
-	if renderer, ok := program.keyHintPresenter().Renderer(); ok {
-		renderers[viewStatusLineKeyHintsName] = renderer
-	}
+}
 
-	return screenComposition{Layout: layout, Renderers: renderers}
+func pullRequestBuildRunPopupOverlayFrame(layout pullRequestBuildRunPopupLayoutState, maxX int, maxY int) paneFrame {
+	totalWidth := boundedHalfWidth(maxX, pullRequestBuildRunPopupMinWidth, pullRequestBuildRunPopupFallbackWidth)
+	totalHeight := pullRequestBuildRunPopupMinHeight
+	if layout.widthPercent > 0 {
+		totalWidth = maxInt(10, (maxX*layout.widthPercent)/100)
+	}
+	if layout.heightPercent > 0 {
+		totalHeight = maxInt(3, (maxY*layout.heightPercent)/100)
+	} else {
+		totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(layout.body))+2)
+		if totalHeight > maxY-2 {
+			totalHeight = maxInt(3, maxY-2)
+		}
+	}
+	return centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight)
 }
 
 func (program *Program) applyScreenComposition(gui *gocui.Gui, composition screenComposition) error {
@@ -439,8 +337,4 @@ func focusForFooterName(viewName string) Focus {
 	default:
 		return FocusUserView
 	}
-}
-
-func (program *Program) paneFooterTextForView(viewName string) string {
-	return strings.TrimSpace(program.footerPresenter().paneFooterStateFor(focusForFooterName(viewName)).Text())
 }

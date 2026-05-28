@@ -45,22 +45,6 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 	return presenter
 }
 
-func (program *Program) actionsPopupFrame(maxX int, maxY int) paneFrame {
-	return program.actionsPopupPresenter().frame(maxX, program.layoutContentHeight(maxY))
-}
-
-func (program *Program) actionsPopupSearchFrame(maxX int, maxY int) paneFrame {
-	return program.actionsPopupPresenter().searchFrame(maxX, program.layoutContentHeight(maxY))
-}
-
-func (program *Program) actionsPopupListFrame(maxX int, maxY int) paneFrame {
-	return program.actionsPopupPresenter().listFrame(maxX, program.layoutContentHeight(maxY))
-}
-
-func (program *Program) actionsPopupHeight(contentMaxY int) int {
-	return program.actionsPopupPresenter().height(contentMaxY)
-}
-
 func (program *Program) currentActionsPopupSearchText() string {
 	return program.actionsPopupPresenter().promptText()
 }

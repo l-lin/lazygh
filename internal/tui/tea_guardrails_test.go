@@ -862,6 +862,29 @@ func TestRefactorGuard_GivenHelpFile_WhenScanning_ThenHelpPagingDispatchesTypedR
 	}
 }
 
+func TestRefactorGuard_GivenRenderPipelineFile_WhenScanning_ThenLayoutPlanningUsesSnapshotInputsInsteadOfProgramBackedPlannerStructs(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`type MainPanelRenderer struct`,
+		`type SidePanelRenderer struct`,
+		`type OverlayRenderer struct`,
+		`type KeyHintPresenter struct`,
+		`func \(program \*Program\) mainPanelRenderer\(`,
+		`func \(program \*Program\) sidePanelRenderer\(`,
+		`func \(program \*Program\) overlayRenderer\(`,
+		`func \(program \*Program\) keyHintPresenter\(`,
+		`func \(program \*Program\) screenLayoutForSize\(`,
+		`func \(program \*Program\) screenCompositionForSize\(`,
+		`func \(program \*Program\) paneFooterTextForView\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "render_pipeline.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected render_pipeline.go to plan layout and composition from snapshot inputs instead of Program-backed planner structs, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationSupportFile_WhenScanning_ThenItDoesNotOwnReadOnlyScrollHelpers(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`scrollReadOnlyView\(`), func(path string) bool {
 		return filepath.Base(path) == "program_navigation_support.go"

@@ -11,7 +11,3 @@ func (program *Program) helpPresenter() helpPresenter {
 		inlineCommentReplyAvailable: program.inlineCommentReplyShortcutAvailable(),
 	}
 }
-
-func (program *Program) helpViewSize(maxX int, maxY int) (int, int) {
-	return program.helpPresenter().viewSize(maxX, maxY)
-}
