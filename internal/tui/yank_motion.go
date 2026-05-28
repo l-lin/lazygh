@@ -54,44 +54,6 @@ func (program *Program) startPullRequestBuildRunPopupYank(gui *gocui.Gui, view *
 	return program.dispatch(gui, MsgDetailYankRequested{Target: detailMotionTargetBuildPopup})
 }
 
-func (program *Program) copySelectedText(state *detailViewState, document detailDocument) {
-	selection, _ := detailSelectionForCurrentMode(*state, document)
-	err := program.writeTextToClipboard(state.selectedText(document))
-	state.exitVisualMode()
-	if err == nil {
-		program.activateYankHighlight(state, selection)
-		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankSuccessMessage})
-	} else {
-		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankFailureMessage})
-	}
-}
-
-func (program *Program) copySelectedPullRequestBuildRunPopupText(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgCopyPullRequestBuildRunPopupContentRequested{})
-}
-
-func (program *Program) writeTextToClipboard(text string) error {
-	if program.clipboardWriter == nil {
-		return ErrClipboardUnavailable
-	}
-	return program.clipboardWriter.WriteText(text)
-}
-
-func (program *Program) finishPendingYank(document detailDocument, state *detailViewState, snapshot detailYankSnapshot, selectionKind detailYankMotionSelectionKind) {
-	selection, ok := detailSelectionForYankMotion(document, snapshot.cursor, state.cursor, selectionKind)
-	state.restoreYankSnapshot(snapshot)
-	state.pendingYank = false
-	if !ok {
-		return
-	}
-	if err := program.writeTextToClipboard(selection.text(document)); err == nil {
-		program.activateYankHighlight(state, selection)
-		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankSuccessMessage})
-	} else {
-		program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: detailYankFailureMessage})
-	}
-}
-
 func detailYankText(document detailDocument, anchor detailPosition, target detailPosition, selectionKind detailYankMotionSelectionKind) (string, bool) {
 	selection, ok := detailSelectionForYankMotion(document, anchor, target, selectionKind)
 	if !ok {

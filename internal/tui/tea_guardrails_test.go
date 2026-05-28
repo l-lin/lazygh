@@ -1312,6 +1312,33 @@ func TestRefactorGuard_GivenAuditedDetailMotionShortcutFiles_WhenScanning_ThenTh
 	}
 }
 
+func TestRefactorGuard_GivenLegacyDetailMotionShellMutationFiles_WhenScanning_ThenDeadHelpersAreGone(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`func \(program \*Program\) mutateDetailViewStateForYankMotion\(`,
+		`func \(program \*Program\) mutatePullRequestBuildRunPopupViewStateWithoutRefresh\(`,
+		`func \(program \*Program\) mutatePullRequestBuildRunPopupViewStateForYankMotion\(`,
+		`func \(program \*Program\) copySelectedText\(`,
+		`func \(program \*Program\) copySelectedPullRequestBuildRunPopupText\(`,
+		`func \(program \*Program\) finishPendingYank\(`,
+		`func \(program \*Program\) writeTextToClipboard\(`,
+		`func \(program \*Program\) copySelectedDetailText\(`,
+		`func \(program \*Program\) copySelectedPullRequestURL\(`,
+		`func \(program \*Program\) openCurrentLink\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		switch filepath.Base(path) {
+		case "detail_motion_mutation.go", "yank_motion.go", "yank_url.go", "open_link.go":
+			return true
+		default:
+			return false
+		}
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected the dead legacy detail-motion / yank / link helpers to be deleted once the typed command pipeline owns the live flow, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationSupportAndDetailSearchFiles_WhenScanning_ThenTheyStopOwningPageOrSearchShellHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`func \(program \*Program\) handlePageChange\(`,

@@ -25,19 +25,6 @@ func (program *Program) openLinkUnderCursor(gui *gocui.Gui, view *gocui.View) er
 	return program.dispatch(gui, MsgOpenLinkUnderCursorRequested{})
 }
 
-func (program *Program) openCurrentLink(_ *gocui.View) error {
-	if program.linkOpener == nil {
-		return ErrLinkOpenerUnavailable
-	}
-
-	url, ok := program.currentDetailCursorLink(nil)
-	if !ok {
-		return ErrNoLinkUnderCursor
-	}
-
-	return program.linkOpener.Open(url)
-}
-
 func (program *Program) currentDetailCursorLink(_ *gocui.View) (string, bool) {
 	selection := program.currentDetailCursorSelection()
 	if actual, ok := selection.document.linkAt(selection.state.cursor); ok {

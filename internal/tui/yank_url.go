@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	ErrNoPullRequestURL     = errors.New("no pull request url")
 	ErrClipboardUnavailable = errors.New("clipboard is unavailable")
 )
 
@@ -20,18 +19,6 @@ const (
 
 func (program *Program) copyPullRequestURL(gui *gocui.Gui, view *gocui.View) error {
 	return program.dispatch(gui, MsgCopyPullRequestURLRequested{})
-}
-
-func (program *Program) copySelectedDetailText(gui *gocui.Gui, view *gocui.View) error {
-	return program.dispatch(gui, MsgCopySelectedDetailTextRequested{})
-}
-
-func (program *Program) copySelectedPullRequestURL() error {
-	url, ok := program.selectedPullRequestURL()
-	if !ok {
-		return ErrNoPullRequestURL
-	}
-	return program.writeTextToClipboard(url)
 }
 
 func (program *Program) selectedPullRequestURL() (string, bool) {
