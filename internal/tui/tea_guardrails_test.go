@@ -85,6 +85,15 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyDispatchUsesUiU
 	}
 }
 
+func TestRefactorGuard_GivenModalInteractionCommandFile_WhenScanning_ThenItUsesTheRuntimeBridgeInsteadOfNestedProgramDispatch(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.dispatch`), func(path string) bool {
+		return filepath.Base(path) == "cmd_interaction_modal.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected modal-editor command re-entry to use executeRuntimeMessage(...) instead of nested program.dispatch(...), actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1NavigationFiles_WhenScanning_ThenTheyDoNotMutateProgramModelOrCallDirectShellRefreshHelpers(t *testing.T) {
 	phase1Files := map[string]bool{
 		"program_navigation.go":         true,

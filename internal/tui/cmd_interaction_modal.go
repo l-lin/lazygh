@@ -9,7 +9,7 @@ import (
 type modalEditorCommandRuntime struct {
 	externalEditor ExternalEditor
 	submitDeps     modalEditorSubmitCommandDeps
-	dispatch       func(*gocui.Gui, Msg) error
+	executeMessage func(*gocui.Gui, Msg) error
 }
 
 func newModalEditorCommandRuntime(program *Program) modalEditorCommandRuntime {
@@ -19,7 +19,7 @@ func newModalEditorCommandRuntime(program *Program) modalEditorCommandRuntime {
 	return modalEditorCommandRuntime{
 		externalEditor: program.externalEditor,
 		submitDeps:     newModalEditorSubmitCommandDeps(program),
-		dispatch:       program.dispatch,
+		executeMessage: program.executeRuntimeMessage,
 	}
 }
 
@@ -32,16 +32,16 @@ func (command modalEditorExternalEditCmd) execute(program *Program, gui *gocui.G
 }
 
 func executeModalEditorExternalEditCommand(runtime modalEditorCommandRuntime, gui *gocui.Gui, command modalEditorExternalEditCmd) {
-	if runtime.dispatch == nil {
+	if runtime.executeMessage == nil {
 		return
 	}
 	if runtime.externalEditor == nil {
-		_ = runtime.dispatch(gui, MsgModalEditorExternalEditFinished{Err: errors.New("external editor is unavailable")})
+		_ = runtime.executeMessage(gui, MsgModalEditorExternalEditFinished{Err: errors.New("external editor is unavailable")})
 		return
 	}
 
 	editedText, err := runtime.externalEditor.Edit(gui, command.Text)
-	_ = runtime.dispatch(gui, MsgModalEditorExternalEditFinished{Text: editedText, Err: err})
+	_ = runtime.executeMessage(gui, MsgModalEditorExternalEditFinished{Text: editedText, Err: err})
 }
 
 type modalEditorSubmitCmd struct {
@@ -53,10 +53,10 @@ func (command modalEditorSubmitCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeModalEditorSubmitCommand(runtime modalEditorCommandRuntime, gui *gocui.Gui, command modalEditorSubmitCmd) {
-	if command.request == nil || runtime.dispatch == nil {
+	if command.request == nil || runtime.executeMessage == nil {
 		return
 	}
 
 	completion, err := command.request.run(runtime.submitDeps)
-	_ = runtime.dispatch(gui, MsgModalEditorSubmitFinished{Err: err, Completion: completion})
+	_ = runtime.executeMessage(gui, MsgModalEditorSubmitFinished{Err: err, Completion: completion})
 }
