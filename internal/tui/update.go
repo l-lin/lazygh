@@ -141,6 +141,8 @@ func Update(program *Program, msg Msg) []Cmd {
 		return program.applyLineNavigationRequested(actual)
 	case MsgPageNavigationRequested:
 		return program.applyPageNavigationRequested(actual)
+	case MsgPageNavigationResolved:
+		return program.applyPageNavigationResolved(actual)
 	case MsgSideListViewportRequested:
 		return program.applySideListViewportRequested(actual)
 	case MsgDetailViewportRequested:

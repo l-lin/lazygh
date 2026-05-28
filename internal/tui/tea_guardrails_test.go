@@ -1204,6 +1204,20 @@ func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenPageHandlersD
 	}
 }
 
+func TestRefactorGuard_GivenNavigationCommandFile_WhenScanning_ThenPageNavigationStopsMutatingSideOrReviewSelectionDirectly(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`applyMoveReviewSelection\(`,
+		`applyMoveSideSelection\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "cmd_interaction_navigation.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cmd_interaction_navigation.go page navigation to stop mutating side or review selection directly, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProgramNavigationFile_WhenScanning_ThenLineHandlersDispatchInsteadOfCallingSelectionShellHelpers(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`handleSelectionChange\(`), func(path string) bool {
 		return filepath.Base(path) == "program_navigation.go"

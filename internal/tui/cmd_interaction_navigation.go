@@ -6,8 +6,8 @@ type navigationCommandRuntime struct {
 	dispatch                   func(*gocui.Gui, Msg) error
 	resolveView                func(*gocui.Gui, *gocui.View, string) *gocui.View
 	configureGUI               func(*gocui.Gui)
+	currentViewName            func() string
 	currentDetailDocument      func(*gocui.View) detailDocument
-	handlePageNavigation       func(*gocui.Gui, *gocui.View, pageNavigationKind)
 	handleSideListViewport     func(*gocui.Gui, *gocui.View, viewportPlacement)
 	handleActionsPopupViewport func(*gocui.Gui, *gocui.View, viewportPlacement)
 }
@@ -20,22 +20,8 @@ func newNavigationCommandRuntime(program *Program) navigationCommandRuntime {
 		dispatch:              program.dispatch,
 		resolveView:           program.resolveView,
 		configureGUI:          program.configureGUI,
+		currentViewName:       program.currentViewName,
 		currentDetailDocument: program.currentDetailDocument,
-		handlePageNavigation: func(gui *gocui.Gui, view *gocui.View, kind pageNavigationKind) {
-			actualView := program.resolveView(gui, view, program.currentViewName())
-			pageSize := viewPageSize(actualView)
-			delta := pageNavigationDelta(kind, pageSize)
-			if program.actionContext().IsReviewContext() {
-				if program.model.Focus() != FocusPullRequestsView {
-					return
-				}
-				program.applyMoveReviewSelection(MsgMoveReviewSelection{Delta: delta})
-			} else {
-				program.applyMoveSideSelection(MsgMoveSideSelection{Delta: delta})
-			}
-			viewName, selectedVisibleLine, lineCount := program.currentSideListState()
-			_ = program.recenterListSelection(gui, actualView, viewName, selectedVisibleLine, lineCount)
-		},
 		handleSideListViewport: func(gui *gocui.Gui, view *gocui.View, placement viewportPlacement) {
 			viewName, selectedVisibleLine, lineCount := program.currentSideListState()
 			if placement == viewportPlacementCenter {
@@ -97,10 +83,19 @@ func (command pageNavigationCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executePageNavigationCommand(runtime navigationCommandRuntime, gui *gocui.Gui, command pageNavigationCmd) {
-	if runtime.handlePageNavigation == nil {
+	if runtime.dispatch == nil {
 		return
 	}
-	runtime.handlePageNavigation(gui, nil, command.Kind)
+
+	fallbackName := ""
+	if runtime.currentViewName != nil {
+		fallbackName = runtime.currentViewName()
+	}
+	actualView := (*gocui.View)(nil)
+	if runtime.resolveView != nil {
+		actualView = runtime.resolveView(gui, nil, fallbackName)
+	}
+	_ = runtime.dispatch(gui, MsgPageNavigationResolved{Kind: command.Kind, PageSize: viewPageSize(actualView)})
 }
 
 type readOnlyScrollCmd struct {

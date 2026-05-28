@@ -128,6 +128,11 @@ type MsgPageNavigationRequested struct {
 	Kind pageNavigationKind
 }
 
+type MsgPageNavigationResolved struct {
+	Kind     pageNavigationKind
+	PageSize int
+}
+
 type MsgSideListViewportRequested struct {
 	Placement viewportPlacement
 }
@@ -365,6 +370,7 @@ func (MsgCloseHelp) isMsg()                                    {}
 func (MsgAdjustFocusedPane) isMsg()                            {}
 func (MsgLineNavigationRequested) isMsg()                      {}
 func (MsgPageNavigationRequested) isMsg()                      {}
+func (MsgPageNavigationResolved) isMsg()                       {}
 func (MsgSideListViewportRequested) isMsg()                    {}
 func (MsgDetailViewportRequested) isMsg()                      {}
 func (MsgDetailViewportResolved) isMsg()                       {}

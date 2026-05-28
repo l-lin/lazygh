@@ -249,6 +249,28 @@ func (program *Program) applyPageNavigationRequested(message MsgPageNavigationRe
 	return []Cmd{pageNavigationCmd{Kind: message.Kind}}
 }
 
+func (program *Program) applyPageNavigationResolved(message MsgPageNavigationResolved) []Cmd {
+	program.clearPendingSelectionPrefix()
+	if program.selectionChangeBlocked() {
+		return nil
+	}
+
+	delta := pageNavigationDelta(message.Kind, message.PageSize)
+	if delta == 0 {
+		return nil
+	}
+	if program.actionContext().IsReviewContext() {
+		if program.model.Focus() != FocusPullRequestsView {
+			return nil
+		}
+		program.adjustReviewSessionSelection(delta)
+		return []Cmd{sideListViewportCmd{Placement: viewportPlacementCenter}}
+	}
+
+	program.model.adjustSelectionBy(delta)
+	return []Cmd{sideListViewportCmd{Placement: viewportPlacementCenter}}
+}
+
 func (program *Program) applySideListViewportRequested(message MsgSideListViewportRequested) []Cmd {
 	program.clearPendingSelectionPrefix()
 	if program.selectionChangeBlocked() {
