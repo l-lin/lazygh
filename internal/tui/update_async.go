@@ -18,12 +18,10 @@ func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded)
 		connectedUserLogin = strings.TrimSpace(message.User.Login)
 		connectedUserName = strings.TrimSpace(message.User.Name)
 	}
-	if program.connectedUserLogin != connectedUserLogin {
-		program.connectedUserLogin = connectedUserLogin
+	if program.setConnectedUser(connectedUserLogin, connectedUserName) {
 		program.invalidatePullRequestDetailDocumentCache()
 		program.invalidateReviewDiffRenderCache()
 	}
-	program.connectedUserName = connectedUserName
 	program.model.SetUsers([]Item{connectedUserStateItem(message.User, message.Err)})
 }
 

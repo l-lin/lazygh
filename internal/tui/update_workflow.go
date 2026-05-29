@@ -3,7 +3,7 @@ package tui
 import "strings"
 
 func (program *Program) applyConnectedUserLoadPlanned() {
-	program.connectedUserLoadStarted = true
+	program.planConnectedUserLoad()
 }
 
 func (program *Program) applyPullRequestsLoadPlanned(message MsgPullRequestsLoadPlanned) {
