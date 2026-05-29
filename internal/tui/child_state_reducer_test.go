@@ -53,3 +53,35 @@ func TestReviewSessionState_GivenFoldableTree_WhenCollapsingAllRows_ThenItReturn
 		t.Fatalf("expected the original fold map to stay free of new entries, actual %v", subject.collapsedTreeRowIDs)
 	}
 }
+
+func TestDetailStateModel_GivenActiveTabTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := detailStateModel{activeTab: CommentsDetailTab, wrapWidth: 72}
+
+	selected := subject.withActiveTab(CommitsDetailTab)
+	projected := subject.withProjectedScreenStateApplication(projectedScreenStateApplication{hasDetailTab: true, activeDetailTab: ChangesDetailTab})
+	advancedForward := subject.withAdvancedActiveTab(1, len(browserDetailTabs))
+	advancedBackward := subject.withAdvancedActiveTab(-1, len(browserDetailTabs))
+	unchanged := subject.withProjectedScreenStateApplication(projectedScreenStateApplication{})
+
+	if actual := selected.activeTab; actual != CommitsDetailTab {
+		t.Fatalf("expected selected active tab %v, actual %v", CommitsDetailTab, actual)
+	}
+	if actual := projected.activeTab; actual != ChangesDetailTab {
+		t.Fatalf("expected projected active tab %v, actual %v", ChangesDetailTab, actual)
+	}
+	if actual := advancedForward.activeTab; actual != CommitsDetailTab {
+		t.Fatalf("expected forward advanced active tab %v, actual %v", CommitsDetailTab, actual)
+	}
+	if actual := advancedBackward.activeTab; actual != DescriptionDetailTab {
+		t.Fatalf("expected backward advanced active tab %v, actual %v", DescriptionDetailTab, actual)
+	}
+	if actual := unchanged.activeTab; actual != CommentsDetailTab {
+		t.Fatalf("expected unchanged active tab %v, actual %v", CommentsDetailTab, actual)
+	}
+	if actual := subject.activeTab; actual != CommentsDetailTab {
+		t.Fatalf("expected the original active tab %v, actual %v", CommentsDetailTab, actual)
+	}
+	if actual := subject.wrapWidth; actual != 72 {
+		t.Fatalf("expected the original wrap width %d, actual %d", 72, actual)
+	}
+}

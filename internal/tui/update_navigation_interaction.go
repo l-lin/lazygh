@@ -12,9 +12,7 @@ func searchMatchChooserForDirection(direction searchRepeatDirection) searchMatch
 func (program *Program) applyProjectedScreenState(state ScreenState) {
 	application := projectScreenStateApplication(state)
 	program.model.ApplyProjectedScreenState(state)
-	if application.hasDetailTab {
-		program.detailState.activeTab = application.activeDetailTab
-	}
+	program.applyProjectedDetailStateApplication(application)
 }
 
 func (program *Program) applyMoveSideSelection(message MsgMoveSideSelection) {
@@ -159,7 +157,7 @@ func (program *Program) applyOpenPullRequestInPastedTabView(message MsgOpenPullR
 func (program *Program) finishOpenPullRequestInBrowserView(sideFocus Focus) {
 	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
-	program.detailState.activeTab = DescriptionDetailTab
+	program.setDetailActiveTab(DescriptionDetailTab)
 	program.resetDetailViewState()
 	program.detailState.viewState.clearPendingPrefix()
 	program.clearPendingSelectionPrefix()
@@ -187,12 +185,7 @@ func (program *Program) applyAdvanceDetailTab(message MsgAdvanceDetailTab) {
 	if count == 0 || message.Delta == 0 {
 		return
 	}
-	index := int(program.detailState.activeTab)
-	if message.Delta > 0 {
-		program.detailState.activeTab = DetailTab((index + 1) % count)
-		return
-	}
-	program.detailState.activeTab = DetailTab((index + count - 1) % count)
+	program.advanceDetailActiveTab(message.Delta, count)
 }
 
 func (program *Program) applyExitReviewMode() {

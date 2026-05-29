@@ -227,7 +227,7 @@ func (program *Program) restorePullRequestBrowserFromReviewMode() {
 	sourceDetailFullscreenReturn := program.navigationState.reviewSession.sourceDetailFullscreenReturn
 	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
-	program.detailState.activeTab = sourceDetailTab
+	program.setDetailActiveTab(sourceDetailTab)
 	program.detailState.viewState.clearPendingPrefix()
 	program.model.SetPaneLayoutSize(sourcePaneLayoutSize)
 	program.model.SetFullscreenPane(sourceFullscreenPane)

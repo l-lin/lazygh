@@ -2,46 +2,65 @@ package tui
 
 import "github.com/jesseduffield/gocui"
 
-func (program *Program) setDetailWrapWidth(width int) {
+func (program *Program) updateDetailState(transition func(detailStateModel) detailStateModel) {
 	if program == nil {
 		return
 	}
-	program.detailState = program.detailState.withWrapWidth(width)
+	program.detailState = transition(program.detailState)
+}
+
+func (program *Program) setDetailWrapWidth(width int) {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withWrapWidth(width)
+	})
+}
+
+func (program *Program) setDetailActiveTab(tab DetailTab) {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withActiveTab(tab)
+	})
+}
+
+func (program *Program) applyProjectedDetailStateApplication(application projectedScreenStateApplication) {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withProjectedScreenStateApplication(application)
+	})
+}
+
+func (program *Program) advanceDetailActiveTab(delta int, count int) {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withAdvancedActiveTab(delta, count)
+	})
 }
 
 func (program *Program) resetDetailViewState() {
-	if program == nil {
-		return
-	}
-	program.detailState = program.detailState.withResetViewState()
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withResetViewState()
+	})
 }
 
 func (program *Program) syncCurrentDetailViewport(detailDocument detailDocument, viewportHeight int) {
-	if program == nil {
-		return
-	}
-	program.detailState = program.detailState.withSyncedViewport(detailDocument, viewportHeight)
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withSyncedViewport(detailDocument, viewportHeight)
+	})
 }
 
 func (program *Program) placeDetailCursorAtLine(detailDocument detailDocument, line int) {
-	if program == nil {
-		return
-	}
-	program.detailState = program.detailState.withCursorAtLine(detailDocument, line)
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withCursorAtLine(detailDocument, line)
+	})
 }
 
 func (program *Program) focusDetailLine(detailDocument detailDocument, viewportHeight int, line int) {
-	if program == nil {
-		return
-	}
-	program.detailState = program.detailState.withFocusedLine(detailDocument, viewportHeight, line)
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withFocusedLine(detailDocument, viewportHeight, line)
+	})
 }
 
 func (program *Program) syncDetailViewState(detailDocument detailDocument, viewportHeight int) {
-	if program == nil {
-		return
-	}
-	program.detailState = program.detailState.synced(program.currentDetailIdentity(), detailDocument, viewportHeight, program.model.DetailSearchQuery())
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.synced(program.currentDetailIdentity(), detailDocument, viewportHeight, program.model.DetailSearchQuery())
+	})
 }
 
 func (program *Program) syncDetailViewShellState(view *gocui.View) {
@@ -50,11 +69,13 @@ func (program *Program) syncDetailViewShellState(view *gocui.View) {
 	}
 
 	detailDocument := program.currentDetailDocument(view)
-	program.detailState = program.detailState.syncedForRender(
-		program.currentDetailIdentity(),
-		detailDocument,
-		effectiveMarkdownWidth(view.InnerWidth()),
-		view.InnerHeight(),
-		program.model.DetailSearchQuery(),
-	)
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.syncedForRender(
+			program.currentDetailIdentity(),
+			detailDocument,
+			effectiveMarkdownWidth(view.InnerWidth()),
+			view.InnerHeight(),
+			program.model.DetailSearchQuery(),
+		)
+	})
 }

@@ -5,6 +5,33 @@ func (state detailStateModel) withWrapWidth(width int) detailStateModel {
 	return state
 }
 
+func (state detailStateModel) withActiveTab(tab DetailTab) detailStateModel {
+	state.activeTab = tab
+	return state
+}
+
+func (state detailStateModel) withProjectedScreenStateApplication(application projectedScreenStateApplication) detailStateModel {
+	if !application.hasDetailTab {
+		return state
+	}
+	return state.withActiveTab(application.activeDetailTab)
+}
+
+func (state detailStateModel) withAdvancedActiveTab(delta int, count int) detailStateModel {
+	if count <= 0 || delta == 0 {
+		return state
+	}
+
+	index := int(state.activeTab)
+	if delta > 0 {
+		index = (index + 1) % count
+	} else {
+		index = (index + count - 1) % count
+	}
+	state.activeTab = DetailTab(index)
+	return state
+}
+
 func (state detailStateModel) withResetViewState() detailStateModel {
 	state.viewState.reset()
 	return state
