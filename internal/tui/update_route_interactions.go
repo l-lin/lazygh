@@ -180,9 +180,6 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 		return handledUpdate(nil)
 	case MsgActionsPopupSearchInputRequested:
 		return handledUpdate(program.applyActionsPopupSearchInputRequested(actual))
-	case MsgPullRequestSearchesApplied:
-		program.applyPullRequestSearchesApplied(actual)
-		return handledUpdate(nil)
 	default:
 		return ignoredUpdate()
 	}

@@ -273,7 +273,8 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 		searches = append(searches, search)
 	}
 
-	program.runtimeConfig.pullRequestSearches = searches
+	program.setRuntimePullRequestSearches(searches)
+	searches = append([]appconfig.PullRequestSearch(nil), program.runtimeConfig.pullRequestSearches...)
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(searches))
 	for tab, rows := range preservedRows {
 		program.model.SetPullRequestRows(tab, rows)

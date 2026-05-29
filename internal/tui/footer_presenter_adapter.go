@@ -28,6 +28,7 @@ func (program *Program) footerPresenter() footerPresenter {
 		pullRequestBuildPopupVisible: program.pullRequestBuildRunPopupVisible(),
 		assigneePickerVisible:        program.assigneePickerVisible(),
 		notificationSelectionVisible: notificationSelectionVisible,
+		commentShortcutAvailable:     program.paneFooterCommentShortcutAvailable(),
 		actionsPopupAvailable:        program.paneFooterActionsAvailable(),
 		modalEditorSubmitAction:      submitAction,
 		modalEditorSubmitFallback:    submitFallback,
@@ -38,6 +39,38 @@ func (program *Program) footerPresenter() footerPresenter {
 		program.refreshReadCache.footerPresenterSet = true
 	}
 	return presenter
+}
+
+func (program *Program) paneFooterCommentShortcutAvailable() bool {
+	if program == nil || program.model == nil {
+		return false
+	}
+
+	focus := program.screenState().ActiveView().Focus
+	switch focus {
+	case FocusPullRequestsView:
+		if program.actionContext().IsReviewContext() {
+			return false
+		}
+		_, ok := program.selectedPullRequestCommentTarget()
+		return ok
+	case FocusDetailView:
+		switch program.inputContext().DetailInputMode {
+		case DetailInputModePullRequestComment:
+			_, ok := program.selectedPullRequestCommentTarget()
+			return ok
+		case DetailInputModeBrowserChangesInlineComment:
+			_, err := program.selectedBrowserChangesInlineCommentSelection()
+			return err == nil
+		case DetailInputModeReviewInlineComment:
+			_, err := program.selectedReviewInlineCommentSelection()
+			return err == nil
+		default:
+			return false
+		}
+	default:
+		return false
+	}
 }
 
 func (program *Program) paneFooterActionsAvailable() bool {

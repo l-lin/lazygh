@@ -96,7 +96,7 @@ func bindingsForViews(viewNames []string, definitions ...keybindingDefinition) [
 }
 
 func (program *Program) ApplyKeymapOverrides(overrides appconfig.KeymapOverrides) {
-	program.runtimeConfig.keymapOverrides = copyKeymapOverrides(overrides)
+	_ = program.dispatchRuntimeMessage(MsgKeymapOverridesApplied{Overrides: overrides})
 }
 
 func copyKeymapOverrides(overrides appconfig.KeymapOverrides) appconfig.KeymapOverrides {

@@ -1066,6 +1066,20 @@ func TestRefactorGuard_GivenSearchWidgetFiles_WhenScanning_ThenSearchEditorAndDi
 	}
 }
 
+func TestRefactorGuard_GivenRuntimeConfigFiles_WhenScanning_ThenRuntimeConfigWritesStayOnWholeStateReplacementHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.runtimeConfig\.(?:pullRequestSearches|keymapOverrides|storyReviewConfig)\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected runtime-config writes to use whole-state replacement helpers instead of direct field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenNotificationStoreFiles_WhenScanning_ThenNotificationLoadingWritesStayOnValueTransitions(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.(?:notificationsLoadStarted|notificationsLoading|notificationsLoadingDetailMessage)\s*=\s*[^=]`,

@@ -12,6 +12,7 @@ type footerPresenter struct {
 	pullRequestBuildPopupVisible bool
 	assigneePickerVisible        bool
 	notificationSelectionVisible bool
+	commentShortcutAvailable     bool
 	actionsPopupAvailable        bool
 	modalEditorSubmitAction      string
 	modalEditorSubmitFallback    string
@@ -203,6 +204,9 @@ func (presenter footerPresenter) paneFooterKeyHintsText(focus Focus) string {
 			presenter.paneFooterKeyHint("done", keybindingActionID{scope: keymapScopeNotifications, action: "mark_notification_done"}),
 		)
 	}
+	if commentHint := presenter.paneFooterCommentHint(focus); commentHint != "" {
+		hints = append(hints, commentHint)
+	}
 	if actionsHint := presenter.paneFooterActionsHint(focus); actionsHint != "" {
 		hints = append(hints, actionsHint)
 	}
@@ -234,6 +238,24 @@ func (presenter footerPresenter) statusLineKeyHintKeys(fallback string, actionID
 
 func (presenter footerPresenter) paneFooterKeyHint(label string, actionIDs ...keybindingActionID) string {
 	return presenter.statusLineKeyHint(label, "", actionIDs...)
+}
+
+func (presenter footerPresenter) paneFooterCommentHint(focus Focus) string {
+	if !presenter.commentShortcutAvailable {
+		return ""
+	}
+	if focus != FocusPullRequestsView && focus != FocusDetailView {
+		return ""
+	}
+	return presenter.paneFooterOverriddenKeyHint("comment", keybindingActionID{scope: keymapScopePullRequests, action: "comment_on_pull_request"})
+}
+
+func (presenter footerPresenter) paneFooterOverriddenKeyHint(label string, actionIDs ...keybindingActionID) string {
+	actualLabels, ok, hasOverride := presenter.keyResolver.resolvedKeyLabels(actionIDs...)
+	if !ok || !hasOverride || len(actualLabels) == 0 {
+		return ""
+	}
+	return strings.Join(formattedKeySequenceLabelsForDisplay(actualLabels), "/") + ": " + label
 }
 
 func (presenter footerPresenter) paneFooterActionsHint(focus Focus) string {

@@ -7,6 +7,7 @@ import (
 	"github.com/jesseduffield/gocui"
 	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/story"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -221,6 +222,107 @@ func TestStatusLineKeyHints_GivenGlobalActionOverride_WhenRenderingReviewModeFil
 	actualErr = subject.focusDetailView(gui, nil)
 	then_noError(t, actualErr)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, p: action")
+}
+
+func TestStatusLineKeyHints_GivenPullRequestCommentOverride_WhenRenderingPullRequestsView_ThenItShowsTheResolvedCommentHint(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_pullRequestCommentModel(), appconfig.KeymapOverrides{
+		"global": {
+			"open_actions_popup": {"alt+a"},
+		},
+		"pull_requests": {
+			"comment_on_pull_request": {"alt+c"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, Alt+C: comment, Alt+A: action")
+}
+
+func TestStatusLineKeyHints_GivenPullRequestCommentOverride_WhenRenderingBrowserChangesDetail_ThenItShowsTheResolvedCommentHint(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailForChangesInlineCommentTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"global": {
+			"open_actions_popup": {"alt+a"},
+		},
+		"pull_requests": {
+			"comment_on_pull_request": {"alt+c"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "new line")
+	actualErr := subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, Alt+C: comment, Alt+A: action")
+}
+
+func TestStatusLineKeyHints_GivenPullRequestCommentOverride_WhenRenderingStoryReviewDiff_ThenItShowsTheResolvedCommentHint(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_story",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/story",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	storyGenerator := &fakeStoryGenerator{review: story.Review{
+		Summary: "A calmer way to review the pull request.",
+		Chapters: []story.Chapter{{
+			ID:        "chapter-1",
+			Title:     "The Renderer Wakes",
+			Narrative: "## Chapter 1\nThis chapter explains the rendering shift.",
+			Files:     []string{"internal/tui/render.go"},
+		}},
+	}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"global": {
+			"open_actions_popup": {"alt+a"},
+		},
+		"pull_requests": {
+			"comment_on_pull_request": {"alt+c"},
+		},
+	})
+	subject.storyGenerator = storyGenerator
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingStoryReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.moveSelectionDown(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "new line")
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, Alt+C: comment, Alt+A: action")
 }
 
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {

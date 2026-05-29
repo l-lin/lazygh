@@ -28,6 +28,7 @@ func (program *Program) routeLifecycleAndEditorMessages(msg Msg) updateResult {
 	return program.routeUpdateCategory(msg,
 		program.routeBootstrapFocusAndSidePaneSelection,
 		program.routeSearchPromptAndDraftUpdate,
+		program.routeRuntimeConfigMessages,
 		program.routeFeedbackErrorAndModalEditorLifecycle,
 		program.routeBuildRunPopupLifecycle,
 	)

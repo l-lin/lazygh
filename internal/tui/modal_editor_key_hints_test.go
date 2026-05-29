@@ -165,3 +165,88 @@ func TestStatusLineKeyHints_GivenInlineCommentReplyEditor_WhenRendering_ThenItSh
 	then_statusLineKeyHintsAreRightAligned(t, gui, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "Alt+Enter: submit, Ctrl+G: editor, Escape: cancel", given_themeColorHex(t, theme.InactiveTitleHex), "inline comment reply key hints")
 }
+
+func TestStatusLineKeyHints_GivenConfiguredModalEditorOverrides_WhenRenderingPullRequestCommentComposer_ThenItUsesTheResolvedModalKeys(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_pullRequestCommentModel(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"submit":               {"ctrl+l"},
+			"open_external_editor": {"ctrl+o"},
+			"cancel":               {"x"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestCommentComposer(gui, nil)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "Ctrl+L: submit, Ctrl+O: editor, x: cancel")
+}
+
+func TestStatusLineKeyHints_GivenConfiguredModalEditorOverrides_WhenRenderingBrowserChangesInlineCommentComposer_ThenItUsesTheResolvedModalKeys(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailForChangesInlineCommentTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"modal_editor": {
+			"submit":               {"ctrl+l"},
+			"open_external_editor": {"ctrl+o"},
+			"cancel":               {"x"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "new line")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "Ctrl+L: submit, Ctrl+O: editor, x: cancel")
+}
+
+func TestStatusLineKeyHints_GivenConfiguredModalEditorOverrides_WhenRenderingReviewInlineCommentComposer_ThenItUsesTheResolvedModalKeys(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"modal_editor": {
+			"submit":               {"ctrl+l"},
+			"open_external_editor": {"ctrl+o"},
+			"cancel":               {"x"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "new line")
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'c')
+	actualErr = actualHandler(gui, detailView)
+	then_noError(t, actualErr)
+
+	then_statusLineKeyHintsAre(t, gui, "Ctrl+L: submit, Ctrl+O: editor, x: cancel")
+}
