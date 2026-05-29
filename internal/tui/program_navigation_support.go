@@ -3,7 +3,7 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 func (program *Program) clearPendingSelectionPrefix() {
-	program.navigationState.pendingSelectionKeySequence.clear()
+	program.clearPendingSelectionKeySequence()
 }
 
 func (program *Program) resolveView(gui *gocui.Gui, view *gocui.View, fallbackName string) *gocui.View {

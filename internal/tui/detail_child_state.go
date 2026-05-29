@@ -37,6 +37,20 @@ func (state detailStateModel) withPendingPrefixCleared() detailStateModel {
 	return state
 }
 
+func (state detailStateModel) pendingKeySequenceTarget() keySequenceTarget {
+	return state.viewState.pendingKeySequence.pendingTarget
+}
+
+func (state detailStateModel) withPendingKeySequenceArmed(target keySequenceTarget) detailStateModel {
+	state.viewState.pendingKeySequence.arm(target)
+	return state
+}
+
+func (state detailStateModel) withPendingKeySequenceCleared() detailStateModel {
+	state.viewState.pendingKeySequence.clear()
+	return state
+}
+
 func (state detailStateModel) withVisualModeExited() detailStateModel {
 	state.viewState.exitVisualMode()
 	return state

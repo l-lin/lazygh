@@ -796,6 +796,21 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOpenedPullRequestPi
 	}
 }
 
+func TestRefactorGuard_GivenPendingKeySequenceFiles_WhenScanning_ThenPendingKeySequenceStateUsesChildStateTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`return &program\.(?:detailState\.viewState\.pendingKeySequence|pullRequestBuildRunPopup\.viewState\.pendingKeySequence|navigationState\.pendingSelectionKeySequence)`,
+		`program\.navigationState\.pendingSelectionKeySequence\.clear\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "program_keybindings.go" || base == "program_navigation_support.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected pending key-sequence state to stay on explicit child-state transitions instead of pointer escapes or direct selection-prefix mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDirectDetailAndReviewChildStateFieldMutationRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\.selectedFileTreeRow\s*=\s*[^=]`,

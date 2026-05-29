@@ -100,3 +100,22 @@ func TestPullRequestBuildRunPopupState_GivenVisualSelection_WhenPreparingClipboa
 		t.Fatalf("expected original popup mode %v, actual %v", detailVisualMode, subject.viewState.mode)
 	}
 }
+
+func TestPullRequestBuildRunPopupState_GivenPendingKeySequenceTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	originalTarget := keySequenceTargetFor(viewPullRequestBuildInfoName, keymapScopeSelection, "move_selection_to_top")
+	replacementTarget := keySequenceTargetFor(viewPullRequestBuildInfoName, keymapScopeSelection, "recenter_selection")
+	subject := pullRequestBuildRunPopupState{viewState: detailViewState{pendingKeySequence: keySequenceState{pendingTarget: originalTarget}}}
+
+	armed := subject.withPendingKeySequenceArmed(replacementTarget)
+	cleared := subject.withPendingKeySequenceCleared()
+
+	if actual := armed.pendingKeySequenceTarget(); actual != replacementTarget {
+		t.Fatalf("expected armed pending key sequence target %+v, actual %+v", replacementTarget, actual)
+	}
+	if actual := cleared.pendingKeySequenceTarget(); actual != (keySequenceTarget{}) {
+		t.Fatalf("expected cleared pending key sequence target %+v, actual %+v", keySequenceTarget{}, actual)
+	}
+	if actual := subject.pendingKeySequenceTarget(); actual != originalTarget {
+		t.Fatalf("expected the original pending key sequence target %+v, actual %+v", originalTarget, actual)
+	}
+}

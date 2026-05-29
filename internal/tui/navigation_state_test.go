@@ -38,6 +38,25 @@ func TestNavigationStateModel_GivenOpenedPullRequestPinningTransitions_WhenUpdat
 	}
 }
 
+func TestNavigationStateModel_GivenPendingSelectionPrefixTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	originalTarget := keySequenceTargetFor(viewPullRequestsName, keymapScopeSelection, "move_selection_to_top")
+	replacementTarget := keySequenceTargetFor(viewPullRequestsName, keymapScopeSelection, "recenter_selection")
+	subject := navigationStateModel{pendingSelectionKeySequence: keySequenceState{pendingTarget: originalTarget}}
+
+	armed := subject.withPendingSelectionKeySequenceArmed(replacementTarget)
+	cleared := subject.withPendingSelectionKeySequenceCleared()
+
+	if actual := armed.pendingSelectionKeySequenceTarget(); actual != replacementTarget {
+		t.Fatalf("expected armed pending selection target %+v, actual %+v", replacementTarget, actual)
+	}
+	if actual := cleared.pendingSelectionKeySequenceTarget(); actual != (keySequenceTarget{}) {
+		t.Fatalf("expected cleared pending selection target %+v, actual %+v", keySequenceTarget{}, actual)
+	}
+	if actual := subject.pendingSelectionKeySequenceTarget(); actual != originalTarget {
+		t.Fatalf("expected the original pending selection target %+v, actual %+v", originalTarget, actual)
+	}
+}
+
 func TestProgram_GivenLoadedRowsWithAMatchingOpenedPullRequest_WhenApplyingRows_ThenItPinsTheUpdatedSummary(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.navigationState = subject.navigationState.withOpenedPullRequestSummaryPinned(MyPullRequestsTab, githubdomain.PullRequest{Number: 42, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, Title: "Stale"})

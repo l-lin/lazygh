@@ -229,12 +229,15 @@ func (entry keybindingDispatchEntry) hasDispatchLogic() bool {
 
 func (program *Program) dispatchingKeybindingHandler(viewName string, _ any, entry keybindingDispatchEntry) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		state := program.keySequenceStateForView(viewName)
-		if pendingHandler, ok := entry.consumePendingContinuation(state); ok {
-			return pendingHandler(gui, view)
+		pendingTarget := program.pendingKeySequenceTargetForView(viewName)
+		if pendingTarget != (keySequenceTarget{}) && len(entry.continuationHandlers) > 0 {
+			program.clearPendingKeySequenceForView(viewName)
+			if pendingHandler, ok := entry.continuationHandlers[pendingTarget]; ok {
+				return pendingHandler(gui, view)
+			}
 		}
 		if entry.prefixTarget != (keySequenceTarget{}) {
-			state.arm(entry.prefixTarget)
+			program.armPendingKeySequenceForView(viewName, entry.prefixTarget)
 			if entry.directHandler == nil {
 				return nil
 			}
@@ -244,36 +247,6 @@ func (program *Program) dispatchingKeybindingHandler(viewName string, _ any, ent
 		}
 		return nil
 	}
-}
-
-func (entry keybindingDispatchEntry) consumePendingContinuation(state *keySequenceState) (func(*gocui.Gui, *gocui.View) error, bool) {
-	if state == nil || len(entry.continuationHandlers) == 0 {
-		return nil, false
-	}
-
-	pendingTarget := state.pendingTarget
-	if pendingTarget == (keySequenceTarget{}) {
-		return nil, false
-	}
-
-	handler, ok := entry.continuationHandlers[pendingTarget]
-	state.clear()
-	if !ok {
-		return nil, false
-	}
-	return handler, true
-}
-
-func (program *Program) keySequenceStateForView(viewName string) *keySequenceState {
-	switch viewName {
-	case viewDetailName:
-		return &program.detailState.viewState.pendingKeySequence
-	case viewPullRequestBuildInfoName:
-		if program.pullRequestBuildRunPopup != nil {
-			return &program.pullRequestBuildRunPopup.viewState.pendingKeySequence
-		}
-	}
-	return &program.navigationState.pendingSelectionKeySequence
 }
 
 func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {

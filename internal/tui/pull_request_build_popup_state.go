@@ -32,6 +32,20 @@ func (state pullRequestBuildRunPopupState) withPendingPrefixCleared() pullReques
 	return state
 }
 
+func (state pullRequestBuildRunPopupState) pendingKeySequenceTarget() keySequenceTarget {
+	return state.viewState.pendingKeySequence.pendingTarget
+}
+
+func (state pullRequestBuildRunPopupState) withPendingKeySequenceArmed(target keySequenceTarget) pullRequestBuildRunPopupState {
+	state.viewState.pendingKeySequence.arm(target)
+	return state
+}
+
+func (state pullRequestBuildRunPopupState) withPendingKeySequenceCleared() pullRequestBuildRunPopupState {
+	state.viewState.pendingKeySequence.clear()
+	return state
+}
+
 func (state pullRequestBuildRunPopupState) withVisualModeExited() pullRequestBuildRunPopupState {
 	state.viewState.exitVisualMode()
 	return state

@@ -289,3 +289,22 @@ func TestDetailStateModel_GivenPendingPrefixAndVisualModeTransitions_WhenUpdatin
 		t.Fatalf("expected the original visual anchor %+v, actual %+v", detailPosition{line: 1, column: 2}, actual)
 	}
 }
+
+func TestDetailStateModel_GivenPendingKeySequenceTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	originalTarget := keySequenceTargetFor(viewDetailName, keymapScopeSelection, "move_selection_to_top")
+	replacementTarget := keySequenceTargetFor(viewDetailName, keymapScopeSelection, "recenter_selection")
+	subject := detailStateModel{viewState: detailViewState{pendingKeySequence: keySequenceState{pendingTarget: originalTarget}}}
+
+	armed := subject.withPendingKeySequenceArmed(replacementTarget)
+	cleared := subject.withPendingKeySequenceCleared()
+
+	if actual := armed.pendingKeySequenceTarget(); actual != replacementTarget {
+		t.Fatalf("expected armed pending key sequence target %+v, actual %+v", replacementTarget, actual)
+	}
+	if actual := cleared.pendingKeySequenceTarget(); actual != (keySequenceTarget{}) {
+		t.Fatalf("expected cleared pending key sequence target %+v, actual %+v", keySequenceTarget{}, actual)
+	}
+	if actual := subject.pendingKeySequenceTarget(); actual != originalTarget {
+		t.Fatalf("expected the original pending key sequence target %+v, actual %+v", originalTarget, actual)
+	}
+}
