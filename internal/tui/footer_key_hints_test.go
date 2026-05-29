@@ -106,9 +106,9 @@ func TestStatusLineKeyHints_GivenBuildRunPopupVisible_WhenRendering_ThenItShowsP
 	})
 	then_noError(t, actualErr)
 
-	then_statusLineKeyHintsAre(t, gui, "/: search, y: yank, Alt+Y: copy, Escape: back")
-	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, y: yank, Alt+Y: copy, Escape: back", given_themeColorHex(t, theme.InactiveTitleHex), "build run popup key hints")
-	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, y: yank, Alt+Y: copy, Escape: back")
+	then_statusLineKeyHintsAre(t, gui, "/: search, Alt+B: browser, y: yank, Alt+Y: copy, Escape: back")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewStatusLineKeyHintsName, 0, "/: search, Alt+B: browser, y: yank, Alt+Y: copy, Escape: back", given_themeColorHex(t, theme.InactiveTitleHex), "build run popup key hints")
+	then_statusLineKeyHintsAreRightAligned(t, gui, "/: search, Alt+B: browser, y: yank, Alt+Y: copy, Escape: back")
 }
 
 func TestPaneFooter_GivenFocusedViewOneWithoutSearchSummary_WhenRendering_ThenItShowsNoPaneFooterAndTheResolvedKeyHints(t *testing.T) {

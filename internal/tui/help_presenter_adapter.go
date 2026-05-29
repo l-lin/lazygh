@@ -9,5 +9,6 @@ func (program *Program) helpPresenter() helpPresenter {
 		actionContext:               program.actionContext(),
 		keyResolver:                 program.keybindingLabelResolver(),
 		inlineCommentReplyAvailable: program.inlineCommentReplyShortcutAvailable(),
+		pullRequestBrowserAvailable: program.pullRequestBrowserShortcutAvailable(),
 	}
 }

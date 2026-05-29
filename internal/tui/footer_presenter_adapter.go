@@ -29,6 +29,7 @@ func (program *Program) footerPresenter() footerPresenter {
 		assigneePickerVisible:        program.assigneePickerVisible(),
 		notificationSelectionVisible: notificationSelectionVisible,
 		commentShortcutAvailable:     program.paneFooterCommentShortcutAvailable(),
+		pullRequestBrowserAvailable:  program.pullRequestBrowserShortcutAvailable(),
 		actionsPopupAvailable:        program.paneFooterActionsAvailable(),
 		modalEditorSubmitAction:      submitAction,
 		modalEditorSubmitFallback:    submitFallback,

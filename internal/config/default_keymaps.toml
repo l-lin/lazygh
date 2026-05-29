@@ -75,6 +75,7 @@ next_comment = "]c"
 
 [keymaps.pull_requests]
 copy_pull_request_url = "alt+y"
+open_pull_request_in_browser = "alt+b"
 comment_on_pull_request = "c"
 custom_search = ":"
 open_pull_request_by_url = "ctrl+v"

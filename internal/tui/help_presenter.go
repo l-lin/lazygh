@@ -9,6 +9,7 @@ type helpPresenter struct {
 	actionContext               ActionContext
 	keyResolver                 keybindingLabelResolver
 	inlineCommentReplyAvailable bool
+	pullRequestBrowserAvailable bool
 }
 
 func (presenter helpPresenter) sections() []helpSection {
@@ -36,6 +37,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				{Key: "n/N", Description: "Next/previous match"},
 				{Key: "v/V", Description: "Start char/line visual selection"},
 				{Key: presenter.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeCursor, action: "start_yank"}), Description: "Start yank with motion"},
+				pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 				reviewInlineCommentHelpEntry(presenter.keyResolver),
 				{Key: presenter.inlineConversationToggleHelpKeys(), Description: "Expand/collapse conversation"},
 				{Key: presenter.bulkFoldHelpKeys(), Description: "Close/open all folds"},
@@ -70,6 +72,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				{Key: "+/-", Description: "Resize panes"},
 				{Key: presenter.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search file tree"},
 				{Key: presenter.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + presenter.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
+				pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 				pullRequestYankHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 				pullRequestCommentHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 				{Key: presenter.reviewTreeToggleHelpKeys(), Description: "Expand/collapse fold"},
@@ -81,6 +84,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 		default:
 			return []helpEntry{
 				{Key: presenter.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
+				pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopeUser),
 				pullRequestYankHelpEntry(presenter.keyResolver, keymapScopeUser),
 				pullRequestCommentHelpEntry(presenter.keyResolver, keymapScopeUser),
 				{Key: presenter.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}), Description: "Actions"},
@@ -115,6 +119,9 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			presenter.searchWordUnderCursorHelpEntry(),
 			{Key: "<esc>/q", Description: "Exit visual / return"},
 		}
+		if presenter.pullRequestBrowserAvailable {
+			entries = append(entries, pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopePullRequests))
+		}
 		entries = append(entries, helpEntry{Key: presenter.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeGlobal, action: "open_actions_popup"}), Description: "Actions"})
 		if actionContext.IsPullRequestContext() {
 			entries = append(entries, presenter.refreshHelpEntry("Refresh PR"))
@@ -147,6 +154,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			{Key: presenter.helpKeysOrFallback(":", keybindingActionID{scope: keymapScopePullRequests, action: "custom_search"}), Description: "Custom search"},
 			{Key: presenter.helpKeysOrFallback("<c-v>", keybindingActionID{scope: keymapScopePullRequests, action: "open_pull_request_by_url"}), Description: "Open PR from clipboard"},
 			{Key: presenter.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + presenter.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
+			pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 			pullRequestYankHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 			pullRequestCommentHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 			{Key: presenter.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},

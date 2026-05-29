@@ -13,6 +13,7 @@ type footerPresenter struct {
 	assigneePickerVisible        bool
 	notificationSelectionVisible bool
 	commentShortcutAvailable     bool
+	pullRequestBrowserAvailable  bool
 	actionsPopupAvailable        bool
 	modalEditorSubmitAction      string
 	modalEditorSubmitFallback    string
@@ -175,12 +176,18 @@ func (presenter footerPresenter) pullRequestBuildRunPopupKeyHintsText() string {
 		return ""
 	}
 
-	return presenter.statusLineKeyHints(
-		statusLineHintSpec{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "open_search"}}},
+	specs := []statusLineHintSpec{
+		{label: "search", fallback: "/", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "open_search"}}},
+	}
+	if presenter.pullRequestBrowserAvailable {
+		specs = append(specs, statusLineHintSpec{label: "browser", fallback: "Alt+B", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "open_pull_request_in_browser"}}})
+	}
+	specs = append(specs,
 		statusLineHintSpec{label: "yank", fallback: "y", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "start_yank"}}},
 		statusLineHintSpec{label: "copy", fallback: "Alt+Y", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "copy_content"}}},
 		statusLineHintSpec{label: "back", fallback: "Escape", actionIDs: []keybindingActionID{{scope: keymapScopePullRequestBuildInfo, action: "close"}}},
 	)
+	return presenter.statusLineKeyHints(specs...)
 }
 
 func (presenter footerPresenter) shouldShowPullRequestBuildRunPopupStatusLineKeyHints() bool {

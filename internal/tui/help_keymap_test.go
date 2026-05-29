@@ -50,6 +50,7 @@ func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomS
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Custom search", ":")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Y")
 }
 
@@ -161,6 +162,7 @@ func TestHelpPopup_GivenPullRequestDetailFocus_WhenTogglingHelp_ThenItShowsTheSh
 
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Expand/collapse section", "Enter/za")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Close/open all folds", "zM/zR")
 }
@@ -298,6 +300,32 @@ func TestHelpPopup_GivenUserFocus_WhenTogglingHelp_ThenItShowsViewportPlacementM
 	then_helpEntryUsesKey(t, actualBuffer, "Full-page up", "Ctrl+B/PageUp")
 }
 
+func TestHelpPopup_GivenReviewDescriptionFocus_WhenTogglingHelp_ThenItShowsTheBrowserShortcut(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithComments(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusUserView(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.toggleHelp(gui, nil)
+	then_noError(t, actualErr)
+
+	helpView, actualErr := gui.View(viewHelpName)
+	then_noError(t, actualErr)
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR in browser", "Alt+B")
+}
+
 func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
@@ -320,6 +348,7 @@ func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileA
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
 	then_helpEntryUsesKey(t, actualBuffer, "Expand/collapse fold", "za")
@@ -350,6 +379,7 @@ func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAn
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
+	then_helpEntryUsesKey(t, actualBuffer, "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
 	then_helpEntryUsesKey(t, actualBuffer, "Search word under cursor", "*/#")

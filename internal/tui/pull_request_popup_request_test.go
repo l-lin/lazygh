@@ -41,6 +41,67 @@ func TestUpdate_GivenMsgOpenPullRequestInBrowserRequested_WhenApplying_ThenItQue
 	}
 }
 
+func TestUpdate_GivenMsgOpenPullRequestInBrowserShortcutRequested_WhenPullRequestsContextIsActive_ThenItClearsPendingPrefixesAndQueuesTheBrowserMutation(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.navigationState = subject.navigationState.withPendingSelectionKeySequenceArmed(keySequenceTargetFor(viewPullRequestsName, keymapScopeSelection, "move_selection_to_top"))
+	subject.detailState = subject.detailState.withPendingKeySequenceArmed(keySequenceTargetFor(viewDetailName, keymapScopeSelection, "move_selection_to_top"))
+
+	actual := Update(subject, MsgOpenPullRequestInBrowserShortcutRequested{})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(actual))
+	}
+	if actualPending := subject.navigationState.pendingSelectionKeySequenceTarget(); actualPending != (keySequenceTarget{}) {
+		t.Fatalf("expected the pending selection prefix to clear, actual %+v", actualPending)
+	}
+	if actualPending := subject.detailState.pendingKeySequenceTarget(); actualPending != (keySequenceTarget{}) {
+		t.Fatalf("expected the detail pending key sequence to clear, actual %+v", actualPending)
+	}
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(openPullRequestInBrowserPopupRequest)
+	if !ok {
+		t.Fatalf("expected an openPullRequestInBrowserPopupRequest, actual %T", command.request)
+	}
+	if request.repository != "acme/widgets" || request.number != 42 {
+		t.Fatalf("expected browser request for acme/widgets#42, actual %+v", request)
+	}
+}
+
+func TestUpdate_GivenMsgOpenPullRequestInBrowserShortcutRequested_WhenBuildPopupIsVisible_ThenItClearsThePopupPrefixAndQueuesTheBrowserMutation(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "Run #42"})
+	subject.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		state = state.withPendingKeySequenceArmed(keySequenceTargetFor(viewPullRequestBuildInfoName, keymapScopeSelection, "move_selection_to_top"))
+		state.viewState.pendingYank = true
+		return state
+	})
+
+	actual := Update(subject, MsgOpenPullRequestInBrowserShortcutRequested{})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(actual))
+	}
+	if subject.pullRequestBuildRunPopup == nil {
+		t.Fatal("expected the build popup to stay visible")
+	}
+	if actualPending := subject.pullRequestBuildRunPopup.pendingKeySequenceTarget(); actualPending != (keySequenceTarget{}) {
+		t.Fatalf("expected the popup pending key sequence to clear, actual %+v", actualPending)
+	}
+	if subject.pullRequestBuildRunPopup.viewState.pendingYank {
+		t.Fatal("expected the popup pending yank flag to clear")
+	}
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(openPullRequestInBrowserPopupRequest)
+	if !ok {
+		t.Fatalf("expected an openPullRequestInBrowserPopupRequest, actual %T", command.request)
+	}
+	if request.repository != "acme/widgets" || request.number != 42 {
+		t.Fatalf("expected browser request for acme/widgets#42, actual %+v", request)
+	}
+}
+
 func TestUpdate_GivenMsgApprovePullRequestRequested_WhenApplying_ThenItQueuesAnAsyncInvalidateDiffMutationCmd(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)

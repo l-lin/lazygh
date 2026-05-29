@@ -57,6 +57,29 @@ func (program *Program) applyOpenPullRequestCommentComposerRequested() {
 	program.applyModalEditorOpened(MsgModalEditorOpened{Descriptor: newPullRequestCommentComposerOpenDescriptor(target, program.model.Focus())})
 }
 
+func (program *Program) applyOpenPullRequestInBrowserShortcutRequested() []Cmd {
+	if program == nil {
+		return nil
+	}
+
+	program.clearPendingSelectionPrefix()
+	program.clearDetailPendingPrefix()
+	program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		return state.withPendingPrefixCleared()
+	})
+	if !program.hasPullRequestMutations() {
+		program.setFeedback(program.model.Focus(), "github loader is unavailable")
+		return nil
+	}
+
+	target, ok := program.selectedPullRequestActionTarget()
+	if !ok {
+		program.setFeedback(program.model.Focus(), errActionsPopupActionUnavailable.Error())
+		return nil
+	}
+	return program.applyOpenPullRequestInBrowserRequested(MsgOpenPullRequestInBrowserRequested{Target: target})
+}
+
 func (program *Program) applyOpenDetailPullRequestCommentRequested() {
 	if program == nil {
 		return

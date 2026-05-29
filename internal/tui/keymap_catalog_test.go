@@ -32,6 +32,7 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 		{name: "previous tab", action: "previous_tab", expectedScope: keymapScopeGlobal, expectedBindings: []string{"["}, expectedAllowSequences: true},
 		{name: "next tab", action: "next_tab", expectedScope: keymapScopeGlobal, expectedBindings: []string{"]"}, expectedAllowSequences: true},
 		{name: "copy pull request url", action: "copy_pull_request_url", expectedScope: keymapScopePullRequests, expectedBindings: []string{"alt+y"}, expectedAllowSequences: true},
+		{name: "open pull request in browser", action: "open_pull_request_in_browser", expectedScope: keymapScopePullRequests, expectedBindings: []string{"alt+b"}, expectedAllowSequences: true},
 		{name: "comment on pull request", action: "comment_on_pull_request", expectedScope: keymapScopePullRequests, expectedBindings: []string{"c"}, expectedAllowSequences: true},
 		{name: "move selection to top", action: "move_selection_to_top", expectedScope: keymapScopeSelection, expectedBindings: []string{"gg"}, expectedAllowSequences: true},
 		{name: "move selection to bottom", action: "move_selection_to_bottom", expectedScope: keymapScopeSelection, expectedBindings: []string{"G"}, expectedAllowSequences: true},

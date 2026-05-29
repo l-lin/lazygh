@@ -310,6 +310,21 @@ func TestKeybindingSpecs_GivenPullRequestsCopyOverride_WhenListingBindings_ThenI
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'y', handler: subject.startDetailYank})
 }
 
+func TestKeybindingSpecs_GivenPullRequestBrowserOverride_WhenListingBindings_ThenItAppliesToThePullRequestViewsAndBuildPopupWithoutSeparateScopes(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"pull_requests": {
+			"open_pull_request_in_browser": {"u"},
+		},
+	})
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'u', handler: subject.openPullRequestInBrowserShortcut})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'u', handler: subject.openPullRequestInBrowserShortcut})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'u', handler: subject.openPullRequestInBrowserShortcut})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: 'u', handler: subject.openPullRequestInBrowserShortcut})
+}
+
 func TestKeybindingSpecs_GivenFocusViewOverrides_WhenListingBindings_ThenTheNumericShortcutsStayFixed(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"global": {
