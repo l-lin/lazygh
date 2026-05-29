@@ -75,6 +75,15 @@ func (program *Program) syncDetailViewState(detailDocument detailDocument, viewp
 	})
 }
 
+func (program *Program) prepareSelectedDetailClipboard(detailDocument detailDocument, viewportHeight int) detailClipboardResult {
+	prepared := detailClipboardResult{}
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		prepared = state.preparedClipboard(program.currentDetailIdentity(), detailDocument, viewportHeight, program.model.DetailSearchQuery())
+		return prepared.state
+	})
+	return prepared
+}
+
 func (program *Program) syncDetailViewShellState(view *gocui.View) {
 	if program == nil || view == nil {
 		return

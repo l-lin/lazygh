@@ -443,7 +443,9 @@ func (program *Program) applyRepeatDetailSearchRequested(message MsgRepeatDetail
 }
 
 func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWordResolved) []Cmd {
-	program.detailState = program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, program.model.DetailSearchQuery())
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, program.model.DetailSearchQuery())
+	})
 	query, ok := message.Document.wordAt(program.detailState.viewState.cursor)
 	if !ok {
 		return nil

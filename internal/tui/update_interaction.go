@@ -306,17 +306,13 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 }
 
 func (program *Program) applySelectedDetailClipboardPrepared(message MsgSelectedDetailClipboardPrepared) []Cmd {
-	searchQuery := program.model.DetailSearchQuery()
-	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
-	selection, _ := detailSelectionForCurrentMode(detailState.viewState, message.Document)
-	text := detailState.viewState.selectedText(message.Document)
-	program.detailState = detailState.withVisualModeExited()
+	prepared := program.prepareSelectedDetailClipboard(message.Document, message.ViewportHeight)
 	return []Cmd{writeClipboardCmd{
-		Text:            text,
+		Text:            prepared.text,
 		SuccessMessage:  detailYankSuccessMessage,
 		FailureMessage:  detailYankFailureMessage,
 		Target:          message.Target,
-		Selection:       selection,
+		Selection:       prepared.selection,
 		SelectionTarget: clipboardWriteSelectionDetail,
 	}}
 }

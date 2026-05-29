@@ -1139,6 +1139,18 @@ func TestRefactorGuard_GivenDetailStateFiles_WhenScanning_ThenDetailPrefixAndVis
 	}
 }
 
+func TestRefactorGuard_GivenDetailStateFiles_WhenScanning_ThenWholeStateReplacementStaysOnTheDetailAdapter(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(`program\.detailState\s*=\s*[^=]`)
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go") && base != "detail_child_state_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected whole-detail-state replacement to stay on the detail adapter surface instead of direct update-file assignment, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenUpdateDetailMotionFile_WhenScanning_ThenViewportAndSearchSyncStayOnDetailStateTransitions(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`detailState\.viewState\.(?:scrollDown|scrollUp|recenter|placeCursorAtViewportTop|placeCursorAtViewportBottom|syncSearch)\(`,

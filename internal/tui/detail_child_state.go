@@ -1,5 +1,12 @@
 package tui
 
+type detailClipboardResult struct {
+	state              detailStateModel
+	selection          detailSelectionRange
+	text               string
+	hasVisualSelection bool
+}
+
 func (state detailStateModel) withWrapWidth(width int) detailStateModel {
 	state.wrapWidth = width
 	return state
@@ -129,4 +136,21 @@ func (state detailStateModel) synced(detailIdentity string, detailDocument detai
 func (state detailStateModel) syncedForRender(detailIdentity string, detailDocument detailDocument, wrapWidth int, viewportHeight int, searchQuery string) detailStateModel {
 	state = state.withWrapWidth(wrapWidth)
 	return state.synced(detailIdentity, detailDocument, viewportHeight, searchQuery)
+}
+
+func (state detailStateModel) preparedClipboard(detailIdentity string, detailDocument detailDocument, viewportHeight int, searchQuery string) detailClipboardResult {
+	state = state.synced(detailIdentity, detailDocument, viewportHeight, searchQuery)
+	if !state.viewState.mode.isVisual() {
+		return detailClipboardResult{state: state}
+	}
+
+	selection, _ := detailSelectionForCurrentMode(state.viewState, detailDocument)
+	text := state.viewState.selectedText(detailDocument)
+	state = state.withVisualModeExited()
+	return detailClipboardResult{
+		state:              state,
+		selection:          selection,
+		text:               text,
+		hasVisualSelection: true,
+	}
 }
