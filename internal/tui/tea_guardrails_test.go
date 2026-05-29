@@ -745,11 +745,25 @@ func TestRefactorGuard_GivenPullRequestCommandSurface_WhenScanning_ThenItDoesNot
 	}
 }
 
+func TestRefactorGuard_GivenPullRequestListStoreFiles_WhenScanning_ThenPointerMutatorsAreGone(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`func \(store \*pullRequestListStore\) setPullRequestsLoadStarted\(`,
+		`func \(store \*pullRequestListStore\) setPullRequestsLoading\(`,
+		`func \(store \*pullRequestListStore\) setPullRequestsCount\(`,
+		`func \(store \*pullRequestListStore\) resetPullRequestListLoadState\(`,
+	}, "|")), func(path string) bool {
+		return filepath.Base(path) == "program_loading.go" || filepath.Base(path) == "pull_request_list_store.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected pull-request list load/count bookkeeping to use value transitions instead of pointer store mutators, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateFilesAndTheStoreHelperResetPullRequestListLoadState(t *testing.T) {
 	allowedFiles := map[string]bool{
-		"program_loading.go":              true,
-		"update_actions_popup.go":         true,
-		"update_pull_request_commands.go": true,
+		"pull_request_list_store_adapter.go": true,
+		"update_actions_popup.go":            true,
+		"update_pull_request_commands.go":    true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`resetPullRequestListLoadState\(`), func(path string) bool {
