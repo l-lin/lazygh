@@ -32,3 +32,9 @@ func (program *Program) closePullRequestBuildRunPopupState() {
 		return store.withPopupClosed()
 	})
 }
+
+func (program *Program) updatePullRequestBuildRunPopup(transition func(pullRequestBuildRunPopupState) pullRequestBuildRunPopupState) {
+	program.updateBuildStore(func(store buildStore) buildStore {
+		return store.withPopupUpdated(transition)
+	})
+}

@@ -34,3 +34,11 @@ func (store buildStore) withPopupClosed() buildStore {
 	store.pullRequestBuildRunPopup = nil
 	return store
 }
+
+func (store buildStore) withPopupUpdated(transition func(pullRequestBuildRunPopupState) pullRequestBuildRunPopupState) buildStore {
+	if popup := store.pullRequestBuildRunPopup; popup != nil {
+		updatedPopup := transition(*popup)
+		store.pullRequestBuildRunPopup = &updatedPopup
+	}
+	return store
+}

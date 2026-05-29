@@ -1516,6 +1516,24 @@ func TestRefactorGuard_GivenBuildPopupNavigationFiles_WhenScanning_ThenTheyUseEx
 	}
 }
 
+func TestRefactorGuard_GivenBuildPopupStateFiles_WhenScanning_ThenViewAndSearchTransitionsStayOnPopupHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`pullRequestBuildRunPopup\.viewState\.(?:sync|syncSearch)\(`,
+		`popup\.viewState\.(?:clearPendingPrefix|exitVisualMode)\(`,
+		`viewState\.(?:sync|clearPendingPrefix|exitVisualMode)\(`,
+		`popup\.viewState\s*=\s*[^=]`,
+		`popup\.(?:searchActive|searchQuery)\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "pull_request_build_popup_render_state.go" || base == "pull_request_build_popup_search.go" || base == "update_interaction.go" || base == "update_route_interactions.go" || base == "update_detail_motion.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected build-popup view and search transitions to stay on popup-state helpers instead of nested view/search mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPullRequestBuildPopupFile_WhenScanning_ThenRenderAndLinkHelpersUseRenderPrepOrSnapshotSelectors(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`viewState\.syncSearch\(`,

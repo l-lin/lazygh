@@ -257,11 +257,15 @@ func newPullRequestBuildRunPopupState(content pullRequestBuildRunPopupContent) *
 
 func (program *Program) applyPullRequestBuildRunPopupClosed() {
 	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.viewState.mode.isVisual() {
-		popup.viewState.exitVisualMode()
+		program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+			return state.withVisualModeExited()
+		})
 		return
 	}
 	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.viewState.hasPendingYank() {
-		popup.viewState.clearPendingPrefix()
+		program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+			return state.withPendingPrefixCleared()
+		})
 		return
 	}
 	program.closePullRequestBuildRunPopupState()
@@ -316,31 +320,27 @@ func (program *Program) applySelectedDetailClipboardPrepared(message MsgSelected
 }
 
 func (program *Program) applyPullRequestBuildRunPopupClipboardPrepared(message MsgPullRequestBuildRunPopupClipboardPrepared) []Cmd {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
+	if program.pullRequestBuildRunPopup == nil {
 		return nil
 	}
 
-	viewState := popup.viewState
-	viewState.sync(message.Document, message.ViewportHeight)
-	viewState.clearPendingPrefix()
-	if viewState.mode.isVisual() {
-		selection, _ := detailSelectionForCurrentMode(viewState, message.Document)
-		text := viewState.selectedText(message.Document)
-		viewState.exitVisualMode()
-		popup.viewState = viewState
+	prepared := pullRequestBuildRunPopupClipboardResult{}
+	program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		prepared = state.preparedClipboard(message.Document, message.ViewportHeight)
+		return prepared.state
+	})
+	if prepared.hasVisualSelection {
 		return []Cmd{writeClipboardCmd{
-			Text:            text,
+			Text:            prepared.text,
 			SuccessMessage:  detailYankSuccessMessage,
 			FailureMessage:  detailYankFailureMessage,
 			Target:          message.Target,
-			Selection:       selection,
+			Selection:       prepared.selection,
 			SelectionTarget: clipboardWriteSelectionBuildPopup,
 		}}
 	}
 
-	popup.viewState = viewState
-	runURL := strings.TrimSpace(popup.runURL)
+	runURL := strings.TrimSpace(prepared.state.runURL)
 	if runURL == "" {
 		program.setFeedback(message.Target, yankUnavailableMessage)
 		return nil
@@ -373,11 +373,12 @@ func (program *Program) applyOpenLinkUnderCursorRequested(message MsgOpenLinkUnd
 }
 
 func (program *Program) applyOpenPullRequestBuildRunPopupLinkRequested(message MsgOpenPullRequestBuildRunPopupLinkRequested) []Cmd {
-	popup := program.pullRequestBuildRunPopup
-	if popup == nil {
+	if program.pullRequestBuildRunPopup == nil {
 		return nil
 	}
-	popup.viewState.clearPendingPrefix()
+	program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		return state.withPendingPrefixCleared()
+	})
 	return []Cmd{openPullRequestBuildRunPopupLinkCmd{Target: program.model.Focus()}}
 }
 

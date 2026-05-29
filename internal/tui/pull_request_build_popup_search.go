@@ -9,8 +9,10 @@ func (program *Program) searchPromptVisible() bool {
 }
 
 func (program *Program) startPullRequestBuildRunPopupSearch() {
-	if popup := program.pullRequestBuildRunPopup; popup != nil {
-		popup.searchActive = true
-		popup.viewState.clearPendingPrefix()
+	if program == nil || program.pullRequestBuildRunPopup == nil {
+		return
 	}
+	program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		return state.withSearchOpened()
+	})
 }

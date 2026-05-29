@@ -6,7 +6,9 @@ func (program *Program) syncPullRequestBuildRunPopupViewState(document detailDoc
 	if program == nil || program.pullRequestBuildRunPopup == nil {
 		return
 	}
-	program.pullRequestBuildRunPopup.viewState.sync(document, viewportHeight)
+	program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		return state.withViewStateSynced(document, viewportHeight)
+	})
 }
 
 func (program *Program) syncPullRequestBuildRunPopupShellState(view *gocui.View) {
@@ -15,8 +17,9 @@ func (program *Program) syncPullRequestBuildRunPopupShellState(view *gocui.View)
 	}
 
 	document := program.currentPullRequestBuildRunPopupDocument(view)
-	program.syncPullRequestBuildRunPopupViewState(document, viewPageSize(view))
-	program.pullRequestBuildRunPopup.viewState.syncSearch(document, program.pullRequestBuildRunPopup.searchQuery)
+	program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		return state.withRenderStateSynced(document, viewPageSize(view))
+	})
 }
 
 func (program *Program) currentPullRequestBuildRunPopupLinkSnapshot(view *gocui.View) (detailDocument, detailViewState, bool) {
@@ -26,7 +29,6 @@ func (program *Program) currentPullRequestBuildRunPopupLinkSnapshot(view *gocui.
 	}
 
 	document := program.currentPullRequestBuildRunPopupDocument(view)
-	state := popup.viewState
-	state.sync(document, viewPageSize(view))
-	return document, state, true
+	state := popup.withViewStateSynced(document, viewPageSize(view))
+	return document, state.viewState, true
 }

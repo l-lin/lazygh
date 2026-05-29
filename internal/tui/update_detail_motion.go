@@ -125,7 +125,9 @@ func (program *Program) applyDetailMotionResolved(message MsgDetailMotionResolve
 			searchQuery:    popup.searchQuery,
 			searchActive:   popup.searchActive,
 		})
-		popup.viewState = actual.state
+		program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+			return state.withViewState(actual.state)
+		})
 		return program.detailMotionClipboardCommands(message.Target, actual.clipboard)
 	default:
 		searchQuery := program.model.DetailSearchQuery()

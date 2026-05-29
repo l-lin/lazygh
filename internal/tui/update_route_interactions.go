@@ -131,10 +131,9 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 	switch actual := msg.(type) {
 	case MsgSubmitSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
-			if popup := program.pullRequestBuildRunPopup; popup != nil {
-				popup.searchActive = false
-				popup.searchQuery = program.currentSearchText()
-			}
+			program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+				return state.withSearchSubmitted(program.currentSearchText())
+			})
 			program.clearSearchWidgetEditor()
 			return handledUpdate([]Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFollowSubmittedSearch}})
 		}
@@ -162,9 +161,9 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 		return handledUpdate(commands)
 	case MsgCancelSearch:
 		if program.pullRequestBuildRunPopupSearchActive() {
-			if popup := program.pullRequestBuildRunPopup; popup != nil {
-				popup.searchActive = false
-			}
+			program.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+				return state.withSearchCancelled()
+			})
 			program.clearSearchWidgetEditor()
 			return handledUpdate(nil)
 		}

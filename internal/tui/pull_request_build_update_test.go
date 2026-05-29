@@ -94,6 +94,42 @@ func TestUpdate_GivenMsgPullRequestBuildRunJobLogLoadRequested_WhenApplying_Then
 	}
 }
 
+func TestUpdate_GivenMsgPullRequestBuildRunPopupClosedWithVisualSelection_WhenApplying_ThenItKeepsThePopupOpenAndExitsVisualMode(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.pullRequestBuildRunPopup = newPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "Current", body: "current"})
+	subject.pullRequestBuildRunPopup.viewState.enterVisualMode()
+
+	actual := Update(subject, MsgPullRequestBuildRunPopupClosed{})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if subject.pullRequestBuildRunPopup == nil {
+		t.Fatal("expected the popup to stay visible while visual mode exits")
+	}
+	if actual := subject.pullRequestBuildRunPopup.viewState.mode; actual != detailNormalMode {
+		t.Fatalf("expected popup mode %v after close preflight, actual %v", detailNormalMode, actual)
+	}
+}
+
+func TestUpdate_GivenMsgPullRequestBuildRunPopupClosedWithPendingYank_WhenApplying_ThenItKeepsThePopupOpenAndClearsThePendingPrefix(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.pullRequestBuildRunPopup = newPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "Current", body: "current"})
+	subject.pullRequestBuildRunPopup.viewState.armPendingYank()
+
+	actual := Update(subject, MsgPullRequestBuildRunPopupClosed{})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if subject.pullRequestBuildRunPopup == nil {
+		t.Fatal("expected the popup to stay visible while the pending prefix clears")
+	}
+	if subject.pullRequestBuildRunPopup.viewState.hasPendingYank() {
+		t.Fatal("expected close preflight to clear the pending popup prefix")
+	}
+}
+
 func TestUpdate_GivenMsgPullRequestBuildRunPopupClosed_WhenPreviousPopupExists_ThenItRestoresThePreviousPopup(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	previousPopup := newPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "Previous", body: "old"})
