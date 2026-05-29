@@ -49,6 +49,9 @@ Smaller state bags follow the same value-transition rule:
 - `actionsPopupWidgetState` owns popup-local error, confirmation, and picker-open chrome around the popup child surfaces.
 - `manualRefreshStateModel` owns pending refresh targets and completion-feedback counting.
 - `statusStore` owns status-line feedback plus story-review and GH-command loading transitions.
+- `overlayStateModel` owns help visibility, transient error popup lifecycle, recorded errors, and modal editor lifecycle through explicit overlay-state transitions.
+- `navigationStateModel` owns review-session replacement and opened pull-request summary pinning through explicit navigation-state transitions.
+- `startupStateModel` owns app-start and loading-spinner frame advancement through explicit startup-state transitions.
 - `runtimeConfigState` owns keymap overrides, pull-request searches, and story-review config; runtime entrypoints apply it through explicit runtime-config messages or whole-state replacement helpers instead of mutating the bag inline.
 - `pastedPullRequestTabState` owns clipboard-opened pull-request summaries for the dedicated pasted tab so tab rebuilds can preserve them without hijacking the normal search tabs.
 
