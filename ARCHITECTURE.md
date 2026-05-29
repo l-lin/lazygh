@@ -134,7 +134,7 @@ These command files still live in `internal/tui`, but they now build focused run
 - `workflow_plans.go` derives pure workflow plans.
 - `workflow_stores.go` tracks in-flight and invalidation state.
 
-The planner no longer flips store flags inline while deciding commands. Load starts and cache hydration now land through typed messages. The large workflow stores now follow the same helper rule: `pullRequestListStore`, `detailStore`, and `reviewStore` mutate through copy-on-write store helpers plus whole-store adapters instead of direct map writes in update files.
+The planner no longer flips store flags inline while deciding commands. Load starts and cache hydration now land through typed messages. The large workflow stores now follow the same helper rule: `pullRequestListStore`, `detailStore`, and `reviewStore` mutate through copy-on-write store helpers plus whole-store adapters instead of direct map writes in update files. The remaining coordinators, `imageLoadCoordinator` and `optimisticMutationCoordinator`, now expose focused helper methods instead of direct field writes.
 
 ## Boundaries that matter
 
