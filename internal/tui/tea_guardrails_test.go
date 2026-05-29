@@ -1535,7 +1535,7 @@ func TestRefactorGuard_GivenModalEditorSubmitRequestFile_WhenScanning_ThenItDoes
 	}
 }
 
-func TestRefactorGuard_GivenReviewCollapseAndBrowserSectionFiles_WhenScanning_ThenStateWritesStayOnReducerOwnedHelpers(t *testing.T) {
+func TestRefactorGuard_GivenReducerOwnedChildStateFiles_WhenScanning_ThenTheyDoNotMutateReviewSessionOrBrowserCollapsedSectionStateDirectly(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\s*=`,
 		`program\.browserCollapsedSectionStates\s*=`,
@@ -1543,11 +1543,10 @@ func TestRefactorGuard_GivenReviewCollapseAndBrowserSectionFiles_WhenScanning_Th
 	}, "|"))
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
-		base := filepath.Base(path)
-		return base == "review_inline_conversation.go" || base == "detail_bulk_fold.go" || base == "review_file_tree_search.go" || base == "browser_detail_sections.go"
+		return !strings.HasSuffix(path, "_test.go")
 	})
 	if len(actualMatches) != 0 {
-		t.Fatalf("expected review collapse and browser section feature files to stop mutating reducer-owned state directly, actual %v", actualMatches)
+		t.Fatalf("expected reducer-owned child-state writes to stay behind adapter or store helpers instead of mutating promoted fields directly, actual %v", actualMatches)
 	}
 }
 

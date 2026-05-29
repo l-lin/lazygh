@@ -66,6 +66,47 @@ func TestDetailStore_GivenCacheAndLoadState_WhenApplyingWorkflowTransitions_Then
 	}
 }
 
+func TestDetailStore_GivenBrowserCollapsedSectionStates_WhenApplyingCollapseTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newDetailStore(nil)
+	subject.browserCollapsedSectionStates["acme/widgets#1:overview"] = true
+
+	singleCollapsed, actualSingleChanged := subject.withBrowserDetailSectionCollapsed(" acme/widgets#42:checks ", true)
+	bulkCollapsed, actualBulkChanged := singleCollapsed.withBrowserDetailSectionsCollapsed([]string{"acme/widgets#43:reviews", "", " acme/widgets#44:threads "}, true)
+	unchanged, actualUnchanged := bulkCollapsed.withBrowserDetailSectionsCollapsed([]string{"acme/widgets#43:reviews", "acme/widgets#44:threads"}, true)
+
+	expectedSingleKey := "acme/widgets#42:checks"
+	if !actualSingleChanged {
+		t.Fatal("expected the single-section transition to report a change")
+	}
+	if actual := singleCollapsed.browserCollapsedSectionStates[expectedSingleKey]; !actual {
+		t.Fatalf("expected collapsed state for %q to be true", expectedSingleKey)
+	}
+	if !actualBulkChanged {
+		t.Fatal("expected the bulk transition to report a change")
+	}
+	for _, expected := range []string{"acme/widgets#43:reviews", "acme/widgets#44:threads"} {
+		if actual := bulkCollapsed.browserCollapsedSectionStates[expected]; !actual {
+			t.Fatalf("expected collapsed state for %q to be true", expected)
+		}
+	}
+	if actualUnchanged {
+		t.Fatal("expected the unchanged bulk transition to report no change")
+	}
+	if _, ok := unchanged.browserCollapsedSectionStates[""]; ok {
+		t.Fatal("expected blank section ids to stay absent from the collapsed-state map")
+	}
+
+	if actual := subject.browserCollapsedSectionStates["acme/widgets#1:overview"]; !actual {
+		t.Fatal("expected the original collapsed overview state to stay true")
+	}
+	if _, ok := subject.browserCollapsedSectionStates[expectedSingleKey]; ok {
+		t.Fatal("expected the original state to stay free of the new single-section entry")
+	}
+	if _, ok := subject.browserCollapsedSectionStates["acme/widgets#43:reviews"]; ok {
+		t.Fatal("expected the original state to stay free of the new bulk-section entry")
+	}
+}
+
 func TestReviewStore_GivenDiffCacheAndLoadState_WhenApplyingWorkflowTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	subject := newReviewStore(nil)
 	subject.pullRequestDiffCache["acme/widgets#1"] = pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "old.go"}}}}

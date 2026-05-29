@@ -134,6 +134,44 @@ func (store detailStore) withWorkflowStateReset() detailStore {
 	return store
 }
 
+func (store detailStore) withBrowserDetailSectionCollapsed(sectionID string, collapsed bool) (detailStore, bool) {
+	trimmedSectionID := strings.TrimSpace(sectionID)
+	if trimmedSectionID == "" {
+		return store, false
+	}
+	if actualCollapsed, ok := store.browserCollapsedSectionStates[trimmedSectionID]; ok && actualCollapsed == collapsed {
+		return store, false
+	}
+
+	store.browserCollapsedSectionStates = copyWorkflowStringBoolMap(store.browserCollapsedSectionStates)
+	store.browserCollapsedSectionStates[trimmedSectionID] = collapsed
+	return store, true
+}
+
+func (store detailStore) withBrowserDetailSectionsCollapsed(sectionIDs []string, collapsed bool) (detailStore, bool) {
+	trimmedSectionIDs := make([]string, 0, len(sectionIDs))
+	changed := false
+	for _, sectionID := range sectionIDs {
+		trimmedSectionID := strings.TrimSpace(sectionID)
+		if trimmedSectionID == "" {
+			continue
+		}
+		trimmedSectionIDs = append(trimmedSectionIDs, trimmedSectionID)
+		if actualCollapsed, ok := store.browserCollapsedSectionStates[trimmedSectionID]; !ok || actualCollapsed != collapsed {
+			changed = true
+		}
+	}
+	if !changed {
+		return store, false
+	}
+
+	store.browserCollapsedSectionStates = copyWorkflowStringBoolMap(store.browserCollapsedSectionStates)
+	for _, trimmedSectionID := range trimmedSectionIDs {
+		store.browserCollapsedSectionStates[trimmedSectionID] = collapsed
+	}
+	return store, true
+}
+
 func detailResultKnown(results map[string]pullRequestDetailResult, key string) bool {
 	_, ok := results[key]
 	return ok
