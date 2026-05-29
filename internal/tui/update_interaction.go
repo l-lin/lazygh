@@ -94,8 +94,8 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 		return nil
 	}
 
-	editorState := &program.overlayState.modalEditor
-	editorState.errorMessage = ""
+	program.clearModalEditorErrorMessage()
+	editorState := program.overlayState.modalEditor
 	requested := modalEditorSubmitRequestedMessage(editorState.submitDescriptor, editorState.Text())
 	if requested == nil {
 		return nil
@@ -110,7 +110,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-			program.overlayState.modalEditor.errorMessage = ""
+			program.clearModalEditorErrorMessage()
 			return program.applyErrorReportedMessage(popupMessage)
 		}
 		var feedbackErr modalEditorStatusLineError
@@ -118,7 +118,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 			program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
 			return nil
 		}
-		program.overlayState.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
+		program.setModalEditorErrorMessage(message.Err.Error())
 		return nil
 	}
 
@@ -141,26 +141,33 @@ func (program *Program) applyModalEditorExternalEditFinished(message MsgModalEdi
 		return
 	}
 	if message.Err != nil {
-		program.overlayState.modalEditor.errorMessage = strings.TrimSpace(message.Err.Error())
+		program.setModalEditorErrorMessage(message.Err.Error())
 		return
 	}
 
-	program.overlayState.modalEditor.errorMessage = ""
 	program.setModalEditorTextFromExternalEditor(message.Text)
 }
 
 func (program *Program) applyModalEditorLineInputRequested(message MsgModalEditorLineInputRequested) {
-	if program == nil || !program.overlayState.modalEditor.applyLineEditorIntent(message.Intent) {
+	if program == nil {
 		return
 	}
-	program.overlayState.modalEditor.errorMessage = ""
+	updatedState, ok := program.overlayState.modalEditor.withLineEditorIntentApplied(message.Intent)
+	if !ok {
+		return
+	}
+	program.overlayState.modalEditor = updatedState
 }
 
 func (program *Program) applyModalEditorMultilineInputRequested(message MsgModalEditorMultilineInputRequested) {
-	if program == nil || !program.overlayState.modalEditor.applyMultilineEditorIntent(message.Intent) {
+	if program == nil {
 		return
 	}
-	program.overlayState.modalEditor.errorMessage = ""
+	updatedState, ok := program.overlayState.modalEditor.withMultilineEditorIntentApplied(message.Intent)
+	if !ok {
+		return
+	}
+	program.overlayState.modalEditor = updatedState
 }
 
 func (program *Program) applyModalEditorOpened(message MsgModalEditorOpened) {

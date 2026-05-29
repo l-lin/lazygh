@@ -1064,6 +1064,20 @@ func TestRefactorGuard_GivenBuildStoreFiles_WhenScanning_ThenBuildLoadAndPopupWr
 	}
 }
 
+func TestRefactorGuard_GivenModalEditorFiles_WhenScanning_ThenModalEditorErrorWritesStayOnWholeStateReplacementHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.overlayState\.modalEditor\.errorMessage\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected modal-editor error writes to use whole-state replacement helpers instead of direct child-state mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)

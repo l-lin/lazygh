@@ -14,11 +14,9 @@ func (program *Program) setModalEditorTextFromExternalEditor(text string) {
 	if program == nil || !program.modalEditorVisible() {
 		return
 	}
-	if program.overlayState.modalEditor.isLineEditor() {
-		program.overlayState.modalEditor.lineEditor.SetText(normalizeSingleLineExternalEditorText(text))
-		return
-	}
-	program.overlayState.modalEditor.editor.SetText(text)
+	program.updateModalEditorState(func(state modalEditorState) modalEditorState {
+		return state.withTextFromExternalEditor(text)
+	})
 }
 
 func normalizeSingleLineExternalEditorText(text string) string {
