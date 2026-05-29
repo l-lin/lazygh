@@ -155,7 +155,7 @@ func (program *Program) applyOpenPullRequestInPastedTabView(message MsgOpenPullR
 }
 
 func (program *Program) finishOpenPullRequestInBrowserView(sideFocus Focus) {
-	program.navigationState.reviewSession = reviewSessionState{}
+	program.clearReviewSession()
 	program.invalidateReviewDiffRenderCache()
 	program.setDetailActiveTab(DescriptionDetailTab)
 	program.resetDetailViewState()

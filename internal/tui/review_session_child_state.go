@@ -1,6 +1,37 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
+
+func (state reviewSessionState) started(start reviewSessionStartDescriptor) reviewSessionState {
+	return reviewSessionState{
+		active:                       true,
+		mode:                         start.mode,
+		sourceFocus:                  start.sourceFocus,
+		sourceDetailTab:              start.sourceDetailTab,
+		sourcePaneLayoutSize:         start.sourcePaneLayoutSize,
+		sourceFullscreenPane:         start.sourceFullscreenPane,
+		sourceDetailFullscreenReturn: start.sourceDetailFullscreenReturn,
+		summary:                      start.summary,
+		pendingReviewID:              strings.TrimSpace(start.pendingReviewID),
+		selectedFileTreeRow:          -1,
+		collapsedTreeRowIDs:          map[string]bool{},
+		collapsedThreadIDs:           map[string]bool{},
+		story:                        start.story,
+	}
+}
+
+func (state reviewSessionState) cleared() reviewSessionState {
+	return reviewSessionState{}
+}
+
+func (state reviewSessionState) withSummary(summary githubdomain.PullRequest) reviewSessionState {
+	state.summary = summary
+	return state
+}
 
 func (state reviewSessionState) withSelectedFileTreeRow(row int) reviewSessionState {
 	state.selectedFileTreeRow = row

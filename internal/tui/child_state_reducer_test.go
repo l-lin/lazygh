@@ -1,6 +1,11 @@
 package tui
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func TestDetailStateModel_GivenStaleIdentity_WhenSyncing_ThenItReturnsUpdatedCopyWithoutMutatingTheOriginal(t *testing.T) {
 	document := newDetailDocument("alpha\nbeta", 40)
@@ -51,6 +56,59 @@ func TestReviewSessionState_GivenFoldableTree_WhenCollapsingAllRows_ThenItReturn
 	}
 	if _, ok := subject.collapsedTreeRowIDs["child"]; ok {
 		t.Fatalf("expected the original fold map to stay free of new entries, actual %v", subject.collapsedTreeRowIDs)
+	}
+}
+
+func TestReviewSessionState_GivenLifecycleAndSummaryTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	start := reviewSessionStartDescriptor{
+		mode:                         reviewSessionModeStory,
+		sourceFocus:                  FocusDetailView,
+		sourceDetailTab:              CommentsDetailTab,
+		sourcePaneLayoutSize:         PaneLayoutFullscreen,
+		sourceFullscreenPane:         FocusDetailView,
+		sourceDetailFullscreenReturn: PaneLayoutDefault,
+		summary:                      githubdomain.PullRequest{Number: 42, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}},
+		pendingReviewID:              " PRR_pending ",
+		story:                        reviewStoryData{Summary: "Story"},
+	}
+	subject := reviewSessionState{active: true, pendingReviewID: "stale", summary: githubdomain.PullRequest{Number: 7}}
+
+	started := subject.started(start)
+	resummarized := started.withSummary(githubdomain.PullRequest{Number: 99, Repository: githubdomain.Repository{NameWithOwner: "acme/rocket"}})
+	cleared := started.cleared()
+
+	if !started.active {
+		t.Fatal("expected the started review session to be active")
+	}
+	if actual := started.mode; actual != reviewSessionModeStory {
+		t.Fatalf("expected started mode %v, actual %v", reviewSessionModeStory, actual)
+	}
+	if actual := started.pendingReviewID; actual != "PRR_pending" {
+		t.Fatalf("expected started pending review id %q, actual %q", "PRR_pending", actual)
+	}
+	if actual := started.selectedFileTreeRow; actual != -1 {
+		t.Fatalf("expected started file-tree row %d, actual %d", -1, actual)
+	}
+	if started.collapsedTreeRowIDs == nil || started.collapsedThreadIDs == nil {
+		t.Fatal("expected the started review session to initialize collapsed-id maps")
+	}
+	if actual := resummarized.summary.Number; actual != 99 {
+		t.Fatalf("expected replaced review summary number %d, actual %d", 99, actual)
+	}
+	if actual := resummarized.summary.Repository.NameWithOwner; actual != "acme/rocket" {
+		t.Fatalf("expected replaced review summary repository %q, actual %q", "acme/rocket", actual)
+	}
+	if !reflect.DeepEqual(cleared, reviewSessionState{}) {
+		t.Fatalf("expected cleared review session %+v, actual %+v", reviewSessionState{}, cleared)
+	}
+	if actual := subject.pendingReviewID; actual != "stale" {
+		t.Fatalf("expected the original pending review id %q, actual %q", "stale", actual)
+	}
+	if actual := subject.summary.Number; actual != 7 {
+		t.Fatalf("expected the original review summary number %d, actual %d", 7, actual)
+	}
+	if !subject.active {
+		t.Fatal("expected the original review session to stay active")
 	}
 }
 

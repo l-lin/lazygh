@@ -39,6 +39,18 @@ type reviewSessionState struct {
 	story                        reviewStoryData
 }
 
+type reviewSessionStartDescriptor struct {
+	mode                         reviewSessionMode
+	sourceFocus                  Focus
+	sourceDetailTab              DetailTab
+	sourcePaneLayoutSize         PaneLayoutSize
+	sourceFullscreenPane         Focus
+	sourceDetailFullscreenReturn PaneLayoutSize
+	summary                      githubdomain.PullRequest
+	pendingReviewID              string
+	story                        reviewStoryData
+}
+
 func (program *Program) startReviewAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	summary, ok := program.currentPullRequestSummary()

@@ -192,8 +192,7 @@ func (program *Program) startStoryReviewSession(summary any, pendingReviewID str
 func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
 	program.clearDetailPendingPrefix()
 	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
-	program.navigationState.reviewSession = reviewSessionState{
-		active:                       true,
+	program.startReviewSessionState(reviewSessionStartDescriptor{
 		mode:                         mode,
 		sourceFocus:                  program.model.Focus(),
 		sourceDetailTab:              program.detailState.activeTab,
@@ -202,11 +201,8 @@ func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequ
 		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
 		summary:                      summary,
 		pendingReviewID:              trimmedPendingReviewID,
-		selectedFileTreeRow:          -1,
-		collapsedTreeRowIDs:          map[string]bool{},
-		collapsedThreadIDs:           map[string]bool{},
 		story:                        story,
-	}
+	})
 	if trimmedPendingReviewID != "" {
 		program.setPendingPullRequestReviewState(summary, trimmedPendingReviewID)
 	}
@@ -225,7 +221,7 @@ func (program *Program) restorePullRequestBrowserFromReviewMode() {
 	sourcePaneLayoutSize := program.navigationState.reviewSession.sourcePaneLayoutSize
 	sourceFullscreenPane := program.navigationState.reviewSession.sourceFullscreenPane
 	sourceDetailFullscreenReturn := program.navigationState.reviewSession.sourceDetailFullscreenReturn
-	program.navigationState.reviewSession = reviewSessionState{}
+	program.clearReviewSession()
 	program.invalidateReviewDiffRenderCache()
 	program.setDetailActiveTab(sourceDetailTab)
 	program.clearDetailPendingPrefix()
@@ -472,7 +468,9 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 		program.pinOpenedPullRequestSummary(program.navigationState.openedPullRequestTab, updated)
 	}
 	if samePullRequestIdentity(program.navigationState.reviewSession.summary, identity) {
-		mutate(&program.navigationState.reviewSession.summary)
+		updated := program.navigationState.reviewSession.summary
+		mutate(&updated)
+		program.setReviewSessionSummary(updated)
 	}
 }
 

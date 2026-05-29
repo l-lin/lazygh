@@ -1,10 +1,36 @@
 package tui
 
-func (program *Program) setReviewSessionSelectedFileTreeRow(row int) {
+import githubdomain "github.com/l-lin/lazygh/internal/github"
+
+func (program *Program) updateReviewSession(transition func(reviewSessionState) reviewSessionState) {
 	if program == nil {
 		return
 	}
-	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(row)
+	program.navigationState.reviewSession = transition(program.navigationState.reviewSession)
+}
+
+func (program *Program) startReviewSessionState(start reviewSessionStartDescriptor) {
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.started(start)
+	})
+}
+
+func (program *Program) clearReviewSession() {
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.cleared()
+	})
+}
+
+func (program *Program) setReviewSessionSummary(summary githubdomain.PullRequest) {
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.withSummary(summary)
+	})
+}
+
+func (program *Program) setReviewSessionSelectedFileTreeRow(row int) {
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.withSelectedFileTreeRow(row)
+	})
 }
 
 func (program *Program) clampReviewSessionSelection() {
@@ -15,7 +41,9 @@ func (program *Program) clampReviewSessionSelection() {
 	readModel := program.reviewSessionReadModel()
 	selectableRows, ok := readModel.selectableRows()
 	if !ok {
-		program.navigationState.reviewSession = program.navigationState.reviewSession.clampedSelection(nil, nil)
+		program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+			return state.clampedSelection(nil, nil)
+		})
 		return
 	}
 
@@ -23,7 +51,9 @@ func (program *Program) clampReviewSessionSelection() {
 	if !fileRowsOK {
 		fileRows = nil
 	}
-	program.navigationState.reviewSession = program.navigationState.reviewSession.clampedSelection(selectableRows, fileRows)
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.clampedSelection(selectableRows, fileRows)
+	})
 }
 
 func (program *Program) adjustReviewSessionSelection(change int) {
@@ -33,11 +63,15 @@ func (program *Program) adjustReviewSessionSelection(change int) {
 
 	selectableRows, ok := program.reviewSessionReadModel().selectableRows()
 	if !ok {
-		program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(nil, change)
+		program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+			return state.adjustedSelection(nil, change)
+		})
 		return
 	}
 
-	program.navigationState.reviewSession = program.navigationState.reviewSession.adjustedSelection(selectableRows, change)
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.adjustedSelection(selectableRows, change)
+	})
 }
 
 func (program *Program) moveReviewSessionSelectionToTop() {
@@ -47,11 +81,15 @@ func (program *Program) moveReviewSessionSelectionToTop() {
 
 	selectableRows, ok := program.reviewSessionReadModel().selectableRows()
 	if !ok {
-		program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtTop(nil)
+		program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+			return state.selectionAtTop(nil)
+		})
 		return
 	}
 
-	program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtTop(selectableRows)
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.selectionAtTop(selectableRows)
+	})
 }
 
 func (program *Program) moveReviewSessionSelectionToBottom() {
@@ -61,28 +99,59 @@ func (program *Program) moveReviewSessionSelectionToBottom() {
 
 	selectableRows, ok := program.reviewSessionReadModel().selectableRows()
 	if !ok {
-		program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtBottom(nil)
+		program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+			return state.selectionAtBottom(nil)
+		})
 		return
 	}
 
-	program.navigationState.reviewSession = program.navigationState.reviewSession.selectionAtBottom(selectableRows)
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.selectionAtBottom(selectableRows)
+	})
+}
+
+func (program *Program) setReviewSessionTreeRowCollapsed(rowID string, collapsed bool) {
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.withTreeRowCollapsed(rowID, collapsed)
+	})
+}
+
+func (program *Program) setAllReviewSessionTreeRowsCollapsed(tree reviewDiffTree, collapsed bool) bool {
+	if program == nil {
+		return false
+	}
+
+	changed := false
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		updatedReviewSession, actualChanged := state.withAllTreeRowsCollapsed(tree, collapsed)
+		changed = actualChanged
+		if !actualChanged {
+			return state
+		}
+		return updatedReviewSession
+	})
+	return changed
 }
 
 func (program *Program) setReviewSessionThreadCollapsed(threadID string, collapsed bool) {
-	if program == nil {
-		return
-	}
-	program.navigationState.reviewSession = program.navigationState.reviewSession.withThreadCollapsed(threadID, collapsed)
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.withThreadCollapsed(threadID, collapsed)
+	})
 }
 
 func (program *Program) setAllReviewSessionThreadsCollapsed(threads []reviewDiffThread, collapsed bool) bool {
 	if program == nil {
 		return false
 	}
-	updatedReviewSession, changed := program.navigationState.reviewSession.withAllThreadsCollapsed(threads, collapsed)
-	if !changed {
-		return false
-	}
-	program.navigationState.reviewSession = updatedReviewSession
-	return true
+
+	changed := false
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		updatedReviewSession, actualChanged := state.withAllThreadsCollapsed(threads, collapsed)
+		changed = actualChanged
+		if !actualChanged {
+			return state
+		}
+		return updatedReviewSession
+	})
+	return changed
 }
