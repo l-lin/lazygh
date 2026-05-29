@@ -1,6 +1,9 @@
 package tui
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestUpdate_GivenMsgDetailMotionRequestedWithDetailTarget_WhenApplying_ThenItReturnsATypedDetailMotionCommand(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha"}}})
@@ -44,6 +47,83 @@ func TestUpdate_GivenMsgDetailMotionRequestedWithoutLastCharacterMotion_WhenAppl
 
 	if len(actual) != 0 {
 		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+}
+
+func TestUpdate_GivenMsgDetailViewportResolvedWithActiveSearch_WhenApplying_ThenItRefreshesTheSearchMatchAndPreservesViewportSync(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: strings.Join([]string{"Alpha", "Target", "Omega"}, "\n")}}})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	Update(subject, MsgOpenSearch{Query: "Target"})
+	Update(subject, MsgSubmitSearch{})
+
+	document := newDetailDocument(strings.Join([]string{"Alpha", "Target", "Omega"}, "\n"), 40)
+	subject.detailState = subject.detailState.synced(subject.currentDetailIdentity(), document, 2, subject.model.DetailSearchQuery())
+	subject.detailState.viewState.cursor = detailPosition{line: 1, column: 0}
+	subject.detailState.viewState.currentSearchMatch = -1
+
+	actual := Update(subject, MsgDetailViewportResolved{Operation: detailViewportOperationPlaceTop, Document: document, ViewportHeight: 2})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if actual := subject.detailState.viewState.currentSearchMatch; actual != 0 {
+		t.Fatalf("expected refreshed current search match %d, actual %d", 0, actual)
+	}
+	expectedOrigin := placedViewportOrigin(1, 2, document.rowCount(), viewportPlacementTop)
+	if actual := subject.detailState.viewState.originRow; actual != expectedOrigin {
+		t.Fatalf("expected placed origin row %d, actual %d", expectedOrigin, actual)
+	}
+	if actual := subject.detailState.viewState.preserveViewportSyncCount; actual != 3 {
+		t.Fatalf("expected preserve-sync count %d, actual %d", 3, actual)
+	}
+}
+
+func TestUpdate_GivenMsgFocusDetailRenderedLineResolvedWithActiveSearch_WhenApplying_ThenItRefreshesTheSearchMatchForTheFocusedLine(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: strings.Join([]string{"Alpha", "Target one", "Omega", "Target two"}, "\n")}}})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	Update(subject, MsgOpenSearch{Query: "Target"})
+	Update(subject, MsgSubmitSearch{})
+
+	document := newDetailDocument(strings.Join([]string{"Alpha", "Target one", "Omega", "Target two"}, "\n"), 40)
+	subject.detailState = subject.detailState.synced(subject.currentDetailIdentity(), document, 2, subject.model.DetailSearchQuery())
+	subject.detailState.viewState.currentSearchMatch = -1
+
+	actual := Update(subject, MsgFocusDetailRenderedLineResolved{RenderedLine: 3, Document: document, ViewportHeight: 2})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if actual := subject.detailState.viewState.cursor.line; actual != 3 {
+		t.Fatalf("expected focused cursor line %d, actual %d", 3, actual)
+	}
+	if actual := subject.detailState.viewState.currentSearchMatch; actual != 1 {
+		t.Fatalf("expected refreshed current search match %d, actual %d", 1, actual)
+	}
+}
+
+func TestUpdate_GivenMsgDetailViewSyncPlanResolvedWithFocusedLineAndActiveSearch_WhenApplying_ThenItRefreshesTheSearchMatchForTheAppliedLine(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: strings.Join([]string{"Alpha", "Target one", "Omega", "Target two"}, "\n")}}})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	Update(subject, MsgOpenSearch{Query: "Target"})
+	Update(subject, MsgSubmitSearch{})
+
+	document := newDetailDocument(strings.Join([]string{"Alpha", "Target one", "Omega", "Target two"}, "\n"), 40)
+	subject.detailState = subject.detailState.synced(subject.currentDetailIdentity(), document, 2, subject.model.DetailSearchQuery())
+	subject.detailState.viewState.currentSearchMatch = -1
+
+	actual := Update(subject, MsgDetailViewSyncPlanResolved{Plan: detailViewSyncPlan{document: document, focusLine: 3, focusLineKnown: true}, ViewportHeight: 2})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if actual := subject.detailState.viewState.cursor.line; actual != 3 {
+		t.Fatalf("expected focused cursor line %d, actual %d", 3, actual)
+	}
+	if actual := subject.detailState.viewState.currentSearchMatch; actual != 1 {
+		t.Fatalf("expected refreshed current search match %d, actual %d", 1, actual)
 	}
 }
 

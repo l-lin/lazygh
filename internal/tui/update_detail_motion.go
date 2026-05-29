@@ -90,32 +90,19 @@ func (program *Program) detailMotionRequestState(target detailMotionTarget) (det
 
 func (program *Program) applyFocusDetailRenderedLineResolved(message MsgFocusDetailRenderedLineResolved) {
 	searchQuery := program.model.DetailSearchQuery()
-	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
-	detailState = detailState.withFocusedLine(message.Document, message.ViewportHeight, message.RenderedLine)
-	detailState.viewState.syncSearch(message.Document, searchQuery)
-	program.detailState = detailState
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		state = state.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
+		return state.withFocusedLineAndSearchSynced(message.Document, message.ViewportHeight, message.RenderedLine, searchQuery)
+	})
 }
 
 func (program *Program) applyDetailViewportResolved(message MsgDetailViewportResolved) {
 	searchQuery := program.model.DetailSearchQuery()
-	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
-	switch message.Operation {
-	case detailViewportOperationScrollDown:
-		detailState.viewState.scrollDown(message.Document, message.ViewportHeight)
-	case detailViewportOperationScrollUp:
-		detailState.viewState.scrollUp(message.Document, message.ViewportHeight)
-	case detailViewportOperationRecenter:
-		detailState.viewState.recenter(message.Document, message.ViewportHeight)
-		detailState.viewState.preserveViewportSyncCount++
-	case detailViewportOperationPlaceTop:
-		detailState.viewState.placeCursorAtViewportTop(message.Document, message.ViewportHeight)
-		detailState.viewState.preserveViewportSyncCount++
-	case detailViewportOperationPlaceBottom:
-		detailState.viewState.placeCursorAtViewportBottom(message.Document, message.ViewportHeight)
-		detailState.viewState.preserveViewportSyncCount++
-	}
-	detailState.viewState.syncSearch(message.Document, searchQuery)
-	program.detailState = detailState
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		state = state.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
+		state = state.withViewportOperation(message.Document, message.ViewportHeight, message.Operation)
+		return state.withSearchSynced(message.Document, searchQuery)
+	})
 }
 
 func (program *Program) applyDetailMotionResolved(message MsgDetailMotionResolved) []Cmd {
@@ -142,33 +129,36 @@ func (program *Program) applyDetailMotionResolved(message MsgDetailMotionResolve
 		return program.detailMotionClipboardCommands(message.Target, actual.clipboard)
 	default:
 		searchQuery := program.model.DetailSearchQuery()
-		detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
-		actual := applyDetailMotionToViewState(detailMotionApplyInput{
-			state:          detailState.viewState,
-			document:       message.Document,
-			viewportHeight: message.ViewportHeight,
-			operation:      message.Operation,
-			direction:      message.Direction,
-			mode:           message.Mode,
-			reverse:        message.Reverse,
-			selectionKind:  message.SelectionKind,
-			runeValue:      message.Rune,
-			searchQuery:    searchQuery,
+		actual := detailMotionApplyResult{}
+		program.updateDetailState(func(state detailStateModel) detailStateModel {
+			state = state.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
+			actual = applyDetailMotionToViewState(detailMotionApplyInput{
+				state:          state.viewState,
+				document:       message.Document,
+				viewportHeight: message.ViewportHeight,
+				operation:      message.Operation,
+				direction:      message.Direction,
+				mode:           message.Mode,
+				reverse:        message.Reverse,
+				selectionKind:  message.SelectionKind,
+				runeValue:      message.Rune,
+				searchQuery:    searchQuery,
+			})
+			return state.withViewState(actual.state)
 		})
-		detailState.viewState = actual.state
-		program.detailState = detailState
 		return program.detailMotionClipboardCommands(message.Target, actual.clipboard)
 	}
 }
 
 func (program *Program) applyDetailViewSyncPlanResolved(message MsgDetailViewSyncPlanResolved) {
 	searchQuery := program.model.DetailSearchQuery()
-	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Plan.document, message.ViewportHeight, searchQuery)
-	if message.Plan.focusLineKnown {
-		detailState = detailState.withFocusedLine(message.Plan.document, message.ViewportHeight, message.Plan.focusLine)
-		detailState.viewState.syncSearch(message.Plan.document, searchQuery)
-	}
-	program.detailState = detailState
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		state = state.synced(program.currentDetailIdentity(), message.Plan.document, message.ViewportHeight, searchQuery)
+		if !message.Plan.focusLineKnown {
+			return state
+		}
+		return state.withFocusedLineAndSearchSynced(message.Plan.document, message.ViewportHeight, message.Plan.focusLine, searchQuery)
+	})
 }
 
 func (program *Program) detailMotionClipboardCommands(target detailMotionTarget, clipboard *detailMotionClipboardResult) []Cmd {

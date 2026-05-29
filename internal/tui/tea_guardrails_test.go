@@ -1108,6 +1108,21 @@ func TestRefactorGuard_GivenDetailStateFiles_WhenScanning_ThenDetailPrefixAndVis
 	}
 }
 
+func TestRefactorGuard_GivenUpdateDetailMotionFile_WhenScanning_ThenViewportAndSearchSyncStayOnDetailStateTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`detailState\.viewState\.(?:scrollDown|scrollUp|recenter|placeCursorAtViewportTop|placeCursorAtViewportBottom|syncSearch)\(`,
+		`detailState\.viewState\.preserveViewportSyncCount\+\+`,
+		`detailState\.viewState\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		return filepath.Base(path) == "update_detail_motion.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected update_detail_motion.go to route viewport and search-sync state through explicit detail-state transitions instead of nested detail-view mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenLifecycleSelectionAndSummaryWritesStayOnChildStateAdapters(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\s*=\s*[^=]`,

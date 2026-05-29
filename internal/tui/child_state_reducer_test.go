@@ -2,6 +2,7 @@ package tui
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -141,6 +142,100 @@ func TestDetailStateModel_GivenActiveTabTransitions_WhenUpdating_ThenItReturnsUp
 	}
 	if actual := subject.wrapWidth; actual != 72 {
 		t.Fatalf("expected the original wrap width %d, actual %d", 72, actual)
+	}
+}
+
+func TestDetailStateModel_GivenMotionAndSearchSyncTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	document := newDetailDocument(strings.Join([]string{"Alpha", "Target one", "Omega", "Target two"}, "\n"), 40)
+	subject := detailStateModel{viewState: detailViewState{
+		cursor:                detailPosition{line: 1, column: 0},
+		currentSearchMatch:    -1,
+		searchCacheDocumentID: 99,
+		searchCacheQuery:      "stale",
+	}}
+	scrollUpSubject := detailStateModel{viewState: detailViewState{cursor: detailPosition{line: 2, column: 0}, originRow: 1}}
+	recenterSubject := detailStateModel{viewState: detailViewState{cursor: detailPosition{line: 3, column: 0}}}
+
+	searchSynced := subject.withSearchSynced(document, "Target")
+	focused := subject.withFocusedLineAndSearchSynced(document, 2, 3, "Target")
+	scrolledDown := subject.withViewportOperation(document, 2, detailViewportOperationScrollDown)
+	scrolledUp := scrollUpSubject.withViewportOperation(document, 2, detailViewportOperationScrollUp)
+	recentered := recenterSubject.withViewportOperation(document, 2, detailViewportOperationRecenter)
+	placedTop := subject.withViewportOperation(document, 2, detailViewportOperationPlaceTop)
+	placedBottom := subject.withViewportOperation(document, 2, detailViewportOperationPlaceBottom)
+	replaced := subject.withViewState(detailViewState{cursor: detailPosition{line: 2, column: 0}, originRow: 1, currentSearchMatch: 7})
+
+	if actual := len(searchSynced.viewState.searchMatches); actual != 2 {
+		t.Fatalf("expected synced search match count %d, actual %d", 2, actual)
+	}
+	if actual := searchSynced.viewState.currentSearchMatch; actual != 0 {
+		t.Fatalf("expected synced current search match %d, actual %d", 0, actual)
+	}
+	if actual := focused.viewState.cursor.line; actual != 3 {
+		t.Fatalf("expected focused cursor line %d, actual %d", 3, actual)
+	}
+	if actual := focused.viewState.currentSearchMatch; actual != 1 {
+		t.Fatalf("expected focused current search match %d, actual %d", 1, actual)
+	}
+	if actual := scrolledDown.viewState.cursor.line; actual != 2 {
+		t.Fatalf("expected scrolled-down cursor line %d, actual %d", 2, actual)
+	}
+	if actual := scrolledDown.viewState.originRow; actual != 1 {
+		t.Fatalf("expected scrolled-down origin row %d, actual %d", 1, actual)
+	}
+	if !scrolledDown.viewState.manualViewportScroll {
+		t.Fatal("expected scrolling down to keep manual viewport scrolling enabled")
+	}
+	if actual := scrolledUp.viewState.cursor.line; actual != 1 {
+		t.Fatalf("expected scrolled-up cursor line %d, actual %d", 1, actual)
+	}
+	if actual := scrolledUp.viewState.originRow; actual != 0 {
+		t.Fatalf("expected scrolled-up origin row %d, actual %d", 0, actual)
+	}
+	expectedRecenterOrigin := centeredViewportOrigin(3, 2, document.rowCount())
+	if actual := recentered.viewState.originRow; actual != expectedRecenterOrigin {
+		t.Fatalf("expected recentered origin row %d, actual %d", expectedRecenterOrigin, actual)
+	}
+	if actual := recentered.viewState.preserveViewportSyncCount; actual != 3 {
+		t.Fatalf("expected recentered preserve-sync count %d, actual %d", 3, actual)
+	}
+	expectedTopOrigin := placedViewportOrigin(1, 2, document.rowCount(), viewportPlacementTop)
+	if actual := placedTop.viewState.originRow; actual != expectedTopOrigin {
+		t.Fatalf("expected top-placed origin row %d, actual %d", expectedTopOrigin, actual)
+	}
+	if actual := placedTop.viewState.preserveViewportSyncCount; actual != 3 {
+		t.Fatalf("expected top-placed preserve-sync count %d, actual %d", 3, actual)
+	}
+	expectedBottomOrigin := placedViewportOrigin(1, 2, document.rowCount(), viewportPlacementBottom)
+	if actual := placedBottom.viewState.originRow; actual != expectedBottomOrigin {
+		t.Fatalf("expected bottom-placed origin row %d, actual %d", expectedBottomOrigin, actual)
+	}
+	if actual := placedBottom.viewState.preserveViewportSyncCount; actual != 3 {
+		t.Fatalf("expected bottom-placed preserve-sync count %d, actual %d", 3, actual)
+	}
+	if actual := replaced.viewState.cursor.line; actual != 2 {
+		t.Fatalf("expected replaced cursor line %d, actual %d", 2, actual)
+	}
+	if actual := replaced.viewState.originRow; actual != 1 {
+		t.Fatalf("expected replaced origin row %d, actual %d", 1, actual)
+	}
+	if actual := replaced.viewState.currentSearchMatch; actual != 7 {
+		t.Fatalf("expected replaced current search match %d, actual %d", 7, actual)
+	}
+	if actual := subject.viewState.cursor.line; actual != 1 {
+		t.Fatalf("expected the original cursor line %d, actual %d", 1, actual)
+	}
+	if actual := subject.viewState.currentSearchMatch; actual != -1 {
+		t.Fatalf("expected the original current search match %d, actual %d", -1, actual)
+	}
+	if actual := subject.viewState.searchCacheQuery; actual != "stale" {
+		t.Fatalf("expected the original search cache query %q, actual %q", "stale", actual)
+	}
+	if len(subject.viewState.searchMatches) != 0 {
+		t.Fatalf("expected the original search matches to stay empty, actual %+v", subject.viewState.searchMatches)
+	}
+	if subject.viewState.manualViewportScroll {
+		t.Fatal("expected the original manual viewport scroll flag to stay false")
 	}
 }
 

@@ -47,8 +47,42 @@ func (state detailStateModel) withResetViewState() detailStateModel {
 	return state
 }
 
+func (state detailStateModel) withViewState(viewState detailViewState) detailStateModel {
+	state.viewState = viewState
+	return state
+}
+
 func (state detailStateModel) withSyncedViewport(detailDocument detailDocument, viewportHeight int) detailStateModel {
 	state.viewState.sync(detailDocument, viewportHeight)
+	return state
+}
+
+func (state detailStateModel) withSearchSynced(detailDocument detailDocument, searchQuery string) detailStateModel {
+	state.viewState.syncSearch(detailDocument, searchQuery)
+	return state
+}
+
+func (state detailStateModel) withViewportSyncPreserved() detailStateModel {
+	state.viewState.preserveViewportSyncCount++
+	return state
+}
+
+func (state detailStateModel) withViewportOperation(detailDocument detailDocument, viewportHeight int, operation detailViewportOperation) detailStateModel {
+	switch operation {
+	case detailViewportOperationScrollDown:
+		state.viewState.scrollDown(detailDocument, viewportHeight)
+	case detailViewportOperationScrollUp:
+		state.viewState.scrollUp(detailDocument, viewportHeight)
+	case detailViewportOperationRecenter:
+		state.viewState.recenter(detailDocument, viewportHeight)
+		state = state.withViewportSyncPreserved()
+	case detailViewportOperationPlaceTop:
+		state.viewState.placeCursorAtViewportTop(detailDocument, viewportHeight)
+		state = state.withViewportSyncPreserved()
+	case detailViewportOperationPlaceBottom:
+		state.viewState.placeCursorAtViewportBottom(detailDocument, viewportHeight)
+		state = state.withViewportSyncPreserved()
+	}
 	return state
 }
 
@@ -63,6 +97,11 @@ func (state detailStateModel) withFocusedLine(detailDocument detailDocument, vie
 	return state.withSyncedViewport(detailDocument, viewportHeight)
 }
 
+func (state detailStateModel) withFocusedLineAndSearchSynced(detailDocument detailDocument, viewportHeight int, line int, searchQuery string) detailStateModel {
+	state = state.withFocusedLine(detailDocument, viewportHeight, line)
+	return state.withSearchSynced(detailDocument, searchQuery)
+}
+
 func (state detailStateModel) synced(detailIdentity string, detailDocument detailDocument, viewportHeight int, searchQuery string) detailStateModel {
 	if detailIdentity != state.lastIdentity {
 		state.lastIdentity = detailIdentity
@@ -70,8 +109,7 @@ func (state detailStateModel) synced(detailIdentity string, detailDocument detai
 	}
 
 	state = state.withSyncedViewport(detailDocument, viewportHeight)
-	state.viewState.syncSearch(detailDocument, searchQuery)
-	return state
+	return state.withSearchSynced(detailDocument, searchQuery)
 }
 
 func (state detailStateModel) syncedForRender(detailIdentity string, detailDocument detailDocument, wrapWidth int, viewportHeight int, searchQuery string) detailStateModel {
