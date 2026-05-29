@@ -79,7 +79,10 @@ func (program *Program) currentDetailIdentity() string {
 }
 
 func (program *Program) invalidatePullRequestDetail(repository string, number int) {
-	delete(program.pullRequestDetailCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	key := strings.TrimSpace(repository) + fmt.Sprintf("#%d", number)
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withoutPullRequestDetail(key)
+	})
 	program.forgetPendingPullRequestReviewState(repository, number)
 	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidatePullRequestDetailDocumentCache()

@@ -52,7 +52,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.BodyHTML = trimmedRenderedHTML
-		program.pullRequestDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindPullRequestComment:
 		cachedResult, ok := program.pullRequestDetailCache[target.cacheKey]
@@ -60,7 +62,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.Comments[target.itemIndex].BodyHTML = trimmedRenderedHTML
-		program.pullRequestDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindPullRequestInlineThreadComment:
 		cachedResult, ok := program.pullRequestDetailCache[target.cacheKey]
@@ -68,7 +72,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.InlineCommentThreads[target.threadIndex].Comments[target.commentIndex].BodyHTML = trimmedRenderedHTML
-		program.pullRequestDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindPullRequestInlineComment:
 		cachedResult, ok := program.pullRequestDetailCache[target.cacheKey]
@@ -76,7 +82,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.InlineComments[target.itemIndex].BodyHTML = trimmedRenderedHTML
-		program.pullRequestDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindPullRequestCommit:
 		cachedResult, ok := program.pullRequestDetailCache[target.cacheKey]
@@ -84,7 +92,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.Commits[target.itemIndex].MessageBodyHTML = trimmedRenderedHTML
-		program.pullRequestDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindPullRequestDiffThreadComment:
 		cachedResult, ok := program.pullRequestDiffCache[target.cacheKey]
@@ -92,7 +102,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.data.Files[target.fileIndex].Threads[target.threadIndex].Comments[target.commentIndex].BodyHTML = trimmedRenderedHTML
-		program.pullRequestDiffCache[target.cacheKey] = cachedResult
+		program.updateReviewStore(func(store reviewStore) reviewStore {
+			return store.withPullRequestDiffCached(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindIssue:
 		cachedResult, ok := program.issueDetailCache[target.cacheKey]
@@ -100,7 +112,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.BodyHTML = trimmedRenderedHTML
-		program.issueDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withIssueDetailLoaded(target.cacheKey, cachedResult)
+		})
 		return true
 	case detailImageHTMLApplyKindRelease:
 		cachedResult, ok := program.releaseDetailCache[target.cacheKey]
@@ -108,7 +122,9 @@ func (program *Program) applyDetailImageHTMLRendered(target detailImageHTMLApply
 			return false
 		}
 		cachedResult.detail.BodyHTML = trimmedRenderedHTML
-		program.releaseDetailCache[target.cacheKey] = cachedResult
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withReleaseDetailLoaded(target.cacheKey, cachedResult)
+		})
 		return true
 	default:
 		return false

@@ -103,7 +103,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		return nil
 	}
 
-	delete(program.pullRequestDetailLoadInFlight, key)
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withPullRequestDetailLoadCleared(key)
+	})
 	manualRefresh := program.consumeManualPullRequestDetailRefresh(key)
 	if message.PendingReviewStateKnown {
 		program.pendingPullRequestReviewCache[key] = message.PendingReviewState
@@ -111,7 +113,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	if message.Err == nil {
 		clonedDetail := clonePullRequestDetail(message.Detail)
 		program.cachePullRequestDetail(message.Summary, clonedDetail)
-		program.pullRequestDetailCache[key] = pullRequestDetailResult{detail: clonedDetail, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(key, pullRequestDetailResult{detail: clonedDetail, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
+		})
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
@@ -120,7 +124,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	}
 
 	if !program.canKeepPullRequestDetailOnRefreshError(key) {
-		program.pullRequestDetailCache[key] = pullRequestDetailResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
+		program.updateDetailStore(func(store detailStore) detailStore {
+			return store.withPullRequestDetailCached(key, pullRequestDetailResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
+		})
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(message.Err)
@@ -131,7 +137,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	cachedResult := program.pullRequestDetailCache[key]
 	cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(message.Summary)
 	cachedResult.needsRefresh = false
-	program.pullRequestDetailCache[key] = cachedResult
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withPullRequestDetailCached(key, cachedResult)
+	})
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)
 	}
@@ -144,15 +152,19 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		return nil
 	}
 
-	delete(program.pullRequestDiffLoadInFlight, key)
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withPullRequestDiffLoadCleared(key)
+	})
 	manualRefresh := program.consumeManualPullRequestDiffRefresh(key)
 	if message.Err == nil {
 		program.cachePullRequestDiff(message.Summary, message.RawDiff)
-		program.pullRequestDiffCache[key] = pullRequestDiffResult{
-			data:                    buildReviewDiffData(message.RawDiff),
-			sourceUpdatedAt:         pullRequestSummaryVersion(message.Summary),
-			fileTeamOwnersAttempted: message.RawDiff.FileTeamOwnersAttempted,
-		}
+		program.updateReviewStore(func(store reviewStore) reviewStore {
+			return store.withPullRequestDiffCached(key, pullRequestDiffResult{
+				data:                    buildReviewDiffData(message.RawDiff),
+				sourceUpdatedAt:         pullRequestSummaryVersion(message.Summary),
+				fileTeamOwnersAttempted: message.RawDiff.FileTeamOwnersAttempted,
+			})
+		})
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
@@ -163,7 +175,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	}
 
 	if !program.canKeepPullRequestDiffOnRefreshError(key) {
-		program.pullRequestDiffCache[key] = pullRequestDiffResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)}
+		program.updateReviewStore(func(store reviewStore) reviewStore {
+			return store.withPullRequestDiffCached(key, pullRequestDiffResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
+		})
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
@@ -177,7 +191,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(message.Summary)
 	cachedResult.needsRefresh = false
 	cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.shouldLoadPullRequestDiffTeamOwners()
-	program.pullRequestDiffCache[key] = cachedResult
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withPullRequestDiffCached(key, cachedResult)
+	})
 	program.invalidatePullRequestDetailDocumentCache()
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)
@@ -187,20 +203,16 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 
 func (program *Program) applyIssueDetailLoaded(message MsgIssueDetailLoaded) {
 	key := notificationDetailKey(message.Repository, message.Number)
-	if key == "" {
-		return
-	}
-	delete(program.issueDetailLoadInFlight, key)
-	program.issueDetailCache[key] = issueDetailResult{detail: message.Detail, err: message.Err}
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withIssueDetailLoaded(key, issueDetailResult{detail: message.Detail, err: message.Err})
+	})
 }
 
 func (program *Program) applyReleaseDetailLoaded(message MsgReleaseDetailLoaded) {
 	key := notificationDetailKey(message.Repository, message.ID)
-	if key == "" {
-		return
-	}
-	delete(program.releaseDetailLoadInFlight, key)
-	program.releaseDetailCache[key] = releaseDetailResult{detail: message.Detail, err: message.Err}
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withReleaseDetailLoaded(key, releaseDetailResult{detail: message.Detail, err: message.Err})
+	})
 }
 
 func (program *Program) applyCurrentDetailImageHTMLLoaded(message MsgCurrentDetailImageHTMLLoaded) {

@@ -25,10 +25,13 @@ func (program *Program) applyPullRequestDetailCacheResult(repository string, num
 		return false
 	}
 
-	program.pullRequestDetailCache[key] = result
-	if options.clearInFlight {
-		delete(program.pullRequestDetailLoadInFlight, key)
-	}
+	program.updateDetailStore(func(store detailStore) detailStore {
+		store = store.withPullRequestDetailCached(key, result)
+		if options.clearInFlight {
+			store = store.withPullRequestDetailLoadCleared(key)
+		}
+		return store
+	})
 	if options.invalidateDocuments {
 		program.invalidatePullRequestDetailDocumentCache()
 	}
@@ -48,10 +51,13 @@ func (program *Program) applyPullRequestDiffCacheResult(repository string, numbe
 		return false
 	}
 
-	program.pullRequestDiffCache[key] = result
-	if options.clearInFlight {
-		delete(program.pullRequestDiffLoadInFlight, key)
-	}
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		store = store.withPullRequestDiffCached(key, result)
+		if options.clearInFlight {
+			store = store.withPullRequestDiffLoadCleared(key)
+		}
+		return store
+	})
 	if options.invalidateReviewRender {
 		program.invalidateReviewDiffRenderCache()
 	}

@@ -477,8 +477,11 @@ func (program *Program) invalidatePullRequestMutationCaches(summary githubdomain
 		return
 	}
 
-	delete(program.pullRequestDiffCache, key)
-	delete(program.pullRequestDiffLoadInFlight, key)
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		store = store.withoutPullRequestDiff(key)
+		store = store.withPullRequestDiffLoadCleared(key)
+		return store
+	})
 	program.forgetPendingPullRequestReviewState(pullRequestRepositoryName(summary.Repository), summary.Number)
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()

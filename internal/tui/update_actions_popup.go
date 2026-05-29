@@ -142,15 +142,13 @@ func (program *Program) clearCachedData() error {
 		return err
 	}
 
-	program.pullRequestDetailCache = map[string]pullRequestDetailResult{}
-	program.pullRequestDetailLoadInFlight = map[string]bool{}
-	program.pullRequestDiffCache = map[string]pullRequestDiffResult{}
-	program.pullRequestDiffLoadInFlight = map[string]bool{}
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withWorkflowStateReset()
+	})
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withDiffWorkflowStateReset()
+	})
 	program.pendingPullRequestReviewCache = map[string]pendingPullRequestReviewState{}
-	program.issueDetailCache = map[string]issueDetailResult{}
-	program.issueDetailLoadInFlight = map[string]bool{}
-	program.releaseDetailCache = map[string]releaseDetailResult{}
-	program.releaseDetailLoadInFlight = map[string]bool{}
 	program.resetNotificationLoadState()
 	program.clearGHCommandLoading()
 	program.invalidatePullRequestDetailDocumentCache()

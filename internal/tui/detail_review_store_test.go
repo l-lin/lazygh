@@ -1,0 +1,105 @@
+package tui
+
+import (
+	"testing"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
+
+func TestDetailStore_GivenCacheAndLoadState_WhenApplyingWorkflowTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newDetailStore(nil)
+	subject.pullRequestDetailCache["acme/widgets#1"] = pullRequestDetailResult{detail: githubdomain.PullRequestDetail{Title: "old detail"}}
+	subject.pullRequestDetailLoadInFlight["acme/widgets#1"] = true
+	subject.issueDetailLoadInFlight["acme/widgets#7"] = true
+	subject.releaseDetailLoadInFlight["acme/widgets#8"] = true
+
+	loadPlanned := subject.withPullRequestDetailLoadPlanned("acme/widgets#42")
+	cached := loadPlanned.withPullRequestDetailCached("acme/widgets#42", pullRequestDetailResult{detail: githubdomain.PullRequestDetail{Title: "new detail"}})
+	cleared := cached.withPullRequestDetailLoadCleared("acme/widgets#1")
+	invalidated := cleared.withoutPullRequestDetail("acme/widgets#1")
+	issueLoaded := invalidated.withIssueDetailLoaded("acme/widgets#7", issueDetailResult{detail: githubdomain.IssueDetail{Body: "issue body"}})
+	releaseLoaded := issueLoaded.withReleaseDetailLoaded("acme/widgets#8", releaseDetailResult{detail: githubdomain.ReleaseDetail{Body: "release body"}})
+	reset := releaseLoaded.withWorkflowStateReset()
+
+	if !loadPlanned.pullRequestDetailLoadInFlight["acme/widgets#42"] {
+		t.Fatal("expected the planned state to track the new detail load in flight")
+	}
+	if actual := cached.pullRequestDetailCache["acme/widgets#42"].detail.Title; actual != "new detail" {
+		t.Fatalf("expected cached detail title %q, actual %q", "new detail", actual)
+	}
+	if cleared.pullRequestDetailLoadInFlight["acme/widgets#1"] {
+		t.Fatal("expected the cleared state to forget the old detail load")
+	}
+	if _, ok := invalidated.pullRequestDetailCache["acme/widgets#1"]; ok {
+		t.Fatal("expected the invalidated state to drop the old detail cache entry")
+	}
+	if issueLoaded.issueDetailLoadInFlight["acme/widgets#7"] {
+		t.Fatal("expected issue detail loading to clear after storing the result")
+	}
+	if actual := issueLoaded.issueDetailCache["acme/widgets#7"].detail.Body; actual != "issue body" {
+		t.Fatalf("expected cached issue body %q, actual %q", "issue body", actual)
+	}
+	if releaseLoaded.releaseDetailLoadInFlight["acme/widgets#8"] {
+		t.Fatal("expected release detail loading to clear after storing the result")
+	}
+	if actual := releaseLoaded.releaseDetailCache["acme/widgets#8"].detail.Body; actual != "release body" {
+		t.Fatalf("expected cached release body %q, actual %q", "release body", actual)
+	}
+	if len(reset.pullRequestDetailCache) != 0 || len(reset.pullRequestDetailLoadInFlight) != 0 || len(reset.issueDetailCache) != 0 || len(reset.issueDetailLoadInFlight) != 0 || len(reset.releaseDetailCache) != 0 || len(reset.releaseDetailLoadInFlight) != 0 {
+		t.Fatalf("expected workflow reset to clear detail and notification caches, actual detail=%d detailLoads=%d issue=%d issueLoads=%d release=%d releaseLoads=%d", len(reset.pullRequestDetailCache), len(reset.pullRequestDetailLoadInFlight), len(reset.issueDetailCache), len(reset.issueDetailLoadInFlight), len(reset.releaseDetailCache), len(reset.releaseDetailLoadInFlight))
+	}
+
+	if actual := subject.pullRequestDetailCache["acme/widgets#1"].detail.Title; actual != "old detail" {
+		t.Fatalf("expected the original detail title %q, actual %q", "old detail", actual)
+	}
+	if !subject.pullRequestDetailLoadInFlight["acme/widgets#1"] {
+		t.Fatal("expected the original detail load-in-flight state to stay true")
+	}
+	if _, ok := subject.pullRequestDetailLoadInFlight["acme/widgets#42"]; ok {
+		t.Fatal("expected the original state to stay free of the new detail load key")
+	}
+	if subject.issueDetailCache["acme/widgets#7"].detail.Body != "" {
+		t.Fatalf("expected the original issue cache to stay empty, actual %+v", subject.issueDetailCache["acme/widgets#7"])
+	}
+	if subject.releaseDetailCache["acme/widgets#8"].detail.Body != "" {
+		t.Fatalf("expected the original release cache to stay empty, actual %+v", subject.releaseDetailCache["acme/widgets#8"])
+	}
+}
+
+func TestReviewStore_GivenDiffCacheAndLoadState_WhenApplyingWorkflowTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newReviewStore(nil)
+	subject.pullRequestDiffCache["acme/widgets#1"] = pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "old.go"}}}}
+	subject.pullRequestDiffLoadInFlight["acme/widgets#1"] = true
+
+	loadPlanned := subject.withPullRequestDiffLoadPlanned("acme/widgets#42")
+	cached := loadPlanned.withPullRequestDiffCached("acme/widgets#42", pullRequestDiffResult{data: reviewDiffData{Files: []reviewDiffFile{{Path: "main.go"}}}})
+	cleared := cached.withPullRequestDiffLoadCleared("acme/widgets#1")
+	invalidated := cleared.withoutPullRequestDiff("acme/widgets#1")
+	reset := invalidated.withDiffWorkflowStateReset()
+
+	if !loadPlanned.pullRequestDiffLoadInFlight["acme/widgets#42"] {
+		t.Fatal("expected the planned state to track the new diff load in flight")
+	}
+	if actual := cached.pullRequestDiffCache["acme/widgets#42"].data.Files[0].Path; actual != "main.go" {
+		t.Fatalf("expected cached diff path %q, actual %q", "main.go", actual)
+	}
+	if cleared.pullRequestDiffLoadInFlight["acme/widgets#1"] {
+		t.Fatal("expected the cleared state to forget the old diff load")
+	}
+	if _, ok := invalidated.pullRequestDiffCache["acme/widgets#1"]; ok {
+		t.Fatal("expected the invalidated state to drop the old diff cache entry")
+	}
+	if len(reset.pullRequestDiffCache) != 0 || len(reset.pullRequestDiffLoadInFlight) != 0 {
+		t.Fatalf("expected diff workflow reset to clear caches and in-flight state, actual cache=%d inFlight=%d", len(reset.pullRequestDiffCache), len(reset.pullRequestDiffLoadInFlight))
+	}
+
+	if actual := subject.pullRequestDiffCache["acme/widgets#1"].data.Files[0].Path; actual != "old.go" {
+		t.Fatalf("expected the original diff path %q, actual %q", "old.go", actual)
+	}
+	if !subject.pullRequestDiffLoadInFlight["acme/widgets#1"] {
+		t.Fatal("expected the original diff load-in-flight state to stay true")
+	}
+	if _, ok := subject.pullRequestDiffLoadInFlight["acme/widgets#42"]; ok {
+		t.Fatal("expected the original state to stay free of the new diff load key")
+	}
+}

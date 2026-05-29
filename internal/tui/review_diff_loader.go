@@ -44,7 +44,10 @@ func (program *Program) pullRequestDiffForSummary(summary any) (pullRequestDiffR
 }
 
 func (program *Program) invalidatePullRequestDiff(repository string, number int) {
-	delete(program.pullRequestDiffCache, strings.TrimSpace(repository)+fmt.Sprintf("#%d", number))
+	key := strings.TrimSpace(repository) + fmt.Sprintf("#%d", number)
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withoutPullRequestDiff(key)
+	})
 	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()

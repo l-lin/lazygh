@@ -16,35 +16,29 @@ func (program *Program) applyNotificationsLoadPlanned() {
 }
 
 func (program *Program) applyPullRequestDetailLoadPlanned(message MsgPullRequestDetailLoadPlanned) {
-	key := strings.TrimSpace(message.Key)
-	if key == "" {
-		return
-	}
-	program.pullRequestDetailLoadInFlight[key] = true
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withPullRequestDetailLoadPlanned(message.Key)
+	})
 }
 
 func (program *Program) applyPullRequestDiffLoadPlanned(message MsgPullRequestDiffLoadPlanned) {
-	key := strings.TrimSpace(message.Key)
-	if key == "" {
-		return
-	}
-	program.pullRequestDiffLoadInFlight[key] = true
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withPullRequestDiffLoadPlanned(message.Key)
+	})
 }
 
 func (program *Program) applyIssueDetailLoadPlanned(message MsgIssueDetailLoadPlanned) {
 	key := notificationDetailKey(message.Repository, message.Number)
-	if key == "" {
-		return
-	}
-	program.issueDetailLoadInFlight[key] = true
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withIssueDetailLoadPlanned(key)
+	})
 }
 
 func (program *Program) applyReleaseDetailLoadPlanned(message MsgReleaseDetailLoadPlanned) {
 	key := notificationDetailKey(message.Repository, message.ID)
-	if key == "" {
-		return
-	}
-	program.releaseDetailLoadInFlight[key] = true
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withReleaseDetailLoadPlanned(key)
+	})
 }
 
 func (program *Program) applyCurrentDetailImageHTMLLoadPlanned(message MsgCurrentDetailImageHTMLLoadPlanned) {
@@ -68,10 +62,18 @@ func (program *Program) applyPullRequestDetailCacheHydrated(message MsgPullReque
 	if key == "" {
 		return
 	}
-	if _, ok := program.pullRequestDetailCache[key]; ok {
+
+	hydrated := false
+	program.updateDetailStore(func(store detailStore) detailStore {
+		if detailResultKnown(store.pullRequestDetailCache, key) {
+			return store
+		}
+		hydrated = true
+		return store.withPullRequestDetailCached(key, message.Result)
+	})
+	if !hydrated {
 		return
 	}
-	program.pullRequestDetailCache[key] = message.Result
 	program.invalidatePullRequestDetailDocumentCache()
 }
 
@@ -80,10 +82,18 @@ func (program *Program) applyPullRequestDiffCacheHydrated(message MsgPullRequest
 	if key == "" {
 		return
 	}
-	if _, ok := program.pullRequestDiffCache[key]; ok {
+
+	hydrated := false
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		if diffResultKnown(store.pullRequestDiffCache, key) {
+			return store
+		}
+		hydrated = true
+		return store.withPullRequestDiffCached(key, message.Result)
+	})
+	if !hydrated {
 		return
 	}
-	program.pullRequestDiffCache[key] = message.Result
 	program.invalidateReviewDiffRenderCache()
 	program.clampReviewSessionSelection()
 }
