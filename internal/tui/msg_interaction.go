@@ -258,6 +258,8 @@ type MsgOpenDetailPullRequestCommentRequested struct{}
 
 type MsgOpenInlineCommentReplyRequested struct{}
 
+type MsgToggleInlineCommentResolutionRequested struct{}
+
 type MsgOpenLinkUnderCursorRequested struct{}
 
 type MsgOpenLinkUnderCursorResolved struct {
@@ -418,6 +420,7 @@ func (MsgOpenPullRequestCustomSearchEditorRequested) isMsg()   {}
 func (MsgOpenPullRequestCommentComposerRequested) isMsg()      {}
 func (MsgOpenDetailPullRequestCommentRequested) isMsg()        {}
 func (MsgOpenInlineCommentReplyRequested) isMsg()              {}
+func (MsgToggleInlineCommentResolutionRequested) isMsg()       {}
 func (MsgOpenLinkUnderCursorRequested) isMsg()                 {}
 func (MsgOpenLinkUnderCursorResolved) isMsg()                  {}
 func (MsgOpenPullRequestBuildRunPopupLinkRequested) isMsg()    {}

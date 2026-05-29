@@ -19,21 +19,23 @@ func (program *Program) footerPresenter() footerPresenter {
 
 	_, notificationSelectionVisible := program.selectedNotificationActionTarget()
 	presenter := footerPresenter{
-		model:                        program.model,
-		screenState:                  program.screenState(),
-		keyResolver:                  program.keybindingLabelResolver(),
-		helpVisible:                  program.overlayState.helpVisible,
-		modalEditorVisible:           program.modalEditorVisible(),
-		searchPromptVisible:          program.searchPromptVisible(),
-		pullRequestBuildPopupVisible: program.pullRequestBuildRunPopupVisible(),
-		assigneePickerVisible:        program.assigneePickerVisible(),
-		notificationSelectionVisible: notificationSelectionVisible,
-		commentShortcutAvailable:     program.paneFooterCommentShortcutAvailable(),
-		pullRequestBrowserAvailable:  program.pullRequestBrowserShortcutAvailable(),
-		actionsPopupAvailable:        program.paneFooterActionsAvailable(),
-		modalEditorSubmitAction:      submitAction,
-		modalEditorSubmitFallback:    submitFallback,
-		paneSearchSummaries:          program.paneSearchSummaries(),
+		model:                            program.model,
+		screenState:                      program.screenState(),
+		keyResolver:                      program.keybindingLabelResolver(),
+		helpVisible:                      program.overlayState.helpVisible,
+		modalEditorVisible:               program.modalEditorVisible(),
+		searchPromptVisible:              program.searchPromptVisible(),
+		pullRequestBuildPopupVisible:     program.pullRequestBuildRunPopupVisible(),
+		assigneePickerVisible:            program.assigneePickerVisible(),
+		notificationSelectionVisible:     notificationSelectionVisible,
+		commentShortcutAvailable:         program.paneFooterCommentShortcutAvailable(),
+		inlineCommentResolutionAvailable: program.inlineCommentResolutionShortcutAvailable(),
+		inlineCommentResolutionHintLabel: program.inlineCommentResolutionShortcutHintLabel(),
+		pullRequestBrowserAvailable:      program.pullRequestBrowserShortcutAvailable(),
+		actionsPopupAvailable:            program.paneFooterActionsAvailable(),
+		modalEditorSubmitAction:          submitAction,
+		modalEditorSubmitFallback:        submitFallback,
+		paneSearchSummaries:              program.paneSearchSummaries(),
 	}
 	if program.refreshReadCache.enabled {
 		program.refreshReadCache.footerPresenter = presenter

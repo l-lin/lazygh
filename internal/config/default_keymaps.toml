@@ -80,6 +80,7 @@ comment_on_pull_request = "c"
 custom_search = ":"
 open_pull_request_by_url = "ctrl+v"
 reply_to_inline_comment = "r"
+toggle_inline_comment_resolution = "R"
 
 [keymaps.notifications]
 mark_notification_read = "r"

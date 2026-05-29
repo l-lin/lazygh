@@ -3,21 +3,23 @@ package tui
 import "strings"
 
 type footerPresenter struct {
-	model                        *Model
-	screenState                  ScreenState
-	keyResolver                  keybindingLabelResolver
-	helpVisible                  bool
-	modalEditorVisible           bool
-	searchPromptVisible          bool
-	pullRequestBuildPopupVisible bool
-	assigneePickerVisible        bool
-	notificationSelectionVisible bool
-	commentShortcutAvailable     bool
-	pullRequestBrowserAvailable  bool
-	actionsPopupAvailable        bool
-	modalEditorSubmitAction      string
-	modalEditorSubmitFallback    string
-	paneSearchSummaries          map[Focus]string
+	model                            *Model
+	screenState                      ScreenState
+	keyResolver                      keybindingLabelResolver
+	helpVisible                      bool
+	modalEditorVisible               bool
+	searchPromptVisible              bool
+	pullRequestBuildPopupVisible     bool
+	assigneePickerVisible            bool
+	notificationSelectionVisible     bool
+	commentShortcutAvailable         bool
+	inlineCommentResolutionAvailable bool
+	inlineCommentResolutionHintLabel string
+	pullRequestBrowserAvailable      bool
+	actionsPopupAvailable            bool
+	modalEditorSubmitAction          string
+	modalEditorSubmitFallback        string
+	paneSearchSummaries              map[Focus]string
 }
 
 func (presenter footerPresenter) paneFooterStateFor(focus Focus) paneFooterState {
@@ -214,6 +216,9 @@ func (presenter footerPresenter) paneFooterKeyHintsText(focus Focus) string {
 	if commentHint := presenter.paneFooterCommentHint(focus); commentHint != "" {
 		hints = append(hints, commentHint)
 	}
+	if inlineCommentResolutionHint := presenter.paneFooterInlineCommentResolutionHint(focus); inlineCommentResolutionHint != "" {
+		hints = append(hints, inlineCommentResolutionHint)
+	}
 	if actionsHint := presenter.paneFooterActionsHint(focus); actionsHint != "" {
 		hints = append(hints, actionsHint)
 	}
@@ -263,6 +268,13 @@ func (presenter footerPresenter) paneFooterOverriddenKeyHint(label string, actio
 		return ""
 	}
 	return strings.Join(formattedKeySequenceLabelsForDisplay(actualLabels), "/") + ": " + label
+}
+
+func (presenter footerPresenter) paneFooterInlineCommentResolutionHint(focus Focus) string {
+	if !presenter.inlineCommentResolutionAvailable || focus != FocusDetailView || presenter.inlineCommentResolutionHintLabel == "" {
+		return ""
+	}
+	return presenter.statusLineKeyHint(presenter.inlineCommentResolutionHintLabel, "R", keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"})
 }
 
 func (presenter footerPresenter) paneFooterActionsHint(focus Focus) string {

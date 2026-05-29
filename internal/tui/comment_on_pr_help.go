@@ -23,3 +23,10 @@ func inlineCommentReplyHelpEntry(resolver keybindingLabelResolver) helpEntry {
 		Description: "Reply to inline comment",
 	}
 }
+
+func inlineCommentResolutionHelpEntry(resolver keybindingLabelResolver, description string) helpEntry {
+	return helpEntry{
+		Key:         resolver.helpKeysOrFallback("R", keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"}),
+		Description: description,
+	}
+}

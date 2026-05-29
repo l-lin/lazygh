@@ -188,6 +188,7 @@ func TestHelpPopup_GivenPullRequestChangesDetailFocus_WhenTogglingHelp_ThenItSho
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Add inline comment", "c")
 	then_helpEntryUsesKey(t, actualBuffer, "Reply to inline comment", "r")
+	then_helpEntryUsesKey(t, actualBuffer, "Resolve inline comment", "R")
 }
 
 func TestHelpPopup_GivenPullRequestCommentsDetailFocusOnInlineComment_WhenTogglingHelp_ThenItShowsInlineCommentReplyShortcut(t *testing.T) {
@@ -216,6 +217,7 @@ func TestHelpPopup_GivenPullRequestCommentsDetailFocusOnInlineComment_WhenToggli
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Reply to inline comment", "r")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Resolve inline comment", "R")
 }
 
 func TestHelpPopup_GivenReviewDetailFocusOnInlineComment_WhenTogglingHelp_ThenItShowsInlineCommentReplyShortcut(t *testing.T) {
@@ -244,6 +246,7 @@ func TestHelpPopup_GivenReviewDetailFocusOnInlineComment_WhenTogglingHelp_ThenIt
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Reply to inline comment", "r")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Resolve inline comment", "R")
 }
 
 func TestHelpPopup_GivenReviewFilesFocusAndCustomizedFoldBindings_WhenTogglingHelp_ThenItShowsTheConfiguredSingleAndTwoStepFoldKeys(t *testing.T) {

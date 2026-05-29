@@ -43,6 +43,8 @@ func (program *Program) routeURLClipboardBrowserAndLinkFollowUps(msg Msg) update
 	case MsgOpenInlineCommentReplyRequested:
 		program.applyOpenInlineCommentReplyRequested()
 		return handledUpdate(nil)
+	case MsgToggleInlineCommentResolutionRequested:
+		return handledUpdate(program.applyToggleInlineCommentResolutionRequested())
 	case MsgOpenLinkUnderCursorRequested:
 		return handledUpdate(program.applyOpenLinkUnderCursorRequested(actual))
 	case MsgOpenLinkUnderCursorResolved:

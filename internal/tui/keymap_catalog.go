@@ -202,7 +202,7 @@ func (program *Program) modalEditorSubmitKeybindingAction() keybindingAction {
 }
 
 func (program *Program) keybindingActions() []keybindingAction {
-	return []keybindingAction{
+	actions := []keybindingAction{
 		configuredKeybindingActionFor(keymapScopeGlobal, "quit", []string{""}, program.quit),
 		keybindingActionWithBindingSlice(configuredKeybindingActionFor(keymapScopeGlobal, "next_side_view", []string{""}, program.nextSideView), keybindingBindingSliceFirst),
 		keybindingActionWithBindingSlice(configuredKeybindingActionFor(keymapScopeGlobal, "previous_side_view", []string{""}, program.previousSideView), keybindingBindingSliceFirst),
@@ -382,4 +382,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
 		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp),
 	}
+	if program.inlineCommentResolutionShortcutAvailable() {
+		actions = append(actions, configuredKeybindingActionFor(keymapScopePullRequests, "toggle_inline_comment_resolution", []string{viewDetailName}, program.toggleInlineCommentResolutionShortcut))
+	}
+	return actions
 }

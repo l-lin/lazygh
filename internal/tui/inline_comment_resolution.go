@@ -1,10 +1,15 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/jesseduffield/gocui"
+)
 
 const (
-	inlineCommentResolvedSuccessMessage   = "Inline comment resolved"
-	inlineCommentUnresolvedSuccessMessage = "Inline comment marked unresolved"
+	inlineCommentResolvedSuccessMessage       = "Inline comment resolved"
+	inlineCommentUnresolvedSuccessMessage     = "Inline comment marked unresolved"
+	inlineCommentResolutionUnavailableMessage = "Inline comment resolution unavailable here"
 )
 
 type pullRequestReviewThreadActionTarget struct {
@@ -12,6 +17,20 @@ type pullRequestReviewThreadActionTarget struct {
 	number     int
 	threadID   string
 	resolved   bool
+}
+
+func inlineCommentResolutionShortcutDescription(resolved bool) string {
+	if resolved {
+		return "Unresolve inline comment"
+	}
+	return "Resolve inline comment"
+}
+
+func inlineCommentResolutionShortcutHintLabel(resolved bool) string {
+	if resolved {
+		return "unresolve"
+	}
+	return "resolve"
 }
 
 func (program *Program) currentInlineCommentResolutionAction() (actionsPopupAction, bool) {
@@ -23,6 +42,31 @@ func (program *Program) currentInlineCommentResolutionAction() (actionsPopupActi
 		return program.unresolveInlineCommentAction(), true
 	}
 	return program.resolveInlineCommentAction(), true
+}
+
+func (program *Program) toggleInlineCommentResolutionShortcut(gui *gocui.Gui, _ *gocui.View) error {
+	return program.dispatch(gui, MsgToggleInlineCommentResolutionRequested{})
+}
+
+func (program *Program) inlineCommentResolutionShortcutAvailable() bool {
+	_, ok := program.selectedPullRequestReviewThreadActionTarget()
+	return ok
+}
+
+func (program *Program) inlineCommentResolutionShortcutDescription() string {
+	target, ok := program.selectedPullRequestReviewThreadActionTarget()
+	if !ok {
+		return ""
+	}
+	return inlineCommentResolutionShortcutDescription(target.resolved)
+}
+
+func (program *Program) inlineCommentResolutionShortcutHintLabel() string {
+	target, ok := program.selectedPullRequestReviewThreadActionTarget()
+	if !ok {
+		return ""
+	}
+	return inlineCommentResolutionShortcutHintLabel(target.resolved)
 }
 
 func (program *Program) resolveInlineCommentAction() actionsPopupAction {

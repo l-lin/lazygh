@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -168,9 +169,18 @@ func fingerprintKeybindingSpecs(specs []keybindingSpec) string {
 		builder.WriteString(spec.viewName)
 		builder.WriteRune(':')
 		builder.WriteString(keybindingValueID(spec.key, spec.mod))
+		builder.WriteRune(':')
+		builder.WriteString(keybindingHandlerID(spec.handler))
 		builder.WriteRune('|')
 	}
 	return builder.String()
+}
+
+func keybindingHandlerID(handler func(*gocui.Gui, *gocui.View) error) string {
+	if handler == nil {
+		return "0"
+	}
+	return fmt.Sprintf("%x", reflect.ValueOf(handler).Pointer())
 }
 
 func (program *Program) keybindingSpecs() []keybindingSpec {

@@ -325,6 +325,42 @@ func TestStatusLineKeyHints_GivenPullRequestCommentOverride_WhenRenderingStoryRe
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, Alt+C: comment, Alt+A: action")
 }
 
+func TestStatusLineKeyHints_GivenBrowserChangesInlineComment_WhenRendering_ThenItShowsTheResolutionHint(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithOwnedInlineThreadForChangesEditTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithOwnedInlineThreadForChangesEditTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Original inline body": "Rendered original inline body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
+	then_noError(t, subject.afterStateChange(gui))
+
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, R: resolve, a: action")
+}
+
+func TestStatusLineKeyHints_GivenResolvedBrowserChangesInlineComment_WhenRendering_ThenItShowsTheUnresolveHint(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithResolvedInlineThreadForChangesResolutionTests()},
+		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithResolvedInlineThreadForChangesResolutionTests()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Original inline body": "Rendered original inline body"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:43")
+	then_noError(t, subject.afterStateChange(gui))
+
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, R: unresolve, a: action")
+}
+
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {
 	t.Helper()
 

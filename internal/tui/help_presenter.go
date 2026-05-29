@@ -6,10 +6,11 @@ import (
 )
 
 type helpPresenter struct {
-	actionContext               ActionContext
-	keyResolver                 keybindingLabelResolver
-	inlineCommentReplyAvailable bool
-	pullRequestBrowserAvailable bool
+	actionContext                    ActionContext
+	keyResolver                      keybindingLabelResolver
+	inlineCommentReplyAvailable      bool
+	inlineCommentResolutionHelpLabel string
+	pullRequestBrowserAvailable      bool
 }
 
 func (presenter helpPresenter) sections() []helpSection {
@@ -55,6 +56,9 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			}
 			if presenter.inlineCommentReplyAvailable {
 				entries = append(entries, inlineCommentReplyHelpEntry(presenter.keyResolver))
+			}
+			if presenter.inlineCommentResolutionHelpLabel != "" {
+				entries = append(entries, inlineCommentResolutionHelpEntry(presenter.keyResolver, presenter.inlineCommentResolutionHelpLabel))
 			}
 			return entries
 		case FocusPullRequestsView:
@@ -130,6 +134,9 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			entries = append(entries, detailPullRequestCommentHelpEntry(presenter.keyResolver, presenter.browserChangesInlineCommentShortcutActive()))
 			if presenter.inlineCommentReplyAvailable {
 				entries = append(entries, inlineCommentReplyHelpEntry(presenter.keyResolver))
+			}
+			if presenter.inlineCommentResolutionHelpLabel != "" {
+				entries = append(entries, inlineCommentResolutionHelpEntry(presenter.keyResolver, presenter.inlineCommentResolutionHelpLabel))
 			}
 			entries = append(entries,
 				helpEntry{Key: presenter.inlineConversationToggleHelpKeys(), Description: "Expand/collapse section"},

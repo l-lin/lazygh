@@ -137,6 +137,30 @@ func (program *Program) applyOpenInlineCommentReplyRequested() {
 	program.applyModalEditorOpened(MsgModalEditorOpened{Descriptor: newInlineCommentReplyOpenDescriptor(target)})
 }
 
+func (program *Program) applyToggleInlineCommentResolutionRequested() []Cmd {
+	if program == nil {
+		return nil
+	}
+
+	program.clearPendingSelectionPrefix()
+	program.clearDetailPendingPrefix()
+	if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
+		return nil
+	}
+
+	target, ok := program.selectedPullRequestReviewThreadActionTarget()
+	if !ok {
+		program.setFeedback(FocusDetailView, inlineCommentResolutionUnavailableMessage)
+		return nil
+	}
+	if !program.hasReviewMutations() {
+		program.setFeedback(FocusDetailView, "github loader is unavailable")
+		return nil
+	}
+
+	return program.applyInlineCommentResolutionRequested(MsgInlineCommentResolutionRequested{Target: target, Resolved: !target.resolved})
+}
+
 func (program *Program) applyRefreshActiveViewRequested() []Cmd {
 	if program == nil {
 		return nil
