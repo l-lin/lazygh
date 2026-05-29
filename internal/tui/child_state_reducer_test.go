@@ -85,3 +85,54 @@ func TestDetailStateModel_GivenActiveTabTransitions_WhenUpdating_ThenItReturnsUp
 		t.Fatalf("expected the original wrap width %d, actual %d", 72, actual)
 	}
 }
+
+func TestDetailStateModel_GivenPendingPrefixAndVisualModeTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := detailStateModel{viewState: detailViewState{
+		cursor:                 detailPosition{line: 3, column: 4},
+		visualAnchor:           detailPosition{line: 1, column: 2},
+		mode:                   detailVisualMode,
+		pendingKeySequence:     keySequenceState{pendingTarget: keySequenceTarget{viewName: viewDetailName}},
+		pendingCharacterMotion: detailPendingCharacterMotion{active: true, direction: detailCharacterMotionDirectionForward, mode: detailCharacterMotionMatch},
+		pendingYank:            true,
+	}}
+
+	cleared := subject.withPendingPrefixCleared()
+	exited := subject.withVisualModeExited()
+
+	if cleared.viewState.pendingKeySequence != (keySequenceState{}) {
+		t.Fatalf("expected the cleared pending key sequence to reset, actual %+v", cleared.viewState.pendingKeySequence)
+	}
+	if cleared.viewState.pendingCharacterMotion != (detailPendingCharacterMotion{}) {
+		t.Fatalf("expected the cleared pending character motion to reset, actual %+v", cleared.viewState.pendingCharacterMotion)
+	}
+	if cleared.viewState.pendingYank {
+		t.Fatal("expected the cleared pending yank flag to reset")
+	}
+	if actual := cleared.viewState.mode; actual != detailVisualMode {
+		t.Fatalf("expected clear-only mode %v, actual %v", detailVisualMode, actual)
+	}
+	if actual := exited.viewState.mode; actual != detailNormalMode {
+		t.Fatalf("expected exited mode %v, actual %v", detailNormalMode, actual)
+	}
+	if actual := exited.viewState.visualAnchor; actual != subject.viewState.cursor {
+		t.Fatalf("expected exited visual anchor %+v, actual %+v", subject.viewState.cursor, actual)
+	}
+	if exited.viewState.pendingYank {
+		t.Fatal("expected exiting visual mode to clear the pending yank flag")
+	}
+	if subject.viewState.pendingKeySequence == (keySequenceState{}) {
+		t.Fatalf("expected the original pending key sequence to stay armed, actual %+v", subject.viewState.pendingKeySequence)
+	}
+	if subject.viewState.pendingCharacterMotion == (detailPendingCharacterMotion{}) {
+		t.Fatalf("expected the original pending character motion to stay armed, actual %+v", subject.viewState.pendingCharacterMotion)
+	}
+	if !subject.viewState.pendingYank {
+		t.Fatal("expected the original pending yank flag to stay true")
+	}
+	if actual := subject.viewState.mode; actual != detailVisualMode {
+		t.Fatalf("expected the original mode %v, actual %v", detailVisualMode, actual)
+	}
+	if actual := subject.viewState.visualAnchor; actual != (detailPosition{line: 1, column: 2}) {
+		t.Fatalf("expected the original visual anchor %+v, actual %+v", detailPosition{line: 1, column: 2}, actual)
+	}
+}

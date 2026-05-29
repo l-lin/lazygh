@@ -7,7 +7,7 @@ func (program *Program) routeBootstrapFocusAndSidePaneSelection(msg Msg) updateR
 		return handledUpdate(nil)
 	case MsgNextSideView:
 		program.clearPendingSelectionPrefix()
-		program.detailState.viewState.clearPendingPrefix()
+		program.clearDetailPendingPrefix()
 		if program.sideViewCyclingBlocked() {
 			return handledUpdate(nil)
 		}
@@ -15,7 +15,7 @@ func (program *Program) routeBootstrapFocusAndSidePaneSelection(msg Msg) updateR
 		return handledUpdate(nil)
 	case MsgPreviousSideView:
 		program.clearPendingSelectionPrefix()
-		program.detailState.viewState.clearPendingPrefix()
+		program.clearDetailPendingPrefix()
 		if program.sideViewCyclingBlocked() {
 			return handledUpdate(nil)
 		}
@@ -26,7 +26,7 @@ func (program *Program) routeBootstrapFocusAndSidePaneSelection(msg Msg) updateR
 		if program.mainPaneActionBlocked() {
 			return handledUpdate(nil)
 		}
-		program.detailState.viewState.clearPendingPrefix()
+		program.clearDetailPendingPrefix()
 		state := program.screenState()
 		targetView, ok := state.ViewByNumber(actual.Number)
 		if !ok {
@@ -68,7 +68,7 @@ func (program *Program) routeSearchPromptAndDraftUpdate(msg Msg) updateResult {
 		if program.mainPaneActionBlocked() || (inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusUserView) {
 			return handledUpdate(nil)
 		}
-		program.detailState.viewState.clearPendingPrefix()
+		program.clearDetailPendingPrefix()
 		if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
 			program.model.ClearReviewTreeSearchQuery()
 		}

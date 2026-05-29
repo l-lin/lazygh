@@ -32,6 +32,16 @@ func (state detailStateModel) withAdvancedActiveTab(delta int, count int) detail
 	return state
 }
 
+func (state detailStateModel) withPendingPrefixCleared() detailStateModel {
+	state.viewState.clearPendingPrefix()
+	return state
+}
+
+func (state detailStateModel) withVisualModeExited() detailStateModel {
+	state.viewState.exitVisualMode()
+	return state
+}
+
 func (state detailStateModel) withResetViewState() detailStateModel {
 	state.viewState.reset()
 	return state

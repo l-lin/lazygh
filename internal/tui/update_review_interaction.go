@@ -28,7 +28,7 @@ func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) []C
 		return nil
 	}
 
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.navigationState.reviewSession = program.navigationState.reviewSession.withSelectedFileTreeRow(target.fileTreeRow)
 	return []Cmd{focusReviewCommentCmd{RenderedLine: target.renderedLine}}
 }

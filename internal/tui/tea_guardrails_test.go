@@ -1093,6 +1093,21 @@ func TestRefactorGuard_GivenDetailStateFiles_WhenScanning_ThenActiveDetailTabWri
 	}
 }
 
+func TestRefactorGuard_GivenDetailStateFiles_WhenScanning_ThenDetailPrefixAndVisualCleanupStayOnWholeStateReplacementHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.detailState\.viewState\.(?:clearPendingPrefix|exitVisualMode)\(`,
+		`detailState\.viewState\.(?:clearPendingPrefix|exitVisualMode)\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected detail pending-prefix and visual-mode cleanup to use whole-state replacement helpers instead of nested detail-view mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenRuntimeConfigFiles_WhenScanning_ThenRuntimeConfigWritesStayOnWholeStateReplacementHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.runtimeConfig\.(?:pullRequestSearches|keymapOverrides|storyReviewConfig)\s*=\s*[^=]`,

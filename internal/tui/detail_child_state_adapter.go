@@ -33,6 +33,18 @@ func (program *Program) advanceDetailActiveTab(delta int, count int) {
 	})
 }
 
+func (program *Program) clearDetailPendingPrefix() {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withPendingPrefixCleared()
+	})
+}
+
+func (program *Program) exitDetailVisualMode() {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withVisualModeExited()
+	})
+}
+
 func (program *Program) resetDetailViewState() {
 	program.updateDetailState(func(state detailStateModel) detailStateModel {
 		return state.withResetViewState()

@@ -8,7 +8,7 @@ func (program *Program) applyOpenPullRequestByURLPromptRequested() {
 	}
 
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if program.mainPaneActionBlocked() || program.actionContext().IsReviewContext() {
 		return
 	}
@@ -21,7 +21,7 @@ func (program *Program) applyReadPullRequestURLFromClipboardRequested() []Cmd {
 	}
 
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if program.mainPaneActionBlocked() || program.actionContext().IsReviewContext() {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (program *Program) applyOpenDetailPullRequestCommentRequested() {
 	}
 
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if program.pullRequestCommentComposerBlocked() {
 		return
 	}
@@ -98,7 +98,7 @@ func (program *Program) applyOpenInlineCommentReplyRequested() {
 	}
 
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 		return
 	}

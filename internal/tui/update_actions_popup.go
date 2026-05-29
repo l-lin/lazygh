@@ -190,7 +190,7 @@ func (program *Program) startStoryReviewSession(summary any, pendingReviewID str
 }
 
 func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
 	program.navigationState.reviewSession = reviewSessionState{
 		active:                       true,
@@ -228,7 +228,7 @@ func (program *Program) restorePullRequestBrowserFromReviewMode() {
 	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
 	program.setDetailActiveTab(sourceDetailTab)
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.model.SetPaneLayoutSize(sourcePaneLayoutSize)
 	program.model.SetFullscreenPane(sourceFullscreenPane)
 	program.model.SetDetailFullscreenReturnSize(sourceDetailFullscreenReturn)

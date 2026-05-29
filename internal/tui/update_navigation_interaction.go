@@ -59,7 +59,7 @@ func (program *Program) applyAdvancePullRequestTab(message MsgAdvancePullRequest
 
 func (program *Program) applyOpenDetailRequested() {
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if program.detailTransitionBlocked() {
 		return
 	}
@@ -72,15 +72,15 @@ func (program *Program) applyCloseDetailRequested() {
 		return
 	}
 	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
-		program.detailState.viewState.exitVisualMode()
+		program.exitDetailVisualMode()
 		return
 	}
 	if program.model.Focus() == FocusDetailView && program.detailState.viewState.hasPendingYank() {
-		program.detailState.viewState.clearPendingPrefix()
+		program.clearDetailPendingPrefix()
 		return
 	}
 
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.model.CloseDetail()
 }
 
@@ -104,7 +104,7 @@ func (program *Program) applyStartReviewFileTreeSearch(message MsgStartReviewFil
 		return
 	}
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.model.StartSearchForReviewTree(program.model.ActivePullRequestTab())
 	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: message.Query})
 	program.openSearchWidgetEditor(message.Query)
@@ -159,7 +159,7 @@ func (program *Program) finishOpenPullRequestInBrowserView(sideFocus Focus) {
 	program.invalidateReviewDiffRenderCache()
 	program.setDetailActiveTab(DescriptionDetailTab)
 	program.resetDetailViewState()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.clearPendingSelectionPrefix()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.applyOpenPullRequestInDetailFullscreen(MsgOpenPullRequestInDetailFullscreen{SideFocus: sideFocus})
@@ -180,7 +180,7 @@ func (program *Program) applyAdvanceDetailTab(message MsgAdvanceDetailTab) {
 	if program.overlayState.helpVisible || program.model.SearchActive() || !program.shouldShowPullRequestDetailTabs() {
 		return
 	}
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	count := len(browserDetailTabs)
 	if count == 0 || message.Delta == 0 {
 		return
@@ -202,7 +202,7 @@ func (program *Program) applyExitReviewMode() {
 
 func (program *Program) applyToggleHelp() {
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if program.helpToggleBlocked() {
 		return
 	}
@@ -211,7 +211,7 @@ func (program *Program) applyToggleHelp() {
 
 func (program *Program) applyCloseHelp() {
 	program.clearPendingSelectionPrefix()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.overlayState.helpVisible = false
 }
 
@@ -454,7 +454,7 @@ func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWor
 	}
 
 	inputContext := program.inputContext()
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	if inputContext.IsReviewContext() && inputContext.ActiveView.Focus == FocusDetailView {
 		program.model.ClearReviewTreeSearchQuery()
 	}

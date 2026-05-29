@@ -4,7 +4,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 	switch actual := msg.(type) {
 	case MsgOpenActionsPopup:
 		program.clearPendingSelectionPrefix()
-		program.detailState.viewState.clearPendingPrefix()
+		program.clearDetailPendingPrefix()
 		program.clearActionsPopupPendingConfirmation()
 		if program.overlayState.helpVisible || program.model.SearchActive() || program.modalEditorVisible() {
 			return handledUpdate(nil)

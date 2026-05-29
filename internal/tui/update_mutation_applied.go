@@ -92,6 +92,6 @@ func (program *Program) applyInlineCommentReplySubmitted(message MsgInlineCommen
 func (program *Program) applyReviewInlineCommentSubmitted(message MsgReviewInlineCommentSubmitted) {
 	program.setPendingPullRequestReviewStateByIdentity(message.Target.repository, message.Target.number, message.Target.pendingReview)
 	program.optimisticallyAppendInlineComment(message.Target, message.Body)
-	program.detailState.viewState.exitVisualMode()
+	program.exitDetailVisualMode()
 	program.applyFeedbackSet(MsgFeedbackSet{Target: FocusDetailView, Message: pullRequestReviewInlineCommentSuccessMessage})
 }

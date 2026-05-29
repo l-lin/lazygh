@@ -304,8 +304,7 @@ func (program *Program) applySelectedDetailClipboardPrepared(message MsgSelected
 	detailState := program.detailState.synced(program.currentDetailIdentity(), message.Document, message.ViewportHeight, searchQuery)
 	selection, _ := detailSelectionForCurrentMode(detailState.viewState, message.Document)
 	text := detailState.viewState.selectedText(message.Document)
-	detailState.viewState.exitVisualMode()
-	program.detailState = detailState
+	program.detailState = detailState.withVisualModeExited()
 	return []Cmd{writeClipboardCmd{
 		Text:            text,
 		SuccessMessage:  detailYankSuccessMessage,
@@ -368,7 +367,7 @@ func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequ
 }
 
 func (program *Program) applyOpenLinkUnderCursorRequested(message MsgOpenLinkUnderCursorRequested) []Cmd {
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{openLinkUnderCursorCmd{Target: program.model.Focus()}}
 }
@@ -416,7 +415,7 @@ func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequ
 		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
 	}
 
-	program.detailState.viewState.clearPendingPrefix()
+	program.clearDetailPendingPrefix()
 	url, ok := program.selectedPullRequestURL()
 	if !ok {
 		if program.model != nil && program.model.ActionsPopupVisible() {
