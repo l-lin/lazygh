@@ -83,7 +83,7 @@ func (program *Program) advanceLoadingSpinnerFrame() {
 		return
 	}
 
-	program.startupState.loadingSpinnerFrameIndex = (program.startupState.loadingSpinnerFrameIndex + 1) % len(loadingSpinnerFrames)
+	program.advanceStartupLoadingSpinnerFrame(len(loadingSpinnerFrames))
 }
 
 func (program *Program) loadingSpinnerStatus(label string) string {

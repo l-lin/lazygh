@@ -3,7 +3,7 @@ package tui
 func (program *Program) routeBootstrapFocusAndSidePaneSelection(msg Msg) updateResult {
 	switch actual := msg.(type) {
 	case MsgAppStarted:
-		program.startupState.appStarted = true
+		program.markAppStarted()
 		return handledUpdate(nil)
 	case MsgNextSideView:
 		program.clearPendingSelectionPrefix()

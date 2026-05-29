@@ -1206,6 +1206,18 @@ func TestRefactorGuard_GivenOverlayStateFiles_WhenScanning_ThenOverlayLifecycleW
 	}
 }
 
+func TestRefactorGuard_GivenStartupStateFiles_WhenScanning_ThenStartupWritesStayOnStateTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(`program\.startupState\.(?:appStarted|loadingSpinnerFrameIndex)\s*=\s*[^=]`)
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go") && base != "startup_state_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected startup-state writes to use startup-state transitions instead of direct field assignment, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)
