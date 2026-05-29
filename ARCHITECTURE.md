@@ -40,8 +40,8 @@ internal/tui
 
 Two child models now own the hot detail and review transitions:
 
-- `detailStateModel` owns wrap width, cursor placement, viewport sync, and search sync.
-- `reviewSessionState` owns file-tree selection and collapsed file or thread state.
+- `detailStateModel` owns active tab, wrap width, cursor placement, prefix and visual cleanup, viewport sync, and search sync.
+- `reviewSessionState` owns lifecycle summary plus file-tree selection and collapsed file or thread state.
 
 Smaller state bags follow the same value-transition rule:
 
