@@ -45,6 +45,49 @@ func TestActionsPopupWidgetState_GivenStaleConfirmationAndError_WhenUpdatingTheC
 	}
 }
 
+func TestActionsPopupWidgetState_GivenPopupSearchEditorTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := actionsPopupWidgetState{
+		searchEditor:                      newLineEditor("cha"),
+		searchEditorVisible:               true,
+		assigneePickerSearchDebounceDelay: 123 * time.Millisecond,
+	}
+
+	opened := actionsPopupWidgetState{assigneePickerSearchDebounceDelay: 123 * time.Millisecond}.withSearchEditorOpened("draft")
+	updated, ok := subject.withSearchEditorIntentApplied(newLineEditorInsertRuneIntent('r'))
+	if !ok {
+		t.Fatal("expected the popup search editor intent to apply")
+	}
+	cleared := updated.withSearchEditorCleared()
+
+	if !opened.hasSearchEditor() {
+		t.Fatal("expected opening the popup search editor to make it visible")
+	}
+	if actual := opened.searchEditor.Text(); actual != "draft" {
+		t.Fatalf("expected opened popup search editor text %q, actual %q", "draft", actual)
+	}
+	if actual := updated.searchEditor.Text(); actual != "char" {
+		t.Fatalf("expected updated popup search editor text %q, actual %q", "char", actual)
+	}
+	if !updated.hasSearchEditor() {
+		t.Fatal("expected popup search editor input to keep the editor visible")
+	}
+	if actual := updated.assigneePickerSearchDebounceDelay; actual != 123*time.Millisecond {
+		t.Fatalf("expected debounce delay %s, actual %s", 123*time.Millisecond, actual)
+	}
+	if cleared.hasSearchEditor() {
+		t.Fatal("expected clearing the popup search editor to hide it")
+	}
+	if actual := cleared.searchEditor.Text(); actual != "" {
+		t.Fatalf("expected cleared popup search editor text %q, actual %q", "", actual)
+	}
+	if actual := subject.searchEditor.Text(); actual != "cha" {
+		t.Fatalf("expected the original popup search editor text %q, actual %q", "cha", actual)
+	}
+	if !subject.hasSearchEditor() {
+		t.Fatal("expected the original popup search editor visibility to stay true")
+	}
+}
+
 func TestActionsPopupWidgetState_GivenSearchAndPickerChrome_WhenOpeningAnAssigneePickerAndClosing_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	target := pullRequestAssigneePickerTarget{repository: "acme/widgets", number: 42}
 	subject := actionsPopupWidgetState{

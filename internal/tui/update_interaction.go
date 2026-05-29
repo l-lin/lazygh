@@ -69,9 +69,9 @@ func (program *Program) applyActionsPopupSearchInputRequested(message MsgActions
 		return nil
 	}
 	if !program.actionsPopupWidget.hasSearchEditor() {
-		program.actionsPopupWidget.openSearchEditor(program.model.ActionsPopupSearchQuery())
+		program.openActionsPopupSearchEditor(program.model.ActionsPopupSearchQuery())
 	}
-	if !program.actionsPopupWidget.searchEditor.ApplyIntent(message.Intent) {
+	if !program.applyActionsPopupSearchEditorIntent(message.Intent) {
 		return nil
 	}
 

@@ -26,7 +26,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		}
 		program.model.ClearPaneSearchQueries()
 		program.clearActionsPopupPendingConfirmation()
-		program.actionsPopupWidget.openSearchEditor("")
+		program.openActionsPopupSearchEditor("")
 		program.updateActionsPopupSearch("")
 		program.model.FocusActionsPopupSearch()
 		program.clearActionsPopupErrorMessage()

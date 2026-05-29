@@ -7,6 +7,28 @@ func (program *Program) updateActionsPopupWidgetState(transition func(actionsPop
 	program.actionsPopupWidget = transition(program.actionsPopupWidget)
 }
 
+func (program *Program) openActionsPopupSearchEditor(text string) {
+	program.updateActionsPopupWidgetState(func(state actionsPopupWidgetState) actionsPopupWidgetState {
+		return state.withSearchEditorOpened(text)
+	})
+}
+
+func (program *Program) clearActionsPopupSearchEditor() {
+	program.updateActionsPopupWidgetState(func(state actionsPopupWidgetState) actionsPopupWidgetState {
+		return state.withSearchEditorCleared()
+	})
+}
+
+func (program *Program) applyActionsPopupSearchEditorIntent(intent lineEditorIntent) bool {
+	applied := false
+	program.updateActionsPopupWidgetState(func(state actionsPopupWidgetState) actionsPopupWidgetState {
+		updated, ok := state.withSearchEditorIntentApplied(intent)
+		applied = ok
+		return updated
+	})
+	return applied
+}
+
 func (program *Program) setActionsPopupErrorMessage(message string) {
 	program.updateActionsPopupWidgetState(func(state actionsPopupWidgetState) actionsPopupWidgetState {
 		return state.withErrorMessage(message)

@@ -6,6 +6,24 @@ func newActionsPopupWidgetState() actionsPopupWidgetState {
 	return actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay}
 }
 
+func (state actionsPopupWidgetState) withSearchEditorOpened(text string) actionsPopupWidgetState {
+	state.searchEditor = newLineEditor(text)
+	state.searchEditorVisible = true
+	return state
+}
+
+func (state actionsPopupWidgetState) withSearchEditorIntentApplied(intent lineEditorIntent) (actionsPopupWidgetState, bool) {
+	if !state.searchEditorVisible {
+		return state, false
+	}
+
+	updated := state
+	if !updated.searchEditor.ApplyIntent(intent) {
+		return state, false
+	}
+	return updated, true
+}
+
 func (state actionsPopupWidgetState) withErrorMessage(message string) actionsPopupWidgetState {
 	state.errorMessage = strings.TrimSpace(message)
 	return state
