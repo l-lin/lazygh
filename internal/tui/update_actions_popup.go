@@ -151,9 +151,7 @@ func (program *Program) clearCachedData() error {
 	program.issueDetailLoadInFlight = map[string]bool{}
 	program.releaseDetailCache = map[string]releaseDetailResult{}
 	program.releaseDetailLoadInFlight = map[string]bool{}
-	program.notificationsLoadStarted = false
-	program.notificationsLoading = false
-	program.notificationsLoadingDetailMessage = ""
+	program.resetNotificationLoadState()
 	program.clearGHCommandLoading()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()

@@ -78,8 +78,7 @@ func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
 }
 
 func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded) []Cmd {
-	program.notificationsLoading = false
-	program.notificationsLoadingDetailMessage = ""
+	program.finishNotificationsLoading()
 	manualRefresh := program.consumeManualNotificationRefresh()
 	if message.Err == nil {
 		filteredNotifications := program.filterDoneNotifications(message.Notifications)

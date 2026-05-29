@@ -12,6 +12,7 @@ func TestUpdate_GivenMsgNotificationReadRequestedWithoutExplicitTarget_WhenApply
 		given_notificationValue(t, given_issueNotificationRow()),
 	}
 	subject := given_notificationActionProgram(notifications, &fakePullRequestDetailLoader{})
+	subject.feedbackMessage = "stale"
 	target, ok := subject.selectedNotificationActionTarget()
 	if !ok {
 		t.Fatal("expected a selected notification target")
@@ -39,6 +40,12 @@ func TestUpdate_GivenMsgNotificationReadRequestedWithoutExplicitTarget_WhenApply
 	if !subject.notificationsLoading {
 		t.Fatal("expected notifications loading to start immediately")
 	}
+	if actual := subject.notificationsLoadingDetailMessage; actual != notificationReadLoadingMessage {
+		t.Fatalf("expected notification loading detail %q, actual %q", notificationReadLoadingMessage, actual)
+	}
+	if actual := subject.feedbackMessage; actual != "" {
+		t.Fatalf("expected feedback message %q, actual %q", "", actual)
+	}
 	actualRows := subject.model.NotificationRows()
 	if actualRows[0].Notification == nil || actualRows[0].Notification.Unread {
 		t.Fatalf("expected the selected notification row to become read optimistically, actual %+v", actualRows[0].Notification)
@@ -51,6 +58,7 @@ func TestUpdate_GivenMsgNotificationDoneRequestedWithoutExplicitTarget_WhenApply
 		given_notificationValue(t, given_issueNotificationRow()),
 	}
 	subject := given_notificationActionProgram(notifications, &fakePullRequestDetailLoader{})
+	subject.feedbackMessage = "stale"
 	target, ok := subject.selectedNotificationActionTarget()
 	if !ok {
 		t.Fatal("expected a selected notification target")
@@ -80,6 +88,12 @@ func TestUpdate_GivenMsgNotificationDoneRequestedWithoutExplicitTarget_WhenApply
 	}
 	if !subject.notificationsLoading {
 		t.Fatal("expected notifications loading to start immediately")
+	}
+	if actual := subject.notificationsLoadingDetailMessage; actual != notificationDoneLoadingMessage {
+		t.Fatalf("expected notification loading detail %q, actual %q", notificationDoneLoadingMessage, actual)
+	}
+	if actual := subject.feedbackMessage; actual != "" {
+		t.Fatalf("expected feedback message %q, actual %q", "", actual)
 	}
 	actualRows := subject.model.NotificationRows()
 	if len(actualRows) != 1 {

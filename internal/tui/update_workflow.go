@@ -12,9 +12,7 @@ func (program *Program) applyPullRequestsLoadPlanned(message MsgPullRequestsLoad
 }
 
 func (program *Program) applyNotificationsLoadPlanned() {
-	program.notificationsLoadStarted = true
-	program.notificationsLoading = true
-	program.notificationsLoadingDetailMessage = notificationsLoadingDetail
+	program.planNotificationsLoad()
 }
 
 func (program *Program) applyPullRequestDetailLoadPlanned(message MsgPullRequestDetailLoadPlanned) {

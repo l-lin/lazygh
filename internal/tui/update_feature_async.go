@@ -31,8 +31,7 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 func (program *Program) applyNotificationMutationStarted(message MsgNotificationMutationStarted) {
 	program.model.SetNotificationRows(message.OptimisticRows)
 	program.clearFeedbackMessage()
-	program.notificationsLoading = true
-	program.notificationsLoadingDetailMessage = strings.TrimSpace(message.LoadingMessage)
+	program.startNotificationMutationLoading(message.LoadingMessage)
 }
 
 func (program *Program) restoreNotificationMutationSnapshot(snapshot notificationMutationSnapshot) {
@@ -41,8 +40,7 @@ func (program *Program) restoreNotificationMutationSnapshot(snapshot notificatio
 }
 
 func (program *Program) applyNotificationMutationFinished(message MsgNotificationMutationFinished) []Cmd {
-	program.notificationsLoading = false
-	program.notificationsLoadingDetailMessage = ""
+	program.finishNotificationsLoading()
 	if message.Err != nil {
 		program.restoreNotificationMutationSnapshot(message.Snapshot)
 		return program.applyErrorReportedMessage(message.Err.Error())

@@ -64,6 +64,9 @@ func TestClearCachedData_GivenExistingPullRequestListLoadState_WhenClearing_Then
 	subject.additionalPullRequestsLoadStarted[PullRequestTab(2)] = true
 	subject.additionalPullRequestsLoading[PullRequestTab(2)] = true
 	subject.additionalPullRequestsCounts[PullRequestTab(2)] = pullRequestCountState{count: 5, known: true}
+	subject.notificationsLoadStarted = true
+	subject.notificationsLoading = true
+	subject.notificationsLoadingDetailMessage = notificationDoneLoadingMessage
 
 	actualErr := subject.clearCachedData()
 	then_noError(t, actualErr)
@@ -101,6 +104,15 @@ func TestClearCachedData_GivenExistingPullRequestListLoadState_WhenClearing_Then
 	if actual := len(subject.additionalPullRequestsCounts); actual != 0 {
 		t.Fatalf("expected additional pull requests count map length %d, actual %d", 0, actual)
 	}
+	if actual := subject.notificationsLoadStarted; actual {
+		t.Fatalf("expected notifications load started %v, actual %v", false, actual)
+	}
+	if actual := subject.notificationsLoading; actual {
+		t.Fatalf("expected notifications loading %v, actual %v", false, actual)
+	}
+	if actual := subject.notificationsLoadingDetailMessage; actual != "" {
+		t.Fatalf("expected notifications loading detail %q, actual %q", "", actual)
+	}
 }
 
 func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsPersistentAndInMemoryCachesReloadsAndShowsTheEmptyState(t *testing.T) {
@@ -121,6 +133,8 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	subject.additionalPullRequestsLoading[PullRequestTab(2)] = true
 	subject.additionalPullRequestsCounts[PullRequestTab(2)] = pullRequestCountState{count: 5, known: true}
 	subject.notificationsLoadStarted = true
+	subject.notificationsLoading = true
+	subject.notificationsLoadingDetailMessage = notificationDoneLoadingMessage
 	subject.asyncRunner = inlineAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	cache := &fakePersistentPullRequestCache{
