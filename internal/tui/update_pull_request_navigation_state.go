@@ -9,9 +9,7 @@ type openedPullRequestNormalization struct {
 }
 
 func (program *Program) pinOpenedPullRequestSummary(tab PullRequestTab, summary githubdomain.PullRequest) {
-	summaryCopy := summary
-	program.navigationState.openedPullRequestSummary = &summaryCopy
-	program.navigationState.openedPullRequestTab = tab
+	program.pinOpenedPullRequestSummaryState(tab, summary)
 }
 
 func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (githubdomain.PullRequest, bool) {

@@ -3,10 +3,9 @@ package tui
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) updateReviewSession(transition func(reviewSessionState) reviewSessionState) {
-	if program == nil {
-		return
-	}
-	program.navigationState.reviewSession = transition(program.navigationState.reviewSession)
+	program.updateNavigationState(func(state navigationStateModel) navigationStateModel {
+		return state.withReviewSession(transition(state.reviewSession))
+	})
 }
 
 func (program *Program) startReviewSessionState(start reviewSessionStartDescriptor) {

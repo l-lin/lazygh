@@ -770,9 +770,9 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOnlyUpdateFilesAndT
 	}
 }
 
-func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOpenedPullRequestPinningStaysInUpdateOwnedHelpers(t *testing.T) {
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOpenedPullRequestPinningStaysOnTheNavigationStateAdapter(t *testing.T) {
 	allowedFiles := map[string]bool{
-		"update_pull_request_navigation_state.go": true,
+		"navigation_state_adapter.go": true,
 	}
 
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
@@ -792,7 +792,7 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOpenedPullRequestPi
 		remainingMatches = append(remainingMatches, match)
 	}
 	if len(remainingMatches) != 0 {
-		t.Fatalf("expected opened pull request summary pinning to stay in update-owned navigation helpers, actual %v", remainingMatches)
+		t.Fatalf("expected opened pull request summary pinning to stay on the navigation-state adapter instead of direct update-file assignment, actual %v", remainingMatches)
 	}
 }
 
