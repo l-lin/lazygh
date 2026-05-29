@@ -1194,6 +1194,18 @@ func TestRefactorGuard_GivenModalEditorFiles_WhenScanning_ThenModalEditorErrorWr
 	}
 }
 
+func TestRefactorGuard_GivenOverlayStateFiles_WhenScanning_ThenOverlayLifecycleWritesStayOnOverlayStateTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(`program\.overlayState\.(?:helpVisible|errorMessages|transientErrorPopup|modalEditor)\s*=\s*[^=]`)
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go") && base != "overlay_state_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected overlay help, error-popup, and modal lifecycle writes to use overlay-state transitions instead of direct field assignment, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)

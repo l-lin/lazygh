@@ -16,9 +16,12 @@ func (program *Program) applyErrorReported(message MsgErrorReported) []Cmd {
 		return nil
 	}
 
-	program.overlayState.errorMessages = recordedErrorMessagesWithAppended(program.overlayState.errorMessages, trimmedMessage)
-	popup := newTransientErrorPopupState(program.overlayState.transientErrorPopup, trimmedMessage, program.currentTime(), program.timingState.transientErrorPopupDuration)
-	program.overlayState.transientErrorPopup = popup
+	popup := transientErrorPopupState{}
+	program.updateOverlayState(func(state overlayStateModel) overlayStateModel {
+		updatedState, updatedPopup := state.withReportedError(trimmedMessage, program.currentTime(), program.timingState.transientErrorPopupDuration)
+		popup = updatedPopup
+		return updatedState
+	})
 	if popup.expiresAt.IsZero() {
 		return nil
 	}

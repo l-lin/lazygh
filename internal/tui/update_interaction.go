@@ -124,7 +124,7 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 
 	commands := program.applyModalEditorSubmitCompletion(message.Completion)
 	if !modalEditorRemainsOpenAfterCompletion(message.Completion) {
-		program.overlayState.modalEditor = modalEditorState{}
+		program.clearModalEditorState()
 	}
 	return commands
 }
@@ -152,22 +152,26 @@ func (program *Program) applyModalEditorLineInputRequested(message MsgModalEdito
 	if program == nil {
 		return
 	}
-	updatedState, ok := program.overlayState.modalEditor.withLineEditorIntentApplied(message.Intent)
-	if !ok {
-		return
-	}
-	program.overlayState.modalEditor = updatedState
+	program.updateModalEditorState(func(state modalEditorState) modalEditorState {
+		updatedState, ok := state.withLineEditorIntentApplied(message.Intent)
+		if !ok {
+			return state
+		}
+		return updatedState
+	})
 }
 
 func (program *Program) applyModalEditorMultilineInputRequested(message MsgModalEditorMultilineInputRequested) {
 	if program == nil {
 		return
 	}
-	updatedState, ok := program.overlayState.modalEditor.withMultilineEditorIntentApplied(message.Intent)
-	if !ok {
-		return
-	}
-	program.overlayState.modalEditor = updatedState
+	program.updateModalEditorState(func(state modalEditorState) modalEditorState {
+		updatedState, ok := state.withMultilineEditorIntentApplied(message.Intent)
+		if !ok {
+			return state
+		}
+		return updatedState
+	})
 }
 
 func (program *Program) applyModalEditorOpened(message MsgModalEditorOpened) {
@@ -181,7 +185,7 @@ func (program *Program) openModalEditorState(state modalEditorState) {
 	if program == nil {
 		return
 	}
-	program.overlayState.modalEditor = state.clone()
+	program.setModalEditorState(state.clone())
 }
 
 func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullRequestBuildRunLoadRequested) []Cmd {

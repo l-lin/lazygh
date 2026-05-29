@@ -103,7 +103,7 @@ func (program *Program) clearExpiredTransientErrorPopup(now time.Time) bool {
 		return false
 	}
 
-	program.overlayState.transientErrorPopup = transientErrorPopupState{}
+	program.clearTransientErrorPopupState()
 	return true
 }
 

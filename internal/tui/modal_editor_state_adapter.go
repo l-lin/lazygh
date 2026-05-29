@@ -1,10 +1,9 @@
 package tui
 
 func (program *Program) updateModalEditorState(transition func(modalEditorState) modalEditorState) {
-	if program == nil {
-		return
-	}
-	program.overlayState.modalEditor = transition(program.overlayState.modalEditor)
+	program.updateOverlayState(func(state overlayStateModel) overlayStateModel {
+		return state.withModalEditor(transition(state.modalEditor))
+	})
 }
 
 func (program *Program) setModalEditorErrorMessage(message string) {

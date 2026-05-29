@@ -111,7 +111,7 @@ func (program *Program) routeFeedbackErrorAndModalEditorLifecycle(msg Msg) updat
 		program.applyModalEditorMultilineInputRequested(actual)
 		return handledUpdate(nil)
 	case MsgModalEditorClosed:
-		program.overlayState.modalEditor = modalEditorState{}
+		program.clearModalEditorState()
 		return handledUpdate(nil)
 	case MsgModalEditorSubmitRequested:
 		return handledUpdate(program.applyModalEditorSubmitRequested())

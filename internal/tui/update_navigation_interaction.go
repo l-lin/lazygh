@@ -206,13 +206,13 @@ func (program *Program) applyToggleHelp() {
 	if program.helpToggleBlocked() {
 		return
 	}
-	program.overlayState.helpVisible = !program.overlayState.helpVisible
+	program.setHelpVisible(!program.overlayState.helpVisible)
 }
 
 func (program *Program) applyCloseHelp() {
 	program.clearPendingSelectionPrefix()
 	program.clearDetailPendingPrefix()
-	program.overlayState.helpVisible = false
+	program.setHelpVisible(false)
 }
 
 func (program *Program) applyHelpPageNavigationRequested(message MsgHelpPageNavigationRequested) []Cmd {
