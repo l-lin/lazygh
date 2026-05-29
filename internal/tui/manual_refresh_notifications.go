@@ -4,22 +4,32 @@ func (program *Program) markManualNotificationRefresh() bool {
 	if program == nil {
 		return false
 	}
-	updatedState, marked := program.manualRefreshState.withNotificationPending()
-	if !marked {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	marked := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualMarked := state.withNotificationPending()
+		if !actualMarked {
+			return state
+		}
+		marked = true
+		return updatedState
+	})
+	return marked
 }
 
 func (program *Program) consumeManualNotificationRefresh() bool {
 	if program == nil {
 		return false
 	}
-	updatedState, pending := program.manualRefreshState.withoutNotificationPending()
-	if !pending {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	pending := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualPending := state.withoutNotificationPending()
+		if !actualPending {
+			return state
+		}
+		pending = true
+		return updatedState
+	})
+	return pending
 }

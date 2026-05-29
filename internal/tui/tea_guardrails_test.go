@@ -1039,6 +1039,18 @@ func TestRefactorGuard_GivenManualRefreshFiles_WhenScanning_ThenNestedStateWrite
 	}
 }
 
+func TestRefactorGuard_GivenManualRefreshFiles_WhenScanning_ThenWholeStateReplacementStaysOnTheManualRefreshAdapter(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(`program\.manualRefreshState\s*=\s*[^=]`)
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go") && base != "manual_refresh_state_adapter.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected whole manual-refresh state replacement to stay on the manual-refresh adapter surface instead of direct helper assignment, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenActionsPopupChromeFiles_WhenScanning_ThenNestedStateWritesStayOnWholeStateReplacementHelpers(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.actionsPopupWidget\.(?:errorMessage|pendingConfirmationActionID|reactionPicker|themePicker|assigneePicker|assigneePickerLoad)\s*=\s*[^=]`,

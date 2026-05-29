@@ -18,12 +18,18 @@ func (program *Program) beginManualRefresh(successMessage string, pendingOperati
 		return
 	}
 
-	updatedState, started := program.manualRefreshState.withFeedbackBegun(successMessage, pendingOperations)
-	if !started {
-		return
+	started := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualStarted := state.withFeedbackBegun(successMessage, pendingOperations)
+		if !actualStarted {
+			return state
+		}
+		started = true
+		return updatedState
+	})
+	if started {
+		program.clearFeedbackMessage()
 	}
-	program.clearFeedbackMessage()
-	program.manualRefreshState = updatedState
 }
 
 func (program *Program) completeManualRefreshOperation(err error) manualRefreshFeedbackCompletion {
@@ -31,11 +37,17 @@ func (program *Program) completeManualRefreshOperation(err error) manualRefreshF
 		return manualRefreshFeedbackCompletion{}
 	}
 
-	updatedState, completion, clearFeedback := program.manualRefreshState.withCompletedOperation(err)
+	completion := manualRefreshFeedbackCompletion{}
+	clearFeedback := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualCompletion, actualClearFeedback := state.withCompletedOperation(err)
+		completion = actualCompletion
+		clearFeedback = actualClearFeedback
+		return updatedState
+	})
 	if clearFeedback {
 		program.clearFeedbackMessage()
 	}
-	program.manualRefreshState = updatedState
 	return completion
 }
 
@@ -43,72 +55,102 @@ func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) boo
 	if program == nil {
 		return false
 	}
-	updatedState, marked := program.manualRefreshState.withPullRequestListPending(tab)
-	if !marked {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	marked := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualMarked := state.withPullRequestListPending(tab)
+		if !actualMarked {
+			return state
+		}
+		marked = true
+		return updatedState
+	})
+	return marked
 }
 
 func (program *Program) consumeManualPullRequestListRefresh(tab PullRequestTab) bool {
 	if program == nil {
 		return false
 	}
-	updatedState, pending := program.manualRefreshState.withoutPullRequestListPending(tab)
-	if !pending {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	pending := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualPending := state.withoutPullRequestListPending(tab)
+		if !actualPending {
+			return state
+		}
+		pending = true
+		return updatedState
+	})
+	return pending
 }
 
 func (program *Program) markManualPullRequestDetailRefresh(summary githubdomain.PullRequest) bool {
 	if program == nil {
 		return false
 	}
-	updatedState, marked := program.manualRefreshState.withPullRequestDetailPending(summary)
-	if !marked {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	marked := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualMarked := state.withPullRequestDetailPending(summary)
+		if !actualMarked {
+			return state
+		}
+		marked = true
+		return updatedState
+	})
+	return marked
 }
 
 func (program *Program) consumeManualPullRequestDetailRefresh(key string) bool {
 	if program == nil {
 		return false
 	}
-	updatedState, pending := program.manualRefreshState.withoutPullRequestDetailPending(key)
-	if !pending {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	pending := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualPending := state.withoutPullRequestDetailPending(key)
+		if !actualPending {
+			return state
+		}
+		pending = true
+		return updatedState
+	})
+	return pending
 }
 
 func (program *Program) markManualPullRequestDiffRefresh(summary githubdomain.PullRequest) bool {
 	if program == nil {
 		return false
 	}
-	updatedState, marked := program.manualRefreshState.withPullRequestDiffPending(summary)
-	if !marked {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	marked := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualMarked := state.withPullRequestDiffPending(summary)
+		if !actualMarked {
+			return state
+		}
+		marked = true
+		return updatedState
+	})
+	return marked
 }
 
 func (program *Program) consumeManualPullRequestDiffRefresh(key string) bool {
 	if program == nil {
 		return false
 	}
-	updatedState, pending := program.manualRefreshState.withoutPullRequestDiffPending(key)
-	if !pending {
-		return false
-	}
-	program.manualRefreshState = updatedState
-	return true
+
+	pending := false
+	program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+		updatedState, actualPending := state.withoutPullRequestDiffPending(key)
+		if !actualPending {
+			return state
+		}
+		pending = true
+		return updatedState
+	})
+	return pending
 }
 
 func (program *Program) markPullRequestDetailNeedsRefresh(summary githubdomain.PullRequest) {
