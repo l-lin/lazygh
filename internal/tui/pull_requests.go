@@ -49,6 +49,7 @@ var (
 	requestedPullRequestsLoadingDetail = buildPullRequestListState(defaultPullRequestSearches[1]).loadingDetail
 	myPullRequestsState                = buildPullRequestListState(defaultPullRequestSearches[0])
 	requestedPullRequestsState         = buildPullRequestListState(defaultPullRequestSearches[1])
+	pastedPullRequestsState            = newPullRequestListState("Opening pasted pull requests...", "Clipboard-opened pull requests are added directly to the pasted tab.", "No pasted pull requests", "Paste a pull request URL with Ctrl+V to add it here.", "Could not open pasted pull requests", pastedPullRequestsTabLabel)
 )
 
 func buildPullRequestListState(search appconfig.PullRequestSearch) pullRequestListState {

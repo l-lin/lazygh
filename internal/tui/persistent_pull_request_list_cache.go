@@ -7,7 +7,12 @@ func (program *Program) pullRequestsFromCache(tab PullRequestTab) ([]githubdomai
 		return nil, false
 	}
 
-	pullRequests, ok, actualErr := program.pullRequestCache.PullRequests(program.pullRequestSearch(tab))
+	search, searchBacked := program.searchBackedPullRequestSearch(tab)
+	if !searchBacked {
+		return nil, false
+	}
+
+	pullRequests, ok, actualErr := program.pullRequestCache.PullRequests(search)
 	if actualErr != nil || !ok {
 		return nil, false
 	}
@@ -28,7 +33,11 @@ func (program *Program) cachePullRequests(tab PullRequestTab, pullRequests []git
 		return
 	}
 
-	_ = program.pullRequestCache.SavePullRequests(program.pullRequestSearch(tab), pullRequests)
+	search, ok := program.searchBackedPullRequestSearch(tab)
+	if !ok {
+		return
+	}
+	_ = program.pullRequestCache.SavePullRequests(search, pullRequests)
 }
 
 func (program *Program) shouldPreservePullRequestRowsOnRefreshError(tab PullRequestTab) bool {

@@ -16,6 +16,14 @@ func (program *Program) openPullRequestInBrowser(summary githubdomain.PullReques
 	return program.dispatchStartupMessage(MsgOpenPullRequestInBrowserView{Summary: summary})
 }
 
+func (program *Program) openPullRequestInPastedTabByURL(rawURL string) error {
+	summary, err := pullRequestSummaryForURL(newModalEditorSubmitCommandDeps(program), rawURL)
+	if err != nil {
+		return err
+	}
+	return program.dispatchStartupMessage(MsgOpenPullRequestInPastedTabView{Summary: summary})
+}
+
 func (program *Program) dispatchStartupMessage(msg Msg) error {
 	return program.dispatchRuntimeMessage(msg)
 }

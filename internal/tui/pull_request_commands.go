@@ -29,8 +29,24 @@ func (program *Program) pullRequestSearch(tab PullRequestTab) appconfig.PullRequ
 	return searches[index]
 }
 
+func (program *Program) searchBackedPullRequestSearch(tab PullRequestTab) (appconfig.PullRequestSearch, bool) {
+	if program == nil || program.isPastedPullRequestTab(tab) {
+		return appconfig.PullRequestSearch{}, false
+	}
+	searches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)
+	index := int(tab)
+	if index < 0 || index >= len(searches) {
+		return appconfig.PullRequestSearch{}, false
+	}
+	return searches[index], true
+}
+
 func (program *Program) pullRequestListState(tab PullRequestTab) pullRequestListState {
-	return buildPullRequestListState(program.pullRequestSearch(tab))
+	search, ok := program.searchBackedPullRequestSearch(tab)
+	if !ok {
+		return pastedPullRequestsState
+	}
+	return buildPullRequestListState(search)
 }
 
 func (program *Program) pullRequestLoadingItem(tab PullRequestTab) Item {
@@ -57,6 +73,10 @@ func (program *Program) pullRequestsTabLabel(tab PullRequestTab) string {
 }
 
 func (program *Program) pullRequestsCount(tab PullRequestTab) (int, bool) {
+	if program.isPastedPullRequestTab(tab) {
+		return program.pastedPullRequests.rowCount(), true
+	}
+
 	switch tab {
 	case MyPullRequestsTab:
 		return program.myPullRequestsCount, program.myPullRequestsCountKnown

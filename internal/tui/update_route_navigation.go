@@ -25,6 +25,9 @@ func (program *Program) routeBrowserAndReviewNavigation(msg Msg) updateResult {
 	case MsgOpenPullRequestInBrowserView:
 		program.applyOpenPullRequestInBrowserView(actual)
 		return handledUpdate(nil)
+	case MsgOpenPullRequestInPastedTabView:
+		program.applyOpenPullRequestInPastedTabView(actual)
+		return handledUpdate(nil)
 	case MsgOpenPullRequestInDetailFullscreen:
 		program.applyOpenPullRequestInDetailFullscreen(actual)
 		return handledUpdate(nil)

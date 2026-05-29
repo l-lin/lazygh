@@ -10,7 +10,7 @@ func (program *Program) sessionLoadPlan() workflowPlan {
 }
 
 func (program *Program) pullRequestListLoadPlan(tab PullRequestTab) workflowPlan {
-	if program == nil {
+	if program == nil || program.isPastedPullRequestTab(tab) {
 		return workflowPlan{}
 	}
 	return planPullRequestListLoad(pullRequestListLoadPlanInput{
@@ -22,7 +22,7 @@ func (program *Program) pullRequestListLoadPlan(tab PullRequestTab) workflowPlan
 }
 
 func (program *Program) pullRequestListReloadPlan(tab PullRequestTab) workflowPlan {
-	if program == nil {
+	if program == nil || program.isPastedPullRequestTab(tab) {
 		return workflowPlan{}
 	}
 	return planPullRequestListLoad(pullRequestListLoadPlanInput{targetTab: tab, hasPullRequestQueries: program.hasPullRequestListQueries(), forceReload: true})

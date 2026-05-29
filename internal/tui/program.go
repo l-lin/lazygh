@@ -77,6 +77,7 @@ type programViewRuntime struct {
 	searchWidget        searchWidgetState
 	actionsPopupWidget  actionsPopupWidgetState
 	navigationState     navigationStateModel
+	pastedPullRequests  pastedPullRequestTabState
 	listViewportRuntime listViewportRuntimeState
 	runtimeConfig       runtimeConfigState
 }

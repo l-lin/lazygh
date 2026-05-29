@@ -157,6 +157,7 @@ func (program *Program) clearCachedData() error {
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestListLoadState()
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
+	program.syncPastedPullRequestTab()
 	program.model.SetNotifications([]Item{notificationsLoadingItem()})
 	return nil
 }
@@ -278,6 +279,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 		program.model.SetPullRequestRows(tab, rows)
 	}
 	program.model.SetPullRequestRows(customTab, []PullRequestRow{{Item: program.pullRequestLoadingItem(customTab)}})
+	program.syncPastedPullRequestTab()
 	program.model.ClearPullRequestSearchQuery(customTab)
 	program.setPullRequestsLoadStarted(customTab, false)
 	program.setPullRequestsLoading(customTab, false)

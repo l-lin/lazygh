@@ -358,7 +358,7 @@ func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequ
 		program.setFeedback(program.model.Focus(), openPullRequestByClipboardFeedbackMessage(message.Err))
 		return
 	}
-	if err := program.OpenPullRequestByURL(message.URL); err != nil {
+	if err := program.openPullRequestInPastedTabByURL(message.URL); err != nil {
 		if errors.Is(err, githubdomain.ErrInvalidPullRequestURL) {
 			program.setFeedback(program.model.Focus(), openPullRequestByClipboardInvalidMessage)
 			return

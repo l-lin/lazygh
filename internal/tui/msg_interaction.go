@@ -97,6 +97,10 @@ type MsgOpenPullRequestInBrowserView struct {
 	Summary githubdomain.PullRequest
 }
 
+type MsgOpenPullRequestInPastedTabView struct {
+	Summary githubdomain.PullRequest
+}
+
 type MsgOpenPullRequestInDetailFullscreen struct {
 	SideFocus Focus
 }
@@ -381,6 +385,7 @@ func (MsgStartReviewFileTreeSearch) isMsg()                    {}
 func (MsgSubmitReviewFileTreeSearch) isMsg()                   {}
 func (MsgCancelReviewFileTreeSearch) isMsg()                   {}
 func (MsgOpenPullRequestInBrowserView) isMsg()                 {}
+func (MsgOpenPullRequestInPastedTabView) isMsg()               {}
 func (MsgOpenPullRequestInDetailFullscreen) isMsg()            {}
 func (MsgExitReviewMode) isMsg()                               {}
 func (MsgToggleHelp) isMsg()                                   {}

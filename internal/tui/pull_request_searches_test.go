@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 func TestNextPullRequestTab_GivenThreeConfiguredTabs_WhenSwitching_ThenItCyclesAcrossAllTabs(t *testing.T) {
@@ -88,6 +89,22 @@ func TestApplyPullRequestSearches_GivenAConfiguredReplacementList_WhenApplying_T
 	}
 	if actualPullRequests[0].Title != myPullRequestsLoadingTitle {
 		t.Fatalf("expected title %q, actual %q", myPullRequestsLoadingTitle, actualPullRequests[0].Title)
+	}
+}
+
+func TestUpdate_GivenPullRequestSearchesAppliedWithAPastedTab_WhenApplying_ThenItPreservesThePastedRows(t *testing.T) {
+	subject := NewProgramWithModel(NewModel(DefaultSeedData()))
+	summary := githubdomain.PullRequest{Title: "Widgets PR", Number: 13, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/13", Body: "Body 13", State: "OPEN"}
+
+	Update(subject, MsgOpenPullRequestInPastedTabView{Summary: summary})
+	Update(subject, MsgPullRequestSearchesApplied{Searches: []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}})
+
+	if actual := subject.pullRequestsTabLabels(); !reflect.DeepEqual(actual, []string{"Mine", "Pasted (1)"}) {
+		t.Fatalf("expected pull request tab labels %v, actual %v", []string{"Mine", "Pasted (1)"}, actual)
+	}
+	actualRows := subject.model.PullRequestRows(PullRequestTab(1))
+	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Repository.NameWithOwner != "acme/widgets" || actualRows[0].Summary.Number != 13 {
+		t.Fatalf("expected the pasted pull request row to stay visible after applying searches, actual %+v", actualRows)
 	}
 }
 

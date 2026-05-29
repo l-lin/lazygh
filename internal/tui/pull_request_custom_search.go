@@ -38,7 +38,11 @@ func (program *Program) pullRequestCustomSearchActionsPopupAction() actionsPopup
 }
 
 func (program *Program) currentPullRequestSearchCriteria() string {
-	return formatPullRequestSearchCriteria(program.pullRequestSearch(program.model.ActivePullRequestTab()).Command)
+	search, ok := program.searchBackedPullRequestSearch(program.model.ActivePullRequestTab())
+	if !ok {
+		return ""
+	}
+	return formatPullRequestSearchCriteria(search.Command)
 }
 
 func pullRequestCustomSearchTab(searches []appconfig.PullRequestSearch) (PullRequestTab, bool) {

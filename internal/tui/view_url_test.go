@@ -235,7 +235,7 @@ func TestOpenPullRequestByURL_GivenTheURLInputPopup_WhenPressingEnter_ThenItSubm
 	}
 }
 
-func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtrlV_ThenItDirectlyOpensThatPullRequest(t *testing.T) {
+func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtrlV_ThenItAddsThatPullRequestToAPastedTabWithoutOverridingTheExistingTabs(t *testing.T) {
 	loader := given_pullRequestByURLLoader()
 	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
 		Title:       "Widgets PR",
@@ -246,23 +246,35 @@ func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtr
 		HeadRefName: "feature/widgets",
 		State:       "OPEN",
 	}
-	subject := given_pullRequestByURLProgram(given_model(), loader)
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := given_pullRequestByURLProgram(model, loader)
 	subject.clipboardReader = &fakeClipboardWriter{readText: "https://github.com/acme/widgets/pull/13"}
-
-	actualErr := subject.OpenPullRequestByURL("https://github.com/acme/rocket/pull/77")
-	then_noError(t, actualErr)
-
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
-	actualErr = subject.layout(gui)
-	then_noError(t, actualErr)
 
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyCtrlV)(gui, nil)
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	existingLabels := append([]string(nil), subject.pullRequestsTabLabels()...)
+	existingRows := subject.model.PullRequestRows(MyPullRequestsTab)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyCtrlV)(gui, nil)
 	then_noError(t, actualErr)
 
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	then_viewDoesNotExist(t, gui, viewPullRequestsName)
+	expectedLabels := append(existingLabels, "Pasted (1)")
+	if actual := subject.pullRequestsTabLabels(); !reflect.DeepEqual(actual, expectedLabels) {
+		t.Fatalf("expected pull request tab labels %v, actual %v", expectedLabels, actual)
+	}
+	if actual := subject.model.ActivePullRequestTab(); actual != PullRequestTab(len(expectedLabels)-1) {
+		t.Fatalf("expected the pasted tab index %d, actual %d", len(expectedLabels)-1, actual)
+	}
+	if actual := subject.model.PullRequestRows(MyPullRequestsTab); !reflect.DeepEqual(actual, existingRows) {
+		t.Fatalf("expected the existing My PRs tab rows to stay intact, actual %+v", actual)
+	}
 
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
 	if !ok {
@@ -278,10 +290,62 @@ func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtr
 		t.Fatalf("expected pull request url %q, actual %q", "https://github.com/acme/widgets/pull/13", selectedSummary.URL)
 	}
 
+	pastedRows := subject.model.PullRequestRows(PullRequestTab(2))
+	if len(pastedRows) != 1 || pastedRows[0].Summary == nil || pastedRows[0].Summary.Number != 13 {
+		t.Fatalf("expected the pasted tab rows to contain the clipboard pull request, actual %+v", pastedRows)
+	}
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Body 13") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Body 13", detailView.Buffer())
+	}
+}
+
+func TestOpenPullRequestByURL_GivenClipboardContainsDistinctPRURLs_WhenPressingCtrlVRepeatedly_ThenItKeepsAListInThePastedTab(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
+		Title:       "Widgets PR",
+		Number:      13,
+		URL:         "https://github.com/acme/widgets/pull/13",
+		Body:        "Body 13",
+		BaseRefName: "main",
+		HeadRefName: "feature/widgets",
+		State:       "OPEN",
+	}
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+	clipboard := &fakeClipboardWriter{readText: "https://github.com/acme/widgets/pull/13"}
+	subject.clipboardReader = clipboard
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	existingLabels := append([]string(nil), subject.pullRequestsTabLabels()...)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+
+	clipboard.readText = "https://github.com/acme/rocket/pull/77"
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+
+	then_viewDoesNotExist(t, gui, viewPullRequestsName)
+	expectedLabels := append(existingLabels, "Pasted (2)")
+	if actual := subject.pullRequestsTabLabels(); !reflect.DeepEqual(actual, expectedLabels) {
+		t.Fatalf("expected pull request tab labels %v, actual %v", expectedLabels, actual)
+	}
+	if actual := subject.model.ActivePullRequestTab(); actual != PullRequestTab(len(expectedLabels)-1) {
+		t.Fatalf("expected the pasted tab index %d, actual %d", len(expectedLabels)-1, actual)
+	}
+	actualRows := subject.model.PullRequestRows(PullRequestTab(len(expectedLabels) - 1))
+	if len(actualRows) != 2 {
+		t.Fatalf("expected two pasted pull request rows, actual %+v", actualRows)
+	}
+	if actualRows[0].Summary == nil || actualRows[0].Summary.Repository.NameWithOwner != "acme/rocket" || actualRows[0].Summary.Number != 77 {
+		t.Fatalf("expected the newest pasted pull request to be first, actual %+v", actualRows[0])
+	}
+	if actualRows[1].Summary == nil || actualRows[1].Summary.Repository.NameWithOwner != "acme/widgets" || actualRows[1].Summary.Number != 13 {
+		t.Fatalf("expected the earlier pasted pull request to stay visible, actual %+v", actualRows[1])
 	}
 }
 

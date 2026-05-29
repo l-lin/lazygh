@@ -6,4 +6,5 @@ func (program *Program) applyPullRequestSearchesApplied(message MsgPullRequestSe
 	program.runtimeConfig.pullRequestSearches = append([]appconfig.PullRequestSearch(nil), message.Searches...)
 	program.resetPullRequestListLoadState()
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
+	program.syncPastedPullRequestTab()
 }

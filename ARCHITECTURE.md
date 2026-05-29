@@ -49,6 +49,7 @@ Smaller state bags follow the same value-transition rule:
 - `actionsPopupWidgetState` owns popup-local error, confirmation, and picker-open chrome around the popup child surfaces.
 - `manualRefreshStateModel` owns pending refresh targets and completion-feedback counting.
 - `statusStore` owns status-line feedback plus story-review and GH-command loading transitions.
+- `pastedPullRequestTabState` owns clipboard-opened pull-request summaries for the dedicated pasted tab so tab rebuilds can preserve them without hijacking the normal search tabs.
 
 ### Shell
 

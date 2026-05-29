@@ -3,7 +3,11 @@ package tui
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) listPullRequests(tab PullRequestTab) ([]githubdomain.PullRequest, error) {
-	return program.pullRequestListQueries.ListPullRequests(program.pullRequestSearch(tab).Command)
+	search, ok := program.searchBackedPullRequestSearch(tab)
+	if !ok {
+		return nil, nil
+	}
+	return program.pullRequestListQueries.ListPullRequests(search.Command)
 }
 
 func (store *pullRequestListStore) pullRequestsLoadStarted(tab PullRequestTab) bool {

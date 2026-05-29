@@ -138,6 +138,25 @@ func (program *Program) applyOpenPullRequestInBrowserView(message MsgOpenPullReq
 	program.setPullRequestsLoadStarted(MyPullRequestsTab, true)
 	program.setPullRequestsLoading(MyPullRequestsTab, false)
 	program.setPullRequestsCount(MyPullRequestsTab, 1, true)
+	program.finishOpenPullRequestInBrowserView(FocusPullRequestsView)
+}
+
+func (program *Program) applyOpenPullRequestInPastedTabView(message MsgOpenPullRequestInPastedTabView) {
+	summary := message.Summary
+	program.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
+		return state.withPullRequestAdded(summary)
+	})
+	pastedTab, ok := program.syncPastedPullRequestTab()
+	if !ok {
+		return
+	}
+	program.pinOpenedPullRequestSummary(pastedTab, summary)
+	program.model.SetActivePullRequestTab(pastedTab)
+	program.model.SelectPullRequestIndex(pastedTab, 0)
+	program.finishOpenPullRequestInBrowserView(FocusPullRequestsView)
+}
+
+func (program *Program) finishOpenPullRequestInBrowserView(sideFocus Focus) {
 	program.navigationState.reviewSession = reviewSessionState{}
 	program.invalidateReviewDiffRenderCache()
 	program.detailState.activeTab = DescriptionDetailTab
@@ -145,7 +164,7 @@ func (program *Program) applyOpenPullRequestInBrowserView(message MsgOpenPullReq
 	program.detailState.viewState.clearPendingPrefix()
 	program.clearPendingSelectionPrefix()
 	program.invalidatePullRequestDetailDocumentCache()
-	program.applyOpenPullRequestInDetailFullscreen(MsgOpenPullRequestInDetailFullscreen{SideFocus: FocusPullRequestsView})
+	program.applyOpenPullRequestInDetailFullscreen(MsgOpenPullRequestInDetailFullscreen{SideFocus: sideFocus})
 }
 
 func (program *Program) applyOpenPullRequestInDetailFullscreen(message MsgOpenPullRequestInDetailFullscreen) {
