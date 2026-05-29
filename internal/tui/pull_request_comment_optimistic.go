@@ -19,11 +19,12 @@ func pullRequestMutationCacheKey(repository string, number int) string {
 }
 
 func (program *Program) nextOptimisticPullRequestMutationID(kind string) string {
-	if program == nil {
+	if program == nil || program.optimisticMutationCoordinator == nil {
 		return optimisticPullRequestMutationIDPrefix + strings.TrimSpace(kind)
 	}
-	program.optimisticMutationSequence++
-	return fmt.Sprintf("%s%s:%d", optimisticPullRequestMutationIDPrefix, strings.TrimSpace(kind), program.optimisticMutationSequence)
+	updatedCoordinator, actualID := program.optimisticMutationCoordinator.nextOptimisticMutationID(kind)
+	program.optimisticMutationCoordinator = &updatedCoordinator
+	return actualID
 }
 
 func isOptimisticPullRequestMutationID(id string) bool {

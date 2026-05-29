@@ -2096,6 +2096,16 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDocumentAndRenderCa
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenOptimisticMutationSequenceWritesStayOffProgramFields(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.optimisticMutationSequence\+\+`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected optimistic mutation sequence writes to route through the coordinator helper instead of direct program-field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,
