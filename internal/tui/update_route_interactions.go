@@ -135,7 +135,7 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 				popup.searchActive = false
 				popup.searchQuery = program.currentSearchText()
 			}
-			program.searchWidget.clearEditor()
+			program.clearSearchWidgetEditor()
 			return handledUpdate([]Cmd{detailMotionCmd{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationFollowSubmittedSearch}})
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
@@ -148,9 +148,9 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 		targetPullRequestIndex := program.model.SelectedPullRequestIndex(targetPullRequestTab)
 		program.model.SubmitSearch()
 		if target == FocusDetailView {
-			program.searchWidget.detailReversed = false
+			program.setSearchWidgetDetailDirection(false)
 		}
-		program.searchWidget.clearEditor()
+		program.clearSearchWidgetEditor()
 
 		commands := []Cmd(nil)
 		if target == FocusDetailView {
@@ -165,7 +165,7 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 			if popup := program.pullRequestBuildRunPopup; popup != nil {
 				popup.searchActive = false
 			}
-			program.searchWidget.clearEditor()
+			program.clearSearchWidgetEditor()
 			return handledUpdate(nil)
 		}
 		if program.activeSearchIsReviewFileTreeSearch() {
@@ -173,10 +173,10 @@ func (program *Program) routeSearchSubmissionAndPopupSearchEditor(msg Msg) updat
 			return handledUpdate(nil)
 		}
 		program.model.CancelSearch()
-		program.searchWidget.clearEditor()
+		program.clearSearchWidgetEditor()
 		return handledUpdate(nil)
 	case MsgCloseSearch:
-		program.searchWidget.clearEditor()
+		program.clearSearchWidgetEditor()
 		return handledUpdate(nil)
 	case MsgActionsPopupSearchInputRequested:
 		return handledUpdate(program.applyActionsPopupSearchInputRequested(actual))

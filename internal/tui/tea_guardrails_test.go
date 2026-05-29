@@ -1050,6 +1050,22 @@ func TestRefactorGuard_GivenSessionStoreFiles_WhenScanning_ThenConnectedUserWrit
 	}
 }
 
+func TestRefactorGuard_GivenSearchWidgetFiles_WhenScanning_ThenSearchEditorAndDirectionWritesStayOnWholeStateReplacementHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.searchWidget\.(?:openEditor|clearEditor)\(`,
+		`program\.searchWidget\.editor\.ApplyIntent\(`,
+		`program\.searchWidget\.detailReversed\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected search-widget editor and direction writes to use whole-state replacement helpers instead of mutable helper calls or direct field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenNotificationStoreFiles_WhenScanning_ThenNotificationLoadingWritesStayOnValueTransitions(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.(?:notificationsLoadStarted|notificationsLoading|notificationsLoadingDetailMessage)\s*=\s*[^=]`,

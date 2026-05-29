@@ -8,20 +8,33 @@ type searchWidgetState struct {
 	detailReversed bool
 }
 
-func (state *searchWidgetState) openEditor(text string) {
-	if state == nil {
-		return
-	}
+func (state searchWidgetState) withEditorOpened(text string) searchWidgetState {
 	state.editor = newLineEditor(text)
 	state.editorVisible = true
+	return state
 }
 
-func (state *searchWidgetState) clearEditor() {
-	if state == nil {
-		return
-	}
+func (state searchWidgetState) withEditorCleared() searchWidgetState {
 	state.editor = lineEditor{}
 	state.editorVisible = false
+	return state
+}
+
+func (state searchWidgetState) withEditorIntentApplied(intent lineEditorIntent) (searchWidgetState, bool) {
+	if !state.editorVisible {
+		return state, false
+	}
+
+	updated := state
+	if !updated.editor.ApplyIntent(intent) {
+		return state, false
+	}
+	return updated, true
+}
+
+func (state searchWidgetState) withDetailSearchDirection(reverse bool) searchWidgetState {
+	state.detailReversed = reverse
+	return state
 }
 
 func (state searchWidgetState) hasEditor() bool {

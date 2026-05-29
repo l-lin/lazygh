@@ -92,9 +92,9 @@ func (program *Program) applySearchDraftChanged(message MsgSearchDraftChanged) {
 
 func (program *Program) applySearchEditorInputRequested(message MsgSearchEditorInputRequested) {
 	if !program.searchWidget.hasEditor() {
-		program.searchWidget.openEditor(program.model.SearchDraft())
+		program.openSearchWidgetEditor(program.model.SearchDraft())
 	}
-	if !program.searchWidget.editor.ApplyIntent(message.Intent) {
+	if !program.applySearchWidgetEditorIntent(message.Intent) {
 		return
 	}
 	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: program.searchWidget.editor.Text()})
@@ -109,7 +109,7 @@ func (program *Program) applyStartReviewFileTreeSearch(message MsgStartReviewFil
 	program.detailState.viewState.clearPendingPrefix()
 	program.model.StartSearchForReviewTree(program.model.ActivePullRequestTab())
 	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: message.Query})
-	program.searchWidget.openEditor(message.Query)
+	program.openSearchWidgetEditor(message.Query)
 }
 
 func (program *Program) applySubmitReviewFileTreeSearch() {
@@ -118,7 +118,7 @@ func (program *Program) applySubmitReviewFileTreeSearch() {
 	}
 	program.model.SubmitSearch()
 	program.followSubmittedReviewFileTreeSearch(program.model.ReviewTreeSearchQuery())
-	program.searchWidget.clearEditor()
+	program.clearSearchWidgetEditor()
 }
 
 func (program *Program) applyCancelReviewFileTreeSearch() {
@@ -126,7 +126,7 @@ func (program *Program) applyCancelReviewFileTreeSearch() {
 		return
 	}
 	program.model.CancelSearch()
-	program.searchWidget.clearEditor()
+	program.clearSearchWidgetEditor()
 }
 
 func (program *Program) applyOpenPullRequestInBrowserView(message MsgOpenPullRequestInBrowserView) {
@@ -468,8 +468,8 @@ func (program *Program) applyDetailSearchWordResolved(message MsgDetailSearchWor
 	program.model.StartSearch()
 	program.applySearchDraftChanged(MsgSearchDraftChanged{Query: query})
 	program.model.SubmitSearch()
-	program.searchWidget.detailReversed = message.Reverse
-	program.searchWidget.clearEditor()
+	program.setSearchWidgetDetailDirection(message.Reverse)
+	program.clearSearchWidgetEditor()
 	return []Cmd{detailMotionCmd{Target: detailMotionTargetDetail, Operation: detailMotionOperationFollowSubmittedSearch, Reverse: message.Reverse}}
 }
 

@@ -57,7 +57,7 @@ func (program *Program) routeSearchPromptAndDraftUpdate(msg Msg) updateResult {
 		program.clearPendingSelectionPrefix()
 		if program.pullRequestBuildRunPopupVisible() {
 			program.startPullRequestBuildRunPopupSearch()
-			program.searchWidget.openEditor(actual.Query)
+			program.openSearchWidgetEditor(actual.Query)
 			return handledUpdate(nil)
 		}
 		inputContext := program.inputContext()
@@ -74,7 +74,7 @@ func (program *Program) routeSearchPromptAndDraftUpdate(msg Msg) updateResult {
 		}
 		program.model.StartSearch()
 		program.applySearchDraftChanged(MsgSearchDraftChanged{Query: actual.Query})
-		program.searchWidget.openEditor(actual.Query)
+		program.openSearchWidgetEditor(actual.Query)
 		return handledUpdate(nil)
 	case MsgSearchDraftChanged:
 		program.applySearchDraftChanged(actual)
