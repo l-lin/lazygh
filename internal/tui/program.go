@@ -164,7 +164,7 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 		programViewRuntime: programViewRuntime{
 			startupState:        startupStateModel{},
 			detailState:         detailStateModel{viewState: newDetailViewState(), wrapWidth: defaultDetailWrapWidth},
-			actionsPopupWidget:  actionsPopupWidgetState{assigneePickerSearchDebounceDelay: defaultAssigneePickerSearchDebounceDelay},
+			actionsPopupWidget:  newActionsPopupWidgetState(),
 			navigationState:     navigationStateModel{},
 			listViewportRuntime: listViewportRuntimeState{pendingPlacements: map[string]viewportPlacement{}},
 			runtimeConfig:       runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},

@@ -1008,6 +1008,20 @@ func TestRefactorGuard_GivenManualRefreshFiles_WhenScanning_ThenNestedStateWrite
 	}
 }
 
+func TestRefactorGuard_GivenActionsPopupChromeFiles_WhenScanning_ThenNestedStateWritesStayOnWholeStateReplacementHelpers(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.actionsPopupWidget\.(?:errorMessage|pendingConfirmationActionID|reactionPicker|themePicker|assigneePicker|assigneePickerLoad)\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected actions-popup chrome state writes to use whole-state replacement helpers instead of nested field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)

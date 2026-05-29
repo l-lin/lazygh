@@ -28,7 +28,7 @@ func (program *Program) applyActionsPopupPageResolved(message MsgActionsPopupPag
 	default:
 		return nil
 	}
-	program.actionsPopupWidget.errorMessage = ""
+	program.clearActionsPopupErrorMessage()
 	return []Cmd{actionsPopupViewportCmd{Placement: viewportPlacementCenter}}
 }
 

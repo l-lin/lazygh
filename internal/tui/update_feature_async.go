@@ -11,13 +11,7 @@ func (program *Program) closeActionsPopupState() {
 		return
 	}
 	program.model.CloseActionsPopup()
-	program.actionsPopupWidget.clearSearchEditor()
-	program.clearActionsPopupPendingConfirmation()
-	program.actionsPopupWidget.errorMessage = ""
-	program.actionsPopupWidget.reactionPicker = nil
-	program.actionsPopupWidget.themePicker = nil
-	program.actionsPopupWidget.assigneePicker = nil
-	program.actionsPopupWidget.assigneePickerLoad = nil
+	program.resetActionsPopupWidgetChrome()
 }
 
 func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActionsPopupAsyncGHCommandFinished) []Cmd {
@@ -88,13 +82,13 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 
 	if message.Err != nil {
 		program.applyAssigneePickerSearchLoadedState(message.Query, nil)
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 		return program.applyErrorReportedMessage(normalizedAssigneePickerError(message.Err).Error())
 	}
 
 	program.applyAssigneePickerSearchLoadedState(message.Query, message.Results)
-	program.actionsPopupWidget.errorMessage = ""
+	program.clearActionsPopupErrorMessage()
 	program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
 	return nil
 }

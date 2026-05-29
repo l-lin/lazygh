@@ -88,7 +88,7 @@ func (program *Program) handleNotificationRequestUnavailable(message string) []C
 		return nil
 	}
 	if program.model.ActionsPopupVisible() {
-		program.actionsPopupWidget.errorMessage = trimmedMessage
+		program.setActionsPopupErrorMessage(trimmedMessage)
 		return nil
 	}
 	program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: trimmedMessage})

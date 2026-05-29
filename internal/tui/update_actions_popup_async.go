@@ -7,7 +7,7 @@ func (program *Program) queueActionsPopupAsyncRequest(request actionsPopupAsyncR
 		return nil
 	}
 
-	program.actionsPopupWidget.errorMessage = ""
+	program.clearActionsPopupErrorMessage()
 	if statusCommand := strings.TrimSpace(request.statusCommand()); statusCommand != "" {
 		program.startGHCommandLoading(statusCommand)
 	}

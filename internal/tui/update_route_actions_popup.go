@@ -12,13 +12,8 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		if actual.ActionCount <= 0 {
 			return handledUpdate(nil)
 		}
-		program.actionsPopupWidget.reactionPicker = nil
-		program.actionsPopupWidget.themePicker = nil
-		program.actionsPopupWidget.assigneePicker = nil
-		program.actionsPopupWidget.assigneePickerLoad = nil
+		program.resetActionsPopupWidgetChrome()
 		program.model.OpenActionsPopup(actual.ActionCount)
-		program.actionsPopupWidget.clearSearchEditor()
-		program.actionsPopupWidget.errorMessage = ""
 		return handledUpdate(nil)
 	case MsgCloseActionsPopup:
 		program.clearPendingSelectionPrefix()
@@ -34,7 +29,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		program.actionsPopupWidget.openSearchEditor("")
 		program.updateActionsPopupSearch("")
 		program.model.FocusActionsPopupSearch()
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		return handledUpdate(nil)
 	case MsgFocusActionsPopupList:
 		program.clearPendingSelectionPrefix()
@@ -62,7 +57,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		program.syncVisibleActionsPopupSearchSelection()
 		program.clearActionsPopupPendingConfirmation()
 		program.moveActionsPopupSelection(actual.Delta)
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		return handledUpdate(nil)
 	case MsgMoveActionsPopupSelectionToTop:
 		program.clearPendingSelectionPrefix()
@@ -72,7 +67,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		program.syncVisibleActionsPopupSearchSelection()
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToTop()
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		return handledUpdate(nil)
 	case MsgMoveActionsPopupSelectionToBottom:
 		program.clearPendingSelectionPrefix()
@@ -82,7 +77,7 @@ func (program *Program) routeActionsPopupChromeLifecycle(msg Msg) updateResult {
 		program.syncVisibleActionsPopupSearchSelection()
 		program.clearActionsPopupPendingConfirmation()
 		program.model.MoveActionsPopupSelectionToBottom()
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		return handledUpdate(nil)
 	default:
 		return ignoredUpdate()

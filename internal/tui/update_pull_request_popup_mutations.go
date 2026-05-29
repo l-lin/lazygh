@@ -9,7 +9,7 @@ import (
 func (program *Program) applyOpenPullRequestInBrowserRequested(message MsgOpenPullRequestInBrowserRequested) []Cmd {
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
@@ -19,7 +19,7 @@ func (program *Program) applyOpenPullRequestInBrowserRequested(message MsgOpenPu
 func (program *Program) applyApprovePullRequestRequested(message MsgApprovePullRequestRequested) []Cmd {
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
@@ -29,7 +29,7 @@ func (program *Program) applyApprovePullRequestRequested(message MsgApprovePullR
 func (program *Program) applyReRequestPullRequestReviewRequested(message MsgReRequestPullRequestReviewRequested) []Cmd {
 	repository, number, reviewerLogin, ok := popupPullRequestReviewerRequestIdentity(message.Target)
 	if !ok {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
@@ -39,13 +39,13 @@ func (program *Program) applyReRequestPullRequestReviewRequested(message MsgReRe
 func (program *Program) applyPullRequestLifecycleMutationRequested(message MsgPullRequestLifecycleMutationRequested) []Cmd {
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok || !popupPullRequestSummaryValid(message.Summary) {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
 	command := pullRequestLifecycleMutationCommand(message.Kind, repository, number)
 	if command == "" {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
@@ -55,13 +55,13 @@ func (program *Program) applyPullRequestLifecycleMutationRequested(message MsgPu
 func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPullRequestAutoMergeMutationRequested) []Cmd {
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok || !popupPullRequestSummaryValid(message.Summary) {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
 	command := pullRequestAutoMergeMutationCommand(message.Kind, repository, number)
 	if command == "" {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPu
 func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullRequestBranchUpdateRequested) []Cmd {
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok || !popupPullRequestSummaryValid(message.Summary) {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 

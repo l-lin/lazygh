@@ -306,7 +306,7 @@ func (program *Program) applyRepeatActionsPopupSearch(message MsgRepeatActionsPo
 	if !program.model.followActionsPopupSearchMatch(searchMatchChooserForDirection(message.Direction)) {
 		return
 	}
-	program.actionsPopupWidget.errorMessage = ""
+	program.clearActionsPopupErrorMessage()
 }
 
 func (program *Program) setSideSearchSelection(focus Focus, index int) {

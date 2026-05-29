@@ -9,10 +9,6 @@ import (
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func (program *Program) clearActionsPopupPendingConfirmation() {
-	program.actionsPopupWidget.pendingConfirmationActionID = ""
-}
-
 func (program *Program) updateActionsPopupSearch(query string) {
 	program.model.UpdateActionsPopupSearch(query, program.currentActionsPopupMatchingIndexes(query))
 }
@@ -120,18 +116,17 @@ func (program *Program) applyActionsPopupActionRequested(message MsgActionsPopup
 
 func (program *Program) applyClearCacheRequested() []Cmd {
 	if program.pullRequestCache == nil {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != clearCacheActionTitle {
-		program.actionsPopupWidget.pendingConfirmationActionID = clearCacheActionTitle
-		program.actionsPopupWidget.errorMessage = ""
+		program.setActionsPopupPendingConfirmation(clearCacheActionTitle)
 		return nil
 	}
 
 	program.clearActionsPopupPendingConfirmation()
 	if err := program.clearCachedData(); err != nil {
-		program.actionsPopupWidget.errorMessage = strings.TrimSpace(err.Error())
+		program.setActionsPopupErrorMessage(err.Error())
 		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
 	}
 	program.closeActionsPopupState()
@@ -172,7 +167,7 @@ func (program *Program) applyStartPullRequestReviewRequested(message MsgStartPul
 	summary := message.Summary
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
-		program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
@@ -297,8 +292,6 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 
 func (program *Program) applyOpenAssigneePickerRequested(message MsgOpenAssigneePickerRequested) []Cmd {
 	program.openAssigneePicker(message.Target)
-	program.actionsPopupWidget.clearSearchEditor()
-	program.actionsPopupWidget.errorMessage = ""
 	program.model.OpenActionsPopup(program.currentAssigneePickerActionCount())
 	program.updateActionsPopupSearch("")
 
@@ -346,9 +339,7 @@ func (program *Program) applySubmitAssigneePickerRequested(message MsgSubmitAssi
 }
 
 func (program *Program) applyOpenReactionPickerRequested(message MsgOpenReactionPickerRequested) {
-	program.actionsPopupWidget.reactionPicker = &reactionPickerState{target: message.Target}
-	program.actionsPopupWidget.clearSearchEditor()
-	program.actionsPopupWidget.errorMessage = ""
+	program.openReactionPicker(message.Target)
 	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
 }
 
@@ -363,9 +354,7 @@ func (program *Program) applyAddReactionRequested(message MsgAddReactionRequeste
 }
 
 func (program *Program) applyOpenThemePickerRequested() {
-	program.actionsPopupWidget.themePicker = &themePickerState{}
-	program.actionsPopupWidget.clearSearchEditor()
-	program.actionsPopupWidget.errorMessage = ""
+	program.openThemePicker()
 	program.model.OpenActionsPopup(len(program.currentActionsPopupActions()))
 }
 
@@ -393,7 +382,7 @@ func (program *Program) restylePullRequestRows() {
 
 func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd {
 	if message.Err != nil {
-		program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
+		program.setActionsPopupErrorMessage(message.Err.Error())
 		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
 	}
 
@@ -401,7 +390,7 @@ func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd
 	program.restylePullRequestRows()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
-	program.actionsPopupWidget.errorMessage = ""
+	program.clearActionsPopupErrorMessage()
 	program.setFeedback(program.model.Focus(), "Theme changed to "+strings.TrimSpace(message.Label))
 	program.clearPendingSelectionPrefix()
 	program.closeActionsPopupState()

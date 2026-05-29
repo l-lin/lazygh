@@ -2,20 +2,13 @@ package tui
 
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
-func (program *Program) openAssigneePicker(target pullRequestAssigneePickerTarget) {
-	if program == nil {
-		return
-	}
-	program.actionsPopupWidget.assigneePicker = newAssigneePickerState(target, program.currentConnectedUserLogin(), program.currentConnectedUserName())
-}
-
 func (program *Program) updateAssigneePickerState(transition func(assigneePickerState) assigneePickerState) bool {
 	if program == nil || program.actionsPopupWidget.assigneePicker == nil {
 		return false
 	}
 
 	updatedState := transition(*program.actionsPopupWidget.assigneePicker)
-	program.actionsPopupWidget.assigneePicker = &updatedState
+	program.setActionsPopupAssigneePickerState(&updatedState)
 	return true
 }
 

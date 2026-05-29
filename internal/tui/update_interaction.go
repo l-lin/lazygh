@@ -12,16 +12,16 @@ func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPo
 		return nil
 	}
 	if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		return program.applyErrorReportedMessage(popupMessage)
 	}
 	var feedbackErr actionsPopupStatusLineError
 	if errors.As(message.Err, &feedbackErr) {
-		program.actionsPopupWidget.errorMessage = ""
+		program.clearActionsPopupErrorMessage()
 		program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
 		return nil
 	}
-	program.actionsPopupWidget.errorMessage = strings.TrimSpace(message.Err.Error())
+	program.setActionsPopupErrorMessage(message.Err.Error())
 	return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
 }
 
@@ -82,7 +82,7 @@ func (program *Program) applyActionsPopupSearchInputRequested(message MsgActions
 		requestID = program.resetAssigneePickerSearch(query)
 	}
 	program.updateActionsPopupSearch(query)
-	program.actionsPopupWidget.errorMessage = ""
+	program.clearActionsPopupErrorMessage()
 	if program.assigneePickerVisible() && requestID > 0 && strings.TrimSpace(query) != "" {
 		return []Cmd{assigneePickerSearchCmd{RequestID: requestID, Query: query, Delay: program.actionsPopupWidget.assigneePickerSearchDebounceDelay, DispatchLoading: true}}
 	}
@@ -416,7 +416,7 @@ func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequ
 	url, ok := program.selectedPullRequestURL()
 	if !ok {
 		if program.model != nil && program.model.ActionsPopupVisible() {
-			program.actionsPopupWidget.errorMessage = yankUnavailableMessage
+			program.setActionsPopupErrorMessage(yankUnavailableMessage)
 			return nil
 		}
 		program.setFeedback(program.model.Focus(), yankUnavailableMessage)
@@ -436,7 +436,7 @@ func (program *Program) applyCopyPullRequestBuildRunPopupContentRequested(messag
 func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	if program.linkOpener == nil {
 		if program.model != nil && program.model.ActionsPopupVisible() {
-			program.actionsPopupWidget.errorMessage = openLinkOpenerUnavailableMessage
+			program.setActionsPopupErrorMessage(openLinkOpenerUnavailableMessage)
 			return nil
 		}
 		return program.applyErrorReportedMessage(openLinkOpenerUnavailableMessage)
@@ -444,7 +444,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	browserURL, ok := program.selectedNotificationBrowserURL()
 	if !ok {
 		if program.model != nil && program.model.ActionsPopupVisible() {
-			program.actionsPopupWidget.errorMessage = errActionsPopupActionUnavailable.Error()
+			program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 			return nil
 		}
 		return program.applyErrorReportedMessage(errActionsPopupActionUnavailable.Error())
