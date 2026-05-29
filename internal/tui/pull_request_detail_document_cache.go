@@ -62,19 +62,15 @@ func (program *Program) pullRequestConversationDocumentForKey(key pullRequestDet
 }
 
 func (program *Program) cachePullRequestDetailDocument(key pullRequestDetailDocumentCacheKey, document detailDocument) {
-	if program.pullRequestDetailDocumentCache == nil {
-		program.pullRequestDetailDocumentCache = map[pullRequestDetailDocumentCacheKey]detailDocument{}
-	}
-
-	program.pullRequestDetailDocumentCache[key] = document
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withPullRequestDetailDocumentCached(key, document)
+	})
 }
 
 func (program *Program) cachePullRequestConversationDocument(key pullRequestDetailDocumentCacheKey, document browserConversationDocument) {
-	if program.pullRequestConversationDocumentCache == nil {
-		program.pullRequestConversationDocumentCache = map[pullRequestDetailDocumentCacheKey]browserConversationDocument{}
-	}
-
-	program.pullRequestConversationDocumentCache[key] = document
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withPullRequestConversationDocumentCached(key, document)
+	})
 }
 
 func (program *Program) invalidatePullRequestDetailDocumentCache() {
@@ -82,7 +78,7 @@ func (program *Program) invalidatePullRequestDetailDocumentCache() {
 		return
 	}
 
-	program.pullRequestDetailDocumentCache = map[pullRequestDetailDocumentCacheKey]detailDocument{}
-	program.pullRequestConversationDocumentCache = map[pullRequestDetailDocumentCacheKey]browserConversationDocument{}
-	program.pullRequestChangesRenderedRowsCache = map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{}
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withDocumentRenderCachesReset()
+	})
 }

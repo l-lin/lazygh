@@ -2080,6 +2080,22 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenImageLoadCoordinato
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDocumentAndRenderCacheWritesStayOffProgramFields(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.(?:pullRequestDetailDocumentCache|pullRequestConversationDocumentCache|pullRequestChangesRenderedRowsCache|reviewDiffRenderCache)\[[^]]+\]\s*=`,
+		`program\.(?:pullRequestDetailDocumentCache|pullRequestConversationDocumentCache|pullRequestChangesRenderedRowsCache|reviewDiffRenderCache)\s*=\s*map\[`,
+		`delete\(program\.(?:pullRequestDetailDocumentCache|pullRequestConversationDocumentCache|pullRequestChangesRenderedRowsCache|reviewDiffRenderCache)`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected document and render cache writes to route through store helpers instead of direct program-field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

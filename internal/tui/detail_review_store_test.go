@@ -129,3 +129,80 @@ func TestReviewStore_GivenPendingReviewCacheState_WhenApplyingPendingReviewTrans
 		t.Fatal("expected the original cache to stay free of the new pending review entry")
 	}
 }
+
+func TestDetailStore_GivenDocumentAndRenderedRowCaches_WhenApplyingCacheTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newDetailStore(nil)
+	originalKey := pullRequestDetailDocumentCacheKey{pullRequestKey: "acme/widgets#1", tab: DescriptionDetailTab, width: 72}
+	cachedKey := pullRequestDetailDocumentCacheKey{pullRequestKey: "acme/widgets#42", tab: CommentsDetailTab, width: 88}
+	subject.pullRequestDetailDocumentCache[originalKey] = detailDocument{width: 72}
+	subject.pullRequestConversationDocumentCache[originalKey] = browserConversationDocument{text: "old conversation"}
+	subject.pullRequestChangesRenderedRowsCache[originalKey] = []reviewDiffRenderedRow{{Text: "old rows"}}
+	givenRows := []reviewDiffRenderedRow{{Text: "new rows"}}
+
+	detailCached := subject.withPullRequestDetailDocumentCached(cachedKey, detailDocument{width: 88})
+	conversationCached := detailCached.withPullRequestConversationDocumentCached(cachedKey, browserConversationDocument{text: "new conversation"})
+	rowsCached := conversationCached.withPullRequestChangesRenderedRowsCached(cachedKey, givenRows)
+	givenRows[0].Text = "mutated rows"
+	reset := rowsCached.withDocumentRenderCachesReset()
+
+	if actual := detailCached.pullRequestDetailDocumentCache[cachedKey].width; actual != 88 {
+		t.Fatalf("expected cached detail document width %d, actual %d", 88, actual)
+	}
+	if actual := conversationCached.pullRequestConversationDocumentCache[cachedKey].text; actual != "new conversation" {
+		t.Fatalf("expected cached conversation text %q, actual %q", "new conversation", actual)
+	}
+	if actual := rowsCached.pullRequestChangesRenderedRowsCache[cachedKey][0].Text; actual != "new rows" {
+		t.Fatalf("expected cached rendered rows text %q, actual %q", "new rows", actual)
+	}
+	if len(reset.pullRequestDetailDocumentCache) != 0 || len(reset.pullRequestConversationDocumentCache) != 0 || len(reset.pullRequestChangesRenderedRowsCache) != 0 {
+		t.Fatalf("expected document/render cache reset to clear all maps, actual detail=%d conversation=%d rows=%d", len(reset.pullRequestDetailDocumentCache), len(reset.pullRequestConversationDocumentCache), len(reset.pullRequestChangesRenderedRowsCache))
+	}
+
+	if actual := subject.pullRequestDetailDocumentCache[originalKey].width; actual != 72 {
+		t.Fatalf("expected original detail document width %d, actual %d", 72, actual)
+	}
+	if actual := subject.pullRequestConversationDocumentCache[originalKey].text; actual != "old conversation" {
+		t.Fatalf("expected original conversation text %q, actual %q", "old conversation", actual)
+	}
+	if actual := subject.pullRequestChangesRenderedRowsCache[originalKey][0].Text; actual != "old rows" {
+		t.Fatalf("expected original rendered rows text %q, actual %q", "old rows", actual)
+	}
+	if _, ok := subject.pullRequestDetailDocumentCache[cachedKey]; ok {
+		t.Fatal("expected the original detail document cache to stay free of the new entry")
+	}
+	if _, ok := subject.pullRequestConversationDocumentCache[cachedKey]; ok {
+		t.Fatal("expected the original conversation document cache to stay free of the new entry")
+	}
+	if _, ok := subject.pullRequestChangesRenderedRowsCache[cachedKey]; ok {
+		t.Fatal("expected the original rendered rows cache to stay free of the new entry")
+	}
+}
+
+func TestReviewStore_GivenRenderCacheEntries_WhenApplyingRenderCacheTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newReviewStore(nil)
+	originalKey := reviewDiffRenderCacheKey{repositoryName: "acme/widgets", pullRequestNumber: 1, filePath: "old.go", width: 72}
+	cachedKey := reviewDiffRenderCacheKey{repositoryName: "acme/widgets", pullRequestNumber: 42, filePath: "main.go", width: 88}
+	subject.reviewDiffRenderCache[originalKey] = reviewDiffRenderCacheEntry{rows: []reviewDiffRenderedRow{{Text: "old rows"}}, document: detailDocument{width: 72}}
+	givenRows := []reviewDiffRenderedRow{{Text: "new rows"}}
+
+	stored := subject.withReviewDiffRenderEntryCached(cachedKey, reviewDiffRenderCacheEntry{rows: givenRows, document: detailDocument{width: 88}})
+	givenRows[0].Text = "mutated rows"
+	reset := stored.withReviewDiffRenderCacheReset()
+
+	if actual := stored.reviewDiffRenderCache[cachedKey].rows[0].Text; actual != "new rows" {
+		t.Fatalf("expected cached review rows text %q, actual %q", "new rows", actual)
+	}
+	if actual := stored.reviewDiffRenderCache[cachedKey].document.width; actual != 88 {
+		t.Fatalf("expected cached review document width %d, actual %d", 88, actual)
+	}
+	if len(reset.reviewDiffRenderCache) != 0 {
+		t.Fatalf("expected review diff render cache reset to clear the map, actual %d entries", len(reset.reviewDiffRenderCache))
+	}
+
+	if actual := subject.reviewDiffRenderCache[originalKey].rows[0].Text; actual != "old rows" {
+		t.Fatalf("expected original review rows text %q, actual %q", "old rows", actual)
+	}
+	if _, ok := subject.reviewDiffRenderCache[cachedKey]; ok {
+		t.Fatal("expected the original review render cache to stay free of the new entry")
+	}
+}

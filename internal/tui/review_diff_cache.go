@@ -75,11 +75,9 @@ func (program *Program) cachedReviewDiffRenderEntry(key reviewDiffRenderCacheKey
 }
 
 func (program *Program) storeReviewDiffRenderEntry(key reviewDiffRenderCacheKey, entry reviewDiffRenderCacheEntry) {
-	if program.reviewDiffRenderCache == nil {
-		program.reviewDiffRenderCache = map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{}
-	}
-
-	program.reviewDiffRenderCache[key] = entry
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withReviewDiffRenderEntryCached(key, entry)
+	})
 }
 
 func (program *Program) invalidateReviewDiffRenderCache() {
@@ -87,5 +85,7 @@ func (program *Program) invalidateReviewDiffRenderCache() {
 		return
 	}
 
-	program.reviewDiffRenderCache = map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{}
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withReviewDiffRenderCacheReset()
+	})
 }

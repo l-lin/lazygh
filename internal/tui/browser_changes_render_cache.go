@@ -28,9 +28,7 @@ func (program *Program) pullRequestChangesRenderedRowsForKey(key pullRequestDeta
 }
 
 func (program *Program) cachePullRequestChangesRenderedRows(key pullRequestDetailDocumentCacheKey, rows []reviewDiffRenderedRow) {
-	if program.pullRequestChangesRenderedRowsCache == nil {
-		program.pullRequestChangesRenderedRowsCache = map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{}
-	}
-
-	program.pullRequestChangesRenderedRowsCache[key] = rows
+	program.updateDetailStore(func(store detailStore) detailStore {
+		return store.withPullRequestChangesRenderedRowsCached(key, rows)
+	})
 }

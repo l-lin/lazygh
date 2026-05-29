@@ -52,6 +52,12 @@ func (store reviewStore) withPendingPullRequestReviewCached(key string, state pe
 	return store
 }
 
+func (store reviewStore) withReviewDiffRenderEntryCached(key reviewDiffRenderCacheKey, entry reviewDiffRenderCacheEntry) reviewStore {
+	store.reviewDiffRenderCache = copyReviewDiffRenderEntries(store.reviewDiffRenderCache)
+	store.reviewDiffRenderCache[key] = cloneReviewDiffRenderCacheEntry(entry)
+	return store
+}
+
 func (store reviewStore) withoutPendingPullRequestReview(key string) reviewStore {
 	trimmedKey := strings.TrimSpace(key)
 	if trimmedKey == "" {
@@ -68,6 +74,11 @@ func (store reviewStore) withoutPendingPullRequestReview(key string) reviewStore
 func (store reviewStore) withDiffWorkflowStateReset() reviewStore {
 	store.pullRequestDiffCache = map[string]pullRequestDiffResult{}
 	store.pullRequestDiffLoadInFlight = map[string]bool{}
+	return store
+}
+
+func (store reviewStore) withReviewDiffRenderCacheReset() reviewStore {
+	store.reviewDiffRenderCache = map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{}
 	return store
 }
 
@@ -95,4 +106,17 @@ func copyPendingPullRequestReviewStates(source map[string]pendingPullRequestRevi
 		copied[key] = state
 	}
 	return copied
+}
+
+func copyReviewDiffRenderEntries(source map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry) map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry {
+	copied := make(map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry, len(source))
+	for key, entry := range source {
+		copied[key] = cloneReviewDiffRenderCacheEntry(entry)
+	}
+	return copied
+}
+
+func cloneReviewDiffRenderCacheEntry(entry reviewDiffRenderCacheEntry) reviewDiffRenderCacheEntry {
+	entry.rows = copyReviewDiffRenderedRows(entry.rows)
+	return entry
 }

@@ -90,6 +90,40 @@ func (store detailStore) withReleaseDetailLoaded(key string, result releaseDetai
 	return store
 }
 
+func (store detailStore) withPullRequestDetailDocumentCached(key pullRequestDetailDocumentCacheKey, document detailDocument) detailStore {
+	if strings.TrimSpace(key.pullRequestKey) == "" {
+		return store
+	}
+	store.pullRequestDetailDocumentCache = copyPullRequestDetailDocuments(store.pullRequestDetailDocumentCache)
+	store.pullRequestDetailDocumentCache[key] = document
+	return store
+}
+
+func (store detailStore) withPullRequestConversationDocumentCached(key pullRequestDetailDocumentCacheKey, document browserConversationDocument) detailStore {
+	if strings.TrimSpace(key.pullRequestKey) == "" {
+		return store
+	}
+	store.pullRequestConversationDocumentCache = copyBrowserConversationDocuments(store.pullRequestConversationDocumentCache)
+	store.pullRequestConversationDocumentCache[key] = document
+	return store
+}
+
+func (store detailStore) withPullRequestChangesRenderedRowsCached(key pullRequestDetailDocumentCacheKey, rows []reviewDiffRenderedRow) detailStore {
+	if strings.TrimSpace(key.pullRequestKey) == "" {
+		return store
+	}
+	store.pullRequestChangesRenderedRowsCache = copyPullRequestChangesRenderedRowsCache(store.pullRequestChangesRenderedRowsCache)
+	store.pullRequestChangesRenderedRowsCache[key] = copyReviewDiffRenderedRows(rows)
+	return store
+}
+
+func (store detailStore) withDocumentRenderCachesReset() detailStore {
+	store.pullRequestDetailDocumentCache = map[pullRequestDetailDocumentCacheKey]detailDocument{}
+	store.pullRequestConversationDocumentCache = map[pullRequestDetailDocumentCacheKey]browserConversationDocument{}
+	store.pullRequestChangesRenderedRowsCache = map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{}
+	return store
+}
+
 func (store detailStore) withWorkflowStateReset() detailStore {
 	store.pullRequestDetailCache = map[string]pullRequestDetailResult{}
 	store.pullRequestDetailLoadInFlight = map[string]bool{}
@@ -127,6 +161,34 @@ func copyReleaseDetailResults(source map[string]releaseDetailResult) map[string]
 		copied[key] = result
 	}
 	return copied
+}
+
+func copyPullRequestDetailDocuments(source map[pullRequestDetailDocumentCacheKey]detailDocument) map[pullRequestDetailDocumentCacheKey]detailDocument {
+	copied := make(map[pullRequestDetailDocumentCacheKey]detailDocument, len(source))
+	for key, document := range source {
+		copied[key] = document
+	}
+	return copied
+}
+
+func copyBrowserConversationDocuments(source map[pullRequestDetailDocumentCacheKey]browserConversationDocument) map[pullRequestDetailDocumentCacheKey]browserConversationDocument {
+	copied := make(map[pullRequestDetailDocumentCacheKey]browserConversationDocument, len(source))
+	for key, document := range source {
+		copied[key] = document
+	}
+	return copied
+}
+
+func copyPullRequestChangesRenderedRowsCache(source map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow) map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow {
+	copied := make(map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow, len(source))
+	for key, rows := range source {
+		copied[key] = copyReviewDiffRenderedRows(rows)
+	}
+	return copied
+}
+
+func copyReviewDiffRenderedRows(rows []reviewDiffRenderedRow) []reviewDiffRenderedRow {
+	return append([]reviewDiffRenderedRow(nil), rows...)
 }
 
 func copyWorkflowStringBoolMap(source map[string]bool) map[string]bool {
