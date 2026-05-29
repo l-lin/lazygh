@@ -92,7 +92,7 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 }
 
 func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBuildRunLoaded) []Cmd {
-	program.pullRequestBuildRunLoad = nil
+	program.clearPullRequestBuildRunLoad()
 	if message.Err != nil {
 		return program.applyErrorReportedMessage(normalizeGHCommandError(message.Err).Error())
 	}
@@ -108,7 +108,7 @@ func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBui
 }
 
 func (program *Program) applyPullRequestBuildRunJobLogLoaded(message MsgPullRequestBuildRunJobLogLoaded) []Cmd {
-	program.pullRequestBuildRunLoad = nil
+	program.clearPullRequestBuildRunLoad()
 	if message.Err != nil {
 		return program.applyErrorReportedMessage(normalizeGHCommandError(message.Err).Error())
 	}

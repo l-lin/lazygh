@@ -192,8 +192,7 @@ func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullReq
 	}
 
 	program.clearFeedbackMessage()
-	program.pullRequestBuildRunPopup = nil
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunCommand(repository, target.check)}
+	program.startPullRequestBuildRunLoad(formatPullRequestBuildRunCommand(repository, target.check))
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunLoadCmd{Repository: repository, Target: target}}
 }
@@ -209,7 +208,7 @@ func (program *Program) applyPullRequestBuildRunJobLogLoadRequested(message MsgP
 	}
 
 	program.clearFeedbackMessage()
-	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunJobsCommand(repository, message.Check)}
+	program.startPullRequestBuildRunJobLogLoad(formatPullRequestBuildRunJobsCommand(repository, message.Check))
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunJobLogLoadCmd{Repository: repository, Check: message.Check}}
 }
@@ -223,7 +222,9 @@ func (program *Program) openPullRequestBuildRunPopupState(content pullRequestBui
 	if program == nil {
 		return
 	}
-	program.pullRequestBuildRunPopup = newPullRequestBuildRunPopupState(content)
+	program.updateBuildStore(func(store buildStore) buildStore {
+		return store.withPopupOpened(content)
+	})
 }
 
 func newPullRequestBuildRunPopupState(content pullRequestBuildRunPopupContent) *pullRequestBuildRunPopupState {
@@ -256,11 +257,7 @@ func (program *Program) applyPullRequestBuildRunPopupClosed() {
 		popup.viewState.clearPendingPrefix()
 		return
 	}
-	if popup := program.pullRequestBuildRunPopup; popup != nil && popup.previousPopup != nil {
-		program.pullRequestBuildRunPopup = popup.previousPopup
-		return
-	}
-	program.pullRequestBuildRunPopup = nil
+	program.closePullRequestBuildRunPopupState()
 }
 
 func (program *Program) applyOpenBrowserURLRequested(message MsgOpenBrowserURLRequested) []Cmd {
