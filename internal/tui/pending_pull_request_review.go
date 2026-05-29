@@ -50,7 +50,9 @@ func (program *Program) setPendingPullRequestReviewStateByIdentity(repository st
 		return
 	}
 
-	program.pendingPullRequestReviewCache[key] = pendingPullRequestReviewState{id: strings.TrimSpace(pendingReviewID)}
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withPendingPullRequestReviewCached(key, pendingPullRequestReviewState{id: strings.TrimSpace(pendingReviewID)})
+	})
 }
 
 func (program *Program) forgetPendingPullRequestReviewState(repository string, number int) {
@@ -59,7 +61,9 @@ func (program *Program) forgetPendingPullRequestReviewState(repository string, n
 		return
 	}
 
-	delete(program.pendingPullRequestReviewCache, key)
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withoutPendingPullRequestReview(key)
+	})
 }
 
 func pullRequestKeyFromIdentity(repository string, number int) string {

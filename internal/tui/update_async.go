@@ -108,7 +108,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	})
 	manualRefresh := program.consumeManualPullRequestDetailRefresh(key)
 	if message.PendingReviewStateKnown {
-		program.pendingPullRequestReviewCache[key] = message.PendingReviewState
+		program.updateReviewStore(func(store reviewStore) reviewStore {
+			return store.withPendingPullRequestReviewCached(key, message.PendingReviewState)
+		})
 	}
 	if message.Err == nil {
 		clonedDetail := clonePullRequestDetail(message.Detail)

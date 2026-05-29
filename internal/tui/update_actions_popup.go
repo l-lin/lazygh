@@ -146,9 +146,9 @@ func (program *Program) clearCachedData() error {
 		return store.withWorkflowStateReset()
 	})
 	program.updateReviewStore(func(store reviewStore) reviewStore {
-		return store.withDiffWorkflowStateReset()
+		store = store.withDiffWorkflowStateReset()
+		return store.withPendingReviewCacheReset()
 	})
-	program.pendingPullRequestReviewCache = map[string]pendingPullRequestReviewState{}
 	program.resetNotificationLoadState()
 	program.clearGHCommandLoading()
 	program.invalidatePullRequestDetailDocumentCache()

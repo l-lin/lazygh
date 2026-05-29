@@ -2033,6 +2033,22 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenDetailReviewWorkflo
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenPendingReviewCacheWritesStayOffProgramFields(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.pendingPullRequestReviewCache\[[^]]+\]\s*=`,
+		`program\.pendingPullRequestReviewCache\s*=\s*map\[`,
+		`delete\(program\.pendingPullRequestReviewCache`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected pending-review cache writes to route through review-store helpers instead of direct program-field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

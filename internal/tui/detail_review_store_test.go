@@ -103,3 +103,29 @@ func TestReviewStore_GivenDiffCacheAndLoadState_WhenApplyingWorkflowTransitions_
 		t.Fatal("expected the original state to stay free of the new diff load key")
 	}
 }
+
+func TestReviewStore_GivenPendingReviewCacheState_WhenApplyingPendingReviewTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newReviewStore(nil)
+	subject.pendingPullRequestReviewCache["acme/widgets#1"] = pendingPullRequestReviewState{id: "review-1"}
+
+	stored := subject.withPendingPullRequestReviewCached("acme/widgets#42", pendingPullRequestReviewState{id: "review-42"})
+	forgotten := stored.withoutPendingPullRequestReview("acme/widgets#1")
+	reset := forgotten.withPendingReviewCacheReset()
+
+	if actual := stored.pendingPullRequestReviewCache["acme/widgets#42"].id; actual != "review-42" {
+		t.Fatalf("expected stored pending review id %q, actual %q", "review-42", actual)
+	}
+	if _, ok := forgotten.pendingPullRequestReviewCache["acme/widgets#1"]; ok {
+		t.Fatal("expected the forgotten state to drop the original pending review entry")
+	}
+	if len(reset.pendingPullRequestReviewCache) != 0 {
+		t.Fatalf("expected the pending-review reset to clear the cache, actual %d entries", len(reset.pendingPullRequestReviewCache))
+	}
+
+	if actual := subject.pendingPullRequestReviewCache["acme/widgets#1"].id; actual != "review-1" {
+		t.Fatalf("expected the original pending review id %q, actual %q", "review-1", actual)
+	}
+	if _, ok := subject.pendingPullRequestReviewCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the original cache to stay free of the new pending review entry")
+	}
+}

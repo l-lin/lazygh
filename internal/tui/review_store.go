@@ -42,9 +42,37 @@ func (store reviewStore) withoutPullRequestDiff(key string) reviewStore {
 	return store
 }
 
+func (store reviewStore) withPendingPullRequestReviewCached(key string, state pendingPullRequestReviewState) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" {
+		return store
+	}
+	store.pendingPullRequestReviewCache = copyPendingPullRequestReviewStates(store.pendingPullRequestReviewCache)
+	store.pendingPullRequestReviewCache[trimmedKey] = state
+	return store
+}
+
+func (store reviewStore) withoutPendingPullRequestReview(key string) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" {
+		return store
+	}
+	if _, ok := store.pendingPullRequestReviewCache[trimmedKey]; !ok {
+		return store
+	}
+	store.pendingPullRequestReviewCache = copyPendingPullRequestReviewStates(store.pendingPullRequestReviewCache)
+	delete(store.pendingPullRequestReviewCache, trimmedKey)
+	return store
+}
+
 func (store reviewStore) withDiffWorkflowStateReset() reviewStore {
 	store.pullRequestDiffCache = map[string]pullRequestDiffResult{}
 	store.pullRequestDiffLoadInFlight = map[string]bool{}
+	return store
+}
+
+func (store reviewStore) withPendingReviewCacheReset() reviewStore {
+	store.pendingPullRequestReviewCache = map[string]pendingPullRequestReviewState{}
 	return store
 }
 
@@ -57,6 +85,14 @@ func copyPullRequestDiffResults(source map[string]pullRequestDiffResult) map[str
 	copied := make(map[string]pullRequestDiffResult, len(source))
 	for key, result := range source {
 		copied[key] = result
+	}
+	return copied
+}
+
+func copyPendingPullRequestReviewStates(source map[string]pendingPullRequestReviewState) map[string]pendingPullRequestReviewState {
+	copied := make(map[string]pendingPullRequestReviewState, len(source))
+	for key, state := range source {
+		copied[key] = state
 	}
 	return copied
 }
