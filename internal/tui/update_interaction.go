@@ -191,7 +191,7 @@ func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullReq
 		return nil
 	}
 
-	program.feedbackMessage = ""
+	program.clearFeedbackMessage()
 	program.pullRequestBuildRunPopup = nil
 	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunCommand(repository, target.check)}
 	program.closeActionsPopupForAcceptedRequest()
@@ -208,7 +208,7 @@ func (program *Program) applyPullRequestBuildRunJobLogLoadRequested(message MsgP
 		return nil
 	}
 
-	program.feedbackMessage = ""
+	program.clearFeedbackMessage()
 	program.pullRequestBuildRunLoad = &pullRequestBuildRunLoadState{command: formatPullRequestBuildRunJobsCommand(repository, message.Check)}
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunJobLogLoadCmd{Repository: repository, Check: message.Check}}

@@ -1,14 +1,13 @@
 package tui
 
-import "strings"
-
 func (program *Program) setFeedback(_ Focus, message string) {
-	program.feedbackMessage = strings.TrimSpace(message)
+	program.updateStatusStore(func(store statusStore) statusStore {
+		return store.withFeedback(message)
+	})
 }
 
 func (program *Program) clearFeedbackMessage() {
-	if program == nil {
-		return
-	}
-	program.feedbackMessage = ""
+	program.updateStatusStore(func(store statusStore) statusStore {
+		return store.withoutFeedback()
+	})
 }

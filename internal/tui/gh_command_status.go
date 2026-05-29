@@ -23,18 +23,13 @@ func formatRunningCommandStatus(command string) string {
 }
 
 func (program *Program) startGHCommandLoading(command string) {
-	if program == nil {
-		return
-	}
-
-	program.feedbackMessage = ""
-	program.ghCommandLoadingMessage = formatRunningCommandStatus(command)
+	program.updateStatusStore(func(store statusStore) statusStore {
+		return store.withGHCommandLoadingStarted(command)
+	})
 }
 
 func (program *Program) clearGHCommandLoading() {
-	if program == nil {
-		return
-	}
-
-	program.ghCommandLoadingMessage = ""
+	program.updateStatusStore(func(store statusStore) statusStore {
+		return store.withGHCommandLoadingCleared()
+	})
 }

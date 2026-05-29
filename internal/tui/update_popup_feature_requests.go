@@ -114,8 +114,7 @@ func (program *Program) closeActionsPopupForAcceptedRequest() {
 }
 
 func (program *Program) applyReviewStoryRequested(message MsgReviewStoryRequested) []Cmd {
-	program.feedbackMessage = ""
-	program.storyReviewLoading = true
+	program.startStoryReviewLoading()
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{storyReviewPrepareCmd{request: pullRequestStoryReviewPrepareRequest{summary: message.Summary}}}
 }

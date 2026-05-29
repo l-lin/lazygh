@@ -154,7 +154,7 @@ func (program *Program) clearCachedData() error {
 	program.notificationsLoadStarted = false
 	program.notificationsLoading = false
 	program.notificationsLoadingDetailMessage = ""
-	program.ghCommandLoadingMessage = ""
+	program.clearGHCommandLoading()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestListLoadState()

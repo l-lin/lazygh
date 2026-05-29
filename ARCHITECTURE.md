@@ -46,7 +46,9 @@ Two child models now own the hot detail and review transitions:
 Smaller state bags follow the same value-transition rule:
 
 - `assigneePickerState` owns popup assignee selection plus search request/result bookkeeping.
+- `actionsPopupWidgetState` owns popup-local error, confirmation, and picker-open chrome around the popup child surfaces.
 - `manualRefreshStateModel` owns pending refresh targets and completion-feedback counting.
+- `statusStore` owns status-line feedback plus story-review and GH-command loading transitions.
 
 ### Shell
 

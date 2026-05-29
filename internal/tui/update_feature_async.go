@@ -30,7 +30,7 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 
 func (program *Program) applyNotificationMutationStarted(message MsgNotificationMutationStarted) {
 	program.model.SetNotificationRows(message.OptimisticRows)
-	program.feedbackMessage = ""
+	program.clearFeedbackMessage()
 	program.notificationsLoading = true
 	program.notificationsLoadingDetailMessage = strings.TrimSpace(message.LoadingMessage)
 }
@@ -54,7 +54,7 @@ func (program *Program) applyNotificationMutationFinished(message MsgNotificatio
 }
 
 func (program *Program) applyStoryReviewPrepared(message MsgStoryReviewPrepared) []Cmd {
-	program.storyReviewLoading = false
+	program.finishStoryReviewLoading()
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
 			return program.applyErrorReportedMessage(popupMessage)
@@ -63,7 +63,7 @@ func (program *Program) applyStoryReviewPrepared(message MsgStoryReviewPrepared)
 		return nil
 	}
 
-	program.feedbackMessage = ""
+	program.clearFeedbackMessage()
 	program.applyPreparedStoryReview(message.Prepared)
 	return nil
 }

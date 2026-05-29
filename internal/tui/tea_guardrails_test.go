@@ -1022,6 +1022,20 @@ func TestRefactorGuard_GivenActionsPopupChromeFiles_WhenScanning_ThenNestedState
 	}
 }
 
+func TestRefactorGuard_GivenStatusStoreFiles_WhenScanning_ThenSharedStatusFieldsStayOnValueTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.(?:feedbackMessage|ghCommandLoadingMessage|storyReviewLoading)\s*=\s*[^=]`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected shared status-store writes to use value transitions plus whole-store replacement instead of direct field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenReviewSessionFiles_WhenScanning_ThenReadHelpersStayOnTheReadModel(t *testing.T) {
 	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`func \(program \*Program\)`), func(path string) bool {
 		base := filepath.Base(path)
