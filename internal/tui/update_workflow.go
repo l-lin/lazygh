@@ -1,7 +1,5 @@
 package tui
 
-import "strings"
-
 func (program *Program) applyConnectedUserLoadPlanned() {
 	program.planConnectedUserLoad()
 }
@@ -42,19 +40,11 @@ func (program *Program) applyReleaseDetailLoadPlanned(message MsgReleaseDetailLo
 }
 
 func (program *Program) applyCurrentDetailImageHTMLLoadPlanned(message MsgCurrentDetailImageHTMLLoadPlanned) {
-	key := strings.TrimSpace(message.SourceKey)
-	if key == "" {
-		return
-	}
-	program.detailImageHTMLLoadInFlight[key] = true
+	program.markDetailImageHTMLLoadPlanned(message.SourceKey)
 }
 
 func (program *Program) applyCurrentDetailImageLoadPlanned(message MsgCurrentDetailImageLoadPlanned) {
-	imageURL := strings.TrimSpace(message.ImageURL)
-	if imageURL == "" {
-		return
-	}
-	program.detailImageLoadInFlight[imageURL] = true
+	program.markDetailImageLoadPlanned(message.ImageURL)
 }
 
 func (program *Program) applyPullRequestDetailCacheHydrated(message MsgPullRequestDetailCacheHydrated) {

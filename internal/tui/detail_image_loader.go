@@ -25,16 +25,18 @@ func (program *Program) detailImageAuthToken() string {
 	program.detailImageAuthTokenMu.Lock()
 	defer program.detailImageAuthTokenMu.Unlock()
 
-	if program.githubAuthTokenLoaded {
-		return program.githubAuthToken
+	if actual, ok := program.cachedGitHubAuthToken(); ok {
+		return actual
 	}
 
 	actual, err := program.authTokenProvider.GetAuthToken()
-	program.githubAuthTokenLoaded = true
-	if err == nil {
-		program.githubAuthToken = strings.TrimSpace(actual)
+	if err != nil {
+		program.cacheGitHubAuthToken("")
+		return ""
 	}
-	return program.githubAuthToken
+	program.cacheGitHubAuthToken(actual)
+	cachedToken, _ := program.cachedGitHubAuthToken()
+	return cachedToken
 }
 
 func (program *Program) currentDetailImageHTMLSources() []detailImageHTMLSource {

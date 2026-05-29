@@ -2063,6 +2063,23 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenPendingReviewCacheW
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenImageLoadCoordinatorWritesStayOffProgramFields(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`program\.(?:detailImageHTMLLoadInFlight|detailImageHTMLLoadFailed|detailImageLoadInFlight|detailImageLoadFailed)\[[^]]+\]\s*=`,
+		`program\.(?:detailImageHTMLLoadInFlight|detailImageHTMLLoadFailed|detailImageLoadInFlight|detailImageLoadFailed)\s*=\s*map\[`,
+		`delete\(program\.(?:detailImageHTMLLoadInFlight|detailImageHTMLLoadFailed|detailImageLoadInFlight|detailImageLoadFailed)`,
+		`program\.(?:githubAuthTokenLoaded|githubAuthToken)\s*=`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected image-load coordinator writes to route through helper methods instead of direct program-field mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenWorkflowPlannerFile_WhenScanning_ThenItDoesNotDependOnProgramGuiOrInlineStoreMutation(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`\*Program`,

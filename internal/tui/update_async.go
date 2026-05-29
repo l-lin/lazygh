@@ -218,13 +218,12 @@ func (program *Program) applyReleaseDetailLoaded(message MsgReleaseDetailLoaded)
 }
 
 func (program *Program) applyCurrentDetailImageHTMLLoaded(message MsgCurrentDetailImageHTMLLoaded) {
-	delete(program.detailImageHTMLLoadInFlight, message.Source.key)
-	if message.Err != nil || strings.TrimSpace(message.RenderedHTML) == "" {
-		program.detailImageHTMLLoadFailed[message.Source.key] = true
+	loadFailed := message.Err != nil || strings.TrimSpace(message.RenderedHTML) == ""
+	program.recordDetailImageHTMLLoadFinished(message.Source.key, loadFailed)
+	if loadFailed {
 		return
 	}
 
-	delete(program.detailImageHTMLLoadFailed, message.Source.key)
 	if !program.applyDetailImageHTMLRendered(message.Source.applyTarget, message.RenderedHTML) {
 		return
 	}
@@ -233,13 +232,12 @@ func (program *Program) applyCurrentDetailImageHTMLLoaded(message MsgCurrentDeta
 }
 
 func (program *Program) applyCurrentDetailImageLoaded(message MsgCurrentDetailImageLoaded) {
-	delete(program.detailImageLoadInFlight, message.ImageURL)
-	if message.Err != nil {
-		program.detailImageLoadFailed[message.ImageURL] = true
+	loadFailed := message.Err != nil
+	program.recordDetailImageLoadFinished(message.ImageURL, loadFailed)
+	if loadFailed {
 		return
 	}
 
-	delete(program.detailImageLoadFailed, message.ImageURL)
 	program.detailImageStore.Store(message.ImageURL, message.Image)
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()
