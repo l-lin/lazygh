@@ -1233,6 +1233,9 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenGitH
 	if strings.Contains(detailView.Buffer(), "Resolved") {
 		t.Fatalf("expected the detail buffer to keep the thread unresolved after the failure, actual %q", detailView.Buffer())
 	}
+	if !strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected the unresolved thread body to reappear after the failure, actual %q", detailView.Buffer())
+	}
 }
 
 func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenSwitchingToChangesTab_ThenItRefreshesTheThreadStateThereToo(t *testing.T) {
@@ -1390,8 +1393,8 @@ func TestResolveInlineComment_GivenBrowserCommentsTabAction_WhenSubmittingAsynch
 	if strings.Contains(detailView.Buffer(), "Resolved") {
 		t.Fatalf("expected the detail buffer to stay unresolved until the queued async run finishes, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
-		t.Fatalf("expected the unresolved thread body to stay visible before completion, actual %q", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected the inline thread body to fold before async completion, actual %q", detailView.Buffer())
 	}
 
 	asyncRunner.runs[0]()
@@ -1590,8 +1593,8 @@ func TestResolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronously
 	if strings.Contains(detailView.Buffer(), "Resolved") {
 		t.Fatalf("expected detail buffer to stay unresolved until the queued async run finishes, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
-		t.Fatalf("expected the unresolved thread body to stay visible before completion, actual %q", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the inline thread body to fold before async completion, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
 		t.Fatalf("expected detail buffer to avoid the diff loading state before the refresh runs, actual %q", detailView.Buffer())
@@ -1680,6 +1683,9 @@ func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronous
 	}
 	if strings.Contains(detailView.Buffer(), "Unresolved") {
 		t.Fatalf("expected detail buffer to avoid the unresolved label before completion, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the resolved thread body to unfold before async completion, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
 		t.Fatalf("expected detail buffer to avoid the diff loading state before the refresh runs, actual %q", detailView.Buffer())

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jesseduffield/gocui"
@@ -20,7 +21,7 @@ func TestFingerprintKeybindingSpecs_GivenSameKeyDifferentHandlers_WhenFingerprin
 	}
 }
 
-func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineComment_WhenPressingCtrlR_ThenItShowsGHLoadingBeforeAsyncCompletionAndResolvesTheThread(t *testing.T) {
+func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineComment_WhenPressingCtrlR_ThenItShowsGHLoadingFoldsTheThreadBeforeCompletionAndResolvesIt(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithOwnedInlineThreadForChangesEditTests()},
 		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithOwnedInlineThreadForChangesEditTests()},
@@ -51,6 +52,12 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineCommen
 		t.Fatalf("expected status line %q, actual %q", subject.loadingSpinnerStatus(expectedLoading), actual)
 	}
 	then_statusLineContains(t, gui, expectedLoading)
+	if strings.Contains(detailView.Buffer(), "Rendered original inline body") {
+		t.Fatalf("expected the inline thread body to fold before async completion, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected the thread header to stay unresolved until async completion, actual %q", detailView.Buffer())
+	}
 
 	asynchronousRunner.runs[0]()
 
@@ -61,11 +68,12 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineCommen
 	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
-func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInlineComment_WhenPressingCtrlR_ThenItMarksTheThreadUnresolved(t *testing.T) {
+func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInlineComment_WhenPressingCtrlR_ThenItShowsGHLoadingUnfoldsTheThreadBeforeCompletionAndMarksItUnresolved(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithResolvedInlineThreadForChangesResolutionTests()},
 		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithResolvedInlineThreadForChangesResolutionTests()},
 	}
+	asynchronousRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Original inline body": "Rendered original inline body"}}
 	gui := given_headlessGui(t)
@@ -74,12 +82,28 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInli
 
 	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:43")
+	subject.asyncRunner = asynchronousRunner
+	subject.uiUpdater = immediateUIUpdater{}
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	actualHandler := given_handlerForBinding(t, subject.registeredKeybindingSpecs(), viewDetailName, gocui.KeyCtrlR)
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
+
+	if len(asynchronousRunner.runs) != 1 {
+		t.Fatalf("expected one queued async unresolve run, actual %d", len(asynchronousRunner.runs))
+	}
+	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
+	then_statusLineContains(t, gui, expectedLoading)
+	if !strings.Contains(detailView.Buffer(), "Rendered original inline body") {
+		t.Fatalf("expected the resolved thread body to unfold before async completion, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Unresolved") {
+		t.Fatalf("expected the thread header to stay resolved until async completion, actual %q", detailView.Buffer())
+	}
+
+	asynchronousRunner.runs[0]()
 
 	if !reflect.DeepEqual(loader.unresolveReviewThreadIDs, []string{"thread-1"}) {
 		t.Fatalf("expected unresolved thread ids %v, actual %v", []string{"thread-1"}, loader.unresolveReviewThreadIDs)

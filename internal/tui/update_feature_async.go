@@ -17,6 +17,9 @@ func (program *Program) closeActionsPopupState() {
 func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActionsPopupAsyncGHCommandFinished) []Cmd {
 	program.clearGHCommandLoading()
 	if message.Err != nil {
+		if target, previousCollapsed, ok := inlineCommentResolutionRollback(message.Err); ok {
+			program.applyInlineCommentResolutionCollapsed(target, previousCollapsed)
+		}
 		return program.applyErrorReportedMessage(message.Err.Error())
 	}
 

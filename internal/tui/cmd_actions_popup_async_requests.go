@@ -351,9 +351,11 @@ func (request deleteInlineCommentPopupRequest) run(deps actionsPopupAsyncCommand
 }
 
 type inlineCommentResolutionPopupRequest struct {
-	target         pullRequestReviewThreadActionTarget
-	resolved       bool
-	feedbackTarget Focus
+	target                 pullRequestReviewThreadActionTarget
+	resolved               bool
+	feedbackTarget         Focus
+	previousCollapsed      bool
+	rollbackCollapsedState bool
 }
 
 func (inlineCommentResolutionPopupRequest) statusCommand() string {
@@ -375,7 +377,7 @@ func (request inlineCommentResolutionPopupRequest) run(deps actionsPopupAsyncCom
 		err = deps.reviewMutations.UnresolvePullRequestReviewThread(request.target.threadID)
 	}
 	if err != nil {
-		return nil, newTransientErrorPopupActionError(err)
+		return nil, newInlineCommentResolutionAsyncError(err, request.target, request.previousCollapsed, request.rollbackCollapsedState)
 	}
 	return inlineCommentResolutionAppliedCompletion{Target: request.target, Resolved: request.resolved, FeedbackTarget: request.feedbackTarget}, nil
 }

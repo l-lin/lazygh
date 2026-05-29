@@ -74,7 +74,17 @@ func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineC
 		return nil
 	}
 
-	return program.queueActionsPopupAsyncRequest(inlineCommentResolutionPopupRequest{target: message.Target, resolved: message.Resolved, feedbackTarget: program.model.Focus()})
+	previousCollapsed, rollbackCollapsedState := program.currentInlineCommentResolutionCollapsed(message.Target)
+	if rollbackCollapsedState {
+		program.applyInlineCommentResolutionCollapsed(message.Target, message.Resolved)
+	}
+	return program.queueActionsPopupAsyncRequest(inlineCommentResolutionPopupRequest{
+		target:                 message.Target,
+		resolved:               message.Resolved,
+		feedbackTarget:         program.model.Focus(),
+		previousCollapsed:      previousCollapsed,
+		rollbackCollapsedState: rollbackCollapsedState,
+	})
 }
 
 func (program *Program) applyReviewInlineCommentSubmitRequested(message MsgReviewInlineCommentSubmitRequested) []Cmd {

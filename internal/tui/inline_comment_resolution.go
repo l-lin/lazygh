@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/jesseduffield/gocui"
@@ -195,6 +196,99 @@ func (program *Program) selectedReviewDiffReviewThreadActionTarget() (pullReques
 		threadID:   strings.TrimSpace(thread.ID),
 		resolved:   thread.IsResolved,
 	}, true
+}
+
+func browserConversationThreadSectionID(repository string, number int, threadID string) string {
+	pullRequestKey := pullRequestMutationCacheKey(repository, number)
+	trimmedThreadID := strings.TrimSpace(threadID)
+	if pullRequestKey == "" || trimmedThreadID == "" {
+		return ""
+	}
+	return browserDetailSectionID(pullRequestKey, "thread", 0, trimmedThreadID)
+}
+
+func browserChangesThreadSectionIDByIdentity(repository string, number int, threadID string) string {
+	pullRequestKey := pullRequestMutationCacheKey(repository, number)
+	trimmedThreadID := strings.TrimSpace(threadID)
+	if pullRequestKey == "" || trimmedThreadID == "" {
+		return ""
+	}
+	return browserDetailSectionID(pullRequestKey, "changes-thread", 0, trimmedThreadID)
+}
+
+func (program *Program) currentInlineCommentResolutionCollapsed(target pullRequestReviewThreadActionTarget) (bool, bool) {
+	defaultCollapsed := target.resolved
+	switch {
+	case program.reviewModeActive() && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter():
+		return reviewDiffThreadCollapsed(reviewDiffThread{ID: target.threadID, IsResolved: defaultCollapsed}, program.navigationState.reviewSession.collapsedThreadIDs), true
+	case program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == CommentsDetailTab:
+		sectionID := browserConversationThreadSectionID(target.repository, target.number, target.threadID)
+		if sectionID == "" {
+			return false, false
+		}
+		return program.browserDetailSectionCollapsed(sectionID, defaultCollapsed), true
+	case program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == ChangesDetailTab:
+		sectionID := browserChangesThreadSectionIDByIdentity(target.repository, target.number, target.threadID)
+		if sectionID == "" {
+			return false, false
+		}
+		return program.browserDetailSectionCollapsed(sectionID, defaultCollapsed), true
+	default:
+		return false, false
+	}
+}
+
+func (program *Program) applyInlineCommentResolutionCollapsed(target pullRequestReviewThreadActionTarget, collapsed bool) bool {
+	switch {
+	case program.reviewModeActive() && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter():
+		program.setReviewSessionThreadCollapsed(target.threadID, collapsed)
+		program.invalidateReviewDiffRenderCache()
+		return true
+	case program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == CommentsDetailTab:
+		return program.setBrowserDetailSectionCollapsed(browserConversationThreadSectionID(target.repository, target.number, target.threadID), collapsed)
+	case program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == ChangesDetailTab:
+		return program.setBrowserDetailSectionCollapsed(browserChangesThreadSectionIDByIdentity(target.repository, target.number, target.threadID), collapsed)
+	default:
+		return false
+	}
+}
+
+type inlineCommentResolutionAsyncError struct {
+	err                    error
+	target                 pullRequestReviewThreadActionTarget
+	previousCollapsed      bool
+	rollbackCollapsedState bool
+}
+
+func newInlineCommentResolutionAsyncError(err error, target pullRequestReviewThreadActionTarget, previousCollapsed bool, rollbackCollapsedState bool) error {
+	if err == nil {
+		return nil
+	}
+
+	wrappedErr := newTransientErrorPopupActionError(err)
+	if !rollbackCollapsedState {
+		return wrappedErr
+	}
+	return inlineCommentResolutionAsyncError{err: wrappedErr, target: target, previousCollapsed: previousCollapsed, rollbackCollapsedState: true}
+}
+
+func (err inlineCommentResolutionAsyncError) Error() string {
+	if err.err == nil {
+		return ""
+	}
+	return err.err.Error()
+}
+
+func (err inlineCommentResolutionAsyncError) Unwrap() error {
+	return err.err
+}
+
+func inlineCommentResolutionRollback(err error) (pullRequestReviewThreadActionTarget, bool, bool) {
+	var actual inlineCommentResolutionAsyncError
+	if !errors.As(err, &actual) || !actual.rollbackCollapsedState {
+		return pullRequestReviewThreadActionTarget{}, false, false
+	}
+	return actual.target, actual.previousCollapsed, true
 }
 
 func renderedTextLineCount(text string) int {
