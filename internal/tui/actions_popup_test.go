@@ -1179,13 +1179,14 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenGitH
 			"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests(),
 		},
 	}
+	asyncRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
 		"General feedback":   "Rendered general feedback",
 		"Inline thread body": "Rendered inline thread body",
 	}}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(loader.details["acme/widgets#42"])}
-	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -1208,12 +1209,24 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenGitH
 	then_noError(t, actualErr)
 
 	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued async resolution run, actual %d", len(asyncRunner.runs))
+	}
+	if len(loader.resolveReviewThreadIDs) != 0 {
+		t.Fatalf("expected no resolve call before the queued async run, actual %v", loader.resolveReviewThreadIDs)
+	}
+	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
+	then_statusLineContains(t, gui, expectedLoading)
+
+	asyncRunner.runs[0]()
+
 	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-1"}) {
 		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
 	}
 	if subject.actionsPopupWidget.errorMessage != "" {
 		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
+	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
 	then_transientErrorPopupContains(t, gui, "resolve refused")
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
@@ -1314,7 +1327,7 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenSwit
 	}
 }
 
-func TestResolveInlineComment_GivenBrowserCommentsTabAction_WhenSubmittingOptimistically_ThenItKeepsTheThreadHeaderVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+func TestResolveInlineComment_GivenBrowserCommentsTabAction_WhenSubmittingAsynchronously_ThenItShowsGHLoadingAndQueuesABackgroundRefresh(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{
 			"acme/widgets#42": {
@@ -1364,23 +1377,37 @@ func TestResolveInlineComment_GivenBrowserCommentsTabAction_WhenSubmittingOptimi
 	then_noError(t, actualErr)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued async resolution run, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh before the queued run, actual %v", loader.detailCalls)
 	}
+	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
+	then_statusLineContains(t, gui, expectedLoading)
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
+	if strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected the detail buffer to stay unresolved until the queued async run finishes, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
+		t.Fatalf("expected the unresolved thread body to stay visible before completion, actual %q", detailView.Buffer())
+	}
+
+	asyncRunner.runs[0]()
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected the completion path to queue one background refresh after the async mutation, actual %d runs", len(asyncRunner.runs))
+	}
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Resolved") {
-		t.Fatalf("expected detail buffer to contain the optimistic resolved header, actual %q", detailView.Buffer())
+		t.Fatalf("expected detail buffer to contain the resolved header after completion, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
-		t.Fatalf("expected the resolved thread body to stay hidden after the optimistic refresh, actual %q", detailView.Buffer())
+		t.Fatalf("expected the resolved thread body to stay hidden after completion, actual %q", detailView.Buffer())
 	}
-	if strings.Contains(detailView.Buffer(), string(loadingSpinnerFrames[0])) {
-		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
-	}
+	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
 func TestActionsPopup_GivenBrowserCommentsTabCursorOnTheSecondInlineThread_WhenResolving_ThenItTargetsTheMatchingThreadAfterCompactRendering(t *testing.T) {
@@ -1499,7 +1526,7 @@ func TestActionsPopup_GivenReviewModeCursorOnAResolvedInlineThread_WhenOpening_T
 	}
 }
 
-func TestResolveInlineComment_GivenReviewModeAction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+func TestResolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronously_ThenItShowsGHLoadingAndQueuesABackgroundRefresh(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:       "thread-1",
@@ -1544,11 +1571,13 @@ func TestResolveInlineComment_GivenReviewModeAction_WhenSubmittingOptimistically
 	then_noError(t, actualErr)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued async resolution run, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager diff refresh before the queued run, actual %v", loader.diffCalls)
 	}
+	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
+	then_statusLineContains(t, gui, expectedLoading)
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
@@ -1558,18 +1587,33 @@ func TestResolveInlineComment_GivenReviewModeAction_WhenSubmittingOptimistically
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Resolved") {
-		t.Fatalf("expected detail buffer to contain the optimistic resolved header, actual %q", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected detail buffer to stay unresolved until the queued async run finishes, actual %q", detailView.Buffer())
 	}
-	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
-		t.Fatalf("expected the resolved thread body to stay hidden after the optimistic refresh, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the unresolved thread body to stay visible before completion, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
-		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
+		t.Fatalf("expected detail buffer to avoid the diff loading state before the refresh runs, actual %q", detailView.Buffer())
 	}
+
+	asyncRunner.runs[0]()
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected the completion path to queue one background refresh after the async mutation, actual %d runs", len(asyncRunner.runs))
+	}
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected detail buffer to contain the resolved header after completion, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the resolved thread body to stay hidden after completion, actual %q", detailView.Buffer())
+	}
+	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
-func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronously_ThenItShowsGHLoadingAndQueuesABackgroundRefresh(t *testing.T) {
 	diff := given_reviewSessionPullRequestDiff()
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:         "thread-1",
@@ -1615,11 +1659,13 @@ func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingOptimistical
 	then_noError(t, actualErr)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued async unresolve run, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager diff refresh before the queued run, actual %v", loader.diffCalls)
 	}
+	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
+	then_statusLineContains(t, gui, expectedLoading)
 
 	filesView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
@@ -1629,15 +1675,30 @@ func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingOptimistical
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Unresolved") {
-		t.Fatalf("expected detail buffer to contain the optimistic unresolved header, actual %q", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), "Resolved") {
+		t.Fatalf("expected detail buffer to stay resolved until the queued async run finishes, actual %q", detailView.Buffer())
 	}
-	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
-		t.Fatalf("expected the unresolved thread body to reappear after the optimistic refresh, actual %q", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), "Unresolved") {
+		t.Fatalf("expected detail buffer to avoid the unresolved label before completion, actual %q", detailView.Buffer())
 	}
 	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
-		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
+		t.Fatalf("expected detail buffer to avoid the diff loading state before the refresh runs, actual %q", detailView.Buffer())
 	}
+
+	asyncRunner.runs[0]()
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected the completion path to queue one background refresh after the async mutation, actual %d runs", len(asyncRunner.runs))
+	}
+	detailView, actualErr = gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Unresolved") {
+		t.Fatalf("expected detail buffer to contain the unresolved header after completion, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
+		t.Fatalf("expected the unresolved thread body to reappear after completion, actual %q", detailView.Buffer())
+	}
+	then_statusLineContains(t, gui, inlineCommentUnresolvedSuccessMessage)
 }
 
 func TestActionsPopup_GivenReviewModeOwnedInlineCommentUpdateAction_WhenExecuting_ThenItOpensTheEditorSeededWithTheCurrentMarkdown(t *testing.T) {

@@ -12,19 +12,20 @@ import (
 func TestFingerprintKeybindingSpecs_GivenSameKeyDifferentHandlers_WhenFingerprinting_ThenItChanges(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 
-	first := fingerprintKeybindingSpecs([]keybindingSpec{{viewName: viewDetailName, key: 'R', handler: subject.toggleHelp}})
-	second := fingerprintKeybindingSpecs([]keybindingSpec{{viewName: viewDetailName, key: 'R', handler: subject.toggleInlineConversationVisibility}})
+	first := fingerprintKeybindingSpecs([]keybindingSpec{{viewName: viewDetailName, key: gocui.KeyCtrlR, handler: subject.toggleHelp}})
+	second := fingerprintKeybindingSpecs([]keybindingSpec{{viewName: viewDetailName, key: gocui.KeyCtrlR, handler: subject.toggleInlineConversationVisibility}})
 
 	if first == second {
 		t.Fatalf("expected different fingerprints for different handlers, actual %q", first)
 	}
 }
 
-func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineComment_WhenPressingShiftR_ThenItResolvesTheThread(t *testing.T) {
+func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineComment_WhenPressingCtrlR_ThenItShowsGHLoadingBeforeAsyncCompletionAndResolvesTheThread(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithOwnedInlineThreadForChangesEditTests()},
 		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithOwnedInlineThreadForChangesEditTests()},
 	}
+	asynchronousRunner := &capturingAsyncRunner{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Original inline body": "Rendered original inline body"}}
 	gui := given_headlessGui(t)
@@ -33,12 +34,25 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineCommen
 
 	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
+	subject.asyncRunner = asynchronousRunner
+	subject.uiUpdater = immediateUIUpdater{}
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	actualHandler := given_handlerForBinding(t, subject.registeredKeybindingSpecs(), viewDetailName, 'R')
+	actualHandler := given_handlerForBinding(t, subject.registeredKeybindingSpecs(), viewDetailName, gocui.KeyCtrlR)
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
+
+	if len(asynchronousRunner.runs) != 1 {
+		t.Fatalf("expected one queued async resolution run, actual %d", len(asynchronousRunner.runs))
+	}
+	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
+	if actual := subject.statusLinePresenter().Text(); actual != subject.loadingSpinnerStatus(expectedLoading) {
+		t.Fatalf("expected status line %q, actual %q", subject.loadingSpinnerStatus(expectedLoading), actual)
+	}
+	then_statusLineContains(t, gui, expectedLoading)
+
+	asynchronousRunner.runs[0]()
 
 	if !reflect.DeepEqual(loader.resolveReviewThreadIDs, []string{"thread-1"}) {
 		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
@@ -47,7 +61,7 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineCommen
 	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
-func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInlineComment_WhenPressingShiftR_ThenItMarksTheThreadUnresolved(t *testing.T) {
+func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInlineComment_WhenPressingCtrlR_ThenItMarksTheThreadUnresolved(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithResolvedInlineThreadForChangesResolutionTests()},
 		diffs:   map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_pullRequestDiffWithResolvedInlineThreadForChangesResolutionTests()},
@@ -63,7 +77,7 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInli
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	actualHandler := given_handlerForBinding(t, subject.registeredKeybindingSpecs(), viewDetailName, 'R')
+	actualHandler := given_handlerForBinding(t, subject.registeredKeybindingSpecs(), viewDetailName, gocui.KeyCtrlR)
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
 
@@ -74,7 +88,7 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInli
 	then_statusLineContains(t, gui, inlineCommentUnresolvedSuccessMessage)
 }
 
-func TestKeybindingSpecs_GivenInlineCommentResolutionShortcut_WhenCursorMovesBetweenSupportedAndUnsupportedTargets_ThenShiftRAppearsOnlyOnInlineComments(t *testing.T) {
+func TestKeybindingSpecs_GivenInlineCommentResolutionShortcut_WhenCursorMovesBetweenSupportedAndUnsupportedTargets_ThenCtrlRAppearsOnlyOnInlineComments(t *testing.T) {
 	testCases := []struct {
 		name        string
 		newSubject  func() *Program
@@ -162,7 +176,7 @@ func TestKeybindingSpecs_GivenInlineCommentResolutionShortcut_WhenCursorMovesBet
 			actionID := keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"}
 
 			testCase.positionOn(t, gui, subject)
-			then_bindingKeyExists(t, subject.registeredKeybindingSpecs(), viewDetailName, 'R')
+			then_bindingKeyExists(t, subject.registeredKeybindingSpecs(), viewDetailName, gocui.KeyCtrlR)
 			if actualBindings := subject.resolvedBindingsForActionID(actionID); len(actualBindings) == 0 {
 				t.Fatalf("expected the inline-comment resolution action to resolve bindings on inline comments")
 			}

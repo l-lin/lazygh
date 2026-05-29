@@ -14,12 +14,14 @@ import (
 )
 
 const (
-	inlineCommentResolutionShortcutReadyTokenEnv = "LAZYGH_TMUX_READY_TOKEN"
-	inlineCommentResolutionShortcutDoneTokenEnv  = "LAZYGH_TMUX_DONE_TOKEN"
+	inlineCommentResolutionShortcutReadyTokenEnv   = "LAZYGH_TMUX_READY_TOKEN"
+	inlineCommentResolutionShortcutLoadingTokenEnv = "LAZYGH_TMUX_LOADING_TOKEN"
+	inlineCommentResolutionShortcutDoneTokenEnv    = "LAZYGH_TMUX_DONE_TOKEN"
 )
 
 func TestManualVisual_BrowserChangesInlineCommentResolutionShortcut(t *testing.T) {
 	readyToken := strings.TrimSpace(os.Getenv(inlineCommentResolutionShortcutReadyTokenEnv))
+	loadingToken := strings.TrimSpace(os.Getenv(inlineCommentResolutionShortcutLoadingTokenEnv))
 	doneToken := strings.TrimSpace(os.Getenv(inlineCommentResolutionShortcutDoneTokenEnv))
 	if readyToken == "" || doneToken == "" {
 		t.Skip("manualvisual inline-comment resolution shortcut check needs tmux wait-for tokens")
@@ -57,6 +59,8 @@ func TestManualVisual_BrowserChangesInlineCommentResolutionShortcut(t *testing.T
 		t.Fatalf("expected no error, actual %v", actualErr)
 	}
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
+	subject.asyncRunner = &capturingAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
 	if actualErr = subject.setKeybindings(gui); actualErr != nil {
 		t.Fatalf("expected no error, actual %v", actualErr)
 	}
@@ -67,9 +71,17 @@ func TestManualVisual_BrowserChangesInlineCommentResolutionShortcut(t *testing.T
 		defer close(pollingStopped)
 		if actualErr := signalTmuxWaitTokenWhenCondition(gui, readyToken, stopPolling, func(gui *gocui.Gui) bool {
 			keyHintsView, hintsErr := gui.View(viewStatusLineKeyHintsName)
-			return hintsErr == nil && strings.Contains(keyHintsView.Buffer(), "R: resolve")
+			return hintsErr == nil && strings.Contains(keyHintsView.Buffer(), "Ctrl+R: resolve")
 		}); actualErr != nil {
 			return
+		}
+		if loadingToken != "" {
+			if actualErr := signalTmuxWaitTokenWhenCondition(gui, loadingToken, stopPolling, func(gui *gocui.Gui) bool {
+				statusLineView, statusErr := gui.View(viewStatusLineName)
+				return statusErr == nil && strings.Contains(statusLineView.Buffer(), "gh api graphql")
+			}); actualErr != nil {
+				return
+			}
 		}
 		if actualErr := waitForTmuxToken(doneToken); actualErr != nil {
 			return

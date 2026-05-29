@@ -357,11 +357,11 @@ type inlineCommentResolutionPopupRequest struct {
 }
 
 func (inlineCommentResolutionPopupRequest) statusCommand() string {
-	return ""
+	return formatStatusLineCommand("gh", "api", "graphql")
 }
 
 func (inlineCommentResolutionPopupRequest) asyncRequested() bool {
-	return false
+	return true
 }
 
 func (request inlineCommentResolutionPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncCompletion, error) {

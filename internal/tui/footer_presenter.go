@@ -274,7 +274,7 @@ func (presenter footerPresenter) paneFooterInlineCommentResolutionHint(focus Foc
 	if !presenter.inlineCommentResolutionAvailable || focus != FocusDetailView || presenter.inlineCommentResolutionHintLabel == "" {
 		return ""
 	}
-	return presenter.statusLineKeyHint(presenter.inlineCommentResolutionHintLabel, "R", keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"})
+	return presenter.statusLineKeyHint(presenter.inlineCommentResolutionHintLabel, "Ctrl+R", keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"})
 }
 
 func (presenter footerPresenter) paneFooterActionsHint(focus Focus) string {

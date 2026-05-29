@@ -26,7 +26,7 @@ func inlineCommentReplyHelpEntry(resolver keybindingLabelResolver) helpEntry {
 
 func inlineCommentResolutionHelpEntry(resolver keybindingLabelResolver, description string) helpEntry {
 	return helpEntry{
-		Key:         resolver.helpKeysOrFallback("R", keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"}),
+		Key:         resolver.helpKeysOrFallback("Ctrl+R", keybindingActionID{scope: keymapScopePullRequests, action: "toggle_inline_comment_resolution"}),
 		Description: description,
 	}
 }

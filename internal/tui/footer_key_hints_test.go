@@ -340,7 +340,7 @@ func TestStatusLineKeyHints_GivenBrowserChangesInlineComment_WhenRendering_ThenI
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered original inline body")
 	then_noError(t, subject.afterStateChange(gui))
 
-	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, R: resolve, a: action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, Ctrl+R: resolve, a: action")
 }
 
 func TestStatusLineKeyHints_GivenResolvedBrowserChangesInlineComment_WhenRendering_ThenItShowsTheUnresolveHint(t *testing.T) {
@@ -358,7 +358,7 @@ func TestStatusLineKeyHints_GivenResolvedBrowserChangesInlineComment_WhenRenderi
 	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/render.go:43")
 	then_noError(t, subject.afterStateChange(gui))
 
-	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, R: unresolve, a: action")
+	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, Ctrl+R: unresolve, a: action")
 }
 
 func then_footerTextIs(t *testing.T, gui *gocui.Gui, viewName string, expected string) {
