@@ -1,6 +1,9 @@
 package tui
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestPullRequestBuildRunPopupState_GivenViewAndSearchTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	document := newDetailDocument("Alpha\nTarget\nOmega", 40)
@@ -117,5 +120,39 @@ func TestPullRequestBuildRunPopupState_GivenPendingKeySequenceTransitions_WhenUp
 	}
 	if actual := subject.pendingKeySequenceTarget(); actual != originalTarget {
 		t.Fatalf("expected the original pending key sequence target %+v, actual %+v", originalTarget, actual)
+	}
+}
+
+func TestPullRequestBuildRunPopupState_GivenYankHighlightLifecycleTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	now := time.Date(2026, time.May, 29, 14, 0, 0, 0, time.UTC)
+	selection := detailSelectionRange{start: detailPosition{line: 0, column: 0}, end: detailPosition{line: 0, column: 4}}
+	subject := pullRequestBuildRunPopupState{viewState: detailViewState{yankHighlight: detailYankHighlightState{active: true, start: detailPosition{line: 1, column: 0}, end: detailPosition{line: 1, column: 2}, expiresAt: now.Add(-time.Second)}}}
+
+	activated := subject.withYankHighlightActivated(selection, now.Add(time.Second))
+	cleared, changed := subject.withExpiredYankHighlightCleared(now)
+
+	if !activated.hasYankHighlight() {
+		t.Fatal("expected activated popup state to report an active yank highlight")
+	}
+	if actual := activated.viewState.yankHighlight.start; actual != selection.start {
+		t.Fatalf("expected activated popup highlight start %+v, actual %+v", selection.start, actual)
+	}
+	if actual := activated.viewState.yankHighlight.end; actual != selection.end {
+		t.Fatalf("expected activated popup highlight end %+v, actual %+v", selection.end, actual)
+	}
+	if actual := activated.viewState.yankHighlight.expiresAt; !actual.Equal(now.Add(time.Second)) {
+		t.Fatalf("expected activated popup expiry %v, actual %v", now.Add(time.Second), actual)
+	}
+	if !changed {
+		t.Fatal("expected expired popup yank highlight cleanup to report a change")
+	}
+	if cleared.hasYankHighlight() {
+		t.Fatalf("expected cleared popup state to drop the yank highlight, actual %+v", cleared.viewState.yankHighlight)
+	}
+	if !subject.hasYankHighlight() {
+		t.Fatal("expected the original popup state to keep its yank highlight")
+	}
+	if actual := subject.viewState.yankHighlight.start; actual != (detailPosition{line: 1, column: 0}) {
+		t.Fatalf("expected the original popup highlight start %+v, actual %+v", detailPosition{line: 1, column: 0}, actual)
 	}
 }

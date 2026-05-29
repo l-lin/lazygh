@@ -811,6 +811,22 @@ func TestRefactorGuard_GivenPendingKeySequenceFiles_WhenScanning_ThenPendingKeyS
 	}
 }
 
+func TestRefactorGuard_GivenYankHighlightFiles_WhenScanning_ThenHighlightLifecycleUsesChildStateTransitions(t *testing.T) {
+	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
+		`activateYankHighlight\(&program\.(?:detailState\.viewState|pullRequestBuildRunPopup\.viewState)`,
+		`program\.detailState\.viewState\.clearExpiredYankHighlight\(`,
+		`popup\.viewState\.clearExpiredYankHighlight\(`,
+	}, "|"))
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", forbiddenPattern, func(path string) bool {
+		base := filepath.Base(path)
+		return base == "update_interaction.go" || base == "yank_highlight.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected yank-highlight activation and expiry to stay on explicit detail/build-popup state transitions instead of nested view-state mutation, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenNoDirectDetailAndReviewChildStateFieldMutationRemains(t *testing.T) {
 	forbiddenPattern := regexp.MustCompile(strings.Join([]string{
 		`program\.navigationState\.reviewSession\.selectedFileTreeRow\s*=\s*[^=]`,

@@ -295,11 +295,9 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 	if message.Err == nil {
 		switch message.SelectionTarget {
 		case clipboardWriteSelectionDetail:
-			program.activateYankHighlight(&program.detailState.viewState, message.Selection)
+			program.activateDetailYankHighlight(message.Selection)
 		case clipboardWriteSelectionBuildPopup:
-			if program.pullRequestBuildRunPopup != nil {
-				program.activateYankHighlight(&program.pullRequestBuildRunPopup.viewState, message.Selection)
-			}
+			program.activatePullRequestBuildRunPopupYankHighlight(message.Selection)
 		}
 		program.setFeedback(message.Target, message.SuccessMessage)
 		return

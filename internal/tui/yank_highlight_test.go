@@ -103,3 +103,97 @@ func TestPullRequestBuildRunPopup_GivenVisualYank_WhenRendering_ThenItUsesSearch
 	lineIndex := given_viewLineIndexContaining(t, popupView, "Alpha Beta")
 	then_viewLineSegmentHasSearchHighlightBackground(t, gui, viewPullRequestBuildInfoName, lineIndex, "Alpha")
 }
+
+func TestUpdate_GivenMsgClipboardWriteFinishedWithDetailSelection_WhenApplying_ThenItActivatesTheDetailYankHighlightThroughChildStateTransitions(t *testing.T) {
+	now := time.Date(2026, time.May, 29, 14, 0, 0, 0, time.UTC)
+	subject := NewProgramWithModel(given_model())
+	subject.timingState.yankHighlightDuration = time.Second
+	subject.timingState.now = func() time.Time { return now }
+	selection := detailSelectionRange{start: detailPosition{line: 0, column: 0}, end: detailPosition{line: 0, column: 4}}
+
+	actual := Update(subject, MsgClipboardWriteFinished{
+		Target:          FocusDetailView,
+		SuccessMessage:  detailYankSuccessMessage,
+		Selection:       selection,
+		SelectionTarget: clipboardWriteSelectionDetail,
+	})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if !subject.detailState.hasYankHighlight() {
+		t.Fatal("expected the detail yank highlight to become active")
+	}
+	if actual := subject.detailState.viewState.yankHighlight.start; actual != selection.start {
+		t.Fatalf("expected detail highlight start %+v, actual %+v", selection.start, actual)
+	}
+	if actual := subject.detailState.viewState.yankHighlight.end; actual != selection.end {
+		t.Fatalf("expected detail highlight end %+v, actual %+v", selection.end, actual)
+	}
+	if actual := subject.detailState.viewState.yankHighlight.expiresAt; !actual.Equal(now.Add(time.Second)) {
+		t.Fatalf("expected detail highlight expiry %v, actual %v", now.Add(time.Second), actual)
+	}
+}
+
+func TestUpdate_GivenMsgClipboardWriteFinishedWithBuildPopupSelection_WhenApplying_ThenItActivatesThePopupYankHighlightThroughChildStateTransitions(t *testing.T) {
+	now := time.Date(2026, time.May, 29, 14, 0, 0, 0, time.UTC)
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.timingState.yankHighlightDuration = time.Second
+	subject.timingState.now = func() time.Time { return now }
+	subject.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "Alpha Beta"})
+	selection := detailSelectionRange{start: detailPosition{line: 0, column: 0}, end: detailPosition{line: 0, column: 4}}
+
+	actual := Update(subject, MsgClipboardWriteFinished{
+		Target:          FocusDetailView,
+		SuccessMessage:  detailYankSuccessMessage,
+		Selection:       selection,
+		SelectionTarget: clipboardWriteSelectionBuildPopup,
+	})
+
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if subject.pullRequestBuildRunPopup == nil {
+		t.Fatal("expected the build popup to stay visible")
+	}
+	if !subject.pullRequestBuildRunPopup.hasYankHighlight() {
+		t.Fatal("expected the build-popup yank highlight to become active")
+	}
+	if actual := subject.pullRequestBuildRunPopup.viewState.yankHighlight.start; actual != selection.start {
+		t.Fatalf("expected popup highlight start %+v, actual %+v", selection.start, actual)
+	}
+	if actual := subject.pullRequestBuildRunPopup.viewState.yankHighlight.end; actual != selection.end {
+		t.Fatalf("expected popup highlight end %+v, actual %+v", selection.end, actual)
+	}
+	if actual := subject.pullRequestBuildRunPopup.viewState.yankHighlight.expiresAt; !actual.Equal(now.Add(time.Second)) {
+		t.Fatalf("expected popup highlight expiry %v, actual %v", now.Add(time.Second), actual)
+	}
+}
+
+func TestProgram_GivenExpiredDetailAndPopupYankHighlights_WhenClearing_ThenItClearsThemThroughChildStateTransitions(t *testing.T) {
+	now := time.Date(2026, time.May, 29, 14, 0, 0, 0, time.UTC)
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.timingState.now = func() time.Time { return now }
+	selection := detailSelectionRange{start: detailPosition{line: 0, column: 0}, end: detailPosition{line: 0, column: 4}}
+
+	subject.detailState = subject.detailState.withYankHighlightActivated(selection, now.Add(-time.Millisecond))
+	subject.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "Alpha Beta"})
+	subject.updatePullRequestBuildRunPopup(func(state pullRequestBuildRunPopupState) pullRequestBuildRunPopupState {
+		return state.withYankHighlightActivated(selection, now.Add(-time.Millisecond))
+	})
+
+	actual := subject.clearExpiredYankHighlights()
+
+	if !actual {
+		t.Fatal("expected expired yank highlight cleanup to report a change")
+	}
+	if subject.detailState.hasYankHighlight() {
+		t.Fatalf("expected detail yank highlight to be cleared, actual %+v", subject.detailState.viewState.yankHighlight)
+	}
+	if subject.pullRequestBuildRunPopup == nil {
+		t.Fatal("expected the build popup to stay visible")
+	}
+	if subject.pullRequestBuildRunPopup.hasYankHighlight() {
+		t.Fatalf("expected popup yank highlight to be cleared, actual %+v", subject.pullRequestBuildRunPopup.viewState.yankHighlight)
+	}
+}
