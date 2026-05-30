@@ -16,10 +16,7 @@ func (program *Program) reviewSessionReadModel() reviewSessionReadModel {
 	}
 
 	model := program.buildReviewSessionReadModel()
-	if program.refreshReadCache.enabled {
-		program.refreshReadCache.reviewSessionReadModel = model
-		program.refreshReadCache.reviewSessionReadModelSet = true
-	}
+	program.cacheReviewSessionReadModel(model)
 	return model
 }
 

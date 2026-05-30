@@ -227,6 +227,16 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenListViewportAndKeyb
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenRefreshReadCacheMemoizationUsesHelperSurfaces(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.refreshReadCache\.[A-Za-z0-9_]+\s*=\s*[^=]`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected refresh read-cache memoization to route through helper surfaces instead of direct nested writes, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCallTheLegacyAsyncPopupBridge(t *testing.T) {
 	phase1Files := map[string]bool{
 		"pull_request_browser.go":     true,

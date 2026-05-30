@@ -21,9 +21,6 @@ func (program *Program) keybindingLabelResolver() keybindingLabelResolver {
 	}
 
 	resolver := newKeybindingLabelResolver(program.resolvedKeybindingActions())
-	if program.refreshReadCache.enabled {
-		program.refreshReadCache.keybindingResolver = resolver
-		program.refreshReadCache.keybindingResolverSet = true
-	}
+	program.cacheKeybindingLabelResolver(resolver)
 	return resolver
 }

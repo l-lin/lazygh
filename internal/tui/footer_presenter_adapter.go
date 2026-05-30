@@ -37,10 +37,7 @@ func (program *Program) footerPresenter() footerPresenter {
 		modalEditorSubmitFallback:        submitFallback,
 		paneSearchSummaries:              program.paneSearchSummaries(),
 	}
-	if program.refreshReadCache.enabled {
-		program.refreshReadCache.footerPresenter = presenter
-		program.refreshReadCache.footerPresenterSet = true
-	}
+	program.cacheFooterPresenter(presenter)
 	return presenter
 }
 

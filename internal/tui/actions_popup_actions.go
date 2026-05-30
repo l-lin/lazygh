@@ -11,10 +11,7 @@ func (program *Program) currentActionsPopupActions() []actionsPopupAction {
 	}
 
 	actions := program.buildCurrentActionsPopupActions()
-	if program != nil && program.refreshReadCache.enabled {
-		program.refreshReadCache.actionsPopupActions = actions
-		program.refreshReadCache.actionsPopupActionsKnown = true
-	}
+	program.cacheActionsPopupActions(actions)
 	return actions
 }
 

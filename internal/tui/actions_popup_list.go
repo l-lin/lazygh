@@ -89,10 +89,7 @@ func (program *Program) currentActionsPopupVisibleLines() []actionsPopupVisibleL
 	}
 
 	visibleLines := program.buildCurrentActionsPopupVisibleLines()
-	if program != nil && program.refreshReadCache.enabled {
-		program.refreshReadCache.actionsPopupVisibleLines = visibleLines
-		program.refreshReadCache.actionsPopupVisibleKnown = true
-	}
+	program.cacheActionsPopupVisibleLines(visibleLines)
 	return visibleLines
 }
 

@@ -38,10 +38,7 @@ func (program *Program) actionsPopupPresenter() actionsPopupPresenter {
 		totalActionCount:      len(program.currentActionsPopupActions()),
 		renderedLineCount:     program.currentActionsPopupRenderedLineCount(),
 	}
-	if program.refreshReadCache.enabled {
-		program.refreshReadCache.actionsPopupPresenter = presenter
-		program.refreshReadCache.actionsPopupPresenterSet = true
-	}
+	program.cacheActionsPopupPresenter(presenter)
 	return presenter
 }
 
