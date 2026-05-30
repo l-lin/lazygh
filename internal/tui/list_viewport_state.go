@@ -1,32 +1,22 @@
 package tui
 
 func (program *Program) setPendingListViewportPlacement(viewName string, placement viewportPlacement) {
-	if viewName == "" {
-		return
-	}
-	if program.listViewportRuntime.pendingPlacements == nil {
-		program.listViewportRuntime.pendingPlacements = map[string]viewportPlacement{}
-	}
-	program.listViewportRuntime.pendingPlacements[viewName] = placement
+	program.updateListViewportRuntime(func(state listViewportRuntimeState) listViewportRuntimeState {
+		return state.withPendingPlacement(viewName, placement)
+	})
 }
 
 func (program *Program) pendingListViewportPlacement(viewName string) (viewportPlacement, bool) {
-	if viewName == "" || len(program.listViewportRuntime.pendingPlacements) == 0 {
+	if program == nil {
 		return 0, false
 	}
-
-	placement, ok := program.listViewportRuntime.pendingPlacements[viewName]
-	if !ok {
-		return 0, false
-	}
-	return placement, true
+	return program.listViewportRuntime.pendingPlacement(viewName)
 }
 
 func (program *Program) clearPendingListViewportPlacement(viewName string) {
-	if viewName == "" || len(program.listViewportRuntime.pendingPlacements) == 0 {
-		return
-	}
-	delete(program.listViewportRuntime.pendingPlacements, viewName)
+	program.updateListViewportRuntime(func(state listViewportRuntimeState) listViewportRuntimeState {
+		return state.withoutPendingPlacement(viewName)
+	})
 }
 
 func (program *Program) clearVisibleListViewportPlacements(layout ScreenLayout) {

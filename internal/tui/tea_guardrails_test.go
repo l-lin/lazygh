@@ -212,6 +212,21 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenPersistentCacheSave
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenListViewportAndKeybindingRuntimeStateUseHelperSurfaces(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`program\.listViewportRuntime\.pendingPlacements\[[^]]+\]\s*=`,
+		`program\.listViewportRuntime\.pendingPlacements\s*=\s*map\[`,
+		`delete\(program\.listViewportRuntime\.pendingPlacements`,
+		`program\.keybindingRuntime\.registeredFingerprint\s*=`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected list viewport and keybinding runtime state to mutate through helper surfaces instead of direct nested writes, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCallTheLegacyAsyncPopupBridge(t *testing.T) {
 	phase1Files := map[string]bool{
 		"pull_request_browser.go":     true,
