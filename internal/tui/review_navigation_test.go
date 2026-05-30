@@ -48,6 +48,49 @@ func TestReviewMode_GivenTheFilesPane_WhenPressingDoubleBracketMotions_ThenItMov
 	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
 }
 
+func TestReviewMode_GivenTheFilesPaneAndDirectoryRowsBetweenFiles_WhenPressingDoubleBracketMotions_ThenItSkipsDirectoryRowsAndSelectsFiles(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffAcrossDirectories(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	nextFileHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ']')
+	previousFileHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, '[')
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	then_selectedReviewTreeRowIsFile(t, subject, "cmd/lazygh/main.go")
+
+	actualErr = nextFileHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewTreeRowIsFile(t, subject, "cmd/lazygh/main.go")
+
+	actualErr = nextFileHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_selectedReviewTreeRowIsFile(t, subject, "internal/tui/render.go")
+
+	actualErr = previousFileHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewTreeRowIsFile(t, subject, "internal/tui/render.go")
+
+	actualErr = previousFileHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_selectedReviewFileIs(t, subject, "cmd/lazygh/main.go")
+	then_selectedReviewTreeRowIsFile(t, subject, "cmd/lazygh/main.go")
+}
+
 func TestReviewMode_GivenTheDiffPane_WhenPressingDoubleBracketMotions_ThenItMovesToThePreviousOrNextFileWithoutLeavingViewZero(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
@@ -315,6 +358,27 @@ func then_selectedReviewFileIs(t *testing.T, subject *Program, expectedPath stri
 	}
 }
 
+func then_selectedReviewTreeRowIsFile(t *testing.T, subject *Program, expectedPath string) {
+	t.Helper()
+
+	tree, files, ok := subject.reviewSessionCurrentTree()
+	if !ok || len(tree.Rows) == 0 {
+		t.Fatal("expected a visible review tree")
+	}
+
+	selectedRowIndex := clampIndex(subject.navigationState.reviewSession.selectedFileTreeRow, len(tree.Rows))
+	selectedRow := tree.Rows[selectedRowIndex]
+	if selectedRow.Kind != reviewDiffTreeRowKindFile {
+		t.Fatalf("expected selected review tree row %d to be a file, actual kind %v", selectedRowIndex, selectedRow.Kind)
+	}
+	if selectedRow.FileIndex < 0 || selectedRow.FileIndex >= len(files) {
+		t.Fatalf("expected selected review tree row %d to reference a file index within %d files, actual %d", selectedRowIndex, len(files), selectedRow.FileIndex)
+	}
+	if actualPath := files[selectedRow.FileIndex].Path; actualPath != expectedPath {
+		t.Fatalf("expected selected review tree row file %q, actual %q", expectedPath, actualPath)
+	}
+}
+
 func then_reviewModeDetailCursorLineContains(t *testing.T, gui *gocui.Gui, subject *Program, expectedSegment string) {
 	t.Helper()
 
@@ -329,6 +393,31 @@ func then_reviewModeDetailCursorLineContains(t *testing.T, gui *gocui.Gui, subje
 	actualLine := string(document.lines[subject.detailState.viewState.cursor.line])
 	if !strings.Contains(actualLine, expectedSegment) {
 		t.Fatalf("expected detail cursor line to contain %q, actual %q", expectedSegment, actualLine)
+	}
+}
+
+func given_reviewSessionPullRequestDiffAcrossDirectories() githubcli.PullRequestDiff {
+	return githubcli.PullRequestDiff{
+		UnifiedDiff: strings.Join([]string{
+			"diff --git a/cmd/lazygh/main.go b/cmd/lazygh/main.go",
+			"index 1111111..2222222 100644",
+			"--- a/cmd/lazygh/main.go",
+			"+++ b/cmd/lazygh/main.go",
+			"@@ -1,1 +1,1 @@",
+			"-old main",
+			"+new main",
+			"diff --git a/internal/tui/render.go b/internal/tui/render.go",
+			"index 3333333..4444444 100644",
+			"--- a/internal/tui/render.go",
+			"+++ b/internal/tui/render.go",
+			"@@ -3,1 +3,1 @@",
+			"-old render",
+			"+new render",
+		}, "\n"),
+		Files: []githubcli.PullRequestDiffFile{
+			{Path: "cmd/lazygh/main.go", ChangeType: "modified", Additions: 1, Deletions: 1},
+			{Path: "internal/tui/render.go", ChangeType: "modified", Additions: 1, Deletions: 1},
+		},
 	}
 }
 

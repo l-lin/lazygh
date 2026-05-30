@@ -11,7 +11,7 @@ func (program *Program) applyMoveReviewFile(message MsgMoveReviewFile) {
 	}
 
 	originalRow := program.navigationState.reviewSession.selectedFileTreeRow
-	program.adjustReviewSessionSelection(message.Delta)
+	program.adjustReviewSessionFileSelection(message.Delta)
 	if program.navigationState.reviewSession.selectedFileTreeRow == originalRow {
 		return
 	}

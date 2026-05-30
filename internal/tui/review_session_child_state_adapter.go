@@ -73,6 +73,24 @@ func (program *Program) adjustReviewSessionSelection(change int) {
 	})
 }
 
+func (program *Program) adjustReviewSessionFileSelection(change int) {
+	if program == nil {
+		return
+	}
+
+	fileRows, ok := program.reviewSessionReadModel().fileRows()
+	if !ok {
+		program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+			return state.adjustedSelection(nil, change)
+		})
+		return
+	}
+
+	program.updateReviewSession(func(state reviewSessionState) reviewSessionState {
+		return state.adjustedSelection(fileRows, change)
+	})
+}
+
 func (program *Program) moveReviewSessionSelectionToTop() {
 	if program == nil {
 		return
