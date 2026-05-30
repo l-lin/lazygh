@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	persistcache "github.com/l-lin/lazygh/internal/cache"
 	appconfig "github.com/l-lin/lazygh/internal/config"
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
@@ -33,6 +34,46 @@ type fakeRuntimeLinkOpener struct{}
 
 func (fakeRuntimeLinkOpener) Open(string) error {
 	return nil
+}
+
+func TestExecuteApplyCacheConfigRuntime_GivenOpenedStoresAndAPreviousCache_WhenApplying_ThenItOpensTheNewStoresBeforeClosingThePreviousCache(t *testing.T) {
+	previousCache := &closingPersistentPullRequestCache{}
+	openedCache := &closingPersistentPullRequestCache{}
+	callLog := []string{}
+	config := appconfig.CacheConfig{Path: filepath.Join(t.TempDir(), "lazygh", "cache.sqlite3")}
+
+	actual, actualErr := executeApplyCacheConfigRuntime(cacheConfigRuntime{
+		openPersistentCache: func(path string) (persistentPullRequestCache, error) {
+			callLog = append(callLog, "open-cache:"+path)
+			return openedCache, nil
+		},
+		openNotificationDoneStore: func(path string) (notificationDoneStore, error) {
+			callLog = append(callLog, "open-done:"+path)
+			return recordingNotificationDoneStore{}, nil
+		},
+		closePersistentCache: func(cache persistentPullRequestCache) error {
+			callLog = append(callLog, "close-previous")
+			return cache.Close()
+		},
+	}, previousCache, config)
+
+	then_noError(t, actualErr)
+	if actual.pullRequestCache != openedCache {
+		t.Fatalf("expected the opened cache %p, actual %p", openedCache, actual.pullRequestCache)
+	}
+	if _, ok := actual.notificationDoneStore.(recordingNotificationDoneStore); !ok {
+		t.Fatalf("expected the runtime notification done store, actual %T", actual.notificationDoneStore)
+	}
+	expectedCallLog := []string{"open-cache:" + config.Path, "open-done:" + persistcache.NotificationDoneStorePath(config.Path), "close-previous"}
+	if !reflect.DeepEqual(callLog, expectedCallLog) {
+		t.Fatalf("expected cache-config runtime call log %v, actual %v", expectedCallLog, callLog)
+	}
+	if actual := previousCache.closeCalls; actual != 1 {
+		t.Fatalf("expected the previous cache to close once, actual %d", actual)
+	}
+	if actual := openedCache.closeCalls; actual != 0 {
+		t.Fatalf("expected the newly opened cache to stay open, actual close calls %d", actual)
+	}
 }
 
 func TestUpdate_GivenMsgLinksConfigApplied_WhenApplying_ThenItReplacesNonSystemOpenersWithAConfiguredSystemOpener(t *testing.T) {

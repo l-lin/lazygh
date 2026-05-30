@@ -20,3 +20,16 @@ func TestRefactorGuard_GivenCacheAndLinkRuntimeFiles_WhenScanning_ThenRuntimeCon
 		t.Fatalf("expected cache and links runtime config entrypoints to stop replacing shell dependencies and stores inline, actual %v", actualMatches)
 	}
 }
+
+func TestRefactorGuard_GivenCacheConfigEntryPoint_WhenScanning_ThenItStopsOwningOpenAndCloseIO(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`persistcache\.Open\(`,
+		`OpenNotificationDoneStore\(`,
+		`\.Close\(`,
+	}, "|")), func(path string) bool {
+		return filepath.Base(path) == "cache_config.go"
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected cache_config.go to delegate cache open and close IO to an explicit runtime surface, actual %v", actualMatches)
+	}
+}
