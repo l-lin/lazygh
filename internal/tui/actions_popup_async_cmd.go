@@ -42,12 +42,10 @@ func (command saveThemePresetCmd) execute(program *Program, gui *gocui.Gui) {
 		return
 	}
 
-	err := error(nil)
-	if program.themePresetStore != nil {
-		err = program.themePresetStore.SaveThemePreset(command.NormalizedName)
-	}
-	if program.themePresetStore == nil {
-		err = errors.New("theme preset store is unavailable")
+	runtime := newThemePresetRuntime(program)
+	err := errors.New(themePresetStoreUnavailableMessage)
+	if runtime.saveThemePreset != nil {
+		err = runtime.saveThemePreset(command.NormalizedName)
 	}
 	_ = program.executeRuntimeMessage(gui, MsgThemePresetSaved{NormalizedName: command.NormalizedName, Label: command.Label, Err: err})
 }

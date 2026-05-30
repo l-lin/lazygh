@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	themePickerActionTitle = "Change theme"
-	themePickerTitle       = "Select theme"
+	themePickerActionTitle             = "Change theme"
+	themePickerTitle                   = "Select theme"
+	themePresetStoreUnavailableMessage = "theme preset store is unavailable"
 )
 
 type themePresetStore interface {
@@ -57,11 +58,12 @@ func (program *Program) currentThemePickerActions() []actionsPopupAction {
 
 func (program *Program) themePickerAction(preset theme.Preset) actionsPopupAction {
 	normalizedName := theme.NormalizePresetName(preset.Name)
+	themeCapabilities := program.currentThemeCapabilitySnapshot()
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	switch {
 	case !program.themePickerVisible():
-	case program.themePresetStore == nil:
-		requested = actionsPopupErrorRequested(errors.New("theme preset store is unavailable"))
+	case !themeCapabilities.presetPersistenceAvailable:
+		requested = actionsPopupErrorRequested(errors.New(themePresetStoreUnavailableMessage))
 	case normalizedName == "":
 	default:
 		requested = MsgThemePresetSelected{NormalizedName: normalizedName, Label: strings.TrimSpace(preset.Label)}
