@@ -17,75 +17,7 @@ type detailImageHTMLSource struct {
 	applyTarget  detailImageHTMLApplyTarget
 }
 
-func (program *Program) currentDetailImageHTMLSources() []detailImageHTMLSource {
-	if program.reviewModeActive() {
-		return program.currentReviewSessionImageHTMLSources()
-	}
-	if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
-		if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
-			return program.currentPullRequestImageHTMLSources(summary, result.detail)
-		}
-	}
-	if program.model.currentSideFocus() != FocusNotificationsView {
-		return nil
-	}
-	if notification, ok := program.model.SelectedNotification(); ok {
-		if repository, number, ok := notification.IssueIdentity(); ok {
-			return program.currentIssueImageHTMLSources(repository, number)
-		}
-		if repository, id, ok := notification.ReleaseIdentity(); ok {
-			return program.currentReleaseImageHTMLSources(repository, id)
-		}
-	}
-	return nil
-}
-
-func (program *Program) currentReviewSessionImageHTMLSources() []detailImageHTMLSource {
-	if program.reviewSessionShowsDescription() {
-		summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
-		if !ok {
-			return nil
-		}
-		return []detailImageHTMLSource{program.pullRequestDescriptionImageHTMLSource(summary, detail)}
-	}
-	if program.reviewSessionShowsStoryChapter() {
-		chapter, ok := program.selectedReviewSessionStoryChapter()
-		if !ok {
-			return nil
-		}
-		markdown := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{"# " + strings.TrimSpace(chapter.Title), strings.TrimSpace(chapter.Narrative)}), "\n\n"))
-		return []detailImageHTMLSource{{
-			key:          detailImageSourceKey(fmt.Sprintf("story:%s:%s", pullRequestDetailKey(program.navigationState.reviewSession.summary.Repository, program.navigationState.reviewSession.summary.Number), firstNonEmpty(strings.TrimSpace(chapter.ID), strings.TrimSpace(chapter.Title))), markdown),
-			repository:   pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository),
-			markdown:     markdown,
-			renderedHTML: "",
-		}}
-	}
-
-	selectedFile, ok := program.selectedReviewSessionDiffFile()
-	if !ok {
-		return nil
-	}
-	return program.reviewDiffFileImageHTMLSources(program.navigationState.reviewSession.summary, selectedFile)
-}
-
-func (program *Program) currentPullRequestImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
-	switch program.detailState.activeTab {
-	case CommentsDetailTab:
-		return program.pullRequestCommentsImageHTMLSources(summary, detail)
-	case CommitsDetailTab:
-		return program.pullRequestCommitImageHTMLSources(summary, detail)
-	case ChangesDetailTab:
-		if result, ok := program.pullRequestDiffForSummary(summary); ok && result.err == nil {
-			return program.pullRequestDiffImageHTMLSources(summary, result.data.Files)
-		}
-		return nil
-	default:
-		return []detailImageHTMLSource{program.pullRequestDescriptionImageHTMLSource(summary, detail)}
-	}
-}
-
-func (program *Program) pullRequestDescriptionImageHTMLSource(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) detailImageHTMLSource {
+func pullRequestDescriptionImageHTMLSource(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) detailImageHTMLSource {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	markdown := detailBody(detail, summary)
 	revision := detailImageMarkdownRevision(markdown)
@@ -103,7 +35,17 @@ func (program *Program) pullRequestDescriptionImageHTMLSource(summary githubdoma
 	}
 }
 
-func (program *Program) pullRequestCommentsImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
+func storyChapterImageHTMLSource(summary githubdomain.PullRequest, chapter reviewStoryChapter) detailImageHTMLSource {
+	markdown := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{"# " + strings.TrimSpace(chapter.Title), strings.TrimSpace(chapter.Narrative)}), "\n\n"))
+	return detailImageHTMLSource{
+		key:          detailImageSourceKey(fmt.Sprintf("story:%s:%s", pullRequestDetailKey(summary.Repository, summary.Number), firstNonEmpty(strings.TrimSpace(chapter.ID), strings.TrimSpace(chapter.Title))), markdown),
+		repository:   pullRequestRepositoryName(summary.Repository),
+		markdown:     markdown,
+		renderedHTML: "",
+	}
+}
+
+func pullRequestCommentsImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	repository := pullRequestRepositoryName(summary.Repository)
 	sources := make([]detailImageHTMLSource, 0, len(detail.Comments)+len(detail.InlineComments))
@@ -165,7 +107,7 @@ func (program *Program) pullRequestCommentsImageHTMLSources(summary githubdomain
 	return sources
 }
 
-func (program *Program) pullRequestCommitImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
+func pullRequestCommitImageHTMLSources(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) []detailImageHTMLSource {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	repository := pullRequestRepositoryName(summary.Repository)
 	sources := make([]detailImageHTMLSource, 0, len(detail.Commits))
@@ -188,32 +130,20 @@ func (program *Program) pullRequestCommitImageHTMLSources(summary githubdomain.P
 	return sources
 }
 
-func (program *Program) pullRequestDiffImageHTMLSources(summary any, files []reviewDiffFile) []detailImageHTMLSource {
+func pullRequestDiffImageHTMLSources(summary githubdomain.PullRequest, files []reviewDiffFile) []detailImageHTMLSource {
 	sources := make([]detailImageHTMLSource, 0)
 	for fileIndex, file := range files {
-		sources = append(sources, program.reviewDiffFileImageHTMLSourcesWithIndex(summary, file, fileIndex)...)
+		sources = append(sources, reviewDiffFileImageHTMLSourcesWithIndex(summary, file, fileIndex)...)
 	}
 	return sources
 }
 
-func (program *Program) reviewDiffFileImageHTMLSources(summary any, file reviewDiffFile) []detailImageHTMLSource {
-	return program.reviewDiffFileImageHTMLSourcesWithIndex(summary, file, -1)
-}
-
-func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary any, file reviewDiffFile, fileIndexHint int) []detailImageHTMLSource {
-	summaryValue, ok := toDomainPullRequestSummary(summary)
-	if !ok {
-		return nil
-	}
-	diffKey := pullRequestDetailKey(summaryValue.Repository, summaryValue.Number)
-	repository := pullRequestRepositoryName(summaryValue.Repository)
+func reviewDiffFileImageHTMLSourcesWithIndex(summary githubdomain.PullRequest, file reviewDiffFile, fileIndex int) []detailImageHTMLSource {
+	diffKey := pullRequestDetailKey(summary.Repository, summary.Number)
+	repository := pullRequestRepositoryName(summary.Repository)
 	sources := make([]detailImageHTMLSource, 0)
 	for threadIndex, thread := range file.Threads {
 		for commentIndex, comment := range thread.Comments {
-			resolvedFileIndex := fileIndexHint
-			if resolvedFileIndex < 0 {
-				resolvedFileIndex = program.pullRequestDiffFileIndex(summary, file.Path)
-			}
 			threadPosition := threadIndex
 			commentPosition := commentIndex
 			revision := detailImageMarkdownRevision(comment.Body)
@@ -226,7 +156,7 @@ func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary any, fil
 					kind:             detailImageHTMLApplyKindPullRequestDiffThreadComment,
 					cacheKey:         diffKey,
 					markdownRevision: revision,
-					fileIndex:        resolvedFileIndex,
+					fileIndex:        fileIndex,
 					threadIndex:      threadPosition,
 					commentIndex:     commentPosition,
 				},
@@ -236,12 +166,8 @@ func (program *Program) reviewDiffFileImageHTMLSourcesWithIndex(summary any, fil
 	return sources
 }
 
-func (program *Program) pullRequestDiffFileIndex(summary any, filePath string) int {
-	result, ok := program.pullRequestDiffForSummary(summary)
-	if !ok {
-		return -1
-	}
-	for index, file := range result.data.Files {
+func pullRequestDiffFileIndex(files []reviewDiffFile, filePath string) int {
+	for index, file := range files {
 		if strings.TrimSpace(file.Path) == strings.TrimSpace(filePath) {
 			return index
 		}
@@ -249,19 +175,15 @@ func (program *Program) pullRequestDiffFileIndex(summary any, filePath string) i
 	return -1
 }
 
-func (program *Program) currentIssueImageHTMLSources(repository string, number int) []detailImageHTMLSource {
+func issueImageHTMLSources(repository string, number int, detail githubdomain.IssueDetail) []detailImageHTMLSource {
 	key := notificationDetailKey(repository, number)
-	result, ok := program.issueDetailCache[key]
-	if !ok || result.err != nil {
-		return nil
-	}
-	markdown := result.detail.Body
+	markdown := detail.Body
 	revision := detailImageMarkdownRevision(markdown)
 	return []detailImageHTMLSource{{
 		key:          detailImageSourceKey(key+":issue", markdown),
 		repository:   repository,
 		markdown:     markdown,
-		renderedHTML: result.detail.BodyHTML,
+		renderedHTML: detail.BodyHTML,
 		applyTarget: detailImageHTMLApplyTarget{
 			kind:             detailImageHTMLApplyKindIssue,
 			cacheKey:         key,
@@ -270,19 +192,15 @@ func (program *Program) currentIssueImageHTMLSources(repository string, number i
 	}}
 }
 
-func (program *Program) currentReleaseImageHTMLSources(repository string, id int) []detailImageHTMLSource {
+func releaseImageHTMLSources(repository string, id int, detail githubdomain.ReleaseDetail) []detailImageHTMLSource {
 	key := notificationDetailKey(repository, id)
-	result, ok := program.releaseDetailCache[key]
-	if !ok || result.err != nil {
-		return nil
-	}
-	markdown := result.detail.Body
+	markdown := detail.Body
 	revision := detailImageMarkdownRevision(markdown)
 	return []detailImageHTMLSource{{
 		key:          detailImageSourceKey(key+":release", markdown),
 		repository:   repository,
 		markdown:     markdown,
-		renderedHTML: result.detail.BodyHTML,
+		renderedHTML: detail.BodyHTML,
 		applyTarget: detailImageHTMLApplyTarget{
 			kind:             detailImageHTMLApplyKindRelease,
 			cacheKey:         key,
