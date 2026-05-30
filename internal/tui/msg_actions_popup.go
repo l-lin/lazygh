@@ -108,6 +108,10 @@ type MsgThemePresetSaved struct {
 	Err            error
 }
 
+type MsgPersistentCacheCleared struct {
+	Err error
+}
+
 type MsgRefreshPullRequestListRequested struct{}
 
 type MsgRefreshPullRequestRequested struct {
@@ -154,6 +158,7 @@ func (MsgAddReactionRequested) isMsg()                    {}
 func (MsgOpenThemePickerRequested) isMsg()                {}
 func (MsgThemePresetSelected) isMsg()                     {}
 func (MsgThemePresetSaved) isMsg()                        {}
+func (MsgPersistentCacheCleared) isMsg()                  {}
 func (MsgRefreshPullRequestListRequested) isMsg()         {}
 func (MsgRefreshPullRequestRequested) isMsg()             {}
 func (MsgPullRequestTitleEditApplied) isMsg()             {}

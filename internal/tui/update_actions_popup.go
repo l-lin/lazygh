@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
@@ -125,6 +124,14 @@ func (program *Program) applyClearCacheRequested() []Cmd {
 	}
 
 	program.clearActionsPopupPendingConfirmation()
+	return []Cmd{clearPersistentCacheCmd{}}
+}
+
+func (program *Program) applyPersistentCacheCleared(message MsgPersistentCacheCleared) []Cmd {
+	if message.Err != nil {
+		program.setActionsPopupErrorMessage(message.Err.Error())
+		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
+	}
 	if err := program.clearCachedData(); err != nil {
 		program.setActionsPopupErrorMessage(err.Error())
 		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
@@ -135,13 +142,6 @@ func (program *Program) applyClearCacheRequested() []Cmd {
 }
 
 func (program *Program) clearCachedData() error {
-	if program.pullRequestCache == nil {
-		return fmt.Errorf("persistent cache is unavailable")
-	}
-	if err := program.pullRequestCache.Clear(); err != nil {
-		return err
-	}
-
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withWorkflowStateReset()
 	})

@@ -74,6 +74,8 @@ func (program *Program) routeMutationApplyResultsAndOptimisticFollowUp(msg Msg) 
 		return handledUpdate(program.applyThemePresetSelected(actual))
 	case MsgThemePresetSaved:
 		return handledUpdate(program.applyThemePresetSaved(actual))
+	case MsgPersistentCacheCleared:
+		return handledUpdate(program.applyPersistentCacheCleared(actual))
 	case MsgRefreshPullRequestListRequested:
 		return handledUpdate(program.applyRefreshPullRequestListRequested())
 	case MsgRefreshPullRequestRequested:

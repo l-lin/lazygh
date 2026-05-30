@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -50,9 +51,36 @@ func TestActionsPopup_GivenClearCacheActionSelected_WhenExecutingOnce_ThenItAsks
 	}
 }
 
-func TestClearCachedData_GivenExistingPullRequestListLoadState_WhenClearing_ThenItResetsFlagsCountsAndAdditionalTabs(t *testing.T) {
+func TestUpdate_GivenConfirmedClearCacheRequested_WhenApplying_ThenItQueuesAPersistentCacheClearCommandWithoutResettingInMemoryState(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.pullRequestCache = &fakePersistentPullRequestCache{}
+	subject.model.OpenActionsPopup(1)
+	subject.setActionsPopupPendingConfirmation(clearCacheActionTitle)
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Cached PR", Number: 42, Body: "Cached body"})}
+
+	actual := Update(subject, MsgClearCacheRequested{})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(actual))
+	}
+	if _, ok := actual[0].(clearPersistentCacheCmd); !ok {
+		t.Fatalf("expected a clearPersistentCacheCmd, actual %T", actual[0])
+	}
+	if actual := subject.actionsPopupWidget.pendingConfirmationActionID; actual != "" {
+		t.Fatalf("expected pending confirmation %q, actual %q", "", actual)
+	}
+	if !subject.model.ActionsPopupVisible() {
+		t.Fatal("expected the actions popup to stay open until the command completion arrives")
+	}
+	if actual := len(subject.pullRequestDetailCache); actual != 1 {
+		t.Fatalf("expected the in-memory detail cache to stay intact before command completion, actual %d entries", actual)
+	}
+}
+
+func TestUpdate_GivenMsgPersistentCacheCleared_WhenApplying_ThenItResetsFlagsCountsAndAdditionalTabs(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.pullRequestCache = &fakePersistentPullRequestCache{}
+	subject.model.OpenActionsPopup(1)
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
 	subject.myPullRequestsLoading = true
@@ -68,9 +96,17 @@ func TestClearCachedData_GivenExistingPullRequestListLoadState_WhenClearing_Then
 	subject.notificationsLoading = true
 	subject.notificationsLoadingDetailMessage = notificationDoneLoadingMessage
 
-	actualErr := subject.clearCachedData()
-	then_noError(t, actualErr)
+	actual := Update(subject, MsgPersistentCacheCleared{})
 
+	if len(actual) != 0 {
+		t.Fatalf("expected no follow-up commands, actual %d", len(actual))
+	}
+	if subject.model.ActionsPopupVisible() {
+		t.Fatal("expected the actions popup to close after a successful cache clear completion")
+	}
+	if actual := subject.feedbackMessage; actual != clearCacheSuccessMessage {
+		t.Fatalf("expected feedback %q, actual %q", clearCacheSuccessMessage, actual)
+	}
 	if actual := subject.myPullRequestsLoadStarted; actual {
 		t.Fatalf("expected my pull requests load started %v, actual %v", false, actual)
 	}
@@ -112,6 +148,26 @@ func TestClearCachedData_GivenExistingPullRequestListLoadState_WhenClearing_Then
 	}
 	if actual := subject.notificationsLoadingDetailMessage; actual != "" {
 		t.Fatalf("expected notifications loading detail %q, actual %q", "", actual)
+	}
+}
+
+func TestUpdate_GivenMsgPersistentCacheClearedWithError_WhenApplying_ThenItKeepsThePopupOpenAndReportsTheError(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.model.OpenActionsPopup(1)
+
+	actual := Update(subject, MsgPersistentCacheCleared{Err: errors.New("boom")})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
+	}
+	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
+		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
+	}
+	if !subject.model.ActionsPopupVisible() {
+		t.Fatal("expected the actions popup to stay open after a failed cache clear")
+	}
+	if actual := subject.actionsPopupWidget.errorMessage; actual != "boom" {
+		t.Fatalf("expected popup error %q, actual %q", "boom", actual)
 	}
 }
 

@@ -173,6 +173,16 @@ func TestRefactorGuard_GivenPhase2ActionFiles_WhenScanning_ThenTheyDoNotMutateSt
 	}
 }
 
+func TestRefactorGuard_GivenUpdateFiles_WhenScanning_ThenTheyDoNotClearThePersistentCacheInline(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.pullRequestCache\.Clear\(`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasPrefix(base, "update") && strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+	if len(actualMatches) != 0 {
+		t.Fatalf("expected persistent cache clearing to route through an explicit command surface instead of update-file IO, actual %v", actualMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCallTheLegacyAsyncPopupBridge(t *testing.T) {
 	phase1Files := map[string]bool{
 		"pull_request_browser.go":     true,
