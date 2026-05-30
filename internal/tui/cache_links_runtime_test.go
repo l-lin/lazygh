@@ -93,6 +93,34 @@ func TestUpdate_GivenMsgLinksConfigApplied_WhenApplying_ThenItReplacesNonSystemO
 	}
 }
 
+func TestUpdate_GivenMsgLinksConfigAppliedAndExistingSystemOpener_WhenApplying_ThenItReplacesTheOpenerWithAnUpdatedCopy(t *testing.T) {
+	startHook := func(string, ...string) error { return nil }
+	original := &systemLinkOpener{command: []string{"open", "--foreground"}, start: startHook}
+	subject := NewProgramWithModel(given_model())
+	subject.linkOpener = original
+	given_config := appconfig.LinksConfig{OpenCommand: []string{"custom-open", "--background"}}
+
+	Update(subject, MsgLinksConfigApplied{Config: given_config})
+
+	actual, ok := subject.linkOpener.(*systemLinkOpener)
+	if !ok {
+		t.Fatalf("expected a system link opener, actual %T", subject.linkOpener)
+	}
+	if actual == original {
+		t.Fatal("expected links config apply to replace the system opener instead of mutating it in place")
+	}
+	expectedCommand := []string{"custom-open", "--background"}
+	if !reflect.DeepEqual(actual.command, expectedCommand) {
+		t.Fatalf("expected system opener command %v, actual %v", expectedCommand, actual.command)
+	}
+	if !reflect.DeepEqual(original.command, []string{"open", "--foreground"}) {
+		t.Fatalf("expected the original command %v to stay untouched, actual %v", []string{"open", "--foreground"}, original.command)
+	}
+	if actual.start == nil || reflect.ValueOf(actual.start).Pointer() != reflect.ValueOf(startHook).Pointer() {
+		t.Fatal("expected the updated system opener to keep the existing start hook")
+	}
+}
+
 func TestApplyCacheConfig_GivenExistingCacheAndEmptyPath_WhenApplying_ThenItClosesTheOldCacheAndResetsTheRuntimeStores(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	oldCache := &closingPersistentPullRequestCache{}

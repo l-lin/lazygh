@@ -23,6 +23,14 @@ func newSystemLinkOpener(command []string) *systemLinkOpener {
 	return &systemLinkOpener{command: append([]string(nil), command...), start: startDetachedCommand}
 }
 
+func (opener *systemLinkOpener) withCommand(command []string) *systemLinkOpener {
+	updated := newSystemLinkOpener(command)
+	if opener != nil && opener.start != nil {
+		updated.start = opener.start
+	}
+	return updated
+}
+
 func (program *Program) ApplyLinksConfig(config appconfig.LinksConfig) {
 	if program == nil {
 		return

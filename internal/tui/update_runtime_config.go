@@ -30,10 +30,7 @@ func (program *Program) applyKeymapOverridesApplied(message MsgKeymapOverridesAp
 
 func (program *Program) applyLinksConfigApplied(message MsgLinksConfigApplied) {
 	resolved := appconfig.ResolveLinksConfig(message.Config)
-	if program.updateSystemLinkOpenerCommand(resolved.OpenCommand) {
-		return
-	}
-	program.setLinkOpener(newSystemLinkOpener(resolved.OpenCommand))
+	program.setLinkOpener(configuredSystemLinkOpener(program.linkOpener, resolved.OpenCommand))
 }
 
 func (program *Program) applyCacheConfigApplied(message MsgCacheConfigApplied) {

@@ -20,14 +20,10 @@ func (program *Program) setLinkOpener(opener linkOpener) {
 	program.linkOpener = opener
 }
 
-func (program *Program) updateSystemLinkOpenerCommand(command []string) bool {
-	if program == nil {
-		return false
-	}
-	actual, ok := program.linkOpener.(*systemLinkOpener)
+func configuredSystemLinkOpener(current linkOpener, command []string) linkOpener {
+	actual, ok := current.(*systemLinkOpener)
 	if !ok {
-		return false
+		return newSystemLinkOpener(command)
 	}
-	actual.command = append([]string(nil), command...)
-	return true
+	return actual.withCommand(command)
 }
