@@ -115,11 +115,12 @@ Shell work now lives behind explicit command files.
 - `workflow_pull_request_list_commands.go`: pull-request list load, reload, and cache hydration
 - `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
 - `workflow_notification_commands.go`: notifications plus issue and release detail loads
-- `workflow_detail_image_commands.go`: markdown HTML and detail-image loads
+- `workflow_detail_image_commands.go`: markdown HTML, GitHub auth-token lookup for private image fetches, and detail-image loads
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
 - `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and forced refresh execution
++- `cache_config_runtime.go`: synchronous cache open/close reconfiguration runtime for startup and config reload entrypoints
 - `cmd_transient_error_popup.go`: transient error popup expiry scheduling
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view lookup
 - `cmd_detail_motion.go`: detail/build-popup motion, repeat-search, and pending-yank live-view sync
