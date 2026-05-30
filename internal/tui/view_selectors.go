@@ -2,28 +2,6 @@ package tui
 
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
-func (program *Program) currentPullRequestConversationDocument(summary any, detail any, width int) browserConversationDocument {
-	summaryValue, ok := toDomainPullRequestSummary(summary)
-	if !ok {
-		return browserConversationDocument{}
-	}
-	detailValue, ok := toDomainPullRequestDetail(detail)
-	if !ok {
-		return browserConversationDocument{}
-	}
-	if cacheKey, ok := pullRequestConversationDocumentCacheKey(summaryValue, width); ok {
-		if document, ok := program.pullRequestConversationDocumentForKey(cacheKey); ok {
-			return document
-		}
-
-		document := buildBrowserConversationDocument(program.buildPullRequestConversationSections(summaryValue, detailValue, width))
-		program.cachePullRequestConversationDocument(cacheKey, document)
-		return document
-	}
-
-	return buildBrowserConversationDocument(program.buildPullRequestConversationSections(summaryValue, detailValue, width))
-}
-
 func (program *Program) currentPullRequestChangesRenderedRows(summary githubdomain.PullRequest, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
 	if cacheKey, ok := pullRequestChangesRenderedRowsCacheKey(summary, width); ok {
 		if rows, ok := program.pullRequestChangesRenderedRowsForKey(cacheKey); ok {

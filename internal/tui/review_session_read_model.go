@@ -81,7 +81,12 @@ func (model reviewSessionReadModel) descriptionOverview() string {
 	if !model.descriptionResultKnown || model.descriptionResult.err != nil {
 		return ""
 	}
-	return renderBrowserDetailSections(buildPullRequestOverviewSections(model.summary, model.descriptionResult.detail, model.detailWrapWidth, model.browserCollapsedSectionStates), false)
+	return browserDetailReadModel{
+		summary:                model.summary,
+		detail:                 model.descriptionResult.detail,
+		width:                  model.detailWrapWidth,
+		collapsedSectionStates: model.browserCollapsedSectionStates,
+	}.renderOverview()
 }
 
 func (model reviewSessionReadModel) storyChapterContent() string {

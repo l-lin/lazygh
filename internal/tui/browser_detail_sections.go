@@ -115,13 +115,6 @@ func browserDetailSectionCollapsed(collapsedSectionStates map[string]bool, secti
 	return collapsedByDefault
 }
 
-func (program *Program) browserDetailSectionCollapsed(sectionID string, collapsedByDefault bool) bool {
-	if program == nil {
-		return collapsedByDefault
-	}
-	return browserDetailSectionCollapsed(program.browserCollapsedSectionStates, sectionID, collapsedByDefault)
-}
-
 func buildPullRequestOverviewSections(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, width int, collapsedSectionStates map[string]bool) []browserDetailSection {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	overview := buildPullRequestOverviewSection(detail)
@@ -148,27 +141,11 @@ func buildPullRequestOverviewSections(summary githubdomain.PullRequest, detail g
 	return sections
 }
 
-func (program *Program) currentPullRequestOverviewSections(summary any, detail any, width int) []browserDetailSection {
-	summaryValue, ok := toDomainPullRequestSummary(summary)
-	if !ok {
-		return nil
-	}
-	detailValue, ok := toDomainPullRequestDetail(detail)
-	if !ok {
-		return nil
-	}
-	return buildPullRequestOverviewSections(summaryValue, detailValue, width, program.browserCollapsedSectionStates)
-}
-
 func pullRequestOverviewBlockCollapsedByDefault(block pullRequestOverviewBlock) bool {
 	if strings.EqualFold(strings.TrimSpace(block.Title), "Reviewers") {
 		return block.Status == pullRequestOverviewStatusSuccess
 	}
 	return block.Status != pullRequestOverviewStatusFailure
-}
-
-func (program *Program) renderCurrentPullRequestOverview(summary any, detail any, width int) string {
-	return renderBrowserDetailSections(program.currentPullRequestOverviewSections(summary, detail, width), false)
 }
 
 func browserDescriptionOverviewStartLine(summary any, detail any) int {
@@ -187,33 +164,17 @@ func browserDescriptionOverviewStartLine(summary any, detail any) int {
 	return renderedTextLineCount(header) + 1
 }
 
-func (program *Program) browserOverviewSectionAtCursor(summary any, detail any, width int, cursorLine int) (browserDetailSectionCursor, bool) {
-	overviewStartLine := browserDescriptionOverviewStartLine(summary, detail)
-	relativeCursorLine := cursorLine - overviewStartLine
-	if relativeCursorLine < 0 {
-		return browserDetailSectionCursor{}, false
-	}
-	sectionAtCursor, ok := browserDetailSectionAtCursor(program.currentPullRequestOverviewSections(summary, detail, width), relativeCursorLine, false)
-	if !ok {
-		return browserDetailSectionCursor{}, false
-	}
-	sectionAtCursor.headerLine += overviewStartLine
-	sectionAtCursor.headerFocusLine += overviewStartLine
-	return sectionAtCursor, true
-}
-
-func (program *Program) buildPullRequestConversationSections(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, width int) []browserDetailSection {
+func buildPullRequestConversationSections(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, width int, markdownRenderer MarkdownRenderer, wordWrapEnabled bool, connectedUserLogin string, collapsedSectionStates map[string]bool) []browserDetailSection {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	sections := make([]browserDetailSection, 0, len(detail.Comments)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
-	renderWidth := program.detailMarkdownRenderWidth(commentBodyWidth)
-	connectedUserLogin := program.currentConnectedUserLogin()
+	renderWidth := markdownRenderWidthForWordWrap(commentBodyWidth, wordWrapEnabled)
 
 	for index, rawComment := range detail.Comments {
 		comment := rawComment
-		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), program.markdownRenderer, renderWidth, "No comment body.")
+		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), markdownRenderer, renderWidth, "No comment body.")
 		sectionID := browserDetailSectionID(pullRequestKey, "comment", index, comment.ID)
-		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
+		collapsed := browserDetailSectionCollapsed(collapsedSectionStates, sectionID, false)
 		sections = append(sections, browserDetailSection{
 			id:        sectionID,
 			header:    renderBrowserDetailSectionHeader(renderPullRequestCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
@@ -227,15 +188,15 @@ func (program *Program) buildPullRequestConversationSections(summary githubdomai
 		for index, rawThread := range detail.InlineCommentThreads {
 			thread := rawThread
 			sectionID := browserDetailSectionID(pullRequestKey, "thread", index, thread.ID)
-			collapsed := program.browserDetailSectionCollapsed(sectionID, thread.IsResolved)
+			collapsed := browserDetailSectionCollapsed(collapsedSectionStates, sectionID, thread.IsResolved)
 			sections = append(sections, browserDetailSection{
 				id:                           sectionID,
 				header:                       renderPullRequestInlineCommentThreadHeader(thread, collapsed, width),
 				headerFocusOffset:            1,
-				body:                         renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(thread, program.markdownRenderer, width, program.detailWordWrapEnabled(), connectedUserLogin),
+				body:                         renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(thread, markdownRenderer, width, wordWrapEnabled, connectedUserLogin),
 				collapsed:                    collapsed,
 				inlineThread:                 &thread,
-				inlineThreadBodyCommentIndex: inlineThreadBodyCommentIndexesForViewerWithWordWrap(thread, program.markdownRenderer, width, program.detailWordWrapEnabled(), connectedUserLogin),
+				inlineThreadBodyCommentIndex: inlineThreadBodyCommentIndexesForViewerWithWordWrap(thread, markdownRenderer, width, wordWrapEnabled, connectedUserLogin),
 			})
 		}
 		return sections
@@ -243,9 +204,9 @@ func (program *Program) buildPullRequestConversationSections(summary githubdomai
 
 	for index, rawComment := range detail.InlineComments {
 		comment := rawComment
-		body := renderInlineCommentBodyForInlineComment(comment, program.markdownRenderer, renderWidth)
+		body := renderInlineCommentBodyForInlineComment(comment, markdownRenderer, renderWidth)
 		sectionID := browserDetailSectionID(pullRequestKey, "inline-comment", index, comment.ID)
-		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
+		collapsed := browserDetailSectionCollapsed(collapsedSectionStates, sectionID, false)
 		sections = append(sections, browserDetailSection{
 			id:            sectionID,
 			header:        renderBrowserDetailSectionHeader(renderPullRequestInlineCommentConversationTitle(comment), collapsed, theme.InactiveTitleHex),
@@ -256,26 +217,6 @@ func (program *Program) buildPullRequestConversationSections(summary githubdomai
 	}
 
 	return sections
-}
-
-func (program *Program) currentPullRequestConversationSections(summary any, detail any, width int) []browserDetailSection {
-	document := program.currentPullRequestConversationDocument(summary, detail, width)
-	return append([]browserDetailSection(nil), document.sections...)
-}
-
-func (program *Program) renderCurrentPullRequestConversationsTab(summary any, detail any, width int) string {
-	document := program.currentPullRequestConversationDocument(summary, detail, width)
-	if len(document.sections) == 0 {
-		return "No comments yet."
-	}
-	return document.text
-}
-
-func (program *Program) browserConversationSectionAtCursor(summary any, detail any, width int, cursorLine int) (browserDetailSectionCursor, bool) {
-	if cursorLine < 0 {
-		return browserDetailSectionCursor{}, false
-	}
-	return program.currentPullRequestConversationDocument(summary, detail, width).sectionAtCursor(cursorLine)
 }
 
 func browserConversationInlineThreadCommentAtCursor(sectionAtCursor browserDetailSectionCursor) (githubdomain.PullRequestComment, bool) {
