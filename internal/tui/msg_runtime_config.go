@@ -13,10 +13,21 @@ type MsgPullRequestSearchesApplied struct {
 	Searches []appconfig.PullRequestSearch
 }
 
+type MsgLinksConfigApplied struct {
+	Config appconfig.LinksConfig
+}
+
+type MsgCacheConfigApplied struct {
+	PullRequestCache      persistentPullRequestCache
+	NotificationDoneStore notificationDoneStore
+}
+
 type MsgStoryReviewConfigApplied struct {
 	Config story.Config
 }
 
 func (MsgKeymapOverridesApplied) isMsg()     {}
 func (MsgPullRequestSearchesApplied) isMsg() {}
+func (MsgLinksConfigApplied) isMsg()         {}
+func (MsgCacheConfigApplied) isMsg()         {}
 func (MsgStoryReviewConfigApplied) isMsg()   {}

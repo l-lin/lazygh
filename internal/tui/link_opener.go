@@ -27,14 +27,7 @@ func (program *Program) ApplyLinksConfig(config appconfig.LinksConfig) {
 	if program == nil {
 		return
 	}
-
-	resolved := appconfig.ResolveLinksConfig(config)
-	if actual, ok := program.linkOpener.(*systemLinkOpener); ok {
-		actual.command = append([]string(nil), resolved.OpenCommand...)
-		return
-	}
-
-	program.linkOpener = newSystemLinkOpener(resolved.OpenCommand)
+	_ = program.dispatchRuntimeMessage(MsgLinksConfigApplied{Config: config})
 }
 
 func (opener *systemLinkOpener) Open(url string) error {

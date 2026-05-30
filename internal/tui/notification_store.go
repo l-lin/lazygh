@@ -27,3 +27,11 @@ func (store notificationStore) withLoadStateReset() notificationStore {
 	store.notificationsLoadingDetailMessage = ""
 	return store
 }
+
+func (store notificationStore) withNotificationDoneStore(doneStore notificationDoneStore) notificationStore {
+	if doneStore == nil {
+		doneStore = noopNotificationDoneStore{}
+	}
+	store.notificationDoneStore = doneStore
+	return store
+}
