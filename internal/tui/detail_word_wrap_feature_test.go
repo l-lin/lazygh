@@ -134,6 +134,48 @@ func TestLayout_GivenDescriptionTabWithALongMarkdownParagraphAndDisabledWordWrap
 	}
 }
 
+func TestLayout_GivenChangesTabWithALongDiffLineAndEnabledWordWrap_WhenBuildingViewZeroDocument_ThenItWrapsTheDiffAcrossVisibleLines(t *testing.T) {
+	longLine := strings.Repeat("browserdiffwrap ", 12)
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": {
+				UnifiedDiff: strings.Join([]string{
+					"diff --git a/internal/tui/render.go b/internal/tui/render.go",
+					"index 1111111..2222222 100644",
+					"--- a/internal/tui/render.go",
+					"+++ b/internal/tui/render.go",
+					"@@ -1,1 +1,1 @@",
+					"+" + longLine,
+				}, "\n"),
+				Files: []githubcli.PullRequestDiffFile{{Path: "internal/tui/render.go", ChangeType: "modified", Additions: 1}},
+			},
+		},
+	})
+	gui := given_headlessGuiWithSize(t, 60, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, "browserdiffwrap browserdiffwrap browserdiffwrap")
+
+	if actual := reviewDiffDocumentRowCountForLine(document, lineIndex); actual < 2 {
+		t.Fatalf("expected the browser changes diff to wrap across multiple rendered rows, actual %d for %q", actual, actualLine)
+	}
+}
+
 func TestReviewMode_GivenAnInlineThreadWithALongMarkdownCommentAndDisabledWordWrap_WhenBuildingViewZeroDocument_ThenItKeepsTheThreadBodyOnOneVisibleLine(t *testing.T) {
 	threadBody := strings.Repeat("nowrapthreadbody ", 18)
 	loader := &fakePullRequestDetailLoader{

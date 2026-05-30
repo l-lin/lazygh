@@ -12,7 +12,7 @@ const (
 	actionsPopupGroupNavigation    = "Navigation"
 	actionsPopupGroupNotifications = "Notifications"
 	actionsPopupGroupErrors        = "Errors"
-	actionsPopupGroupTheme         = "Theme"
+	actionsPopupGroupDisplay       = "Display"
 	actionsPopupGroupCache         = "Cache"
 )
 

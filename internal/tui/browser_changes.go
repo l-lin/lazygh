@@ -113,7 +113,7 @@ func (program *Program) toggleBrowserChangesFileVisibility(summary githubdomain.
 	program.setBrowserDetailSectionCollapsed(sectionID, !collapsed)
 
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, width)
-	plan := detailViewSyncPlan{document: newReviewDiffDetailDocument(updatedRows, width)}
+	plan := detailViewSyncPlan{document: newReviewDiffDetailDocumentWithWordWrap(updatedRows, width, program.detailWordWrapEnabled())}
 	headerLineIndex := reviewDiffFileHeaderLineIndex(updatedRows, trimmedFilePath)
 	if headerLineIndex >= 0 {
 		plan.focusLine = headerLineIndex
@@ -134,7 +134,7 @@ func (program *Program) toggleBrowserChangesThreadVisibility(summary githubdomai
 	program.setBrowserDetailSectionCollapsed(sectionID, !collapsed)
 
 	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
-	plan := detailViewSyncPlan{document: newReviewDiffDetailDocument(updatedRows, detailDocument.width)}
+	plan := detailViewSyncPlan{document: newReviewDiffDetailDocumentWithWordWrap(updatedRows, detailDocument.width, program.detailWordWrapEnabled())}
 	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
 	if headerLineIndex >= 0 {
 		plan.focusLine = headerLineIndex

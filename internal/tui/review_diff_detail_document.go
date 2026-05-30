@@ -1,11 +1,15 @@
 package tui
 
 func newReviewDiffDetailDocument(rows []reviewDiffRenderedRow, width int) detailDocument {
+	return newReviewDiffDetailDocumentWithWordWrap(rows, width, false)
+}
+
+func newReviewDiffDetailDocumentWithWordWrap(rows []reviewDiffRenderedRow, width int, wordWrapEnabled bool) detailDocument {
 	lines := make([]detailDocumentLine, 0, len(rows))
 	for _, row := range rows {
 		lines = append(lines, reviewDiffDetailDocumentLine(row))
 	}
-	return newDetailDocumentFromLines(lines, width, false)
+	return newDetailDocumentFromLines(lines, width, wordWrapEnabled)
 }
 
 func reviewDiffDetailDocumentLine(row reviewDiffRenderedRow) detailDocumentLine {

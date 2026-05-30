@@ -38,7 +38,12 @@ func (program *Program) currentGlobalActionsPopupActions() []actionsPopupAction 
 	if action, ok := program.currentRecentErrorsActionsPopupAction(); ok {
 		actions = append(actions, actionsPopupGrouped(actionsPopupGroupErrors, action)...)
 	}
-	actions = append(actions, actionsPopupGrouped(actionsPopupGroupTheme, program.changeThemeActionsPopupAction())...)
+	displayActions := make([]actionsPopupAction, 0, 2)
+	if wrapAction, ok := program.currentDetailWordWrapAction(); ok {
+		displayActions = append(displayActions, wrapAction)
+	}
+	displayActions = append(displayActions, program.changeThemeActionsPopupAction())
+	actions = append(actions, actionsPopupGrouped(actionsPopupGroupDisplay, displayActions...)...)
 	cacheActions := program.currentCacheActionsPopupActions(program.actionContext())
 	if len(cacheActions) > 0 {
 		actions = append(actions, actionsPopupGrouped(actionsPopupGroupCache, cacheActions...)...)
@@ -61,9 +66,6 @@ func (program *Program) currentCacheActionsPopupActions(actionContext ActionCont
 func (program *Program) currentContextualActionsPopupActions() []actionsPopupAction {
 	actionContext := program.actionContext()
 	actions := make([]actionsPopupAction, 0, 4)
-	if wrapAction, ok := program.currentDetailWordWrapAction(); ok {
-		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, wrapAction)...)
-	}
 	if actionContext.IsNotificationContext() {
 		return append(actions, program.currentNotificationActionsPopupActions()...)
 	}

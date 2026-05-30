@@ -75,7 +75,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsGroupedReview
 		actionsPopupLabel(actionsPopupCommentOnPullRequestIcon, "Comment on PR"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR title"),
 		actionsPopupLabel(actionsPopupEditPullRequestIcon, "Edit PR description"),
-		"Theme",
+		"Display",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestRefreshActionTitle),
@@ -136,12 +136,12 @@ func TestActionsPopup_GivenPullRequestLevelReactionAction_WhenOpening_ThenItKeep
 	reviewHeaderIndex := strings.Index(buffer, actionsPopupGroupReview)
 	pullRequestHeaderIndex := strings.Index(buffer, actionsPopupGroupPullRequest)
 	addReactionIndex := strings.Index(buffer, reactionPickerTitle)
-	themeHeaderIndex := strings.Index(buffer, actionsPopupGroupTheme)
-	if reviewHeaderIndex < 0 || pullRequestHeaderIndex < 0 || addReactionIndex < 0 || themeHeaderIndex < 0 {
-		t.Fatalf("expected popup buffer to contain %q, %q, %q, and %q, actual %q", actionsPopupGroupReview, actionsPopupGroupPullRequest, reactionPickerTitle, actionsPopupGroupTheme, buffer)
+	displayHeaderIndex := strings.Index(buffer, "Display")
+	if reviewHeaderIndex < 0 || pullRequestHeaderIndex < 0 || addReactionIndex < 0 || displayHeaderIndex < 0 {
+		t.Fatalf("expected popup buffer to contain %q, %q, %q, and %q, actual %q", actionsPopupGroupReview, actionsPopupGroupPullRequest, reactionPickerTitle, "Display", buffer)
 	}
-	if !(reviewHeaderIndex < pullRequestHeaderIndex && pullRequestHeaderIndex < addReactionIndex && addReactionIndex < themeHeaderIndex) {
-		t.Fatalf("expected %q to stay inside the %q group after %q and before %q, actual %q", reactionPickerTitle, actionsPopupGroupPullRequest, actionsPopupGroupReview, actionsPopupGroupTheme, buffer)
+	if !(reviewHeaderIndex < pullRequestHeaderIndex && pullRequestHeaderIndex < addReactionIndex && addReactionIndex < displayHeaderIndex) {
+		t.Fatalf("expected %q to stay inside the %q group after %q and before %q, actual %q", reactionPickerTitle, actionsPopupGroupPullRequest, actionsPopupGroupReview, "Display", buffer)
 	}
 }
 
@@ -163,9 +163,8 @@ func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalA
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"Navigation",
+		"Display",
 		actionsPopupLabel(actionsPopupWordWrapIcon, disableDetailWordWrapActionTitle),
-		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestListRefreshActionTitle),

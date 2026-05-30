@@ -36,7 +36,7 @@ func TestActionsPopup_GivenReviewMode_WhenOpening_ThenItShowsReviewSubmitAndNavi
 		"Pull request",
 		actionsPopupLabel(actionsPopupYankPullRequestURLIcon, "Yank URL to clipboard"),
 		actionsPopupLabel(actionsPopupOpenPullRequestBrowserIcon, "Open PR in browser"),
-		"Theme",
+		"Display",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestRefreshActionTitle),

@@ -45,6 +45,7 @@ func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool
 		images:               make([]detailImagePlacement, 0),
 		width:                width,
 		wrap:                 wrap,
+		lineWrapWidths:       make([]int, 0, len(lines)),
 		lineStartOffsets:     make([]int, 0, len(lines)),
 		lineStartRows:        make([]int, 0, len(lines)),
 	}
@@ -57,10 +58,12 @@ func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool
 		lineRunes := append([]rune(nil), bodyLine.runes...)
 		lineStylePrefixes := append([]string(nil), bodyLine.stylePrefixes...)
 		lineHyperlinkTargets := append([]string(nil), bodyLine.hyperlinkTargets...)
+		lineWrapWidth := detailDocumentLineWrapWidth(width, prefixLine, wrap)
 		document.prefixLines = append(document.prefixLines, prefixLine)
 		document.lines = append(document.lines, lineRunes)
 		document.lineStylePrefixes = append(document.lineStylePrefixes, lineStylePrefixes)
 		document.lineHyperlinkTargets = append(document.lineHyperlinkTargets, lineHyperlinkTargets)
+		document.lineWrapWidths = append(document.lineWrapWidths, lineWrapWidth)
 		document.lineStartOffsets = append(document.lineStartOffsets, offset)
 		document.lineStartRows = append(document.lineStartRows, rowIndex)
 		for _, control := range bodyLine.controls {
@@ -77,8 +80,8 @@ func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool
 			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: len(lineRunes) - 1, text: string(lineRunes)})
 			rowIndex++
 		} else {
-			for startColumn := 0; startColumn < len(lineRunes); startColumn += width {
-				endColumnExclusive := minInt(startColumn+width, len(lineRunes))
+			for startColumn := 0; startColumn < len(lineRunes); startColumn += lineWrapWidth {
+				endColumnExclusive := minInt(startColumn+lineWrapWidth, len(lineRunes))
 				document.rows = append(document.rows, detailWrappedRow{
 					line:        lineIndex,
 					startColumn: startColumn,
@@ -134,6 +137,20 @@ func (document detailDocument) prefixWidthForLine(line int) int {
 	return len(document.prefixLines[line].runes)
 }
 
+func detailDocumentLineWrapWidth(width int, prefixLine styledTextLine, wrap bool) int {
+	if !wrap {
+		return width
+	}
+	return maxInt(width-len(prefixLine.runes), 1)
+}
+
+func (document detailDocument) wrapWidthForLine(line int) int {
+	if line < 0 || line >= len(document.lineWrapWidths) || document.lineWrapWidths[line] < 1 {
+		return maxInt(document.width, 1)
+	}
+	return document.lineWrapWidths[line]
+}
+
 func (document detailDocument) rowCount() int {
 	return len(document.rows)
 }
@@ -187,7 +204,7 @@ func (document detailDocument) rowIndexForPosition(position detailPosition) int 
 		return document.lineStartRows[position.line]
 	}
 
-	return document.lineStartRows[position.line] + (position.column / document.width)
+	return document.lineStartRows[position.line] + (position.column / document.wrapWidthForLine(position.line))
 }
 
 func (document detailDocument) screenColumnForPosition(position detailPosition) int {
@@ -199,7 +216,7 @@ func (document detailDocument) screenColumnForPosition(position detailPosition) 
 		return position.column
 	}
 
-	return position.column % document.width
+	return position.column % document.wrapWidthForLine(position.line)
 }
 
 func (document detailDocument) visualScreenColumnForPosition(position detailPosition) int {

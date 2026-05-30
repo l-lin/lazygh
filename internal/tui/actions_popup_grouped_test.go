@@ -25,7 +25,7 @@ func TestActionsPopup_GivenUserView_WhenOpening_ThenItShowsTheGlobalGroupedActio
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
-		"Theme",
+		"Display",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
 		actionsPopupLabel(actionsPopupRefreshPullRequestIcon, pullRequestListRefreshActionTitle),

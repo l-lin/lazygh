@@ -45,6 +45,7 @@ type detailDocument struct {
 	images               []detailImagePlacement
 	width                int
 	wrap                 bool
+	lineWrapWidths       []int
 	lineStartOffsets     []int
 	lineStartRows        []int
 	rows                 []detailWrappedRow
