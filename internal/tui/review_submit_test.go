@@ -185,7 +185,6 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubmittingFails_ThenItKeepsTheDraftAndPendingReviewVisible(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending", submitReviewErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.asyncRunner = &capturingAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -205,9 +204,15 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	subject.overlayState.modalEditor.editor.SetText("Needs tests")
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	if !subject.navigationState.reviewSession.active {

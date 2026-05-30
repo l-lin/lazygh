@@ -109,7 +109,13 @@ func TestEditPullRequestComment_GivenBrowserCommentsTabSubmit_WhenSubmittingOpti
 	then_noError(t, actualErr)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued submit and one background refresh, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued run, actual %v", loader.detailCalls)

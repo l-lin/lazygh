@@ -150,6 +150,15 @@ func TestInlineComment_GivenBrowserChangesSubmitWithoutPendingReview_WhenPosting
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued pending-review submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected a queued prepared submit after creating the pending review, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 1)
 	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/widgets#42"}) {
@@ -165,8 +174,8 @@ func TestInlineComment_GivenBrowserChangesSubmitWithoutPendingReview_WhenPosting
 	if !reflect.DeepEqual(loader.reviewThreadBodies, []string{"Optimistic inline comment"}) {
 		t.Fatalf("expected review thread bodies %v, actual %v", []string{"Optimistic inline comment"}, loader.reviewThreadBodies)
 	}
-	if len(asyncRunner.runs) != 2 {
-		t.Fatalf("expected two queued background refreshes, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 4 {
+		t.Fatalf("expected two submit runs and two queued background refreshes, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued runs, actual %v", loader.detailCalls)

@@ -7,19 +7,24 @@ import (
 )
 
 type modalEditorCommandRuntime struct {
-	externalEditor ExternalEditor
-	submitDeps     modalEditorSubmitCommandDeps
-	executeMessage func(*gocui.Gui, Msg) error
+	externalEditor       ExternalEditor
+	submitDeps           modalEditorSubmitCommandDeps
+	executeMessage       func(*gocui.Gui, Msg) error
+	dispatchAsyncMessage func(Msg)
+	runAsync             func(func())
 }
 
 func newModalEditorCommandRuntime(program *Program) modalEditorCommandRuntime {
 	if program == nil {
 		return modalEditorCommandRuntime{}
 	}
+	dispatchAsync := asyncRuntimeMessageDispatcher(program)
 	return modalEditorCommandRuntime{
-		externalEditor: program.externalEditor,
-		submitDeps:     newModalEditorSubmitCommandDeps(program),
-		executeMessage: program.executeRuntimeMessage,
+		externalEditor:       program.externalEditor,
+		submitDeps:           newModalEditorSubmitCommandDeps(program),
+		executeMessage:       program.executeRuntimeMessage,
+		dispatchAsyncMessage: dispatchAsync,
+		runAsync:             program.runAsync,
 	}
 }
 
@@ -53,10 +58,27 @@ func (command modalEditorSubmitCmd) execute(program *Program, gui *gocui.Gui) {
 }
 
 func executeModalEditorSubmitCommand(runtime modalEditorCommandRuntime, gui *gocui.Gui, command modalEditorSubmitCmd) {
-	if command.request == nil || runtime.executeMessage == nil {
+	if command.request == nil {
 		return
 	}
 
-	completion, err := command.request.run(runtime.submitDeps)
-	_ = runtime.executeMessage(gui, MsgModalEditorSubmitFinished{Err: err, Completion: completion})
+	run := func() {
+		completion, err := command.request.run(runtime.submitDeps)
+		message := MsgModalEditorSubmitFinished{Err: err, Completion: completion}
+		if command.request.asyncRequested() && runtime.dispatchAsyncMessage != nil {
+			runtime.dispatchAsyncMessage(message)
+			return
+		}
+		if runtime.executeMessage != nil {
+			_ = runtime.executeMessage(gui, message)
+		}
+	}
+	if command.request.asyncRequested() && runtime.runAsync != nil {
+		runtime.runAsync(run)
+		return
+	}
+	if runtime.executeMessage == nil && runtime.dispatchAsyncMessage == nil {
+		return
+	}
+	run()
 }

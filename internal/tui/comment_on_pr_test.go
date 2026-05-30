@@ -181,7 +181,6 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisibleAndShowsTheError(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{commentErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.asyncRunner = &capturingAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -192,10 +191,16 @@ func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	actualErr = subject.openPullRequestCommentComposer(gui, nil)
 	then_noError(t, actualErr)
 	subject.overlayState.modalEditor.editor.SetText("Line one\nLine two")
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	composerView := given_commentComposer(t, gui, subject)
@@ -238,10 +243,15 @@ func TestPullRequestCommentComposer_GivenCommentsTabSubmit_WhenPostingComment_Th
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued submit and one background refresh, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued run, actual %v", loader.detailCalls)
@@ -292,10 +302,15 @@ func TestPullRequestCommentComposer_GivenChangesTabSubmit_WhenPostingComment_The
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued submit and one background refresh, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued run, actual %v", loader.detailCalls)

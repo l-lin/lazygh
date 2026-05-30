@@ -104,13 +104,17 @@ func (program *Program) applyModalEditorSubmitRequested() []Cmd {
 }
 
 func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSubmitFinished) []Cmd {
-	if program == nil || !program.modalEditorVisible() {
+	if program == nil {
 		return nil
 	}
 
+	program.clearGHCommandLoading()
+	modalVisible := program.modalEditorVisible()
 	if message.Err != nil {
 		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-			program.clearModalEditorErrorMessage()
+			if modalVisible {
+				program.clearModalEditorErrorMessage()
+			}
 			return program.applyErrorReportedMessage(popupMessage)
 		}
 		var feedbackErr modalEditorStatusLineError
@@ -118,12 +122,15 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 			program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
 			return nil
 		}
-		program.setModalEditorErrorMessage(message.Err.Error())
-		return nil
+		if modalVisible {
+			program.setModalEditorErrorMessage(message.Err.Error())
+			return nil
+		}
+		return program.applyErrorReportedMessage(message.Err.Error())
 	}
 
 	commands := program.applyModalEditorSubmitCompletion(message.Completion)
-	if !modalEditorRemainsOpenAfterCompletion(message.Completion) {
+	if modalVisible && !modalEditorRemainsOpenAfterCompletion(message.Completion) {
 		program.clearModalEditorState()
 	}
 	return commands
@@ -347,7 +354,7 @@ func (program *Program) applyPullRequestBuildRunPopupClipboardPrepared(message M
 }
 
 func (program *Program) applyOpenPullRequestByURLSubmitRequested(message MsgOpenPullRequestByURLSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: openPullRequestByURLSubmitRequest{rawURL: message.URL}}}
+	return program.queueModalEditorSubmitRequest(openPullRequestByURLSubmitRequest{rawURL: message.URL})
 }
 
 func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequestURLReadFromClipboard) {

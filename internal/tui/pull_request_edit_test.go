@@ -139,7 +139,6 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenPressingEnter_ThenItRefr
 func TestEditPullRequestTitle_GivenSubmitFailure_WhenPressingEnter_ThenItKeepsTheDraftVisible(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{editTitleErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.asyncRunner = &capturingAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -158,9 +157,15 @@ func TestEditPullRequestTitle_GivenSubmitFailure_WhenPressingEnter_ThenItKeepsTh
 
 	titleView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)
 	actualErr = actualHandler(gui, titleView)
 	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	if !strings.Contains(titleView.Buffer(), "Broken title") {
@@ -387,7 +392,6 @@ func TestEditPullRequestDescription_GivenSuccessfulSubmit_WhenSubmitting_ThenItR
 func TestEditPullRequestDescription_GivenSubmitFailure_WhenSubmitting_ThenItKeepsTheDraftVisible(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{editDescriptionErr: errors.New("boom")}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
-	subject.asyncRunner = &capturingAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -404,9 +408,15 @@ func TestEditPullRequestDescription_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	then_noError(t, actualErr)
 	subject.overlayState.modalEditor.editor.SetText("Broken body")
 
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	descriptionView, actualErr := gui.View(viewModalEditorName)

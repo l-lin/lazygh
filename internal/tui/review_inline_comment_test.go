@@ -252,10 +252,15 @@ func TestReviewMode_GivenInlineCommentSubmit_WhenPostingOptimistically_ThenItKee
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued submit and one background refresh, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager diff refresh call before the queued run, actual %v", loader.diffCalls)
@@ -339,12 +344,17 @@ func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeep
 	actualErr = actualHandler(gui, detailView)
 	then_noError(t, actualErr)
 	subject.overlayState.modalEditor.editor.SetText("Draft inline comment")
-	subject.asyncRunner = &capturingAsyncRunner{}
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
 	subject.uiUpdater = immediateUIUpdater{}
 
 	actualHandler = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	composerView, actualErr := gui.View(viewModalEditorName)

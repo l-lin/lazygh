@@ -91,9 +91,49 @@ func TestModalEditorSubmitCommand_GivenCompletion_WhenExecuting_ThenItAppliesThe
 	}
 }
 
+func TestModalEditorSubmitCommand_GivenAsyncRequest_WhenExecuting_ThenItUsesTheAsyncRunnerAndDispatchesTheFinishedMessageAsynchronously(t *testing.T) {
+	actualMessages := []Msg(nil)
+	actualRuns := 0
+	expectedCompletion := pullRequestCommentSubmittedCompletion(MsgPullRequestCommentSubmitted{Body: "Submitted body"})
+
+	executeModalEditorSubmitCommand(modalEditorCommandRuntime{
+		dispatchAsyncMessage: func(msg Msg) {
+			actualMessages = append(actualMessages, msg)
+		},
+		runAsync: func(run func()) {
+			actualRuns++
+			run()
+		},
+	}, nil, modalEditorSubmitCmd{request: fakeModalEditorSubmitRequest{completion: expectedCompletion, async: true}})
+
+	if actual := actualRuns; actual != 1 {
+		t.Fatalf("expected one async run, actual %d", actual)
+	}
+	if len(actualMessages) != 1 {
+		t.Fatalf("expected one async finished message, actual %d", len(actualMessages))
+	}
+	message, ok := actualMessages[0].(MsgModalEditorSubmitFinished)
+	if !ok {
+		t.Fatalf("expected a MsgModalEditorSubmitFinished, actual %T", actualMessages[0])
+	}
+	if message.Err != nil {
+		t.Fatalf("expected no error, actual %v", message.Err)
+	}
+}
+
 type fakeModalEditorSubmitRequest struct {
-	completion modalEditorSubmitCompletion
-	err        error
+	completion      modalEditorSubmitCompletion
+	err             error
+	async           bool
+	statusLineValue string
+}
+
+func (request fakeModalEditorSubmitRequest) statusCommand() string {
+	return request.statusLineValue
+}
+
+func (request fakeModalEditorSubmitRequest) asyncRequested() bool {
+	return request.async
 }
 
 func (request fakeModalEditorSubmitRequest) run(modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error) {

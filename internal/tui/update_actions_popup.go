@@ -236,7 +236,7 @@ func (program *Program) restorePullRequestBrowserFromReviewMode() {
 }
 
 func (program *Program) applyPullRequestCustomSearchSubmitRequested(message MsgPullRequestCustomSearchSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestCustomSearchSubmitRequest{criteria: message.Criteria}}}
+	return program.queueModalEditorSubmitRequest(pullRequestCustomSearchSubmitRequest{criteria: message.Criteria})
 }
 
 func (program *Program) applyPullRequestCustomSearchSubmitted(message MsgPullRequestCustomSearchSubmitted) []Cmd {

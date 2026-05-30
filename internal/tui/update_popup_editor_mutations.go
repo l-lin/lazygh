@@ -7,27 +7,27 @@ import (
 )
 
 func (program *Program) applyPullRequestCommentSubmitRequested(message MsgPullRequestCommentSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestCommentSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
+	return program.queueModalEditorSubmitRequest(pullRequestCommentSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget})
 }
 
 func (program *Program) applyPullRequestReviewCommentSubmitRequested(message MsgPullRequestReviewCommentSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestReviewCommentSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
+	return program.queueModalEditorSubmitRequest(pullRequestReviewCommentSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget})
 }
 
 func (program *Program) applyPullRequestRequestChangesSubmitRequested(message MsgPullRequestRequestChangesSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestRequestChangesSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
+	return program.queueModalEditorSubmitRequest(pullRequestRequestChangesSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget})
 }
 
 func (program *Program) applyPullRequestTitleEditRequested(message MsgPullRequestTitleEditRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestTitleEditSubmitRequest{target: message.Target, title: message.Title, feedbackTarget: message.FeedbackTarget}}}
+	return program.queueModalEditorSubmitRequest(pullRequestTitleEditSubmitRequest{target: message.Target, title: message.Title, feedbackTarget: message.FeedbackTarget})
 }
 
 func (program *Program) applyPullRequestDescriptionEditRequested(message MsgPullRequestDescriptionEditRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestDescriptionEditSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
+	return program.queueModalEditorSubmitRequest(pullRequestDescriptionEditSubmitRequest{target: message.Target, body: message.Body, feedbackTarget: message.FeedbackTarget})
 }
 
 func (program *Program) applyPullRequestCommentUpdateRequested(message MsgPullRequestCommentUpdateRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pullRequestCommentUpdateSubmitRequest{target: message.Target, body: message.Body}}}
+	return program.queueModalEditorSubmitRequest(pullRequestCommentUpdateSubmitRequest{target: message.Target, body: message.Body})
 }
 
 func (program *Program) applyPullRequestCommentDeleteRequested(message MsgPullRequestCommentDeleteRequested) []Cmd {
@@ -44,7 +44,7 @@ func (program *Program) applyPullRequestCommentDeleteRequested(message MsgPullRe
 }
 
 func (program *Program) applyInlineCommentUpdateRequested(message MsgInlineCommentUpdateRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: inlineCommentUpdateSubmitRequest{target: message.Target, body: message.Body}}}
+	return program.queueModalEditorSubmitRequest(inlineCommentUpdateSubmitRequest{target: message.Target, body: message.Body})
 }
 
 func (program *Program) applyInlineCommentDeleteRequested(message MsgInlineCommentDeleteRequested) []Cmd {
@@ -61,7 +61,7 @@ func (program *Program) applyInlineCommentDeleteRequested(message MsgInlineComme
 }
 
 func (program *Program) applyInlineCommentReplySubmitRequested(message MsgInlineCommentReplySubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: inlineCommentReplySubmitRequest{target: message.Target, body: message.Body}}}
+	return program.queueModalEditorSubmitRequest(inlineCommentReplySubmitRequest{target: message.Target, body: message.Body})
 }
 
 func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineCommentResolutionRequested) []Cmd {
@@ -88,16 +88,16 @@ func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineC
 }
 
 func (program *Program) applyReviewInlineCommentSubmitRequested(message MsgReviewInlineCommentSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: reviewInlineCommentSubmitRequest{target: message.Target, body: message.Body}}}
+	return program.queueModalEditorSubmitRequest(reviewInlineCommentSubmitRequest{target: message.Target, body: message.Body})
 }
 
 func (program *Program) applyReviewInlineCommentPendingReviewPrepared(message MsgReviewInlineCommentPendingReviewPrepared) []Cmd {
 	program.setPendingPullRequestReviewStateByIdentity(message.Target.repository, message.Target.number, message.Target.pendingReview)
-	return []Cmd{modalEditorSubmitCmd{request: preparedReviewInlineCommentSubmitRequest{target: message.Target, body: message.Body}}}
+	return program.queueModalEditorSubmitRequest(preparedReviewInlineCommentSubmitRequest{target: message.Target, body: message.Body})
 }
 
 func (program *Program) applyPendingPullRequestReviewSubmitRequested(message MsgPendingPullRequestReviewSubmitRequested) []Cmd {
-	return []Cmd{modalEditorSubmitCmd{request: pendingPullRequestReviewSubmitRequest{target: message.Target, event: message.Event, body: message.Body, feedbackTarget: message.FeedbackTarget}}}
+	return program.queueModalEditorSubmitRequest(pendingPullRequestReviewSubmitRequest{target: message.Target, event: message.Event, body: message.Body, feedbackTarget: message.FeedbackTarget})
 }
 
 func pendingReviewSubmitError(event githubdomain.PullRequestReviewEvent, feedbackTarget Focus, err error) error {

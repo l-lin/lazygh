@@ -81,8 +81,14 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
 
-	if len(asyncRunner.runs) != 2 {
-		t.Fatalf("expected two queued background refreshes, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 3 {
+		t.Fatalf("expected one queued submit and two background refreshes, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued runs, actual %v", loader.detailCalls)

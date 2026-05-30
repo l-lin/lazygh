@@ -506,10 +506,15 @@ func TestReplyToInlineComment_GivenCommentsTabSubmit_WhenPostingReply_ThenItKeep
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued submit and one background refresh, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued run, actual %v", loader.detailCalls)
@@ -564,10 +569,15 @@ func TestReplyToInlineComment_GivenChangesTabSubmit_WhenPostingReply_ThenItKeeps
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
 	then_currentViewNameIs(t, gui, viewDetailName)
 
-	if len(asyncRunner.runs) != 2 {
-		t.Fatalf("expected two queued background refreshes, actual %d", len(asyncRunner.runs))
+	if len(asyncRunner.runs) != 3 {
+		t.Fatalf("expected one queued submit and two background refreshes, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager detail refresh call before the queued runs, actual %v", loader.detailCalls)
@@ -618,10 +628,15 @@ func TestReplyToInlineComment_GivenReviewModeSubmit_WhenPostingReply_ThenItKeeps
 	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
 	actualErr = actualHandler(gui, nil)
 	then_noError(t, actualErr)
-	then_currentViewNameIs(t, gui, viewDetailName)
 
 	if len(asyncRunner.runs) != 1 {
-		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+		t.Fatalf("expected one queued submit, actual %d", len(asyncRunner.runs))
+	}
+	given_runQueuedAsync(t, asyncRunner, 0)
+	then_currentViewNameIs(t, gui, viewDetailName)
+
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued submit and one background refresh, actual %d", len(asyncRunner.runs))
 	}
 	if !reflect.DeepEqual(loader.diffCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected no eager diff refresh call before the queued run, actual %v", loader.diffCalls)

@@ -15,6 +15,8 @@ type modalEditorSubmitCommandDeps struct {
 }
 
 type modalEditorSubmitRequest interface {
+	statusCommand() string
+	asyncRequested() bool
 	run(modalEditorSubmitCommandDeps) (modalEditorSubmitCompletion, error)
 }
 
