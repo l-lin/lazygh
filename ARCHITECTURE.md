@@ -65,6 +65,7 @@ Smaller state bags follow the same value-transition rule:
 - `programShellRuntime`: GUI, timers, async runner, refresh memoization, and shell-only services such as queued persistent-cache sync
 
 This keeps the composition root in one place, but it is still broader than a strict Elm shell.
+Live `*gocui.Gui` capture is centralized on `captureGUI(...)`; startup, render, and post-update entrypoints reuse that seam instead of writing `program.gui` directly.
 
 ### Loop
 
