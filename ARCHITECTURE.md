@@ -62,7 +62,7 @@ Smaller state bags follow the same value-transition rule:
 - `programDeps`: injected ports and services
 - `programStores`: caches, stores, and in-flight trackers
 - `programViewRuntime`: promoted UI runtime state
-- `programShellRuntime`: GUI, timers, async runner, and shell-only services
+- `programShellRuntime`: GUI, timers, async runner, refresh memoization, and shell-only services such as queued persistent-cache sync
 
 This keeps the composition root in one place, but it is still broader than a strict Elm shell.
 
@@ -74,7 +74,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 2. `Update` mutates state and returns typed `Cmd` values.
    Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so page-navigation selection, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit completion handling, detail/build-popup motion or yank request routing, detail-fold collapse plus sync-plan derivation, link-open feedback preflight, clipboard-preflight teardown, and pending-review cache recording stay in `Update`. The top-level `update.go` router is grouped by message category, and helper files no longer re-enter `Update(program, msg)` for local follow-up work.
 3. `dispatch()` executes those commands.
-4. `afterStateChange()` runs workflow planning, shell sync, and redraw only.
+4. `afterStateChange()` runs workflow planning, persistent-cache shell sync, shell sync, and redraw only.
 
 `dispatchRuntimeMessage(...)` is the explicit shell bridge for runtime entrypoints that need `Update` plus `afterStateChange()`. `executeRuntimeMessage(...)` is the low-level shell bridge for command/runtime re-entry that should apply a message without another post-update pass. `dispatchAsyncMessage()` still hops worker results back onto the UI thread.
 
