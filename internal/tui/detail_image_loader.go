@@ -17,28 +17,6 @@ type detailImageHTMLSource struct {
 	applyTarget  detailImageHTMLApplyTarget
 }
 
-func (program *Program) detailImageAuthToken() string {
-	if !program.hasAuthTokenProvider() {
-		return ""
-	}
-
-	program.detailImageAuthTokenMu.Lock()
-	defer program.detailImageAuthTokenMu.Unlock()
-
-	if actual, ok := program.cachedGitHubAuthToken(); ok {
-		return actual
-	}
-
-	actual, err := program.authTokenProvider.GetAuthToken()
-	if err != nil {
-		program.cacheGitHubAuthToken("")
-		return ""
-	}
-	program.cacheGitHubAuthToken(actual)
-	cachedToken, _ := program.cachedGitHubAuthToken()
-	return cachedToken
-}
-
 func (program *Program) currentDetailImageHTMLSources() []detailImageHTMLSource {
 	if program.reviewModeActive() {
 		return program.currentReviewSessionImageHTMLSources()

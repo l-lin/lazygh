@@ -120,12 +120,17 @@ func TestLoadCurrentDetailImageHTMLCommand_GivenMarkdownHTMLRendererOnly_WhenExe
 	}
 }
 
-func TestDetailImageAuthToken_GivenAuthTokenProviderOnly_WhenLoading_ThenItCachesTheToken(t *testing.T) {
+func TestNewDetailImageWorkflowRuntime_GivenAuthTokenProviderOnly_WhenLoadingTheGitHubToken_ThenItCachesTheToken(t *testing.T) {
 	provider := &fakeAuthTokenProvider{token: " ghp_secret-token "}
 	subject := NewProgramWithModelAndDeps(given_model(), AppDeps{AuthTokenProvider: provider})
+	runtime := newDetailImageWorkflowRuntime(subject, nil)
 
-	actualFirst := subject.detailImageAuthToken()
-	actualSecond := subject.detailImageAuthToken()
+	if runtime.loadGitHubAuthToken == nil {
+		t.Fatal("expected the detail-image workflow runtime to expose a GitHub auth token loader")
+	}
+
+	actualFirst := runtime.loadGitHubAuthToken()
+	actualSecond := runtime.loadGitHubAuthToken()
 
 	if provider.calls != 1 {
 		t.Fatalf("expected one auth token lookup, actual %d", provider.calls)

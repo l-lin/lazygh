@@ -4,8 +4,9 @@ import "github.com/jesseduffield/gocui"
 
 type detailImageWorkflowRuntime struct {
 	workflowShellRuntime
-	renderMarkdownHTML func(string, string) (string, error)
-	loadDetailImage    func(string) (loadedDetailImage, error)
+	renderMarkdownHTML  func(string, string) (string, error)
+	loadDetailImage     func(string) (loadedDetailImage, error)
+	loadGitHubAuthToken func() string
 }
 
 type loadCurrentDetailImageHTMLCmd struct {
@@ -24,14 +25,38 @@ func newDetailImageWorkflowRuntime(program *Program, gui *gocui.Gui) detailImage
 	if program.markdownHTMLRenderer != nil {
 		runtime.renderMarkdownHTML = program.markdownHTMLRenderer.RenderMarkdownHTML
 	}
+	runtime.loadGitHubAuthToken = newDetailImageAuthTokenRuntime(program)
 	runtime.loadDetailImage = func(imageURL string) (loadedDetailImage, error) {
 		githubToken := ""
-		if isGitHubImageSource(imageURL) {
-			githubToken = program.detailImageAuthToken()
+		if isGitHubImageSource(imageURL) && runtime.loadGitHubAuthToken != nil {
+			githubToken = runtime.loadGitHubAuthToken()
 		}
 		return loadDetailImage(imageURL, program.imageHTTPClient, githubToken)
 	}
 	return runtime
+}
+
+func newDetailImageAuthTokenRuntime(program *Program) func() string {
+	if program == nil || !program.hasAuthTokenProvider() {
+		return nil
+	}
+	return func() string {
+		program.detailImageAuthTokenMu.Lock()
+		defer program.detailImageAuthTokenMu.Unlock()
+
+		if actual, ok := program.cachedGitHubAuthToken(); ok {
+			return actual
+		}
+
+		actual, err := program.authTokenProvider.GetAuthToken()
+		if err != nil {
+			program.cacheGitHubAuthToken("")
+			return ""
+		}
+		program.cacheGitHubAuthToken(actual)
+		cachedToken, _ := program.cachedGitHubAuthToken()
+		return cachedToken
+	}
 }
 
 func (command loadCurrentDetailImageHTMLCmd) execute(program *Program, gui *gocui.Gui) {
