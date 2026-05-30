@@ -20,25 +20,37 @@ func pullRequestTabSeedsForSearches(searches []appconfig.PullRequestSearch) []Pu
 	return seeds
 }
 
-func (program *Program) pullRequestSearch(tab PullRequestTab) appconfig.PullRequestSearch {
-	searches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)
+func pullRequestSearchForTab(searches []appconfig.PullRequestSearch, tab PullRequestTab) (appconfig.PullRequestSearch, bool) {
+	resolvedSearches := appconfig.ResolvePullRequestSearches(searches)
 	index := int(tab)
-	if index < 0 || index >= len(searches) {
-		return searches[0]
+	if index < 0 || index >= len(resolvedSearches) {
+		return appconfig.PullRequestSearch{}, false
 	}
-	return searches[index]
+	return resolvedSearches[index], true
+}
+
+func pullRequestSearchCommandForTab(searches []appconfig.PullRequestSearch, tab PullRequestTab) ([]string, bool) {
+	search, ok := pullRequestSearchForTab(searches, tab)
+	if !ok {
+		return nil, false
+	}
+	return append([]string(nil), search.Command...), true
+}
+
+func (program *Program) pullRequestSearch(tab PullRequestTab) appconfig.PullRequestSearch {
+	search, ok := pullRequestSearchForTab(program.runtimeConfig.pullRequestSearches, tab)
+	if !ok {
+		resolvedSearches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)
+		return resolvedSearches[0]
+	}
+	return search
 }
 
 func (program *Program) searchBackedPullRequestSearch(tab PullRequestTab) (appconfig.PullRequestSearch, bool) {
 	if program == nil || program.isPastedPullRequestTab(tab) {
 		return appconfig.PullRequestSearch{}, false
 	}
-	searches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)
-	index := int(tab)
-	if index < 0 || index >= len(searches) {
-		return appconfig.PullRequestSearch{}, false
-	}
-	return searches[index], true
+	return pullRequestSearchForTab(program.runtimeConfig.pullRequestSearches, tab)
 }
 
 func (program *Program) pullRequestListState(tab PullRequestTab) pullRequestListState {

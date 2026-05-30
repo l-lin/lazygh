@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/jesseduffield/gocui"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
@@ -29,10 +30,23 @@ func newPullRequestListWorkflowRuntime(program *Program, gui *gocui.Gui) pullReq
 	if program != nil {
 		runtime.pullRequestsFromCache = program.pullRequestsFromCache
 		if program.pullRequestListQueries != nil {
-			runtime.listPullRequests = program.listPullRequests
+			runtime.listPullRequests = newPullRequestListQueryCommand(program.pullRequestListQueries, program.runtimeConfig.pullRequestSearches)
 		}
 	}
 	return runtime
+}
+
+func newPullRequestListQueryCommand(queries PullRequestListQueries, searches []appconfig.PullRequestSearch) func(PullRequestTab) ([]githubdomain.PullRequest, error) {
+	if queries == nil {
+		return nil
+	}
+	return func(tab PullRequestTab) ([]githubdomain.PullRequest, error) {
+		command, ok := pullRequestSearchCommandForTab(searches, tab)
+		if !ok {
+			return nil, nil
+		}
+		return queries.ListPullRequests(command)
+	}
 }
 
 func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {

@@ -11,7 +11,6 @@ import (
 
 func TestAsyncResultHandlers_GivenLoaderAndTimerFiles_WhenInspecting_ThenTheyDoNotMutateStateInsideUiUpdaterClosures(t *testing.T) {
 	for _, path := range []string{
-		"program_loading.go",
 		"pull_request_detail_loader.go",
 		"review_diff_loader.go",
 		"workflow_command_runtime.go",

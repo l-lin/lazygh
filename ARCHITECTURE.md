@@ -144,7 +144,7 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 - Palette values belong in `internal/theme`.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is read-only.
-- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_pull_request_detail_commands.go`, `workflow_notification_commands.go`, `program_loading.go`, `notification_loading.go`, and `notification_detail_loader.go`.
+- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_pull_request_list_commands.go`, `workflow_pull_request_detail_commands.go`, `workflow_notification_commands.go`, `notification_loading.go`, and `notification_detail_loader.go`.
 
 ## Start here
 
