@@ -24,11 +24,7 @@ func (program *Program) canHydrateNotificationsFromCache() bool {
 }
 
 func (program *Program) cacheNotifications(notifications []githubdomain.Notification) {
-	if program.pullRequestCache == nil {
-		return
-	}
-
-	_ = program.pullRequestCache.SaveNotifications(program.filterDoneNotifications(notifications))
+	program.queuePersistentCacheShellAction(saveNotificationsPersistentCacheAction{notifications: clonePersistentCacheNotifications(program.filterDoneNotifications(notifications))})
 }
 
 func (program *Program) shouldPreserveNotificationRowsOnRefreshError() bool {

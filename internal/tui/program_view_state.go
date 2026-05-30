@@ -6,6 +6,7 @@ type viewConfigurator func(*gocui.View)
 type viewRenderer func(*gocui.View)
 
 func (program *Program) afterStateChange(gui *gocui.Gui) error {
+	program.syncPersistentCacheShellState()
 	if gui == nil {
 		return nil
 	}

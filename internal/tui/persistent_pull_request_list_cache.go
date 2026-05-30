@@ -29,15 +29,11 @@ func (program *Program) canHydratePullRequestsFromCache(tab PullRequestTab) bool
 }
 
 func (program *Program) cachePullRequests(tab PullRequestTab, pullRequests []githubdomain.PullRequest) {
-	if program.pullRequestCache == nil {
-		return
-	}
-
 	search, ok := program.searchBackedPullRequestSearch(tab)
 	if !ok {
 		return
 	}
-	_ = program.pullRequestCache.SavePullRequests(search, pullRequests)
+	program.queuePersistentCacheShellAction(savePullRequestsPersistentCacheAction{search: search, pullRequests: clonePersistentCachePullRequests(pullRequests)})
 }
 
 func (program *Program) shouldPreservePullRequestRowsOnRefreshError(tab PullRequestTab) bool {

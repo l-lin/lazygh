@@ -505,7 +505,7 @@ func TestMaybeLoadSelectedPullRequestDiff_GivenBrowserChangesTabAndAStaleCachedD
 		t.Fatalf("expected saved cached diff %+v with version %q, actual %+v", freshDiff, summary.UpdatedAt, actual)
 	}
 }
-func TestUpdate_GivenLoadedPullRequestDiffResult_WhenApplying_ThenItStoresTheResultInThePersistentCache(t *testing.T) {
+func TestUpdate_GivenLoadedPullRequestDiffResult_WhenApplying_ThenItStagesThePersistentCacheSaveUntilShellSync(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
 	expected := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+fresh", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, FileTeamOwnersAttempted: true}
 	loader := &cacheAwarePullRequestLoader{fakePullRequestDetailLoader: &fakePullRequestDetailLoader{diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": expected}}}
@@ -515,17 +515,29 @@ func TestUpdate_GivenLoadedPullRequestDiffResult_WhenApplying_ThenItStoresTheRes
 
 	Update(subject, loadPullRequestDiffResult(newPullRequestDiffWorkflowRuntime(subject, nil), githubcli.ToDomainPullRequestSummary(summary)))
 
+	if actual, ok := cache.savedDiffs["acme/widgets#42"]; ok {
+		t.Fatalf("expected no saved diff before shell sync, actual %+v", actual)
+	}
+
+	subject.syncPersistentCacheShellState()
+
 	actual := cache.savedDiffs["acme/widgets#42"]
 	if !reflect.DeepEqual(actual.Diff, expected) || actual.SourceUpdatedAt != summary.UpdatedAt {
 		t.Fatalf("expected saved diff %+v with version %q, actual %+v", expected, summary.UpdatedAt, actual)
 	}
 }
-func TestInvalidatePullRequestDetail_GivenAPersistentCache_WhenInvalidating_ThenItInvalidatesTheStoredPullRequest(t *testing.T) {
+func TestInvalidatePullRequestDetail_GivenAPersistentCache_WhenInvalidating_ThenItStagesTheStoredPullRequestInvalidationUntilShellSync(t *testing.T) {
 	subject := NewProgram()
 	cache := &fakePersistentPullRequestCache{}
 	subject.pullRequestCache = cache
 
 	subject.invalidatePullRequestDetail("acme/widgets", 42)
+
+	if len(cache.invalidatedPullRequests) != 0 {
+		t.Fatalf("expected no invalidated pull requests before shell sync, actual %v", cache.invalidatedPullRequests)
+	}
+
+	subject.syncPersistentCacheShellState()
 
 	if !reflect.DeepEqual(cache.invalidatedPullRequests, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected invalidated pull requests %v, actual %v", []string{"acme/widgets#42"}, cache.invalidatedPullRequests)

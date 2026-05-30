@@ -20,6 +20,7 @@ func TestUpdate_GivenMsgPullRequestTitleEditApplied_WhenApplying_ThenItKeepsTheV
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", State: "OPEN"}), sourceUpdatedAt: summary.UpdatedAt}
 
 	Update(subject, MsgPullRequestTitleEditApplied{Target: pullRequestActionTarget{repository: "acme/widgets", number: 42}, Title: "New title", FeedbackTarget: FocusPullRequestsView})
+	subject.syncPersistentCacheShellState()
 
 	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Title != "New title" {
@@ -49,6 +50,7 @@ func TestUpdate_GivenMsgPullRequestDescriptionEditApplied_WhenApplying_ThenItKee
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Old title", Number: 42, URL: summary.URL, Body: "Old body", BodyHTML: "<p>Old body</p>", State: "OPEN"}), sourceUpdatedAt: summary.UpdatedAt}
 
 	Update(subject, MsgPullRequestDescriptionEditApplied{Target: pullRequestActionTarget{repository: "acme/widgets", number: 42}, Body: "New body", FeedbackTarget: FocusPullRequestsView})
+	subject.syncPersistentCacheShellState()
 
 	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Body != "New body" {
@@ -266,6 +268,7 @@ func TestOptimisticMutationCoordinator_GivenLoadedPullRequestDetail_WhenAppendin
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: summary.Title, Number: summary.Number, URL: summary.URL, Body: summary.Body, State: summary.State})}
 
 	subject.optimisticallyAppendPullRequestComment(pullRequestCommentTarget{repository: "acme/widgets", number: 42}, "Ship it")
+	subject.syncPersistentCacheShellState()
 
 	actual := subject.pullRequestDetailCache["acme/widgets#42"]
 	if len(actual.detail.Comments) != 1 {

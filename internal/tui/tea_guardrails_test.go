@@ -183,6 +183,35 @@ func TestRefactorGuard_GivenUpdateFiles_WhenScanning_ThenTheyDoNotClearThePersis
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenPersistentCacheSaveAndInvalidationIOStaysOnTheExplicitShellSurface(t *testing.T) {
+	allowedFiles := map[string]bool{
+		"persistent_cache_shell_runtime.go": true,
+	}
+
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(strings.Join([]string{
+		`pullRequestCache\.SavePullRequests\(`,
+		`pullRequestCache\.SaveNotifications\(`,
+		`pullRequestCache\.SavePullRequestDetail\(`,
+		`pullRequestCache\.SavePullRequestDiff\(`,
+		`pullRequestCache\.InvalidatePullRequest\(`,
+	}, "|")), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if allowedFiles[base] {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected persistent cache save/invalidation IO to stay on the explicit shell surface, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCallTheLegacyAsyncPopupBridge(t *testing.T) {
 	phase1Files := map[string]bool{
 		"pull_request_browser.go":     true,

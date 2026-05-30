@@ -48,11 +48,7 @@ func (program *Program) canKeepPullRequestDetailOnRefreshError(key string) bool 
 }
 
 func (program *Program) cachePullRequestDetail(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) {
-	if program.pullRequestCache == nil {
-		return
-	}
-
-	_ = program.pullRequestCache.SavePullRequestDetail(summary, detail)
+	program.queuePersistentCacheShellAction(savePullRequestDetailPersistentCacheAction{summary: summary, detail: clonePullRequestDetail(detail)})
 }
 
 func (program *Program) pullRequestDiffFromPersistentCache(summary githubdomain.PullRequest) (pullRequestDiffResult, bool) {
@@ -101,19 +97,14 @@ func (program *Program) canKeepPullRequestDiffOnRefreshError(key string) bool {
 }
 
 func (program *Program) cachePullRequestDiff(summary githubdomain.PullRequest, diff githubdomain.PullRequestDiff) {
-	if program.pullRequestCache == nil {
-		return
-	}
-
-	_ = program.pullRequestCache.SavePullRequestDiff(summary, diff)
+	program.queuePersistentCacheShellAction(savePullRequestDiffPersistentCacheAction{summary: summary, diff: clonePersistentCachePullRequestDiff(diff)})
 }
 
 func (program *Program) invalidatePersistentPullRequest(repository string, number int) {
-	if program.pullRequestCache == nil {
+	if pullRequestKeyFromIdentity(repository, number) == "" {
 		return
 	}
-
-	_ = program.pullRequestCache.InvalidatePullRequest(strings.TrimSpace(repository), number)
+	program.queuePersistentCacheShellAction(invalidatePullRequestPersistentCacheAction{repository: repository, number: number})
 }
 
 func pullRequestSummaryVersion(summary any) string {
