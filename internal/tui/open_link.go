@@ -75,8 +75,9 @@ func (program *Program) detailCursorHasLink() bool {
 }
 
 func (program *Program) openLinkUnderCursorActionsPopupAction() actionsPopupAction {
+	capabilities := program.currentInteractionCapabilitySnapshot()
 	var requested Msg = MsgOpenLinkUnderCursorRequested{}
-	if program.linkOpener == nil {
+	if !capabilities.linkOpenerAvailable {
 		requested = actionsPopupErrorRequested(errors.New(openLinkOpenerUnavailableMessage))
 	}
 	return actionsPopupAction{

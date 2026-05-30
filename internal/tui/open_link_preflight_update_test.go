@@ -6,6 +6,21 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
+func TestInteractionCapabilitySnapshot_GivenLinkOpenerAndClipboardReader_WhenResolving_ThenItReportsAvailability(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.linkOpener = &fakeLinkOpener{}
+	subject.clipboardReader = &fakeClipboardWriter{}
+
+	actual := subject.currentInteractionCapabilitySnapshot()
+
+	if !actual.linkOpenerAvailable {
+		t.Fatal("expected the capability snapshot to report an available link opener")
+	}
+	if !actual.clipboardReaderAvailable {
+		t.Fatal("expected the capability snapshot to report an available clipboard reader")
+	}
+}
+
 func TestUpdate_GivenMsgOpenLinkUnderCursorResolvedWithoutLink_WhenApplying_ThenItSetsUnavailableFeedback(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 

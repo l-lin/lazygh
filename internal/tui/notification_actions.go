@@ -181,9 +181,10 @@ func (program *Program) markAllNotificationsDoneAction() actionsPopupAction {
 }
 
 func (program *Program) openNotificationInBrowserAction() actionsPopupAction {
+	capabilities := program.currentInteractionCapabilitySnapshot()
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
 	switch {
-	case program.linkOpener == nil:
+	case !capabilities.linkOpenerAvailable:
 		requested = actionsPopupErrorRequested(ErrLinkOpenerUnavailable)
 	case !program.isNotificationContext():
 	case func() bool {

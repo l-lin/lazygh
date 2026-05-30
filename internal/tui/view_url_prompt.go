@@ -28,22 +28,6 @@ func openPullRequestByURLPromptDescriptor() modalEditorOpenDescriptor {
 	return newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(openPullRequestByURLActionTitle, "", newOpenPullRequestByURLSubmitDescriptor(), openPullRequestByURLEditorHeight)
 }
 
-func (program *Program) clipboardPullRequestURL() (string, error) {
-	if program == nil || program.clipboardReader == nil {
-		return "", ErrClipboardUnavailable
-	}
-
-	clipboardText, err := program.clipboardReader.ReadText()
-	if err != nil {
-		return "", err
-	}
-	pullRequest, err := githubdomain.ParsePullRequestURL(clipboardText)
-	if err != nil {
-		return "", err
-	}
-	return pullRequest.URL, nil
-}
-
 func openPullRequestByClipboardFeedbackMessage(err error) string {
 	switch {
 	case errors.Is(err, ErrClipboardUnavailable):

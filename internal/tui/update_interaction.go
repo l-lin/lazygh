@@ -443,7 +443,8 @@ func (program *Program) applyCopyPullRequestBuildRunPopupContentRequested(messag
 }
 
 func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
-	if program.linkOpener == nil {
+	capabilities := program.currentInteractionCapabilitySnapshot()
+	if !capabilities.linkOpenerAvailable {
 		if program.model != nil && program.model.ActionsPopupVisible() {
 			program.setActionsPopupErrorMessage(openLinkOpenerUnavailableMessage)
 			return nil
