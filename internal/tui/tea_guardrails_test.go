@@ -237,6 +237,25 @@ func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenRefreshReadCacheMem
 	}
 }
 
+func TestRefactorGuard_GivenProductionFiles_WhenScanning_ThenGUICaptureStaysOnTheHelperSurface(t *testing.T) {
+	actualMatches := given_regexpLineMatchesInGoFiles(t, ".", regexp.MustCompile(`program\.gui\s*=\s*gui`), func(path string) bool {
+		base := filepath.Base(path)
+		return strings.HasSuffix(base, ".go") && !strings.HasSuffix(base, "_test.go")
+	})
+
+	remainingMatches := make([]string, 0, len(actualMatches))
+	for _, match := range actualMatches {
+		base := filepath.Base(strings.Split(match, ":")[0])
+		if base == "dispatch.go" {
+			continue
+		}
+		remainingMatches = append(remainingMatches, match)
+	}
+	if len(remainingMatches) != 0 {
+		t.Fatalf("expected GUI capture to stay on the dedicated helper surface, actual %v", remainingMatches)
+	}
+}
+
 func TestRefactorGuard_GivenPhase1PopupAsyncFiles_WhenScanning_ThenTheyDoNotCallTheLegacyAsyncPopupBridge(t *testing.T) {
 	phase1Files := map[string]bool{
 		"pull_request_browser.go":     true,

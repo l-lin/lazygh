@@ -236,7 +236,7 @@ func (program *Program) configureGUI(gui *gocui.Gui) {
 	gui.SelBgColor = gocuiColorOrDefault(theme.BackgroundHex)
 	gui.SelFgColor = gocui.GetColor(theme.ActiveTextHex)
 	gui.SelFrameColor = gocui.GetColor(theme.ActiveBorderHex)
-	program.gui = gui
+	gui = program.captureGUI(gui)
 	if !program.startupState.appStarted {
 		_ = program.dispatch(gui, MsgAppStarted{})
 	}

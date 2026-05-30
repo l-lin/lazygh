@@ -11,7 +11,7 @@ func (program *Program) afterStateChange(gui *gocui.Gui) error {
 		return nil
 	}
 
-	program.gui = gui
+	gui = program.captureGUI(gui)
 	if program.startupState.appStarted {
 		program.executeWorkflowPlan(gui, program.plannedWorkflow())
 	}
@@ -23,9 +23,9 @@ func (program *Program) refreshViews(gui *gocui.Gui) error {
 		return nil
 	}
 
+	gui = program.captureGUI(gui)
 	var actualErr error
 	program.withRefreshReadCache(func() {
-		program.gui = gui
 		maxX, maxY := gui.Size()
 		if actualErr = program.applyScreenCompositionAndSyncView(gui, program.screenCompositionForSize(maxX, maxY)); actualErr != nil {
 			return

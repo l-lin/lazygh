@@ -21,9 +21,9 @@ func (program *Program) layout(gui *gocui.Gui) error {
 		return nil
 	}
 
+	gui = program.captureGUI(gui)
 	var actualErr error
 	program.withRefreshReadCache(func() {
-		program.gui = gui
 		maxX, maxY := gui.Size()
 		actualErr = program.applyScreenCompositionAndSyncView(gui, program.screenCompositionForSize(maxX, maxY))
 	})
