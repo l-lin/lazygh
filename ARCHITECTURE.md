@@ -102,10 +102,11 @@ The main read-only projection seams are:
 - `searchViewPresenter`
 - `statusLinePresenter`
 - `reviewSessionReadModel`
+- `detailReadModel`
 - `review_session_selectors.go`
 - `detail_cursor_selectors.go`
 
-Those snapshots keep footer, help, popup, title, and hot review/story selection derivation off the full `*Program` bag.
+Those snapshots keep footer, help, popup, title, view-0 detail identity or document selection, and hot review/story selection derivation off the full `*Program` bag.
 
 ## Command surfaces
 
