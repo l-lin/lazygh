@@ -1,38 +1,6 @@
 package tui
 
-import (
-	"github.com/jesseduffield/gocui"
-
-	githubdomain "github.com/l-lin/lazygh/internal/github"
-)
-
-func (program *Program) currentDetailDocument(view *gocui.View) detailDocument {
-	width := program.detailState.wrapWidth
-	if view != nil && view.InnerWidth() > 0 {
-		width = view.InnerWidth()
-	}
-	if width < 1 {
-		width = 1
-	}
-
-	if program.reviewModeActive() && !program.reviewSessionShowsDescription() && !program.reviewSessionShowsStoryChapter() {
-		if selectedFile, ok := program.selectedReviewSessionDiffFile(); ok {
-			return program.currentReviewDiffDocument(selectedFile, width)
-		}
-	}
-
-	if cacheKey, ok := program.currentPullRequestDetailDocumentCacheKey(width); ok {
-		if document, ok := program.pullRequestDetailDocumentForKey(cacheKey); ok {
-			return document
-		}
-
-		document := program.buildCurrentDetailDocument(width)
-		program.cachePullRequestDetailDocument(cacheKey, document)
-		return document
-	}
-
-	return program.buildCurrentDetailDocument(width)
-}
+import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 func (program *Program) currentPullRequestConversationDocument(summary any, detail any, width int) browserConversationDocument {
 	summaryValue, ok := toDomainPullRequestSummary(summary)

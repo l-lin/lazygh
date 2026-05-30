@@ -29,6 +29,10 @@ type reviewSessionReadModel struct {
 	diffResultKnown               bool
 }
 
+func (model reviewSessionReadModel) isActive() bool {
+	return model.active
+}
+
 func (model reviewSessionReadModel) metadataContent() string {
 	reference := pullRequestReference(model.summary, githubdomain.PullRequestDetail{})
 	return valueOrDash(strings.TrimSpace(reference))
