@@ -9,11 +9,7 @@ import (
 func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchRanges map[int][]detailColumnRange, state detailViewState) string {
 	lineMatchRanges := searchMatchRanges[row.line]
 	rowImages := detailImagesOnRow(document.images, row.line)
-	prefixLine := styledTextLine{}
-	if row.line >= 0 && row.line < len(document.prefixLines) {
-		prefixLine = document.prefixLines[row.line]
-	}
-	prefixText := renderStyledTextLine(prefixLine)
+	prefixText := renderStyledTextLine(detailRowPrefixLine(document, row))
 	if row.empty && len(rowImages) == 0 {
 		return prefixText
 	}
@@ -111,6 +107,24 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 	}
 
 	return prefixText + builder.String()
+}
+
+func detailRowPrefixLine(document detailDocument, row detailWrappedRow) styledTextLine {
+	if row.line < 0 || row.line >= len(document.prefixLines) {
+		return styledTextLine{}
+	}
+
+	prefixLine := cloneStyledTextLine(document.prefixLines[row.line])
+	if row.startColumn == 0 {
+		return prefixLine
+	}
+	for index, character := range prefixLine.runes {
+		if character == '│' || character == ' ' || character == '\t' {
+			continue
+		}
+		prefixLine.runes[index] = ' '
+	}
+	return prefixLine
 }
 
 func detailCellStylePrefix(style detailCellStyle, basePrefix string) string {

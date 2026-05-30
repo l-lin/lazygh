@@ -90,7 +90,7 @@ func (program *Program) currentReviewDiffDocument(file reviewDiffFile, width int
 	}
 
 	rows := program.currentReviewDiffRenderedRows(file, width)
-	document := newReviewDiffDetailDocument(rows, width)
+	document := newReviewDiffDetailDocumentWithWordWrap(rows, width, program.detailWordWrapEnabled())
 	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
 	entry.document = document
 	program.storeReviewDiffRenderEntry(cacheKey, entry)
