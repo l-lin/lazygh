@@ -21,13 +21,13 @@ func (program *Program) detailViewContent() string {
 			case CommentsDetailTab:
 				return program.renderCurrentPullRequestConversationsTab(summary, result.detail, program.detailState.wrapWidth)
 			case CommitsDetailTab:
-				return renderPullRequestCommitsTab(result.detail.Commits, program.markdownRenderer, program.detailState.wrapWidth)
+				return renderPullRequestCommitsTabWithWordWrap(result.detail.Commits, program.markdownRenderer, program.detailState.wrapWidth, program.detailWordWrapEnabled())
 			case ChangesDetailTab:
 				return program.renderCurrentPullRequestChangesTab(summary, program.detailState.wrapWidth)
 			default:
 				header := renderPullRequestBrowserHeader(summary, result.detail)
 				overview := program.renderCurrentPullRequestOverview(summary, result.detail, program.detailState.wrapWidth)
-				content := renderPullRequestDescription(summary, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
+				content := renderPullRequestDescriptionWithWordWrap(summary, result.detail, program.markdownRenderer, program.detailState.wrapWidth, program.detailWordWrapEnabled())
 				return renderPullRequestBrowserDetailContent(header, overview, content, program.detailState.wrapWidth)
 			}
 		}
@@ -40,7 +40,7 @@ func (program *Program) detailViewContent() string {
 					if result.err != nil {
 						return renderIssueDetailError(notification, repository, result.err)
 					}
-					return renderIssueDetail(repository, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
+					return renderIssueDetailWithWordWrap(repository, result.detail, program.markdownRenderer, program.detailState.wrapWidth, program.detailWordWrapEnabled())
 				}
 				return renderNotificationDetailLoading(notification, repository, program.loadingSpinnerFrame())
 			}
@@ -49,7 +49,7 @@ func (program *Program) detailViewContent() string {
 					if result.err != nil {
 						return renderReleaseDetailError(notification, repository, result.err)
 					}
-					return renderReleaseDetail(repository, result.detail, program.markdownRenderer, program.detailState.wrapWidth)
+					return renderReleaseDetailWithWordWrap(repository, result.detail, program.markdownRenderer, program.detailState.wrapWidth, program.detailWordWrapEnabled())
 				}
 				return renderNotificationDetailLoading(notification, repository, program.loadingSpinnerFrame())
 			}

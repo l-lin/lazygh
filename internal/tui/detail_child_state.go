@@ -12,6 +12,19 @@ func (state detailStateModel) withWrapWidth(width int) detailStateModel {
 	return state
 }
 
+func (state detailStateModel) wordWrapEnabled() bool {
+	return !state.wordWrapDisabled
+}
+
+func (state detailStateModel) withWordWrapEnabled(enabled bool) detailStateModel {
+	state.wordWrapDisabled = !enabled
+	return state
+}
+
+func (state detailStateModel) withWordWrapToggled() detailStateModel {
+	return state.withWordWrapEnabled(!state.wordWrapEnabled())
+}
+
 func (state detailStateModel) withActiveTab(tab DetailTab) detailStateModel {
 	state.activeTab = tab
 	return state

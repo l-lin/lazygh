@@ -14,10 +14,11 @@ type startupStateModel struct {
 }
 
 type detailStateModel struct {
-	wrapWidth    int
-	activeTab    DetailTab
-	lastIdentity string
-	viewState    detailViewState
+	wrapWidth        int
+	wordWrapDisabled bool
+	activeTab        DetailTab
+	lastIdentity     string
+	viewState        detailViewState
 }
 
 type overlayStateModel struct {

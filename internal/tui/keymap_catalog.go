@@ -274,6 +274,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_row_end", []string{viewDetailName}, program.moveDetailCursorToRowEnd),
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_top", []string{viewDetailName}, program.moveDetailCursorToTop),
 		sharedKeybindingActionFor(keymapScopeCursor, "open_link_under_cursor", []string{viewDetailName}, program.openLinkUnderCursor),
+		configuredKeybindingActionFor(keymapScopeCursor, "toggle_word_wrap", []string{viewDetailName}, program.toggleDetailWordWrap),
 		configuredKeybindingActionFor(keymapScopeCursor, "search_word_under_cursor_forward", []string{viewDetailName}, program.searchWordUnderCursorForward),
 		configuredKeybindingActionFor(keymapScopeCursor, "search_word_under_cursor_backward", []string{viewDetailName}, program.searchWordUnderCursorBackward),
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_to_bottom", []string{viewDetailName}, program.moveDetailCursorToBottom),

@@ -62,6 +62,10 @@ func renderPullRequestHeader(summary any, detail any, options pullRequestHeaderO
 }
 
 func renderPullRequestDescription(summary any, detail any, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestDescriptionWithWordWrap(summary, detail, renderer, width, true)
+}
+
+func renderPullRequestDescriptionWithWordWrap(summary any, detail any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
 	summaryValue, ok := toDomainPullRequestSummary(summary)
 	if !ok {
 		summaryValue = githubdomain.PullRequest{}
@@ -70,11 +74,15 @@ func renderPullRequestDescription(summary any, detail any, renderer MarkdownRend
 	if !ok {
 		detailValue = githubdomain.PullRequestDetail{}
 	}
-	return renderMarkdownWithFallback(prepareMarkdownForImageRendering(detailBody(detailValue, summaryValue), detailBodyHTML(detailValue)), renderer, width, "No description available.")
+	return renderMarkdownWithFallback(prepareMarkdownForImageRendering(detailBody(detailValue, summaryValue), detailBodyHTML(detailValue)), renderer, markdownRenderWidthForWordWrap(width, wordWrapEnabled), "No description available.")
 }
 
 func renderPullRequestCommentsTab(comments any, inlineThreads any, inlineComments any, renderer MarkdownRenderer, width int) string {
-	sections := buildPullRequestCommentsRenderedSections(toDomainPullRequestComments(comments), toDomainPullRequestReviewThreads(inlineThreads), toDomainPullRequestInlineComments(inlineComments), renderer, width)
+	return renderPullRequestCommentsTabWithWordWrap(comments, inlineThreads, inlineComments, renderer, width, true)
+}
+
+func renderPullRequestCommentsTabWithWordWrap(comments any, inlineThreads any, inlineComments any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
+	sections := buildPullRequestCommentsRenderedSectionsWithWordWrap(toDomainPullRequestComments(comments), toDomainPullRequestReviewThreads(inlineThreads), toDomainPullRequestInlineComments(inlineComments), renderer, width, wordWrapEnabled)
 	if len(sections) == 0 {
 		return "No comments yet."
 	}
@@ -87,6 +95,10 @@ func renderPullRequestCommentsTab(comments any, inlineThreads any, inlineComment
 }
 
 func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestCommitsTabWithWordWrap(commits, renderer, width, true)
+}
+
+func renderPullRequestCommitsTabWithWordWrap(commits any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
 	commitValues := sortedPullRequestCommitsDescending(toDomainPullRequestCommits(commits))
 	if len(commitValues) == 0 {
 		return "No commits yet."
@@ -94,7 +106,7 @@ func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width i
 
 	sections := make([]string, 0, len(commitValues))
 	for _, commit := range commitValues {
-		sections = append(sections, renderPullRequestCommitSection(commit, renderer, width))
+		sections = append(sections, renderPullRequestCommitSectionWithWordWrap(commit, renderer, width, wordWrapEnabled))
 	}
 	return strings.Join(sections, "\n"+renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), "")+"\n")
 }
@@ -108,6 +120,10 @@ func renderPullRequestChangesTabError(err error) string {
 }
 
 func renderPullRequestCommitSection(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestCommitSectionWithWordWrap(commit, renderer, width, true)
+}
+
+func renderPullRequestCommitSectionWithWordWrap(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
 	sectionLines := []string{renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineDotPrefix(), renderPullRequestCommitHeader(commit))}
 	for _, metadataLine := range filterEmptyStrings([]string{
 		renderPullRequestCommitAuthorsLine(commit.Authors),
@@ -115,7 +131,7 @@ func renderPullRequestCommitSection(commit githubdomain.PullRequestCommit, rende
 	}) {
 		sectionLines = append(sectionLines, renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), metadataLine))
 	}
-	if body := strings.TrimSpace(renderMarkdownWithFallback(prepareMarkdownForImageRendering(commit.MessageBody, commit.MessageBodyHTML), renderer, pullRequestCommitTimelineBodyWidth(width), "")); body != "" {
+	if body := strings.TrimSpace(renderMarkdownWithFallback(prepareMarkdownForImageRendering(commit.MessageBody, commit.MessageBodyHTML), renderer, markdownRenderWidthForWordWrap(pullRequestCommitTimelineBodyWidth(width), wordWrapEnabled), "")); body != "" {
 		sectionLines = append(sectionLines, renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), ""))
 		sectionLines = append(sectionLines, renderPullRequestCommitTimelineText(renderPullRequestCommitTimelineRailPrefix(), body))
 	}
@@ -390,21 +406,26 @@ type pullRequestCommentsRenderedSection struct {
 }
 
 func buildPullRequestCommentsRenderedSections(comments []githubdomain.PullRequestComment, inlineThreads []githubdomain.PullRequestReviewThread, inlineComments []githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int) []pullRequestCommentsRenderedSection {
+	return buildPullRequestCommentsRenderedSectionsWithWordWrap(comments, inlineThreads, inlineComments, renderer, width, true)
+}
+
+func buildPullRequestCommentsRenderedSectionsWithWordWrap(comments []githubdomain.PullRequestComment, inlineThreads []githubdomain.PullRequestReviewThread, inlineComments []githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, wordWrapEnabled bool) []pullRequestCommentsRenderedSection {
 	sections := make([]pullRequestCommentsRenderedSection, 0, len(comments)+maxInt(len(inlineThreads), len(inlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
+	renderWidth := markdownRenderWidthForWordWrap(commentBodyWidth, wordWrapEnabled)
 	for _, comment := range comments {
-		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), renderer, commentBodyWidth, "No comment body.")
+		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), renderer, renderWidth, "No comment body.")
 		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestCommentSection(comment, body, width)})
 	}
 	if len(inlineThreads) > 0 {
 		for _, inlineThread := range inlineThreads {
 			thread := inlineThread
-			sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentThreadSection(thread, renderer, width), inlineThread: &thread})
+			sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentThreadSectionWithWordWrap(thread, renderer, width, wordWrapEnabled), inlineThread: &thread})
 		}
 		return sections
 	}
 	for _, inlineComment := range inlineComments {
-		body := renderInlineCommentBodyForInlineComment(inlineComment, renderer, commentBodyWidth)
+		body := renderInlineCommentBodyForInlineComment(inlineComment, renderer, renderWidth)
 		sections = append(sections, pullRequestCommentsRenderedSection{text: renderPullRequestInlineCommentSection(inlineComment, body, width)})
 	}
 	return sections

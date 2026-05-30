@@ -206,11 +206,12 @@ func (program *Program) buildPullRequestConversationSections(summary githubdomai
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
 	sections := make([]browserDetailSection, 0, len(detail.Comments)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
+	renderWidth := program.detailMarkdownRenderWidth(commentBodyWidth)
 	connectedUserLogin := program.currentConnectedUserLogin()
 
 	for index, rawComment := range detail.Comments {
 		comment := rawComment
-		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), program.markdownRenderer, commentBodyWidth, "No comment body.")
+		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(comment.Body, comment.BodyHTML), program.markdownRenderer, renderWidth, "No comment body.")
 		sectionID := browserDetailSectionID(pullRequestKey, "comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{
@@ -231,10 +232,10 @@ func (program *Program) buildPullRequestConversationSections(summary githubdomai
 				id:                           sectionID,
 				header:                       renderPullRequestInlineCommentThreadHeader(thread, collapsed, width),
 				headerFocusOffset:            1,
-				body:                         renderPullRequestInlineCommentThreadBodyForViewer(thread, program.markdownRenderer, width, connectedUserLogin),
+				body:                         renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(thread, program.markdownRenderer, width, program.detailWordWrapEnabled(), connectedUserLogin),
 				collapsed:                    collapsed,
 				inlineThread:                 &thread,
-				inlineThreadBodyCommentIndex: inlineThreadBodyCommentIndexesForViewer(thread, program.markdownRenderer, width, connectedUserLogin),
+				inlineThreadBodyCommentIndex: inlineThreadBodyCommentIndexesForViewerWithWordWrap(thread, program.markdownRenderer, width, program.detailWordWrapEnabled(), connectedUserLogin),
 			})
 		}
 		return sections
@@ -242,7 +243,7 @@ func (program *Program) buildPullRequestConversationSections(summary githubdomai
 
 	for index, rawComment := range detail.InlineComments {
 		comment := rawComment
-		body := renderInlineCommentBodyForInlineComment(comment, program.markdownRenderer, commentBodyWidth)
+		body := renderInlineCommentBodyForInlineComment(comment, program.markdownRenderer, renderWidth)
 		sectionID := browserDetailSectionID(pullRequestKey, "inline-comment", index, comment.ID)
 		collapsed := program.browserDetailSectionCollapsed(sectionID, false)
 		sections = append(sections, browserDetailSection{

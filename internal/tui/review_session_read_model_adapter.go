@@ -36,6 +36,7 @@ func (program *Program) buildReviewSessionReadModel() reviewSessionReadModel {
 		collapsedThreadIDs:            state.collapsedThreadIDs,
 		story:                         state.story,
 		detailWrapWidth:               program.detailState.wrapWidth,
+		wordWrapEnabled:               program.detailWordWrapEnabled(),
 		markdownRenderer:              program.markdownRenderer,
 		connectedUserLogin:            program.currentConnectedUserLogin(),
 		loadingSpinner:                program.loadingSpinnerFrame(),

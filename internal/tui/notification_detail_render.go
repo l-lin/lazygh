@@ -8,6 +8,10 @@ import (
 )
 
 func renderIssueDetail(repository string, detail githubdomain.IssueDetail, renderer MarkdownRenderer, width int) string {
+	return renderIssueDetailWithWordWrap(repository, detail, renderer, width, true)
+}
+
+func renderIssueDetailWithWordWrap(repository string, detail githubdomain.IssueDetail, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
 	header := strings.Join(filterEmptyStrings([]string{
 		stylePullRequestTitleText(iconNotificationIssue + " " + firstNonEmpty(detail.Title, fmt.Sprintf("Issue #%d", detail.Number))),
 		stylePullRequestReferenceText(fmt.Sprintf("%s#%d", strings.TrimSpace(repository), detail.Number)),
@@ -15,17 +19,21 @@ func renderIssueDetail(repository string, detail githubdomain.IssueDetail, rende
 		renderPullRequestAssigneesLine(detail.Assignees),
 		renderPullRequestLabelsLine(detail.Labels),
 	}), "\n")
-	body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(detail.Body, detail.BodyHTML), renderer, width, "No description available.")
+	body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(detail.Body, detail.BodyHTML), renderer, markdownRenderWidthForWordWrap(width, wordWrapEnabled), "No description available.")
 	return renderPullRequestDetailContent(header, body)
 }
 
 func renderReleaseDetail(repository string, detail githubdomain.ReleaseDetail, renderer MarkdownRenderer, width int) string {
+	return renderReleaseDetailWithWordWrap(repository, detail, renderer, width, true)
+}
+
+func renderReleaseDetailWithWordWrap(repository string, detail githubdomain.ReleaseDetail, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
 	header := strings.Join(filterEmptyStrings([]string{
 		stylePullRequestTitleText(iconNotificationRelease + " " + firstNonEmpty(detail.Name, detail.TagName, "Release")),
 		stylePullRequestReferenceText(strings.TrimSpace(repository)),
 		renderReleaseMetaLine(detail),
 	}), "\n")
-	body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(detail.Body, detail.BodyHTML), renderer, width, "No release notes available.")
+	body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(detail.Body, detail.BodyHTML), renderer, markdownRenderWidthForWordWrap(width, wordWrapEnabled), "No release notes available.")
 	return renderPullRequestDetailContent(header, body)
 }
 

@@ -18,6 +18,10 @@ func buildPullRequestChangesRenderedRows(files []reviewDiffFile, renderer Markdo
 }
 
 func buildPullRequestChangesRenderedRowsForViewer(files []reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, collapsedFileIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
+	return buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, renderer, width, true, collapsedThreadIDs, collapsedFileIDs, connectedUserLogin)
+}
+
+func buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files []reviewDiffFile, renderer MarkdownRenderer, width int, wordWrapEnabled bool, collapsedThreadIDs map[string]bool, collapsedFileIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(files)*8)
 	for index, file := range files {
 		filePath := strings.TrimSpace(file.Path)
@@ -29,7 +33,7 @@ func buildPullRequestChangesRenderedRowsForViewer(files []reviewDiffFile, render
 		if collapsed {
 			continue
 		}
-		contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin), filePath)
+		contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewerAndWordWrap(file, renderer, width, wordWrapEnabled, collapsedThreadIDs, connectedUserLogin), filePath)
 		if len(contentRows) == 0 {
 			continue
 		}

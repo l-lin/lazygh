@@ -15,6 +15,12 @@ func (program *Program) setDetailWrapWidth(width int) {
 	})
 }
 
+func (program *Program) toggleDetailWordWrapState() {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withWordWrapToggled()
+	})
+}
+
 func (program *Program) setDetailActiveTab(tab DetailTab) {
 	program.updateDetailState(func(state detailStateModel) detailStateModel {
 		return state.withActiveTab(tab)

@@ -62,12 +62,12 @@ func (program *Program) currentPullRequestChangesRenderedRows(summary githubdoma
 			return rows
 		}
 
-		rows := buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
+		rows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
 		program.cachePullRequestChangesRenderedRows(cacheKey, rows)
 		return rows
 	}
 
-	return buildPullRequestChangesRenderedRowsForViewer(files, program.markdownRenderer, width, program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
+	return buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
 }
 
 func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {
@@ -76,7 +76,7 @@ func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width
 		return entry.rows
 	}
 
-	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, program.markdownRenderer, width, program.navigationState.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
+	rows := buildReviewDiffRenderedRowsWithCollapsedThreadsForViewerAndWordWrap(file, program.markdownRenderer, width, program.detailWordWrapEnabled(), program.navigationState.reviewSession.collapsedThreadIDs, program.currentConnectedUserLogin())
 	entry, _ := program.cachedReviewDiffRenderEntry(cacheKey)
 	entry.rows = rows
 	program.storeReviewDiffRenderEntry(cacheKey, entry)

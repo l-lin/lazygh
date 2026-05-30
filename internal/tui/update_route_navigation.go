@@ -13,6 +13,9 @@ func (program *Program) routeBrowserAndReviewNavigation(msg Msg) updateResult {
 	case MsgCloseDetailRequested:
 		program.applyCloseDetailRequested()
 		return handledUpdate(nil)
+	case MsgToggleDetailWordWrapRequested:
+		program.applyToggleDetailWordWrapRequested()
+		return handledUpdate(nil)
 	case MsgStartReviewFileTreeSearch:
 		program.applyStartReviewFileTreeSearch(actual)
 		return handledUpdate(nil)

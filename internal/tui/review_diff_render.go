@@ -41,7 +41,11 @@ func renderReviewDiffFileForViewer(file reviewDiffFile, renderer MarkdownRendere
 }
 
 func renderReviewDiffFileWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) string {
-	return reviewDiffRenderedRowsText(buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin))
+	return renderReviewDiffFileWithCollapsedThreadsForViewerAndWordWrap(file, renderer, width, true, collapsedThreadIDs, connectedUserLogin)
+}
+
+func renderReviewDiffFileWithCollapsedThreadsForViewerAndWordWrap(file reviewDiffFile, renderer MarkdownRenderer, width int, wordWrapEnabled bool, collapsedThreadIDs map[string]bool, connectedUserLogin string) string {
+	return reviewDiffRenderedRowsText(buildReviewDiffRenderedRowsWithCollapsedThreadsForViewerAndWordWrap(file, renderer, width, wordWrapEnabled, collapsedThreadIDs, connectedUserLogin))
 }
 
 func buildReviewDiffRenderedRows(file reviewDiffFile, renderer MarkdownRenderer, width int) []reviewDiffRenderedRow {
@@ -53,9 +57,13 @@ func buildReviewDiffRenderedRowsForViewer(file reviewDiffFile, renderer Markdown
 }
 
 func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
+	return buildReviewDiffRenderedRowsWithCollapsedThreadsForViewerAndWordWrap(file, renderer, width, true, collapsedThreadIDs, connectedUserLogin)
+}
+
+func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewerAndWordWrap(file reviewDiffFile, renderer MarkdownRenderer, width int, wordWrapEnabled bool, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	filePath := strings.TrimSpace(file.Path)
 	rows := reviewDiffFileHeaderRows(file, renderReviewDiffFileHeader(file))
-	contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewer(file, renderer, width, collapsedThreadIDs, connectedUserLogin), filePath)
+	contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewerAndWordWrap(file, renderer, width, wordWrapEnabled, collapsedThreadIDs, connectedUserLogin), filePath)
 	if len(contentRows) == 0 {
 		return rows
 	}
@@ -67,6 +75,10 @@ func buildReviewDiffRenderedRowsWithCollapsedThreadsForViewer(file reviewDiffFil
 }
 
 func buildReviewDiffFileContentRowsForViewer(file reviewDiffFile, renderer MarkdownRenderer, width int, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
+	return buildReviewDiffFileContentRowsForViewerAndWordWrap(file, renderer, width, true, collapsedThreadIDs, connectedUserLogin)
+}
+
+func buildReviewDiffFileContentRowsForViewerAndWordWrap(file reviewDiffFile, renderer MarkdownRenderer, width int, wordWrapEnabled bool, collapsedThreadIDs map[string]bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0)
 	placeholder := reviewDiffPlaceholderText(file)
 	if placeholder != "" {
@@ -95,7 +107,7 @@ func buildReviewDiffFileContentRowsForViewer(file reviewDiffFile, renderer Markd
 					continue
 				}
 				matchedThreadIndexes[threadIndex] = true
-				rows = append(rows, renderReviewDiffThreadRowsForViewer(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs), connectedUserLogin)...)
+				rows = append(rows, renderReviewDiffThreadRowsForViewerWithWordWrap(thread, renderer, width, wordWrapEnabled, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs), connectedUserLogin)...)
 			}
 		}
 	}
@@ -109,7 +121,7 @@ func buildReviewDiffFileContentRowsForViewer(file reviewDiffFile, renderer Markd
 	}
 	rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindNote, Text: styleText("Inline discussion without visible diff context.", foregroundColorEscape(theme.DiffHunkHeaderHex))})
 	for _, thread := range unmatchedThreads {
-		rows = append(rows, renderReviewDiffThreadRowsForViewer(thread, renderer, width, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs), connectedUserLogin)...)
+		rows = append(rows, renderReviewDiffThreadRowsForViewerWithWordWrap(thread, renderer, width, wordWrapEnabled, numberWidth, reviewDiffThreadCollapsed(thread, collapsedThreadIDs), connectedUserLogin)...)
 	}
 	return rows
 }
@@ -235,7 +247,11 @@ func (thread reviewDiffThread) anchorLineNumbers() []int {
 	return lineNumbers
 }
 
-func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer MarkdownRenderer, width int, _ int, collapsed bool, connectedUserLogin string) []reviewDiffRenderedRow {
+func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int, collapsed bool, connectedUserLogin string) []reviewDiffRenderedRow {
+	return renderReviewDiffThreadRowsForViewerWithWordWrap(thread, renderer, width, true, numberWidth, collapsed, connectedUserLogin)
+}
+
+func renderReviewDiffThreadRowsForViewerWithWordWrap(thread reviewDiffThread, renderer MarkdownRenderer, width int, wordWrapEnabled bool, _ int, collapsed bool, connectedUserLogin string) []reviewDiffRenderedRow {
 	rows := make([]reviewDiffRenderedRow, 0, len(thread.Comments)*8)
 	threadWidth := effectiveMarkdownWidth(width)
 	threadCopy := thread
@@ -252,7 +268,7 @@ func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer Markd
 
 	for commentIndex, comment := range thread.Comments {
 		commentCopy := comment
-		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(comment, suggestionContext, renderer, threadWidth, commentIndex, len(thread.Comments), connectedUserLogin)
+		renderedCommentBlock := renderInlineThreadCommentBlockForViewerWithWordWrap(comment, suggestionContext, renderer, threadWidth, wordWrapEnabled, commentIndex, len(thread.Comments), connectedUserLogin)
 		for boxLine := range strings.SplitSeq(renderedCommentBlock, "\n") {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindInlineCommentDecoration, Text: boxLine, Thread: &threadCopy, Comment: &commentCopy})
 		}

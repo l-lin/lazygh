@@ -120,6 +120,7 @@ const (
 	actionsPopupOpenPullRequestBrowserIcon   = iconOpenBrowser
 	actionsPopupOpenPullRequestByURLIcon     = iconPullRequest
 	actionsPopupOpenLinkIcon                 = iconLink
+	actionsPopupWordWrapIcon                 = iconDescription
 	actionsPopupRefreshPullRequestIcon       = iconRefresh
 	actionsPopupReviewApproveIcon            = iconReviewApprove
 	actionsPopupReviewCommentIcon            = iconReviewComment

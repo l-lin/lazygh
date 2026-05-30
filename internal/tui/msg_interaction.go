@@ -85,6 +85,8 @@ type MsgOpenDetailRequested struct{}
 
 type MsgCloseDetailRequested struct{}
 
+type MsgToggleDetailWordWrapRequested struct{}
+
 type MsgStartReviewFileTreeSearch struct {
 	Query string
 }
@@ -385,6 +387,7 @@ func (MsgAdvanceDetailTab) isMsg()                             {}
 func (MsgAdvancePullRequestTab) isMsg()                        {}
 func (MsgOpenDetailRequested) isMsg()                          {}
 func (MsgCloseDetailRequested) isMsg()                         {}
+func (MsgToggleDetailWordWrapRequested) isMsg()                {}
 func (MsgStartReviewFileTreeSearch) isMsg()                    {}
 func (MsgSubmitReviewFileTreeSearch) isMsg()                   {}
 func (MsgCancelReviewFileTreeSearch) isMsg()                   {}

@@ -84,6 +84,18 @@ func (program *Program) applyCloseDetailRequested() {
 	program.model.CloseDetail()
 }
 
+func (program *Program) applyToggleDetailWordWrapRequested() {
+	if program == nil || program.model == nil || program.model.Focus() != FocusDetailView || !program.model.PaneVisible(FocusDetailView) {
+		return
+	}
+
+	program.toggleDetailWordWrapState()
+	program.invalidatePullRequestDetailDocumentCache()
+	program.invalidateReviewDiffRenderCache()
+	program.setFeedback(program.model.Focus(), detailWordWrapFeedbackMessage(program.detailWordWrapEnabled()))
+	program.closeActionsPopupForAcceptedRequest()
+}
+
 func (program *Program) applySearchDraftChanged(message MsgSearchDraftChanged) {
 	program.model.UpdateSearchDraft(message.Query)
 }

@@ -33,16 +33,24 @@ func renderPullRequestInlineCommentSectionForViewer(comment githubdomain.PullReq
 }
 
 func renderPullRequestInlineCommentThreadSection(thread any, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestInlineCommentThreadSectionForViewer(thread, renderer, width, "")
+	return renderPullRequestInlineCommentThreadSectionWithWordWrap(thread, renderer, width, true)
+}
+
+func renderPullRequestInlineCommentThreadSectionWithWordWrap(thread any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
+	return renderPullRequestInlineCommentThreadSectionForViewerWithWordWrap(thread, renderer, width, wordWrapEnabled, "")
 }
 
 func renderPullRequestInlineCommentThreadSectionForViewer(thread any, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
+	return renderPullRequestInlineCommentThreadSectionForViewerWithWordWrap(thread, renderer, width, true, connectedUserLogin)
+}
+
+func renderPullRequestInlineCommentThreadSectionForViewerWithWordWrap(thread any, renderer MarkdownRenderer, width int, wordWrapEnabled bool, connectedUserLogin string) string {
 	threadValue, ok := toDomainPullRequestReviewThread(thread)
 	if !ok {
 		return ""
 	}
 	header := renderPullRequestInlineCommentThreadHeader(threadValue, false, width)
-	body := renderPullRequestInlineCommentThreadBodyForViewer(threadValue, renderer, width, connectedUserLogin)
+	body := renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(threadValue, renderer, width, wordWrapEnabled, connectedUserLogin)
 	if strings.TrimSpace(body) == "" {
 		return header
 	}
@@ -62,10 +70,18 @@ func renderPullRequestInlineCommentThreadHeader(thread any, collapsed bool, _ in
 }
 
 func renderPullRequestInlineCommentThreadBody(thread any, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestInlineCommentThreadBodyForViewer(thread, renderer, width, "")
+	return renderPullRequestInlineCommentThreadBodyWithWordWrap(thread, renderer, width, true)
+}
+
+func renderPullRequestInlineCommentThreadBodyWithWordWrap(thread any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
+	return renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(thread, renderer, width, wordWrapEnabled, "")
 }
 
 func renderPullRequestInlineCommentThreadBodyForViewer(thread any, renderer MarkdownRenderer, width int, connectedUserLogin string) string {
+	return renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(thread, renderer, width, true, connectedUserLogin)
+}
+
+func renderPullRequestInlineCommentThreadBodyForViewerWithWordWrap(thread any, renderer MarkdownRenderer, width int, wordWrapEnabled bool, connectedUserLogin string) string {
 	threadValue, ok := toDomainPullRequestReviewThread(thread)
 	if !ok {
 		return ""
@@ -81,11 +97,15 @@ func renderPullRequestInlineCommentThreadBodyForViewer(thread any, renderer Mark
 		return strings.Join(lines, "\n")
 	}
 
-	lines = append(lines, renderInlineThreadCommentBoxesForViewer(threadValue.Comments, suggestionContext, renderer, width, connectedUserLogin)...)
+	lines = append(lines, renderInlineThreadCommentBoxesForViewerWithWordWrap(threadValue.Comments, suggestionContext, renderer, width, wordWrapEnabled, connectedUserLogin)...)
 	return strings.Join(lines, "\n")
 }
 
 func inlineThreadBodyCommentIndexesForViewer(thread any, renderer MarkdownRenderer, width int, connectedUserLogin string) []int {
+	return inlineThreadBodyCommentIndexesForViewerWithWordWrap(thread, renderer, width, true, connectedUserLogin)
+}
+
+func inlineThreadBodyCommentIndexesForViewerWithWordWrap(thread any, renderer MarkdownRenderer, width int, wordWrapEnabled bool, connectedUserLogin string) []int {
 	threadValue, ok := toDomainPullRequestReviewThread(thread)
 	if !ok {
 		return nil
@@ -105,7 +125,7 @@ func inlineThreadBodyCommentIndexesForViewer(thread any, renderer MarkdownRender
 	}
 
 	for commentIndex, threadComment := range threadValue.Comments {
-		renderedCommentBlock := renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(threadValue.Comments), connectedUserLogin)
+		renderedCommentBlock := renderInlineThreadCommentBlockForViewerWithWordWrap(threadComment, suggestionContext, renderer, width, wordWrapEnabled, commentIndex, len(threadValue.Comments), connectedUserLogin)
 		for range renderedTextLineCount(renderedCommentBlock) {
 			commentIndexes = append(commentIndexes, commentIndex)
 		}
@@ -131,19 +151,31 @@ func renderPullRequestInlineCommentThreadDiffPreview(comment githubdomain.PullRe
 }
 
 func renderInlineThreadCommentBoxesForViewer(comments []githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string) []string {
+	return renderInlineThreadCommentBoxesForViewerWithWordWrap(comments, suggestionContext, renderer, width, true, connectedUserLogin)
+}
+
+func renderInlineThreadCommentBoxesForViewerWithWordWrap(comments []githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, wordWrapEnabled bool, connectedUserLogin string) []string {
 	renderedComments := make([]string, 0, len(comments))
 	for commentIndex, threadComment := range comments {
-		renderedComments = append(renderedComments, renderInlineThreadCommentBlockForViewer(threadComment, suggestionContext, renderer, width, commentIndex, len(comments), connectedUserLogin))
+		renderedComments = append(renderedComments, renderInlineThreadCommentBlockForViewerWithWordWrap(threadComment, suggestionContext, renderer, width, wordWrapEnabled, commentIndex, len(comments), connectedUserLogin))
 	}
 	return renderedComments
 }
 
 func renderInlineThreadCommentBlock(comment githubdomain.PullRequestComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int) string {
-	return renderInlineThreadCommentBlockForViewer(comment, githubdomain.PullRequestInlineComment{}, renderer, width, commentIndex, commentCount, "")
+	return renderInlineThreadCommentBlockWithWordWrap(comment, renderer, width, true, commentIndex, commentCount)
+}
+
+func renderInlineThreadCommentBlockWithWordWrap(comment githubdomain.PullRequestComment, renderer MarkdownRenderer, width int, wordWrapEnabled bool, commentIndex int, commentCount int) string {
+	return renderInlineThreadCommentBlockForViewerWithWordWrap(comment, githubdomain.PullRequestInlineComment{}, renderer, width, wordWrapEnabled, commentIndex, commentCount, "")
 }
 
 func renderInlineThreadCommentBlockForViewer(comment githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, commentIndex int, commentCount int, connectedUserLogin string) string {
-	renderedCommentBox := renderInlineThreadCommentBoxForViewer(comment, suggestionContext, renderer, width, connectedUserLogin, commentIndex > 0)
+	return renderInlineThreadCommentBlockForViewerWithWordWrap(comment, suggestionContext, renderer, width, true, commentIndex, commentCount, connectedUserLogin)
+}
+
+func renderInlineThreadCommentBlockForViewerWithWordWrap(comment githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, wordWrapEnabled bool, commentIndex int, commentCount int, connectedUserLogin string) string {
+	renderedCommentBox := renderInlineThreadCommentBoxForViewerWithWordWrap(comment, suggestionContext, renderer, width, wordWrapEnabled, connectedUserLogin, commentIndex > 0)
 	if commentIndex == 0 {
 		return renderedCommentBox
 	}
@@ -151,9 +183,13 @@ func renderInlineThreadCommentBlockForViewer(comment githubdomain.PullRequestCom
 }
 
 func renderInlineThreadCommentBoxForViewer(comment githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, connectedUserLogin string, isReply bool) string {
+	return renderInlineThreadCommentBoxForViewerWithWordWrap(comment, suggestionContext, renderer, width, true, connectedUserLogin, isReply)
+}
+
+func renderInlineThreadCommentBoxForViewerWithWordWrap(comment githubdomain.PullRequestComment, suggestionContext githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, wordWrapEnabled bool, connectedUserLogin string, isReply bool) string {
 	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
 	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
-	body := renderInlineCommentBodyForThreadComment(comment, suggestionContext, renderer, commentBodyWidth)
+	body := renderInlineCommentBodyForThreadComment(comment, suggestionContext, renderer, markdownRenderWidthForWordWrap(commentBodyWidth, wordWrapEnabled))
 	return renderCompactCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
 }
 

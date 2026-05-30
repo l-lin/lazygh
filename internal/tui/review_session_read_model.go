@@ -18,6 +18,7 @@ type reviewSessionReadModel struct {
 	collapsedThreadIDs            map[string]bool
 	story                         reviewStoryData
 	detailWrapWidth               int
+	wordWrapEnabled               bool
 	markdownRenderer              MarkdownRenderer
 	connectedUserLogin            string
 	loadingSpinner                string
@@ -53,7 +54,7 @@ func (model reviewSessionReadModel) detailContent() string {
 	if !ok {
 		return model.noDiffDetail()
 	}
-	return renderReviewDiffFileWithCollapsedThreadsForViewer(selectedFile, model.markdownRenderer, model.detailWrapWidth, model.collapsedThreadIDs, model.connectedUserLogin)
+	return renderReviewDiffFileWithCollapsedThreadsForViewerAndWordWrap(selectedFile, model.markdownRenderer, model.detailWrapWidth, model.wordWrapEnabled, model.collapsedThreadIDs, model.connectedUserLogin)
 }
 
 func (model reviewSessionReadModel) descriptionContent() string {
@@ -65,7 +66,7 @@ func (model reviewSessionReadModel) descriptionContent() string {
 
 		header := renderPullRequestBrowserHeader(summary, model.descriptionResult.detail)
 		overview := model.descriptionOverview()
-		content := renderPullRequestDescription(summary, model.descriptionResult.detail, model.markdownRenderer, model.detailWrapWidth)
+		content := renderPullRequestDescriptionWithWordWrap(summary, model.descriptionResult.detail, model.markdownRenderer, model.detailWrapWidth, model.wordWrapEnabled)
 		return renderPullRequestBrowserDetailContent(header, overview, content, model.detailWrapWidth)
 	}
 
@@ -89,7 +90,7 @@ func (model reviewSessionReadModel) storyChapterContent() string {
 	if strings.TrimSpace(chapter.Narrative) != "" {
 		sections = append(sections, strings.TrimSpace(chapter.Narrative))
 	}
-	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), model.markdownRenderer, model.detailWrapWidth, "No chapter narrative is available.")
+	return renderMarkdownWithFallback(strings.Join(sections, "\n\n"), model.markdownRenderer, markdownRenderWidthForWordWrap(model.detailWrapWidth, model.wordWrapEnabled), "No chapter narrative is available.")
 }
 
 func (model reviewSessionReadModel) descriptionSummaryAndDetail() (githubdomain.PullRequest, githubdomain.PullRequestDetail, bool) {

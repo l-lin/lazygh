@@ -60,11 +60,15 @@ func (program *Program) currentCacheActionsPopupActions(actionContext ActionCont
 
 func (program *Program) currentContextualActionsPopupActions() []actionsPopupAction {
 	actionContext := program.actionContext()
+	actions := make([]actionsPopupAction, 0, 4)
+	if wrapAction, ok := program.currentDetailWordWrapAction(); ok {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, wrapAction)...)
+	}
 	if actionContext.IsNotificationContext() {
-		return program.currentNotificationActionsPopupActions()
+		return append(actions, program.currentNotificationActionsPopupActions()...)
 	}
 	if !actionContext.IsPullRequestContext() {
-		return nil
+		return actions
 	}
 
 	reviewActions, pullRequestActions := program.currentPullRequestActionsPopupGroupActions(actionContext)
@@ -90,7 +94,6 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 		reviewActions = append(reviewActions, inlineCommentAction)
 	}
 
-	actions := make([]actionsPopupAction, 0, len(reviewActions)+len(pullRequestActions)+2)
 	if len(reviewActions) > 0 {
 		actions = append(actions, actionsPopupGrouped(actionsPopupGroupReview, reviewActions...)...)
 	}
@@ -320,6 +323,8 @@ func actionsPopupDefaultKeywords(action actionsPopupAction) []string {
 		return []string{"note"}
 	case action.id == "open-link-under-cursor":
 		return []string{"browse", "visit"}
+	case action.id == "toggle-word-wrap":
+		return []string{"nowrap", "soft wrap", "line wrap"}
 	case action.id == "view-build-run":
 		return []string{"checks", "workflow", "ci"}
 	case action.id == "view-build-run-job-logs":

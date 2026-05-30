@@ -163,6 +163,8 @@ func TestActionsPopup_GivenConnectedUserDetail_WhenOpening_ThenItShowsTheGlobalA
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
 	then_popupBufferContainsOrderedActionLines(t, popupView.Buffer(), []string{
+		"Navigation",
+		actionsPopupLabel(actionsPopupWordWrapIcon, disableDetailWordWrapActionTitle),
 		"Theme",
 		actionsPopupLabel(actionsPopupChangeThemeIcon, themePickerActionTitle),
 		"Cache",
