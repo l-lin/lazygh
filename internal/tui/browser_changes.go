@@ -53,14 +53,14 @@ func browserChangesThreadSectionID(summary githubdomain.PullRequest, thread revi
 	return browserDetailSectionID(pullRequestDetailKey(summary.Repository, summary.Number), "changes-thread", 0, thread.ID)
 }
 
-func (program *Program) browserCollapsedChangesFileIDs(summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
+func browserCollapsedChangesFileIDs(collapsedSectionStates map[string]bool, summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
 	collapsedFileIDs := map[string]bool{}
 	for _, file := range files {
 		filePath := strings.TrimSpace(file.Path)
 		if filePath == "" {
 			continue
 		}
-		collapsedFileIDs[filePath] = program.browserDetailSectionCollapsed(browserChangesFileSectionID(summary, filePath), false)
+		collapsedFileIDs[filePath] = browserDetailSectionCollapsed(collapsedSectionStates, browserChangesFileSectionID(summary, filePath), false)
 	}
 	if len(collapsedFileIDs) == 0 {
 		return nil
@@ -68,7 +68,7 @@ func (program *Program) browserCollapsedChangesFileIDs(summary githubdomain.Pull
 	return collapsedFileIDs
 }
 
-func (program *Program) browserCollapsedChangesThreadIDs(summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
+func browserCollapsedChangesThreadIDs(collapsedSectionStates map[string]bool, summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
 	collapsedThreadIDs := map[string]bool{}
 	for _, file := range files {
 		for _, thread := range file.Threads {
@@ -76,71 +76,13 @@ func (program *Program) browserCollapsedChangesThreadIDs(summary githubdomain.Pu
 			if threadID == "" {
 				continue
 			}
-			collapsedThreadIDs[threadID] = program.browserDetailSectionCollapsed(browserChangesThreadSectionID(summary, thread), thread.IsResolved)
+			collapsedThreadIDs[threadID] = browserDetailSectionCollapsed(collapsedSectionStates, browserChangesThreadSectionID(summary, thread), thread.IsResolved)
 		}
 	}
 	if len(collapsedThreadIDs) == 0 {
 		return nil
 	}
 	return collapsedThreadIDs
-}
-
-func (program *Program) toggleBrowserChangesVisibility(summary githubdomain.PullRequest, detailDocument detailDocument) (detailViewSyncPlan, bool) {
-	result, ok := program.pullRequestDiffForSummary(summary)
-	if !ok || result.err != nil {
-		return detailViewSyncPlan{}, false
-	}
-
-	renderedRows := program.currentPullRequestChangesRenderedRows(summary, result.data.Files, detailDocument.width)
-	if _, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState); ok {
-		return program.toggleBrowserChangesThreadVisibility(summary, result.data.Files, detailDocument)
-	}
-	filePath, ok := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailState.viewState)
-	if !ok {
-		return detailViewSyncPlan{}, false
-	}
-	return program.toggleBrowserChangesFileVisibility(summary, result.data.Files, detailDocument.width, filePath)
-}
-
-func (program *Program) toggleBrowserChangesFileVisibility(summary githubdomain.PullRequest, files []reviewDiffFile, width int, filePath string) (detailViewSyncPlan, bool) {
-	trimmedFilePath := strings.TrimSpace(filePath)
-	if trimmedFilePath == "" {
-		return detailViewSyncPlan{}, false
-	}
-
-	sectionID := browserChangesFileSectionID(summary, trimmedFilePath)
-	collapsed := program.browserDetailSectionCollapsed(sectionID, false)
-	program.setBrowserDetailSectionCollapsed(sectionID, !collapsed)
-
-	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, width)
-	plan := detailViewSyncPlan{document: newReviewDiffDetailDocumentWithWordWrap(updatedRows, width, program.detailWordWrapEnabled())}
-	headerLineIndex := reviewDiffFileHeaderLineIndex(updatedRows, trimmedFilePath)
-	if headerLineIndex >= 0 {
-		plan.focusLine = headerLineIndex
-		plan.focusLineKnown = true
-	}
-	return plan, true
-}
-
-func (program *Program) toggleBrowserChangesThreadVisibility(summary githubdomain.PullRequest, files []reviewDiffFile, detailDocument detailDocument) (detailViewSyncPlan, bool) {
-	renderedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
-	thread, ok := reviewDiffThreadAtCursor(renderedRows, detailDocument, program.detailState.viewState)
-	if !ok {
-		return detailViewSyncPlan{}, false
-	}
-
-	sectionID := browserChangesThreadSectionID(summary, thread)
-	collapsed := program.browserDetailSectionCollapsed(sectionID, thread.IsResolved)
-	program.setBrowserDetailSectionCollapsed(sectionID, !collapsed)
-
-	updatedRows := program.currentPullRequestChangesRenderedRows(summary, files, detailDocument.width)
-	plan := detailViewSyncPlan{document: newReviewDiffDetailDocumentWithWordWrap(updatedRows, detailDocument.width, program.detailWordWrapEnabled())}
-	headerLineIndex := reviewDiffThreadHeaderLineIndex(updatedRows, thread.ID)
-	if headerLineIndex >= 0 {
-		plan.focusLine = headerLineIndex
-		plan.focusLineKnown = true
-	}
-	return plan, true
 }
 
 func reviewDiffFilePathAtCursor(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) (string, bool) {
