@@ -25,22 +25,19 @@ func (program *Program) detailCursorHasBuildLink() bool {
 }
 
 func (program *Program) currentPullRequestBuildRunTargetAtDetailCursor() (pullRequestBuildRunTarget, bool) {
-	context, ok := program.currentPullRequestDescriptionCursorContext()
+	model := program.currentDescriptionCursorActionReadModel()
+	entry, ok := model.buildActionEntryAtCursor()
 	if !ok {
 		return pullRequestBuildRunTarget{}, false
 	}
 
-	entry, ok := program.browserOverviewBuildEntryAtDetailCursorDocument(context.selection.document)
-	if !ok || strings.TrimSpace(entry.Link) == "" {
-		return pullRequestBuildRunTarget{}, false
-	}
-	check, ok := pullRequestStatusCheckMatchingEntry(context.detail.StatusCheckRollup, entry)
+	check, ok := pullRequestStatusCheckMatchingEntry(model.detail.StatusCheckRollup, entry)
 	if !ok {
 		return pullRequestBuildRunTarget{}, false
 	}
-	repository := pullRequestRepositoryName(context.summary.Repository)
+	repository := pullRequestRepositoryName(model.summary.Repository)
 	return pullRequestBuildRunTarget{
-		summary: context.summary,
+		summary: model.summary,
 		check:   check,
 		popupContent: pullRequestBuildRunPopupContent{
 			checkTitle: checkTitleForPullRequestBuildRunPopup(check),
@@ -100,53 +97,4 @@ func pullRequestStatusCheckMatchingEntry(checks []githubdomain.PullRequestStatus
 
 func checkTitleForPullRequestBuildRunPopup(check githubdomain.PullRequestStatusCheck) string {
 	return pullRequestOverviewCheckDisplayName(check)
-}
-
-func (program *Program) browserOverviewBuildEntryAtDetailCursorDocument(document detailDocument) (pullRequestOverviewEntry, bool) {
-	summary, detail, ok := program.currentPullRequestDescriptionSummaryAndDetail()
-	if !ok {
-		return pullRequestOverviewEntry{}, false
-	}
-
-	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, document.width, program.detailState.viewState.cursor.line)
-	if !ok || !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Builds") {
-		return pullRequestOverviewEntry{}, false
-	}
-	entry, ok := pullRequestOverviewEntryAtBodyLine(sectionAtCursor.section, sectionAtCursor.bodyLine)
-	if !ok || strings.TrimSpace(entry.Link) == "" {
-		return pullRequestOverviewEntry{}, false
-	}
-	return entry, true
-}
-
-func (program *Program) currentPullRequestDescriptionSummaryAndDetail() (githubdomain.PullRequest, githubdomain.PullRequestDetail, bool) {
-	actionContext := program.actionContext()
-	if actionContext.IsReviewContext() {
-		summary, detail, ok := program.reviewSessionDescriptionSummaryAndDetail()
-		if !ok {
-			return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
-		}
-		return summary, detail, true
-	}
-	if !actionContext.ShowsPullRequestDescription() {
-		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
-	}
-
-	summary, ok := program.selectedPullRequestSummaryForDetail()
-	if !ok {
-		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
-	}
-	result, ok := program.pullRequestDetailForSummary(summary)
-	if !ok || result.err != nil {
-		return githubdomain.PullRequest{}, githubdomain.PullRequestDetail{}, false
-	}
-	return summary, result.detail, true
-}
-
-func (program *Program) detailCursorActionsAvailable() bool {
-	actionContext := program.actionContext()
-	if actionContext.ActiveView.Focus == FocusDetailView {
-		return true
-	}
-	return actionContext.IsReviewContext() && actionContext.ActiveView.Focus == FocusUserView && actionContext.ShowsPullRequestDescription()
 }

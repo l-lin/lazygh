@@ -30,20 +30,11 @@ func (program *Program) currentDetailCursorLink() (string, bool) {
 	if actual, ok := selection.document.linkAt(selection.state.cursor); ok {
 		return actual, true
 	}
-	return program.buildLinkUnderCursor(selection.document)
+	return program.buildLinkUnderCursor()
 }
 
-func (program *Program) buildLinkUnderCursor(document detailDocument) (string, bool) {
-	entry, ok := program.browserOverviewBuildEntryAtDetailCursorDocument(document)
-	if !ok {
-		return "", false
-	}
-
-	actual := strings.TrimSpace(entry.Link)
-	if actual == "" {
-		return "", false
-	}
-	return actual, true
+func (program *Program) buildLinkUnderCursor() (string, bool) {
+	return program.currentDescriptionCursorActionReadModel().buildLinkAtCursor()
 }
 
 func pullRequestOverviewEntryAtBodyLine(section browserDetailSection, bodyLine int) (pullRequestOverviewEntry, bool) {

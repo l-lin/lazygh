@@ -49,22 +49,14 @@ func requestPullRequestReviewerCommand(repository string, number int, reviewerLo
 }
 
 func (program *Program) currentPullRequestReviewerRequestTargetAtDetailCursor() (pullRequestReviewerRequestTarget, bool) {
-	if !program.detailCursorActionsAvailable() {
-		return pullRequestReviewerRequestTarget{}, false
-	}
-
-	context, ok := program.currentPullRequestDescriptionCursorContext()
+	model := program.currentDescriptionCursorActionReadModel()
+	entry, ok := model.reviewerActionEntryAtCursor()
 	if !ok {
 		return pullRequestReviewerRequestTarget{}, false
 	}
 
-	entry, ok := program.browserOverviewReviewerEntryAtDetailCursorDocument(context.selection.document)
-	if !ok {
-		return pullRequestReviewerRequestTarget{}, false
-	}
-
-	repository := strings.TrimSpace(pullRequestRepositoryName(context.summary.Repository))
-	if repository == "" || repository == "-" || context.summary.Number <= 0 {
+	repository := strings.TrimSpace(pullRequestRepositoryName(model.summary.Repository))
+	if repository == "" || repository == "-" || model.summary.Number <= 0 {
 		return pullRequestReviewerRequestTarget{}, false
 	}
 	trimmedLogin := strings.TrimSpace(entry.ReviewerLogin)
@@ -74,24 +66,7 @@ func (program *Program) currentPullRequestReviewerRequestTargetAtDetailCursor() 
 
 	return pullRequestReviewerRequestTarget{
 		repository:    repository,
-		number:        context.summary.Number,
+		number:        model.summary.Number,
 		reviewerLogin: trimmedLogin,
 	}, true
-}
-
-func (program *Program) browserOverviewReviewerEntryAtDetailCursorDocument(document detailDocument) (pullRequestOverviewEntry, bool) {
-	summary, detail, ok := program.currentPullRequestDescriptionSummaryAndDetail()
-	if !ok {
-		return pullRequestOverviewEntry{}, false
-	}
-
-	sectionAtCursor, ok := program.browserOverviewSectionAtCursor(summary, detail, document.width, program.detailState.viewState.cursor.line)
-	if !ok || !sectionAtCursor.inBody || !strings.EqualFold(strings.TrimSpace(sectionAtCursor.section.overviewBlockTitle), "Reviewers") {
-		return pullRequestOverviewEntry{}, false
-	}
-	entry, ok := pullRequestOverviewEntryAtBodyLine(sectionAtCursor.section, sectionAtCursor.bodyLine)
-	if !ok || !entry.CanReRequestReview || strings.TrimSpace(entry.ReviewerLogin) == "" {
-		return pullRequestOverviewEntry{}, false
-	}
-	return entry, true
 }
