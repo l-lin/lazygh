@@ -66,6 +66,10 @@ func (program *Program) enterPullRequestBuildRunPopupLineVisualMode(gui *gocui.G
 	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationEnterLineVisualMode})
 }
 
+func (program *Program) movePullRequestBuildRunPopupCursorToOtherEnd(gui *gocui.Gui, view *gocui.View) error {
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationMoveToOtherSelectionEnd})
+}
+
 func (program *Program) pagePullRequestBuildRunPopupDown(gui *gocui.Gui, view *gocui.View) error {
 	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetBuildPopup, Operation: detailMotionOperationPageDown})
 }

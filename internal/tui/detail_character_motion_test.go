@@ -100,6 +100,36 @@ func TestDetailCharacterMotion_GivenDetailVisualMode_WhenPressingVFA_ThenItKeeps
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 }
 
+func TestDetailCharacterMotion_GivenDetailVisualModeAndPendingCharacterMotion_WhenPressingO_ThenItTreatsItAsTheCharacterTarget(t *testing.T) {
+	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "food"}}})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	given_detailCursorOnSegment(t, gui, subject, "food")
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	start := given_detailPositionOfSegmentOccurrence(t, gui, subject, "food", 0)
+
+	registeredBindings := subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'v')(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'f')(gui, detailView)
+	then_noError(t, actualErr)
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewDetailName, 'o')(gui, detailView)
+	then_noError(t, actualErr)
+
+	if subject.detailState.viewState.mode != detailVisualMode {
+		t.Fatalf("expected detail mode %v, actual %v", detailVisualMode, subject.detailState.viewState.mode)
+	}
+	then_detailSelectionIs(t, subject.currentDetailDocument(detailView), subject.detailState.viewState, start, detailPosition{line: start.line, column: start.column + 1})
+}
+
 func TestDetailCharacterMotion_GivenBrowserDetailTabs_WhenPressingForwardFindWithAnUnboundTarget_ThenItNavigatesEachRenderedTab(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
 	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{
@@ -368,6 +398,34 @@ func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingForwardFindWithAnUnbo
 	if actual := subject.pullRequestBuildRunPopup.viewState.cursor; actual != (detailPosition{line: 0, column: 6}) {
 		t.Fatalf("expected popup cursor %+v, actual %+v", detailPosition{line: 0, column: 6}, actual)
 	}
+}
+
+func TestPullRequestBuildRunPopup_GivenVisualModeAndPendingCharacterMotion_WhenPressingO_ThenItTreatsItAsTheCharacterTarget(t *testing.T) {
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openPullRequestBuildRunPopup(gui, pullRequestBuildRunPopupContent{checkTitle: "CI / test", body: "food"})
+	then_noError(t, actualErr)
+
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+	registeredBindings := subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'v')(gui, popupView)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'f')(gui, popupView)
+	then_noError(t, actualErr)
+	registeredBindings = subject.registeredKeybindingSpecs()
+	actualErr = given_handlerForBinding(t, registeredBindings, viewPullRequestBuildInfoName, 'o')(gui, popupView)
+	then_noError(t, actualErr)
+
+	if actual := subject.pullRequestBuildRunPopup.viewState.mode; actual != detailVisualMode {
+		t.Fatalf("expected popup mode %v, actual %v", detailVisualMode, actual)
+	}
+	then_detailSelectionIs(t, subject.currentPullRequestBuildRunPopupDocument(popupView), subject.pullRequestBuildRunPopup.viewState, detailPosition{line: 0, column: 0}, detailPosition{line: 0, column: 1})
 }
 
 func TestPullRequestBuildRunPopup_GivenVisible_WhenPressingSemicolonAndComma_ThenItRepeatsTheLastCharacterMotion(t *testing.T) {

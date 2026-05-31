@@ -142,6 +142,10 @@ func (program *Program) enterDetailLineVisualMode(gui *gocui.Gui, view *gocui.Vi
 	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationEnterLineVisualMode})
 }
 
+func (program *Program) moveDetailCursorToOtherEnd(gui *gocui.Gui, view *gocui.View) error {
+	return program.dispatch(gui, MsgDetailMotionRequested{Target: detailMotionTargetDetail, Operation: detailMotionOperationMoveToOtherSelectionEnd})
+}
+
 func (program *Program) nextPullRequestTab(gui *gocui.Gui, _ *gocui.View) error {
 	return program.dispatch(gui, MsgAdvancePullRequestTab{Delta: 1})
 }

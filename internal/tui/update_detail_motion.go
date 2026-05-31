@@ -27,6 +27,10 @@ func (program *Program) applyDetailMotionRequested(message MsgDetailMotionReques
 		if !state.hasLastCharacterMotion {
 			return nil
 		}
+	case detailMotionOperationMoveToOtherSelectionEnd:
+		if !state.mode.isVisual() {
+			return nil
+		}
 	case detailMotionOperationRepeatSearch:
 		if state.mode != detailNormalMode || searchActive || strings.TrimSpace(searchQuery) == "" {
 			return nil
@@ -238,6 +242,8 @@ func applyDetailMotionToViewState(input detailMotionApplyInput) detailMotionAppl
 		state.enterVisualMode()
 	case detailMotionOperationEnterLineVisualMode:
 		state.enterLineVisualMode(input.document)
+	case detailMotionOperationMoveToOtherSelectionEnd:
+		state.moveToOtherSelectionEnd(input.document, input.viewportHeight)
 	case detailMotionOperationFollowSubmittedSearch:
 		trimmedQuery := strings.TrimSpace(input.searchQuery)
 		if trimmedQuery == "" {

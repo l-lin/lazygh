@@ -15,6 +15,8 @@ const (
 func (program *Program) registeredKeybindingSpecs() []keybindingSpec {
 	specs := program.activeDetailCharacterMotionTargetBindingSpecs()
 	specs = append(specs, program.activePullRequestBuildRunPopupCharacterMotionTargetBindingSpecs()...)
+	specs = append(specs, program.activeDetailVisualModeOtherEndBindingSpecs()...)
+	specs = append(specs, program.activePullRequestBuildRunPopupVisualModeOtherEndBindingSpecs()...)
 	specs = append(specs, program.activeDetailCharacterMotionRepeatBindingSpecs()...)
 	specs = append(specs, program.activePullRequestBuildRunPopupCharacterMotionRepeatBindingSpecs()...)
 	specs = append(specs, program.keybindingSpecs()...)

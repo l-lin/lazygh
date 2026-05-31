@@ -33,6 +33,7 @@ const (
 	detailMotionOperationMoveToPreviousBigWord
 	detailMotionOperationEnterVisualMode
 	detailMotionOperationEnterLineVisualMode
+	detailMotionOperationMoveToOtherSelectionEnd
 	detailMotionOperationPageDown
 	detailMotionOperationPageUp
 	detailMotionOperationFullPageDown
@@ -128,6 +129,8 @@ func applyDetailMotionStateOperation(state *detailViewState, document detailDocu
 		state.moveToPreviousWord(document, viewportHeight)
 	case detailMotionOperationMoveToPreviousBigWord:
 		state.moveToPreviousBigWord(document, viewportHeight)
+	case detailMotionOperationMoveToOtherSelectionEnd:
+		state.moveToOtherSelectionEnd(document, viewportHeight)
 	case detailMotionOperationPageDown:
 		state.pageDown(document, viewportHeight)
 	case detailMotionOperationPageUp:

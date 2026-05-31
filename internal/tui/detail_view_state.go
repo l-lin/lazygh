@@ -91,6 +91,18 @@ func (state *detailViewState) exitVisualMode() {
 	state.visualAnchor = state.cursor
 }
 
+func (state *detailViewState) moveToOtherSelectionEnd(document detailDocument, viewportHeight int) {
+	state.clearPendingPrefix()
+	if !state.mode.isVisual() {
+		return
+	}
+
+	state.sync(document, viewportHeight)
+	state.cursor, state.visualAnchor = state.visualAnchor, state.cursor
+	state.preferredColumn = document.screenColumnForPosition(state.cursor)
+	state.sync(document, viewportHeight)
+}
+
 func (state *detailViewState) moveLeft(document detailDocument, viewportHeight int) {
 	state.clearPendingPrefix()
 	state.cursor = document.moveLeft(state.cursor)

@@ -116,6 +116,7 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsCharacterMotionB
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Find/till character", "f/F/t/T")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Repeat character motion", ";/,")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Move cursor to other end of selection", "o")
 }
 
 func TestHelpPopup_GivenCharacterMotionOverrides_WhenTogglingHelp_ThenItShowsTheConfiguredCharacterMotionBindings(t *testing.T) {
