@@ -8,7 +8,7 @@ func (program *Program) activeDetailCharacterMotionTargetBindingSpecs() []keybin
 
 	specs := make([]keybindingSpec, 0, len(bindings))
 	for _, target := range bindings {
-		specs = append(specs, keybindingSpec{viewName: viewDetailName, key: target, handler: program.detailCharacterMotionTargetHandler(target)})
+		specs = append(specs, keybindingSpec{viewName: viewDetailName, key: keybindingValueForRune(target), handler: program.detailCharacterMotionTargetHandler(target)})
 	}
 	return specs
 }
@@ -21,7 +21,7 @@ func (program *Program) activePullRequestBuildRunPopupCharacterMotionTargetBindi
 
 	specs := make([]keybindingSpec, 0, len(bindings))
 	for _, target := range bindings {
-		specs = append(specs, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: target, handler: program.pullRequestBuildRunPopupCharacterMotionTargetHandler(target)})
+		specs = append(specs, keybindingSpec{viewName: viewPullRequestBuildInfoName, key: keybindingValueForRune(target), handler: program.pullRequestBuildRunPopupCharacterMotionTargetHandler(target)})
 	}
 	return specs
 }

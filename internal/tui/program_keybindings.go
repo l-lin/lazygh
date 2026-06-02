@@ -639,13 +639,22 @@ func configuredControlBindings() map[string]configuredKeybinding {
 	}
 }
 
+func keybindingValueForRune(value rune) any {
+	// gocui normalizes a live spacebar press to KeySpace rather than a rune, so
+	// bindings registered as rune(' ') never match real input.
+	if value == ' ' {
+		return gocui.KeySpace
+	}
+	return value
+}
+
 func runeBinding(value rune) configuredKeybinding {
 	label := string(value)
 	if value == ' ' {
 		label = "space"
 	}
 
-	return configuredKeybinding{value: value, mod: gocui.ModNone, label: label}
+	return configuredKeybinding{value: keybindingValueForRune(value), mod: gocui.ModNone, label: label}
 }
 
 func namedBinding(value any, label string) configuredKeybinding {
