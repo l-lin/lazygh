@@ -23,3 +23,26 @@ func BenchmarkRenderDetailDocumentView_GivenLargeCachedDiff_WhenRenderingVisible
 		renderVisibleDetailDocumentView(detailView, document, state)
 	}
 }
+
+// 2026-06-02 large row-build baselines on the same 10k-line fixture:
+// Go diff: 236ms/op, 212MB/op, 3.13M allocs/op.
+// Plain-text control: 47ms/op, 105MB/op, 1.44M allocs/op.
+func BenchmarkBuildReviewDiffRenderedRows_GivenLargeGoDiff_WhenRenderingRows(b *testing.B) {
+	subject := given_largeGoReviewDiffFile(b, largeDiffDisplayFixtureLineCount)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		_ = buildReviewDiffRenderedRows(subject, nil, largeDiffDisplayFixtureWidth)
+	}
+}
+
+func BenchmarkBuildReviewDiffRenderedRows_GivenLargePlainTextDiff_WhenRenderingRows(b *testing.B) {
+	subject := given_largePlainTextReviewDiffFile(b, largeDiffDisplayFixtureLineCount)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		_ = buildReviewDiffRenderedRows(subject, nil, largeDiffDisplayFixtureWidth)
+	}
+}

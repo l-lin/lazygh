@@ -49,24 +49,44 @@ type treeSitterLanguageRuntime struct {
 	queryOnce            sync.Once
 	query                *tree_sitter.Query
 	queryErr             *tree_sitter.QueryError
+	parserPool           sync.Pool
+	cursorPool           sync.Pool
+	syntaxRangeCache     *syntaxRangeCache
+}
+
+const defaultSyntaxRangeCacheCapacity = 1024
+
+func newTreeSitterLanguageRuntime(language *tree_sitter.Language, highlightQuerySource string) *treeSitterLanguageRuntime {
+	runtime := &treeSitterLanguageRuntime{
+		language:             language,
+		highlightQuerySource: highlightQuerySource,
+		syntaxRangeCache:     newSyntaxRangeCache(defaultSyntaxRangeCacheCapacity),
+	}
+	runtime.parserPool.New = func() any {
+		return runtime.newParser()
+	}
+	runtime.cursorPool.New = func() any {
+		return tree_sitter.NewQueryCursor()
+	}
+	return runtime
 }
 
 var (
-	treeSitterBashRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_bash.Language()), highlightQuerySource: treeSitterBashHighlightsQuery}
-	treeSitterGoRuntime         = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_go.Language()), highlightQuerySource: treeSitterGoHighlightsQuery}
-	treeSitterHTMLRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_html.Language()), highlightQuerySource: treeSitterHTMLHighlightsQuery}
-	treeSitterJavaRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_java.Language()), highlightQuerySource: treeSitterJavaHighlightsQuery}
-	treeSitterJavaScriptRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_javascript.Language()), highlightQuerySource: treeSitterJavaScriptHighlightsQuery}
-	treeSitterJSONRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_json.Language()), highlightQuerySource: treeSitterJSONHighlightsQuery}
-	treeSitterKotlinRuntime     = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_kotlin.Language()), highlightQuerySource: treeSitterKotlinHighlightsQuery}
-	treeSitterLuaRuntime        = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_lua.Language()), highlightQuerySource: treeSitterLuaHighlightsQuery}
-	treeSitterMakeRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_make.Language()), highlightQuerySource: treeSitterMakeHighlightsQuery}
-	treeSitterPythonRuntime     = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_python.Language()), highlightQuerySource: treeSitterPythonHighlightsQuery}
-	treeSitterRubyRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_ruby.Language()), highlightQuerySource: treeSitterRubyHighlightsQuery}
-	treeSitterTOMLRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_toml.Language()), highlightQuerySource: treeSitterTOMLHighlightsQuery}
-	treeSitterTypeScriptRuntime = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_typescript.LanguageTypescript()), highlightQuerySource: treeSitterTypeScriptHighlightsQuery}
-	treeSitterXMLRuntime        = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_xml.LanguageXML()), highlightQuerySource: treeSitterXMLHighlightsQuery}
-	treeSitterYAMLRuntime       = &treeSitterLanguageRuntime{language: tree_sitter.NewLanguage(tree_sitter_yaml.Language()), highlightQuerySource: treeSitterYAMLHighlightsQuery}
+	treeSitterBashRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_bash.Language()), treeSitterBashHighlightsQuery)
+	treeSitterGoRuntime         = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_go.Language()), treeSitterGoHighlightsQuery)
+	treeSitterHTMLRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_html.Language()), treeSitterHTMLHighlightsQuery)
+	treeSitterJavaRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_java.Language()), treeSitterJavaHighlightsQuery)
+	treeSitterJavaScriptRuntime = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_javascript.Language()), treeSitterJavaScriptHighlightsQuery)
+	treeSitterJSONRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_json.Language()), treeSitterJSONHighlightsQuery)
+	treeSitterKotlinRuntime     = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_kotlin.Language()), treeSitterKotlinHighlightsQuery)
+	treeSitterLuaRuntime        = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_lua.Language()), treeSitterLuaHighlightsQuery)
+	treeSitterMakeRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_make.Language()), treeSitterMakeHighlightsQuery)
+	treeSitterPythonRuntime     = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_python.Language()), treeSitterPythonHighlightsQuery)
+	treeSitterRubyRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_ruby.Language()), treeSitterRubyHighlightsQuery)
+	treeSitterTOMLRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_toml.Language()), treeSitterTOMLHighlightsQuery)
+	treeSitterTypeScriptRuntime = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_typescript.LanguageTypescript()), treeSitterTypeScriptHighlightsQuery)
+	treeSitterXMLRuntime        = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_xml.LanguageXML()), treeSitterXMLHighlightsQuery)
+	treeSitterYAMLRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_yaml.Language()), treeSitterYAMLHighlightsQuery)
 )
 
 func renderSyntaxHighlightedCode(path string, text string, basePrefix string, leadingRanges []styledRuneRange) string {
@@ -180,10 +200,56 @@ func (runtime *treeSitterLanguageRuntime) highlightQuery() (*tree_sitter.Query, 
 	return runtime.query, runtime.queryErr == nil && runtime.query != nil
 }
 
+func (runtime *treeSitterLanguageRuntime) newParser() *tree_sitter.Parser {
+	parser := tree_sitter.NewParser()
+	if parser == nil {
+		return nil
+	}
+	if err := parser.SetLanguage(runtime.language); err != nil {
+		parser.Close()
+		return nil
+	}
+	return parser
+}
+
+func (runtime *treeSitterLanguageRuntime) borrowParser() *tree_sitter.Parser {
+	parser, _ := runtime.parserPool.Get().(*tree_sitter.Parser)
+	if parser != nil {
+		return parser
+	}
+	return runtime.newParser()
+}
+
+func (runtime *treeSitterLanguageRuntime) releaseParser(parser *tree_sitter.Parser) {
+	if parser == nil {
+		return
+	}
+	parser.Reset()
+	runtime.parserPool.Put(parser)
+}
+
+func (runtime *treeSitterLanguageRuntime) borrowQueryCursor() *tree_sitter.QueryCursor {
+	cursor, _ := runtime.cursorPool.Get().(*tree_sitter.QueryCursor)
+	if cursor != nil {
+		return cursor
+	}
+	return tree_sitter.NewQueryCursor()
+}
+
+func (runtime *treeSitterLanguageRuntime) releaseQueryCursor(cursor *tree_sitter.QueryCursor) {
+	if cursor == nil {
+		return
+	}
+	runtime.cursorPool.Put(cursor)
+}
+
 func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRuneRange {
 	trimmedText := strings.TrimSpace(text)
 	if trimmedText == "" {
 		return nil
+	}
+	if cachedRanges, ok := runtime.syntaxRangeCache.Get(text); ok {
+		return cachedRanges
 	}
 
 	query, ok := runtime.highlightQuery()
@@ -192,11 +258,11 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	}
 
 	source := []byte(text)
-	parser := tree_sitter.NewParser()
-	defer parser.Close()
-	if err := parser.SetLanguage(runtime.language); err != nil {
+	parser := runtime.borrowParser()
+	if parser == nil {
 		return nil
 	}
+	defer runtime.releaseParser(parser)
 
 	tree := parser.Parse(source, nil)
 	if tree == nil {
@@ -204,8 +270,13 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	}
 	defer tree.Close()
 
-	cursor := tree_sitter.NewQueryCursor()
-	defer cursor.Close()
+	cursor := runtime.borrowQueryCursor()
+	if cursor == nil {
+		return nil
+	}
+	defer runtime.releaseQueryCursor(cursor)
+
+	captureNames := query.CaptureNames()
 	captures := cursor.Captures(query, tree.RootNode(), source)
 
 	rangesBySpan := make(map[[2]int]capturedStyleRange)
@@ -215,11 +286,11 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 		}
 
 		capture := match.Captures[captureIndex]
-		if int(capture.Index) >= len(query.CaptureNames()) {
+		if int(capture.Index) >= len(captureNames) {
 			continue
 		}
 
-		captureStyle, ok := treeSitterCaptureStyleForName(query.CaptureNames()[capture.Index])
+		captureStyle, ok := treeSitterCaptureStyleForName(captureNames[capture.Index])
 		if !ok {
 			continue
 		}
@@ -242,6 +313,7 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	}
 
 	if len(rangesBySpan) == 0 {
+		runtime.syntaxRangeCache.Put(text, nil)
 		return nil
 	}
 
@@ -265,6 +337,7 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	for _, styleRange := range ranges {
 		result = append(result, styleRange.styledRuneRange)
 	}
+	runtime.syntaxRangeCache.Put(text, result)
 	return result
 }
 

@@ -32,6 +32,11 @@ type reviewDiffRenderedRow struct {
 	Comment  *githubdomain.PullRequestComment
 }
 
+const (
+	reviewDiffSyntaxHighlightLargeFileLineCount = 4000
+	reviewDiffSyntaxHighlightLargeLineRuneCount = 2000
+)
+
 func renderReviewDiffFile(file reviewDiffFile, renderer MarkdownRenderer, width int) string {
 	return renderReviewDiffFileForViewer(file, renderer, width, "")
 }
@@ -86,6 +91,7 @@ func buildReviewDiffFileContentRowsForViewerAndWordWrap(file reviewDiffFile, ren
 	}
 
 	numberWidth := reviewDiffLineNumberWidth(file.Hunks)
+	syntaxHighlightEnabled := reviewDiffSyntaxHighlightEnabled(file)
 	matchedThreadIndexes := make([]bool, len(file.Threads))
 	for hunkIndex, hunk := range file.Hunks {
 		if hunkIndex > 0 || len(rows) > 0 {
@@ -96,7 +102,7 @@ func buildReviewDiffFileContentRowsForViewerAndWordWrap(file reviewDiffFile, ren
 		for lineIndex, line := range hunk.Lines {
 			rows = append(rows, reviewDiffRenderedRow{
 				Kind: reviewDiffRenderedRowKindDiffLine,
-				Text: renderReviewDiffLine(file.Path, line, numberWidth, changedRangesByLine[lineIndex]),
+				Text: renderReviewDiffLine(file.Path, line, numberWidth, changedRangesByLine[lineIndex], syntaxHighlightEnabled),
 				Anchor: &reviewDiffRenderedRowAnchor{
 					Path: strings.TrimSpace(file.Path),
 					Line: line,
@@ -328,7 +334,7 @@ func renderReviewDiffHunkHeader(header string) string {
 	return styleText(header, foregroundColorEscape(theme.DiffHunkHeaderHex))
 }
 
-func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int, changedRanges []styledRuneRange) string {
+func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int, changedRanges []styledRuneRange, syntaxHighlightEnabled bool) string {
 	numberPrefix := foregroundColorEscape(theme.DiffLineNumberHex)
 	prefix := styleText(
 		fmt.Sprintf("%s : %s │ ", diffPreviewLineNumberText(line.LeftLine, numberWidth), diffPreviewLineNumberText(line.RightLine, numberWidth)),
@@ -345,7 +351,26 @@ func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int, cha
 		sign = "+"
 	}
 
+	if !syntaxHighlightEnabled || shouldSkipSyntaxHighlight(path, line.Text) {
+		return prefix + styleText(sign, basePrefix) + renderTextWithStyleRanges(line.Text, basePrefix, changedRanges)
+	}
 	return prefix + styleText(sign, basePrefix) + renderSyntaxHighlightedCode(path, line.Text, basePrefix, changedRanges)
+}
+
+func reviewDiffSyntaxHighlightEnabled(file reviewDiffFile) bool {
+	return reviewDiffHunkLineCount(file.Hunks) < reviewDiffSyntaxHighlightLargeFileLineCount
+}
+
+func shouldSkipSyntaxHighlight(_ string, text string) bool {
+	return runeCountInt(text) >= reviewDiffSyntaxHighlightLargeLineRuneCount
+}
+
+func reviewDiffHunkLineCount(hunks []reviewDiffHunk) int {
+	lineCount := 0
+	for _, hunk := range hunks {
+		lineCount += len(hunk.Lines)
+	}
+	return lineCount
 }
 
 func reviewDiffLineNumberWidth(hunks []reviewDiffHunk) int {

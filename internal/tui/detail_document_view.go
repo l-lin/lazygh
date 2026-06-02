@@ -6,10 +6,6 @@ import (
 	"github.com/jesseduffield/gocui"
 )
 
-func renderDetailDocumentView(view *gocui.View, document detailDocument, state detailViewState) {
-	renderDetailDocumentRows(view, document, state, 0, document.rowCount(), state.originRow)
-}
-
 func renderVisibleDetailDocumentView(view *gocui.View, document detailDocument, state detailViewState) {
 	startRow := clampInt(state.originRow, 0, maxInt(0, document.rowCount()-1))
 	viewportHeight := maxInt(1, viewPageSize(view))

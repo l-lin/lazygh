@@ -1,13 +1,14 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
-func TestRenderReviewDiffFile_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
+func TestReviewDiffTreeSitter_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "src/main/java/com/acme/VersionParser.java",
 		Additions:  1,
@@ -32,7 +33,32 @@ func TestRenderReviewDiffFile_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSit
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"5.1.0"`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
 }
 
-func TestRenderReviewDiffFile_GivenCodeDiffsWithMoreSupportedLanguages_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
+func TestReviewDiffTreeSitter_GivenGoCodeDiff_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -1,0 +1,1 @@",
+			Lines: []reviewDiffLine{{
+				Kind:      reviewDiffAdditionLine,
+				Text:      `func addedLine() int { return 2 }`,
+				RightLine: 1,
+				Side:      reviewDiffLineSideRight,
+			}},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `func addedLine() int { return 2 }`)
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "func", foregroundColorEscape(theme.SyntaxKeywordHex), "go keyword")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "addedLine", foregroundColorEscape(theme.SyntaxFunctionHex), "go function")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "2", foregroundColorEscape(theme.SyntaxNumberHex), "go number")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "addedLine", backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
+}
+
+func TestReviewDiffTreeSitter_GivenCodeDiffsWithMoreSupportedLanguages_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
 	testCases := []struct {
 		name          string
 		path          string
@@ -77,7 +103,7 @@ func TestRenderReviewDiffFile_GivenCodeDiffsWithMoreSupportedLanguages_WhenForma
 	}
 }
 
-func TestRenderReviewDiffFile_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHardBackgroundOnlyOnChangedSegments(t *testing.T) {
+func TestReviewDiffTreeSitter_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHardBackgroundOnlyOnChangedSegments(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "src/main/java/com/acme/VersionParser.java",
 		Additions:  1,
@@ -105,7 +131,7 @@ func TestRenderReviewDiffFile_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHar
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionVisibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "addition base background")
 }
 
-func TestRenderReviewDiffFile_GivenUnsupportedFileExtension_WhenFormatting_ThenItFallsBackToPlainDiffColors(t *testing.T) {
+func TestReviewDiffTreeSitter_GivenUnsupportedFileExtension_WhenFormatting_ThenItFallsBackToPlainDiffColors(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "notes/version.custom",
 		Additions:  1,
@@ -128,6 +154,39 @@ func TestRenderReviewDiffFile_GivenUnsupportedFileExtension_WhenFormatting_ThenI
 	expectedStylePrefix := foregroundColorEscape(theme.DiffAdditionHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
 	if actualStylePrefix != expectedStylePrefix {
 		t.Fatalf("expected unsupported file prefix %q, actual %q", expectedStylePrefix, actualStylePrefix)
+	}
+}
+
+func TestRenderReviewDiffLine_GivenVeryLargeInputFile_WhenFormatting_ThenItFallsBackToPlainDiffColorsAndKeepsIntralineHighlights(t *testing.T) {
+	file := given_veryLargeJavaReviewDiffFile()
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `return Versions.fromString("5.1.0");`)
+
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.SyntaxFunctionHex), "large-file fallback syntax function")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.DiffAdditionHex), "large-file fallback diff foreground")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "large-file fallback diff background")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "1.0", backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "large-file fallback intraline background")
+}
+
+func given_veryLargeJavaReviewDiffFile() reviewDiffFile {
+	lines := []reviewDiffLine{
+		{Kind: reviewDiffDeletionLine, Text: `return Versions.fromString("5.0.1");`, LeftLine: 1, Side: reviewDiffLineSideLeft},
+		{Kind: reviewDiffAdditionLine, Text: `return Versions.fromString("5.1.0");`, RightLine: 1, Side: reviewDiffLineSideRight},
+	}
+	for lineNumber := 2; lineNumber <= reviewDiffSyntaxHighlightLargeFileLineCount; lineNumber++ {
+		lines = append(lines, reviewDiffLine{Kind: reviewDiffAdditionLine, Text: fmt.Sprintf(`return Versions.fromString("%d.0.0");`, lineNumber), RightLine: lineNumber, Side: reviewDiffLineSideRight})
+	}
+
+	return reviewDiffFile{
+		Path:       "src/main/java/com/acme/VersionParser.java",
+		Additions:  len(lines) - 1,
+		Deletions:  1,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: fmt.Sprintf("@@ -1,1 +1,%d @@", len(lines)),
+			Lines:  lines,
+		}},
 	}
 }
 
