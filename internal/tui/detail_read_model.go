@@ -119,6 +119,9 @@ func (model detailReadModel) document() detailDocument {
 		}
 		return newDetailDocumentWithWrap(model.content(), model.width, false)
 	}
+	if model.activeTab == CommentsDetailTab {
+		return newBrowserConversationDetailDocument(model.content(), model.width, model.wordWrapEnabled)
+	}
 	if model.activeTab == ChangesDetailTab && model.pullRequestSummaryKnown && model.pullRequestDetailResultKnown && model.pullRequestDetailResult.err == nil && model.pullRequestDiffResultKnown && model.pullRequestDiffResult.err == nil && model.pullRequestChangesKnown {
 		return newReviewDiffDetailDocumentWithWordWrap(model.pullRequestChangesRenderedRows, model.width, model.wordWrapEnabled)
 	}

@@ -8,8 +8,9 @@ import (
 var detailDocumentSequence atomic.Uint64
 
 type detailDocumentLine struct {
-	prefix styledTextLine
-	body   styledTextLine
+	prefix            styledTextLine
+	body              styledTextLine
+	preserveSingleRow bool
 }
 
 func newDetailDocument(text string, width int) detailDocument {
@@ -58,7 +59,8 @@ func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool
 		lineRunes := append([]rune(nil), bodyLine.runes...)
 		lineStylePrefixes := append([]string(nil), bodyLine.stylePrefixes...)
 		lineHyperlinkTargets := append([]string(nil), bodyLine.hyperlinkTargets...)
-		lineWrapWidth := detailDocumentLineWrapWidth(width, prefixLine, wrap)
+		lineWrapEnabled := wrap && !line.preserveSingleRow
+		lineWrapWidth := detailDocumentLineWrapWidth(width, prefixLine, lineWrapEnabled)
 		document.prefixLines = append(document.prefixLines, prefixLine)
 		document.lines = append(document.lines, lineRunes)
 		document.lineStylePrefixes = append(document.lineStylePrefixes, lineStylePrefixes)
@@ -76,7 +78,7 @@ func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool
 		if len(lineRunes) == 0 {
 			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: 0, empty: true})
 			rowIndex++
-		} else if !wrap {
+		} else if !lineWrapEnabled {
 			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: len(lineRunes) - 1, text: string(lineRunes)})
 			rowIndex++
 		} else {

@@ -176,6 +176,110 @@ func TestLayout_GivenChangesTabWithALongDiffLineAndEnabledWordWrap_WhenBuildingV
 	}
 }
 
+func TestLayout_GivenCommentsTabWithALongInlineCommentDiffAndEnabledWordWrap_WhenBuildingViewZeroDocument_ThenItWrapsTheDiffAcrossVisibleLines(t *testing.T) {
+	longLine := strings.Repeat("commentsdiffwrap ", 12)
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				BaseRefName: "main",
+				HeadRefName: "feature/comments-wrap",
+				State:       "OPEN",
+				InlineComments: []githubcli.PullRequestInlineComment{{
+					Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:         "Inline body",
+					CreatedAt:    "2026-05-05T10:00:00Z",
+					Path:         "internal/tui/render.go",
+					Line:         43,
+					OriginalLine: 43,
+					Side:         "RIGHT",
+					DiffHunk:     "@@ -43,1 +43,1 @@\n-" + longLine + "\n+" + longLine,
+				}},
+			},
+		},
+	})
+	gui := given_headlessGuiWithSize(t, 60, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, "commentsdiffwrap commentsdiffwrap commentsdiffwrap")
+
+	if actual := reviewDiffDocumentRowCountForLine(document, lineIndex); actual < 2 {
+		t.Fatalf("expected the comments-tab diff to wrap across multiple rendered rows, actual %d for %q", actual, actualLine)
+	}
+	firstRowIndex := document.lineStartRows[lineIndex]
+	firstRowText := given_visibleDetailRowText(document, document.rows[firstRowIndex])
+	secondRowText := given_visibleDetailRowText(document, document.rows[firstRowIndex+1])
+	if !strings.Contains(firstRowText, "43 :    │ commentsdiffwrap") {
+		t.Fatalf("expected the first wrapped row to keep the visible diff gutter, actual %q", firstRowText)
+	}
+	if strings.Contains(secondRowText, "43 :") {
+		t.Fatalf("expected the continuation row to drop the repeated line numbers, actual %q", secondRowText)
+	}
+	if !strings.Contains(secondRowText, "│") {
+		t.Fatalf("expected the continuation row to keep the diff separator, actual %q", secondRowText)
+	}
+}
+
+func TestLayout_GivenCommentsTabWithALongInlineCommentDiffAndDisabledWordWrap_WhenBuildingViewZeroDocument_ThenItKeepsTheDiffOnOneRenderedRow(t *testing.T) {
+	longLine := strings.Repeat("commentsdiffnowrap ", 12)
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				BaseRefName: "main",
+				HeadRefName: "feature/comments-nowrap",
+				State:       "OPEN",
+				InlineComments: []githubcli.PullRequestInlineComment{{
+					Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:         "Inline body",
+					CreatedAt:    "2026-05-05T10:00:00Z",
+					Path:         "internal/tui/render.go",
+					Line:         43,
+					OriginalLine: 43,
+					Side:         "RIGHT",
+					DiffHunk:     "@@ -43,1 +43,1 @@\n-" + longLine + "\n+" + longLine,
+				}},
+			},
+		},
+	})
+	gui := given_headlessGuiWithSize(t, 60, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.FocusDetailView()
+	Update(subject, MsgToggleDetailWordWrapRequested{})
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, "commentsdiffnowrap commentsdiffnowrap commentsdiffnowrap")
+
+	if actual := reviewDiffDocumentRowCountForLine(document, lineIndex); actual != 1 {
+		t.Fatalf("expected the comments-tab diff to stay on one rendered row with word wrap disabled, actual %d for %q", actual, actualLine)
+	}
+}
+
 func TestReviewMode_GivenAnInlineThreadWithALongMarkdownCommentAndDisabledWordWrap_WhenBuildingViewZeroDocument_ThenItKeepsTheThreadBodyOnOneVisibleLine(t *testing.T) {
 	threadBody := strings.Repeat("nowrapthreadbody ", 18)
 	loader := &fakePullRequestDetailLoader{
