@@ -158,5 +158,5 @@ func (program *Program) renderNotificationsView(view *gocui.View) {
 }
 
 func (program *Program) renderDetailView(view *gocui.View) {
-	renderDetailDocumentView(view, program.currentDetailDocument(view), program.detailState.viewState)
+	renderVisibleDetailDocumentView(view, program.currentDetailDocument(view), program.detailState.viewState)
 }

@@ -38,9 +38,8 @@ func TestSubmitSearch_GivenDetailSearchMatchAfterTheCurrentCursor_WhenSubmitting
 		actualErr = subject.moveSelectionDown(gui, detailView)
 		then_noError(t, actualErr)
 	}
-	_, expectedViewportHeight := detailView.Size()
-	expectedViewportHeight = detailView.InnerHeight()
-	_, expectedCurrentOriginY := detailView.Origin()
+	expectedViewportHeight := detailView.InnerHeight()
+	expectedCurrentOriginRow := subject.detailState.viewState.originRow
 
 	actualErr = subject.openSearch(gui, nil)
 	then_noError(t, actualErr)
@@ -54,15 +53,16 @@ func TestSubmitSearch_GivenDetailSearchMatchAfterTheCurrentCursor_WhenSubmitting
 	then_currentViewNameIs(t, gui, viewDetailName)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	originX, originY := detailView.Origin()
+	originX, _ := detailView.Origin()
 	cursorX, cursorY := detailView.Cursor()
+	actualOriginRow := subject.detailState.viewState.originRow
 	expectedTargetRow := 15
-	expectedOriginY := visibleViewportOrigin(expectedTargetRow, expectedCurrentOriginY, expectedViewportHeight, 20)
-	if originX != 0 || originY != expectedOriginY {
-		t.Fatalf("expected detail origin 0,%d after following the submitted search, actual %d,%d", expectedOriginY, originX, originY)
+	expectedOriginRow := visibleViewportOrigin(expectedTargetRow, expectedCurrentOriginRow, expectedViewportHeight, 20)
+	if originX != 0 || actualOriginRow != expectedOriginRow {
+		t.Fatalf("expected detail origin 0,%d after following the submitted search, actual %d,%d", expectedOriginRow, originX, actualOriginRow)
 	}
-	if cursorX != 0 || cursorY != expectedTargetRow-expectedOriginY {
-		t.Fatalf("expected detail cursor 0,%d after following the submitted search, actual %d,%d", expectedTargetRow-expectedOriginY, cursorX, cursorY)
+	if cursorX != 0 || cursorY != expectedTargetRow-expectedOriginRow {
+		t.Fatalf("expected detail cursor 0,%d after following the submitted search, actual %d,%d", expectedTargetRow-expectedOriginRow, cursorX, cursorY)
 	}
 }
 
@@ -83,7 +83,8 @@ func TestDetailSearchFollow_GivenNoActiveDetailSearch_WhenRepeatingForwardOrBack
 	actualErr = subject.moveSelectionDown(gui, detailView)
 	then_noError(t, actualErr)
 
-	expectedOriginX, expectedOriginY := detailView.Origin()
+	expectedOriginX, _ := detailView.Origin()
+	expectedOriginRow := subject.detailState.viewState.originRow
 	expectedCursorX, expectedCursorY := detailView.Cursor()
 
 	actualErr = subject.nextDetailSearchMatch(gui, detailView)
@@ -91,10 +92,11 @@ func TestDetailSearchFollow_GivenNoActiveDetailSearch_WhenRepeatingForwardOrBack
 	actualErr = subject.previousDetailSearchMatch(gui, detailView)
 	then_noError(t, actualErr)
 
-	actualOriginX, actualOriginY := detailView.Origin()
+	actualOriginX, _ := detailView.Origin()
+	actualOriginRow := subject.detailState.viewState.originRow
 	actualCursorX, actualCursorY := detailView.Cursor()
-	if actualOriginX != expectedOriginX || actualOriginY != expectedOriginY {
-		t.Fatalf("expected detail origin %d,%d without an active search, actual %d,%d", expectedOriginX, expectedOriginY, actualOriginX, actualOriginY)
+	if actualOriginX != expectedOriginX || actualOriginRow != expectedOriginRow {
+		t.Fatalf("expected detail origin %d,%d without an active search, actual %d,%d", expectedOriginX, expectedOriginRow, actualOriginX, actualOriginRow)
 	}
 	if actualCursorX != expectedCursorX || actualCursorY != expectedCursorY {
 		t.Fatalf("expected detail cursor %d,%d without an active search, actual %d,%d", expectedCursorX, expectedCursorY, actualCursorX, actualCursorY)

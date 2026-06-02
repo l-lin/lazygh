@@ -816,13 +816,13 @@ func TestPaging_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailViewMov
 	then_noError(t, actualErr)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewIsCenteredOnCursor(t, detailView, step, 80)
+	then_detailViewIsCenteredOnCursor(t, subject, detailView, step, 80)
 
 	actualErr = subject.pageUp(gui, detailView)
 	then_noError(t, actualErr)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewIsCenteredOnCursor(t, detailView, 0, 80)
+	then_detailViewIsCenteredOnCursor(t, subject, detailView, 0, 80)
 }
 
 func TestLineNavigation_GivenDetailFocus_WhenHandlingProgramActions_ThenTheDetailCursorMovesByLineBeforeTheViewportScrolls(t *testing.T) {

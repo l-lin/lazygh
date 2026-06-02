@@ -91,12 +91,12 @@ func TestRecenter_GivenDetailCursor_WhenPressingZZ_ThenTheCursorMovesToTheMiddle
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 
-	_, actualOriginY := detailView.Origin()
+	actualOriginRow := subject.detailState.viewState.originRow
 	_, actualCursorY := detailView.Cursor()
 	expectedOriginY := centeredViewportOrigin(targetLine, detailView.InnerHeight(), 40)
 	expectedCursorY := targetLine - expectedOriginY
-	if actualOriginY != expectedOriginY {
-		t.Fatalf("expected detail origin y %d, actual %d", expectedOriginY, actualOriginY)
+	if actualOriginRow != expectedOriginY {
+		t.Fatalf("expected detail origin row %d, actual %d", expectedOriginY, actualOriginRow)
 	}
 	if actualCursorY != expectedCursorY {
 		t.Fatalf("expected detail cursor y %d, actual %d", expectedCursorY, actualCursorY)
@@ -222,13 +222,13 @@ func TestPaging_GivenDetailCursor_WhenPressingControlDAndControlU_ThenItMovesHal
 	then_noError(t, actualErr)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewIsCenteredOnCursor(t, detailView, initialLine+step, 40)
+	then_detailViewIsCenteredOnCursor(t, subject, detailView, initialLine+step, 40)
 
 	actualErr = subject.pageUp(gui, detailView)
 	then_noError(t, actualErr)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewIsCenteredOnCursor(t, detailView, initialLine, 40)
+	then_detailViewIsCenteredOnCursor(t, subject, detailView, initialLine, 40)
 }
 
 func TestPaging_GivenActionsPopupSelection_WhenPressingControlDAndControlU_ThenItMovesHalfAPageAndRecentersTheSelection(t *testing.T) {
@@ -279,15 +279,15 @@ func then_listViewIsCenteredOnSelection(t *testing.T, view *gocui.View, expected
 	}
 }
 
-func then_detailViewIsCenteredOnCursor(t *testing.T, view *gocui.View, expectedLine int, lineCount int) {
+func then_detailViewIsCenteredOnCursor(t *testing.T, subject *Program, view *gocui.View, expectedLine int, lineCount int) {
 	t.Helper()
 
-	_, actualOriginY := view.Origin()
+	actualOriginRow := subject.detailState.viewState.originRow
 	_, actualCursorY := view.Cursor()
 	expectedOriginY := centeredViewportOrigin(expectedLine, view.InnerHeight(), lineCount)
 	expectedCursorY := expectedLine - expectedOriginY
-	if actualOriginY != expectedOriginY {
-		t.Fatalf("expected detail origin y %d, actual %d", expectedOriginY, actualOriginY)
+	if actualOriginRow != expectedOriginY {
+		t.Fatalf("expected detail origin row %d, actual %d", expectedOriginY, actualOriginRow)
 	}
 	if actualCursorY != expectedCursorY {
 		t.Fatalf("expected detail cursor y %d, actual %d", expectedCursorY, actualCursorY)

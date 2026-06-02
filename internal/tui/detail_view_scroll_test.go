@@ -21,19 +21,18 @@ func TestViewZeroScroll_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenI
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-
-	detailView, actualErr := gui.View(viewDetailName)
+	_, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	_, initialOriginY := detailView.Origin()
+	initialOriginRow := subject.detailState.viewState.originRow
 
 	downHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'J')
 	actualErr = downHandler(gui, nil)
 	then_noError(t, actualErr)
-	detailView, actualErr = gui.View(viewDetailName)
+	_, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	_, actualOriginY := detailView.Origin()
-	if actualOriginY != initialOriginY+1 {
-		t.Fatalf("expected detail origin y %d after Shift-j, actual %d", initialOriginY+1, actualOriginY)
+	actualOriginRow := subject.detailState.viewState.originRow
+	if actualOriginRow != initialOriginRow+1 {
+		t.Fatalf("expected detail origin row %d after Shift-j, actual %d", initialOriginRow+1, actualOriginRow)
 	}
 	if subject.model.SelectedPullRequestIndex(MyPullRequestsTab) != 0 {
 		t.Fatalf("expected selected pull request index %d, actual %d", 0, subject.model.SelectedPullRequestIndex(MyPullRequestsTab))
@@ -42,11 +41,11 @@ func TestViewZeroScroll_GivenPullRequestsFocus_WhenPressingShiftJAndShiftK_ThenI
 	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')
 	actualErr = upHandler(gui, nil)
 	then_noError(t, actualErr)
-	detailView, actualErr = gui.View(viewDetailName)
+	_, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	_, actualOriginY = detailView.Origin()
-	if actualOriginY != initialOriginY {
-		t.Fatalf("expected detail origin y %d after Shift-k, actual %d", initialOriginY, actualOriginY)
+	actualOriginRow = subject.detailState.viewState.originRow
+	if actualOriginRow != initialOriginRow {
+		t.Fatalf("expected detail origin row %d after Shift-k, actual %d", initialOriginRow, actualOriginRow)
 	}
 }
 
@@ -62,19 +61,18 @@ func TestViewZeroScroll_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItScroll
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-
-	detailView, actualErr := gui.View(viewDetailName)
+	_, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	_, initialOriginY := detailView.Origin()
+	initialOriginRow := subject.detailState.viewState.originRow
 
 	downHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'J')
 	actualErr = downHandler(gui, nil)
 	then_noError(t, actualErr)
-	detailView, actualErr = gui.View(viewDetailName)
+	_, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	_, actualOriginY := detailView.Origin()
-	if actualOriginY != initialOriginY+1 {
-		t.Fatalf("expected detail origin y %d after Shift-j in review mode, actual %d", initialOriginY+1, actualOriginY)
+	actualOriginRow := subject.detailState.viewState.originRow
+	if actualOriginRow != initialOriginRow+1 {
+		t.Fatalf("expected detail origin row %d after Shift-j in review mode, actual %d", initialOriginRow+1, actualOriginRow)
 	}
 	if subject.navigationState.reviewSession.selectedFileTreeRow != expectedSelectedFileTreeRow {
 		t.Fatalf("expected selected review file tree row %d, actual %d", expectedSelectedFileTreeRow, subject.navigationState.reviewSession.selectedFileTreeRow)
@@ -83,11 +81,11 @@ func TestViewZeroScroll_GivenReviewMode_WhenPressingShiftJAndShiftK_ThenItScroll
 	upHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'K')
 	actualErr = upHandler(gui, nil)
 	then_noError(t, actualErr)
-	detailView, actualErr = gui.View(viewDetailName)
+	_, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	_, actualOriginY = detailView.Origin()
-	if actualOriginY != initialOriginY {
-		t.Fatalf("expected detail origin y %d after Shift-k in review mode, actual %d", initialOriginY, actualOriginY)
+	actualOriginRow = subject.detailState.viewState.originRow
+	if actualOriginRow != initialOriginRow {
+		t.Fatalf("expected detail origin row %d after Shift-k in review mode, actual %d", initialOriginRow, actualOriginRow)
 	}
 }
 

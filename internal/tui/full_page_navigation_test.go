@@ -177,14 +177,14 @@ func TestFullPageNavigation_GivenDetailCursor_WhenPressingControlFAndControlB_Th
 	then_noError(t, actualErr)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewIsCenteredOnCursor(t, detailView, expectedDownLine, 60)
+	then_detailViewIsCenteredOnCursor(t, subject, detailView, expectedDownLine, 60)
 
 	fullPageUpHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyCtrlB)
 	actualErr = fullPageUpHandler(gui, detailView)
 	then_noError(t, actualErr)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewIsCenteredOnCursor(t, detailView, initialLine, 60)
+	then_detailViewIsCenteredOnCursor(t, subject, detailView, initialLine, 60)
 }
 
 func TestFullPageNavigation_GivenHelpView_WhenPressingPageDownAndPageUp_ThenItScrollsAFullPage(t *testing.T) {

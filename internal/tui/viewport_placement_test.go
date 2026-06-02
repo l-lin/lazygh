@@ -52,7 +52,7 @@ func TestViewportPlacement_GivenDetailCursor_WhenPressingZT_ThenItPlacesTheCurso
 
 	actualView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewPlacesCursorAtTheTopOfTheViewport(t, actualView, targetLine, 40)
+	then_detailViewPlacesCursorAtTheTopOfTheViewport(t, subject, actualView, targetLine, 40)
 }
 
 func TestViewportPlacement_GivenDetailCursor_WhenPressingZZ_ThenItPlacesTheCursorAtTheCenterOfTheViewport(t *testing.T) {
@@ -64,7 +64,7 @@ func TestViewportPlacement_GivenDetailCursor_WhenPressingZZ_ThenItPlacesTheCurso
 
 	actualView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewPlacesCursorAtTheCenterOfTheViewport(t, actualView, targetLine, 40)
+	then_detailViewPlacesCursorAtTheCenterOfTheViewport(t, subject, actualView, targetLine, 40)
 }
 
 func TestViewportPlacement_GivenDetailCursor_WhenPressingZB_ThenItPlacesTheCursorAtTheBottomOfTheViewport(t *testing.T) {
@@ -76,7 +76,7 @@ func TestViewportPlacement_GivenDetailCursor_WhenPressingZB_ThenItPlacesTheCurso
 
 	actualView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewPlacesCursorAtTheBottomOfTheViewport(t, actualView, targetLine, 40)
+	then_detailViewPlacesCursorAtTheBottomOfTheViewport(t, subject, actualView, targetLine, 40)
 }
 
 func TestViewportPlacement_GivenActionsPopupSelection_WhenPressingZT_ThenItPlacesTheSelectionAtTheTopOfThePopup(t *testing.T) {
@@ -156,17 +156,17 @@ func TestViewportPlacement_GivenRemappedDetailViewportPlacementBindings_WhenPres
 	when_pressingKeySequence(t, subject, gui, viewDetailName, detailView, 'm', 't')
 	actualDetailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewPlacesCursorAtTheTopOfTheViewport(t, actualDetailView, targetLine, 40)
+	then_detailViewPlacesCursorAtTheTopOfTheViewport(t, subject, actualDetailView, targetLine, 40)
 
 	when_pressingKeySequence(t, subject, gui, viewDetailName, actualDetailView, 'm', 'm')
 	actualDetailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewPlacesCursorAtTheCenterOfTheViewport(t, actualDetailView, targetLine, 40)
+	then_detailViewPlacesCursorAtTheCenterOfTheViewport(t, subject, actualDetailView, targetLine, 40)
 
 	when_pressingKeySequence(t, subject, gui, viewDetailName, actualDetailView, 'm', 'b')
 	actualDetailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	then_detailViewPlacesCursorAtTheBottomOfTheViewport(t, actualDetailView, targetLine, 40)
+	then_detailViewPlacesCursorAtTheBottomOfTheViewport(t, subject, actualDetailView, targetLine, 40)
 }
 
 func given_userViewPlacementScenario(t *testing.T, subject *Program) (*gocui.Gui, *gocui.View, int) {
@@ -275,19 +275,19 @@ func then_listViewPlacesSelectionAtTheBottomOfTheViewport(t *testing.T, view *go
 	then_listViewPlacesSelectionAtViewportOrigin(t, view, expectedSelectedIndex, expectedViewportBottomOrigin(expectedSelectedIndex, view.InnerHeight(), lineCount))
 }
 
-func then_detailViewPlacesCursorAtTheTopOfTheViewport(t *testing.T, view *gocui.View, expectedLine int, lineCount int) {
+func then_detailViewPlacesCursorAtTheTopOfTheViewport(t *testing.T, subject *Program, view *gocui.View, expectedLine int, lineCount int) {
 	t.Helper()
-	then_detailViewPlacesCursorAtViewportOrigin(t, view, expectedLine, expectedViewportTopOrigin(expectedLine, view.InnerHeight(), lineCount))
+	then_detailViewPlacesCursorAtViewportOrigin(t, subject, view, expectedLine, expectedViewportTopOrigin(expectedLine, view.InnerHeight(), lineCount))
 }
 
-func then_detailViewPlacesCursorAtTheCenterOfTheViewport(t *testing.T, view *gocui.View, expectedLine int, lineCount int) {
+func then_detailViewPlacesCursorAtTheCenterOfTheViewport(t *testing.T, subject *Program, view *gocui.View, expectedLine int, lineCount int) {
 	t.Helper()
-	then_detailViewPlacesCursorAtViewportOrigin(t, view, expectedLine, centeredViewportOrigin(expectedLine, view.InnerHeight(), lineCount))
+	then_detailViewPlacesCursorAtViewportOrigin(t, subject, view, expectedLine, centeredViewportOrigin(expectedLine, view.InnerHeight(), lineCount))
 }
 
-func then_detailViewPlacesCursorAtTheBottomOfTheViewport(t *testing.T, view *gocui.View, expectedLine int, lineCount int) {
+func then_detailViewPlacesCursorAtTheBottomOfTheViewport(t *testing.T, subject *Program, view *gocui.View, expectedLine int, lineCount int) {
 	t.Helper()
-	then_detailViewPlacesCursorAtViewportOrigin(t, view, expectedLine, expectedViewportBottomOrigin(expectedLine, view.InnerHeight(), lineCount))
+	then_detailViewPlacesCursorAtViewportOrigin(t, subject, view, expectedLine, expectedViewportBottomOrigin(expectedLine, view.InnerHeight(), lineCount))
 }
 
 func then_listViewPlacesSelectionAtViewportOrigin(t *testing.T, view *gocui.View, expectedSelectedIndex int, expectedOriginY int) {
@@ -304,14 +304,14 @@ func then_listViewPlacesSelectionAtViewportOrigin(t *testing.T, view *gocui.View
 	}
 }
 
-func then_detailViewPlacesCursorAtViewportOrigin(t *testing.T, view *gocui.View, expectedLine int, expectedOriginY int) {
+func then_detailViewPlacesCursorAtViewportOrigin(t *testing.T, subject *Program, view *gocui.View, expectedLine int, expectedOriginY int) {
 	t.Helper()
 
-	_, actualOriginY := view.Origin()
+	actualOriginRow := subject.detailState.viewState.originRow
 	_, actualCursorY := view.Cursor()
 	expectedCursorY := expectedLine - expectedOriginY
-	if actualOriginY != expectedOriginY {
-		t.Fatalf("expected detail origin y %d, actual %d", expectedOriginY, actualOriginY)
+	if actualOriginRow != expectedOriginY {
+		t.Fatalf("expected detail origin row %d, actual %d", expectedOriginY, actualOriginRow)
 	}
 	if actualCursorY != expectedCursorY {
 		t.Fatalf("expected detail cursor y %d, actual %d", expectedCursorY, actualCursorY)
