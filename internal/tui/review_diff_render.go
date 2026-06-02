@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -227,30 +226,31 @@ func reviewDiffUnmatchedThreads(threads []reviewDiffThread, matchedThreadIndexes
 }
 
 func reviewDiffThreadMatchesLine(thread reviewDiffThread, line reviewDiffLine) bool {
-	side := thread.anchorSide()
-	if side == reviewDiffLineSideNone || !line.supportsSide(side) {
+	displayLine, side, ok := reviewDiffThreadDisplayAnchor(thread)
+	if !ok || !line.supportsSide(side) {
 		return false
 	}
 	lineNumber := reviewDiffLineNumberForSide(line, side)
-	return slices.Contains(thread.anchorLineNumbers(), lineNumber)
+	return lineNumber == displayLine
 }
 
-func (thread reviewDiffThread) anchorSide() reviewDiffLineSide {
-	if thread.Side != reviewDiffLineSideNone {
-		return thread.Side
+func reviewDiffThreadDisplayAnchor(thread reviewDiffThread) (int, reviewDiffLineSide, bool) {
+	side := thread.Side
+	if side == reviewDiffLineSideNone {
+		side = thread.StartSide
 	}
-	return thread.StartSide
-}
+	if side == reviewDiffLineSideNone {
+		return 0, reviewDiffLineSideNone, false
+	}
 
-func (thread reviewDiffThread) anchorLineNumbers() []int {
-	lineNumbers := make([]int, 0, 4)
-	for _, lineNumber := range []int{thread.Line, thread.OriginalLine, thread.StartLine, thread.OriginalStartLine} {
-		if lineNumber <= 0 || indexOfInt(lineNumbers, lineNumber) >= 0 {
-			continue
-		}
-		lineNumbers = append(lineNumbers, lineNumber)
+	displayLine := firstPositive(thread.Line, thread.StartLine, thread.OriginalLine, thread.OriginalStartLine)
+	if side == reviewDiffLineSideLeft {
+		displayLine = firstPositive(thread.OriginalLine, thread.OriginalStartLine, thread.Line, thread.StartLine)
 	}
-	return lineNumbers
+	if displayLine <= 0 {
+		return 0, reviewDiffLineSideNone, false
+	}
+	return displayLine, side, true
 }
 
 func renderReviewDiffThreadRowsForViewer(thread reviewDiffThread, renderer MarkdownRenderer, width int, numberWidth int, collapsed bool, connectedUserLogin string) []reviewDiffRenderedRow {

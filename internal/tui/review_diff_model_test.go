@@ -410,6 +410,47 @@ func TestRenderReviewDiffFile_GivenInlineReviewThreads_WhenRendering_ThenItPlace
 	}
 }
 
+func TestRenderReviewDiffFile_GivenAMultiLineInlineReviewThread_WhenRendering_ThenItPlacesTheThreadAfterTheLastSelectedDiffLine(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{output: "Rendered thread body"}
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  2,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -10,1 +10,3 @@",
+			Lines: []reviewDiffLine{
+				{Kind: reviewDiffContextLine, Text: "context line", LeftLine: 10, RightLine: 10, Side: reviewDiffLineSideBoth},
+				{Kind: reviewDiffAdditionLine, Text: "new line", RightLine: 11, Side: reviewDiffLineSideRight},
+				{Kind: reviewDiffAdditionLine, Text: "another line", RightLine: 12, Side: reviewDiffLineSideRight},
+				{Kind: reviewDiffContextLine, Text: "tail line", LeftLine: 11, RightLine: 13, Side: reviewDiffLineSideBoth},
+			},
+		}},
+		Threads: []reviewDiffThread{{
+			ID:        "thread-1",
+			Path:      "internal/tui/render.go",
+			StartLine: 11,
+			Line:      12,
+			Side:      reviewDiffLineSideRight,
+			StartSide: reviewDiffLineSideRight,
+			Comments:  []githubcli.PullRequestComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"}, Body: "Thread body", CreatedAt: "2026-04-20T10:00:00Z"}},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, renderer, 96), 96)
+	firstSelectedLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "new line")
+	lastSelectedLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "another line")
+	metadataLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "@reviewer-one")
+	tailLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "tail line")
+
+	if metadataLineIndex <= lastSelectedLineIndex || metadataLineIndex >= tailLineIndex {
+		t.Fatalf("expected the multi-line inline thread to render after the last selected diff line and before the next diff line, actual %q", string(actualDocument.text))
+	}
+	if metadataLineIndex <= firstSelectedLineIndex {
+		t.Fatalf("expected the multi-line inline thread to avoid anchoring on the first selected diff line, actual %q", string(actualDocument.text))
+	}
+}
+
 func TestRenderReviewDiffFile_GivenInlineReviewThreadReplies_WhenRendering_ThenItRendersReplyRailsAndConnectors(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{outputs: map[string]string{
 		"Root comment": "Rendered root comment",

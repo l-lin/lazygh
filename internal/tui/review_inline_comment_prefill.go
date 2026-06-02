@@ -49,8 +49,8 @@ func reviewInlineCommentSuggestionLanguage(path string) string {
 }
 
 func reviewDiffSelectedSnippet(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) string {
-	if startRow, endRow, ok := state.visualRowSelection(document); ok {
-		return reviewDiffSelectedLineSnippet(renderedRows, startRow, endRow)
+	if _, _, ok := state.visualRowSelection(document); ok {
+		return reviewDiffSelectedLineSnippet(renderedRows, reviewDiffSelectedRenderedRowIndexes(document, state))
 	}
 	if start, end, ok := state.visualSelection(document); ok {
 		return reviewDiffSelectedCharacterSnippet(renderedRows, document, start, end)
@@ -59,13 +59,9 @@ func reviewDiffSelectedSnippet(renderedRows []reviewDiffRenderedRow, document de
 	return ""
 }
 
-func reviewDiffSelectedLineSnippet(renderedRows []reviewDiffRenderedRow, startRow int, endRow int) string {
-	if startRow > endRow {
-		startRow, endRow = endRow, startRow
-	}
-
-	selectedLines := make([]string, 0, endRow-startRow+1)
-	for lineIndex := startRow; lineIndex <= endRow; lineIndex++ {
+func reviewDiffSelectedLineSnippet(renderedRows []reviewDiffRenderedRow, selectedLineIndexes []int) string {
+	selectedLines := make([]string, 0, len(selectedLineIndexes))
+	for _, lineIndex := range selectedLineIndexes {
 		lineText, ok := reviewDiffRenderedRowText(renderedRows, lineIndex)
 		if !ok {
 			continue
