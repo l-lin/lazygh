@@ -108,6 +108,39 @@ func TestRenderInlineThreadCommentBlock_GivenRegularCodeFence_WhenRendering_Then
 	}
 }
 
+func TestRenderInlineThreadCommentBoxForViewerWithWordWrap_GivenAReplyWithAFencedCodeBlock_WhenRendering_ThenItAddsBlankPaddingLinesAroundTheCodeBlock(t *testing.T) {
+	comment := githubdomain.PullRequestComment{
+		Author:    &githubdomain.PullRequestCommentAuthor{Login: "reviewer-one"},
+		Body:      "Before\n\n```go\nfmt.Println(\"hello\")\n```\n\nAfter",
+		CreatedAt: "2026-04-20T10:00:00Z",
+	}
+
+	actualDocument := newDetailDocumentWithWrap(renderInlineThreadCommentBoxForViewerWithWordWrap(comment, githubdomain.PullRequestInlineComment{}, glamourMarkdownRenderer{}, 96, true, "", true), 96, false)
+	introLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "Before")
+	codeLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, `fmt.Println("hello")`)
+	outroLineIndex, _ := given_detailDocumentLineContaining(t, actualDocument, "After")
+
+	actualBlankLineCountBeforeCode := 0
+	for lineIndex := introLineIndex + 1; lineIndex < codeLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lineIndex]))); actualInnerText == "" {
+			actualBlankLineCountBeforeCode++
+		}
+	}
+	if actualBlankLineCountBeforeCode != 2 {
+		t.Fatalf("expected exactly 2 blank lines before the reply code block, actual %d in %q", actualBlankLineCountBeforeCode, actualDocument.text)
+	}
+
+	actualBlankLineCountAfterCode := 0
+	for lineIndex := codeLineIndex + 1; lineIndex < outroLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, string(actualDocument.lines[lineIndex]))); actualInnerText == "" {
+			actualBlankLineCountAfterCode++
+		}
+	}
+	if actualBlankLineCountAfterCode != 2 {
+		t.Fatalf("expected exactly 2 blank lines after the reply code block, actual %d in %q", actualBlankLineCountAfterCode, actualDocument.text)
+	}
+}
+
 func TestRenderInlineCommentBody_GivenSuggestionFence_WhenRendering_ThenItUsesASuggestionPlaceholderMarkdown(t *testing.T) {
 	renderer := &fakeMarkdownRenderer{output: "Rendered inline comment"}
 

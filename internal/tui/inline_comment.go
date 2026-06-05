@@ -190,7 +190,7 @@ func renderInlineThreadCommentBoxForViewerWithWordWrap(comment githubdomain.Pull
 	commentBoxWidth := inlineThreadCommentBoxWidth(width, isReply)
 	commentBodyWidth := commentBoxInnerWidth(commentBoxWidth)
 	body := renderInlineCommentBodyForThreadComment(comment, suggestionContext, renderer, markdownRenderWidthForWordWrap(commentBodyWidth, wordWrapEnabled))
-	return renderCompactCommentBoxWithMetadataBadgesForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin)
+	return renderCommentBoxWithMetadataBadgesAndCodeBlockPaddingForViewer(comment.Author, comment.CreatedAt, inlineThreadCommentMetadataBadges(comment), comment.ReactionGroups, body, commentBoxWidth, connectedUserLogin, isReply)
 }
 
 func renderInlineThreadReplyBlock(renderedCommentBox string, hasFollowingReplies bool) string {

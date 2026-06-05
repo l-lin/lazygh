@@ -864,7 +864,7 @@ func TestBrowserMode_GivenAnInlineCommentCodeFence_WhenRenderingComments_ThenItD
 	}
 }
 
-func TestBrowserMode_GivenInlineThreadReplyCodeFence_WhenRenderingChanges_ThenItDoesNotAddExtraPaddingLinesInsideTheReplyCommentBox(t *testing.T) {
+func TestBrowserMode_GivenInlineThreadReplyCodeFence_WhenRenderingChanges_ThenItAddsPaddingLinesInsideTheReplyCommentBox(t *testing.T) {
 	diff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/internal/tui/render.go b/internal/tui/render.go\nindex 0000000..1111111 100644\n--- a/internal/tui/render.go\n+++ b/internal/tui/render.go\n@@ -42,0 +43,3 @@\n+func render(value int) string {\n+\treturn fmt.Sprintf(\"%d\", value + 42)\n+}\n"}
 	diff.Threads = []githubcli.PullRequestReviewThread{{
 		ID:       "thread-1",
@@ -919,11 +919,25 @@ func TestBrowserMode_GivenInlineThreadReplyCodeFence_WhenRenderingChanges_ThenIt
 	metadataLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "@octocat")
 	codeStartLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "func render")
 	codeEndLineIndex := given_viewLineIndexContainingCommentBoxText(t, detailView, "}")
-	if metadataLineIndex+1 != codeStartLineIndex {
-		t.Fatalf("expected the reply code fence to start immediately after the metadata line, actual %q", detailView.Buffer())
+
+	actualBlankLineCountBeforeCode := 0
+	for lineIndex := metadataLineIndex + 1; lineIndex < codeStartLineIndex; lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[lineIndex])); actualInnerText == "" {
+			actualBlankLineCountBeforeCode++
+		}
 	}
-	if !strings.Contains(detailView.BufferLines()[codeEndLineIndex+1], "╰") {
-		t.Fatalf("expected the reply code fence to end immediately before the bottom border, actual %q", detailView.Buffer())
+	if actualBlankLineCountBeforeCode != 2 {
+		t.Fatalf("expected exactly 2 blank lines before the reply code fence, actual %d in %q", actualBlankLineCountBeforeCode, detailView.Buffer())
+	}
+
+	actualBlankLineCountAfterCode := 0
+	for lineIndex := codeEndLineIndex + 1; lineIndex < len(detailView.BufferLines()) && !strings.Contains(detailView.BufferLines()[lineIndex], "╰"); lineIndex++ {
+		if actualInnerText := strings.TrimSpace(given_commentBoxInnerText(t, detailView.BufferLines()[lineIndex])); actualInnerText == "" {
+			actualBlankLineCountAfterCode++
+		}
+	}
+	if actualBlankLineCountAfterCode != 2 {
+		t.Fatalf("expected exactly 2 blank lines after the reply code fence, actual %d in %q", actualBlankLineCountAfterCode, detailView.Buffer())
 	}
 }
 
