@@ -10,6 +10,14 @@ func (program *Program) refreshViewsIfGUI(gui *gocui.Gui) error {
 	return program.afterStateChange(gui)
 }
 
+func (program *Program) refreshCurrentViewFocus(gui *gocui.Gui) error {
+	if gui == nil {
+		return nil
+	}
+
+	return program.syncCurrentView(gui)
+}
+
 func (program *Program) applyScreenCompositionAndSyncView(gui *gocui.Gui, composition screenComposition) error {
 	if actualErr := program.applyScreenComposition(gui, composition); actualErr != nil {
 		return actualErr
