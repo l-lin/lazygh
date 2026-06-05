@@ -25,11 +25,11 @@ func (model reviewCommentNavigationReadModel) currentPosition() (int, int) {
 	return currentFileTreeRow, model.selection.document.rows[rowIndex].line
 }
 
-func (model reviewCommentNavigationReadModel) commentLocations() []reviewCommentLocation {
+func (model reviewCommentNavigationReadModel) commentLocations(filter reviewCommentNavigationFilter) []reviewCommentLocation {
 	locations := make([]reviewCommentLocation, 0)
 	for _, file := range model.files {
 		for renderedLine, row := range file.renderedRows {
-			if !reviewDiffRenderedRowIsThreadStatus(row) {
+			if !reviewDiffRenderedRowMatchesCommentNavigationFilter(row, filter) {
 				continue
 			}
 			locations = append(locations, reviewCommentLocation{fileTreeRow: file.fileTreeRow, renderedLine: renderedLine})
@@ -38,8 +38,8 @@ func (model reviewCommentNavigationReadModel) commentLocations() []reviewComment
 	return locations
 }
 
-func (model reviewCommentNavigationReadModel) target(direction reviewNavigationDirection) (reviewCommentLocation, bool) {
-	locations := model.commentLocations()
+func (model reviewCommentNavigationReadModel) target(direction reviewNavigationDirection, filter reviewCommentNavigationFilter) (reviewCommentLocation, bool) {
+	locations := model.commentLocations(filter)
 	if len(locations) == 0 {
 		return reviewCommentLocation{}, false
 	}

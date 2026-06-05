@@ -43,7 +43,7 @@ func TestReviewCommentNavigationReadModel_GivenVisibleCommentLocations_WhenSelec
 		},
 	}
 
-	actualForward, forwardOK := subject.target(reviewNavigationForward)
+	actualForward, forwardOK := subject.target(reviewNavigationForward, reviewCommentNavigationFilterAll)
 	if !forwardOK {
 		t.Fatal("expected a next review comment target")
 	}
@@ -52,11 +52,47 @@ func TestReviewCommentNavigationReadModel_GivenVisibleCommentLocations_WhenSelec
 	}
 
 	subject.selectedFileTreeRow = 4
-	actualBackward, backwardOK := subject.target(reviewNavigationBackward)
+	actualBackward, backwardOK := subject.target(reviewNavigationBackward, reviewCommentNavigationFilterAll)
 	if !backwardOK {
 		t.Fatal("expected a previous review comment target")
 	}
 	if actualBackward.fileTreeRow != 1 || actualBackward.renderedLine != 0 {
 		t.Fatalf("expected previous target {fileTreeRow:%d renderedLine:%d}, actual %+v", 1, 0, actualBackward)
+	}
+}
+
+func TestReviewCommentNavigationReadModel_GivenMixedResolvedAndUnresolvedCommentLocations_WhenSelectingUnresolvedTargets_ThenItSkipsResolvedThreads(t *testing.T) {
+	unresolvedThreadOne := reviewDiffThread{ID: "thread-1"}
+	resolvedThread := reviewDiffThread{ID: "thread-2", IsResolved: true}
+	unresolvedThreadTwo := reviewDiffThread{ID: "thread-3"}
+	document := newReviewDiffDetailDocumentWithWordWrap([]reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindInlineCommentHeader, Thread: &unresolvedThreadOne}}, 72, true)
+	state := newDetailViewState()
+	state.sync(document, 4)
+	subject := reviewCommentNavigationReadModel{
+		active:              true,
+		selectedFileTreeRow: 1,
+		selection:           detailCursorSelection{document: document, state: state},
+		files: []reviewCommentNavigationFile{
+			{fileTreeRow: 1, renderedRows: []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindInlineCommentHeader, Thread: &unresolvedThreadOne}}},
+			{fileTreeRow: 3, renderedRows: []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindInlineCommentHeader, Thread: &resolvedThread}}},
+			{fileTreeRow: 5, renderedRows: []reviewDiffRenderedRow{{Kind: reviewDiffRenderedRowKindInlineCommentHeader, Thread: &unresolvedThreadTwo}}},
+		},
+	}
+
+	actualForward, forwardOK := subject.target(reviewNavigationForward, reviewCommentNavigationFilterUnresolvedOnly)
+	if !forwardOK {
+		t.Fatal("expected a next unresolved review comment target")
+	}
+	if actualForward.fileTreeRow != 5 || actualForward.renderedLine != 0 {
+		t.Fatalf("expected next unresolved target {fileTreeRow:%d renderedLine:%d}, actual %+v", 5, 0, actualForward)
+	}
+
+	subject.selectedFileTreeRow = 5
+	actualBackward, backwardOK := subject.target(reviewNavigationBackward, reviewCommentNavigationFilterUnresolvedOnly)
+	if !backwardOK {
+		t.Fatal("expected a previous unresolved review comment target")
+	}
+	if actualBackward.fileTreeRow != 1 || actualBackward.renderedLine != 0 {
+		t.Fatalf("expected previous unresolved target {fileTreeRow:%d renderedLine:%d}, actual %+v", 1, 0, actualBackward)
 	}
 }

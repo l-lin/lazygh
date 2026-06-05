@@ -268,6 +268,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		configuredKeybindingActionFor(keymapScopeReview, "next_file", reviewPaneViewNames, program.nextReviewFile),
 		configuredKeybindingActionFor(keymapScopeReview, "previous_comment", reviewPaneViewNames, program.previousReviewComment),
 		configuredKeybindingActionFor(keymapScopeReview, "next_comment", reviewPaneViewNames, program.nextReviewComment),
+		configuredKeybindingActionFor(keymapScopeReview, "previous_unresolved_comment", reviewPaneViewNames, program.previousReviewUnresolvedComment),
+		configuredKeybindingActionFor(keymapScopeReview, "next_unresolved_comment", reviewPaneViewNames, program.nextReviewUnresolvedComment),
 
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_left", []string{viewDetailName}, program.moveDetailCursorLeft),
 		sharedKeybindingActionFor(keymapScopeCursor, "move_cursor_right", []string{viewDetailName}, program.moveDetailCursorRight),

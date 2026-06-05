@@ -22,7 +22,7 @@ func (program *Program) applyMoveReviewComment(message MsgMoveReviewComment) []C
 		return nil
 	}
 
-	target, ok := program.currentReviewCommentNavigationReadModel().target(message.Direction)
+	target, ok := program.currentReviewCommentNavigationReadModel().target(message.Direction, message.Filter)
 	if !ok {
 		return nil
 	}

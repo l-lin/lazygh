@@ -335,6 +335,7 @@ type MsgMoveReviewFile struct {
 
 type MsgMoveReviewComment struct {
 	Direction reviewNavigationDirection
+	Filter    reviewCommentNavigationFilter
 }
 
 type MsgSearchWordUnderCursor struct {

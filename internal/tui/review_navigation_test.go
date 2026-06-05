@@ -250,6 +250,110 @@ func TestReviewMode_GivenTheDiffPane_WhenPressingCommentMotions_ThenItMovesToThe
 	then_viewDoesNotExist(t, gui, viewModalEditorName)
 }
 
+func TestReviewMode_GivenTheFilesPane_WhenPressingUnresolvedCommentMotions_ThenItMovesToThePreviousOrNextUnresolvedCommentWithoutOpeningTheComposer(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithMixedCommentResolution(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	nextPrefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ']')
+	previousPrefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, '[')
+	unresolvedCommentHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'C')
+	filesView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+
+	actualErr = nextPrefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = unresolvedCommentHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	actualErr = nextPrefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = unresolvedCommentHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/model.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	actualErr = previousPrefixHandler(gui, filesView)
+	then_noError(t, actualErr)
+	actualErr = unresolvedCommentHandler(gui, filesView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewPullRequestsName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+}
+
+func TestReviewMode_GivenTheDiffPane_WhenPressingUnresolvedCommentMotions_ThenItMovesToThePreviousOrNextUnresolvedCommentWithoutLeavingViewZero(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiffWithMixedCommentResolution(),
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+	actualErr = subject.focusDetailView(gui, nil)
+	then_noError(t, actualErr)
+
+	nextPrefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, ']')
+	previousPrefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, '[')
+	unresolvedCommentHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'C')
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+
+	actualErr = nextPrefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = unresolvedCommentHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	actualErr = nextPrefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = unresolvedCommentHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/model.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go:10")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+
+	actualErr = previousPrefixHandler(gui, detailView)
+	then_noError(t, actualErr)
+	actualErr = unresolvedCommentHandler(gui, detailView)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_selectedReviewFileIs(t, subject, "internal/tui/render.go")
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go:3")
+	then_viewDoesNotExist(t, gui, viewModalEditorName)
+}
+
 func TestReviewMode_GivenReviewMotionOverrides_WhenPressingConfiguredFileMotions_ThenItMovesBetweenFiles(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		startReviewID: "PRR_pending",
@@ -443,6 +547,47 @@ func given_reviewSessionPullRequestDiffWithComments() githubcli.PullRequestDiff 
 			Comments: []githubcli.PullRequestComment{{
 				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"},
 				Body:      "Model thread",
+				CreatedAt: "2026-04-24T11:00:00Z",
+			}},
+		},
+	}
+	return diff
+}
+
+func given_reviewSessionPullRequestDiffWithMixedCommentResolution() githubcli.PullRequestDiff {
+	diff := given_reviewSessionPullRequestDiff()
+	diff.Threads = []githubcli.PullRequestReviewThread{
+		{
+			ID:       "thread-render-unresolved",
+			Path:     "internal/tui/render.go",
+			Line:     3,
+			DiffSide: "RIGHT",
+			Comments: []githubcli.PullRequestComment{{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+				Body:      "Render unresolved thread",
+				CreatedAt: "2026-04-24T10:00:00Z",
+			}},
+		},
+		{
+			ID:         "thread-render-resolved",
+			Path:       "internal/tui/render.go",
+			Line:       3,
+			DiffSide:   "RIGHT",
+			IsResolved: true,
+			Comments: []githubcli.PullRequestComment{{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"},
+				Body:      "Render resolved thread",
+				CreatedAt: "2026-04-24T10:30:00Z",
+			}},
+		},
+		{
+			ID:           "thread-model-unresolved",
+			Path:         "internal/tui/model.go",
+			OriginalLine: 10,
+			DiffSide:     "LEFT",
+			Comments: []githubcli.PullRequestComment{{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-three"},
+				Body:      "Model unresolved thread",
 				CreatedAt: "2026-04-24T11:00:00Z",
 			}},
 		},

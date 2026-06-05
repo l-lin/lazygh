@@ -31,6 +31,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				{Key: "gg/G", Description: "First/last line"},
 				{Key: presenter.reviewFileMotionHelpKeys(), Description: "Previous/next file"},
 				{Key: presenter.reviewCommentMotionHelpKeys(), Description: "Previous/next comment"},
+				{Key: presenter.reviewUnresolvedCommentMotionHelpKeys(), Description: "Previous/next unresolved comment"},
 				{Key: presenter.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_top"}, keybindingActionID{scope: keymapScopeCursor, action: "recenter_cursor"}, keybindingActionID{scope: keymapScopeCursor, action: "place_cursor_at_viewport_bottom"}), Description: "Cursor to top/center/bottom"},
 				{Key: presenter.wordMotionHelpKeys(keymapScopeCursor), Description: "Next/end/previous word/WORD"},
 				presenter.characterMotionHelpEntry(),
@@ -69,6 +70,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				{Key: "gg/G", Description: "First/last file"},
 				{Key: presenter.reviewFileMotionHelpKeys(), Description: "Previous/next file"},
 				{Key: presenter.reviewCommentMotionHelpKeys(), Description: "Previous/next comment"},
+				{Key: presenter.reviewUnresolvedCommentMotionHelpKeys(), Description: "Previous/next unresolved comment"},
 				{Key: presenter.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeSide, action: "place_selection_at_viewport_top"}, keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopeSide, action: "place_selection_at_viewport_bottom"}), Description: "Selection to top/center/bottom"},
 				{Key: presenter.helpKeysOrFallback("h/l", keybindingActionID{scope: keymapScopeSide, action: "previous_side_view"}, keybindingActionID{scope: keymapScopeSide, action: "next_side_view"}), Description: "Switch side view"},
 				{Key: presenter.helpKeysOrFallback("<c-d>", keybindingActionID{scope: keymapScopeMain, action: "page_down"}), Description: "Half-page down + recenter"},
@@ -292,6 +294,10 @@ func (presenter helpPresenter) reviewFileMotionHelpKeys() string {
 
 func (presenter helpPresenter) reviewCommentMotionHelpKeys() string {
 	return presenter.helpKeysOrFallback("[c", keybindingActionID{scope: keymapScopeReview, action: "previous_comment"}) + "/" + presenter.helpKeysOrFallback("]c", keybindingActionID{scope: keymapScopeReview, action: "next_comment"})
+}
+
+func (presenter helpPresenter) reviewUnresolvedCommentMotionHelpKeys() string {
+	return presenter.helpKeysOrFallback("[C", keybindingActionID{scope: keymapScopeReview, action: "previous_unresolved_comment"}) + "/" + presenter.helpKeysOrFallback("]C", keybindingActionID{scope: keymapScopeReview, action: "next_unresolved_comment"})
 }
 
 func (presenter helpPresenter) wordMotionHelpKeys(scope string) string {

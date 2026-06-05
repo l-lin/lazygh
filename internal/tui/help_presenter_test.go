@@ -13,6 +13,8 @@ func TestHelpPresenter_GivenReviewFilesFocusAndConfiguredReviewMotionOverrides_W
 			given_resolvedKeybindingAction(keymapScopeReview, "next_file", "g]"),
 			given_resolvedKeybindingAction(keymapScopeReview, "previous_comment", "gh"),
 			given_resolvedKeybindingAction(keymapScopeReview, "next_comment", "gl"),
+			given_resolvedKeybindingAction(keymapScopeReview, "previous_unresolved_comment", "gH"),
+			given_resolvedKeybindingAction(keymapScopeReview, "next_unresolved_comment", "gL"),
 		}),
 	}
 
@@ -20,6 +22,7 @@ func TestHelpPresenter_GivenReviewFilesFocusAndConfiguredReviewMotionOverrides_W
 
 	then_helpEntriesContainKey(t, actual, "Previous/next file", "g[/g]")
 	then_helpEntriesContainKey(t, actual, "Previous/next comment", "gh/gl")
+	then_helpEntriesContainKey(t, actual, "Previous/next unresolved comment", "gH/gL")
 }
 
 func TestHelpPresenter_GivenPullRequestChangesDetailContextWithInlineReplyAvailable_WhenListingLocalHelpEntries_ThenItShowsInlineCommentEntries(t *testing.T) {

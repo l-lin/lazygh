@@ -74,6 +74,8 @@ previous_file = "[["
 next_file = "]]"
 previous_comment = "[c"
 next_comment = "]c"
+previous_unresolved_comment = "[C"
+next_unresolved_comment = "]C"
 
 [keymaps.pull_requests]
 copy_pull_request_url = "alt+y"

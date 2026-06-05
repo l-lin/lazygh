@@ -267,7 +267,7 @@ func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {
 	defaults := program.keybindingActions()
 	resolved := make([]resolvedKeybindingAction, 0, len(defaults))
 	for _, action := range defaults {
-		bindings := action.selectBindings(copyConfiguredKeySequences(action.defaultBindings))
+		bindings := action.selectBindings(action.defaultBindings)
 		overridden := false
 		if overrideBindings, ok := program.overrideBindings(action); ok {
 			bindings = overrideBindings
@@ -278,7 +278,7 @@ func (program *Program) resolvedKeybindingActions() []resolvedKeybindingAction {
 
 	conflictingOverrides := conflictingOverrideIndexes(resolved)
 	for index := range conflictingOverrides {
-		resolved[index].bindings = resolved[index].action.selectBindings(copyConfiguredKeySequences(resolved[index].action.defaultBindings))
+		resolved[index].bindings = resolved[index].action.selectBindings(resolved[index].action.defaultBindings)
 		resolved[index].overridden = false
 	}
 

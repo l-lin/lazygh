@@ -40,6 +40,10 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 		"pull_request_build_info": {
 			"copy_content": {"alt+y"},
 		},
+		"review": {
+			"previous_unresolved_comment": {"[C"},
+			"next_unresolved_comment":     {"]C"},
+		},
 	}
 	for scope, expectedActions := range expected {
 		actualActions, ok := actual[scope]

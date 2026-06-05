@@ -355,6 +355,7 @@ func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileA
 	then_helpEntryUsesKey(t, actualBuffer, "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next unresolved comment", "[C/]C")
 	then_helpEntryUsesKey(t, actualBuffer, "Expand/collapse fold", "za")
 	then_helpEntryUsesKey(t, actualBuffer, "Close/open all folds", "zM/zR")
 }
@@ -386,6 +387,7 @@ func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAn
 	then_helpEntryUsesKey(t, actualBuffer, "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next unresolved comment", "[C/]C")
 	then_helpEntryUsesKey(t, actualBuffer, "Search word under cursor", "*/#")
 }
 
@@ -399,10 +401,12 @@ func TestHelpPopup_GivenReviewFocusAndConfiguredReviewMotionOverrides_WhenToggli
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
 		"review": {
-			"previous_file":    {"g["},
-			"next_file":        {"g]"},
-			"previous_comment": {"gh"},
-			"next_comment":     {"gl"},
+			"previous_file":               {"g["},
+			"next_file":                   {"g]"},
+			"previous_comment":            {"gh"},
+			"next_comment":                {"gl"},
+			"previous_unresolved_comment": {"gH"},
+			"next_unresolved_comment":     {"gL"},
 		},
 	})
 	gui := given_headlessGui(t)
@@ -421,6 +425,7 @@ func TestHelpPopup_GivenReviewFocusAndConfiguredReviewMotionOverrides_WhenToggli
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "g[/g]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "gh/gl")
+	then_helpEntryUsesKey(t, actualBuffer, "Previous/next unresolved comment", "gH/gL")
 }
 
 func then_helpEntryUsesKey(t *testing.T, buffer string, description string, expectedKey string) {
