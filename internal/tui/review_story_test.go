@@ -422,6 +422,86 @@ func TestReviewStoryMode_GivenTheChapterTree_WhenPressingZMAndZR_ThenItClosesAnd
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, chapterLineIndex, "The Renderer Wakes")
 }
 
+func TestReviewStoryMode_GivenACachedStoryReview_WhenStartingAgain_ThenItReusesTheCachedStoryWithoutRegenerating(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_story",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/story",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	storyGenerator := &fakeStoryGenerator{review: story.Review{
+		Summary: "Original story summary",
+		Chapters: []story.Chapter{{
+			ID:        "chapter-1",
+			Title:     "The Renderer Wakes",
+			Narrative: "Original narrative",
+			Files:     []string{"internal/tui/render.go"},
+		}},
+	}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.storyGenerator = storyGenerator
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_startingStoryReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	summary := subject.navigationState.reviewSession.summary
+	cached, ok := subject.storyReviewForSummary(summary)
+	if !ok {
+		t.Fatal("expected the story review to be cached after the first start")
+	}
+	if actual := cached.pendingReviewID; actual != "PRR_story" {
+		t.Fatalf("expected cached pending review id %q, actual %q", "PRR_story", actual)
+	}
+
+	exitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEsc)
+	actualErr = exitHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	storyGenerator.review = story.Review{
+		Summary: "Updated story summary",
+		Chapters: []story.Chapter{{
+			ID:        "chapter-1",
+			Title:     "The Renderer Wakes",
+			Narrative: "Updated narrative",
+			Files:     []string{"internal/tui/render.go"},
+		}},
+	}
+	actualErr = given_startingStoryReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	if len(storyGenerator.requests) != 1 {
+		t.Fatalf("expected one story generation request after the cache hit, actual %d", len(storyGenerator.requests))
+	}
+	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected story review start calls %v, actual %v", []string{"acme/widgets#42"}, loader.startReviewCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Original narrative") {
+		t.Fatalf("expected cached story narrative %q, actual %q", "Original narrative", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Updated narrative") {
+		t.Fatalf("expected the cache hit to skip the regenerated narrative, actual %q", detailView.Buffer())
+	}
+}
+
 func given_startingStoryReviewMode(t *testing.T, gui *gocui.Gui, subject *Program) error {
 	t.Helper()
 

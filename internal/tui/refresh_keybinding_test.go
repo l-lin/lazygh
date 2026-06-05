@@ -8,6 +8,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/story"
 )
 
 func TestRefreshKeybinding_GivenProgram_WhenListingBindings_ThenAltRIsAvailableInEveryMainPane(t *testing.T) {
@@ -524,6 +525,96 @@ func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltRAndTheRefreshIsA
 	given_runQueuedAsync(t, asyncRunner, 1)
 
 	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
+}
+
+func TestRefreshActiveView_GivenStoryReviewFocus_WhenPressingAltR_ThenItEvictsTheCachedStoryAndReExecutesStoryReviewMode(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_story",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/story",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": given_reviewSessionPullRequestDiff(),
+		},
+	}
+	storyGenerator := &fakeStoryGenerator{review: story.Review{
+		Summary: "Original story summary",
+		Chapters: []story.Chapter{{
+			ID:        "chapter-1",
+			Title:     "The Renderer Wakes",
+			Narrative: "Original narrative",
+			Files:     []string{"internal/tui/render.go"},
+		}},
+	}}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.storyGenerator = storyGenerator
+	subject.ApplyStoryReviewConfig(story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = given_startingStoryReviewMode(t, gui, subject)
+	then_noError(t, actualErr)
+
+	summary := subject.navigationState.reviewSession.summary
+	if _, ok := subject.storyReviewForSummary(summary); !ok {
+		t.Fatal("expected the story review to be cached before refreshing")
+	}
+	if len(storyGenerator.requests) != 1 {
+		t.Fatalf("expected one initial story generation request, actual %d", len(storyGenerator.requests))
+	}
+	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected one initial story review start call, actual %v", loader.startReviewCalls)
+	}
+
+	storyGenerator.review = story.Review{
+		Summary: "Updated story summary",
+		Chapters: []story.Chapter{{
+			ID:        "chapter-1",
+			Title:     "The Renderer Wakes",
+			Narrative: "Updated narrative",
+			Files:     []string{"internal/tui/render.go"},
+		}},
+	}
+	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewPullRequestsName, 'r', gocui.ModAlt)
+	actualErr = handler(gui, pullRequestsView)
+	then_noError(t, actualErr)
+
+	if len(storyGenerator.requests) != 2 {
+		t.Fatalf("expected the refresh to rerun story generation, actual %d requests", len(storyGenerator.requests))
+	}
+	if !reflect.DeepEqual(loader.startReviewCalls, []string{"acme/widgets#42", "acme/widgets#42"}) {
+		t.Fatalf("expected story review start calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.startReviewCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Updated narrative") {
+		t.Fatalf("expected refreshed story narrative %q, actual %q", "Updated narrative", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), "Original narrative") {
+		t.Fatalf("expected the stale story narrative to disappear after refresh, actual %q", detailView.Buffer())
+	}
+
+	exitHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyEsc)
+	actualErr = exitHandler(gui, pullRequestsView)
+	then_noError(t, actualErr)
+	if actual := subject.model.Focus(); actual != FocusDetailView {
+		t.Fatalf("expected refresh to preserve the original browser focus %v, actual %v", FocusDetailView, actual)
+	}
 }
 
 func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheRefreshShortcut(t *testing.T) {

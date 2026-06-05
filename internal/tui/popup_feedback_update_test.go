@@ -52,6 +52,7 @@ func TestUpdate_GivenMsgPendingPullRequestReviewSubmitted_WhenApplying_ThenItRes
 	subject.startReviewSession(summary, "PRR_pending")
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: subject.optimisticPullRequestDetailSeed(summary)}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
+	subject.storyReviewCache["acme/widgets#42"] = storyReviewResult{story: reviewStoryData{Summary: "Story summary"}, pendingReviewID: "PRR_pending"}
 	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{repositoryName: "acme/widgets", pullRequestNumber: 42, filePath: "main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 
 	Update(subject, MsgPendingPullRequestReviewSubmitted{Target: pendingPullRequestReviewTarget{repository: "acme/widgets", number: 42, pendingReviewID: "PRR_pending", sourceFocus: FocusPullRequestsView}})
@@ -64,6 +65,9 @@ func TestUpdate_GivenMsgPendingPullRequestReviewSubmitted_WhenApplying_ThenItRes
 	}
 	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; ok {
 		t.Fatal("expected the pull request diff cache to be invalidated after submitting the pending review")
+	}
+	if _, ok := subject.storyReviewCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the story review cache to be invalidated after submitting the pending review")
 	}
 	if state, ok := subject.pendingPullRequestReviewCache["acme/widgets#42"]; !ok || state.id != "" {
 		t.Fatalf("expected pending review state to be cleared, actual %+v, known=%v", state, ok)

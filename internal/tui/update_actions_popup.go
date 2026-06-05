@@ -150,6 +150,7 @@ func (program *Program) clearCachedData() error {
 	})
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		store = store.withDiffWorkflowStateReset()
+		store = store.withStoryReviewCacheReset()
 		return store.withPendingReviewCacheReset()
 	})
 	program.resetNotificationLoadState()
@@ -193,13 +194,25 @@ func (program *Program) startStoryReviewSession(summary any, pendingReviewID str
 func (program *Program) startReviewSessionWithMode(summary githubdomain.PullRequest, pendingReviewID string, mode reviewSessionMode, story reviewStoryData) {
 	program.clearDetailPendingPrefix()
 	trimmedPendingReviewID := strings.TrimSpace(pendingReviewID)
+	sourceFocus := program.model.Focus()
+	sourceDetailTab := program.detailState.activeTab
+	sourcePaneLayoutSize := program.model.paneLayoutSize
+	sourceFullscreenPane := program.model.fullscreenPane
+	sourceDetailFullscreenReturn := program.model.detailFullscreenReturnSize
+	if program.reviewModeActive() {
+		sourceFocus = program.navigationState.reviewSession.sourceFocus
+		sourceDetailTab = program.navigationState.reviewSession.sourceDetailTab
+		sourcePaneLayoutSize = program.navigationState.reviewSession.sourcePaneLayoutSize
+		sourceFullscreenPane = program.navigationState.reviewSession.sourceFullscreenPane
+		sourceDetailFullscreenReturn = program.navigationState.reviewSession.sourceDetailFullscreenReturn
+	}
 	program.startReviewSessionState(reviewSessionStartDescriptor{
 		mode:                         mode,
-		sourceFocus:                  program.model.Focus(),
-		sourceDetailTab:              program.detailState.activeTab,
-		sourcePaneLayoutSize:         program.model.paneLayoutSize,
-		sourceFullscreenPane:         program.model.fullscreenPane,
-		sourceDetailFullscreenReturn: program.model.detailFullscreenReturnSize,
+		sourceFocus:                  sourceFocus,
+		sourceDetailTab:              sourceDetailTab,
+		sourcePaneLayoutSize:         sourcePaneLayoutSize,
+		sourceFullscreenPane:         sourceFullscreenPane,
+		sourceDetailFullscreenReturn: sourceDetailFullscreenReturn,
 		summary:                      summary,
 		pendingReviewID:              trimmedPendingReviewID,
 		story:                        story,
@@ -406,6 +419,11 @@ func (program *Program) applyRefreshPullRequestListRequested() []Cmd {
 func (program *Program) applyRefreshPullRequestRequested(message MsgRefreshPullRequestRequested) []Cmd {
 	target := message.Target
 	summary := message.Summary
+	program.clearPendingSelectionPrefix()
+	program.closeActionsPopupState()
+	if program.storyReviewModeActive() {
+		return program.requestStoryReview(summary, true)
+	}
 	if program.hasDetailQueries() {
 		program.markPullRequestDetailNeedsRefresh(summary)
 		if program.reviewModeActive() {
@@ -414,8 +432,6 @@ func (program *Program) applyRefreshPullRequestRequested(message MsgRefreshPullR
 	}
 	program.invalidatePersistentPullRequest(target.repository, target.number)
 	program.beginManualPullRequestRefresh(summary, program.model.ActivePullRequestTab())
-	program.clearPendingSelectionPrefix()
-	program.closeActionsPopupState()
 
 	if program.reviewModeActive() {
 		return nil

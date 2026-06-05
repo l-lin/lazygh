@@ -445,6 +445,7 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenI
 	subject.pendingPullRequestReviewCache["acme/widgets#42"] = pendingPullRequestReviewState{id: "PRR_pending"}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"})}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
+	subject.storyReviewCache["acme/widgets#42"] = storyReviewResult{story: reviewStoryData{Summary: "Story summary"}, pendingReviewID: "PRR_pending"}
 	asyncRunner := &capturingAsyncRunner{}
 	subject.asyncRunner = asyncRunner
 	gui := given_headlessGui(t)
@@ -474,6 +475,9 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenI
 	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; ok {
 		t.Fatal("expected the cached pull request diff to be invalidated after canceling the pending review")
 	}
+	if _, ok := subject.storyReviewCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the cached story review to be invalidated after canceling the pending review")
+	}
 	summary, ok := subject.currentPullRequestSummary()
 	if !ok {
 		t.Fatal("expected the selected pull request summary to stay available")
@@ -494,6 +498,7 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenGitHubRejectsCa
 	subject.pendingPullRequestReviewCache["acme/widgets#42"] = pendingPullRequestReviewState{id: "PRR_pending"}
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Original body", State: "OPEN"})}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: reviewDiffData{}}
+	subject.storyReviewCache["acme/widgets#42"] = storyReviewResult{story: reviewStoryData{Summary: "Story summary"}, pendingReviewID: "PRR_pending"}
 	subject.asyncRunner = &capturingAsyncRunner{}
 	subject.uiUpdater = immediateUIUpdater{}
 	gui := given_headlessGui(t)
@@ -524,6 +529,9 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenGitHubRejectsCa
 	}
 	if _, ok := subject.pullRequestDiffCache["acme/widgets#42"]; !ok {
 		t.Fatal("expected the cached pull request diff to stay available after the failure")
+	}
+	if _, ok := subject.storyReviewCache["acme/widgets#42"]; !ok {
+		t.Fatal("expected the cached story review to stay available after the failure")
 	}
 }
 

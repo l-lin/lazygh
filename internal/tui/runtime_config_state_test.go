@@ -59,8 +59,9 @@ func TestUpdate_GivenMsgKeymapOverridesApplied_WhenApplying_ThenItCopiesTheOverr
 	}
 }
 
-func TestUpdate_GivenMsgStoryReviewConfigApplied_WhenApplying_ThenItStoresTheResolvedStoryReviewConfig(t *testing.T) {
+func TestUpdate_GivenMsgStoryReviewConfigApplied_WhenApplying_ThenItStoresTheResolvedStoryReviewConfigAndClearsCachedStories(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	subject.storyReviewCache["acme/widgets#42"] = storyReviewResult{story: reviewStoryData{Summary: "Cached story"}, pendingReviewID: "PRR_story"}
 	given_config := story.Config{AgentCommand: []string{" pi ", " -p ", " @{{prompt_file}} "}, Prompt: "  Custom prompt  "}
 
 	Update(subject, MsgStoryReviewConfigApplied{Config: given_config})
@@ -69,6 +70,9 @@ func TestUpdate_GivenMsgStoryReviewConfigApplied_WhenApplying_ThenItStoresTheRes
 	expected := story.ResolveConfig(story.Config{AgentCommand: []string{" pi ", " -p ", " @{{prompt_file}} "}, Prompt: "  Custom prompt  "})
 	if !reflect.DeepEqual(subject.runtimeConfig.storyReviewConfig, expected) {
 		t.Fatalf("expected resolved story review config %+v, actual %+v", expected, subject.runtimeConfig.storyReviewConfig)
+	}
+	if actual := len(subject.storyReviewCache); actual != 0 {
+		t.Fatalf("expected the story review cache length %d, actual %d", 0, actual)
 	}
 }
 

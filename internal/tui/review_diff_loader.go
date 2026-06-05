@@ -48,6 +48,7 @@ func (program *Program) invalidatePullRequestDiff(repository string, number int)
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		return store.withoutPullRequestDiff(key)
 	})
+	program.invalidatePullRequestStoryReview(repository, number)
 	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidateReviewDiffRenderCache()
 	program.invalidatePullRequestDetailDocumentCache()

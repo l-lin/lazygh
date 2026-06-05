@@ -95,6 +95,7 @@ func TestUpdate_GivenMsgPersistentCacheCleared_WhenApplying_ThenItResetsFlagsCou
 	subject.notificationsLoadStarted = true
 	subject.notificationsLoading = true
 	subject.notificationsLoadingDetailMessage = notificationDoneLoadingMessage
+	subject.storyReviewCache["acme/widgets#42"] = storyReviewResult{story: reviewStoryData{Summary: "Story summary"}, pendingReviewID: "PRR_story"}
 
 	actual := Update(subject, MsgPersistentCacheCleared{})
 
@@ -148,6 +149,9 @@ func TestUpdate_GivenMsgPersistentCacheCleared_WhenApplying_ThenItResetsFlagsCou
 	}
 	if actual := subject.notificationsLoadingDetailMessage; actual != "" {
 		t.Fatalf("expected notifications loading detail %q, actual %q", "", actual)
+	}
+	if actual := len(subject.storyReviewCache); actual != 0 {
+		t.Fatalf("expected story review cache length %d, actual %d", 0, actual)
 	}
 }
 
@@ -208,6 +212,7 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	subject.pullRequestCache = cache
 	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{Title: "Cached PR", Number: 42, Body: "Cached body"})}
 	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{data: buildReviewDiffData(githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}})}
+	subject.storyReviewCache["acme/widgets#42"] = storyReviewResult{story: reviewStoryData{Summary: "Story summary"}, pendingReviewID: "PRR_story"}
 	subject.pullRequestDetailDocumentCache[pullRequestDetailDocumentCacheKey{pullRequestKey: "acme/widgets#42", tab: DescriptionDetailTab, width: 80}] = detailDocument{}
 	subject.reviewDiffRenderCache[reviewDiffRenderCacheKey{repositoryName: "acme/widgets", pullRequestNumber: 42, filePath: "main.go", width: 80}] = reviewDiffRenderCacheEntry{}
 	gui := given_headlessGui(t)
@@ -236,6 +241,9 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	}
 	if len(subject.pullRequestDiffCache) != 0 {
 		t.Fatalf("expected diff cache to be empty, actual %d entries", len(subject.pullRequestDiffCache))
+	}
+	if len(subject.storyReviewCache) != 0 {
+		t.Fatalf("expected story review cache to be empty, actual %d entries", len(subject.storyReviewCache))
 	}
 	if len(subject.pullRequestDetailDocumentCache) != 0 {
 		t.Fatalf("expected detail document cache to be empty, actual %d entries", len(subject.pullRequestDetailDocumentCache))

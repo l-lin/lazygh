@@ -40,4 +40,7 @@ func (program *Program) applyCacheConfigApplied(message MsgCacheConfigApplied) {
 
 func (program *Program) applyStoryReviewConfigApplied(message MsgStoryReviewConfigApplied) {
 	program.setRuntimeStoryReviewConfig(message.Config)
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withStoryReviewCacheReset()
+	})
 }

@@ -167,6 +167,13 @@ func (program *Program) applyRefreshActiveViewRequested() []Cmd {
 	}
 
 	program.clearPendingSelectionPrefix()
+	if program.storyReviewModeActive() {
+		summary, ok := program.currentPullRequestSummary()
+		if !ok {
+			return nil
+		}
+		return program.requestStoryReview(summary, true)
+	}
 	state := program.screenState()
 	switch state.ActiveView().Number {
 	case sidePanelUserViewNumber:

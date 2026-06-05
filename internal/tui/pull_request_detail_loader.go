@@ -57,6 +57,7 @@ func (program *Program) invalidatePullRequestDetail(repository string, number in
 		return store.withoutPullRequestDetail(key)
 	})
 	program.forgetPendingPullRequestReviewState(repository, number)
+	program.invalidatePullRequestStoryReview(repository, number)
 	program.invalidatePersistentPullRequest(repository, number)
 	program.invalidatePullRequestDetailDocumentCache()
 }

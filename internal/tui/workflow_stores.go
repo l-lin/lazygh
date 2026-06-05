@@ -92,6 +92,7 @@ type reviewStore struct {
 	persistence                   *persistentCacheStore
 	pullRequestDiffCache          map[string]pullRequestDiffResult
 	pullRequestDiffLoadInFlight   map[string]bool
+	storyReviewCache              map[string]storyReviewResult
 	reviewDiffRenderCache         map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
 	pendingPullRequestReviewCache map[string]pendingPullRequestReviewState
 }
@@ -101,6 +102,7 @@ func newReviewStore(persistence *persistentCacheStore) *reviewStore {
 		persistence:                   persistence,
 		pullRequestDiffCache:          map[string]pullRequestDiffResult{},
 		pullRequestDiffLoadInFlight:   map[string]bool{},
+		storyReviewCache:              map[string]storyReviewResult{},
 		reviewDiffRenderCache:         map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
 		pendingPullRequestReviewCache: map[string]pendingPullRequestReviewState{},
 	}

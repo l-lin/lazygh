@@ -60,12 +60,33 @@ func (program *Program) validateStoryReviewAvailability() error {
 	return nil
 }
 
+func (program *Program) requestStoryReview(summary githubdomain.PullRequest, forceRefresh bool) []Cmd {
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if pullRequestKeyFromIdentity(repository, summary.Number) == "" {
+		return nil
+	}
+
+	if !forceRefresh {
+		if cached, ok := program.storyReviewForSummary(summary); ok && !storyReviewNeedsRefresh(summary, cached, ok) {
+			program.clearFeedbackMessage()
+			program.startStoryReviewSession(summary, cached.pendingReviewID, cached.story)
+			return nil
+		}
+	} else {
+		program.invalidatePullRequestStoryReview(repository, summary.Number)
+	}
+
+	program.startStoryReviewLoading()
+	return []Cmd{storyReviewPrepareCmd{request: pullRequestStoryReviewPrepareRequest{summary: summary}}}
+}
+
 func (program *Program) applyPreparedStoryReview(prepared preparedStoryReview) {
 	repository := pullRequestRepositoryName(prepared.summary.Repository)
 	program.applyPullRequestDiffCacheResult(repository, prepared.summary.Number, pullRequestDiffResult{data: prepared.diffData}, pullRequestDiffCacheApplyOptions{})
 	if prepared.detailOK {
 		program.applyPullRequestDetailCacheResult(repository, prepared.summary.Number, pullRequestDetailResult{detail: clonePullRequestDetail(prepared.detail)}, pullRequestDetailCacheApplyOptions{invalidateDocuments: true})
 	}
+	program.cacheStoryReview(prepared.summary, prepared.pendingReviewID, prepared.storyData)
 	program.startStoryReviewSession(prepared.summary, prepared.pendingReviewID, prepared.storyData)
 }
 

@@ -171,6 +171,35 @@ func TestReviewStore_GivenPendingReviewCacheState_WhenApplyingPendingReviewTrans
 	}
 }
 
+func TestReviewStore_GivenStoryReviewCacheState_WhenApplyingStoryReviewTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+	subject := newReviewStore(nil)
+	subject.storyReviewCache["acme/widgets#1"] = storyReviewResult{story: reviewStoryData{Summary: "old story"}, pendingReviewID: "PRR_old"}
+
+	stored := subject.withStoryReviewCached("acme/widgets#42", storyReviewResult{story: reviewStoryData{Summary: "new story"}, pendingReviewID: "PRR_new"})
+	forgotten := stored.withoutStoryReview("acme/widgets#1")
+	reset := forgotten.withStoryReviewCacheReset()
+
+	if actual := stored.storyReviewCache["acme/widgets#42"].story.Summary; actual != "new story" {
+		t.Fatalf("expected stored story summary %q, actual %q", "new story", actual)
+	}
+	if actual := stored.storyReviewCache["acme/widgets#42"].pendingReviewID; actual != "PRR_new" {
+		t.Fatalf("expected stored pending review id %q, actual %q", "PRR_new", actual)
+	}
+	if _, ok := forgotten.storyReviewCache["acme/widgets#1"]; ok {
+		t.Fatal("expected the forgotten state to drop the original story review entry")
+	}
+	if len(reset.storyReviewCache) != 0 {
+		t.Fatalf("expected the story-review reset to clear the cache, actual %d entries", len(reset.storyReviewCache))
+	}
+
+	if actual := subject.storyReviewCache["acme/widgets#1"].story.Summary; actual != "old story" {
+		t.Fatalf("expected the original story summary %q, actual %q", "old story", actual)
+	}
+	if _, ok := subject.storyReviewCache["acme/widgets#42"]; ok {
+		t.Fatal("expected the original cache to stay free of the new story review entry")
+	}
+}
+
 func TestDetailStore_GivenDocumentAndRenderedRowCaches_WhenApplyingCacheTransitions_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	subject := newDetailStore(nil)
 	originalKey := pullRequestDetailDocumentCacheKey{pullRequestKey: "acme/widgets#1", tab: DescriptionDetailTab, width: 72}

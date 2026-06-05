@@ -42,6 +42,29 @@ func (store reviewStore) withoutPullRequestDiff(key string) reviewStore {
 	return store
 }
 
+func (store reviewStore) withStoryReviewCached(key string, result storyReviewResult) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" {
+		return store
+	}
+	store.storyReviewCache = copyStoryReviewResults(store.storyReviewCache)
+	store.storyReviewCache[trimmedKey] = cloneStoryReviewResult(result)
+	return store
+}
+
+func (store reviewStore) withoutStoryReview(key string) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" {
+		return store
+	}
+	if _, ok := store.storyReviewCache[trimmedKey]; !ok {
+		return store
+	}
+	store.storyReviewCache = copyStoryReviewResults(store.storyReviewCache)
+	delete(store.storyReviewCache, trimmedKey)
+	return store
+}
+
 func (store reviewStore) withPendingPullRequestReviewCached(key string, state pendingPullRequestReviewState) reviewStore {
 	trimmedKey := strings.TrimSpace(key)
 	if trimmedKey == "" {
@@ -77,6 +100,11 @@ func (store reviewStore) withDiffWorkflowStateReset() reviewStore {
 	return store
 }
 
+func (store reviewStore) withStoryReviewCacheReset() reviewStore {
+	store.storyReviewCache = map[string]storyReviewResult{}
+	return store
+}
+
 func (store reviewStore) withReviewDiffRenderCacheReset() reviewStore {
 	store.reviewDiffRenderCache = map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{}
 	return store
@@ -96,6 +124,14 @@ func copyPullRequestDiffResults(source map[string]pullRequestDiffResult) map[str
 	copied := make(map[string]pullRequestDiffResult, len(source))
 	for key, result := range source {
 		copied[key] = result
+	}
+	return copied
+}
+
+func copyStoryReviewResults(source map[string]storyReviewResult) map[string]storyReviewResult {
+	copied := make(map[string]storyReviewResult, len(source))
+	for key, result := range source {
+		copied[key] = cloneStoryReviewResult(result)
 	}
 	return copied
 }

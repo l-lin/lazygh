@@ -35,3 +35,10 @@ func (program *Program) reviewModeActive() bool {
 	}
 	return isReviewScreenMode(program.screenState().Mode)
 }
+
+func (program *Program) storyReviewModeActive() bool {
+	if program == nil {
+		return false
+	}
+	return program.screenState().Mode == ScreenModeStoryReview
+}
