@@ -77,7 +77,7 @@ func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAn
 	t.Cleanup(theme.ResetPalette)
 	theme.ApplyPalette(theme.ResolvePalette(theme.Palette{
 		ActionsPopupGroupForegroundHex: "#000000",
-		MarkdownHeadingBackgroundHex:   "#204060",
+		ActionsPopupGroupBackgroundHex: "#204060",
 		SelectedLineBackgroundHex:      "#802020",
 	}))
 
@@ -93,7 +93,7 @@ func TestActionsPopup_GivenGroupedHeaders_WhenRendering_ThenItCentersTheHeaderAn
 
 	popupView, actualErr := gui.View(viewActionsPopupName)
 	then_noError(t, actualErr)
-	then_viewLineHasBackgroundColor(t, gui, viewActionsPopupName, 0, given_themeColorHex(t, theme.MarkdownHeadingBackgroundHex), "actions popup group header background")
+	then_viewLineHasBackgroundColor(t, gui, viewActionsPopupName, 0, given_themeColorHex(t, theme.ActionsPopupGroupBackgroundHex), "actions popup group header background")
 	then_viewLineSegmentHasForegroundColor(t, gui, viewActionsPopupName, 0, actionsPopupGroupReview, given_themeColorHex(t, theme.ActionsPopupGroupForegroundHex), "actions popup group header foreground")
 	then_viewLineSegmentIsCenteredInView(t, gui, viewActionsPopupName, 0, actionsPopupGroupReview)
 	if actual := strings.TrimSpace(popupView.BufferLines()[0]); actual != actionsPopupGroupReview {

@@ -3,8 +3,6 @@ package tui
 import (
 	"errors"
 	"strings"
-
-	"github.com/jesseduffield/gocui"
 )
 
 type actionsPopupAction struct {
@@ -14,13 +12,6 @@ type actionsPopupAction struct {
 	icon      string
 	keywords  []string
 	requested Msg
-}
-
-func (program *Program) closeActionsPopupIfVisible(gui *gocui.Gui) error {
-	if program == nil || program.model == nil || !program.model.ActionsPopupVisible() {
-		return nil
-	}
-	return program.dispatch(gui, MsgCloseActionsPopup{})
 }
 
 func (action actionsPopupAction) withGroup(group string) actionsPopupAction {

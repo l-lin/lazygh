@@ -47,7 +47,7 @@ func (line actionsPopupVisibleLine) item(viewWidth int) Item {
 		TitleSegments: []ItemTitleSegment{{
 			Text:               centeredTitle,
 			ForegroundHex:      theme.ActionsPopupGroupForegroundHex,
-			BackgroundHex:      theme.MarkdownHeadingBackgroundHex,
+			BackgroundHex:      theme.ActionsPopupGroupBackgroundHex,
 			MinimumContrast:    4.5,
 			PreserveForeground: true,
 		}},

@@ -21,6 +21,7 @@ type Palette struct {
 	PullRequestTitleHex                  string `toml:"pull_request_title"`
 	SelectedLineBackgroundHex            string `toml:"selected_line_background"`
 	ActionsPopupGroupForegroundHex       string `toml:"actions_popup_group_foreground"`
+	ActionsPopupGroupBackgroundHex       string `toml:"actions_popup_group_background"`
 	SearchHighlightHex                   string `toml:"search_highlight"`
 	MarkdownHeadingHex                   string `toml:"markdown_heading"`
 	MarkdownHeadingBackgroundHex         string `toml:"markdown_heading_background"`
@@ -90,6 +91,7 @@ func newDefaultLightPalette() Palette {
 		PullRequestTitleHex:                  activeTextHex,
 		SelectedLineBackgroundHex:            pendingBackgroundHex,
 		ActionsPopupGroupForegroundHex:       activeTextHex,
+		ActionsPopupGroupBackgroundHex:       searchHighlightHex,
 		SearchHighlightHex:                   searchHighlightHex,
 		MarkdownHeadingHex:                   activeTextHex,
 		MarkdownHeadingBackgroundHex:         searchHighlightHex,
@@ -159,6 +161,7 @@ func newDefaultDarkPalette() Palette {
 		PullRequestTitleHex:                  activeTextHex,
 		SelectedLineBackgroundHex:            "#21262D",
 		ActionsPopupGroupForegroundHex:       activeTextHex,
+		ActionsPopupGroupBackgroundHex:       "#58A6FF",
 		SearchHighlightHex:                   "#633C01",
 		MarkdownHeadingHex:                   activeTextHex,
 		MarkdownHeadingBackgroundHex:         "#58A6FF",
@@ -216,6 +219,7 @@ var (
 	PullRequestTitleHex                  = initialDefaultPalette.PullRequestTitleHex
 	SelectedLineBackgroundHex            = initialDefaultPalette.SelectedLineBackgroundHex
 	ActionsPopupGroupForegroundHex       = initialDefaultPalette.ActionsPopupGroupForegroundHex
+	ActionsPopupGroupBackgroundHex       = initialDefaultPalette.ActionsPopupGroupBackgroundHex
 	SearchHighlightHex                   = initialDefaultPalette.SearchHighlightHex
 	MarkdownHeadingHex                   = initialDefaultPalette.MarkdownHeadingHex
 	MarkdownHeadingBackgroundHex         = initialDefaultPalette.MarkdownHeadingBackgroundHex
@@ -325,6 +329,7 @@ func applyResolvedPalette(palette Palette) {
 	PullRequestTitleHex = palette.PullRequestTitleHex
 	SelectedLineBackgroundHex = palette.SelectedLineBackgroundHex
 	ActionsPopupGroupForegroundHex = palette.ActionsPopupGroupForegroundHex
+	ActionsPopupGroupBackgroundHex = palette.ActionsPopupGroupBackgroundHex
 	SearchHighlightHex = palette.SearchHighlightHex
 	MarkdownHeadingHex = palette.MarkdownHeadingHex
 	MarkdownHeadingBackgroundHex = palette.MarkdownHeadingBackgroundHex
@@ -400,6 +405,7 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.PullRequestTitleHex,
 		&palette.SelectedLineBackgroundHex,
 		&palette.ActionsPopupGroupForegroundHex,
+		&palette.ActionsPopupGroupBackgroundHex,
 		&palette.SearchHighlightHex,
 		&palette.MarkdownHeadingHex,
 		&palette.MarkdownHeadingBackgroundHex,
