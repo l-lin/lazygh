@@ -1,5 +1,7 @@
 package tui
 
+import "maps"
+
 func (store pullRequestListStore) pullRequestsLoadStarted(tab PullRequestTab) bool {
 	switch tab {
 	case MyPullRequestsTab:
@@ -69,16 +71,12 @@ func (store pullRequestListStore) withLoadStateReset() pullRequestListStore {
 
 func copyPullRequestTabBoolState(source map[PullRequestTab]bool) map[PullRequestTab]bool {
 	copied := make(map[PullRequestTab]bool, len(source))
-	for tab, value := range source {
-		copied[tab] = value
-	}
+	maps.Copy(copied, source)
 	return copied
 }
 
 func copyPullRequestCountStates(source map[PullRequestTab]pullRequestCountState) map[PullRequestTab]pullRequestCountState {
 	copied := make(map[PullRequestTab]pullRequestCountState, len(source))
-	for tab, state := range source {
-		copied[tab] = state
-	}
+	maps.Copy(copied, source)
 	return copied
 }

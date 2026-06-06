@@ -119,10 +119,6 @@ func renderPullRequestChangesTabError(err error) string {
 	return fmt.Sprintf("Could not load pull request changes.\n\n%s", message)
 }
 
-func renderPullRequestCommitSection(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestCommitSectionWithWordWrap(commit, renderer, width, true)
-}
-
 func renderPullRequestCommitSectionWithWordWrap(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
 	sectionLines := []string{renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineDotPrefix(), renderPullRequestCommitHeader(commit))}
 	for _, metadataLine := range filterEmptyStrings([]string{
@@ -403,10 +399,6 @@ func renderPullRequestDetailSectionSeparator(width int) string {
 type pullRequestCommentsRenderedSection struct {
 	text         string
 	inlineThread *githubdomain.PullRequestReviewThread
-}
-
-func buildPullRequestCommentsRenderedSections(comments []githubdomain.PullRequestComment, inlineThreads []githubdomain.PullRequestReviewThread, inlineComments []githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int) []pullRequestCommentsRenderedSection {
-	return buildPullRequestCommentsRenderedSectionsWithWordWrap(comments, inlineThreads, inlineComments, renderer, width, true)
 }
 
 func buildPullRequestCommentsRenderedSectionsWithWordWrap(comments []githubdomain.PullRequestComment, inlineThreads []githubdomain.PullRequestReviewThread, inlineComments []githubdomain.PullRequestInlineComment, renderer MarkdownRenderer, width int, wordWrapEnabled bool) []pullRequestCommentsRenderedSection {
