@@ -6,10 +6,11 @@ func (program *Program) helpPresenter() helpPresenter {
 	}
 
 	return helpPresenter{
-		actionContext:                    program.actionContext(),
-		keyResolver:                      program.keybindingLabelResolver(),
-		inlineCommentReplyAvailable:      program.inlineCommentReplyShortcutAvailable(),
-		inlineCommentResolutionHelpLabel: program.inlineCommentResolutionShortcutDescription(),
-		pullRequestBrowserAvailable:      program.pullRequestBrowserShortcutAvailable(),
+		actionContext:                     program.actionContext(),
+		keyResolver:                       program.keybindingLabelResolver(),
+		inlineCommentReplyAvailable:       program.inlineCommentReplyShortcutAvailable(),
+		inlineCommentResolutionHelpLabel:  program.inlineCommentResolutionShortcutDescription(),
+		pullRequestBrowserAvailable:       program.pullRequestBrowserShortcutAvailable(),
+		pastedPullRequestRemovalAvailable: program.canRemovePastedPullRequest(),
 	}
 }

@@ -6,11 +6,12 @@ import (
 )
 
 type helpPresenter struct {
-	actionContext                    ActionContext
-	keyResolver                      keybindingLabelResolver
-	inlineCommentReplyAvailable      bool
-	inlineCommentResolutionHelpLabel string
-	pullRequestBrowserAvailable      bool
+	actionContext                     ActionContext
+	keyResolver                       keybindingLabelResolver
+	inlineCommentReplyAvailable       bool
+	inlineCommentResolutionHelpLabel  string
+	pullRequestBrowserAvailable       bool
+	pastedPullRequestRemovalAvailable bool
 }
 
 func (presenter helpPresenter) sections() []helpSection {
@@ -153,7 +154,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 		}
 		return entries
 	case FocusPullRequestsView:
-		return []helpEntry{
+		entries := []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},
 			{Key: "gg/G", Description: "First/last pull request"},
 			{Key: presenter.helpViewportPlacementKeysOrFallback("zt", "zz", "zb", keybindingActionID{scope: keymapScopeSide, action: "place_selection_at_viewport_top"}, keybindingActionID{scope: keymapScopeSide, action: "recenter_selection"}, keybindingActionID{scope: keymapScopeSide, action: "place_selection_at_viewport_bottom"}), Description: "Selection to top/center/bottom"},
@@ -176,6 +177,10 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			{Key: presenter.helpKeysOrFallback("]", keybindingActionID{scope: keymapScopeGlobal, action: "next_tab"}), Description: "Next tab"},
 			{Key: presenter.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open detail"},
 		}
+		if presenter.pastedPullRequestRemovalAvailable {
+			entries = append(entries, helpEntry{Key: presenter.helpKeysOrFallback("d", keybindingActionID{scope: keymapScopePullRequests, action: "remove_pasted_pull_request"}), Description: "Remove from pasted PRs"})
+		}
+		return entries
 	case FocusNotificationsView:
 		return []helpEntry{
 			{Key: "j/k/<up>/<down>", Description: "Move down/up"},

@@ -294,6 +294,8 @@ type MsgRefreshActiveViewRequested struct{}
 
 type MsgRefreshNotificationsRequested struct{}
 
+type MsgRemovePastedPullRequestRequested struct{}
+
 type MsgExecuteSelectedActionsPopupActionRequested struct{}
 
 type MsgSubmitSelectedActionsPopupActionRequested struct{}
@@ -436,6 +438,7 @@ func (MsgCopyPullRequestBuildRunPopupContentRequested) isMsg() {}
 func (MsgOpenNotificationInBrowserRequested) isMsg()           {}
 func (MsgRefreshActiveViewRequested) isMsg()                   {}
 func (MsgRefreshNotificationsRequested) isMsg()                {}
+func (MsgRemovePastedPullRequestRequested) isMsg()             {}
 func (MsgExecuteSelectedActionsPopupActionRequested) isMsg()   {}
 func (MsgSubmitSelectedActionsPopupActionRequested) isMsg()    {}
 func (MsgRepeatActionsPopupSearch) isMsg()                     {}

@@ -37,6 +37,22 @@ func (state pastedPullRequestTabState) withPullRequestAdded(summary githubdomain
 	return state
 }
 
+func (state pastedPullRequestTabState) withPullRequestRemoved(summary githubdomain.PullRequest) pastedPullRequestTabState {
+	if len(state.pullRequests) == 0 {
+		return state
+	}
+
+	updatedPullRequests := make([]githubdomain.PullRequest, 0, len(state.pullRequests))
+	for _, existing := range state.pullRequests {
+		if samePullRequestIdentity(existing, summary) {
+			continue
+		}
+		updatedPullRequests = append(updatedPullRequests, existing)
+	}
+	state.pullRequests = updatedPullRequests
+	return state
+}
+
 func (state pastedPullRequestTabState) rows() []PullRequestRow {
 	rows := make([]PullRequestRow, 0, len(state.pullRequests))
 	for _, pullRequest := range state.pullRequests {

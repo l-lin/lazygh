@@ -67,6 +67,9 @@ func (program *Program) routeURLClipboardBrowserAndLinkFollowUps(msg Msg) update
 		return handledUpdate(program.applyRefreshActiveViewRequested())
 	case MsgRefreshNotificationsRequested:
 		return handledUpdate(program.applyRefreshNotificationsRequested())
+	case MsgRemovePastedPullRequestRequested:
+		program.applyRemovePastedPullRequestRequested()
+		return handledUpdate(nil)
 	default:
 		return ignoredUpdate()
 	}

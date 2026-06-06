@@ -128,6 +128,64 @@ func TestKeybindingSpecs_GivenProgram_WhenListingOpenPullRequestByURLBindings_Th
 	then_bindingDoesNotExist(t, actual, viewNotificationsName, gocui.KeyCtrlV)
 }
 
+func TestKeybindingSpecs_GivenThePastedPullRequestTab_WhenListingBindings_ThenDIsOnlyAvailableOnThatTab(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	subject.model.FocusPullRequestsView()
+	subject.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
+		return state.withPullRequestAdded(githubdomain.PullRequest{Title: "Widgets PR", Number: 13, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/13"})
+	})
+	pastedTab, ok := subject.syncPastedPullRequestTab()
+	if !ok {
+		t.Fatal("expected the pasted pull request tab to exist")
+	}
+	subject.model.SetActivePullRequestTab(pastedTab)
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'd', handler: subject.removePastedPullRequestShortcut})
+
+	subject.model.SetActivePullRequestTab(MyPullRequestsTab)
+	actual = subject.keybindingSpecs()
+	then_bindingDoesNotExist(t, actual, viewPullRequestsName, 'd')
+}
+
+func TestActionsPopup_GivenThePastedPullRequestTab_WhenOpening_ThenTheRemoveActionIsOnlyShownThere(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	model := given_model()
+	model.FocusPullRequestsView()
+	subject := given_pullRequestByURLProgram(model, loader)
+	subject.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
+		state = state.withPullRequestAdded(githubdomain.PullRequest{Title: "Widgets PR", Number: 13, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/13"})
+		return state.withPullRequestAdded(githubdomain.PullRequest{Title: "Rocket PR", Number: 77, Repository: githubdomain.Repository{NameWithOwner: "acme/rocket"}, URL: "https://github.com/acme/rocket/pull/77"})
+	})
+	pastedTab, ok := subject.syncPastedPullRequestTab()
+	if !ok {
+		t.Fatal("expected the pasted pull request tab to exist")
+	}
+	subject.model.SetActivePullRequestTab(pastedTab)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	if !given_hasActionTitle(subject.currentActionsPopupActions(), removePastedPullRequestActionTitle) {
+		t.Fatalf("expected actions popup actions %v to contain %q", given_actionTitles(subject.currentActionsPopupActions()), removePastedPullRequestActionTitle)
+	}
+
+	subject.closeActionsPopupState()
+	subject.model.SetActivePullRequestTab(MyPullRequestsTab)
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	if given_hasActionTitle(subject.currentActionsPopupActions(), removePastedPullRequestActionTitle) {
+		t.Fatalf("expected the remove-pasted action to stay hidden outside the pasted tab, actual %v", given_actionTitles(subject.currentActionsPopupActions()))
+	}
+}
+
 func TestActionsPopup_GivenPullRequestsView_WhenExecutingOpenPullRequestByURL_ThenItOpensTheInputBox(t *testing.T) {
 	loader := given_pullRequestByURLLoader()
 	model := given_model()
@@ -426,6 +484,53 @@ func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtr
 	actual := cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(pastedPullRequestsPersistentSearch())]
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected saved pasted pull requests %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestOpenPullRequestByURL_GivenThePastedPullRequestTab_WhenPressingD_ThenItRemovesTheSelectedPullRequestAndPersistsTheRemainingList(t *testing.T) {
+	cache := &fakePersistentPullRequestCache{}
+	subject := NewProgramWithModel(given_model())
+	subject.pullRequestCache = cache
+	subject.connectedUserLoadStarted = true
+	subject.notificationsLoadStarted = true
+	subject.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
+		state = state.withPullRequestAdded(githubdomain.PullRequest{Title: "Earlier pasted PR", Number: 13, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/13", Body: "Body 13", State: "OPEN"})
+		return state.withPullRequestAdded(githubdomain.PullRequest{Title: "Newest pasted PR", Number: 77, Repository: githubdomain.Repository{NameWithOwner: "acme/rocket"}, URL: "https://github.com/acme/rocket/pull/77", Body: "Body 77", State: "OPEN"})
+	})
+	pastedTab, ok := subject.syncPastedPullRequestTab()
+	if !ok {
+		t.Fatal("expected the pasted pull request tab to exist")
+	}
+	subject.model.FocusPullRequestsView()
+	subject.model.SetActivePullRequestTab(pastedTab)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, 'd')(gui, nil)
+	then_noError(t, actualErr)
+
+	expectedLabels := []string{"My PRs", "Requested", "Pasted (1)"}
+	if actual := subject.pullRequestsTabLabels(); !reflect.DeepEqual(actual, expectedLabels) {
+		t.Fatalf("expected pull request tab labels %v, actual %v", expectedLabels, actual)
+	}
+	actualRows := subject.model.PullRequestRows(PullRequestTab(len(expectedLabels) - 1))
+	if len(actualRows) != 1 || actualRows[0].Summary == nil || actualRows[0].Summary.Title != "Earlier pasted PR" {
+		t.Fatalf("expected only the earlier pasted pull request to remain, actual %+v", actualRows)
+	}
+	actualSaved := cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(pastedPullRequestsPersistentSearch())]
+	expectedSaved := []githubcli.PullRequest{{
+		Title:      "Earlier pasted PR",
+		Number:     13,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		URL:        "https://github.com/acme/widgets/pull/13",
+		Body:       "Body 13",
+		State:      "OPEN",
+	}}
+	if !reflect.DeepEqual(actualSaved, expectedSaved) {
+		t.Fatalf("expected saved pasted pull requests %+v, actual %+v", expectedSaved, actualSaved)
 	}
 }
 

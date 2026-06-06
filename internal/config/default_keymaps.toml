@@ -83,6 +83,7 @@ open_pull_request_in_browser = "alt+b"
 comment_on_pull_request = "c"
 custom_search = ":"
 open_pull_request_by_url = "ctrl+v"
+remove_pasted_pull_request = "d"
 reply_to_inline_comment = "r"
 toggle_inline_comment_resolution = "ctrl+r"
 

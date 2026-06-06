@@ -91,6 +91,9 @@ func (program *Program) applyActionsPopupRequestedMessage(requested Msg) []Cmd {
 		return program.applyRefreshPullRequestRequested(actual)
 	case MsgRefreshPullRequestListRequested:
 		return program.applyRefreshPullRequestListRequested()
+	case MsgRemovePastedPullRequestRequested:
+		program.applyRemovePastedPullRequestRequested()
+		return nil
 	case MsgPullRequestLifecycleMutationRequested:
 		return program.applyPullRequestLifecycleMutationRequested(actual)
 	case MsgPullRequestAutoMergeMutationRequested:

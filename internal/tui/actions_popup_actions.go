@@ -161,6 +161,9 @@ func (program *Program) currentPullRequestActionsPopupGroupActions(actionContext
 	)
 	if actionContext.ActiveView.Focus == FocusPullRequestsView {
 		pullRequestActions = append(pullRequestActions, program.pullRequestCustomSearchActionsPopupAction())
+		if program.canRemovePastedPullRequest() {
+			pullRequestActions = append(pullRequestActions, program.removePastedPullRequestActionsPopupAction())
+		}
 	}
 	pullRequestActions = append(pullRequestActions,
 		program.commendOnPrAction(),

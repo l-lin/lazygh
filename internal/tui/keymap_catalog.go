@@ -388,6 +388,9 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
 		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp),
 	}
+	if program.canRemovePastedPullRequest() {
+		actions = append(actions, configuredKeybindingActionFor(keymapScopePullRequests, "remove_pasted_pull_request", []string{viewPullRequestsName}, program.removePastedPullRequestShortcut))
+	}
 	if program.inlineCommentResolutionShortcutAvailable() {
 		actions = append(actions, configuredKeybindingActionFor(keymapScopePullRequests, "toggle_inline_comment_resolution", []string{viewDetailName}, program.toggleInlineCommentResolutionShortcut))
 	}
