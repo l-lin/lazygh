@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jesseduffield/gocui"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const viewHelpName = "help"
@@ -33,7 +34,7 @@ func (program *Program) renderHelpView(view *gocui.View) {
 	sections := presenter.sections()
 	keyWidth := presenter.keyWidth(sections)
 	for sectionIndex, section := range sections {
-		fmt.Fprintf(view, "    --- %s ---\n", section.Title)
+		program.renderItemLine(view, createHelpTitleTitle(section.Title, view.InnerWidth()), "", false)
 		for _, entry := range section.Entries {
 			fmt.Fprintf(view, "%-*s %s\n", keyWidth+2, entry.Key, entry.Description)
 		}
@@ -166,4 +167,18 @@ func formattedModifiedKeySuffix(label string) string {
 		return strings.ToUpper(label)
 	}
 	return formatKeySequenceLabelForDisplay(label)
+}
+
+func createHelpTitleTitle(title string, viewWidth int) Item {
+	centeredTitle := centeredText(title, viewWidth)
+	return Item{
+		Title: centeredTitle,
+		TitleSegments: []ItemTitleSegment{{
+			Text:               centeredTitle,
+			ForegroundHex:      theme.ActionsPopupGroupForegroundHex,
+			BackgroundHex:      theme.ActionsPopupGroupBackgroundHex,
+			MinimumContrast:    4.5,
+			PreserveForeground: true,
+		}},
+	}
 }

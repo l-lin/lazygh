@@ -67,3 +67,15 @@ func formatTimestamp(value string) string {
 func runeCountInt(value string) int {
 	return len([]rune(value))
 }
+
+func centeredText(title string, viewWidth int) string {
+	trimmedTitle := strings.TrimSpace(title)
+	if trimmedTitle == "" || viewWidth <= len([]rune(trimmedTitle)) {
+		return trimmedTitle
+	}
+
+	padding := viewWidth - len([]rune(trimmedTitle))
+	leftPadding := padding / 2
+	rightPadding := padding - leftPadding
+	return strings.Repeat(" ", leftPadding) + trimmedTitle + strings.Repeat(" ", rightPadding)
+}

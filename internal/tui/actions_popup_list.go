@@ -41,7 +41,7 @@ func (line actionsPopupVisibleLine) item(viewWidth int) Item {
 		return Item{Title: line.text, TitleSegments: append([]ItemTitleSegment(nil), line.titleSegments...)}
 	}
 
-	centeredTitle := centeredActionsPopupGroupTitle(line.text, viewWidth)
+	centeredTitle := centeredText(line.text, viewWidth)
 	return Item{
 		Title: centeredTitle,
 		TitleSegments: []ItemTitleSegment{{
@@ -141,16 +141,4 @@ func (program *Program) currentActionsPopupSelectedRenderedLine() int {
 
 func (program *Program) currentActionsPopupRenderedLineCount() int {
 	return len(program.currentActionsPopupVisibleLines())
-}
-
-func centeredActionsPopupGroupTitle(title string, viewWidth int) string {
-	trimmedTitle := strings.TrimSpace(title)
-	if trimmedTitle == "" || viewWidth <= len([]rune(trimmedTitle)) {
-		return trimmedTitle
-	}
-
-	padding := viewWidth - len([]rune(trimmedTitle))
-	leftPadding := padding / 2
-	rightPadding := padding - leftPadding
-	return strings.Repeat(" ", leftPadding) + trimmedTitle + strings.Repeat(" ", rightPadding)
 }
