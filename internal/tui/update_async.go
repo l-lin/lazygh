@@ -1,6 +1,10 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func (program *Program) applyPullRequestsCacheHydrated(message MsgPullRequestsCacheHydrated) {
 	program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
@@ -118,6 +122,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		program.updateDetailStore(func(store detailStore) detailStore {
 			return store.withPullRequestDetailCached(key, pullRequestDetailResult{detail: clonedDetail, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
 		})
+		program.refreshLoadedPullRequestSummaryFromDetail(message.Summary, clonedDetail)
 		program.invalidatePullRequestDetailDocumentCache()
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
@@ -146,6 +151,23 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		return program.applyManualRefreshCompletion(message.Err)
 	}
 	return nil
+}
+
+func (program *Program) refreshLoadedPullRequestSummaryFromDetail(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) {
+	program.mutateLoadedPullRequestSummaries(summary, func(current *githubdomain.PullRequest) {
+		if current == nil {
+			return
+		}
+		current.Title = firstNonEmpty(strings.TrimSpace(detail.Title), current.Title)
+		current.Body = firstNonEmpty(strings.TrimSpace(detail.Body), current.Body)
+		current.URL = firstNonEmpty(strings.TrimSpace(detail.URL), current.URL)
+		current.State = firstNonEmpty(strings.TrimSpace(detail.State), current.State)
+		current.IsDraft = detail.IsDraft
+		current.UpdatedAt = firstNonEmpty(strings.TrimSpace(detail.UpdatedAt), current.UpdatedAt)
+		current.ReviewDecision = firstNonEmpty(strings.TrimSpace(detail.ReviewDecision), current.ReviewDecision)
+		current.MergeStateStatus = firstNonEmpty(strings.TrimSpace(detail.MergeStateStatus), current.MergeStateStatus)
+		current.Mergeable = firstNonEmpty(strings.TrimSpace(detail.Mergeable), current.Mergeable)
+	})
 }
 
 func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoaded) []Cmd {

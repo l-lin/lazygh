@@ -349,6 +349,48 @@ func TestOpenPullRequestByURL_GivenClipboardContainsDistinctPRURLs_WhenPressingC
 	}
 }
 
+func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenTheDetailTitleLoads_ThenThePastedRowRefreshesWithThatTitle(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
+		Title:       "Widgets PR",
+		Number:      13,
+		URL:         "https://github.com/acme/widgets/pull/13",
+		Body:        "Body 13",
+		BaseRefName: "main",
+		HeadRefName: "feature/widgets",
+		State:       "OPEN",
+	}
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+	subject.clipboardReader = &fakeClipboardWriter{readText: "https://github.com/acme/widgets/pull/13"}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+
+	actualRows := subject.model.PullRequestRows(PullRequestTab(2))
+	if len(actualRows) != 1 || actualRows[0].Summary == nil {
+		t.Fatalf("expected one pasted pull request row, actual %+v", actualRows)
+	}
+	if actual := actualRows[0].Summary.Title; actual != "Widgets PR" {
+		t.Fatalf("expected the pasted pull request title %q after loading detail, actual %q", "Widgets PR", actual)
+	}
+	if actual := subject.pastedPullRequests.pullRequests[0].Title; actual != "Widgets PR" {
+		t.Fatalf("expected the pasted pull request state to keep title %q after loading detail, actual %q", "Widgets PR", actual)
+	}
+
+	actualSelectedSummary, ok := subject.model.SelectedPullRequestSummary()
+	if !ok {
+		t.Fatal("expected a selected pull request summary")
+	}
+	if actualSelectedSummary.Title != "Widgets PR" {
+		t.Fatalf("expected the selected pasted pull request title %q after loading detail, actual %q", "Widgets PR", actualSelectedSummary.Title)
+	}
+}
+
 func TestOpenPullRequestByURL_GivenClipboardDoesNotContainAGitHubPRURL_WhenPressingCtrlV_ThenItShowsFeedbackAndDoesNotOpenThePrompt(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
