@@ -1,6 +1,9 @@
 package tui
 
-import appconfig "github.com/l-lin/lazygh/internal/config"
+import (
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func (program *Program) routeRuntimeConfigMessages(msg Msg) updateResult {
 	switch actual := msg.(type) {
@@ -36,6 +39,10 @@ func (program *Program) applyLinksConfigApplied(message MsgLinksConfigApplied) {
 func (program *Program) applyCacheConfigApplied(message MsgCacheConfigApplied) {
 	program.setPersistentPullRequestCache(message.PullRequestCache)
 	program.setNotificationDoneStore(message.NotificationDoneStore)
+	program.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
+		return state.withPullRequestsLoaded(append([]githubdomain.PullRequest(nil), message.PastedPullRequests...))
+	})
+	program.syncPastedPullRequestTab()
 }
 
 func (program *Program) applyStoryReviewConfigApplied(message MsgStoryReviewConfigApplied) {

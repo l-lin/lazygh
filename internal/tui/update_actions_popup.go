@@ -479,6 +479,7 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 		}
 	}
 
+	pastedUpdated := false
 	program.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
 		if len(state.pullRequests) == 0 {
 			return state
@@ -497,9 +498,13 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 		if !updated {
 			return state
 		}
+		pastedUpdated = true
 		state.pullRequests = updatedPullRequests
 		return state
 	})
+	if pastedUpdated {
+		program.queueSavePastedPullRequestsPersistentCache()
+	}
 
 	if program.navigationState.openedPullRequestSummary != nil && samePullRequestIdentity(*program.navigationState.openedPullRequestSummary, identity) {
 		updated := *program.navigationState.openedPullRequestSummary

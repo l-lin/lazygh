@@ -38,10 +38,11 @@ func executeApplyCacheConfigRuntime(runtime cacheConfigRuntime, previous persist
 		}
 		return cacheConfigAppliedState{}, actualErr
 	}
+	pastedPullRequests := loadPastedPullRequestsFromPersistentCache(store)
 	if runtime.closePersistentCache != nil {
 		_ = runtime.closePersistentCache(previous)
 	}
-	return cacheConfigAppliedState{pullRequestCache: store, notificationDoneStore: doneStore}, nil
+	return cacheConfigAppliedState{pullRequestCache: store, notificationDoneStore: doneStore, pastedPullRequests: pastedPullRequests}, nil
 }
 
 func openPersistentPullRequestCache(path string) (persistentPullRequestCache, error) {

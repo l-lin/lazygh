@@ -2,6 +2,7 @@ package tui
 
 import (
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/story"
 )
 
@@ -20,6 +21,7 @@ type MsgLinksConfigApplied struct {
 type MsgCacheConfigApplied struct {
 	PullRequestCache      persistentPullRequestCache
 	NotificationDoneStore notificationDoneStore
+	PastedPullRequests    []githubdomain.PullRequest
 }
 
 type MsgStoryReviewConfigApplied struct {

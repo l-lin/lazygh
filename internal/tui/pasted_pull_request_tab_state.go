@@ -8,6 +8,18 @@ type pastedPullRequestTabState struct {
 	pullRequests []githubdomain.PullRequest
 }
 
+func (state pastedPullRequestTabState) withPullRequestsLoaded(pullRequests []githubdomain.PullRequest) pastedPullRequestTabState {
+	state.pullRequests = append([]githubdomain.PullRequest(nil), pullRequests...)
+	return state
+}
+
+func (state pastedPullRequestTabState) summaries() []githubdomain.PullRequest {
+	if len(state.pullRequests) == 0 {
+		return nil
+	}
+	return append([]githubdomain.PullRequest(nil), state.pullRequests...)
+}
+
 func (state pastedPullRequestTabState) withPullRequestAdded(summary githubdomain.PullRequest) pastedPullRequestTabState {
 	if pullRequestDetailKey(summary.Repository, summary.Number) == "" {
 		return state

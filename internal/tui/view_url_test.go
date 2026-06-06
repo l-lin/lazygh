@@ -391,6 +391,44 @@ func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenTheDetailTi
 	}
 }
 
+func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtrlV_ThenItSavesThePastedPullRequestListInPersistentCache(t *testing.T) {
+	loader := given_pullRequestByURLLoader()
+	loader.details["acme/widgets#13"] = githubcli.PullRequestDetail{
+		Title:       "Widgets PR",
+		Number:      13,
+		URL:         "https://github.com/acme/widgets/pull/13",
+		Body:        "Body 13",
+		BaseRefName: "main",
+		HeadRefName: "feature/widgets",
+		State:       "OPEN",
+	}
+	cache := &fakePersistentPullRequestCache{}
+	subject := given_pullRequestByURLProgram(given_model(), loader)
+	subject.pullRequestCache = cache
+	subject.clipboardReader = &fakeClipboardWriter{readText: "https://github.com/acme/widgets/pull/13"}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, gocui.KeyCtrlV)(gui, nil)
+	then_noError(t, actualErr)
+
+	expected := []githubcli.PullRequest{{
+		Title:      "Widgets PR",
+		Number:     13,
+		Repository: githubcli.Repository{Name: "widgets", NameWithOwner: "acme/widgets"},
+		URL:        "https://github.com/acme/widgets/pull/13",
+		Body:       "Body 13",
+		State:      "OPEN",
+	}}
+	actual := cache.savedPullRequestsBySearchKey[fakePersistentPullRequestSearchKey(pastedPullRequestsPersistentSearch())]
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected saved pasted pull requests %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestOpenPullRequestByURL_GivenClipboardDoesNotContainAGitHubPRURL_WhenPressingCtrlV_ThenItShowsFeedbackAndDoesNotOpenThePrompt(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

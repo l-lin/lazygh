@@ -1,6 +1,9 @@
 package tui
 
-import appconfig "github.com/l-lin/lazygh/internal/config"
+import (
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func (program *Program) ApplyCacheConfig(config appconfig.CacheConfig) error {
 	if program == nil {
@@ -17,8 +20,9 @@ func (program *Program) ApplyCacheConfig(config appconfig.CacheConfig) error {
 type cacheConfigAppliedState struct {
 	pullRequestCache      persistentPullRequestCache
 	notificationDoneStore notificationDoneStore
+	pastedPullRequests    []githubdomain.PullRequest
 }
 
 func (state cacheConfigAppliedState) message() MsgCacheConfigApplied {
-	return MsgCacheConfigApplied{PullRequestCache: state.pullRequestCache, NotificationDoneStore: state.notificationDoneStore}
+	return MsgCacheConfigApplied{PullRequestCache: state.pullRequestCache, NotificationDoneStore: state.notificationDoneStore, PastedPullRequests: append([]githubdomain.PullRequest(nil), state.pastedPullRequests...)}
 }

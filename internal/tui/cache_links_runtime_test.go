@@ -157,3 +157,50 @@ func TestApplyCacheConfig_GivenAValidPath_WhenApplying_ThenItOpensThePersistentS
 		t.Fatalf("expected the notification done store adapter to be installed, actual %T", subject.notificationDoneStore)
 	}
 }
+
+func TestApplyCacheConfig_GivenPersistentCacheContainsPastedPullRequests_WhenApplying_ThenItHydratesThePastedTabInSavedOrder(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	cachePath := filepath.Join(t.TempDir(), "lazygh", "cache.sqlite3")
+	store, actualErr := persistcache.Open(cachePath)
+	then_noError(t, actualErr)
+	defer func() {
+		then_noError(t, store.Close())
+	}()
+	then_noError(t, store.SavePullRequests(pastedPullRequestsPersistentSearch(), []githubdomain.PullRequest{
+		{
+			Title:      "Newest pasted PR",
+			Number:     77,
+			Repository: githubdomain.Repository{NameWithOwner: "acme/rocket"},
+			URL:        "https://github.com/acme/rocket/pull/77",
+			Body:       "Body 77",
+			State:      "OPEN",
+		},
+		{
+			Title:      "Earlier pasted PR",
+			Number:     13,
+			Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"},
+			URL:        "https://github.com/acme/widgets/pull/13",
+			Body:       "Body 13",
+			State:      "OPEN",
+		},
+	}))
+	subject.ApplyPullRequestSearches(nil)
+
+	actualErr = subject.ApplyCacheConfig(appconfig.CacheConfig{Path: cachePath})
+	then_noError(t, actualErr)
+
+	expectedLabels := []string{"My PRs", "My reviews", "Requested", "Pasted (2)"}
+	if actual := subject.pullRequestsTabLabels(); !reflect.DeepEqual(actual, expectedLabels) {
+		t.Fatalf("expected pull request tab labels %v, actual %v", expectedLabels, actual)
+	}
+	actualRows := subject.model.PullRequestRows(PullRequestTab(len(expectedLabels) - 1))
+	if len(actualRows) != 2 {
+		t.Fatalf("expected two pasted pull request rows, actual %+v", actualRows)
+	}
+	if actualRows[0].Summary == nil || actualRows[0].Summary.Title != "Newest pasted PR" || actualRows[0].Summary.Number != 77 {
+		t.Fatalf("expected the newest cached pasted pull request first, actual %+v", actualRows[0])
+	}
+	if actualRows[1].Summary == nil || actualRows[1].Summary.Title != "Earlier pasted PR" || actualRows[1].Summary.Number != 13 {
+		t.Fatalf("expected the earlier cached pasted pull request second, actual %+v", actualRows[1])
+	}
+}

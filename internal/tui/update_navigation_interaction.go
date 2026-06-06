@@ -156,6 +156,7 @@ func (program *Program) applyOpenPullRequestInPastedTabView(message MsgOpenPullR
 	program.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
 		return state.withPullRequestAdded(summary)
 	})
+	program.queueSavePastedPullRequestsPersistentCache()
 	pastedTab, ok := program.syncPastedPullRequestTab()
 	if !ok {
 		return
