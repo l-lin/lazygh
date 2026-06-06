@@ -14,8 +14,8 @@ func TestUpdate_GivenMsgOpenPullRequestCustomSearchEditorRequested_WhenPullReque
 	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the reducer to open the custom search editor")
 	}
-	if actualText := subject.overlayState.modalEditor.Text(); actualText != "--author @me --state open --sort updated --order desc" {
-		t.Fatalf("expected modal editor text %q, actual %q", "--author @me --state open --sort updated --order desc", actualText)
+	if actualText := subject.overlayState.modalEditor.Text(); actualText != "--author @me --sort updated --order desc --state open" {
+		t.Fatalf("expected modal editor text %q, actual %q", "--author @me --sort updated --order desc --state open", actualText)
 	}
 	if actualPending := subject.navigationState.pendingSelectionKeySequence.pendingTarget; actualPending != (keySequenceTarget{}) {
 		t.Fatalf("expected pending selection prefix to be cleared, actual %+v", actualPending)

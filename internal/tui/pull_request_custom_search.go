@@ -16,6 +16,10 @@ const (
 	pullRequestCustomSearchEditorHeight = lineModalEditorTotalHeight
 )
 
+var (
+	pullRequestSearchCommandPrefix = []string{"search", "prs"}
+)
+
 func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.View) error {
 	return program.dispatch(gui, MsgOpenPullRequestCustomSearchEditorRequested{})
 }
@@ -61,8 +65,8 @@ func pullRequestCustomSearchCommand(criteria string) []string {
 		return nil
 	}
 
-	command := make([]string, 0, len(arguments)+2)
-	command = append(command, "search", "prs")
+	command := make([]string, 0, len(arguments)+len(pullRequestSearchCommandPrefix))
+	command = append(command, pullRequestSearchCommandPrefix...)
 	command = append(command, arguments...)
 	return command
 }

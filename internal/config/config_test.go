@@ -319,9 +319,9 @@ func TestDefaultPullRequestSearches_WhenReadingDefaults_ThenTheySortByLastUpdate
 	actual := DefaultPullRequestSearches()
 
 	expected := []PullRequestSearch{
-		{Label: "My PRs", Command: []string{"search", "prs", "--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"}},
-		{Label: "My reviews", Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"}},
-		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"}},
+		{Label: "My PRs", Command: []string{"search", "prs", "--author", "@me", "--sort", "updated", "--order", "desc", "--state", "open"}},
+		{Label: "My reviews", Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}},
+		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}},
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected searches %+v, actual %+v", expected, actual)

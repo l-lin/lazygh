@@ -58,8 +58,8 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpen
 	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the custom search popup to use the single-line editor")
 	}
-	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
-		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --state open --sort updated --order desc", actual)
+	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --sort updated --order desc --state open" {
+		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --sort updated --order desc --state open", actual)
 	}
 }
 
@@ -78,8 +78,8 @@ func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefill
 	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
 		t.Fatal("expected the custom search popup to use the single-line editor")
 	}
-	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --sort updated --order desc" {
-		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --state open --sort updated --order desc", actual)
+	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --sort updated --order desc --state open" {
+		t.Fatalf("expected the custom search criteria %q, actual %q", "--author @me --sort updated --order desc --state open", actual)
 	}
 	then_statusLineKeyHintsAre(t, gui, "Enter: submit, Ctrl+G: editor, Escape: cancel")
 	_, y0, _, y1, actualErr := gui.ViewPosition(viewModalEditorName)
