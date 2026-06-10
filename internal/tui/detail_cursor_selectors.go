@@ -19,6 +19,12 @@ type browserChangesCursorContext struct {
 	selection    detailCursorSelection
 }
 
+type pullRequestCommitsCursorContext struct {
+	summary   githubdomain.PullRequest
+	commits   []githubdomain.PullRequestCommit
+	selection detailCursorSelection
+}
+
 type reviewDiffCursorContext struct {
 	summary      githubdomain.PullRequest
 	renderedRows []reviewDiffRenderedRow
@@ -33,6 +39,9 @@ type detailCursorReadModel struct {
 	browserChangesSummary      githubdomain.PullRequest
 	browserChangesRenderedRows []reviewDiffRenderedRow
 	browserChangesKnown        bool
+	pullRequestCommitsSummary  githubdomain.PullRequest
+	pullRequestCommits         []githubdomain.PullRequestCommit
+	pullRequestCommitsKnown    bool
 	reviewDiffSummary          githubdomain.PullRequest
 	reviewDiffRenderedRows     []reviewDiffRenderedRow
 	reviewDiffKnown            bool
@@ -64,6 +73,17 @@ func (model detailCursorReadModel) browserChangesContext() (browserChangesCursor
 	}, true
 }
 
+func (model detailCursorReadModel) pullRequestCommitsContext() (pullRequestCommitsCursorContext, bool) {
+	if !model.pullRequestCommitsKnown {
+		return pullRequestCommitsCursorContext{}, false
+	}
+	return pullRequestCommitsCursorContext{
+		summary:   model.pullRequestCommitsSummary,
+		commits:   append([]githubdomain.PullRequestCommit(nil), model.pullRequestCommits...),
+		selection: model.selection,
+	}, true
+}
+
 func (model detailCursorReadModel) reviewDiffContext() (reviewDiffCursorContext, bool) {
 	if !model.reviewDiffKnown {
 		return reviewDiffCursorContext{}, false
@@ -73,4 +93,27 @@ func (model detailCursorReadModel) reviewDiffContext() (reviewDiffCursorContext,
 		renderedRows: append([]reviewDiffRenderedRow(nil), model.reviewDiffRenderedRows...),
 		selection:    model.selection,
 	}, true
+}
+
+func commitAtCursor(context pullRequestCommitsCursorContext) (githubdomain.PullRequestCommit, bool) {
+	orderedCommits := sortedPullRequestCommitsDescending(context.commits)
+	if len(orderedCommits) == 0 || len(context.selection.document.lines) == 0 {
+		return githubdomain.PullRequestCommit{}, false
+	}
+
+	lineIndex := context.selection.document.clampPosition(context.selection.state.cursor).line
+	expectedCommitIndex := 0
+	for documentLineIndex, line := range context.selection.document.lines {
+		if expectedCommitIndex >= len(orderedCommits) {
+			break
+		}
+		if string(line) != renderPullRequestCommitHeaderLineText(orderedCommits[expectedCommitIndex]) {
+			continue
+		}
+		if documentLineIndex == lineIndex {
+			return orderedCommits[expectedCommitIndex], true
+		}
+		expectedCommitIndex++
+	}
+	return githubdomain.PullRequestCommit{}, false
 }

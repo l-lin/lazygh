@@ -145,7 +145,7 @@ func (model detailReadModel) pullRequestContent() string {
 		}
 		return model.pullRequestConversationDocument.text
 	case CommitsDetailTab:
-		return renderPullRequestCommitsTabWithWordWrap(detail.Commits, model.markdownRenderer, model.width, model.wordWrapEnabled)
+		return renderPullRequestCommitsTabWithWordWrapForSummary(summary, detail.Commits, model.markdownRenderer, model.width, model.wordWrapEnabled)
 	case ChangesDetailTab:
 		return model.pullRequestChangesContent()
 	default:

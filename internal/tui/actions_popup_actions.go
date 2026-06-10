@@ -102,16 +102,22 @@ func (program *Program) currentContextualActionsPopupActions() []actionsPopupAct
 	if len(pullRequestActions) > 0 {
 		actions = append(actions, actionsPopupGrouped(actionsPopupGroupPullRequest, pullRequestActions...)...)
 	}
+
+	navigationActions := []actionsPopupAction{}
 	if program.detailCursorActionsAvailable() && program.detailCursorHasBuildLink() {
-		actions = append(actions,
-			actionsPopupGrouped(actionsPopupGroupNavigation,
-				program.pullRequestBuildRunActionsPopupAction(),
-				program.pullRequestBuildRunLogsActionsPopupAction(),
-			)...,
+		navigationActions = append(navigationActions,
+			program.pullRequestBuildRunActionsPopupAction(),
+			program.pullRequestBuildRunLogsActionsPopupAction(),
 		)
 	}
+	if action, ok := program.currentDisplayCommitChangesAction(); ok {
+		navigationActions = append(navigationActions, action)
+	}
 	if program.detailCursorActionsAvailable() && program.detailCursorHasLink() {
-		actions = append(actions, program.openLinkUnderCursorActionsPopupAction().withGroup(actionsPopupGroupNavigation))
+		navigationActions = append(navigationActions, program.openLinkUnderCursorActionsPopupAction())
+	}
+	if len(navigationActions) > 0 {
+		actions = append(actions, actionsPopupGrouped(actionsPopupGroupNavigation, navigationActions...)...)
 	}
 	return actions
 }
@@ -326,6 +332,8 @@ func actionsPopupDefaultKeywords(action actionsPopupAction) []string {
 		return []string{"reopen"}
 	case action.id == "add-inline-comment":
 		return []string{"note"}
+	case action.id == "display-commit-changes":
+		return []string{"commit", "diff", "changes"}
 	case action.id == "open-link-under-cursor":
 		return []string{"browse", "visit"}
 	case action.id == "toggle-word-wrap":

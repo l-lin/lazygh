@@ -95,10 +95,22 @@ func renderPullRequestCommentsTabWithWordWrap(comments any, inlineThreads any, i
 }
 
 func renderPullRequestCommitsTab(commits any, renderer MarkdownRenderer, width int) string {
-	return renderPullRequestCommitsTabWithWordWrap(commits, renderer, width, true)
+	return renderPullRequestCommitsTabForSummary(githubdomain.PullRequest{}, commits, renderer, width)
+}
+
+func renderPullRequestCommitsTabForSummary(summary any, commits any, renderer MarkdownRenderer, width int) string {
+	return renderPullRequestCommitsTabWithWordWrapForSummary(summary, commits, renderer, width, true)
 }
 
 func renderPullRequestCommitsTabWithWordWrap(commits any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
+	return renderPullRequestCommitsTabWithWordWrapForSummary(githubdomain.PullRequest{}, commits, renderer, width, wordWrapEnabled)
+}
+
+func renderPullRequestCommitsTabWithWordWrapForSummary(summary any, commits any, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
+	summaryValue, ok := toDomainPullRequestSummary(summary)
+	if !ok {
+		summaryValue = githubdomain.PullRequest{}
+	}
 	commitValues := sortedPullRequestCommitsDescending(toDomainPullRequestCommits(commits))
 	if len(commitValues) == 0 {
 		return "No commits yet."
@@ -106,7 +118,7 @@ func renderPullRequestCommitsTabWithWordWrap(commits any, renderer MarkdownRende
 
 	sections := make([]string, 0, len(commitValues))
 	for _, commit := range commitValues {
-		sections = append(sections, renderPullRequestCommitSectionWithWordWrap(commit, renderer, width, wordWrapEnabled))
+		sections = append(sections, renderPullRequestCommitSectionWithWordWrapForSummary(summaryValue, commit, renderer, width, wordWrapEnabled))
 	}
 	return strings.Join(sections, "\n"+renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineRailPrefix(), "")+"\n")
 }
@@ -120,7 +132,11 @@ func renderPullRequestChangesTabError(err error) string {
 }
 
 func renderPullRequestCommitSectionWithWordWrap(commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
-	sectionLines := []string{renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineDotPrefix(), renderPullRequestCommitHeader(commit))}
+	return renderPullRequestCommitSectionWithWordWrapForSummary(githubdomain.PullRequest{}, commit, renderer, width, wordWrapEnabled)
+}
+
+func renderPullRequestCommitSectionWithWordWrapForSummary(summary githubdomain.PullRequest, commit githubdomain.PullRequestCommit, renderer MarkdownRenderer, width int, wordWrapEnabled bool) string {
+	sectionLines := []string{renderPullRequestCommitTimelineLine(renderPullRequestCommitTimelineDotPrefix(), renderPullRequestCommitHeaderForSummary(summary, commit))}
 	for _, metadataLine := range filterEmptyStrings([]string{
 		renderPullRequestCommitAuthorsLine(commit.Authors),
 		renderPullRequestCommitTimestampsLine(commit),
@@ -132,6 +148,14 @@ func renderPullRequestCommitSectionWithWordWrap(commit githubdomain.PullRequestC
 		sectionLines = append(sectionLines, renderPullRequestCommitTimelineText(renderPullRequestCommitTimelineRailPrefix(), body))
 	}
 	return strings.Join(sectionLines, "\n")
+}
+
+func renderPullRequestCommitHeaderForSummary(summary githubdomain.PullRequest, commit githubdomain.PullRequestCommit) string {
+	header := renderPullRequestCommitHeader(commit)
+	if url, ok := githubdomain.PullRequestCommitChangesURL(summary.Repository, summary.Number, commit.OID); ok {
+		return hyperlinkText(url, header, underlineEscape)
+	}
+	return header
 }
 
 func renderPullRequestCommitHeader(commit githubdomain.PullRequestCommit) string {
@@ -147,6 +171,25 @@ func renderPullRequestCommitHeader(commit githubdomain.PullRequestCommit) string
 	default:
 		return stylePullRequestTitleText("Commit")
 	}
+}
+
+func renderPullRequestCommitHeaderText(commit githubdomain.PullRequestCommit) string {
+	shortOID := shortPullRequestCommitOID(commit.OID)
+	headline := strings.TrimSpace(commit.MessageHeadline)
+	switch {
+	case shortOID != "" && headline != "":
+		return shortOID + " " + headline
+	case headline != "":
+		return headline
+	case shortOID != "":
+		return shortOID
+	default:
+		return "Commit"
+	}
+}
+
+func renderPullRequestCommitHeaderLineText(commit githubdomain.PullRequestCommit) string {
+	return renderPullRequestCommitTimelineLine(detailCommitTimelineDot, renderPullRequestCommitHeaderText(commit))
 }
 
 func renderPullRequestCommitAuthorsLine(authors []githubdomain.PullRequestCommitAuthor) string {

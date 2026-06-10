@@ -18,6 +18,13 @@ func (program *Program) currentDetailCursorReadModel() detailCursorReadModel {
 		model.descriptionKnown = true
 	}
 	if summary, ok := program.selectedPullRequestSummaryForDetail(); ok {
+		if program.shouldShowPullRequestDetailTabs() && program.detailState.activeTab == CommitsDetailTab {
+			if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+				model.pullRequestCommitsSummary = summary
+				model.pullRequestCommits = result.detail.Commits
+				model.pullRequestCommitsKnown = true
+			}
+		}
 		if result, ok := program.pullRequestDiffForSummary(summary); ok && result.err == nil {
 			model.browserChangesSummary = summary
 			model.browserChangesRenderedRows = program.currentPullRequestChangesRenderedRows(summary, result.data.Files, maxInt(selection.document.width, 1))
@@ -46,6 +53,10 @@ func (program *Program) currentPullRequestDescriptionCursorContext() (pullReques
 
 func (program *Program) currentBrowserChangesCursorContext() (browserChangesCursorContext, bool) {
 	return program.currentDetailCursorReadModel().browserChangesContext()
+}
+
+func (program *Program) currentPullRequestCommitsCursorContext() (pullRequestCommitsCursorContext, bool) {
+	return program.currentDetailCursorReadModel().pullRequestCommitsContext()
 }
 
 func (program *Program) currentReviewDiffCursorContext() (reviewDiffCursorContext, bool) {

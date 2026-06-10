@@ -10,6 +10,7 @@ type helpPresenter struct {
 	keyResolver                       keybindingLabelResolver
 	inlineCommentReplyAvailable       bool
 	inlineCommentResolutionHelpLabel  string
+	displayCommitChangesAvailable     bool
 	pullRequestBrowserAvailable       bool
 	pastedPullRequestRemovalAvailable bool
 }
@@ -129,6 +130,9 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			{Key: presenter.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search detail"},
 			presenter.searchWordUnderCursorHelpEntry(),
 			{Key: "<esc>/q", Description: "Exit visual / return"},
+		}
+		if presenter.displayCommitChangesAvailable {
+			entries = append(entries, helpEntry{Key: presenter.helpKeysOrFallback("gf", keybindingActionID{scope: keymapScopeCursor, action: "display_commit_changes"}), Description: displayCommitChangesActionTitle})
 		}
 		if presenter.pullRequestBrowserAvailable {
 			entries = append(entries, pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopePullRequests))

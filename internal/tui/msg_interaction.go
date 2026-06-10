@@ -264,6 +264,8 @@ type MsgToggleInlineCommentResolutionRequested struct{}
 
 type MsgOpenLinkUnderCursorRequested struct{}
 
+type MsgDisplayCommitChangesRequested struct{}
+
 type MsgOpenLinkUnderCursorResolved struct {
 	Target          Focus
 	URL             string
@@ -428,6 +430,7 @@ func (MsgOpenDetailPullRequestCommentRequested) isMsg()        {}
 func (MsgOpenInlineCommentReplyRequested) isMsg()              {}
 func (MsgToggleInlineCommentResolutionRequested) isMsg()       {}
 func (MsgOpenLinkUnderCursorRequested) isMsg()                 {}
+func (MsgDisplayCommitChangesRequested) isMsg()                {}
 func (MsgOpenLinkUnderCursorResolved) isMsg()                  {}
 func (MsgOpenPullRequestBuildRunPopupLinkRequested) isMsg()    {}
 func (MsgOpenPullRequestBuildRunPopupLinkResolved) isMsg()     {}

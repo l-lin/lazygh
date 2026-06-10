@@ -34,6 +34,8 @@ func (program *Program) applyActionsPopupRequestedMessage(requested Msg) []Cmd {
 		return program.applyCopyPullRequestURLRequested(actual)
 	case MsgOpenLinkUnderCursorRequested:
 		return program.applyOpenLinkUnderCursorRequested(actual)
+	case MsgDisplayCommitChangesRequested:
+		return program.applyDisplayCommitChangesRequested(actual)
 	case MsgToggleDetailWordWrapRequested:
 		program.applyToggleDetailWordWrapRequested()
 		return nil

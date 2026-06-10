@@ -30,6 +30,9 @@ func (program *Program) currentDetailCursorLink() (string, bool) {
 	if actual, ok := selection.document.linkAt(selection.state.cursor); ok {
 		return actual, true
 	}
+	if actual, ok := program.commitChangesLinkUnderCursor(); ok {
+		return actual, true
+	}
 	return program.buildLinkUnderCursor()
 }
 

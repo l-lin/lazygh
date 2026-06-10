@@ -156,6 +156,15 @@ func CanonicalPullRequestURL(repository string, number int) string {
 	return "https://github.com/" + trimmedRepository + "/pull/" + strconv.Itoa(number)
 }
 
+func PullRequestCommitChangesURL(repository Repository, number int, commitOID string) (string, bool) {
+	trimmedRepository := strings.TrimSpace(repository.NameWithOwner)
+	trimmedCommitOID := strings.TrimSpace(commitOID)
+	if trimmedRepository == "" || number <= 0 || trimmedCommitOID == "" {
+		return "", false
+	}
+	return CanonicalPullRequestURL(trimmedRepository, number) + "/changes/" + trimmedCommitOID, true
+}
+
 func pullRequestURLPathSegments(path string) []string {
 	rawSegments := strings.Split(strings.TrimSpace(path), "/")
 	segments := make([]string, 0, len(rawSegments))

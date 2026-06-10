@@ -47,6 +47,8 @@ func (program *Program) routeURLClipboardBrowserAndLinkFollowUps(msg Msg) update
 		return handledUpdate(program.applyToggleInlineCommentResolutionRequested())
 	case MsgOpenLinkUnderCursorRequested:
 		return handledUpdate(program.applyOpenLinkUnderCursorRequested(actual))
+	case MsgDisplayCommitChangesRequested:
+		return handledUpdate(program.applyDisplayCommitChangesRequested(actual))
 	case MsgOpenLinkUnderCursorResolved:
 		return handledUpdate(program.applyOpenLinkUnderCursorResolved(actual))
 	case MsgOpenPullRequestBuildRunPopupLinkRequested:

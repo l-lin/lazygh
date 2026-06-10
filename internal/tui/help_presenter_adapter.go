@@ -10,6 +10,7 @@ func (program *Program) helpPresenter() helpPresenter {
 		keyResolver:                       program.keybindingLabelResolver(),
 		inlineCommentReplyAvailable:       program.inlineCommentReplyShortcutAvailable(),
 		inlineCommentResolutionHelpLabel:  program.inlineCommentResolutionShortcutDescription(),
+		displayCommitChangesAvailable:     program.displayCommitChangesShortcutAvailable(),
 		pullRequestBrowserAvailable:       program.pullRequestBrowserShortcutAvailable(),
 		pastedPullRequestRemovalAvailable: program.canRemovePastedPullRequest(),
 	}

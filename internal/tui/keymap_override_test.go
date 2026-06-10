@@ -388,10 +388,11 @@ func TestKeybindingSpecs_GivenCharacterMotionOverrides_WhenListingBindings_ThenI
 		for _, key := range []rune{'s', 'S', 'x', 'X'} {
 			then_bindingKeyExists(t, actual, viewName, key)
 		}
-		for _, key := range []rune{'f', 'F', ';', ',', '(', ')'} {
+		for _, key := range []rune{'F', ';', ',', '(', ')'} {
 			then_bindingDoesNotExist(t, actual, viewName, key)
 		}
 	}
+	then_bindingDoesNotExist(t, actual, viewPullRequestBuildInfoName, 'f')
 }
 
 func TestRegisteredKeybindingSpecs_GivenCharacterMotionRepeatOverridesAndNoSearchHistory_WhenListingBindings_ThenRepeatBindingsStayAbsent(t *testing.T) {
