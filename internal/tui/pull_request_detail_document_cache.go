@@ -3,6 +3,7 @@ package tui
 type pullRequestDetailDocumentCacheKey struct {
 	pullRequestKey string
 	tab            DetailTab
+	variant        string
 	width          int
 }
 

@@ -24,6 +24,7 @@ const (
 	CommentsDetailTab
 	CommitsDetailTab
 	ChangesDetailTab
+	CommitChangesDetailTab
 )
 
 type MarkdownRenderer interface {
@@ -51,6 +52,8 @@ func (tab DetailTab) Label() string {
 		return detailCommitsIcon + " Commits"
 	case ChangesDetailTab:
 		return detailChangesIcon + " Changes"
+	case CommitChangesDetailTab:
+		return detailChangesIcon + " Commit changes"
 	default:
 		return detailDescriptionIcon + " Description"
 	}

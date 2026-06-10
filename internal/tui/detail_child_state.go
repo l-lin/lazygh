@@ -30,26 +30,58 @@ func (state detailStateModel) withActiveTab(tab DetailTab) detailStateModel {
 	return state
 }
 
-func (state detailStateModel) withProjectedScreenStateApplication(application projectedScreenStateApplication) detailStateModel {
+func (state detailStateModel) withCommitDiffTabOpened(pullRequestKey string, commitOID string, shortLabel string) detailStateModel {
+	state.commitDiffTab = state.commitDiffTab.withOpened(pullRequestKey, commitOID, shortLabel)
+	return state
+}
+
+func (state detailStateModel) withCommitDiffTabCleared() detailStateModel {
+	state.commitDiffTab = state.commitDiffTab.cleared()
+	if state.activeTab == CommitChangesDetailTab {
+		state.activeTab = DescriptionDetailTab
+	}
+	return state
+}
+
+func (state detailStateModel) withProjectedScreenStateApplication(application projectedScreenStateApplication, visibleTabs []DetailTab) detailStateModel {
 	if !application.hasDetailTab {
 		return state
 	}
-	return state.withActiveTab(application.activeDetailTab)
+	if tab, ok := detailTabAtIndex(visibleTabs, application.activeDetailTabIndex); ok {
+		return state.withActiveTab(tab)
+	}
+	return state
 }
 
-func (state detailStateModel) withAdvancedActiveTab(delta int, count int) detailStateModel {
-	if count <= 0 || delta == 0 {
+func (state detailStateModel) withAdvancedActiveTab(delta int, visibleTabs []DetailTab) detailStateModel {
+	if len(visibleTabs) == 0 || delta == 0 {
 		return state
 	}
 
-	index := int(state.activeTab)
+	index := detailTabIndex(visibleTabs, state.activeTab)
 	if delta > 0 {
-		index = (index + 1) % count
+		index = (index + 1) % len(visibleTabs)
 	} else {
-		index = (index + count - 1) % count
+		index = (index + len(visibleTabs) - 1) % len(visibleTabs)
 	}
-	state.activeTab = DetailTab(index)
+	state.activeTab = visibleTabs[index]
 	return state
+}
+
+func detailTabIndex(visibleTabs []DetailTab, activeTab DetailTab) int {
+	for index, tab := range visibleTabs {
+		if tab == activeTab {
+			return index
+		}
+	}
+	return 0
+}
+
+func detailTabAtIndex(visibleTabs []DetailTab, index int) (DetailTab, bool) {
+	if index < 0 || index >= len(visibleTabs) {
+		return DescriptionDetailTab, false
+	}
+	return visibleTabs[index], true
 }
 
 func (state detailStateModel) withPendingPrefixCleared() detailStateModel {

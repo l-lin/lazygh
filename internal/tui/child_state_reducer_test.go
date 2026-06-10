@@ -118,10 +118,10 @@ func TestDetailStateModel_GivenActiveTabTransitions_WhenUpdating_ThenItReturnsUp
 	subject := detailStateModel{activeTab: CommentsDetailTab, wrapWidth: 72}
 
 	selected := subject.withActiveTab(CommitsDetailTab)
-	projected := subject.withProjectedScreenStateApplication(projectedScreenStateApplication{hasDetailTab: true, activeDetailTab: ChangesDetailTab})
-	advancedForward := subject.withAdvancedActiveTab(1, len(browserDetailTabs))
-	advancedBackward := subject.withAdvancedActiveTab(-1, len(browserDetailTabs))
-	unchanged := subject.withProjectedScreenStateApplication(projectedScreenStateApplication{})
+	projected := subject.withProjectedScreenStateApplication(projectedScreenStateApplication{hasDetailTab: true, activeDetailTabIndex: 3}, browserDetailTabs)
+	advancedForward := subject.withAdvancedActiveTab(1, browserDetailTabs)
+	advancedBackward := subject.withAdvancedActiveTab(-1, browserDetailTabs)
+	unchanged := subject.withProjectedScreenStateApplication(projectedScreenStateApplication{}, browserDetailTabs)
 
 	if actual := selected.activeTab; actual != CommitsDetailTab {
 		t.Fatalf("expected selected active tab %v, actual %v", CommitsDetailTab, actual)

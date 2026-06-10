@@ -1,5 +1,7 @@
 package tui
 
+import "strings"
+
 func pullRequestChangesRenderedRowsCacheKey(summary any, width int) (pullRequestDetailDocumentCacheKey, bool) {
 	if width < 1 {
 		return pullRequestDetailDocumentCacheKey{}, false
@@ -16,6 +18,18 @@ func pullRequestChangesRenderedRowsCacheKey(summary any, width int) (pullRequest
 	}
 
 	return pullRequestDetailDocumentCacheKey{pullRequestKey: pullRequestKey, tab: ChangesDetailTab, width: width}, true
+}
+
+func commitDiffRenderedRowsCacheKey(pullRequestKey string, commitOID string, width int) (pullRequestDetailDocumentCacheKey, bool) {
+	if width < 1 {
+		return pullRequestDetailDocumentCacheKey{}, false
+	}
+	trimmedPullRequestKey := strings.TrimSpace(pullRequestKey)
+	trimmedCommitOID := strings.TrimSpace(commitOID)
+	if trimmedPullRequestKey == "" || trimmedCommitOID == "" {
+		return pullRequestDetailDocumentCacheKey{}, false
+	}
+	return pullRequestDetailDocumentCacheKey{pullRequestKey: trimmedPullRequestKey, tab: CommitChangesDetailTab, variant: trimmedCommitOID, width: width}, true
 }
 
 func (program *Program) pullRequestChangesRenderedRowsForKey(key pullRequestDetailDocumentCacheKey) ([]reviewDiffRenderedRow, bool) {

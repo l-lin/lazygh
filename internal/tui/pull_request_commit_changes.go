@@ -79,8 +79,31 @@ func (program *Program) applyDisplayCommitChangesRequested(_ MsgDisplayCommitCha
 	}
 
 	program.clearDetailPendingPrefix()
-	if !program.displayCommitChangesShortcutAvailable() {
+	target, ok := program.selectedPullRequestCommitActionTarget()
+	if !ok {
 		return nil
 	}
-	return nil
+	program.closeActionsPopupForAcceptedRequest()
+
+	pullRequestKey := pullRequestDetailKey(target.summary.Repository, target.summary.Number)
+	commitOID := strings.TrimSpace(target.commit.OID)
+	if pullRequestKey == "" || commitOID == "" {
+		return nil
+	}
+
+	program.openCommitDiffTab(pullRequestKey, commitOID, shortPullRequestCommitOID(commitOID))
+	if _, ok := program.commitDiffResultForTarget(pullRequestKey, commitOID); ok || program.commitDiffLoadInFlightForTarget(pullRequestKey, commitOID) {
+		return nil
+	}
+
+	repository := strings.TrimSpace(pullRequestRepositoryName(target.summary.Repository))
+	if repository == "" || repository == "-" {
+		return nil
+	}
+
+	loadKey := commitDiffCacheKey(pullRequestKey, commitOID)
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withCommitDiffLoadPlanned(loadKey)
+	})
+	return []Cmd{loadCommitDiffCmd{PullRequestKey: pullRequestKey, Repository: repository, CommitOID: commitOID}}
 }

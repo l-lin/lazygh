@@ -32,7 +32,7 @@ func TestProjectedScreenStateApplication_GivenBrowserScreenTabs_WhenProjecting_T
 	if actual.activePullRequestTab != RequestedPullRequestsTab {
 		t.Fatalf("expected pull request tab %v, actual %v", RequestedPullRequestsTab, actual.activePullRequestTab)
 	}
-	if actual.activeDetailTab != ChangesDetailTab {
-		t.Fatalf("expected detail tab %v, actual %v", ChangesDetailTab, actual.activeDetailTab)
+	if actual.activeDetailTabIndex != 3 {
+		t.Fatalf("expected detail tab index %d, actual %d", 3, actual.activeDetailTabIndex)
 	}
 }

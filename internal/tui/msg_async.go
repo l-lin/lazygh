@@ -32,6 +32,13 @@ type MsgPullRequestDiffLoaded struct {
 	Err     error
 }
 
+type MsgCommitDiffLoaded struct {
+	PullRequestKey string
+	CommitOID      string
+	Diff           githubdomain.CommitDiff
+	Err            error
+}
+
 type MsgIssueDetailLoaded struct {
 	Repository string
 	Number     int
@@ -69,6 +76,7 @@ func (MsgPullRequestsLoaded) isMsg()           {}
 func (MsgNotificationsLoaded) isMsg()          {}
 func (MsgPullRequestDetailLoaded) isMsg()      {}
 func (MsgPullRequestDiffLoaded) isMsg()        {}
+func (MsgCommitDiffLoaded) isMsg()             {}
 func (MsgIssueDetailLoaded) isMsg()            {}
 func (MsgReleaseDetailLoaded) isMsg()          {}
 func (MsgCurrentDetailImageHTMLLoaded) isMsg() {}

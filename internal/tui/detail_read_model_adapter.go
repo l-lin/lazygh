@@ -17,6 +17,7 @@ func (program *Program) buildDetailReadModel(width int, includeDocumentInputs bo
 	}
 
 	model.activeTab = program.detailState.activeTab
+	model.commitDiffTab = program.detailState.commitDiffTab
 	model.wordWrapEnabled = program.detailWordWrapEnabled()
 	model.loadingSpinner = program.loadingSpinnerFrame()
 	model.markdownRenderer = program.markdownRenderer
@@ -64,6 +65,13 @@ func (program *Program) buildDetailReadModel(width int, includeDocumentInputs bo
 				model.pullRequestDiffResultKnown = true
 			}
 		}
+		pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+		if model.commitDiffTab.visibleForPullRequestKey(pullRequestKey) {
+			if result, ok := program.commitDiffResultForTarget(pullRequestKey, model.commitDiffTab.commitOID); ok {
+				model.commitDiffResult = result
+				model.commitDiffResultKnown = true
+			}
+		}
 	}
 
 	if !includeDocumentInputs {
@@ -92,6 +100,12 @@ func (program *Program) buildDetailReadModel(width int, includeDocumentInputs bo
 		if model.pullRequestDiffResultKnown && model.pullRequestDiffResult.err == nil {
 			model.pullRequestChangesRenderedRows = program.currentPullRequestChangesRenderedRows(summary, model.pullRequestDiffResult.data.Files, model.width)
 			model.pullRequestChangesKnown = true
+		}
+	case CommitChangesDetailTab:
+		pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+		if model.commitDiffResultKnown && model.commitDiffResult.err == nil && pullRequestKey != "" {
+			model.commitDiffRenderedRows = program.currentCommitDiffRenderedRows(pullRequestKey, model.commitDiffTab.commitOID, model.commitDiffResult.data.Files, model.width)
+			model.commitDiffKnown = true
 		}
 	case DescriptionDetailTab:
 		model.pullRequestOverview = program.renderCurrentPullRequestOverview(summary, detail, model.width)

@@ -59,6 +59,9 @@ func (program *Program) routeAsyncLoadResultsAndTimerTicks(msg Msg) updateResult
 		return handledUpdate(program.applyPullRequestDetailLoaded(actual))
 	case MsgPullRequestDiffLoaded:
 		return handledUpdate(program.applyPullRequestDiffLoaded(actual))
+	case MsgCommitDiffLoaded:
+		program.applyCommitDiffLoaded(actual)
+		return handledUpdate(nil)
 	case MsgIssueDetailLoaded:
 		program.applyIssueDetailLoaded(actual)
 		return handledUpdate(nil)

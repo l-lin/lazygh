@@ -174,6 +174,14 @@ func (adapter *PullRequestDetailAdapter) GetPullRequestDiff(repository string, n
 	return ToDomainPullRequestDiff(diff), nil
 }
 
+func (adapter *PullRequestDetailAdapter) GetCommitDiff(repository string, commitOID string) (githubdomain.CommitDiff, error) {
+	diff, err := adapter.service.GetCommitDiff(repository, commitOID)
+	if err != nil {
+		return githubdomain.CommitDiff{}, err
+	}
+	return ToDomainCommitDiff(diff), nil
+}
+
 func (adapter *PullRequestDetailAdapter) GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error) {
 	return adapter.service.GetPullRequestFileTeamOwners(repository, number, filePaths)
 }

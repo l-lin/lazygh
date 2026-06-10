@@ -17,6 +17,7 @@ type detailStateModel struct {
 	wrapWidth        int
 	wordWrapDisabled bool
 	activeTab        DetailTab
+	commitDiffTab    commitDiffTabState
 	lastIdentity     string
 	viewState        detailViewState
 }

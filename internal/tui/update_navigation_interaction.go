@@ -81,6 +81,7 @@ func (program *Program) applyCloseDetailRequested() {
 	}
 
 	program.clearDetailPendingPrefix()
+	program.clearCommitDiffTabState()
 	program.model.CloseDetail()
 }
 
@@ -169,6 +170,7 @@ func (program *Program) applyOpenPullRequestInPastedTabView(message MsgOpenPullR
 
 func (program *Program) finishOpenPullRequestInBrowserView(sideFocus Focus) {
 	program.clearReviewSession()
+	program.clearCommitDiffTabState()
 	program.invalidateReviewDiffRenderCache()
 	program.setDetailActiveTab(DescriptionDetailTab)
 	program.resetDetailViewState()
@@ -194,11 +196,11 @@ func (program *Program) applyAdvanceDetailTab(message MsgAdvanceDetailTab) {
 		return
 	}
 	program.clearDetailPendingPrefix()
-	count := len(browserDetailTabs)
-	if count == 0 || message.Delta == 0 {
+	visibleTabs := program.visibleDetailTabs()
+	if len(visibleTabs) == 0 || message.Delta == 0 {
 		return
 	}
-	program.advanceDetailActiveTab(message.Delta, count)
+	program.advanceDetailActiveTab(message.Delta, visibleTabs)
 }
 
 func (program *Program) applyExitReviewMode() {

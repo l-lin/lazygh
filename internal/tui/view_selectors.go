@@ -16,6 +16,20 @@ func (program *Program) currentPullRequestChangesRenderedRows(summary githubdoma
 	return buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), program.browserCollapsedChangesThreadIDs(summary, files), program.browserCollapsedChangesFileIDs(summary, files), program.currentConnectedUserLogin())
 }
 
+func (program *Program) currentCommitDiffRenderedRows(pullRequestKey string, commitOID string, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
+	if cacheKey, ok := commitDiffRenderedRowsCacheKey(pullRequestKey, commitOID, width); ok {
+		if rows, ok := program.pullRequestChangesRenderedRowsForKey(cacheKey); ok {
+			return rows
+		}
+
+		rows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), nil, nil, program.currentConnectedUserLogin())
+		program.cachePullRequestChangesRenderedRows(cacheKey, rows)
+		return rows
+	}
+
+	return buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), nil, nil, program.currentConnectedUserLogin())
+}
+
 func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {
 	cacheKey := program.reviewDiffRenderKey(file, width)
 	if entry, ok := program.cachedReviewDiffRenderEntry(cacheKey); ok && len(entry.rows) > 0 {

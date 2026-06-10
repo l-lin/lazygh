@@ -225,6 +225,22 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	return nil
 }
 
+func (program *Program) applyCommitDiffLoaded(message MsgCommitDiffLoaded) {
+	key := commitDiffCacheKey(message.PullRequestKey, message.CommitOID)
+	if key == "" {
+		return
+	}
+
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		store = store.withCommitDiffLoadCleared(key)
+		if message.Err == nil {
+			return store.withCommitDiffCached(key, commitDiffResult{data: buildCommitDiffReviewData(message.Diff)})
+		}
+		return store.withCommitDiffCached(key, commitDiffResult{err: message.Err})
+	})
+	program.invalidatePullRequestDetailDocumentCache()
+}
+
 func (program *Program) applyIssueDetailLoaded(message MsgIssueDetailLoaded) {
 	key := notificationDetailKey(message.Repository, message.Number)
 	program.updateDetailStore(func(store detailStore) detailStore {

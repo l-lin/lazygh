@@ -29,14 +29,34 @@ func (program *Program) setDetailActiveTab(tab DetailTab) {
 
 func (program *Program) applyProjectedDetailStateApplication(application projectedScreenStateApplication) {
 	program.updateDetailState(func(state detailStateModel) detailStateModel {
-		return state.withProjectedScreenStateApplication(application)
+		return state.withProjectedScreenStateApplication(application, program.visibleDetailTabs())
 	})
 }
 
-func (program *Program) advanceDetailActiveTab(delta int, count int) {
+func (program *Program) advanceDetailActiveTab(delta int, visibleTabs []DetailTab) {
 	program.updateDetailState(func(state detailStateModel) detailStateModel {
-		return state.withAdvancedActiveTab(delta, count)
+		return state.withAdvancedActiveTab(delta, visibleTabs)
 	})
+}
+
+func (program *Program) openCommitDiffTab(pullRequestKey string, commitOID string, shortLabel string) {
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		state = state.withCommitDiffTabOpened(pullRequestKey, commitOID, shortLabel)
+		return state.withActiveTab(CommitChangesDetailTab)
+	})
+}
+
+func (program *Program) clearCommitDiffTabState() {
+	if program == nil {
+		return
+	}
+	program.updateDetailState(func(state detailStateModel) detailStateModel {
+		return state.withCommitDiffTabCleared()
+	})
+	program.updateReviewStore(func(store reviewStore) reviewStore {
+		return store.withCommitDiffWorkflowStateReset()
+	})
+	program.invalidatePullRequestDetailDocumentCache()
 }
 
 func (program *Program) clearDetailPendingPrefix() {

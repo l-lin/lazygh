@@ -45,7 +45,7 @@ func (BrowserMode) SidebarSchema(program *Program) SidebarSchema {
 func (BrowserMode) ScreenState(program *Program) ScreenState {
 	state := program.model.ScreenState()
 	if program.browserShowsPullRequestDetailTabs() {
-		state = state.WithViewTabs(mainPanelViewNumber, int(program.detailState.activeTab), program.detailScreenTabs())
+		state = state.WithViewTabs(mainPanelViewNumber, program.activeDetailTabIndex(), program.detailScreenTabs())
 	}
 	return state
 }

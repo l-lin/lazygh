@@ -37,6 +37,11 @@ type detailReadModel struct {
 	pullRequestOverviewKnown        bool
 	pullRequestChangesRenderedRows  []reviewDiffRenderedRow
 	pullRequestChangesKnown         bool
+	commitDiffTab                   commitDiffTabState
+	commitDiffResult                commitDiffResult
+	commitDiffResultKnown           bool
+	commitDiffRenderedRows          []reviewDiffRenderedRow
+	commitDiffKnown                 bool
 
 	notification             githubdomain.Notification
 	notificationKnown        bool
@@ -57,6 +62,9 @@ func (model detailReadModel) identity() string {
 
 	if model.pullRequestSummaryKnown {
 		if key := pullRequestDetailKey(model.pullRequestSummary.Repository, model.pullRequestSummary.Number); key != "" {
+			if model.activeTab == CommitChangesDetailTab && model.commitDiffTab.visibleForPullRequestKey(key) {
+				return fmt.Sprintf("pr:%s:commit:%s", key, strings.TrimSpace(model.commitDiffTab.commitOID))
+			}
 			if model.currentSideFocus == FocusNotificationsView {
 				return fmt.Sprintf("notification-pr:%s:tab:%d", key, model.activeTab)
 			}
@@ -93,7 +101,11 @@ func (model detailReadModel) documentCacheKey() (pullRequestDetailDocumentCacheK
 	if model.reviewSession.isActive() {
 		tab = DescriptionDetailTab
 	}
-	return pullRequestDetailDocumentCacheKey{pullRequestKey: pullRequestKey, tab: tab, width: model.width}, true
+	cacheKey := pullRequestDetailDocumentCacheKey{pullRequestKey: pullRequestKey, tab: tab, width: model.width}
+	if tab == CommitChangesDetailTab {
+		cacheKey.variant = strings.TrimSpace(model.commitDiffTab.commitOID)
+	}
+	return cacheKey, true
 }
 
 func (model detailReadModel) content() string {
@@ -125,6 +137,9 @@ func (model detailReadModel) document() detailDocument {
 	if model.activeTab == ChangesDetailTab && model.pullRequestSummaryKnown && model.pullRequestDetailResultKnown && model.pullRequestDetailResult.err == nil && model.pullRequestDiffResultKnown && model.pullRequestDiffResult.err == nil && model.pullRequestChangesKnown {
 		return newReviewDiffDetailDocumentWithWordWrap(model.pullRequestChangesRenderedRows, model.width, model.wordWrapEnabled)
 	}
+	if model.activeTab == CommitChangesDetailTab && model.pullRequestSummaryKnown && model.pullRequestDetailResultKnown && model.pullRequestDetailResult.err == nil && model.commitDiffResultKnown && model.commitDiffResult.err == nil && model.commitDiffKnown {
+		return newReviewDiffDetailDocumentWithWordWrap(model.commitDiffRenderedRows, model.width, model.wordWrapEnabled)
+	}
 	return newDetailDocumentWithWrap(model.content(), model.width, false)
 }
 
@@ -148,6 +163,8 @@ func (model detailReadModel) pullRequestContent() string {
 		return renderPullRequestCommitsTabWithWordWrapForSummary(summary, detail.Commits, model.markdownRenderer, model.width, model.wordWrapEnabled)
 	case ChangesDetailTab:
 		return model.pullRequestChangesContent()
+	case CommitChangesDetailTab:
+		return model.commitDiffContent()
 	default:
 		header := renderPullRequestBrowserHeader(summary, detail)
 		overview := ""
@@ -167,6 +184,16 @@ func (model detailReadModel) pullRequestChangesContent() string {
 		return renderPullRequestChangesTabError(model.pullRequestDiffResult.err)
 	}
 	return renderPullRequestChangesRows(model.pullRequestChangesRenderedRows)
+}
+
+func (model detailReadModel) commitDiffContent() string {
+	if !model.commitDiffResultKnown {
+		return strings.TrimSpace(model.loadingSpinner)
+	}
+	if model.commitDiffResult.err != nil {
+		return renderPullRequestChangesTabError(model.commitDiffResult.err)
+	}
+	return renderPullRequestChangesRows(model.commitDiffRenderedRows)
 }
 
 func (model detailReadModel) notificationContent() string {

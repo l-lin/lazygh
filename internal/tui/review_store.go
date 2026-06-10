@@ -42,6 +42,42 @@ func (store reviewStore) withoutPullRequestDiff(key string) reviewStore {
 	return store
 }
 
+func (store reviewStore) withCommitDiffLoadPlanned(key string) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" {
+		return store
+	}
+	store.commitDiffLoadInFlight = copyWorkflowStringBoolMap(store.commitDiffLoadInFlight)
+	store.commitDiffLoadInFlight[trimmedKey] = true
+	return store
+}
+
+func (store reviewStore) withCommitDiffLoadCleared(key string) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" || !store.commitDiffLoadInFlight[trimmedKey] {
+		return store
+	}
+	store.commitDiffLoadInFlight = copyWorkflowStringBoolMap(store.commitDiffLoadInFlight)
+	delete(store.commitDiffLoadInFlight, trimmedKey)
+	return store
+}
+
+func (store reviewStore) withCommitDiffCached(key string, result commitDiffResult) reviewStore {
+	trimmedKey := strings.TrimSpace(key)
+	if trimmedKey == "" {
+		return store
+	}
+	store.commitDiffCache = copyCommitDiffResults(store.commitDiffCache)
+	store.commitDiffCache[trimmedKey] = result
+	return store
+}
+
+func (store reviewStore) withCommitDiffWorkflowStateReset() reviewStore {
+	store.commitDiffCache = map[string]commitDiffResult{}
+	store.commitDiffLoadInFlight = map[string]bool{}
+	return store
+}
+
 func (store reviewStore) withStoryReviewCached(key string, result storyReviewResult) reviewStore {
 	trimmedKey := strings.TrimSpace(key)
 	if trimmedKey == "" {
@@ -122,6 +158,14 @@ func diffResultKnown(results map[string]pullRequestDiffResult, key string) bool 
 
 func copyPullRequestDiffResults(source map[string]pullRequestDiffResult) map[string]pullRequestDiffResult {
 	copied := make(map[string]pullRequestDiffResult, len(source))
+	for key, result := range source {
+		copied[key] = result
+	}
+	return copied
+}
+
+func copyCommitDiffResults(source map[string]commitDiffResult) map[string]commitDiffResult {
+	copied := make(map[string]commitDiffResult, len(source))
 	for key, result := range source {
 		copied[key] = result
 	}

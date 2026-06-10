@@ -5,7 +5,7 @@ type projectedScreenStateApplication struct {
 	lastSideFocus        Focus
 	activePullRequestTab PullRequestTab
 	hasPullRequestTab    bool
-	activeDetailTab      DetailTab
+	activeDetailTabIndex int
 	hasDetailTab         bool
 }
 
@@ -22,7 +22,7 @@ func projectScreenStateApplication(state ScreenState) projectedScreenStateApplic
 		application.hasPullRequestTab = true
 	}
 	if mainView, ok := state.ViewByNumber(mainPanelViewNumber); ok && len(mainView.Tabs) > 0 {
-		application.activeDetailTab = DetailTab(clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs)))
+		application.activeDetailTabIndex = clampScreenTabIndex(mainView.ActiveTab, len(mainView.Tabs))
 		application.hasDetailTab = true
 	}
 	return application

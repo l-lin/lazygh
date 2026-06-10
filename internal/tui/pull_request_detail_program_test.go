@@ -1730,6 +1730,9 @@ type fakePullRequestDetailLoader struct {
 	diffs                             map[string]githubcli.PullRequestDiff
 	diffErrors                        map[string]error
 	diffCalls                         []string
+	commitDiffs                       map[string]githubcli.CommitDiff
+	commitDiffErrors                  map[string]error
+	commitDiffCalls                   []string
 	fileTeamOwners                    map[string]map[string][]string
 	fileTeamOwnerErrors               map[string]error
 	fileTeamOwnerCalls                []string
@@ -2004,6 +2007,22 @@ func (loader *fakePullRequestDetailLoader) GetPullRequestDiff(repository string,
 		}
 	}
 	return githubdomain.PullRequestDiff{}, nil
+}
+
+func (loader *fakePullRequestDetailLoader) GetCommitDiff(repository string, commitOID string) (githubdomain.CommitDiff, error) {
+	key := repository + "@" + strings.TrimSpace(commitOID)
+	loader.commitDiffCalls = append(loader.commitDiffCalls, key)
+	if loader.commitDiffErrors != nil {
+		if err, ok := loader.commitDiffErrors[key]; ok {
+			return githubdomain.CommitDiff{}, err
+		}
+	}
+	if loader.commitDiffs != nil {
+		if diff, ok := loader.commitDiffs[key]; ok {
+			return githubcli.ToDomainCommitDiff(diff), nil
+		}
+	}
+	return githubdomain.CommitDiff{}, nil
 }
 
 func (loader *fakePullRequestDetailLoader) GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error) {

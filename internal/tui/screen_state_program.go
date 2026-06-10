@@ -13,9 +13,10 @@ func (program *Program) baseScreenState() ScreenState {
 }
 
 func (program *Program) detailScreenTabs() []TabState {
-	tabs := make([]TabState, 0, len(browserDetailTabs))
-	for _, tab := range browserDetailTabs {
-		tabs = append(tabs, TabState{Label: tab.Label()})
+	visibleTabs := program.visibleDetailTabs()
+	tabs := make([]TabState, 0, len(visibleTabs))
+	for _, tab := range visibleTabs {
+		tabs = append(tabs, TabState{Label: program.detailTabLabel(tab)})
 	}
 	return tabs
 }
