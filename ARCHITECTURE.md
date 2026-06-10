@@ -40,7 +40,7 @@ internal/tui
 
 Two child models now own the hot detail and review transitions:
 
-- `detailStateModel` owns active tab, wrap width, cursor placement, prefix and visual cleanup, viewport sync, and search sync.
+- `detailStateModel` owns active tab, wrap width, cursor placement, prefix and visual cleanup, viewport sync, search sync, and the single optional browser commit-diff tab state. That tab state records the current PR identity, the selected commit OID, and the short label shown in the tab chrome.
 - `reviewSessionState` owns lifecycle summary plus file-tree selection and collapsed file or thread state.
 
 Smaller state bags follow the same value-transition rule:
@@ -77,6 +77,8 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, persistent-cache shell sync, shell sync, and redraw only.
 
+For the optional browser commit-diff tab, `Update` owns open, retarget, focus, and clear decisions. `commit_diff_commands.go` owns the GitHub fetch only.
+
 `dispatchRuntimeMessage(...)` is the explicit shell bridge for runtime entrypoints that need `Update` plus `afterStateChange()`. `executeRuntimeMessage(...)` is the low-level shell bridge for command/runtime re-entry that should apply a message without another post-update pass. `dispatchAsyncMessage()` still hops worker results back onto the UI thread.
 
 ## Read side and render side
@@ -90,6 +92,8 @@ The read side is much cleaner than it used to be.
 - `applyScreenComposition()` applies the result to `gocui`.
 
 The render layer is mostly read-only now. Expensive document building and cache mutation live outside the render entrypoints. Detail and build-popup cursor or search clamping now runs through the explicit pre-render shell-sync seam `syncViewShellState(...)`, while `prepareViewRenderState(...)` stays read-only.
+
+`detailReadModel` now handles two browser diff surfaces. The normal `Changes` tab reads the pull-request diff cache. The optional commit-diff tab reads its own commit-diff cache, renders through the same review-diff document pipeline, and stays read-only.
 
 `refreshViews()` now runs with a short-lived read cache so footer and popup presenters, popup action lists, keybinding label resolution, and review-session read models are computed once per redraw instead of several times.
 Actions-popup filtered matches are derived from current popup state during update or read-side projections instead of being repaired in the post-update shell hook.
@@ -118,6 +122,7 @@ Shell work now lives behind explicit command files.
 - `workflow_session_commands.go`: connected-user load
 - `workflow_pull_request_list_commands.go`: pull-request list load, reload, and cache hydration
 - `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
+- `commit_diff_commands.go`: single-commit diff load for the optional browser commit-diff tab
 - `workflow_notification_commands.go`: notifications plus issue and release detail loads
 - `workflow_detail_image_commands.go`: markdown HTML, GitHub auth-token lookup for private image fetches, and detail-image loads
 - `cmd_actions_popup_async_requests.go`: actions-popup async transport
@@ -140,7 +145,7 @@ These command files still live in `internal/tui`, but they now build focused run
 - `workflow_plans.go` derives pure workflow plans.
 - `workflow_stores.go` tracks in-flight and invalidation state.
 
-The planner no longer flips store flags inline while deciding commands. Load starts and cache hydration now land through typed messages. The large workflow stores now follow the same helper rule: `pullRequestListStore`, `detailStore`, and `reviewStore` mutate through copy-on-write store helpers plus whole-store adapters instead of direct map writes in update files. The remaining coordinators, `imageLoadCoordinator` and `optimisticMutationCoordinator`, now expose focused helper methods instead of direct field writes.
+The planner no longer flips store flags inline while deciding commands. Load starts and cache hydration now land through typed messages. The large workflow stores now follow the same helper rule: `pullRequestListStore`, `detailStore`, and `reviewStore` mutate through copy-on-write store helpers plus whole-store adapters instead of direct map writes in update files. `reviewStore` now keeps pull-request diff workflow state separate from the optional commit-diff cache and its in-flight load tracking. The remaining coordinators, `imageLoadCoordinator` and `optimisticMutationCoordinator`, now expose focused helper methods instead of direct field writes.
 
 ## Boundaries that matter
 
@@ -149,7 +154,7 @@ The planner no longer flips store flags inline while deciding commands. Load sta
 - Palette values belong in `internal/theme`.
 - Rendering belongs in `internal/tui`.
 - Detail view `0` is read-only.
-- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_pull_request_list_commands.go`, `workflow_pull_request_detail_commands.go`, `workflow_notification_commands.go`, `notification_loading.go`, and `notification_detail_loader.go`.
+- Direct GitHub port calls in `internal/tui` are confined to explicit command or loading files such as `workflow_pull_request_list_commands.go`, `workflow_pull_request_detail_commands.go`, `commit_diff_commands.go`, `workflow_notification_commands.go`, `notification_loading.go`, and `notification_detail_loader.go`.
 
 ## Start here
 

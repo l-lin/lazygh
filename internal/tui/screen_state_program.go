@@ -16,7 +16,11 @@ func (program *Program) detailScreenTabs() []TabState {
 	visibleTabs := program.visibleDetailTabs()
 	tabs := make([]TabState, 0, len(visibleTabs))
 	for _, tab := range visibleTabs {
-		tabs = append(tabs, TabState{Label: program.detailTabLabel(tab)})
+		label := tab.Label()
+		if tab == CommitChangesDetailTab {
+			label = program.detailTabLabel(tab)
+		}
+		tabs = append(tabs, TabState{Label: label})
 	}
 	return tabs
 }

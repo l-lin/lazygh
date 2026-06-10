@@ -20,7 +20,7 @@ func TestBrowserMode_GivenCommitChangesRequest_WhenOpening_ThenItShowsTheCommitD
 
 	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
 
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label(), "2222222"}, 4)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label(), detailChangesIcon + " 2222222"}, 4)
 	for _, expected := range []string{"internal/tui/render.go", "@@ -42,2 +42,2 @@", "42 : 42 │  context line", "43 :    │ -old line", "   : 43 │ +new line"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the commit diff tab to contain %q, actual %q", expected, detailView.Buffer())
@@ -47,7 +47,7 @@ func TestBrowserMode_GivenAnExistingCommitDiffTabForTheSameCommit_WhenOpeningAga
 
 	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
 
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label(), "2222222"}, 4)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label(), detailChangesIcon + " 2222222"}, 4)
 	if !reflect.DeepEqual(loader.commitDiffCalls, []string{"acme/widgets@2222222bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}) {
 		t.Fatalf("expected the same commit diff to stay cached after reopening, actual %v", loader.commitDiffCalls)
 	}
@@ -69,7 +69,7 @@ func TestBrowserMode_GivenAnExistingCommitDiffTabForADifferentCommit_WhenOpening
 
 	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
 
-	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label(), "1111111"}, 4)
+	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (2)", ChangesDetailTab.Label(), detailChangesIcon + " 1111111"}, 4)
 	for _, expected := range []string{"internal/tui/model.go", "@@ -7,1 +7,1 @@", "-old model", "+new model"} {
 		if !strings.Contains(detailView.Buffer(), expected) {
 			t.Fatalf("expected the retargeted commit diff tab to contain %q, actual %q", expected, detailView.Buffer())

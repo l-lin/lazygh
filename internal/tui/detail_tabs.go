@@ -120,10 +120,10 @@ func (program *Program) detailTabLabel(tab DetailTab) string {
 		return fmt.Sprintf("%s (%d)", label, commitCount)
 	case CommitChangesDetailTab:
 		if actual := strings.TrimSpace(program.detailState.commitDiffTab.shortLabel); actual != "" {
-			return actual
+			return detailChangesIcon + " " + actual
 		}
 		if actual := shortPullRequestCommitOID(program.detailState.commitDiffTab.commitOID); actual != "" {
-			return actual
+			return detailChangesIcon + " " + actual
 		}
 		return label
 	default:
