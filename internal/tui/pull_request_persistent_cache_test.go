@@ -43,7 +43,7 @@ func TestLayout_GivenCachedPullRequests_WhenRendering_ThenItShowsThemBeforeTheBa
 	then_noError(t, actualErr)
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	expected := iconPullRequest + " acme/widgets#42 Cached PR"
+	expected := iconPullRequest + " widgets#42 Cached PR"
 	if actualLine, ok := pullRequestsView.Line(0); !ok || !strings.Contains(actualLine, expected) {
 		t.Fatalf("expected pull requests line %q to contain %q", actualLine, expected)
 	}

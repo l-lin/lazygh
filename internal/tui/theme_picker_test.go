@@ -105,9 +105,9 @@ func TestChangeTheme_GivenExistingPullRequestRows_WhenSubmitting_ThenItRestylesT
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, oldReferenceHex), "pull request reference after theme switch")
+	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "widgets#42", given_themeColorHex(t, oldReferenceHex), "pull request reference after theme switch")
 	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, oldTitleHex), "pull request title after theme switch")
-	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "pull request reference contrast after theme switch")
+	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "widgets#42", theme.SelectedLineBackgroundHex, 4.5, "pull request reference contrast after theme switch")
 	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "First PR", theme.SelectedLineBackgroundHex, 4.5, "pull request title contrast after theme switch")
 }
 

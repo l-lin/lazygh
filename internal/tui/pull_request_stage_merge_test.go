@@ -463,10 +463,10 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 	then_statusLineContains(t, gui, pullRequestMarkedReadyForReviewSuccessMessage)
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.Buffer(), " acme/widgets#42 Lifecycle PR") {
+	if !strings.Contains(pullRequestsView.Buffer(), " widgets#42 Lifecycle PR") {
 		t.Fatalf("expected the pull-requests buffer to contain the open row, actual %q", pullRequestsView.Buffer())
 	}
-	if strings.Contains(pullRequestsView.Buffer(), " acme/widgets#42 Lifecycle PR") {
+	if strings.Contains(pullRequestsView.Buffer(), " widgets#42 Lifecycle PR") {
 		t.Fatalf("expected the pull-requests buffer to drop the draft row, actual %q", pullRequestsView.Buffer())
 	}
 	detailView, actualErr := gui.View(viewDetailName)
@@ -531,7 +531,7 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 	then_statusLineContains(t, gui, pullRequestClosedSuccessMessage)
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(pullRequestsView.Buffer(), " acme/widgets#42 Lifecycle PR") {
+	if !strings.Contains(pullRequestsView.Buffer(), " widgets#42 Lifecycle PR") {
 		t.Fatalf("expected the pull-requests buffer to keep the selected row, actual %q", pullRequestsView.Buffer())
 	}
 	detailView, actualErr := gui.View(viewDetailName)

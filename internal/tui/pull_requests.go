@@ -261,7 +261,7 @@ func pullRequestRow(pullRequest any) PullRequestRow {
 		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex) + mergeChecksBackgroundPrefix
 	}
 
-	titlePrefix := fmt.Sprintf("%s#%d", repositoryName, pullRequestValue.Number)
+	titlePrefix := pullRequestListReference(pullRequestValue.Repository, pullRequestValue.Number)
 	titleSuffix := " " + valueOrDash(pullRequestValue.Title)
 
 	summaryCopy := pullRequestValue

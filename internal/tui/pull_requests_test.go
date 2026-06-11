@@ -42,8 +42,8 @@ func TestSetPullRequests_GivenMyPullRequests_WhenSelectingThePullRequestsView_Th
 	if len(actualPullRequests) != 1 {
 		t.Fatalf("expected 1 pull request row, actual %d", len(actualPullRequests))
 	}
-	if actualPullRequests[0].Title != " acme/foobar#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA" {
-		t.Fatalf("expected title %q, actual %q", " acme/foobar#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA", actualPullRequests[0].Title)
+	if actualPullRequests[0].Title != " foobar#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA" {
+		t.Fatalf("expected title %q, actual %q", " foobar#422 fix(P3C-6986): exclude dependencies bump PRs + bump GHA", actualPullRequests[0].Title)
 	}
 
 	actualDetail := subject.DetailContent()
@@ -105,7 +105,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			},
 			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusOpenHex),
-			expectedVisibleTitle:    " acme/widgets#42 Open PR",
+			expectedVisibleTitle:    " widgets#42 Open PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
@@ -120,7 +120,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			},
 			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusDraftHex),
-			expectedVisibleTitle:    " acme/widgets#43 Draft PR",
+			expectedVisibleTitle:    " widgets#43 Draft PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
@@ -134,7 +134,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			},
 			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusClosedHex),
-			expectedVisibleTitle:    " acme/widgets#44 Closed PR",
+			expectedVisibleTitle:    " widgets#44 Closed PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
@@ -149,7 +149,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			},
 			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusClosedHex),
-			expectedVisibleTitle:    " acme/widgets#46 Closed draft PR",
+			expectedVisibleTitle:    " widgets#46 Closed draft PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
@@ -163,7 +163,7 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			},
 			expectedIconText:        " ",
 			expectedIconPrefix:      foregroundColorEscape(theme.PullRequestStatusMergedHex),
-			expectedVisibleTitle:    " acme/widgets#45 Merged PR",
+			expectedVisibleTitle:    " widgets#45 Merged PR",
 			expectedReferencePrefix: foregroundColorEscape(theme.PullRequestReferenceHex),
 			expectedTitlePrefix:     foregroundColorEscape(theme.PullRequestTitleHex),
 		},
@@ -185,8 +185,8 @@ func TestPullRequestRow_GivenPullRequestStatuses_WhenBuildingTheListRow_ThenItPr
 			if actual.TitleSegments[0].Prefix != testCase.expectedIconPrefix {
 				t.Fatalf("expected icon segment prefix %q, actual %q", testCase.expectedIconPrefix, actual.TitleSegments[0].Prefix)
 			}
-			if actual.TitleSegments[1].Text != fmt.Sprintf("acme/widgets#%d", testCase.pullRequest.Number) {
-				t.Fatalf("expected reference segment %q, actual %q", fmt.Sprintf("acme/widgets#%d", testCase.pullRequest.Number), actual.TitleSegments[1].Text)
+			if actual.TitleSegments[1].Text != fmt.Sprintf("widgets#%d", testCase.pullRequest.Number) {
+				t.Fatalf("expected reference segment %q, actual %q", fmt.Sprintf("widgets#%d", testCase.pullRequest.Number), actual.TitleSegments[1].Text)
 			}
 			if actual.TitleSegments[1].Prefix != testCase.expectedReferencePrefix {
 				t.Fatalf("expected reference segment prefix %q, actual %q", testCase.expectedReferencePrefix, actual.TitleSegments[1].Prefix)
@@ -213,8 +213,8 @@ func TestPullRequestRow_GivenSuccessfulMergeChecks_WhenBuildingTheListRow_ThenIt
 		StatusCheckRollupState: "SUCCESS",
 	}).Item
 
-	if actual.Title != " acme/widgets#42 Approved PR" {
-		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Approved PR", actual.Title)
+	if actual.Title != " widgets#42 Approved PR" {
+		t.Fatalf("expected title %q, actual %q", " widgets#42 Approved PR", actual.Title)
 	}
 	if len(actual.TitleSegments) != 3 {
 		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
@@ -240,8 +240,8 @@ func TestPullRequestRow_GivenApprovedReviewsWithoutPassingMergeChecks_WhenBuildi
 		StatusCheckRollupState: "PENDING",
 	}).Item
 
-	if actual.Title != " acme/widgets#42 Waiting PR" {
-		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Waiting PR", actual.Title)
+	if actual.Title != " widgets#42 Waiting PR" {
+		t.Fatalf("expected title %q, actual %q", " widgets#42 Waiting PR", actual.Title)
 	}
 	unexpectedBackground := backgroundColorEscape(theme.SuccessBackgroundHex)
 	for index, segment := range actual.TitleSegments {
@@ -264,8 +264,8 @@ func TestPullRequestRow_GivenApprovedReviewsWithRequestedTeamReview_WhenBuilding
 		StatusCheckRollupState: "SUCCESS",
 	}).Item
 
-	if actual.Title != " acme/widgets#42 Waiting on team" {
-		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Waiting on team", actual.Title)
+	if actual.Title != " widgets#42 Waiting on team" {
+		t.Fatalf("expected title %q, actual %q", " widgets#42 Waiting on team", actual.Title)
 	}
 	for index, unexpectedBackground := range []string{backgroundColorEscape(theme.SuccessBackgroundHex), backgroundColorEscape(theme.FailureBackgroundHex)} {
 		for segmentIndex, segment := range actual.TitleSegments {
@@ -288,8 +288,8 @@ func TestPullRequestRow_GivenBlockedMergeStateWithPassingReviewsAndChecks_WhenBu
 		StatusCheckRollupState: "SUCCESS",
 	}).Item
 
-	if actual.Title != " acme/widgets#42 Blocked by merge checks" {
-		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Blocked by merge checks", actual.Title)
+	if actual.Title != " widgets#42 Blocked by merge checks" {
+		t.Fatalf("expected title %q, actual %q", " widgets#42 Blocked by merge checks", actual.Title)
 	}
 	for index, unexpectedBackground := range []string{backgroundColorEscape(theme.SuccessBackgroundHex), backgroundColorEscape(theme.FailureBackgroundHex)} {
 		for segmentIndex, segment := range actual.TitleSegments {
@@ -311,8 +311,8 @@ func TestPullRequestRow_GivenFailingMergeChecks_WhenBuildingTheListRow_ThenItUse
 		StatusCheckRollupState: "FAILURE",
 	}).Item
 
-	if actual.Title != " acme/widgets#42 Blocked PR" {
-		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Blocked PR", actual.Title)
+	if actual.Title != " widgets#42 Blocked PR" {
+		t.Fatalf("expected title %q, actual %q", " widgets#42 Blocked PR", actual.Title)
 	}
 	if len(actual.TitleSegments) != 3 {
 		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
@@ -340,8 +340,8 @@ func TestPullRequestRow_GivenRequestedReviewTeams_WhenBuildingTheListRow_ThenItD
 		},
 	}).Item
 
-	if actual.Title != " acme/widgets#42 Need teams" {
-		t.Fatalf("expected title %q, actual %q", " acme/widgets#42 Need teams", actual.Title)
+	if actual.Title != " widgets#42 Need teams" {
+		t.Fatalf("expected title %q, actual %q", " widgets#42 Need teams", actual.Title)
 	}
 	if len(actual.TitleSegments) != 3 {
 		t.Fatalf("expected 3 title segments, actual %d", len(actual.TitleSegments))
