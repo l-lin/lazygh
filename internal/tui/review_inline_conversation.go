@@ -76,6 +76,13 @@ func (program *Program) toggleBrowserDetailSectionVisibility(detailDocument deta
 	if program.detailState.activeTab == ChangesDetailTab {
 		return program.toggleBrowserChangesVisibility(summary, detailDocument)
 	}
+	if program.detailState.activeTab == CommitChangesDetailTab {
+		pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+		if !program.detailState.commitDiffTab.visibleForPullRequestKey(pullRequestKey) {
+			return detailViewSyncPlan{}, false
+		}
+		return program.toggleCommitDiffVisibility(pullRequestKey, program.detailState.commitDiffTab.commitOID, detailDocument)
+	}
 
 	if program.detailState.activeTab == CommentsDetailTab {
 		sectionAtCursor, ok := program.browserConversationSectionAtCursor(summary, result.detail, detailDocument.width, program.detailState.viewState.cursor.line)

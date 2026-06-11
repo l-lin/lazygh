@@ -114,8 +114,8 @@ func given_browserChangesReadModelForTests(t *testing.T) (browserChangesReadMode
 	state.sync(document, 8)
 
 	return browserChangesReadModel{
-		summary: githubdomain.PullRequest{Number: 42, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}},
-		files:   files,
+		sectionScopeKey: pullRequestDetailKey(githubdomain.Repository{NameWithOwner: "acme/widgets"}, 42),
+		files:           files,
 		selection: detailCursorSelection{
 			document: document,
 			state:    state,

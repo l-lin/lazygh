@@ -46,21 +46,41 @@ func buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files []reviewDiff
 }
 
 func browserChangesFileSectionID(summary githubdomain.PullRequest, filePath string) string {
-	return browserDetailSectionID(pullRequestDetailKey(summary.Repository, summary.Number), "changes-file", 0, filePath)
+	return browserChangesFileSectionIDForScope(pullRequestDetailKey(summary.Repository, summary.Number), filePath)
+}
+
+func browserChangesFileSectionIDForScope(sectionScopeKey string, filePath string) string {
+	return browserDetailSectionID(sectionScopeKey, "changes-file", 0, filePath)
+}
+
+func commitDiffFileSectionID(pullRequestKey string, commitOID string, filePath string) string {
+	return browserChangesFileSectionIDForScope(commitDiffCacheKey(pullRequestKey, commitOID), filePath)
 }
 
 func browserChangesThreadSectionID(summary githubdomain.PullRequest, thread reviewDiffThread) string {
-	return browserDetailSectionID(pullRequestDetailKey(summary.Repository, summary.Number), "changes-thread", 0, thread.ID)
+	return browserChangesThreadSectionIDForScope(pullRequestDetailKey(summary.Repository, summary.Number), thread)
+}
+
+func browserChangesThreadSectionIDForScope(sectionScopeKey string, thread reviewDiffThread) string {
+	return browserDetailSectionID(sectionScopeKey, "changes-thread", 0, thread.ID)
+}
+
+func commitDiffThreadSectionID(pullRequestKey string, commitOID string, thread reviewDiffThread) string {
+	return browserChangesThreadSectionIDForScope(commitDiffCacheKey(pullRequestKey, commitOID), thread)
 }
 
 func browserCollapsedChangesFileIDs(collapsedSectionStates map[string]bool, summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
+	return browserCollapsedChangesFileIDsForScope(collapsedSectionStates, pullRequestDetailKey(summary.Repository, summary.Number), files)
+}
+
+func browserCollapsedChangesFileIDsForScope(collapsedSectionStates map[string]bool, sectionScopeKey string, files []reviewDiffFile) map[string]bool {
 	collapsedFileIDs := map[string]bool{}
 	for _, file := range files {
 		filePath := strings.TrimSpace(file.Path)
 		if filePath == "" {
 			continue
 		}
-		collapsedFileIDs[filePath] = browserDetailSectionCollapsed(collapsedSectionStates, browserChangesFileSectionID(summary, filePath), false)
+		collapsedFileIDs[filePath] = browserDetailSectionCollapsed(collapsedSectionStates, browserChangesFileSectionIDForScope(sectionScopeKey, filePath), false)
 	}
 	if len(collapsedFileIDs) == 0 {
 		return nil
@@ -69,6 +89,10 @@ func browserCollapsedChangesFileIDs(collapsedSectionStates map[string]bool, summ
 }
 
 func browserCollapsedChangesThreadIDs(collapsedSectionStates map[string]bool, summary githubdomain.PullRequest, files []reviewDiffFile) map[string]bool {
+	return browserCollapsedChangesThreadIDsForScope(collapsedSectionStates, pullRequestDetailKey(summary.Repository, summary.Number), files)
+}
+
+func browserCollapsedChangesThreadIDsForScope(collapsedSectionStates map[string]bool, sectionScopeKey string, files []reviewDiffFile) map[string]bool {
 	collapsedThreadIDs := map[string]bool{}
 	for _, file := range files {
 		for _, thread := range file.Threads {
@@ -76,7 +100,7 @@ func browserCollapsedChangesThreadIDs(collapsedSectionStates map[string]bool, su
 			if threadID == "" {
 				continue
 			}
-			collapsedThreadIDs[threadID] = browserDetailSectionCollapsed(collapsedSectionStates, browserChangesThreadSectionID(summary, thread), thread.IsResolved)
+			collapsedThreadIDs[threadID] = browserDetailSectionCollapsed(collapsedSectionStates, browserChangesThreadSectionIDForScope(sectionScopeKey, thread), thread.IsResolved)
 		}
 	}
 	if len(collapsedThreadIDs) == 0 {

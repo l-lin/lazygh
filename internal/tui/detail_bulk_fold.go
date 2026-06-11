@@ -80,6 +80,8 @@ func (program *Program) setAllBrowserDetailFolds(detailDocument detailDocument, 
 	switch program.detailState.activeTab {
 	case ChangesDetailTab:
 		return program.setAllBrowserChangesThreadFolds(summary, detailDocument, collapsed)
+	case CommitChangesDetailTab:
+		return program.setAllCommitDiffFolds(summary, detailDocument, collapsed)
 	case CommentsDetailTab:
 		return program.setAllBrowserConversationFolds(summary, result.detail, detailDocument, collapsed)
 	default:
@@ -145,6 +147,35 @@ func (program *Program) setAllBrowserChangesThreadFolds(summary githubdomain.Pul
 	return plan, true
 }
 
+func (program *Program) setAllCommitDiffFolds(summary githubdomain.PullRequest, detailDocument detailDocument, collapsed bool) (detailViewSyncPlan, bool) {
+	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
+	if !program.detailState.commitDiffTab.visibleForPullRequestKey(pullRequestKey) {
+		return detailViewSyncPlan{}, false
+	}
+	commitOID := program.detailState.commitDiffTab.commitOID
+	result, ok := program.commitDiffResultForTarget(pullRequestKey, commitOID)
+	if !ok || result.err != nil {
+		return detailViewSyncPlan{}, false
+	}
+
+	renderedRows := program.currentCommitDiffRenderedRows(pullRequestKey, commitOID, result.data.Files, detailDocument.width)
+	filePathAtCursor, cursorOnFile := reviewDiffFilePathAtCursor(renderedRows, detailDocument, program.detailState.viewState)
+	sectionIDs := append(commitDiffFileSectionIDs(pullRequestKey, commitOID, result.data.Files), commitDiffThreadSectionIDs(pullRequestKey, commitOID, result.data.Files)...)
+	if !program.setBrowserDetailSectionsCollapsed(sectionIDs, collapsed) {
+		return detailViewSyncPlan{}, false
+	}
+
+	plan := detailViewSyncPlan{document: program.buildCurrentDetailDocument(detailDocument.width)}
+	if cursorOnFile {
+		headerLineIndex := reviewDiffFileHeaderLineIndex(program.currentCommitDiffRenderedRows(pullRequestKey, commitOID, result.data.Files, detailDocument.width), filePathAtCursor)
+		if headerLineIndex >= 0 {
+			plan.focusLine = headerLineIndex
+			plan.focusLineKnown = true
+		}
+	}
+	return plan, true
+}
+
 func browserDetailSectionIDs(sections []browserDetailSection) []string {
 	sectionIDs := make([]string, 0, len(sections))
 	for _, section := range sections {
@@ -174,6 +205,30 @@ func browserChangesThreadSectionIDs(summary githubdomain.PullRequest, files []re
 				continue
 			}
 			sectionIDs = append(sectionIDs, browserChangesThreadSectionID(summary, thread))
+		}
+	}
+	return sectionIDs
+}
+
+func commitDiffFileSectionIDs(pullRequestKey string, commitOID string, files []reviewDiffFile) []string {
+	sectionIDs := make([]string, 0, len(files))
+	for _, file := range files {
+		if trimmedFilePath := strings.TrimSpace(file.Path); trimmedFilePath != "" {
+			sectionIDs = append(sectionIDs, commitDiffFileSectionID(pullRequestKey, commitOID, trimmedFilePath))
+		}
+	}
+	return sectionIDs
+}
+
+func commitDiffThreadSectionIDs(pullRequestKey string, commitOID string, files []reviewDiffFile) []string {
+	sectionIDs := make([]string, 0)
+	for _, file := range files {
+		for _, thread := range file.Threads {
+			trimmedThreadID := strings.TrimSpace(thread.ID)
+			if trimmedThreadID == "" {
+				continue
+			}
+			sectionIDs = append(sectionIDs, commitDiffThreadSectionID(pullRequestKey, commitOID, thread))
 		}
 	}
 	return sectionIDs

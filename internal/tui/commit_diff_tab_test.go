@@ -114,6 +114,119 @@ func TestActionsPopup_GivenACommitDiffTab_WhenListingActions_ThenItStaysReadOnly
 	}
 }
 
+func TestBrowserMode_GivenACommitDiffTab_WhenPressingEnterAndZA_ThenItTogglesTheContainingFileVisibility(t *testing.T) {
+	loader := given_commitDiffTabLoader()
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	detailView := given_commitDiffTabOnCommitHeader(t, gui, subject, "● 2222222 newer commit")
+	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "+new line")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
+	then_noError(t, toggleHandler(gui, detailView))
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") {
+		t.Fatalf("expected enter to collapse the commit diff file, actual %q", detailView.Buffer())
+	}
+	for _, hidden := range []string{"@@ -42,2 +42,2 @@", "+new line"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected enter to hide %q from the collapsed commit diff file, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	if !strings.Contains(detailView.Buffer(), "internal/tui/model.go") || !strings.Contains(detailView.Buffer(), "+new model") {
+		t.Fatalf("expected collapsing one commit diff file to keep the other file visible, actual %q", detailView.Buffer())
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go")
+
+	then_noError(t, toggleHandler(gui, detailView))
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") || !strings.Contains(detailView.Buffer(), "+new line") {
+		t.Fatalf("expected enter to expand the commit diff file again, actual %q", detailView.Buffer())
+	}
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "+new line")
+
+	prefixHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'z')
+	collapseHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, 'a')
+	then_noError(t, prefixHandler(gui, detailView))
+	then_noError(t, collapseHandler(gui, detailView))
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/render.go") {
+		t.Fatalf("expected za to collapse the commit diff file, actual %q", detailView.Buffer())
+	}
+	for _, hidden := range []string{"@@ -42,2 +42,2 @@", "+new line"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected za to hide %q from the collapsed commit diff file, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go")
+}
+
+func TestBrowserMode_GivenCommitDiffTabFiles_WhenPressingZMAndZR_ThenItClosesAndOpensEveryFileWhileKeepingTheCursorOnTheSameFileHeader(t *testing.T) {
+	loader := given_commitDiffTabLoader()
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	detailView := given_commitDiffTabOnCommitHeader(t, gui, subject, "● 2222222 newer commit")
+	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/model.go")
+
+	prefixHandler, closeAllHandler, openAllHandler := given_detailBulkFoldHandlers(t, subject)
+	then_noError(t, prefixHandler(gui, detailView))
+	then_noError(t, closeAllHandler(gui, detailView))
+	for _, expected := range []string{" " + reviewDiffHeaderPathIcon + " internal/tui/render.go", " " + reviewDiffHeaderPathIcon + " internal/tui/model.go"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected zM to collapse every commit diff file and keep %q visible, actual %q", expected, detailView.Buffer())
+		}
+	}
+	for _, hidden := range []string{"+new line", "+new model"} {
+		if strings.Contains(detailView.Buffer(), hidden) {
+			t.Fatalf("expected zM to hide %q from collapsed commit diff files, actual %q", hidden, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go")
+
+	then_noError(t, prefixHandler(gui, detailView))
+	then_noError(t, openAllHandler(gui, detailView))
+	for _, expected := range []string{" " + reviewDiffHeaderPathIcon + " internal/tui/render.go", " " + reviewDiffHeaderPathIcon + " internal/tui/model.go", "+new line", "+new model"} {
+		if !strings.Contains(detailView.Buffer(), expected) {
+			t.Fatalf("expected zR to reopen every commit diff file and show %q, actual %q", expected, detailView.Buffer())
+		}
+	}
+	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/model.go")
+}
+
+func TestBrowserMode_GivenACommitDiffTabWithCollapsedFiles_WhenOpeningADifferentCommit_ThenItDoesNotReuseThePreviousCommitFoldState(t *testing.T) {
+	loader := given_commitDiffTabLoader()
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	detailView := given_commitDiffTabOnCommitHeader(t, gui, subject, "● 2222222 newer commit")
+	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "internal/tui/model.go")
+
+	toggleHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewDetailName, gocui.KeyEnter)
+	then_noError(t, toggleHandler(gui, detailView))
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/model.go") {
+		t.Fatalf("expected the newer commit diff file to collapse before retargeting, actual %q", detailView.Buffer())
+	}
+
+	subject.setDetailActiveTab(CommitsDetailTab)
+	then_noError(t, subject.afterStateChange(gui))
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "● 1111111 older commit")
+	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
+
+	if !strings.Contains(detailView.Buffer(), " "+reviewDiffHeaderPathIcon+" internal/tui/model.go") {
+		t.Fatalf("expected the older commit diff file to start expanded instead of reusing the previous commit fold state, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "+new model") {
+		t.Fatalf("expected the older commit diff body to stay visible after retargeting, actual %q", detailView.Buffer())
+	}
+}
+
 func given_commitDiffTabOnCommitHeader(t *testing.T, gui *gocui.Gui, subject *Program, header string) *gocui.View {
 	t.Helper()
 
@@ -156,18 +269,31 @@ func given_commitDiffTabLoader() *fakePullRequestDetailLoader {
 		},
 		commitDiffs: map[string]githubcli.CommitDiff{
 			"acme/widgets@2222222bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": {
-				Files: []githubcli.PullRequestDiffFile{{
-					Path:       "internal/tui/render.go",
-					ChangeType: "modified",
-					Additions:  1,
-					Deletions:  1,
-					Patch: strings.Join([]string{
-						"@@ -42,2 +42,2 @@",
-						" context line",
-						"-old line",
-						"+new line",
-					}, "\n"),
-				}},
+				Files: []githubcli.PullRequestDiffFile{
+					{
+						Path:       "internal/tui/render.go",
+						ChangeType: "modified",
+						Additions:  1,
+						Deletions:  1,
+						Patch: strings.Join([]string{
+							"@@ -42,2 +42,2 @@",
+							" context line",
+							"-old line",
+							"+new line",
+						}, "\n"),
+					},
+					{
+						Path:       "internal/tui/model.go",
+						ChangeType: "modified",
+						Additions:  1,
+						Deletions:  1,
+						Patch: strings.Join([]string{
+							"@@ -7,1 +7,1 @@",
+							"-old model",
+							"+new model",
+						}, "\n"),
+					},
+				},
 			},
 			"acme/widgets@1111111aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {
 				Files: []githubcli.PullRequestDiffFile{{

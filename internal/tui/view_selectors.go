@@ -17,17 +17,19 @@ func (program *Program) currentPullRequestChangesRenderedRows(summary githubdoma
 }
 
 func (program *Program) currentCommitDiffRenderedRows(pullRequestKey string, commitOID string, files []reviewDiffFile, width int) []reviewDiffRenderedRow {
+	collapsedThreadIDs := program.browserCollapsedCommitDiffThreadIDs(pullRequestKey, commitOID, files)
+	collapsedFileIDs := program.browserCollapsedCommitDiffFileIDs(pullRequestKey, commitOID, files)
 	if cacheKey, ok := commitDiffRenderedRowsCacheKey(pullRequestKey, commitOID, width); ok {
 		if rows, ok := program.pullRequestChangesRenderedRowsForKey(cacheKey); ok {
 			return rows
 		}
 
-		rows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), nil, nil, program.currentConnectedUserLogin())
+		rows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), collapsedThreadIDs, collapsedFileIDs, program.currentConnectedUserLogin())
 		program.cachePullRequestChangesRenderedRows(cacheKey, rows)
 		return rows
 	}
 
-	return buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), nil, nil, program.currentConnectedUserLogin())
+	return buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files, program.markdownRenderer, width, program.detailWordWrapEnabled(), collapsedThreadIDs, collapsedFileIDs, program.currentConnectedUserLogin())
 }
 
 func (program *Program) currentReviewDiffRenderedRows(file reviewDiffFile, width int) []reviewDiffRenderedRow {

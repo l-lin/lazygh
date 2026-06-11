@@ -2,12 +2,10 @@ package tui
 
 import (
 	"strings"
-
-	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 type browserChangesReadModel struct {
-	summary            githubdomain.PullRequest
+	sectionScopeKey    string
 	files              []reviewDiffFile
 	selection          detailCursorSelection
 	renderedRows       []reviewDiffRenderedRow
