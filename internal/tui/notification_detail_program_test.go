@@ -57,9 +57,21 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
+	notificationsView, actualErr := gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
+	if !strings.Contains(notificationsView.Buffer(), "widgets#42") {
+		t.Fatalf("expected notification list to contain %q, actual %q", "widgets#42", notificationsView.Buffer())
+	}
+	if strings.Contains(notificationsView.Buffer(), "acme/widgets#42") {
+		t.Fatalf("expected notification list to omit %q, actual %q", "acme/widgets#42", notificationsView.Buffer())
+	}
+
 	detailView := given_notificationDetailView(t, gui)
 	if !strings.Contains(detailView.Buffer(), "Pull request body") {
 		t.Fatalf("expected pull request detail body %q, actual %q", "Pull request body", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "acme/widgets#42") {
+		t.Fatalf("expected pull request detail header to contain %q, actual %q", "acme/widgets#42", detailView.Buffer())
 	}
 	if len(detailView.Tabs) != 4 {
 		t.Fatalf("expected pull request notification detail to expose 4 browser tabs, actual %v", detailView.Tabs)
@@ -71,16 +83,27 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 		t.Fatalf("expected pull request detail load for %q, actual %v", "acme/widgets#42", loader.detailCalls)
 	}
 
-	notificationsView, actualErr := gui.View(viewNotificationsName)
+	notificationsView, actualErr = gui.View(viewNotificationsName)
 	then_noError(t, actualErr)
 	actualErr = subject.moveSelectionDown(gui, notificationsView)
 	then_noError(t, actualErr)
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
+	notificationsView, actualErr = gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
 	detailView = given_notificationDetailView(t, gui)
+	if !strings.Contains(notificationsView.Buffer(), "opencode#3235") {
+		t.Fatalf("expected notification list to contain %q, actual %q", "opencode#3235", notificationsView.Buffer())
+	}
+	if strings.Contains(notificationsView.Buffer(), "acme/opencode#3235") {
+		t.Fatalf("expected notification list to omit %q, actual %q", "acme/opencode#3235", notificationsView.Buffer())
+	}
 	if !strings.Contains(detailView.Buffer(), "Issue body") {
 		t.Fatalf("expected issue detail body %q, actual %q", "Issue body", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "acme/opencode#3235") {
+		t.Fatalf("expected issue detail header to contain %q, actual %q", "acme/opencode#3235", detailView.Buffer())
 	}
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected issue detail to avoid pull request tabs, actual %v", detailView.Tabs)
@@ -94,9 +117,20 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	actualErr = subject.afterStateChange(gui)
 	then_noError(t, actualErr)
 
+	notificationsView, actualErr = gui.View(viewNotificationsName)
+	then_noError(t, actualErr)
 	detailView = given_notificationDetailView(t, gui)
+	if !strings.Contains(notificationsView.Buffer(), "doctoboot") {
+		t.Fatalf("expected notification list to contain %q, actual %q", "doctoboot", notificationsView.Buffer())
+	}
+	if strings.Contains(notificationsView.Buffer(), "acme/doctoboot") {
+		t.Fatalf("expected notification list to omit %q, actual %q", "acme/doctoboot", notificationsView.Buffer())
+	}
 	if !strings.Contains(detailView.Buffer(), "Release notes") {
 		t.Fatalf("expected release detail body %q, actual %q", "Release notes", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "acme/doctoboot") {
+		t.Fatalf("expected release detail header to contain %q, actual %q", "acme/doctoboot", detailView.Buffer())
 	}
 	if len(detailView.Tabs) != 0 {
 		t.Fatalf("expected release detail to avoid pull request tabs, actual %v", detailView.Tabs)

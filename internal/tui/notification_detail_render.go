@@ -68,7 +68,7 @@ func renderUnsupportedNotificationDetail(notification githubdomain.Notification)
 }
 
 func renderNotificationHeader(notification githubdomain.Notification, repository string) string {
-	reference := notificationDisplayReference(notification)
+	reference := notificationDetailReference(notification)
 	if reference == "" {
 		reference = strings.TrimSpace(repository)
 	}

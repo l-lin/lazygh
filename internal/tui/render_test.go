@@ -264,6 +264,35 @@ func TestLayout_GivenPullRequestListStatusIcon_WhenRenderingTheSelectedRow_ThenI
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewPullRequestsName, 0, iconPullRequest)
 }
 
+func TestLayout_GivenNotifications_WhenRendering_ThenTheReferenceUsesThePullRequestReferenceColor(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasForegroundColor(t, gui, viewNotificationsName, 0, "widgets#42", given_themeColorHex(t, theme.PullRequestReferenceHex), "notification reference")
+}
+
+func TestLayout_GivenSelectedNotifications_WhenRendering_ThenTheReferenceStaysReadableOnTheSelectedBackground(t *testing.T) {
+	model := NewModel(DefaultSeedData())
+	model.FocusNotificationsView()
+	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
+	subject := NewProgramWithModel(model)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewNotificationsName, 0, "widgets#42", theme.SelectedLineBackgroundHex, 4.5, "readable selected notification reference")
+}
+
 func TestLayout_GivenSuccessfulMergeChecks_WhenRendering_ThenTheListRowUsesTheSuccessBackground(t *testing.T) {
 	model := NewModel(DefaultSeedData())
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{

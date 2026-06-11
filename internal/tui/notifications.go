@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 const (
@@ -64,12 +65,10 @@ func notificationRow(notification any) NotificationRow {
 	if !ok {
 		return NotificationRow{}
 	}
-	reference := notificationDisplayReference(notificationValue)
+	reference := notificationListReference(notificationValue)
 	title := strings.TrimSpace(notificationValue.Subject.Title)
-	rowTitle := strings.TrimSpace(strings.Join(filterEmptyStrings([]string{notificationReadStateIcon(notificationValue.Unread), notificationIcon(notificationValue.Subject.Type), reference, title}), " "))
-	if rowTitle == "" {
-		rowTitle = notificationReadStateIcon(notificationValue.Unread)
-	}
+	titleSegments := notificationTitleSegments(notificationValue, reference, title)
+	rowTitle := itemTitleFromSegments(titleSegments)
 
 	detailLines := []string{
 		fmt.Sprintf("Repository: %s", valueOrDash(strings.TrimSpace(notificationValue.Repository.NameWithOwner))),
@@ -88,24 +87,54 @@ func notificationRow(notification any) NotificationRow {
 	notificationCopy := notificationValue
 	return NotificationRow{
 		Item: Item{
-			Title:  rowTitle,
-			Detail: strings.Join(detailLines, "\n"),
+			Title:         rowTitle,
+			Detail:        strings.Join(detailLines, "\n"),
+			TitleSegments: titleSegments,
 		},
 		Notification: &notificationCopy,
 	}
 }
 
-func notificationDisplayReference(notification githubdomain.Notification) string {
-	if summary, ok := notification.PullRequestSummary(); ok {
-		return fmt.Sprintf("%s#%d", strings.TrimSpace(summary.Repository.NameWithOwner), summary.Number)
+func notificationTitleSegments(notification githubdomain.Notification, reference string, title string) []ItemTitleSegment {
+	segments := make([]ItemTitleSegment, 0, 4)
+
+	readStateIcon := notificationReadStateIcon(notification.Unread)
+	if readStateIcon != "" {
+		segments = append(segments, ItemTitleSegment{Text: readStateIcon + " "})
 	}
-	if repository, number, ok := notification.IssueIdentity(); ok {
-		return fmt.Sprintf("%s#%d", repository, number)
+
+	typeIcon := notificationIcon(notification.Subject.Type)
+	if typeIcon != "" {
+		typeIconText := typeIcon
+		if strings.TrimSpace(reference) != "" || strings.TrimSpace(title) != "" {
+			typeIconText += " "
+		}
+		segments = append(segments, ItemTitleSegment{Text: typeIconText})
 	}
-	if repository, _, ok := notification.ReleaseIdentity(); ok {
-		return repository
+
+	trimmedReference := strings.TrimSpace(reference)
+	if trimmedReference != "" {
+		segments = append(segments, ItemTitleSegment{Text: trimmedReference, ForegroundHex: theme.PullRequestReferenceHex})
 	}
-	return strings.TrimSpace(notification.Repository.NameWithOwner)
+
+	trimmedTitle := strings.TrimSpace(title)
+	if trimmedTitle != "" {
+		titleText := trimmedTitle
+		if trimmedReference != "" {
+			titleText = " " + titleText
+		}
+		segments = append(segments, ItemTitleSegment{Text: titleText})
+	}
+
+	return segments
+}
+
+func itemTitleFromSegments(segments []ItemTitleSegment) string {
+	var builder strings.Builder
+	for _, segment := range segments {
+		builder.WriteString(segment.Text)
+	}
+	return builder.String()
 }
 
 func notificationReadStateIcon(unread bool) string {
