@@ -1,5 +1,5 @@
 [tools]
-go = "1.25.9"
+go = "1.26.1"
 
 [env]
 GORELEASER_CROSS_IMAGE = "ghcr.io/goreleaser/goreleaser-cross:v1.25.9"
