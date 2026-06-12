@@ -106,7 +106,26 @@ For private repositories, `lazygh` asks GitHub to render the markdown with repos
 
 `lazygh` looks for `$XDG_CONFIG_HOME/lazygh/config.toml`. If `XDG_CONFIG_HOME` is unset, it falls back to `~/.config/lazygh/config.toml`.
 
-If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid story-review settings, invalid cache settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+If the file is missing, `lazygh` starts with the built-in defaults. If the TOML is malformed, startup fails. Unknown scopes, unknown actions, invalid key strings, invalid keymap value types, invalid theme colors, invalid display settings, invalid story-review settings, invalid cache settings, and invalid pull-request search entries are ignored, because apparently survival is preferable to drama.
+
+### Display
+
+Use `[display]` to control how repository names appear in browser list rows.
+
+- By default, `lazygh` uses `owner_name`, which shows full references such as `acme/widgets#42`.
+- Set `repository_style = "name"` to shorten list rows to `widgets#42`.
+- This only affects browser list rows, including the pasted PR tab.
+- Detail headers, detail metadata, URLs, cache keys, and GitHub commands keep full repository identities.
+
+```toml
+[display]
+repository_style = "name"
+```
+
+Accepted values:
+
+- `owner_name`, the default
+- `name`
 
 ### Cache
 
@@ -145,7 +164,7 @@ A few palette entries do more than their names suggest:
 - `background` fills the full TUI background.
 - `markdown_heading_background` controls the full-line heading fill.
 
-- `pull_request_reference` colors the `owner/repo#123` prefix in pull-request lists.
+- `pull_request_reference` colors the repository reference prefix in pull-request and notification lists, whether it is `owner/repo#123` or the shorter `repo#123` display form.
 - `pull_request_title` colors the pull-request title text in pull-request lists.
 - `pull_request_status_*_background` also colors the `` status icon in pull-request lists.
 - `success_background` and `failure_background` also fill pull-request rows in view 2 when the Merge Checks summary is fully passing or failing.
