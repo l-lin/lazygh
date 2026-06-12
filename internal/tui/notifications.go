@@ -95,6 +95,18 @@ func notificationRow(notification any) NotificationRow {
 	}
 }
 
+func restyledNotificationRows(rows []NotificationRow) []NotificationRow {
+	restyledRows := make([]NotificationRow, 0, len(rows))
+	for _, row := range rows {
+		if row.Notification == nil {
+			restyledRows = append(restyledRows, row)
+			continue
+		}
+		restyledRows = append(restyledRows, notificationRow(*row.Notification))
+	}
+	return restyledRows
+}
+
 func notificationTitleSegments(notification githubdomain.Notification, reference string, title string) []ItemTitleSegment {
 	segments := make([]ItemTitleSegment, 0, 4)
 

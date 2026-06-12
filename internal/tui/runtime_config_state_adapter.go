@@ -24,6 +24,12 @@ func (program *Program) setRuntimePullRequestSearches(searches []appconfig.PullR
 	})
 }
 
+func (program *Program) setRuntimeDisplayConfig(config appconfig.DisplayConfig) {
+	program.updateRuntimeConfig(func(state runtimeConfigState) runtimeConfigState {
+		return state.withDisplayConfig(config)
+	})
+}
+
 func (program *Program) setRuntimeStoryReviewConfig(config story.Config) {
 	program.updateRuntimeConfig(func(state runtimeConfigState) runtimeConfigState {
 		return state.withStoryReviewConfig(config)

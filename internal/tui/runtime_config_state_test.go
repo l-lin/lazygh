@@ -5,24 +5,29 @@ import (
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/story"
 )
 
-func TestRuntimeConfigState_GivenKeymapsSearchesAndStoryReviewConfig_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
+func TestRuntimeConfigState_GivenKeymapsSearchesDisplayAndStoryReviewConfig_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	subject := runtimeConfigState{
 		keymapOverrides:     appconfig.KeymapOverrides{"global": {"open_search": {"/"}}},
 		pullRequestSearches: []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}},
+		displayConfig:       appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleOwnerName},
 		storyReviewConfig:   story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}, Prompt: "Original prompt"},
 	}
 	given_overrides := appconfig.KeymapOverrides{"global": {"open_search": {"s"}}}
 	given_searches := []appconfig.PullRequestSearch{{Label: "Team", Command: []string{" search ", " prs ", " --review-requested ", " @me "}}}
+	given_displayConfig := appconfig.DisplayConfig{RepositoryStyle: " NAME "}
 	given_storyConfig := story.Config{AgentCommand: []string{" pi ", " -p ", " @{{prompt_file}} "}, Prompt: "  Custom prompt  "}
 
 	keymapsUpdated := subject.withKeymapOverrides(given_overrides)
 	searchesUpdated := keymapsUpdated.withPullRequestSearches(given_searches)
-	storyUpdated := searchesUpdated.withStoryReviewConfig(given_storyConfig)
+	displayUpdated := searchesUpdated.withDisplayConfig(given_displayConfig)
+	storyUpdated := displayUpdated.withStoryReviewConfig(given_storyConfig)
 	given_overrides["global"]["open_search"][0] = "x"
 	given_searches[0].Label = "Broken"
+	given_displayConfig.RepositoryStyle = "mutated"
 	given_storyConfig.AgentCommand[0] = "mutated"
 
 	if actual := keymapsUpdated.keymapOverrides["global"]["open_search"][0]; actual != "s" {
@@ -31,6 +36,10 @@ func TestRuntimeConfigState_GivenKeymapsSearchesAndStoryReviewConfig_WhenUpdatin
 	expectedSearches := []appconfig.PullRequestSearch{{Label: "Team", Command: []string{"search", "prs", "--review-requested", "@me"}}}
 	if !reflect.DeepEqual(searchesUpdated.pullRequestSearches, expectedSearches) {
 		t.Fatalf("expected normalized pull request searches %+v, actual %+v", expectedSearches, searchesUpdated.pullRequestSearches)
+	}
+	expectedDisplayConfig := appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleName}
+	if !reflect.DeepEqual(displayUpdated.displayConfig, expectedDisplayConfig) {
+		t.Fatalf("expected resolved display config %+v, actual %+v", expectedDisplayConfig, displayUpdated.displayConfig)
 	}
 	expectedStoryConfig := story.ResolveConfig(story.Config{AgentCommand: []string{" pi ", " -p ", " @{{prompt_file}} "}, Prompt: "  Custom prompt  "})
 	if !reflect.DeepEqual(storyUpdated.storyReviewConfig, expectedStoryConfig) {
@@ -41,6 +50,9 @@ func TestRuntimeConfigState_GivenKeymapsSearchesAndStoryReviewConfig_WhenUpdatin
 	}
 	if !reflect.DeepEqual(subject.pullRequestSearches, []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}) {
 		t.Fatalf("expected the original pull request searches to stay intact, actual %+v", subject.pullRequestSearches)
+	}
+	if !reflect.DeepEqual(subject.displayConfig, appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleOwnerName}) {
+		t.Fatalf("expected the original display config to stay intact, actual %+v", subject.displayConfig)
 	}
 	if !reflect.DeepEqual(subject.storyReviewConfig, story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}, Prompt: "Original prompt"}) {
 		t.Fatalf("expected the original story review config to stay intact, actual %+v", subject.storyReviewConfig)
@@ -56,6 +68,34 @@ func TestUpdate_GivenMsgKeymapOverridesApplied_WhenApplying_ThenItCopiesTheOverr
 
 	if actual := subject.runtimeConfig.keymapOverrides["global"]["open_search"][0]; actual != "s" {
 		t.Fatalf("expected copied keymap override %q, actual %q", "s", actual)
+	}
+}
+
+func TestUpdate_GivenMsgDisplayConfigApplied_WhenApplying_ThenItStoresTheResolvedDisplayConfigAndRebuildsStoredRows(t *testing.T) {
+	given_pullRequest := githubdomain.PullRequest{Title: "Ship notifications", Number: 42, Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}, State: "OPEN"}
+	given_notification := githubdomain.Notification{ID: "thread-pr", Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}, Subject: githubdomain.NotificationSubject{Type: githubdomain.NotificationSubjectTypePullRequest, Title: "Ship notifications", URL: "https://api.github.com/repos/acme/widgets/pulls/42"}}
+	model := NewModel(DefaultSeedData())
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{{Item: Item{Title: "stale pull request title"}, Summary: &given_pullRequest}})
+	model.SetNotificationRows([]NotificationRow{{Item: Item{Title: "stale notification title"}, Notification: &given_notification}})
+	subject := NewProgramWithModel(model)
+	given_config := appconfig.DisplayConfig{}
+
+	Update(subject, MsgDisplayConfigApplied{Config: given_config})
+	given_config.RepositoryStyle = "name"
+
+	expectedDisplayConfig := appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleOwnerName}
+	if !reflect.DeepEqual(subject.runtimeConfig.displayConfig, expectedDisplayConfig) {
+		t.Fatalf("expected resolved display config %+v, actual %+v", expectedDisplayConfig, subject.runtimeConfig.displayConfig)
+	}
+	actualPullRequestRows := subject.model.PullRequestRows(MyPullRequestsTab)
+	expectedPullRequestRows := []PullRequestRow{pullRequestRow(given_pullRequest)}
+	if !reflect.DeepEqual(actualPullRequestRows, expectedPullRequestRows) {
+		t.Fatalf("expected rebuilt pull request rows %+v, actual %+v", expectedPullRequestRows, actualPullRequestRows)
+	}
+	actualNotificationRows := subject.model.NotificationRows()
+	expectedNotificationRows := []NotificationRow{notificationRow(given_notification)}
+	if !reflect.DeepEqual(actualNotificationRows, expectedNotificationRows) {
+		t.Fatalf("expected rebuilt notification rows %+v, actual %+v", expectedNotificationRows, actualNotificationRows)
 	}
 }
 

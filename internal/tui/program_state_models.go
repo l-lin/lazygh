@@ -39,6 +39,7 @@ type navigationStateModel struct {
 type runtimeConfigState struct {
 	keymapOverrides     appconfig.KeymapOverrides
 	pullRequestSearches []appconfig.PullRequestSearch
+	displayConfig       appconfig.DisplayConfig
 	storyReviewConfig   story.Config
 }
 

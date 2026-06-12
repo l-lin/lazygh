@@ -62,8 +62,31 @@ func TestRun_GivenLoadedPullRequestSearches_WhenStartingTheProgram_ThenItApplies
 	if !reflect.DeepEqual(runner.appliedPullRequestSearches, expectedSearches) {
 		t.Fatalf("expected pull request searches %+v, actual %+v", expectedSearches, runner.appliedPullRequestSearches)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	}
+}
+
+func TestRun_GivenLoadedDisplayConfig_WhenStartingTheProgram_ThenItAppliesTheResolvedDisplayConfigBeforeRunning(t *testing.T) {
+	runner := &fakeConfigurableRunner{}
+
+	actualErr := run(
+		nil,
+		func() (appconfig.Config, error) {
+			return appconfig.Config{Display: appconfig.DisplayConfig{RepositoryStyle: " NAME "}}, nil
+		},
+		func() configurableRunner {
+			return runner
+		},
+	)
+
+	then_noError(t, actualErr)
+	expected := appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleName}
+	if !reflect.DeepEqual(runner.appliedDisplayConfig, expected) {
+		t.Fatalf("expected display config %+v, actual %+v", expected, runner.appliedDisplayConfig)
+	}
+	if actual := len(runner.calls); actual == 0 || runner.calls[actual-1] != "run" {
+		t.Fatalf("expected the runner to finish with run, actual %v", runner.calls)
 	}
 }
 
@@ -85,8 +108,8 @@ func TestRun_GivenLoadedLinksConfig_WhenStartingTheProgram_ThenItAppliesItBefore
 	if !reflect.DeepEqual(runner.appliedLinksConfig, expectedConfig) {
 		t.Fatalf("expected links config %+v, actual %+v", expectedConfig, runner.appliedLinksConfig)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
 	}
 }
 
@@ -138,8 +161,8 @@ func TestRun_GivenLoadedStoryReviewConfig_WhenStartingTheProgram_ThenItAppliesIt
 	if !reflect.DeepEqual(runner.appliedStoryReviewConfig, expectedConfig) {
 		t.Fatalf("expected story review config %+v, actual %+v", expectedConfig, runner.appliedStoryReviewConfig)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
 	}
 }
 
@@ -161,8 +184,8 @@ func TestRun_GivenLoadedCacheConfig_WhenStartingTheProgram_ThenItAppliesItBefore
 	if !reflect.DeepEqual(runner.appliedCacheConfig, expectedConfig) {
 		t.Fatalf("expected cache config %+v, actual %+v", expectedConfig, runner.appliedCacheConfig)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "run"}, runner.calls)
 	}
 }
 
@@ -411,8 +434,8 @@ func TestRun_GivenReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequeste
 	if runner.reviewURL != expectedURL {
 		t.Fatalf("expected review url %q, actual %q", expectedURL, runner.reviewURL)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "review", "run"}, runner.calls)
 	}
 }
 
@@ -434,8 +457,8 @@ func TestRun_GivenViewSubcommand_WhenStartingTheProgram_ThenItOpensTheRequestedU
 	if runner.viewURL != expectedURL {
 		t.Fatalf("expected view url %q, actual %q", expectedURL, runner.viewURL)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "view", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "view", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "view", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "view", "run"}, runner.calls)
 	}
 }
 
@@ -457,8 +480,8 @@ func TestRun_GivenStoryReviewSubcommand_WhenStartingTheProgram_ThenItOpensTheReq
 	if runner.storyReviewURL != expectedURL {
 		t.Fatalf("expected story review url %q, actual %q", expectedURL, runner.storyReviewURL)
 	}
-	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "story_review", "run"}) {
-		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_links", "apply_story_review", "apply_cache", "story_review", "run"}, runner.calls)
+	if !reflect.DeepEqual(runner.calls, []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "story_review", "run"}) {
+		t.Fatalf("expected runner calls %v, actual %v", []string{"apply", "apply_pull_request_searches", "apply_display", "apply_links", "apply_story_review", "apply_cache", "story_review", "run"}, runner.calls)
 	}
 }
 
@@ -546,6 +569,7 @@ func TestRun_GivenStoryReviewSubcommandWithoutURL_WhenStartingTheProgram_ThenItR
 type fakeConfigurableRunner struct {
 	appliedOverrides           appconfig.KeymapOverrides
 	appliedPullRequestSearches []appconfig.PullRequestSearch
+	appliedDisplayConfig       appconfig.DisplayConfig
 	appliedLinksConfig         appconfig.LinksConfig
 	appliedStoryReviewConfig   story.Config
 	appliedCacheConfig         appconfig.CacheConfig
@@ -572,6 +596,11 @@ func (runner *fakeConfigurableRunner) ApplyKeymapOverrides(overrides appconfig.K
 func (runner *fakeConfigurableRunner) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
 	runner.appliedPullRequestSearches = append([]appconfig.PullRequestSearch(nil), searches...)
 	runner.calls = append(runner.calls, "apply_pull_request_searches")
+}
+
+func (runner *fakeConfigurableRunner) ApplyDisplayConfig(config appconfig.DisplayConfig) {
+	runner.appliedDisplayConfig = config
+	runner.calls = append(runner.calls, "apply_display")
 }
 
 func (runner *fakeConfigurableRunner) ApplyLinksConfig(config appconfig.LinksConfig) {

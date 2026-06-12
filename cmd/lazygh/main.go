@@ -16,6 +16,7 @@ import (
 type configurableRunner interface {
 	ApplyKeymapOverrides(appconfig.KeymapOverrides)
 	ApplyPullRequestSearches([]appconfig.PullRequestSearch)
+	ApplyDisplayConfig(appconfig.DisplayConfig)
 	ApplyLinksConfig(appconfig.LinksConfig)
 	ApplyStoryReviewConfig(story.Config)
 	ApplyCacheConfig(appconfig.CacheConfig) error
@@ -87,6 +88,7 @@ func runWithIO(args []string, stdout io.Writer, version string, loadConfig func(
 	runner := newRunner()
 	runner.ApplyKeymapOverrides(configuration.Keymaps)
 	runner.ApplyPullRequestSearches(configuration.PullRequests)
+	runner.ApplyDisplayConfig(configuration.ResolvedDisplay())
 	runner.ApplyLinksConfig(configuration.ResolvedLinks())
 	runner.ApplyStoryReviewConfig(configuration.ResolvedStoryReview())
 	if actualErr := runner.ApplyCacheConfig(resolvedCache); actualErr != nil {

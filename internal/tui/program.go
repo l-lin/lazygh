@@ -169,7 +169,10 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 			actionsPopupWidget:  newActionsPopupWidgetState(),
 			navigationState:     navigationStateModel{},
 			listViewportRuntime: newListViewportRuntimeState(),
-			runtimeConfig:       runtimeConfigState{pullRequestSearches: appconfig.DefaultPullRequestSearches()},
+			runtimeConfig: runtimeConfigState{
+				pullRequestSearches: appconfig.DefaultPullRequestSearches(),
+				displayConfig:       appconfig.ResolveDisplayConfig(appconfig.DisplayConfig{}),
+			},
 		},
 		programShellRuntime: programShellRuntime{
 			asyncRunner:        goroutineAsyncRunner{},

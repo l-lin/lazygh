@@ -14,6 +14,10 @@ type MsgPullRequestSearchesApplied struct {
 	Searches []appconfig.PullRequestSearch
 }
 
+type MsgDisplayConfigApplied struct {
+	Config appconfig.DisplayConfig
+}
+
 type MsgLinksConfigApplied struct {
 	Config appconfig.LinksConfig
 }
@@ -30,6 +34,7 @@ type MsgStoryReviewConfigApplied struct {
 
 func (MsgKeymapOverridesApplied) isMsg()     {}
 func (MsgPullRequestSearchesApplied) isMsg() {}
+func (MsgDisplayConfigApplied) isMsg()       {}
 func (MsgLinksConfigApplied) isMsg()         {}
 func (MsgCacheConfigApplied) isMsg()         {}
 func (MsgStoryReviewConfigApplied) isMsg()   {}

@@ -396,6 +396,18 @@ func (program *Program) restylePullRequestRows() {
 	}
 }
 
+func (program *Program) restyleNotificationRows() {
+	if program == nil || program.model == nil {
+		return
+	}
+
+	rows := program.model.NotificationRows()
+	if len(rows) == 0 {
+		return
+	}
+	program.model.SetNotificationRows(restyledNotificationRows(rows))
+}
+
 func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd {
 	if message.Err != nil {
 		program.setActionsPopupErrorMessage(message.Err.Error())

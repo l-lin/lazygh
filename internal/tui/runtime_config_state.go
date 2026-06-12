@@ -15,6 +15,11 @@ func (state runtimeConfigState) withPullRequestSearches(searches []appconfig.Pul
 	return state
 }
 
+func (state runtimeConfigState) withDisplayConfig(config appconfig.DisplayConfig) runtimeConfigState {
+	state.displayConfig = appconfig.ResolveDisplayConfig(config)
+	return state
+}
+
 func (state runtimeConfigState) withStoryReviewConfig(config story.Config) runtimeConfigState {
 	state.storyReviewConfig = story.ResolveConfig(config)
 	return state

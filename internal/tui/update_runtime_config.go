@@ -13,6 +13,9 @@ func (program *Program) routeRuntimeConfigMessages(msg Msg) updateResult {
 	case MsgPullRequestSearchesApplied:
 		program.applyPullRequestSearchesApplied(actual)
 		return handledUpdate(nil)
+	case MsgDisplayConfigApplied:
+		program.applyDisplayConfigApplied(actual)
+		return handledUpdate(nil)
 	case MsgLinksConfigApplied:
 		program.applyLinksConfigApplied(actual)
 		return handledUpdate(nil)
@@ -29,6 +32,12 @@ func (program *Program) routeRuntimeConfigMessages(msg Msg) updateResult {
 
 func (program *Program) applyKeymapOverridesApplied(message MsgKeymapOverridesApplied) {
 	program.setRuntimeKeymapOverrides(message.Overrides)
+}
+
+func (program *Program) applyDisplayConfigApplied(message MsgDisplayConfigApplied) {
+	program.setRuntimeDisplayConfig(message.Config)
+	program.restylePullRequestRows()
+	program.restyleNotificationRows()
 }
 
 func (program *Program) applyLinksConfigApplied(message MsgLinksConfigApplied) {

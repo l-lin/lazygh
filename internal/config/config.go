@@ -29,6 +29,7 @@ type Config struct {
 	PullRequests []PullRequestSearch
 	ThemePreset  string
 	Theme        theme.Palette
+	Display      DisplayConfig
 	Links        LinksConfig
 	StoryReview  story.Config
 	Cache        CacheConfig
@@ -37,6 +38,15 @@ type Config struct {
 type CacheConfig struct {
 	Path string
 }
+
+type DisplayConfig struct {
+	RepositoryStyle string
+}
+
+const (
+	RepositoryStyleOwnerName = "owner_name"
+	RepositoryStyleName      = "name"
+)
 
 type LinksConfig struct {
 	OpenCommand []string
@@ -53,6 +63,7 @@ type rawConfig struct {
 	Keymaps      map[string]map[string]any `toml:"keymaps"`
 	PullRequests rawPullRequestConfig      `toml:"pull_requests"`
 	Theme        rawThemeConfig            `toml:"theme"`
+	Display      rawDisplayConfig          `toml:"display"`
 	Links        rawLinksConfig            `toml:"links"`
 	StoryReview  rawStoryReviewConfig      `toml:"story_review"`
 	Cache        rawCacheConfig            `toml:"cache"`
@@ -61,6 +72,10 @@ type rawConfig struct {
 type rawThemeConfig struct {
 	Preset string `toml:"preset"`
 	theme.Palette
+}
+
+type rawDisplayConfig struct {
+	RepositoryStyle any `toml:"repository_style"`
 }
 
 type rawPullRequestConfig struct {
@@ -124,6 +139,7 @@ func Load(configPath string) (Config, error) {
 		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
 		ThemePreset:  theme.NormalizePresetName(raw.Theme.Preset),
 		Theme:        theme.NormalizePalette(raw.Theme.Palette),
+		Display:      normalizeDisplayConfig(raw.Display),
 		Links:        normalizeLinksConfig(raw.Links),
 		StoryReview:  normalizeStoryReviewConfig(raw.StoryReview),
 		Cache:        normalizeCacheConfig(raw.Cache),
@@ -164,6 +180,10 @@ func (config Config) ResolvedTheme() theme.Palette {
 	return theme.ResolvePaletteWithPreset(config.ThemePreset, config.Theme)
 }
 
+func (config Config) ResolvedDisplay() DisplayConfig {
+	return ResolveDisplayConfig(config.Display)
+}
+
 func (config Config) ResolvedLinks() LinksConfig {
 	return ResolveLinksConfig(config.Links)
 }
@@ -198,6 +218,14 @@ func ResolveCacheConfig(config CacheConfig) (CacheConfig, error) {
 	}
 
 	return CacheConfig{Path: DefaultCachePath(homeDirectory, os.Getenv("XDG_DATA_HOME"))}, nil
+}
+
+func ResolveDisplayConfig(config DisplayConfig) DisplayConfig {
+	style := normalizeRepositoryStyle(config.RepositoryStyle)
+	if style == "" {
+		style = RepositoryStyleOwnerName
+	}
+	return DisplayConfig{RepositoryStyle: style}
 }
 
 func ResolveLinksConfig(config LinksConfig) LinksConfig {
@@ -440,6 +468,21 @@ func normalizeStoryReviewConfig(raw rawStoryReviewConfig) story.Config {
 	return story.Config{
 		AgentCommand: normalizeCommand(raw.AgentCommand),
 		Prompt:       strings.TrimSpace(raw.Prompt),
+	}
+}
+
+func normalizeDisplayConfig(raw rawDisplayConfig) DisplayConfig {
+	return DisplayConfig{RepositoryStyle: normalizeRepositoryStyle(normalizeOptionalString(raw.RepositoryStyle))}
+}
+
+func normalizeRepositoryStyle(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case RepositoryStyleOwnerName:
+		return RepositoryStyleOwnerName
+	case RepositoryStyleName:
+		return RepositoryStyleName
+	default:
+		return ""
 	}
 }
 

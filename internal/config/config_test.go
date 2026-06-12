@@ -244,6 +244,36 @@ prompt = "Tell the story with dry professionalism."
 	}
 }
 
+func TestLoad_GivenDisplayRepositoryStyle_WhenLoading_ThenItPreservesTheNormalizedConfiguredValue(t *testing.T) {
+	configPath := given_configFile(t, `
+[display]
+repository_style = " Name "
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{Display: DisplayConfig{RepositoryStyle: RepositoryStyleName}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoad_GivenInvalidDisplayRepositoryStyle_WhenLoading_ThenItIgnoresTheBadValue(t *testing.T) {
+	configPath := given_configFile(t, `
+[display]
+repository_style = " owner/repo "
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenLinksOpenCommand_WhenLoading_ThenItPreservesTheConfiguredCommand(t *testing.T) {
 	configPath := given_configFile(t, `
 [links]
@@ -360,6 +390,44 @@ func TestConfig_ResolvedTheme_GivenThemePreset_WhenResolving_ThenItUsesThatPrese
 	}
 	if actual.ActiveTextHex != "#DCD7BA" {
 		t.Fatalf("expected active text color %q, actual %q", "#DCD7BA", actual.ActiveTextHex)
+	}
+}
+
+func TestConfig_ResolvedDisplay_GivenConfiguredAndInvalidStyles_WhenResolving_ThenItNormalizesOrFallsBackToOwnerName(t *testing.T) {
+	testCases := []struct {
+		name     string
+		subject  Config
+		expected DisplayConfig
+	}{
+		{
+			name:     "configured short style",
+			subject:  Config{Display: DisplayConfig{RepositoryStyle: " NAME "}},
+			expected: DisplayConfig{RepositoryStyle: RepositoryStyleName},
+		},
+		{
+			name:     "blank style",
+			subject:  Config{Display: DisplayConfig{RepositoryStyle: "   "}},
+			expected: DisplayConfig{RepositoryStyle: RepositoryStyleOwnerName},
+		},
+		{
+			name:     "invalid style",
+			subject:  Config{Display: DisplayConfig{RepositoryStyle: "owner/repo"}},
+			expected: DisplayConfig{RepositoryStyle: RepositoryStyleOwnerName},
+		},
+		{
+			name:     "missing style",
+			subject:  Config{},
+			expected: DisplayConfig{RepositoryStyle: RepositoryStyleOwnerName},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual := testCase.subject.ResolvedDisplay()
+			if !reflect.DeepEqual(actual, testCase.expected) {
+				t.Fatalf("expected resolved display config %+v, actual %+v", testCase.expected, actual)
+			}
+		})
 	}
 }
 
