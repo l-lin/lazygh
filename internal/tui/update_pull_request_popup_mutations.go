@@ -68,6 +68,22 @@ func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPu
 	return program.queueActionsPopupAsyncRequest(pullRequestAutoMergeMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, enabled: message.Enabled, successMessage: message.SuccessMessage, feedbackTarget: program.model.Focus()})
 }
 
+func (program *Program) applyPullRequestMergeQueueMutationRequested(message MsgPullRequestMergeQueueMutationRequested) []Cmd {
+	pullRequestID, ok := popupPullRequestActionTargetPullRequestID(message.Target)
+	if !ok || !popupPullRequestSummaryValid(message.Summary) {
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		return nil
+	}
+	if pullRequestMergeQueueMutationCommand(message.Kind) == "" {
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		return nil
+	}
+
+	snapshot := program.capturePullRequestMergeQueueMutationSnapshot(message.Summary)
+	program.applyVisiblePullRequestMergeQueueMutation(message.Summary, message.InQueue)
+	return program.queueActionsPopupAsyncRequest(pullRequestMergeQueueMutationPopupRequest{kind: message.Kind, pullRequestID: pullRequestID, summary: message.Summary, inQueue: message.InQueue, successMessage: message.SuccessMessage, feedbackTarget: program.model.Focus(), rollbackSnapshot: snapshot})
+}
+
 func (program *Program) applyPullRequestBranchUpdateRequested(message MsgPullRequestBranchUpdateRequested) []Cmd {
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok || !popupPullRequestSummaryValid(message.Summary) {
@@ -104,6 +120,11 @@ func popupPullRequestReviewerRequestIdentity(target pullRequestReviewerRequestTa
 	return repository, target.number, reviewerLogin, true
 }
 
+func popupPullRequestActionTargetPullRequestID(target pullRequestActionTarget) (string, bool) {
+	pullRequestID := strings.TrimSpace(target.pullRequestID)
+	return pullRequestID, pullRequestID != ""
+}
+
 func popupPullRequestSummaryValid(summary githubdomain.PullRequest) bool {
 	return pullRequestDetailKey(summary.Repository, summary.Number) != ""
 }
@@ -129,6 +150,15 @@ func pullRequestAutoMergeMutationCommand(kind pullRequestAutoMergeMutationKind, 
 		return enablePullRequestAutoMergeCommand(repository, number)
 	case pullRequestAutoMergeMutationDisable:
 		return disablePullRequestAutoMergeCommand(repository, number)
+	default:
+		return ""
+	}
+}
+
+func pullRequestMergeQueueMutationCommand(kind pullRequestMergeQueueMutationKind) string {
+	switch kind {
+	case pullRequestMergeQueueMutationEnqueue, pullRequestMergeQueueMutationDequeue:
+		return formatStatusLineCommand("gh", "api", "graphql")
 	default:
 		return ""
 	}

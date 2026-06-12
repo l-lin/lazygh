@@ -171,11 +171,15 @@ func renderPullRequestAssigneesLine(assignees []githubdomain.PullRequestAuthor) 
 	return stylePullRequestTitleText("Assigned to ") + strings.Join(entries, " ")
 }
 
-func renderPullRequestAutoMergeLine(detail githubdomain.PullRequestDetail) string {
-	if detail.AutoMergeRequest == nil {
+func renderPullRequestMergeStateLine(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) string {
+	switch {
+	case effectivePullRequestInMergeQueue(summary, detail):
+		return renderRoundedPill("Queued to merge", theme.PendingHex, theme.PendingBackgroundHex)
+	case detail.AutoMergeRequest != nil || summary.AutoMergeRequest != nil:
+		return renderRoundedPill("Auto-merge enabled", theme.PendingHex, theme.PendingBackgroundHex)
+	default:
 		return ""
 	}
-	return renderRoundedPill("Auto-merge enabled", theme.PendingHex, theme.PendingBackgroundHex)
 }
 
 func renderPullRequestActorBadge(login string) string {

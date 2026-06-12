@@ -44,6 +44,8 @@ type PullRequestMutations interface {
 	SquashMergePullRequest(repository string, number int) error
 	EnablePullRequestAutoMerge(repository string, number int) error
 	DisablePullRequestAutoMerge(repository string, number int) error
+	EnqueuePullRequest(pullRequestID string) error
+	DequeuePullRequest(pullRequestID string) error
 	UpdatePullRequestBranch(repository string, number int) error
 }
 

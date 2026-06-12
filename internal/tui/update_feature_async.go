@@ -20,6 +20,9 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 		if target, previousCollapsed, ok := inlineCommentResolutionRollback(message.Err); ok {
 			program.applyInlineCommentResolutionCollapsed(target, previousCollapsed)
 		}
+		if snapshot, ok := pullRequestMergeQueueRollback(message.Err); ok {
+			program.restorePullRequestMergeQueueMutationSnapshot(snapshot)
+		}
 		return program.applyErrorReportedMessage(message.Err.Error())
 	}
 

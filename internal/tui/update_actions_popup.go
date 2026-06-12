@@ -100,6 +100,8 @@ func (program *Program) applyActionsPopupRequestedMessage(requested Msg) []Cmd {
 		return program.applyPullRequestLifecycleMutationRequested(actual)
 	case MsgPullRequestAutoMergeMutationRequested:
 		return program.applyPullRequestAutoMergeMutationRequested(actual)
+	case MsgPullRequestMergeQueueMutationRequested:
+		return program.applyPullRequestMergeQueueMutationRequested(actual)
 	case MsgPullRequestBranchUpdateRequested:
 		return program.applyPullRequestBranchUpdateRequested(actual)
 	case MsgPullRequestSquashMergeRequested:

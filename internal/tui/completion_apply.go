@@ -19,6 +19,9 @@ func (program *Program) applyActionsPopupAsyncCompletion(completion actionsPopup
 	case pullRequestAutoMergeAppliedCompletion:
 		program.applyPullRequestAutoMergeApplied(MsgPullRequestAutoMergeApplied(actual))
 		return nil
+	case pullRequestMergeQueueAppliedCompletion:
+		program.applyPullRequestMergeQueueApplied(MsgPullRequestMergeQueueApplied(actual))
+		return nil
 	case pullRequestBranchUpdatedCompletion:
 		program.applyPullRequestBranchUpdated(MsgPullRequestBranchUpdated(actual))
 		return nil

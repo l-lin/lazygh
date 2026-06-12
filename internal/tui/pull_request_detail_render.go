@@ -41,7 +41,7 @@ func renderPullRequestHeader(summary any, detail any, options pullRequestHeaderO
 	})
 	metadataLines := filterEmptyStrings([]string{
 		renderPullRequestMetaLineWithOptions(summaryValue, detailValue, options.includeStatusChecks),
-		renderPullRequestAutoMergeLine(detailValue),
+		renderPullRequestMergeStateLine(summaryValue, detailValue),
 		renderPullRequestLabelsLine(detailValue.Labels),
 		renderPullRequestReactionLine(detailValue.ReactionGroups),
 		renderPullRequestOutOfDateLine(detailValue),

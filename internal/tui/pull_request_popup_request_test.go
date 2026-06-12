@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"reflect"
 	"testing"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -259,6 +260,46 @@ func TestUpdate_GivenMsgPullRequestAutoMergeMutationRequested_WhenApplyingEnable
 	}
 	if !samePullRequestIdentity(autoMergeSuccess.Summary, summary) || !autoMergeSuccess.Enabled || autoMergeSuccess.FeedbackTarget != subject.model.Focus() || autoMergeSuccess.Message != pullRequestAutoMergeEnabledSuccessMessage {
 		t.Fatalf("expected auto-merge completion for %v with enabled/%q, actual %+v", summary, pullRequestAutoMergeEnabledSuccessMessage, autoMergeSuccess)
+	}
+}
+
+func TestUpdate_GivenMsgPullRequestMergeQueueMutationRequested_WhenApplyingEnqueue_ThenItQueuesAnAsyncOptimisticQueueMutationCmd(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	summary := given_pullRequestMutationSummary("OPEN", false)
+	summary.IsMergeQueueEnabled = true
+
+	actual := Update(subject, MsgPullRequestMergeQueueMutationRequested{
+		Kind:           pullRequestMergeQueueMutationEnqueue,
+		Target:         pullRequestActionTarget{repository: "acme/widgets", number: 42, pullRequestID: "PR_kwDOA"},
+		Summary:        summary,
+		InQueue:        true,
+		SuccessMessage: pullRequestQueuedToMergeSuccessMessage,
+	})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one queued command, actual %d", len(actual))
+	}
+	command := given_actionsPopupAsyncCommand(t, actual)
+	request, ok := command.request.(pullRequestMergeQueueMutationPopupRequest)
+	if !ok {
+		t.Fatalf("expected a pullRequestMergeQueueMutationPopupRequest, actual %T", command.request)
+	}
+	if !request.asyncRequested() {
+		t.Fatal("expected the merge-queue mutation command to run asynchronously")
+	}
+
+	actualSuccess, actualErr := request.run(newActionsPopupAsyncCommandDeps(subject))
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(loader.enqueuePullRequestCalls, []string{"PR_kwDOA"}) {
+		t.Fatalf("expected enqueue calls %v, actual %v", []string{"PR_kwDOA"}, loader.enqueuePullRequestCalls)
+	}
+	mergeQueueSuccess, ok := actualSuccess.(pullRequestMergeQueueAppliedCompletion)
+	if !ok {
+		t.Fatalf("expected merge-queue completion, actual %T", actualSuccess)
+	}
+	if !samePullRequestIdentity(mergeQueueSuccess.Summary, summary) || !mergeQueueSuccess.InQueue || mergeQueueSuccess.FeedbackTarget != subject.model.Focus() || mergeQueueSuccess.Message != pullRequestQueuedToMergeSuccessMessage {
+		t.Fatalf("expected merge-queue completion for %v with queued/%q, actual %+v", summary, pullRequestQueuedToMergeSuccessMessage, mergeQueueSuccess)
 	}
 }
 

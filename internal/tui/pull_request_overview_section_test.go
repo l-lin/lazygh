@@ -61,6 +61,29 @@ func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_T
 	}
 }
 
+func TestRenderPullRequestBrowserHeader_GivenQueuedPullRequest_WhenFormatting_ThenItShowsQueuedToMergeAndHidesAutoMerge(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "Overview PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, AutoMergeRequest: &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"}}
+	detail := githubcli.PullRequestDetail{
+		Number:              42,
+		Author:              &githubcli.PullRequestAuthor{Login: "octocat"},
+		State:               "OPEN",
+		CreatedAt:           "2026-04-18T10:00:00Z",
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry:     &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"},
+		AutoMergeRequest:    &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"},
+	}
+
+	actual := renderPullRequestBrowserHeader(summary, detail)
+
+	if !strings.Contains(actual, "Queued to merge") {
+		t.Fatalf("expected the browser header to contain %q, actual %q", "Queued to merge", actual)
+	}
+	if strings.Contains(actual, "Auto-merge enabled") {
+		t.Fatalf("expected the browser header to hide %q when queued, actual %q", "Auto-merge enabled", actual)
+	}
+}
+
 func TestRenderPullRequestOverviewSection_GivenPopulatedMetadata_WhenFormatting_ThenItShowsReviewersMergeChecksAndBuildsInSeparateBoxes(t *testing.T) {
 	detail := githubcli.PullRequestDetail{
 		ReviewRequests: []githubcli.PullRequestReviewRequest{

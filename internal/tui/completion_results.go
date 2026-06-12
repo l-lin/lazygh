@@ -18,6 +18,8 @@ type pullRequestLifecycleAppliedCompletion MsgPullRequestLifecycleApplied
 
 type pullRequestAutoMergeAppliedCompletion MsgPullRequestAutoMergeApplied
 
+type pullRequestMergeQueueAppliedCompletion MsgPullRequestMergeQueueApplied
+
 type pullRequestBranchUpdatedCompletion MsgPullRequestBranchUpdated
 
 type pullRequestAssigneesUpdatedCompletion MsgPullRequestAssigneesUpdated
@@ -62,6 +64,7 @@ func (pullRequestInvalidatedWithFeedbackCompletion) isActionsPopupAsyncCompletio
 func (pullRequestInvalidatedWithFeedbackCompletion) isModalEditorSubmitCompletion() {}
 func (pullRequestLifecycleAppliedCompletion) isActionsPopupAsyncCompletion()        {}
 func (pullRequestAutoMergeAppliedCompletion) isActionsPopupAsyncCompletion()        {}
+func (pullRequestMergeQueueAppliedCompletion) isActionsPopupAsyncCompletion()       {}
 func (pullRequestBranchUpdatedCompletion) isActionsPopupAsyncCompletion()           {}
 func (pullRequestAssigneesUpdatedCompletion) isActionsPopupAsyncCompletion()        {}
 func (reactionAddedCompletion) isActionsPopupAsyncCompletion()                      {}

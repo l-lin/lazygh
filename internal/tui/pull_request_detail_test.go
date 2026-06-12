@@ -904,6 +904,27 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_T
 	}
 }
 
+func TestRenderPullRequestDetailHeader_GivenQueuedPullRequest_WhenFormatting_ThenItShowsQueuedToMergeAndHidesAutoMerge(t *testing.T) {
+	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, AutoMergeRequest: &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"}}
+	detail := githubcli.PullRequestDetail{
+		Number:              42,
+		State:               "OPEN",
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry:     &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"},
+		AutoMergeRequest:    &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"},
+	}
+
+	actual := renderPullRequestDetailHeader(summary, detail)
+
+	if !strings.Contains(actual, "Queued to merge") {
+		t.Fatalf("expected the detail header to contain %q, actual %q", "Queued to merge", actual)
+	}
+	if strings.Contains(actual, "Auto-merge enabled") {
+		t.Fatalf("expected the detail header to hide %q when queued, actual %q", "Auto-merge enabled", actual)
+	}
+}
+
 func TestRenderPullRequestDetailHeader_GivenApprovalReviews_WhenFormatting_ThenItShowsTheCurrentApproversWithGreenCheckIcons(t *testing.T) {
 	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
 	detail := githubcli.PullRequestDetail{

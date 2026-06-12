@@ -10,6 +10,11 @@ func (program *Program) applyPullRequestAutoMergeApplied(message MsgPullRequestA
 	program.setFeedback(message.FeedbackTarget, message.Message)
 }
 
+func (program *Program) applyPullRequestMergeQueueApplied(message MsgPullRequestMergeQueueApplied) {
+	program.applyVisiblePullRequestMergeQueueMutation(message.Summary, message.InQueue)
+	program.setFeedback(message.FeedbackTarget, message.Message)
+}
+
 func (program *Program) applyPullRequestBranchUpdated(message MsgPullRequestBranchUpdated) {
 	program.applyVisiblePullRequestBranchUpdate(message.Summary)
 	program.setFeedback(message.FeedbackTarget, message.Message)

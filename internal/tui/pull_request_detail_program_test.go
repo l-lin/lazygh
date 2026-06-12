@@ -1840,6 +1840,10 @@ type fakePullRequestDetailLoader struct {
 	enableAutoMergeErr                error
 	disableAutoMergeCalls             []string
 	disableAutoMergeErr               error
+	enqueuePullRequestCalls           []string
+	enqueuePullRequestErr             error
+	dequeuePullRequestCalls           []string
+	dequeuePullRequestErr             error
 	updateBranchCalls                 []string
 	updateBranchErr                   error
 	startReviewCalls                  []string
@@ -2487,6 +2491,56 @@ func (loader *fakePullRequestDetailLoader) DisablePullRequestAutoMerge(repositor
 	return nil
 }
 
+func (loader *fakePullRequestDetailLoader) EnqueuePullRequest(pullRequestID string) error {
+	trimmedPullRequestID := strings.TrimSpace(pullRequestID)
+	loader.enqueuePullRequestCalls = append(loader.enqueuePullRequestCalls, trimmedPullRequestID)
+	if loader.enqueuePullRequestErr != nil {
+		return loader.enqueuePullRequestErr
+	}
+
+	repository, number, ok := loader.pullRequestIdentityForID(trimmedPullRequestID)
+	if !ok {
+		return nil
+	}
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.IsMergeQueueEnabled = true
+		pullRequest.IsInMergeQueue = true
+		pullRequest.MergeQueueEntry = &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}
+		pullRequest.AutoMergeRequest = nil
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.IsMergeQueueEnabled = true
+		detail.IsInMergeQueue = true
+		detail.MergeQueueEntry = &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}
+		detail.AutoMergeRequest = nil
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) DequeuePullRequest(pullRequestID string) error {
+	trimmedPullRequestID := strings.TrimSpace(pullRequestID)
+	loader.dequeuePullRequestCalls = append(loader.dequeuePullRequestCalls, trimmedPullRequestID)
+	if loader.dequeuePullRequestErr != nil {
+		return loader.dequeuePullRequestErr
+	}
+
+	repository, number, ok := loader.pullRequestIdentityForID(trimmedPullRequestID)
+	if !ok {
+		return nil
+	}
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.IsMergeQueueEnabled = true
+		pullRequest.IsInMergeQueue = false
+		pullRequest.MergeQueueEntry = nil
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.IsMergeQueueEnabled = true
+		detail.IsInMergeQueue = false
+		detail.MergeQueueEntry = nil
+	})
+	return nil
+}
+
 func (loader *fakePullRequestDetailLoader) UpdatePullRequestBranch(repository string, number int) error {
 	loader.updateBranchCalls = append(loader.updateBranchCalls, repository+"#"+strconv.Itoa(number))
 	if loader.updateBranchErr != nil {
@@ -2505,6 +2559,36 @@ func (loader *fakePullRequestDetailLoader) UpdatePullRequestBranch(repository st
 		}
 	})
 	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) pullRequestIdentityForID(pullRequestID string) (string, int, bool) {
+	trimmedPullRequestID := strings.TrimSpace(pullRequestID)
+	if trimmedPullRequestID == "" {
+		return "", 0, false
+	}
+
+	for key, detail := range loader.details {
+		if strings.TrimSpace(detail.ID) != trimmedPullRequestID {
+			continue
+		}
+		repository, numberText, ok := strings.Cut(key, "#")
+		number, actualErr := strconv.Atoi(strings.TrimSpace(numberText))
+		if !ok || actualErr != nil {
+			return "", 0, false
+		}
+		return strings.TrimSpace(repository), number, true
+	}
+	for _, pullRequest := range loader.myPullRequests {
+		if strings.TrimSpace(pullRequest.ID) == trimmedPullRequestID {
+			return strings.TrimSpace(pullRequest.Repository.NameWithOwner), pullRequest.Number, true
+		}
+	}
+	for _, pullRequest := range loader.requestedPullRequests {
+		if strings.TrimSpace(pullRequest.ID) == trimmedPullRequestID {
+			return strings.TrimSpace(pullRequest.Repository.NameWithOwner), pullRequest.Number, true
+		}
+	}
+	return "", 0, false
 }
 
 func (loader *fakePullRequestDetailLoader) StartPendingPullRequestReview(repository string, number int) (string, error) {

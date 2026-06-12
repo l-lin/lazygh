@@ -7,10 +7,11 @@ import (
 )
 
 type pullRequestActionTarget struct {
-	repository string
-	number     int
-	title      string
-	body       string
+	repository    string
+	number        int
+	pullRequestID string
+	title         string
+	body          string
 }
 
 func (program *Program) currentPullRequestSummary() (githubdomain.PullRequest, bool) {
@@ -48,12 +49,14 @@ func (program *Program) selectedPullRequestActionTarget() (pullRequestActionTarg
 	}
 
 	target := pullRequestActionTarget{
-		repository: repository,
-		number:     summary.Number,
-		title:      strings.TrimSpace(summary.Title),
-		body:       strings.TrimSpace(summary.Body),
+		repository:    repository,
+		number:        summary.Number,
+		pullRequestID: strings.TrimSpace(summary.ID),
+		title:         strings.TrimSpace(summary.Title),
+		body:          strings.TrimSpace(summary.Body),
 	}
 	if result, ok := program.pullRequestDetailForSummary(summary); ok {
+		target.pullRequestID = firstNonEmpty(result.detail.ID, target.pullRequestID)
 		target.title = firstNonEmpty(result.detail.Title, target.title)
 		target.body = firstNonEmpty(result.detail.Body, target.body)
 	}

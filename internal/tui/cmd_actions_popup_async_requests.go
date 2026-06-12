@@ -181,6 +181,16 @@ type pullRequestAutoMergeMutationPopupRequest struct {
 	feedbackTarget Focus
 }
 
+type pullRequestMergeQueueMutationPopupRequest struct {
+	kind             pullRequestMergeQueueMutationKind
+	pullRequestID    string
+	summary          githubdomain.PullRequest
+	inQueue          bool
+	successMessage   string
+	feedbackTarget   Focus
+	rollbackSnapshot pullRequestMergeQueueMutationSnapshot
+}
+
 func (request pullRequestAutoMergeMutationPopupRequest) statusCommand() string {
 	return pullRequestAutoMergeMutationCommand(request.kind, request.repository, request.number)
 }
@@ -196,6 +206,26 @@ func (request pullRequestAutoMergeMutationPopupRequest) run(deps actionsPopupAsy
 	return pullRequestAutoMergeAppliedCompletion{
 		Summary:        request.summary,
 		Enabled:        request.enabled,
+		FeedbackTarget: request.feedbackTarget,
+		Message:        request.successMessage,
+	}, nil
+}
+
+func (request pullRequestMergeQueueMutationPopupRequest) statusCommand() string {
+	return pullRequestMergeQueueMutationCommand(request.kind)
+}
+
+func (pullRequestMergeQueueMutationPopupRequest) asyncRequested() bool {
+	return true
+}
+
+func (request pullRequestMergeQueueMutationPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncCompletion, error) {
+	if err := runPullRequestMergeQueueMutation(deps, request.kind, request.pullRequestID); err != nil {
+		return nil, newPullRequestMergeQueueAsyncError(err, request.rollbackSnapshot)
+	}
+	return pullRequestMergeQueueAppliedCompletion{
+		Summary:        request.summary,
+		InQueue:        request.inQueue,
 		FeedbackTarget: request.feedbackTarget,
 		Message:        request.successMessage,
 	}, nil
@@ -479,6 +509,20 @@ func runPullRequestAutoMergeMutation(deps actionsPopupAsyncCommandDeps, kind pul
 		return normalizedPullRequestMutationError(deps.pullRequestMutations.EnablePullRequestAutoMerge(repository, number), "gh pr merge")
 	case pullRequestAutoMergeMutationDisable:
 		return normalizedPullRequestMutationError(deps.pullRequestMutations.DisablePullRequestAutoMerge(repository, number), "gh pr merge")
+	default:
+		return errActionsPopupActionUnavailable
+	}
+}
+
+func runPullRequestMergeQueueMutation(deps actionsPopupAsyncCommandDeps, kind pullRequestMergeQueueMutationKind, pullRequestID string) error {
+	if deps.pullRequestMutations == nil {
+		return errors.New("github loader is unavailable")
+	}
+	switch kind {
+	case pullRequestMergeQueueMutationEnqueue:
+		return normalizedPullRequestMutationError(deps.pullRequestMutations.EnqueuePullRequest(pullRequestID), "gh api graphql")
+	case pullRequestMergeQueueMutationDequeue:
+		return normalizedPullRequestMutationError(deps.pullRequestMutations.DequeuePullRequest(pullRequestID), "gh api graphql")
 	default:
 		return errActionsPopupActionUnavailable
 	}

@@ -310,6 +310,10 @@ func actionsPopupDefaultKeywords(action actionsPopupAction) []string {
 		return []string{"open again", "restore"}
 	case action.id == "squash-merge-pull-request":
 		return []string{"merge", "land"}
+	case action.id == "merge-when-ready-pull-request":
+		return []string{"queue", "merge queue", "enqueue"}
+	case action.id == "remove-from-queue-pull-request":
+		return []string{"queue", "merge queue", "dequeue", "unqueue"}
 	case action.id == "update-pull-request-branch":
 		return []string{"rebase", "sync base"}
 	case action.id == "change-theme":

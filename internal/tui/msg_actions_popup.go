@@ -53,6 +53,21 @@ type MsgPullRequestAutoMergeMutationRequested struct {
 	SuccessMessage string
 }
 
+type pullRequestMergeQueueMutationKind int
+
+const (
+	pullRequestMergeQueueMutationEnqueue pullRequestMergeQueueMutationKind = iota
+	pullRequestMergeQueueMutationDequeue
+)
+
+type MsgPullRequestMergeQueueMutationRequested struct {
+	Kind           pullRequestMergeQueueMutationKind
+	Target         pullRequestActionTarget
+	Summary        githubdomain.PullRequest
+	InQueue        bool
+	SuccessMessage string
+}
+
 type MsgPullRequestBranchUpdateRequested struct {
 	Target  pullRequestActionTarget
 	Summary githubdomain.PullRequest
@@ -146,6 +161,7 @@ func (MsgApprovePullRequestRequested) isMsg()             {}
 func (MsgReRequestPullRequestReviewRequested) isMsg()     {}
 func (MsgPullRequestLifecycleMutationRequested) isMsg()   {}
 func (MsgPullRequestAutoMergeMutationRequested) isMsg()   {}
+func (MsgPullRequestMergeQueueMutationRequested) isMsg()  {}
 func (MsgPullRequestBranchUpdateRequested) isMsg()        {}
 func (MsgActionsPopupClosedWithFeedback) isMsg()          {}
 func (MsgPullRequestCustomSearchSubmitRequested) isMsg()  {}

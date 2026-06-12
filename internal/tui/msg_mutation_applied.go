@@ -17,6 +17,13 @@ type MsgPullRequestAutoMergeApplied struct {
 	Message        string
 }
 
+type MsgPullRequestMergeQueueApplied struct {
+	Summary        githubdomain.PullRequest
+	InQueue        bool
+	FeedbackTarget Focus
+	Message        string
+}
+
 type MsgPullRequestBranchUpdated struct {
 	Summary        githubdomain.PullRequest
 	FeedbackTarget Focus
@@ -107,6 +114,7 @@ type MsgReviewInlineCommentSubmitted struct {
 
 func (MsgPullRequestLifecycleApplied) isMsg()              {}
 func (MsgPullRequestAutoMergeApplied) isMsg()              {}
+func (MsgPullRequestMergeQueueApplied) isMsg()             {}
 func (MsgPullRequestBranchUpdated) isMsg()                 {}
 func (MsgPullRequestInvalidatedWithFeedback) isMsg()       {}
 func (MsgPullRequestAssigneesUpdated) isMsg()              {}
