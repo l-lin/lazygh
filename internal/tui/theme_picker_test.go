@@ -105,10 +105,43 @@ func TestChangeTheme_GivenExistingPullRequestRows_WhenSubmitting_ThenItRestylesT
 	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "widgets#42", given_themeColorHex(t, oldReferenceHex), "pull request reference after theme switch")
+	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "acme/widgets#42", given_themeColorHex(t, oldReferenceHex), "pull request reference after theme switch")
 	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewPullRequestsName, 0, "First PR", given_themeColorHex(t, oldTitleHex), "pull request title after theme switch")
-	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "widgets#42", theme.SelectedLineBackgroundHex, 4.5, "pull request reference contrast after theme switch")
+	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "pull request reference contrast after theme switch")
 	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "First PR", theme.SelectedLineBackgroundHex, 4.5, "pull request title contrast after theme switch")
+}
+
+func TestChangeTheme_GivenExistingNotificationRows_WhenSubmitting_ThenItRestylesThemWithoutWaitingForADataRefresh(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.ResolvePaletteWithPreset("catppuccin-latte", theme.Palette{}))
+	oldReferenceHex := theme.PullRequestReferenceHex
+
+	model := given_pullRequestCommentModel()
+	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
+	model.FocusNotificationsView()
+	subject := NewProgramWithModel(model)
+	subject.themePresetStore = &fakeThemePresetStore{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("change theme", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "change theme"))
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch("gruvbox dark", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "gruvbox dark"))
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_viewLineSegmentDoesNotHaveForegroundColor(t, gui, viewNotificationsName, 0, "acme/widgets#42", given_themeColorHex(t, oldReferenceHex), "notification reference after theme switch")
+	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewNotificationsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "notification reference contrast after theme switch")
 }
 
 func TestChangeTheme_GivenPresetSaveFailure_WhenSubmitting_ThenItKeepsThePickerOpenAndShowsTheError(t *testing.T) {

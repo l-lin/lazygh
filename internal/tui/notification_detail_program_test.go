@@ -59,11 +59,11 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 
 	notificationsView, actualErr := gui.View(viewNotificationsName)
 	then_noError(t, actualErr)
-	if !strings.Contains(notificationsView.Buffer(), "widgets#42") {
-		t.Fatalf("expected notification list to contain %q, actual %q", "widgets#42", notificationsView.Buffer())
+	if !strings.Contains(notificationsView.Buffer(), "acme/widgets#42") {
+		t.Fatalf("expected notification list to contain %q, actual %q", "acme/widgets#42", notificationsView.Buffer())
 	}
-	if strings.Contains(notificationsView.Buffer(), "acme/widgets#42") {
-		t.Fatalf("expected notification list to omit %q, actual %q", "acme/widgets#42", notificationsView.Buffer())
+	if strings.Contains(notificationsView.Buffer(), " widgets#42 ") {
+		t.Fatalf("expected notification list to avoid the short-only fragment %q, actual %q", " widgets#42 ", notificationsView.Buffer())
 	}
 
 	detailView := given_notificationDetailView(t, gui)
@@ -93,11 +93,11 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	notificationsView, actualErr = gui.View(viewNotificationsName)
 	then_noError(t, actualErr)
 	detailView = given_notificationDetailView(t, gui)
-	if !strings.Contains(notificationsView.Buffer(), "opencode#3235") {
-		t.Fatalf("expected notification list to contain %q, actual %q", "opencode#3235", notificationsView.Buffer())
+	if !strings.Contains(notificationsView.Buffer(), "acme/opencode#3235") {
+		t.Fatalf("expected notification list to contain %q, actual %q", "acme/opencode#3235", notificationsView.Buffer())
 	}
-	if strings.Contains(notificationsView.Buffer(), "acme/opencode#3235") {
-		t.Fatalf("expected notification list to omit %q, actual %q", "acme/opencode#3235", notificationsView.Buffer())
+	if strings.Contains(notificationsView.Buffer(), " opencode#3235 ") {
+		t.Fatalf("expected notification list to avoid the short-only fragment %q, actual %q", " opencode#3235 ", notificationsView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Issue body") {
 		t.Fatalf("expected issue detail body %q, actual %q", "Issue body", detailView.Buffer())
@@ -120,11 +120,8 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 	notificationsView, actualErr = gui.View(viewNotificationsName)
 	then_noError(t, actualErr)
 	detailView = given_notificationDetailView(t, gui)
-	if !strings.Contains(notificationsView.Buffer(), "doctoboot") {
-		t.Fatalf("expected notification list to contain %q, actual %q", "doctoboot", notificationsView.Buffer())
-	}
-	if strings.Contains(notificationsView.Buffer(), "acme/doctoboot") {
-		t.Fatalf("expected notification list to omit %q, actual %q", "acme/doctoboot", notificationsView.Buffer())
+	if !strings.Contains(notificationsView.Buffer(), "acme/doctoboot") {
+		t.Fatalf("expected notification list to contain %q, actual %q", "acme/doctoboot", notificationsView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "Release notes") {
 		t.Fatalf("expected release detail body %q, actual %q", "Release notes", detailView.Buffer())

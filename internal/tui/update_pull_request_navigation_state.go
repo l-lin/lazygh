@@ -25,7 +25,7 @@ func (program *Program) applyLoadedPullRequestRows(tab PullRequestTab, pullReque
 		program.pinOpenedPullRequestSummary(tab, normalized.matchedOpenedSummary)
 	}
 
-	rows := pullRequestStateRows(program.pullRequestListState(tab), normalized.pullRequests, nil)
+	rows := pullRequestStateRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.pullRequestListState(tab), normalized.pullRequests, nil)
 	program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
 	program.model.SetPullRequestRows(tab, rows)
 }

@@ -1,7 +1,10 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func notificationRows(notifications []githubdomain.Notification) []NotificationRow {
-	return notificationsStateRows(notifications, nil)
+	return notificationRowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, notifications)
 }

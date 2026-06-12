@@ -206,6 +206,10 @@ func pullRequestLoadingItem(state pullRequestListState) Item {
 }
 
 func pullRequestStateRows(state pullRequestListState, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
+	return pullRequestStateRowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, state, pullRequests, err)
+}
+
+func pullRequestStateRowsWithRepositoryStyle(style string, state pullRequestListState, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
 	if err != nil {
 		return []PullRequestRow{{Item: pullRequestErrorItem(state, err)}}
 	}
@@ -215,7 +219,7 @@ func pullRequestStateRows(state pullRequestListState, pullRequests []githubdomai
 
 	rows := make([]PullRequestRow, 0, len(pullRequests))
 	for _, pullRequest := range pullRequests {
-		rows = append(rows, pullRequestRow(pullRequest))
+		rows = append(rows, pullRequestRowWithRepositoryStyle(style, pullRequest))
 	}
 	return rows
 }
@@ -231,6 +235,10 @@ func pullRequestSummaryRowCount(rows []PullRequestRow) int {
 }
 
 func pullRequestRow(pullRequest any) PullRequestRow {
+	return pullRequestRowWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, pullRequest)
+}
+
+func pullRequestRowWithRepositoryStyle(style string, pullRequest any) PullRequestRow {
 	pullRequestValue, ok := toDomainPullRequestSummary(pullRequest)
 	if !ok {
 		return PullRequestRow{}
@@ -261,7 +269,7 @@ func pullRequestRow(pullRequest any) PullRequestRow {
 		statusIconSegment.Prefix = foregroundColorEscape(statusStyle.foregroundHex) + mergeChecksBackgroundPrefix
 	}
 
-	titlePrefix := pullRequestListReference(pullRequestValue.Repository, pullRequestValue.Number)
+	titlePrefix := pullRequestListReference(style, pullRequestValue.Repository, pullRequestValue.Number)
 	titleSuffix := " " + valueOrDash(pullRequestValue.Title)
 
 	summaryCopy := pullRequestValue
@@ -291,13 +299,17 @@ func pullRequestMergeChecksBackgroundHex(pullRequest githubdomain.PullRequest) s
 }
 
 func restyledPullRequestRows(rows []PullRequestRow) []PullRequestRow {
+	return restyledPullRequestRowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, rows)
+}
+
+func restyledPullRequestRowsWithRepositoryStyle(style string, rows []PullRequestRow) []PullRequestRow {
 	restyledRows := make([]PullRequestRow, 0, len(rows))
 	for _, row := range rows {
 		if row.Summary == nil {
 			restyledRows = append(restyledRows, row)
 			continue
 		}
-		restyledRows = append(restyledRows, pullRequestRow(*row.Summary))
+		restyledRows = append(restyledRows, pullRequestRowWithRepositoryStyle(style, *row.Summary))
 	}
 	return restyledRows
 }

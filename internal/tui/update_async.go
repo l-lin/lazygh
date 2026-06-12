@@ -12,7 +12,7 @@ func (program *Program) applyPullRequestsCacheHydrated(message MsgPullRequestsCa
 }
 
 func (program *Program) applyNotificationsCacheHydrated(message MsgNotificationsCacheHydrated) {
-	program.model.SetNotificationRows(notificationRows(program.filterDoneNotifications(message.Notifications)))
+	program.model.SetNotificationRows(notificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.filterDoneNotifications(message.Notifications)))
 }
 
 func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded) {
@@ -55,7 +55,7 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
-		program.model.SetPullRequestRows(message.Tab, pullRequestStateRows(program.pullRequestListState(message.Tab), nil, message.Err))
+		program.model.SetPullRequestRows(message.Tab, pullRequestStateRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.pullRequestListState(message.Tab), nil, message.Err))
 	}
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)
@@ -85,7 +85,7 @@ func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded)
 	if message.Err == nil {
 		filteredNotifications := program.filterDoneNotifications(message.Notifications)
 		program.cacheNotifications(filteredNotifications)
-		program.model.SetNotificationRows(notificationRows(filteredNotifications))
+		program.model.SetNotificationRows(notificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, filteredNotifications))
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
 		}

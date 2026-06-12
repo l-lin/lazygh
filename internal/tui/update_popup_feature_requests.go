@@ -20,7 +20,7 @@ func (program *Program) applyNotificationReadRequested(message MsgNotificationRe
 	if !markNotificationReadState(optimisticNotifications, target.threadID, false) {
 		return program.handleNotificationRequestUnavailable(errActionsPopupActionUnavailable.Error())
 	}
-	return program.beginNotificationMutation(notificationRows(optimisticNotifications), notificationReadLoadingMessage, notificationMarkedReadMessage, notificationReadMutationRequest{threadID: target.threadID})
+	return program.beginNotificationMutation(notificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, optimisticNotifications), notificationReadLoadingMessage, notificationMarkedReadMessage, notificationReadMutationRequest{threadID: target.threadID})
 }
 
 func (program *Program) applyNotificationDoneRequested(message MsgNotificationDoneRequested) []Cmd {
@@ -33,7 +33,7 @@ func (program *Program) applyNotificationDoneRequested(message MsgNotificationDo
 	if !removed {
 		return program.handleNotificationRequestUnavailable(errActionsPopupActionUnavailable.Error())
 	}
-	return program.beginNotificationMutation(notificationRows(optimisticNotifications), notificationDoneLoadingMessage, notificationMarkedDoneMessage, notificationDoneMutationRequest{threadID: target.threadID, notification: target.notification})
+	return program.beginNotificationMutation(notificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, optimisticNotifications), notificationDoneLoadingMessage, notificationMarkedDoneMessage, notificationDoneMutationRequest{threadID: target.threadID, notification: target.notification})
 }
 
 func (program *Program) resolveNotificationRequestTarget(target notificationActionTarget) (notificationActionTarget, bool) {
@@ -51,7 +51,7 @@ func (program *Program) applyAllNotificationsReadRequested() []Cmd {
 
 	optimisticNotifications := append([]githubdomain.Notification(nil), loadedNotifications...)
 	markAllNotificationsRead(optimisticNotifications)
-	return program.beginNotificationMutation(notificationRows(optimisticNotifications), notificationAllReadLoadingMessage, notificationMarkedAllReadMessage, allNotificationsReadMutationRequest{})
+	return program.beginNotificationMutation(notificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, optimisticNotifications), notificationAllReadLoadingMessage, notificationMarkedAllReadMessage, allNotificationsReadMutationRequest{})
 }
 
 func (program *Program) applyAllNotificationsDoneRequested() []Cmd {
@@ -64,7 +64,7 @@ func (program *Program) applyAllNotificationsDoneRequested() []Cmd {
 	if count := len(loadedNotifications); count > 0 {
 		loadingMessage = formatNotificationDoneLoadingMessage(count)
 	}
-	return program.beginNotificationMutation(notificationRows(nil), loadingMessage, notificationMarkedAllDoneMessage, allNotificationsDoneMutationRequest{notifications: append([]githubdomain.Notification(nil), loadedNotifications...)})
+	return program.beginNotificationMutation(notificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, nil), loadingMessage, notificationMarkedAllDoneMessage, allNotificationsDoneMutationRequest{notifications: append([]githubdomain.Notification(nil), loadedNotifications...)})
 }
 
 func formatNotificationDoneLoadingMessage(count int) string {

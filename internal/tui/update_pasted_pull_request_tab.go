@@ -5,7 +5,7 @@ func (program *Program) syncPastedPullRequestTab() (PullRequestTab, bool) {
 		return 0, false
 	}
 
-	seed, hasPastedTab := program.pastedPullRequests.tabSeed()
+	seed, hasPastedTab := program.pastedPullRequests.tabSeedWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle)
 	preservedRows := make(map[PullRequestTab][]PullRequestRow, len(program.model.PullRequestTabs()))
 	seeds := make([]PullRequestTabSeed, 0, len(program.model.PullRequestTabs())+1)
 	for _, tab := range program.model.PullRequestTabs() {
@@ -29,6 +29,6 @@ func (program *Program) syncPastedPullRequestTab() (PullRequestTab, bool) {
 	}
 
 	pastedTab := PullRequestTab(len(seeds) - 1)
-	program.model.SetPullRequestRows(pastedTab, program.pastedPullRequests.rows())
+	program.model.SetPullRequestRows(pastedTab, program.pastedPullRequests.rowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle))
 	return pastedTab, true
 }

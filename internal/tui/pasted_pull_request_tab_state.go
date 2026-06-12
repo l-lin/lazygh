@@ -1,6 +1,9 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 const pastedPullRequestsTabLabel = "Pasted"
 
@@ -54,9 +57,13 @@ func (state pastedPullRequestTabState) withPullRequestRemoved(summary githubdoma
 }
 
 func (state pastedPullRequestTabState) rows() []PullRequestRow {
+	return state.rowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName)
+}
+
+func (state pastedPullRequestTabState) rowsWithRepositoryStyle(style string) []PullRequestRow {
 	rows := make([]PullRequestRow, 0, len(state.pullRequests))
 	for _, pullRequest := range state.pullRequests {
-		rows = append(rows, pullRequestRow(pullRequest))
+		rows = append(rows, pullRequestRowWithRepositoryStyle(style, pullRequest))
 	}
 	return rows
 }
@@ -66,7 +73,11 @@ func (state pastedPullRequestTabState) rowCount() int {
 }
 
 func (state pastedPullRequestTabState) tabSeed() (PullRequestTabSeed, bool) {
-	rows := state.rows()
+	return state.tabSeedWithRepositoryStyle(appconfig.RepositoryStyleOwnerName)
+}
+
+func (state pastedPullRequestTabState) tabSeedWithRepositoryStyle(style string) (PullRequestTabSeed, bool) {
+	rows := state.rowsWithRepositoryStyle(style)
 	if len(rows) == 0 {
 		return PullRequestTabSeed{}, false
 	}

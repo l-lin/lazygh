@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -39,6 +40,18 @@ func notificationsStateRows(notifications []githubdomain.Notification, err error
 	return rows
 }
 
+func notificationRowsWithRepositoryStyle(style string, notifications []githubdomain.Notification) []NotificationRow {
+	if len(notifications) == 0 {
+		return notificationsStateRows(nil, nil)
+	}
+
+	rows := make([]NotificationRow, 0, len(notifications))
+	for _, notification := range notifications {
+		rows = append(rows, notificationRowWithRepositoryStyle(style, notification))
+	}
+	return rows
+}
+
 func notificationsEmptyItem() Item {
 	return Item{Title: notificationsEmptyTitle, Detail: notificationsEmptyDetail}
 }
@@ -61,11 +74,15 @@ func notificationsErrorItem(err error) Item {
 }
 
 func notificationRow(notification any) NotificationRow {
+	return notificationRowWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, notification)
+}
+
+func notificationRowWithRepositoryStyle(style string, notification any) NotificationRow {
 	notificationValue, ok := toDomainNotification(notification)
 	if !ok {
 		return NotificationRow{}
 	}
-	reference := notificationListReference(notificationValue)
+	reference := notificationListReference(style, notificationValue)
 	title := strings.TrimSpace(notificationValue.Subject.Title)
 	titleSegments := notificationTitleSegments(notificationValue, reference, title)
 	rowTitle := itemTitleFromSegments(titleSegments)
@@ -96,13 +113,17 @@ func notificationRow(notification any) NotificationRow {
 }
 
 func restyledNotificationRows(rows []NotificationRow) []NotificationRow {
+	return restyledNotificationRowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, rows)
+}
+
+func restyledNotificationRowsWithRepositoryStyle(style string, rows []NotificationRow) []NotificationRow {
 	restyledRows := make([]NotificationRow, 0, len(rows))
 	for _, row := range rows {
 		if row.Notification == nil {
 			restyledRows = append(restyledRows, row)
 			continue
 		}
-		restyledRows = append(restyledRows, notificationRow(*row.Notification))
+		restyledRows = append(restyledRows, notificationRowWithRepositoryStyle(style, *row.Notification))
 	}
 	return restyledRows
 }

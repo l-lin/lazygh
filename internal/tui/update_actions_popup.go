@@ -392,7 +392,7 @@ func (program *Program) restylePullRequestRows() {
 		if len(rows) == 0 {
 			continue
 		}
-		program.model.SetPullRequestRows(tab, restyledPullRequestRows(rows))
+		program.model.SetPullRequestRows(tab, restyledPullRequestRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, rows))
 	}
 }
 
@@ -405,7 +405,7 @@ func (program *Program) restyleNotificationRows() {
 	if len(rows) == 0 {
 		return
 	}
-	program.model.SetNotificationRows(restyledNotificationRows(rows))
+	program.model.SetNotificationRows(restyledNotificationRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, rows))
 }
 
 func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd {
@@ -416,6 +416,7 @@ func (program *Program) applyThemePresetSaved(message MsgThemePresetSaved) []Cmd
 
 	theme.ApplyPalette(theme.ResolvePaletteWithPreset(strings.TrimSpace(message.NormalizedName), theme.Palette{}))
 	program.restylePullRequestRows()
+	program.restyleNotificationRows()
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.clearActionsPopupErrorMessage()
@@ -488,7 +489,7 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 
 			summary := *row.Summary
 			mutate(&summary)
-			updatedRows[index] = pullRequestRow(summary)
+			updatedRows[index] = pullRequestRowWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, summary)
 			updated = true
 		}
 		if updated {
