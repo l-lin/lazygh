@@ -61,7 +61,7 @@ func TestRenderPullRequestBrowserHeader_GivenReviewersAndChecks_WhenFormatting_T
 	}
 }
 
-func TestRenderPullRequestBrowserHeader_GivenQueuedPullRequest_WhenFormatting_ThenItShowsQueuedToMergeAndHidesAutoMerge(t *testing.T) {
+func TestRenderPullRequestBrowserHeader_GivenQueuedPullRequest_WhenFormatting_ThenItShowsQUEUEDAndHidesAutoMerge(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "Overview PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, AutoMergeRequest: &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"}}
 	detail := githubcli.PullRequestDetail{
 		Number:              42,
@@ -74,13 +74,17 @@ func TestRenderPullRequestBrowserHeader_GivenQueuedPullRequest_WhenFormatting_Th
 		AutoMergeRequest:    &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"},
 	}
 
-	actual := renderPullRequestBrowserHeader(summary, detail)
+	actualDocument := newDetailDocument(renderPullRequestBrowserHeader(summary, detail), 120)
+	actualText := string(actualDocument.text)
 
-	if !strings.Contains(actual, "Queued to merge") {
-		t.Fatalf("expected the browser header to contain %q, actual %q", "Queued to merge", actual)
+	if !strings.Contains(actualText, detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the browser header to contain %q, actual %q", detailStatusIcon+" QUEUED", actualText)
 	}
-	if strings.Contains(actual, "Auto-merge enabled") {
-		t.Fatalf("expected the browser header to hide %q when queued, actual %q", "Auto-merge enabled", actual)
+	if strings.Contains(actualText, detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the browser header to hide %q when queued, actual %q", detailStatusIcon+" OPEN", actualText)
+	}
+	if strings.Contains(actualText, "Auto-merge enabled") {
+		t.Fatalf("expected the browser header to hide %q when queued, actual %q", "Auto-merge enabled", actualText)
 	}
 }
 

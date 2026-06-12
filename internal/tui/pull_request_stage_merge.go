@@ -49,7 +49,7 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 			actions = append(actions, program.updatePullRequestBranchAction())
 		}
 		return append(actions, program.closePullRequestAction())
-	case "OPEN":
+	case "OPEN", "QUEUED":
 		actions := []actionsPopupAction{program.convertPullRequestToDraftAction()}
 		switch {
 		case program.currentPullRequestMergeQueueEnabled() && program.currentPullRequestInMergeQueue():
@@ -95,7 +95,7 @@ func (program *Program) currentPullRequestStageAndMergeStatus() (string, bool) {
 	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
 		return detailStatus(result.detail, summary), true
 	}
-	return effectivePullRequestStatus(summary.State, summary.IsDraft), true
+	return pullRequestSummaryStatus(summary), true
 }
 
 func (program *Program) markPullRequestReadyForReviewAction() actionsPopupAction {

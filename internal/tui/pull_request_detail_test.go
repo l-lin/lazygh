@@ -867,6 +867,17 @@ func TestDetailStatus_GivenClosedDraftMetadata_WhenFormatting_ThenItPrefersCLOSE
 	}
 }
 
+func TestDetailStatus_GivenQueuedOpenMetadata_WhenFormatting_ThenItPrefersQUEUED(t *testing.T) {
+	summary := githubcli.PullRequest{State: "OPEN", IsInMergeQueue: true, MergeQueueEntry: &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}}
+	detail := githubcli.PullRequestDetail{State: "OPEN", IsMergeQueueEnabled: true, IsInMergeQueue: true, MergeQueueEntry: &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}}
+
+	actual := detailStatus(detail, summary)
+
+	if actual != "QUEUED" {
+		t.Fatalf("expected status %q, actual %q", "QUEUED", actual)
+	}
+}
+
 func TestRenderPullRequestStatusBadge_GivenDraftStatus_WhenFormatting_ThenItUsesTheDraftIcon(t *testing.T) {
 	actual := renderPullRequestStatusBadge("DRAFT")
 
@@ -885,6 +896,7 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_T
 	}{
 		{name: "open", summary: githubcli.PullRequest{State: "OPEN"}, detail: githubcli.PullRequestDetail{State: "OPEN"}, expectedStatus: "OPEN", expectedBackgroundHex: theme.PullRequestStatusOpenBackgroundHex},
 		{name: "draft", summary: githubcli.PullRequest{State: "OPEN"}, detail: githubcli.PullRequestDetail{State: "OPEN", IsDraft: true}, expectedStatus: "DRAFT", expectedBackgroundHex: theme.PullRequestStatusDraftBackgroundHex},
+		{name: "queued", summary: githubcli.PullRequest{State: "OPEN", IsInMergeQueue: true, MergeQueueEntry: &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}}, detail: githubcli.PullRequestDetail{State: "OPEN", IsMergeQueueEnabled: true, IsInMergeQueue: true, MergeQueueEntry: &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}}, expectedStatus: "QUEUED", expectedBackgroundHex: theme.WarningHex},
 		{name: "closed", summary: githubcli.PullRequest{State: "CLOSED"}, detail: githubcli.PullRequestDetail{State: "CLOSED"}, expectedStatus: "CLOSED", expectedBackgroundHex: theme.PullRequestStatusClosedBackgroundHex},
 		{name: "closed draft", summary: githubcli.PullRequest{State: "CLOSED", IsDraft: true}, detail: githubcli.PullRequestDetail{State: "CLOSED", IsDraft: true}, expectedStatus: "CLOSED", expectedBackgroundHex: theme.PullRequestStatusClosedBackgroundHex},
 		{name: "merged", summary: githubcli.PullRequest{State: "MERGED"}, detail: githubcli.PullRequestDetail{State: "MERGED"}, expectedStatus: "MERGED", expectedBackgroundHex: theme.PullRequestStatusMergedBackgroundHex},
@@ -892,7 +904,12 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_T
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			header := renderPullRequestDetailHeader(githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: testCase.summary.State, IsDraft: testCase.summary.IsDraft}, githubcli.PullRequestDetail{Number: 42, State: testCase.detail.State, IsDraft: testCase.detail.IsDraft})
+			summary := testCase.summary
+			summary.Number = 42
+			summary.Repository = githubcli.Repository{NameWithOwner: "acme/widgets"}
+			detail := testCase.detail
+			detail.Number = 42
+			header := renderPullRequestDetailHeader(summary, detail)
 			actualDocument := newDetailDocument(header, 120)
 			lineIndex, line := given_detailDocumentLineContaining(t, actualDocument, testCase.expectedStatus)
 			statusIndex := given_runeIndexInString(t, line, testCase.expectedStatus)
@@ -904,7 +921,7 @@ func TestRenderPullRequestDetailHeader_GivenPullRequestStatuses_WhenFormatting_T
 	}
 }
 
-func TestRenderPullRequestDetailHeader_GivenQueuedPullRequest_WhenFormatting_ThenItShowsQueuedToMergeAndHidesAutoMerge(t *testing.T) {
+func TestRenderPullRequestDetailHeader_GivenQueuedPullRequest_WhenFormatting_ThenItShowsQUEUEDAndHidesAutoMerge(t *testing.T) {
 	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, AutoMergeRequest: &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"}}
 	detail := githubcli.PullRequestDetail{
 		Number:              42,
@@ -915,13 +932,17 @@ func TestRenderPullRequestDetailHeader_GivenQueuedPullRequest_WhenFormatting_The
 		AutoMergeRequest:    &githubcli.PullRequestAutoMergeRequest{EnabledAt: "2026-05-20T10:00:00Z"},
 	}
 
-	actual := renderPullRequestDetailHeader(summary, detail)
+	actualDocument := newDetailDocument(renderPullRequestDetailHeader(summary, detail), 120)
+	actualText := string(actualDocument.text)
 
-	if !strings.Contains(actual, "Queued to merge") {
-		t.Fatalf("expected the detail header to contain %q, actual %q", "Queued to merge", actual)
+	if !strings.Contains(actualText, detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail header to contain %q, actual %q", detailStatusIcon+" QUEUED", actualText)
 	}
-	if strings.Contains(actual, "Auto-merge enabled") {
-		t.Fatalf("expected the detail header to hide %q when queued, actual %q", "Auto-merge enabled", actual)
+	if strings.Contains(actualText, detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail header to hide %q when queued, actual %q", detailStatusIcon+" OPEN", actualText)
+	}
+	if strings.Contains(actualText, "Auto-merge enabled") {
+		t.Fatalf("expected the detail header to hide %q when queued, actual %q", "Auto-merge enabled", actualText)
 	}
 }
 

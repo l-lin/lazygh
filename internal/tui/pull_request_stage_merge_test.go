@@ -871,8 +871,11 @@ func TestLayout_GivenAMergeWhenReadyMutationWithSummaryMissingNodeID_WhenRenderi
 	then_noError(t, actualErr)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if strings.Contains(detailView.Buffer(), "Queued to merge") {
-		t.Fatalf("expected the detail buffer to omit %q before queueing, actual %q", "Queued to merge", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to omit %q before queueing, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail buffer to contain %q before queueing, actual %q", detailStatusIcon+" OPEN", detailView.Buffer())
 	}
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
@@ -898,8 +901,11 @@ func TestLayout_GivenAMergeWhenReadyMutationWithSummaryMissingNodeID_WhenRenderi
 	then_statusLineContains(t, gui, pullRequestQueuedToMergeSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Queued to merge") {
-		t.Fatalf("expected the detail buffer to contain %q after queueing, actual %q", "Queued to merge", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to contain %q after queueing, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail buffer to drop %q after queueing, actual %q", detailStatusIcon+" OPEN", detailView.Buffer())
 	}
 
 	actualErr = subject.openActionsPopup(gui, nil)
@@ -932,8 +938,8 @@ func TestLayout_GivenARemoveFromQueueMutation_WhenRendering_ThenItClearsTheQueue
 	then_noError(t, actualErr)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Queued to merge") {
-		t.Fatalf("expected the detail buffer to contain %q before dequeueing, actual %q", "Queued to merge", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to contain %q before dequeueing, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
 	}
 	actualErr = subject.openActionsPopup(gui, nil)
 	then_noError(t, actualErr)
@@ -959,8 +965,11 @@ func TestLayout_GivenARemoveFromQueueMutation_WhenRendering_ThenItClearsTheQueue
 	then_statusLineContains(t, gui, pullRequestRemovedFromQueueSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if strings.Contains(detailView.Buffer(), "Queued to merge") {
-		t.Fatalf("expected the detail buffer to omit %q after dequeueing, actual %q", "Queued to merge", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to omit %q after dequeueing, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail buffer to restore %q after dequeueing, actual %q", detailStatusIcon+" OPEN", detailView.Buffer())
 	}
 
 	actualErr = subject.openActionsPopup(gui, nil)
@@ -1003,8 +1012,11 @@ func TestActionsPopup_GivenAMergeWhenReadyFailure_WhenExecuting_ThenItRollsBackT
 	then_noError(t, actualErr)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if !strings.Contains(detailView.Buffer(), "Queued to merge") {
-		t.Fatalf("expected the detail buffer to contain %q during optimistic queueing, actual %q", "Queued to merge", detailView.Buffer())
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to contain %q during optimistic queueing, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail buffer to drop %q during optimistic queueing, actual %q", detailStatusIcon+" OPEN", detailView.Buffer())
 	}
 	if len(asyncRunner.runs) <= queuedRunsBeforeAction {
 		t.Fatalf("expected a queued merge-when-ready mutation, actual before=%d after=%d", queuedRunsBeforeAction, len(asyncRunner.runs))
@@ -1017,8 +1029,11 @@ func TestActionsPopup_GivenAMergeWhenReadyFailure_WhenExecuting_ThenItRollsBackT
 	then_transientErrorPopupContains(t, gui, "GitHub rejected queueing")
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
-	if strings.Contains(detailView.Buffer(), "Queued to merge") {
-		t.Fatalf("expected the detail buffer to roll back %q after the failure, actual %q", "Queued to merge", detailView.Buffer())
+	if strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to roll back %q after the failure, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail buffer to restore %q after the failure, actual %q", detailStatusIcon+" OPEN", detailView.Buffer())
 	}
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()
 	if !ok || selectedSummary.IsInMergeQueue || selectedSummary.MergeQueueEntry != nil {

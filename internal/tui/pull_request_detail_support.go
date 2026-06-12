@@ -27,10 +27,22 @@ func detailStatus(detail any, summary any) string {
 	if !ok {
 		summaryValue = githubdomain.PullRequest{}
 	}
-	return effectivePullRequestStatus(firstNonEmpty(detailValue.State, summaryValue.State), detailValue.IsDraft || summaryValue.IsDraft)
+	return effectivePullRequestDisplayStatus(summaryValue, detailValue)
 }
 
-func effectivePullRequestStatus(state string, isDraft bool) string {
+func pullRequestSummaryStatus(summary githubdomain.PullRequest) string {
+	return effectivePullRequestDisplayStatus(summary, githubdomain.PullRequestDetail{})
+}
+
+func effectivePullRequestDisplayStatus(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) string {
+	status := effectivePullRequestLifecycleStatus(firstNonEmpty(detail.State, summary.State), detail.IsDraft || summary.IsDraft)
+	if status == "OPEN" && effectivePullRequestInMergeQueue(summary, detail) {
+		return "QUEUED"
+	}
+	return status
+}
+
+func effectivePullRequestLifecycleStatus(state string, isDraft bool) string {
 	normalizedState := strings.ToUpper(strings.TrimSpace(state))
 	if normalizedState == "" {
 		if isDraft {
@@ -72,6 +84,10 @@ func pullRequestStatusStyleFor(status string) (pullRequestStatusStyle, bool) {
 		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusOpenHex, backgroundHex: theme.PullRequestStatusOpenBackgroundHex}, true
 	case "DRAFT":
 		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusDraftHex, backgroundHex: theme.PullRequestStatusDraftBackgroundHex}, true
+	case "QUEUED":
+		backgroundHex := theme.WarningHex
+		foregroundHex := readableForegroundHexForBackground(theme.ActiveTextHex, backgroundHex, theme.InactiveTextHex, theme.BackgroundHex)
+		return pullRequestStatusStyle{foregroundHex: foregroundHex, backgroundHex: backgroundHex}, true
 	case "CLOSED":
 		return pullRequestStatusStyle{foregroundHex: theme.PullRequestStatusClosedHex, backgroundHex: theme.PullRequestStatusClosedBackgroundHex}, true
 	case "MERGED":
@@ -172,14 +188,13 @@ func renderPullRequestAssigneesLine(assignees []githubdomain.PullRequestAuthor) 
 }
 
 func renderPullRequestMergeStateLine(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) string {
-	switch {
-	case effectivePullRequestInMergeQueue(summary, detail):
-		return renderRoundedPill("Queued to merge", theme.PendingHex, theme.PendingBackgroundHex)
-	case detail.AutoMergeRequest != nil || summary.AutoMergeRequest != nil:
-		return renderRoundedPill("Auto-merge enabled", theme.PendingHex, theme.PendingBackgroundHex)
-	default:
+	if effectivePullRequestInMergeQueue(summary, detail) {
 		return ""
 	}
+	if detail.AutoMergeRequest != nil || summary.AutoMergeRequest != nil {
+		return renderRoundedPill("Auto-merge enabled", theme.PendingHex, theme.PendingBackgroundHex)
+	}
+	return ""
 }
 
 func renderPullRequestActorBadge(login string) string {

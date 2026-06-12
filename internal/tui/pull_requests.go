@@ -262,7 +262,7 @@ func pullRequestRowWithRepositoryStyle(style string, pullRequest any) PullReques
 
 	mergeChecksBackgroundHex := pullRequestMergeChecksBackgroundHex(pullRequestValue)
 	mergeChecksBackgroundPrefix := backgroundColorEscape(mergeChecksBackgroundHex)
-	status := effectivePullRequestStatus(pullRequestValue.State, pullRequestValue.IsDraft)
+	status := effectivePullRequestLifecycleStatus(pullRequestValue.State, pullRequestValue.IsDraft)
 	statusIconSegment := ItemTitleSegment{Text: pullRequestStatusIcon(status) + " ", Prefix: mergeChecksBackgroundPrefix, BackgroundHex: mergeChecksBackgroundHex, MinimumContrast: 3.0}
 	if statusStyle, ok := pullRequestStatusStyleFor(status); ok {
 		statusIconSegment.ForegroundHex = statusStyle.foregroundHex
