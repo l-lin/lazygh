@@ -29,6 +29,14 @@ query($ids:[ID!]!) {
       autoMergeRequest {
         enabledAt
       }
+      isMergeQueueEnabled
+      isInMergeQueue
+      mergeQueueEntry {
+        id
+        state
+        position
+        estimatedTimeToMerge
+      }
       reviewRequests(first:100) {
         nodes {
           requestedReviewer {
@@ -98,6 +106,9 @@ type PullRequest struct {
 	MergeStateStatus       string                       `json:"mergeStateStatus"`
 	Mergeable              string                       `json:"mergeable"`
 	AutoMergeRequest       *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	IsMergeQueueEnabled    bool                         `json:"isMergeQueueEnabled,omitempty"`
+	IsInMergeQueue         bool                         `json:"isInMergeQueue,omitempty"`
+	MergeQueueEntry        *PullRequestMergeQueueEntry  `json:"mergeQueueEntry,omitempty"`
 	StatusCheckRollupState string                       `json:"statusCheckRollupState"`
 }
 
@@ -107,6 +118,9 @@ type pullRequestListReviewMetadata struct {
 	MergeStateStatus       string
 	Mergeable              string
 	AutoMergeRequest       *PullRequestAutoMergeRequest
+	IsMergeQueueEnabled    bool
+	IsInMergeQueue         bool
+	MergeQueueEntry        *PullRequestMergeQueueEntry
 	StatusCheckRollupState string
 }
 
@@ -133,6 +147,9 @@ func (client *PullRequestListService) ListPullRequests(commandArguments []string
 			pullRequests[index].ReviewRequests = append([]PullRequestReviewRequest(nil), reviewMetadata.ReviewRequests...)
 			pullRequests[index].MergeStateStatus = reviewMetadata.MergeStateStatus
 			pullRequests[index].Mergeable = reviewMetadata.Mergeable
+			pullRequests[index].IsMergeQueueEnabled = reviewMetadata.IsMergeQueueEnabled
+			pullRequests[index].IsInMergeQueue = reviewMetadata.IsInMergeQueue
+			pullRequests[index].MergeQueueEntry = normalizePullRequestMergeQueueEntry(reviewMetadata.MergeQueueEntry)
 			if reviewMetadata.AutoMergeRequest != nil {
 				normalizedRequest := reviewMetadata.AutoMergeRequest.normalized()
 				pullRequests[index].AutoMergeRequest = &normalizedRequest
@@ -212,12 +229,15 @@ func uniquePullRequestIDs(pullRequests []PullRequest) []string {
 func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestListReviewMetadata, error) {
 	var response struct {
 		Nodes []*struct {
-			ID               string                       `json:"id"`
-			ReviewDecision   string                       `json:"reviewDecision"`
-			MergeStateStatus string                       `json:"mergeStateStatus"`
-			Mergeable        string                       `json:"mergeable"`
-			AutoMergeRequest *PullRequestAutoMergeRequest `json:"autoMergeRequest"`
-			ReviewRequests   struct {
+			ID                  string                       `json:"id"`
+			ReviewDecision      string                       `json:"reviewDecision"`
+			MergeStateStatus    string                       `json:"mergeStateStatus"`
+			Mergeable           string                       `json:"mergeable"`
+			AutoMergeRequest    *PullRequestAutoMergeRequest `json:"autoMergeRequest"`
+			IsMergeQueueEnabled bool                         `json:"isMergeQueueEnabled"`
+			IsInMergeQueue      bool                         `json:"isInMergeQueue"`
+			MergeQueueEntry     *PullRequestMergeQueueEntry  `json:"mergeQueueEntry"`
+			ReviewRequests      struct {
 				Nodes []PullRequestReviewRequest `json:"nodes"`
 			} `json:"reviewRequests"`
 			HeadRefStatusCheckRollup struct {
@@ -238,12 +258,15 @@ func parsePullRequestListReviewMetadata(stdout []byte) (map[string]pullRequestLi
 }
 
 func mapPullRequestListReviewMetadataResponse(nodes []*struct {
-	ID               string                       `json:"id"`
-	ReviewDecision   string                       `json:"reviewDecision"`
-	MergeStateStatus string                       `json:"mergeStateStatus"`
-	Mergeable        string                       `json:"mergeable"`
-	AutoMergeRequest *PullRequestAutoMergeRequest `json:"autoMergeRequest"`
-	ReviewRequests   struct {
+	ID                  string                       `json:"id"`
+	ReviewDecision      string                       `json:"reviewDecision"`
+	MergeStateStatus    string                       `json:"mergeStateStatus"`
+	Mergeable           string                       `json:"mergeable"`
+	AutoMergeRequest    *PullRequestAutoMergeRequest `json:"autoMergeRequest"`
+	IsMergeQueueEnabled bool                         `json:"isMergeQueueEnabled"`
+	IsInMergeQueue      bool                         `json:"isInMergeQueue"`
+	MergeQueueEntry     *PullRequestMergeQueueEntry  `json:"mergeQueueEntry"`
+	ReviewRequests      struct {
 		Nodes []PullRequestReviewRequest `json:"nodes"`
 	} `json:"reviewRequests"`
 	HeadRefStatusCheckRollup struct {
@@ -273,6 +296,9 @@ func mapPullRequestListReviewMetadataResponse(nodes []*struct {
 			ReviewDecision:         strings.TrimSpace(node.ReviewDecision),
 			MergeStateStatus:       strings.TrimSpace(node.MergeStateStatus),
 			Mergeable:              strings.TrimSpace(node.Mergeable),
+			IsMergeQueueEnabled:    node.IsMergeQueueEnabled,
+			IsInMergeQueue:         node.IsInMergeQueue,
+			MergeQueueEntry:        normalizePullRequestMergeQueueEntry(node.MergeQueueEntry),
 			StatusCheckRollupState: pullRequestListStatusCheckRollupState(node.HeadRefStatusCheckRollup.Nodes),
 		}
 		if node.AutoMergeRequest != nil {
@@ -350,6 +376,7 @@ func (pullRequest PullRequest) normalized() PullRequest {
 		normalizedRequest := pullRequest.AutoMergeRequest.normalized()
 		pullRequest.AutoMergeRequest = &normalizedRequest
 	}
+	pullRequest.MergeQueueEntry = normalizePullRequestMergeQueueEntry(pullRequest.MergeQueueEntry)
 	pullRequest.StatusCheckRollupState = strings.TrimSpace(pullRequest.StatusCheckRollupState)
 	if len(pullRequest.ReviewRequests) > 0 {
 		normalizedReviewRequests := make([]PullRequestReviewRequest, 0, len(pullRequest.ReviewRequests))

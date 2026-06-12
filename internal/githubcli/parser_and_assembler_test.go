@@ -32,6 +32,29 @@ func TestParsePullRequestListReviewMetadata_GivenFixture_WhenParsing_ThenItHydra
 	}
 }
 
+func TestParsePullRequestListReviewMetadata_GivenMergeQueueFields_WhenParsing_ThenItReturnsNormalizedQueueState(t *testing.T) {
+	subject := []byte(`{"data":{"nodes":[{"id":" PR_kwDOA ","isMergeQueueEnabled":true,"isInMergeQueue":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}]}}`)
+
+	actual, actualErr := parsePullRequestListReviewMetadata(subject)
+
+	then_noError(t, actualErr)
+	expected := map[string]pullRequestListReviewMetadata{
+		"PR_kwDOA": {
+			IsMergeQueueEnabled: true,
+			IsInMergeQueue:      true,
+			MergeQueueEntry: &PullRequestMergeQueueEntry{
+				ID:                   "MQE_1",
+				State:                "QUEUED",
+				Position:             2,
+				EstimatedTimeToMerge: 15,
+			},
+		},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected merge queue metadata %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestParsePullRequestDetailResponse_GivenFixture_WhenParsing_ThenItReturnsTheNormalizedDomainDetail(t *testing.T) {
 	fixture := given_pullRequestFixtureBytes(t, "detail.json")
 
@@ -90,6 +113,30 @@ func TestParsePullRequestDetailResponse_GivenFixture_WhenParsing_ThenItReturnsTh
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected detail %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestParsePullRequestDetailResponse_GivenMergeQueueFields_WhenParsing_ThenItReturnsNormalizedQueueState(t *testing.T) {
+	subject := []byte(`{"title":" Queue detail ","number":42,"state":" OPEN ","isMergeQueueEnabled":true,"isInMergeQueue":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":3,"estimatedTimeToMerge":11}}`)
+
+	actual, actualErr := parsePullRequestDetailResponse(subject)
+
+	then_noError(t, actualErr)
+	expected := PullRequestDetail{
+		Title:               "Queue detail",
+		Number:              42,
+		State:               "OPEN",
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry: &PullRequestMergeQueueEntry{
+			ID:                   "MQE_1",
+			State:                "QUEUED",
+			Position:             3,
+			EstimatedTimeToMerge: 11,
+		},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected merge queue detail %+v, actual %+v", expected, actual)
 	}
 }
 
@@ -390,6 +437,48 @@ func TestPullRequestDetailAssembler_GivenWorkflowLoaders_WhenAssembling_ThenItSt
 	}
 	if len(actual.InlineCommentThreads) != 1 || actual.InlineCommentThreads[0].ID != "thread-1" {
 		t.Fatalf("expected review threads to be stitched into the detail, actual %+v", actual.InlineCommentThreads)
+	}
+}
+
+func TestPullRequestDetailAssembler_GivenMergeQueueMetadata_WhenAssembling_ThenItStitchesTheQueueFields(t *testing.T) {
+	assembler := PullRequestDetailAssembler{
+		LoadBaseDetail: func(repository string, number int) (PullRequestDetail, error) {
+			return PullRequestDetail{Title: "Ship it", Number: 42}, nil
+		},
+		LoadMergeQueueMetadata: func(repository string, number int) (pullRequestMergeQueueMetadata, error) {
+			if repository != "acme/widgets" || number != 42 {
+				t.Fatalf("expected merge queue lookup for %s#%d", "acme/widgets", 42)
+			}
+			return pullRequestMergeQueueMetadata{
+				IsMergeQueueEnabled: true,
+				IsInMergeQueue:      true,
+				MergeQueueEntry: &PullRequestMergeQueueEntry{
+					ID:                   " MQE_1 ",
+					State:                " QUEUED ",
+					Position:             2,
+					EstimatedTimeToMerge: 15,
+				},
+			}, nil
+		},
+	}
+
+	actual, actualErr := assembler.Assemble("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	expected := PullRequestDetail{
+		Title:               "Ship it",
+		Number:              42,
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry: &PullRequestMergeQueueEntry{
+			ID:                   "MQE_1",
+			State:                "QUEUED",
+			Position:             2,
+			EstimatedTimeToMerge: 15,
+		},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected merged queue detail %+v, actual %+v", expected, actual)
 	}
 }
 

@@ -42,6 +42,9 @@ func ToDomainPullRequestSummary(pullRequest PullRequest) githubdomain.PullReques
 		MergeStateStatus:       pullRequest.MergeStateStatus,
 		Mergeable:              pullRequest.Mergeable,
 		AutoMergeRequest:       toDomainPullRequestAutoMergeRequest(pullRequest.AutoMergeRequest),
+		IsMergeQueueEnabled:    pullRequest.IsMergeQueueEnabled,
+		IsInMergeQueue:         pullRequest.IsInMergeQueue,
+		MergeQueueEntry:        toDomainPullRequestMergeQueueEntry(pullRequest.MergeQueueEntry),
 		StatusCheckRollupState: pullRequest.StatusCheckRollupState,
 	}
 }
@@ -62,6 +65,9 @@ func PullRequestSummaryFromDomain(pullRequest githubdomain.PullRequestSummary) P
 		MergeStateStatus:       pullRequest.MergeStateStatus,
 		Mergeable:              pullRequest.Mergeable,
 		AutoMergeRequest:       pullRequestAutoMergeRequestFromDomain(pullRequest.AutoMergeRequest),
+		IsMergeQueueEnabled:    pullRequest.IsMergeQueueEnabled,
+		IsInMergeQueue:         pullRequest.IsInMergeQueue,
+		MergeQueueEntry:        pullRequestMergeQueueEntryFromDomain(pullRequest.MergeQueueEntry),
 		StatusCheckRollupState: pullRequest.StatusCheckRollupState,
 	}
 }
@@ -87,6 +93,32 @@ func pullRequestAutoMergeRequestFromDomain(request *githubdomain.PullRequestAuto
 		return nil
 	}
 	actual := PullRequestAutoMergeRequest{EnabledAt: request.EnabledAt}
+	return &actual
+}
+
+func toDomainPullRequestMergeQueueEntry(entry *PullRequestMergeQueueEntry) *githubdomain.PullRequestMergeQueueEntry {
+	if entry == nil {
+		return nil
+	}
+	actual := githubdomain.PullRequestMergeQueueEntry{
+		ID:                   entry.ID,
+		State:                entry.State,
+		Position:             entry.Position,
+		EstimatedTimeToMerge: entry.EstimatedTimeToMerge,
+	}
+	return &actual
+}
+
+func pullRequestMergeQueueEntryFromDomain(entry *githubdomain.PullRequestMergeQueueEntry) *PullRequestMergeQueueEntry {
+	if entry == nil {
+		return nil
+	}
+	actual := PullRequestMergeQueueEntry{
+		ID:                   entry.ID,
+		State:                entry.State,
+		Position:             entry.Position,
+		EstimatedTimeToMerge: entry.EstimatedTimeToMerge,
+	}
 	return &actual
 }
 
@@ -151,6 +183,9 @@ func ToDomainPullRequestDetail(detail PullRequestDetail) githubdomain.PullReques
 		MergeStateStatus:     detail.MergeStateStatus,
 		Mergeable:            detail.Mergeable,
 		AutoMergeRequest:     toDomainPullRequestAutoMergeRequest(detail.AutoMergeRequest),
+		IsMergeQueueEnabled:  detail.IsMergeQueueEnabled,
+		IsInMergeQueue:       detail.IsInMergeQueue,
+		MergeQueueEntry:      toDomainPullRequestMergeQueueEntry(detail.MergeQueueEntry),
 		OutOfDateWithBase:    detail.OutOfDateWithBase,
 		ReactionGroups:       toDomainReactionGroups(detail.ReactionGroups),
 		Comments:             toDomainPullRequestComments(detail.Comments),
@@ -191,6 +226,9 @@ func PullRequestDetailFromDomain(detail githubdomain.PullRequestDetail) PullRequ
 		MergeStateStatus:     detail.MergeStateStatus,
 		Mergeable:            detail.Mergeable,
 		AutoMergeRequest:     pullRequestAutoMergeRequestFromDomain(detail.AutoMergeRequest),
+		IsMergeQueueEnabled:  detail.IsMergeQueueEnabled,
+		IsInMergeQueue:       detail.IsInMergeQueue,
+		MergeQueueEntry:      pullRequestMergeQueueEntryFromDomain(detail.MergeQueueEntry),
 		OutOfDateWithBase:    detail.OutOfDateWithBase,
 		ReactionGroups:       reactionGroupsFromDomain(detail.ReactionGroups),
 		Comments:             pullRequestCommentsFromDomain(detail.Comments),

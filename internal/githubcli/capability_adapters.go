@@ -262,6 +262,14 @@ func (adapter *PullRequestMutationAdapter) DisablePullRequestAutoMerge(repositor
 	return adapter.service.DisablePullRequestAutoMerge(repository, number)
 }
 
+func (adapter *PullRequestMutationAdapter) EnqueuePullRequest(pullRequestID string) error {
+	return adapter.service.EnqueuePullRequest(pullRequestID)
+}
+
+func (adapter *PullRequestMutationAdapter) DequeuePullRequest(pullRequestID string) error {
+	return adapter.service.DequeuePullRequest(pullRequestID)
+}
+
 func (adapter *PullRequestMutationAdapter) UpdatePullRequestBranch(repository string, number int) error {
 	return adapter.service.UpdatePullRequestBranch(repository, number)
 }

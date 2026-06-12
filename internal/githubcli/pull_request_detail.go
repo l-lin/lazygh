@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const pullRequestDetailJSONFields = "title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewDecision,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,autoMergeRequest,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
+const pullRequestDetailJSONFields = "id,title,number,url,body,author,state,isDraft,createdAt,updatedAt,labels,assignees,reviewDecision,reviewRequests,baseRefName,headRefName,mergeStateStatus,mergeable,autoMergeRequest,comments,commits,reviews,additions,deletions,changedFiles,statusCheckRollup"
 
 var (
 	ErrInvalidPullRequestDetailResponse           = fmt.Errorf("invalid pull request detail response")
@@ -36,6 +36,9 @@ type PullRequestDetail struct {
 	MergeStateStatus     string                       `json:"mergeStateStatus"`
 	Mergeable            string                       `json:"mergeable"`
 	AutoMergeRequest     *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	IsMergeQueueEnabled  bool                         `json:"isMergeQueueEnabled,omitempty"`
+	IsInMergeQueue       bool                         `json:"isInMergeQueue,omitempty"`
+	MergeQueueEntry      *PullRequestMergeQueueEntry  `json:"mergeQueueEntry,omitempty"`
 	OutOfDateWithBase    bool                         `json:"outOfDateWithBase,omitempty"`
 	ReactionGroups       []ReactionGroup              `json:"reactionGroups,omitempty"`
 	Comments             []PullRequestComment         `json:"comments"`
@@ -243,6 +246,7 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 		normalizedRequest := detail.AutoMergeRequest.normalized()
 		detail.AutoMergeRequest = &normalizedRequest
 	}
+	detail.MergeQueueEntry = normalizePullRequestMergeQueueEntry(detail.MergeQueueEntry)
 	if detail.Author != nil {
 		normalizedAuthor := detail.Author.normalized()
 		detail.Author = &normalizedAuthor

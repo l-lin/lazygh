@@ -2,6 +2,7 @@ package githubcli
 
 type PullRequestDetailAssembler struct {
 	LoadBaseDetail                  func(repository string, number int) (PullRequestDetail, error)
+	LoadMergeQueueMetadata          func(repository string, number int) (pullRequestMergeQueueMetadata, error)
 	LoadOutOfDateWithBase           func(repository string, detail PullRequestDetail) (bool, error)
 	HydrateBuildLinks               func(repository string, number int, checks []PullRequestStatusCheck) []PullRequestStatusCheck
 	ListInlineComments              func(repository string, number int) ([]PullRequestInlineComment, error)
@@ -14,6 +15,7 @@ func newPullRequestDetailAssembler(service *PullRequestDetailService) PullReques
 	builds := newBuildAssembler(service.serviceBase)
 	return PullRequestDetailAssembler{
 		LoadBaseDetail:                  service.loadPullRequestBaseDetail,
+		LoadMergeQueueMetadata:          service.loadPullRequestMergeQueueMetadata,
 		LoadOutOfDateWithBase:           service.pullRequestOutOfDateWithBase,
 		HydrateBuildLinks:               builds.HydrateStatusCheckLinks,
 		ListInlineComments:              service.listPullRequestInlineComments,
@@ -31,6 +33,13 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 	detail, err := assembler.LoadBaseDetail(repository, number)
 	if err != nil {
 		return PullRequestDetail{}, err
+	}
+	if assembler.LoadMergeQueueMetadata != nil {
+		mergeQueueMetadata, actualErr := assembler.LoadMergeQueueMetadata(repository, number)
+		if actualErr != nil {
+			return PullRequestDetail{}, actualErr
+		}
+		detail = applyPullRequestMergeQueueMetadata(detail, mergeQueueMetadata)
 	}
 	if assembler.LoadOutOfDateWithBase != nil {
 		outOfDateWithBase, actualErr := assembler.LoadOutOfDateWithBase(repository, detail)

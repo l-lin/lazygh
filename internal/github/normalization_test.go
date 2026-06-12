@@ -221,6 +221,27 @@ func TestPullRequestAutoMergeRequest_GivenWhitespaceEnabledAt_WhenNormalizing_Th
 	}
 }
 
+func TestPullRequestMergeQueueEntry_GivenWhitespaceFields_WhenNormalizing_ThenItTrimsStringsAndKeepsNumericData(t *testing.T) {
+	subject := PullRequestMergeQueueEntry{
+		ID:                   " MQE_1 ",
+		State:                " QUEUED ",
+		Position:             2,
+		EstimatedTimeToMerge: 17,
+	}
+
+	actual := subject.normalized()
+
+	expected := PullRequestMergeQueueEntry{
+		ID:                   "MQE_1",
+		State:                "QUEUED",
+		Position:             2,
+		EstimatedTimeToMerge: 17,
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected normalized merge queue entry %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestPullRequestURLHelpers_GivenRepositoryAndSubjectURLs_WhenNormalizing_ThenTheyReturnCanonicalValues(t *testing.T) {
 	actualPullRequestURL := PullRequestHTMLURL(" acme/widgets ", 42)
 	actualCanonicalURL := CanonicalPullRequestURL(" acme/widgets ", 77)

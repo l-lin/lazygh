@@ -11,7 +11,23 @@ import (
 func TestStore_GivenProviderNeutralModels_WhenSavingAndLoading_ThenTheRoundTripsStayLossless(t *testing.T) {
 	subject := given_cacheStore(t)
 	search := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
-	expectedPullRequests := []githubdomain.PullRequestSummary{{Title: "First PR", Number: 42, Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "First body", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}}
+	expectedPullRequests := []githubdomain.PullRequestSummary{{
+		Title:               "First PR",
+		Number:              42,
+		Repository:          githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"},
+		URL:                 "https://github.com/acme/widgets/pull/42",
+		Body:                "First body",
+		State:               "OPEN",
+		UpdatedAt:           "2026-05-05T10:00:00Z",
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry: &githubdomain.PullRequestMergeQueueEntry{
+			ID:                   "MQE_1",
+			State:                "QUEUED",
+			Position:             2,
+			EstimatedTimeToMerge: 17,
+		},
+	}}
 	expectedNotifications := []githubdomain.Notification{{
 		ID:         "1001",
 		Unread:     true,
@@ -20,8 +36,37 @@ func TestStore_GivenProviderNeutralModels_WhenSavingAndLoading_ThenTheRoundTrips
 		Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"},
 		Subject:    githubdomain.NotificationSubject{Title: "ship notifications", Type: githubdomain.NotificationSubjectTypePullRequest, URL: "https://api.github.com/repos/acme/widgets/pulls/42"},
 	}}
-	summary := githubdomain.PullRequestSummary{Title: "First PR", Number: 42, Repository: githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"}, UpdatedAt: "2026-05-05T10:00:00Z"}
-	expectedDetail := githubdomain.PullRequestDetail{Title: "First PR", Number: 42, Body: "Rich body", BaseRefName: "main", HeadRefName: "feature/cache", State: "OPEN", InlineCommentThreads: []githubdomain.ReviewThread{{ID: "thread-1", Path: "main.go", Line: 12, Comments: []githubdomain.PullRequestComment{{Body: "ship it"}}}}}
+	summary := githubdomain.PullRequestSummary{
+		Title:               "First PR",
+		Number:              42,
+		Repository:          githubdomain.RepositoryRef{NameWithOwner: "acme/widgets"},
+		UpdatedAt:           "2026-05-05T10:00:00Z",
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry: &githubdomain.PullRequestMergeQueueEntry{
+			ID:                   "MQE_1",
+			State:                "QUEUED",
+			Position:             2,
+			EstimatedTimeToMerge: 17,
+		},
+	}
+	expectedDetail := githubdomain.PullRequestDetail{
+		Title:               "First PR",
+		Number:              42,
+		Body:                "Rich body",
+		BaseRefName:         "main",
+		HeadRefName:         "feature/cache",
+		State:               "OPEN",
+		IsMergeQueueEnabled: true,
+		IsInMergeQueue:      true,
+		MergeQueueEntry: &githubdomain.PullRequestMergeQueueEntry{
+			ID:                   "MQE_1",
+			State:                "QUEUED",
+			Position:             2,
+			EstimatedTimeToMerge: 17,
+		},
+		InlineCommentThreads: []githubdomain.ReviewThread{{ID: "thread-1", Path: "main.go", Line: 12, Comments: []githubdomain.PullRequestComment{{Body: "ship it"}}}},
+	}
 	expectedDiff := githubdomain.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n+cached", Files: []githubdomain.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1}}, Threads: []githubdomain.ReviewThread{{ID: "thread-1", Path: "main.go", Line: 12, Comments: []githubdomain.PullRequestComment{{Body: "ship it"}}}}}
 
 	then_noError(t, subject.SavePullRequests(search, expectedPullRequests))

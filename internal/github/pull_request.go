@@ -35,6 +35,9 @@ type PullRequestSummary struct {
 	MergeStateStatus       string                       `json:"mergeStateStatus"`
 	Mergeable              string                       `json:"mergeable"`
 	AutoMergeRequest       *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	IsMergeQueueEnabled    bool                         `json:"isMergeQueueEnabled,omitempty"`
+	IsInMergeQueue         bool                         `json:"isInMergeQueue,omitempty"`
+	MergeQueueEntry        *PullRequestMergeQueueEntry  `json:"mergeQueueEntry,omitempty"`
 	StatusCheckRollupState string                       `json:"statusCheckRollupState"`
 }
 

@@ -23,6 +23,9 @@ type PullRequestDetail struct {
 	MergeStateStatus     string                       `json:"mergeStateStatus"`
 	Mergeable            string                       `json:"mergeable"`
 	AutoMergeRequest     *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	IsMergeQueueEnabled  bool                         `json:"isMergeQueueEnabled,omitempty"`
+	IsInMergeQueue       bool                         `json:"isInMergeQueue,omitempty"`
+	MergeQueueEntry      *PullRequestMergeQueueEntry  `json:"mergeQueueEntry,omitempty"`
 	OutOfDateWithBase    bool                         `json:"outOfDateWithBase,omitempty"`
 	ReactionGroups       []ReactionGroup              `json:"reactionGroups,omitempty"`
 	Comments             []PullRequestComment         `json:"comments"`
