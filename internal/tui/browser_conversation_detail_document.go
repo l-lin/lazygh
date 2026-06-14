@@ -2,6 +2,12 @@ package tui
 
 import "strings"
 
+var (
+	browserConversationLocationLinePrefixRune     = firstRuneOrZero(detailInlineCommentLocationIcon)
+	browserConversationExpandedChevronPrefixRune  = firstRuneOrZero(browserDetailExpandedChevron)
+	browserConversationCollapsedChevronPrefixRune = firstRuneOrZero(browserDetailCollapsedChevron)
+)
+
 func newBrowserConversationDetailDocument(text string, width int, wordWrapEnabled bool) detailDocument {
 	styledLines := splitStyledTextLines(text)
 	lines := make([]detailDocumentLine, 0, len(styledLines))
@@ -16,7 +22,29 @@ func browserConversationDetailDocumentLine(styledLine styledTextLine) detailDocu
 		prefix, body := splitStyledTextLine(styledLine, splitColumn)
 		return detailDocumentLine{prefix: prefix, body: body}
 	}
+	if browserConversationLineUsesDetailWordWrap(styledLine) {
+		return detailDocumentLine{body: cloneStyledTextLine(styledLine)}
+	}
 	return detailDocumentLine{body: cloneStyledTextLine(styledLine), preserveSingleRow: true}
+}
+
+func browserConversationLineUsesDetailWordWrap(line styledTextLine) bool {
+	if len(line.runes) < 2 || line.runes[1] != ' ' {
+		return false
+	}
+	switch line.runes[0] {
+	case browserConversationLocationLinePrefixRune, browserConversationExpandedChevronPrefixRune, browserConversationCollapsedChevronPrefixRune:
+		return true
+	default:
+		return false
+	}
+}
+
+func firstRuneOrZero(value string) rune {
+	for _, character := range value {
+		return character
+	}
+	return 0
 }
 
 func browserConversationDiffPreviewBodyStartColumn(line styledTextLine) int {

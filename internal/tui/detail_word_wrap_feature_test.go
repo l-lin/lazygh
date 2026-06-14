@@ -280,6 +280,144 @@ func TestLayout_GivenCommentsTabWithALongInlineCommentDiffAndDisabledWordWrap_Wh
 	}
 }
 
+func TestLayout_GivenCommentsTabWithALongInlineCommentLocationAndEnabledWordWrap_WhenBuildingViewZeroDocument_ThenItWrapsTheLocationAcrossVisibleLines(t *testing.T) {
+	longPath := strings.Repeat("comments/very-long-segment/", 4) + "location.go"
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				BaseRefName: "main",
+				HeadRefName: "feature/comments-location-wrap",
+				State:       "OPEN",
+				InlineComments: []githubcli.PullRequestInlineComment{{
+					Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:         "Inline body",
+					CreatedAt:    "2026-05-05T10:00:00Z",
+					Path:         longPath,
+					Line:         43,
+					OriginalLine: 43,
+					Side:         "RIGHT",
+					DiffHunk:     "@@ -43,1 +43,1 @@\n-old line\n+new line",
+				}},
+			},
+		},
+	})
+	gui := given_headlessGuiWithSize(t, 60, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, longPath+":43")
+
+	if actual := reviewDiffDocumentRowCountForLine(document, lineIndex); actual < 2 {
+		t.Fatalf("expected the comments-tab location line to wrap across multiple rendered rows, actual %d for %q", actual, actualLine)
+	}
+}
+
+func TestLayout_GivenCommentsTabWithALongInlineCommentLocationAndDisabledWordWrap_WhenBuildingViewZeroDocument_ThenItKeepsTheLocationOnOneRenderedRow(t *testing.T) {
+	longPath := strings.Repeat("comments/no-wrap-segment/", 4) + "location.go"
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				BaseRefName: "main",
+				HeadRefName: "feature/comments-location-nowrap",
+				State:       "OPEN",
+				InlineComments: []githubcli.PullRequestInlineComment{{
+					Author:       &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:         "Inline body",
+					CreatedAt:    "2026-05-05T10:00:00Z",
+					Path:         longPath,
+					Line:         43,
+					OriginalLine: 43,
+					Side:         "RIGHT",
+					DiffHunk:     "@@ -43,1 +43,1 @@\n-old line\n+new line",
+				}},
+			},
+		},
+	})
+	gui := given_headlessGuiWithSize(t, 60, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.FocusDetailView()
+	Update(subject, MsgToggleDetailWordWrapRequested{})
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, longPath+":43")
+
+	if actual := reviewDiffDocumentRowCountForLine(document, lineIndex); actual != 1 {
+		t.Fatalf("expected the comments-tab location line to stay on one rendered row with word wrap disabled, actual %d for %q", actual, actualLine)
+	}
+}
+
+func TestLayout_GivenCommentsTabWithALongInlineThreadHeaderAndEnabledWordWrap_WhenBuildingViewZeroDocument_ThenItWrapsTheHeaderAcrossVisibleLines(t *testing.T) {
+	longPath := strings.Repeat("comments/thread-wrap-segment/", 4) + "header.go"
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				BaseRefName: "main",
+				HeadRefName: "feature/comments-thread-wrap",
+				State:       "OPEN",
+				InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+					ID:       "thread-1",
+					Path:     longPath,
+					Line:     43,
+					DiffSide: "RIGHT",
+					Comments: []githubcli.PullRequestComment{{
+						Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+						Body:      "Thread body",
+						CreatedAt: "2026-05-05T10:00:00Z",
+						DiffHunk:  "@@ -43,1 +43,1 @@\n-old line\n+new line",
+					}},
+				}},
+			},
+		},
+	})
+	gui := given_headlessGuiWithSize(t, 60, 30)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	lineIndex, actualLine := given_detailDocumentLineContaining(t, document, longPath+":43")
+
+	if actual := reviewDiffDocumentRowCountForLine(document, lineIndex); actual < 2 {
+		t.Fatalf("expected the comments-tab inline thread header to wrap across multiple rendered rows, actual %d for %q", actual, actualLine)
+	}
+}
+
 func TestReviewMode_GivenAnInlineThreadWithALongMarkdownCommentAndDisabledWordWrap_WhenBuildingViewZeroDocument_ThenItKeepsTheThreadBodyOnOneVisibleLine(t *testing.T) {
 	threadBody := strings.Repeat("nowrapthreadbody ", 18)
 	loader := &fakePullRequestDetailLoader{
