@@ -8,9 +8,11 @@ import (
 var detailDocumentSequence atomic.Uint64
 
 type detailDocumentLine struct {
-	prefix            styledTextLine
-	body              styledTextLine
-	preserveSingleRow bool
+	prefix                 styledTextLine
+	body                   styledTextLine
+	preserveSingleRow      bool
+	owningHeaderLine       int
+	hasOwningHeaderContext bool
 }
 
 func newDetailDocument(text string, width int) detailDocument {
@@ -75,20 +77,25 @@ func newDetailDocumentFromLines(lines []detailDocumentLine, width int, wrap bool
 			document.images = append(document.images, detailImagePlacement{line: lineIndex, column: control.column, imageID: control.image.imageID, columns: control.image.columns, rows: control.image.rows})
 		}
 
+		owningHeaderLine := -1
+		if line.hasOwningHeaderContext {
+			owningHeaderLine = line.owningHeaderLine
+		}
 		if len(lineRunes) == 0 {
-			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: 0, empty: true})
+			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: 0, empty: true, owningHeaderLine: owningHeaderLine})
 			rowIndex++
 		} else if !lineWrapEnabled {
-			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: len(lineRunes) - 1, text: string(lineRunes)})
+			document.rows = append(document.rows, detailWrappedRow{line: lineIndex, startColumn: 0, endColumn: len(lineRunes) - 1, text: string(lineRunes), owningHeaderLine: owningHeaderLine})
 			rowIndex++
 		} else {
 			for startColumn := 0; startColumn < len(lineRunes); startColumn += lineWrapWidth {
 				endColumnExclusive := minInt(startColumn+lineWrapWidth, len(lineRunes))
 				document.rows = append(document.rows, detailWrappedRow{
-					line:        lineIndex,
-					startColumn: startColumn,
-					endColumn:   endColumnExclusive - 1,
-					text:        string(lineRunes[startColumn:endColumnExclusive]),
+					line:             lineIndex,
+					startColumn:      startColumn,
+					endColumn:        endColumnExclusive - 1,
+					text:             string(lineRunes[startColumn:endColumnExclusive]),
+					owningHeaderLine: owningHeaderLine,
 				})
 				rowIndex++
 			}
@@ -317,4 +324,16 @@ func (document detailDocument) moveToTop() detailPosition {
 
 func (document detailDocument) moveToBottom() detailPosition {
 	return document.positionForRow(document.rowCount()-1, 0)
+}
+
+func (document detailDocument) rowRangeForLine(line int) (int, int, bool) {
+	if line < 0 || line >= len(document.lineStartRows) {
+		return 0, 0, false
+	}
+
+	startRow := document.lineStartRows[line]
+	if line+1 < len(document.lineStartRows) {
+		return startRow, document.lineStartRows[line+1], true
+	}
+	return startRow, len(document.rows), true
 }

@@ -345,6 +345,59 @@ func TestLayout_GivenPullRequestChanges_WhenRendering_ThenTheBrowserChangesTabLo
 	}
 }
 
+func TestBrowserMode_GivenPullRequestChangesScrolledIntoAFile_WhenRendering_ThenItPinsTheFileHeaderAtTheTop(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{StickyFileHeaderBackgroundHex: "#223249"})
+
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "First PR",
+				Number:      42,
+				Body:        "Body 42",
+				BaseRefName: "main",
+				HeadRefName: "feature/changes",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 12)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, subject.openDetail(gui, nil))
+	then_noError(t, subject.nextDetailTab(gui, nil))
+	then_noError(t, subject.nextDetailTab(gui, nil))
+	then_noError(t, subject.nextDetailTab(gui, nil))
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	document := subject.currentDetailDocument(detailView)
+	bodyLineIndex, _ := given_detailDocumentLineContaining(t, document, "+new line")
+	bodyRowIndex := document.lineStartRows[bodyLineIndex]
+	subject.detailState.viewState.originRow = bodyRowIndex
+	subject.detailState.viewState.cursor = document.positionForRow(bodyRowIndex, 0)
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.manualViewportScroll = true
+
+	then_noError(t, subject.refreshDetailView(gui))
+
+	actualLines := detailView.BufferLines()
+	if len(actualLines) < 2 {
+		t.Fatalf("expected sticky header plus body rows, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(actualLines[0], "internal/tui/render.go") {
+		t.Fatalf("expected the sticky file header at the top, actual %q", actualLines[0])
+	}
+	if len(actualLines) < 2 || !strings.Contains(strings.Join(actualLines[1:], "\n"), "+new line") {
+		t.Fatalf("expected the diff body below the sticky header, actual %q", detailView.Buffer())
+	}
+	then_viewLineHasBackgroundColor(t, gui, viewDetailName, 0, given_themeColorHex(t, theme.StickyFileHeaderBackgroundHex), "sticky file header background")
+}
+
 func TestBrowserMode_GivenAChangesTabFileHeader_WhenPressingEnterAndZA_ThenItTogglesTheFileVisibility(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{

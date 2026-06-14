@@ -29,16 +29,18 @@ func buildPullRequestChangesRenderedRowsForViewerWithWordWrap(files []reviewDiff
 		if index > 0 {
 			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: ""})
 		}
-		rows = append(rows, reviewDiffFileHeaderRows(file, renderFoldableReviewDiffFileHeader(file, collapsed))...)
+		owningHeaderLine := len(rows)
+		headerRows := reviewDiffRowsWithOwningHeaderLine(reviewDiffFileHeaderRows(file, renderFoldableReviewDiffFileHeader(file, collapsed)), owningHeaderLine)
+		rows = append(rows, headerRows...)
 		if collapsed {
 			continue
 		}
-		contentRows := reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewerAndWordWrap(file, renderer, width, wordWrapEnabled, collapsedThreadIDs, connectedUserLogin), filePath)
+		contentRows := reviewDiffRowsWithOwningHeaderLine(reviewDiffRowsWithFilePath(buildReviewDiffFileContentRowsForViewerAndWordWrap(file, renderer, width, wordWrapEnabled, collapsedThreadIDs, connectedUserLogin), filePath), owningHeaderLine)
 		if len(contentRows) == 0 {
 			continue
 		}
-		if reviewDiffHeaderRowsNeedContentSpacer(rows) {
-			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath})
+		if reviewDiffHeaderRowsNeedContentSpacer(headerRows) {
+			rows = append(rows, reviewDiffRenderedRow{Kind: reviewDiffRenderedRowKindSpacer, Text: "", FilePath: filePath, OwningHeaderLine: owningHeaderLine})
 		}
 		rows = append(rows, contentRows...)
 	}

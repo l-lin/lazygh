@@ -37,6 +37,8 @@ const (
 	lightDefaultFailureBackgroundHex           = "#FFE2E5"
 	lightDefaultPendingHex                     = "#656D76"
 	lightDefaultPendingBackgroundHex           = "#E6E6E6"
+	lightDefaultStickyFileHeaderBackgroundHex  = "#E6E6E6"
+	darkDefaultStickyFileHeaderBackgroundHex   = "#30363D"
 	lightDefaultMutedHex                       = "#636363"
 	lightDefaultWarningHex                     = "#9A6700"
 )
@@ -194,6 +196,36 @@ func TestResolvePalette_GivenSpecificStatusOverrides_WhenResolving_ThenTheyWinOv
 	}
 	if actual.DiffAdditionBackgroundHex != "#CFE1C8" {
 		t.Fatalf("expected addition background %q, actual %q", "#CFE1C8", actual.DiffAdditionBackgroundHex)
+	}
+}
+
+func TestResolvePalette_GivenStickyFileHeaderBackgroundUnset_WhenResolving_ThenItInheritsThePendingBackground(t *testing.T) {
+	actual := ResolvePalette(Palette{PendingBackgroundHex: "#E6E3D8"})
+
+	expected := "#E6E3D8"
+	if actual.StickyFileHeaderBackgroundHex != expected {
+		t.Fatalf("expected sticky file header background %q, actual %q", expected, actual.StickyFileHeaderBackgroundHex)
+	}
+}
+
+func TestResolvePaletteWithPreset_GivenStickyFileHeaderBackgroundUnset_WhenResolving_ThenItInheritsThePresetPendingBackground(t *testing.T) {
+	actual := ResolvePaletteWithPreset("kanagawa-dark", Palette{})
+
+	expected := actual.PendingBackgroundHex
+	if actual.StickyFileHeaderBackgroundHex != expected {
+		t.Fatalf("expected sticky file header background %q, actual %q", expected, actual.StickyFileHeaderBackgroundHex)
+	}
+}
+
+func TestResolvePalette_GivenStickyFileHeaderBackgroundOverride_WhenResolving_ThenItWinsOverTheInheritedPendingBackground(t *testing.T) {
+	actual := ResolvePalette(Palette{
+		PendingBackgroundHex:          "#E6E3D8",
+		StickyFileHeaderBackgroundHex: "#223249",
+	})
+
+	expected := "#223249"
+	if actual.StickyFileHeaderBackgroundHex != expected {
+		t.Fatalf("expected sticky file header background %q, actual %q", expected, actual.StickyFileHeaderBackgroundHex)
 	}
 }
 
@@ -424,6 +456,9 @@ func then_paletteUsesDarkDefaults(t *testing.T, actual Palette) {
 	if actual.DiffAdditionBackgroundHex != darkDefaultDiffAdditionBackgroundHex {
 		t.Fatalf("expected diff addition background %q, actual %q", darkDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)
 	}
+	if actual.StickyFileHeaderBackgroundHex != darkDefaultStickyFileHeaderBackgroundHex {
+		t.Fatalf("expected sticky file header background %q, actual %q", darkDefaultStickyFileHeaderBackgroundHex, actual.StickyFileHeaderBackgroundHex)
+	}
 }
 
 func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
@@ -458,5 +493,8 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.SuccessBackgroundHex != lightDefaultSuccessBackgroundHex || actual.FailureBackgroundHex != lightDefaultFailureBackgroundHex || actual.PendingBackgroundHex != lightDefaultPendingBackgroundHex {
 		t.Fatalf("expected generic status backgrounds success=%q failure=%q pending=%q, actual success=%q failure=%q pending=%q", lightDefaultSuccessBackgroundHex, lightDefaultFailureBackgroundHex, lightDefaultPendingBackgroundHex, actual.SuccessBackgroundHex, actual.FailureBackgroundHex, actual.PendingBackgroundHex)
+	}
+	if actual.StickyFileHeaderBackgroundHex != lightDefaultStickyFileHeaderBackgroundHex {
+		t.Fatalf("expected sticky file header background %q, actual %q", lightDefaultStickyFileHeaderBackgroundHex, actual.StickyFileHeaderBackgroundHex)
 	}
 }

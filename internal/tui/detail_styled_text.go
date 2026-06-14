@@ -277,7 +277,7 @@ func renderStyledTextLineWithWidth(line styledTextLine, width int) string {
 }
 
 func styledTextLinePaddingPrefix(line styledTextLine, width int) string {
-	if paddingPrefix := markdownFullWidthLinePaddingPrefix(width, line.stylePrefixes, 0, len(line.runes)-1); paddingPrefix != "" {
+	if paddingPrefix := markdownFullWidthLinePaddingPrefix(width, line.stylePrefixes, 0, len(line.runes)-1, ""); paddingPrefix != "" {
 		return paddingPrefix
 	}
 	if styledLineUsesCommentBoxCodeBlockBackground(line) {
@@ -338,9 +338,12 @@ func renderStyledTextLine(line styledTextLine) string {
 	return builder.String()
 }
 
-func markdownFullWidthLinePaddingPrefix(width int, prefixes []string, startColumn int, endColumn int) string {
+func markdownFullWidthLinePaddingPrefix(width int, prefixes []string, startColumn int, endColumn int, backgroundOverrideHex string) string {
 	if width <= 0 || endColumn < startColumn || (endColumn-startColumn+1) >= width {
 		return ""
+	}
+	if backgroundOverrideHex != "" {
+		return backgroundColorEscape(backgroundOverrideHex)
 	}
 
 	for _, backgroundHex := range []string{theme.MarkdownHeadingBackgroundHex, theme.SelectedLineBackgroundHex} {

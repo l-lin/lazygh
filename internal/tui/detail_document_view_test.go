@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+	githubcli "github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestRefreshViews_GivenAScrolledDetailDocument_WhenRefreshing_ThenTheDetailBufferContainsOnlyVisibleRows(t *testing.T) {
@@ -133,6 +135,120 @@ func TestRenderVisibleDetailDocumentView_GivenAWrappedDiffContinuationRow_WhenRe
 	}
 }
 
+func TestRenderVisibleDetailDocumentView_GivenScrolledBrowserDiff_WhenRendering_ThenItPinsTheOwningFileHeader(t *testing.T) {
+	actualView := given_detailRenderTestView(t)
+	document := given_browserChangesStickyTestDocument(t, 48)
+	bodyRowIndex := given_browserChangesStickyTestRowIndexContaining(t, document, "+new line")
+
+	subject := newDetailViewState()
+	subject.originRow = bodyRowIndex
+	subject.cursor = document.positionForRow(bodyRowIndex, 0)
+	subject.manualViewportScroll = true
+
+	renderVisibleDetailDocumentView(actualView, document, subject)
+
+	actualLines := given_detailBufferLines(actualView)
+	if len(actualLines) < 2 {
+		t.Fatalf("expected pinned header plus body rows, actual %q", actualView.Buffer())
+	}
+	if !strings.Contains(actualLines[0], "internal/tui/render.go") {
+		t.Fatalf("expected the sticky header on the first visible line, actual %q", actualLines[0])
+	}
+	if !strings.Contains(actualLines[1], "+new line") {
+		t.Fatalf("expected the diff body to stay below the sticky header, actual %q", actualLines[1])
+	}
+}
+
+func TestRenderVisibleDetailDocumentView_GivenWrappedFileHeaderStillVisible_WhenRendering_ThenItShowsNoStickyHeader(t *testing.T) {
+	actualView := given_detailRenderTestView(t)
+	document := given_browserChangesStickyLongHeaderDocument(t, 24)
+	headerLineIndex, _ := given_detailDocumentLineContaining(t, document, "sticky-file-header-context")
+	headerContinuationRowIndex := document.lineStartRows[headerLineIndex] + 1
+	if headerContinuationRowIndex >= document.rowCount() {
+		t.Fatalf("expected a wrapped header continuation row for %q", document.text)
+	}
+
+	subject := newDetailViewState()
+	subject.originRow = headerContinuationRowIndex
+	subject.cursor = document.positionForRow(headerContinuationRowIndex, 0)
+	subject.manualViewportScroll = true
+
+	renderVisibleDetailDocumentView(actualView, document, subject)
+
+	actualLines := given_detailBufferLines(actualView)
+	if len(actualLines) == 0 {
+		t.Fatal("expected visible rows")
+	}
+	if strings.Contains(actualLines[0], "") {
+		t.Fatalf("expected the visible wrapped header continuation instead of a duplicated sticky header, actual %q", actualLines[0])
+	}
+}
+
+func TestRenderVisibleDetailDocumentView_GivenAnInterFileSpacerAtTheTop_WhenRendering_ThenItShowsNoStickyHeader(t *testing.T) {
+	actualView := given_detailRenderTestView(t)
+	document := given_browserChangesStickyTestDocument(t, 48)
+	spacerRowIndex := given_browserChangesStickyTestSpacerRowIndex(t, document)
+
+	subject := newDetailViewState()
+	subject.originRow = spacerRowIndex
+	subject.cursor = document.positionForRow(spacerRowIndex, 0)
+	subject.manualViewportScroll = true
+
+	renderVisibleDetailDocumentView(actualView, document, subject)
+
+	actualLines := given_detailBufferLines(actualView)
+	if len(actualLines) == 0 {
+		t.Fatal("expected visible rows")
+	}
+	if strings.Contains(actualLines[0], "internal/tui/render.go") {
+		t.Fatalf("expected no sticky header on the inter-file spacer, actual %q", actualLines[0])
+	}
+}
+
+func TestRenderVisibleDetailDocumentView_GivenScrolledInlineThread_WhenRendering_ThenItPinsTheOwningFileHeader(t *testing.T) {
+	actualView := given_detailRenderTestView(t)
+	document := given_browserChangesStickyThreadDocument(t, 48)
+	threadRowIndex := given_browserChangesStickyTestRowIndexContaining(t, document, "Needs follow-up")
+
+	subject := newDetailViewState()
+	subject.originRow = threadRowIndex
+	subject.cursor = document.positionForRow(threadRowIndex, 0)
+	subject.manualViewportScroll = true
+
+	renderVisibleDetailDocumentView(actualView, document, subject)
+
+	actualLines := given_detailBufferLines(actualView)
+	if len(actualLines) == 0 {
+		t.Fatal("expected visible rows")
+	}
+	if !strings.Contains(actualLines[0], "widget.go") {
+		t.Fatalf("expected the sticky header to stay pinned above inline thread rows, actual %q", actualLines[0])
+	}
+}
+
+func TestRenderVisibleDetailDocumentView_GivenScrolledBrowserDiff_WhenRendering_ThenItFillsThePinnedHeaderLineBackground(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{StickyFileHeaderBackgroundHex: "#223249"})
+
+	gui := given_headlessGuiWithSize(t, 80, 12)
+	defer gui.Close()
+	actualView, actualErr := gui.SetView(viewDetailName, 0, 0, 39, 6, 0)
+	if actualErr != nil && !isUnknownViewError(actualErr) {
+		then_noError(t, actualErr)
+	}
+	document := given_browserChangesStickyTestDocument(t, actualView.InnerWidth())
+	bodyRowIndex := given_browserChangesStickyTestRowIndexContaining(t, document, "+new line")
+
+	subject := newDetailViewState()
+	subject.originRow = bodyRowIndex
+	subject.cursor = document.positionForRow(bodyRowIndex, 0)
+	subject.manualViewportScroll = true
+
+	renderVisibleDetailDocumentView(actualView, document, subject)
+
+	then_viewLineHasBackgroundColor(t, gui, viewDetailName, 0, given_themeColorHex(t, theme.StickyFileHeaderBackgroundHex), "sticky file header background")
+}
+
 func given_numberedDetailBody(lineCount int) string {
 	lines := make([]string, 0, lineCount)
 	for lineNumber := range lineCount {
@@ -179,4 +295,72 @@ func given_withoutANSIEscapeSequences(text string) string {
 		}
 	}
 	return builder.String()
+}
+
+func given_browserChangesStickyTestDocument(t *testing.T, width int) detailDocument {
+	t.Helper()
+
+	renderedRows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(buildReviewDiffData(given_reviewSessionPullRequestDiff()).Files, nil, width, true, nil, nil, "")
+	return newBrowserChangesDetailDocumentWithWordWrap(renderedRows, width, true)
+}
+
+func given_browserChangesStickyLongHeaderDocument(t *testing.T, width int) detailDocument {
+	t.Helper()
+
+	given_file := reviewDiffFile{
+		Path:       "internal/tui/sticky-file-header-context/very/long/path/that-wraps.go",
+		Additions:  1,
+		Deletions:  0,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -1,0 +1,1 @@",
+			Lines:  []reviewDiffLine{{Kind: reviewDiffAdditionLine, Text: "wrapped body", RightLine: 1, Side: reviewDiffLineSideRight}},
+		}},
+	}
+	renderedRows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap([]reviewDiffFile{given_file}, nil, width, true, nil, nil, "")
+	return newBrowserChangesDetailDocumentWithWordWrap(renderedRows, width, true)
+}
+
+func given_browserChangesStickyThreadDocument(t *testing.T, width int) detailDocument {
+	t.Helper()
+
+	given_diff := githubcli.PullRequestDiff{
+		UnifiedDiff: "diff --git a/widget.go b/widget.go\nindex 0000000..1111111 100644\n--- a/widget.go\n+++ b/widget.go\n@@ -0,0 +1 @@\n+added line\n",
+		Files:       []githubcli.PullRequestDiffFile{{Path: "widget.go", ChangeType: "added", Additions: 1}},
+		Threads: []githubcli.PullRequestReviewThread{{
+			ID:       "thread-1",
+			Path:     "widget.go",
+			Line:     1,
+			DiffSide: "RIGHT",
+			Comments: []githubcli.PullRequestComment{{
+				Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+				Body:      "Needs follow-up",
+				CreatedAt: "2026-05-31T09:00:00Z",
+			}},
+		}},
+	}
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{"Needs follow-up": "Needs follow-up"}}
+	renderedRows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(buildReviewDiffData(given_diff).Files, renderer, width, true, nil, nil, "")
+	return newBrowserChangesDetailDocumentWithWordWrap(renderedRows, width, true)
+}
+
+func given_browserChangesStickyTestRowIndexContaining(t *testing.T, document detailDocument, segment string) int {
+	t.Helper()
+
+	lineIndex, _ := given_detailDocumentLineContaining(t, document, segment)
+	return document.lineStartRows[lineIndex]
+}
+
+func given_browserChangesStickyTestSpacerRowIndex(t *testing.T, document detailDocument) int {
+	t.Helper()
+
+	for rowIndex, row := range document.rows {
+		if row.owningHeaderLine >= 0 || !row.empty {
+			continue
+		}
+		return rowIndex
+	}
+
+	t.Fatalf("expected an inter-file spacer row in %q", document.text)
+	return -1
 }

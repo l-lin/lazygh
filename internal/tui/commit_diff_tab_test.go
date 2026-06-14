@@ -7,6 +7,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 	"github.com/l-lin/lazygh/internal/githubcli"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func TestBrowserMode_GivenCommitChangesRequest_WhenOpening_ThenItShowsTheCommitDiffTabWithTheShortSHALabel(t *testing.T) {
@@ -159,6 +160,41 @@ func TestBrowserMode_GivenACommitDiffTab_WhenPressingEnterAndZA_ThenItTogglesThe
 		}
 	}
 	then_reviewModeDetailCursorLineContains(t, gui, subject, "internal/tui/render.go")
+}
+
+func TestBrowserMode_GivenCommitDiffScrolledIntoAFile_WhenRendering_ThenItPinsTheFileHeaderAtTheTop(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{StickyFileHeaderBackgroundHex: "#223249"})
+
+	loader := given_commitDiffTabLoader()
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGuiWithSize(t, 120, 12)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	detailView := given_commitDiffTabOnCommitHeader(t, gui, subject, "● 2222222 newer commit")
+	then_noError(t, subject.displayCommitChangesShortcut(gui, detailView))
+	document := subject.currentDetailDocument(detailView)
+	bodyLineIndex, _ := given_detailDocumentLineContaining(t, document, "+new line")
+	bodyRowIndex := document.lineStartRows[bodyLineIndex]
+	subject.detailState.viewState.originRow = bodyRowIndex
+	subject.detailState.viewState.cursor = document.positionForRow(bodyRowIndex, 0)
+	subject.detailState.viewState.preferredColumn = 0
+	subject.detailState.viewState.manualViewportScroll = true
+
+	then_noError(t, subject.refreshDetailView(gui))
+
+	actualLines := detailView.BufferLines()
+	if len(actualLines) < 2 {
+		t.Fatalf("expected sticky header plus body rows, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(actualLines[0], "internal/tui/render.go") {
+		t.Fatalf("expected the sticky file header at the top, actual %q", actualLines[0])
+	}
+	if len(actualLines) < 2 || !strings.Contains(strings.Join(actualLines[1:], "\n"), "+new line") {
+		t.Fatalf("expected the diff body below the sticky header, actual %q", detailView.Buffer())
+	}
+	then_viewLineHasBackgroundColor(t, gui, viewDetailName, 0, given_themeColorHex(t, theme.StickyFileHeaderBackgroundHex), "sticky file header background")
 }
 
 func TestBrowserMode_GivenCommitDiffTabFiles_WhenPressingZMAndZR_ThenItClosesAndOpensEveryFileWhileKeepingTheCursorOnTheSameFileHeader(t *testing.T) {

@@ -1,5 +1,7 @@
 package tui
 
+import "strings"
+
 func newReviewDiffDetailDocument(rows []reviewDiffRenderedRow, width int) detailDocument {
 	return newReviewDiffDetailDocumentWithWordWrap(rows, width, false)
 }
@@ -8,6 +10,19 @@ func newReviewDiffDetailDocumentWithWordWrap(rows []reviewDiffRenderedRow, width
 	lines := make([]detailDocumentLine, 0, len(rows))
 	for _, row := range rows {
 		lines = append(lines, reviewDiffDetailDocumentLine(row))
+	}
+	return newDetailDocumentFromLines(lines, width, wordWrapEnabled)
+}
+
+func newBrowserChangesDetailDocumentWithWordWrap(rows []reviewDiffRenderedRow, width int, wordWrapEnabled bool) detailDocument {
+	lines := make([]detailDocumentLine, 0, len(rows))
+	for _, row := range rows {
+		line := reviewDiffDetailDocumentLine(row)
+		if row.OwningHeaderLine >= 0 && strings.TrimSpace(row.FilePath) != "" {
+			line.owningHeaderLine = row.OwningHeaderLine
+			line.hasOwningHeaderContext = true
+		}
+		lines = append(lines, line)
 	}
 	return newDetailDocumentFromLines(lines, width, wordWrapEnabled)
 }

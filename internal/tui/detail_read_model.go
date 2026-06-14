@@ -135,10 +135,10 @@ func (model detailReadModel) document() detailDocument {
 		return newBrowserConversationDetailDocument(model.content(), model.width, model.wordWrapEnabled)
 	}
 	if model.activeTab == ChangesDetailTab && model.pullRequestSummaryKnown && model.pullRequestDetailResultKnown && model.pullRequestDetailResult.err == nil && model.pullRequestDiffResultKnown && model.pullRequestDiffResult.err == nil && model.pullRequestChangesKnown {
-		return newReviewDiffDetailDocumentWithWordWrap(model.pullRequestChangesRenderedRows, model.width, model.wordWrapEnabled)
+		return newBrowserChangesDetailDocumentWithWordWrap(model.pullRequestChangesRenderedRows, model.width, model.wordWrapEnabled)
 	}
 	if model.activeTab == CommitChangesDetailTab && model.pullRequestSummaryKnown && model.pullRequestDetailResultKnown && model.pullRequestDetailResult.err == nil && model.commitDiffResultKnown && model.commitDiffResult.err == nil && model.commitDiffKnown {
-		return newReviewDiffDetailDocumentWithWordWrap(model.commitDiffRenderedRows, model.width, model.wordWrapEnabled)
+		return newBrowserChangesDetailDocumentWithWordWrap(model.commitDiffRenderedRows, model.width, model.wordWrapEnabled)
 	}
 	return newDetailDocumentWithWrap(model.content(), model.width, false)
 }

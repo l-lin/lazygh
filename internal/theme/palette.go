@@ -15,6 +15,7 @@ type Palette struct {
 	FailureBackgroundHex                 string `toml:"failure_background"`
 	PendingHex                           string `toml:"pending"`
 	PendingBackgroundHex                 string `toml:"pending_background"`
+	StickyFileHeaderBackgroundHex        string `toml:"sticky_file_header_background"`
 	MutedHex                             string `toml:"muted"`
 	WarningHex                           string `toml:"warning"`
 	PullRequestReferenceHex              string `toml:"pull_request_reference"`
@@ -85,6 +86,7 @@ func newDefaultLightPalette() Palette {
 		FailureBackgroundHex:                 failureBackgroundHex,
 		PendingHex:                           pendingHex,
 		PendingBackgroundHex:                 pendingBackgroundHex,
+		StickyFileHeaderBackgroundHex:        pendingBackgroundHex,
 		MutedHex:                             mutedHex,
 		WarningHex:                           warningHex,
 		PullRequestReferenceHex:              pendingHex,
@@ -155,6 +157,7 @@ func newDefaultDarkPalette() Palette {
 		FailureBackgroundHex:                 failureBackgroundHex,
 		PendingHex:                           pendingHex,
 		PendingBackgroundHex:                 pendingBackgroundHex,
+		StickyFileHeaderBackgroundHex:        pendingBackgroundHex,
 		MutedHex:                             mutedHex,
 		WarningHex:                           warningHex,
 		PullRequestReferenceHex:              pendingHex,
@@ -213,6 +216,7 @@ var (
 	FailureBackgroundHex                 = initialDefaultPalette.FailureBackgroundHex
 	PendingHex                           = initialDefaultPalette.PendingHex
 	PendingBackgroundHex                 = initialDefaultPalette.PendingBackgroundHex
+	StickyFileHeaderBackgroundHex        = initialDefaultPalette.StickyFileHeaderBackgroundHex
 	MutedHex                             = initialDefaultPalette.MutedHex
 	WarningHex                           = initialDefaultPalette.WarningHex
 	PullRequestReferenceHex              = initialDefaultPalette.PullRequestReferenceHex
@@ -279,6 +283,7 @@ func cascadePaletteColors(resolved *Palette, overrides Palette) {
 	inheritColor(&resolved.PullRequestStatusOpenBackgroundHex, overrides.PullRequestStatusOpenBackgroundHex, resolved.SuccessBackgroundHex, overrides.SuccessBackgroundHex)
 	inheritColor(&resolved.PullRequestStatusDraftHex, overrides.PullRequestStatusDraftHex, resolved.PendingHex, overrides.PendingHex)
 	inheritColor(&resolved.PullRequestStatusDraftBackgroundHex, overrides.PullRequestStatusDraftBackgroundHex, resolved.PendingBackgroundHex, overrides.PendingBackgroundHex)
+	inheritColor(&resolved.StickyFileHeaderBackgroundHex, overrides.StickyFileHeaderBackgroundHex, resolved.PendingBackgroundHex, overrides.PendingBackgroundHex)
 	inheritColor(&resolved.PullRequestStatusClosedHex, overrides.PullRequestStatusClosedHex, resolved.FailureHex, overrides.FailureHex)
 	inheritColor(&resolved.PullRequestStatusClosedBackgroundHex, overrides.PullRequestStatusClosedBackgroundHex, resolved.FailureBackgroundHex, overrides.FailureBackgroundHex)
 	inheritColor(&resolved.DiffAdditionHex, overrides.DiffAdditionHex, resolved.SuccessHex, overrides.SuccessHex)
@@ -323,6 +328,7 @@ func applyResolvedPalette(palette Palette) {
 	FailureBackgroundHex = palette.FailureBackgroundHex
 	PendingHex = palette.PendingHex
 	PendingBackgroundHex = palette.PendingBackgroundHex
+	StickyFileHeaderBackgroundHex = palette.StickyFileHeaderBackgroundHex
 	MutedHex = palette.MutedHex
 	WarningHex = palette.WarningHex
 	PullRequestReferenceHex = palette.PullRequestReferenceHex
@@ -399,6 +405,7 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.FailureBackgroundHex,
 		&palette.PendingHex,
 		&palette.PendingBackgroundHex,
+		&palette.StickyFileHeaderBackgroundHex,
 		&palette.MutedHex,
 		&palette.WarningHex,
 		&palette.PullRequestReferenceHex,

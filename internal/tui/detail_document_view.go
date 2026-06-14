@@ -4,35 +4,27 @@ import (
 	"fmt"
 
 	"github.com/jesseduffield/gocui"
+	"github.com/l-lin/lazygh/internal/theme"
 )
 
 func renderVisibleDetailDocumentView(view *gocui.View, document detailDocument, state detailViewState) {
-	startRow := clampInt(state.originRow, 0, maxInt(0, document.rowCount()-1))
 	viewportHeight := maxInt(1, viewPageSize(view))
-	endRow := minInt(document.rowCount(), startRow+viewportHeight)
-	renderDetailDocumentRows(view, document, state, startRow, endRow, 0)
+	plan := planVisibleDetailViewport(document, state.originRow, viewportHeight)
+	renderPlannedDetailDocumentRows(view, document, state, plan)
 }
 
-func renderDetailDocumentRows(view *gocui.View, document detailDocument, state detailViewState, startRow int, endRow int, verticalOrigin int) {
+func renderPlannedDetailDocumentRows(view *gocui.View, document detailDocument, state detailViewState, plan detailViewportRenderPlan) {
 	if view == nil {
 		return
 	}
 
-	rowCount := document.rowCount()
-	if rowCount == 0 {
-		rowCount = 1
-	}
-	startRow = clampInt(startRow, 0, rowCount-1)
-	endRow = clampInt(endRow, startRow+1, rowCount)
-
 	view.Clear()
 	searchMatchRanges := detailSearchMatchRanges(state.searchMatches)
-	for rowIndex := startRow; rowIndex < endRow; rowIndex++ {
-		if rowIndex > startRow {
-			fmt.Fprint(view, "\n")
-		}
-		fmt.Fprint(view, renderDetailRow(document, document.rows[rowIndex], searchMatchRanges, state))
+	wroteRow := false
+	if plan.pinnedKnown {
+		wroteRow = renderDetailDocumentRowRange(view, document, state, searchMatchRanges, plan.pinnedStartRow, plan.pinnedEndRow, detailRowRenderOptions{backgroundOverrideHex: theme.StickyFileHeaderBackgroundHex}, wroteRow)
 	}
+	wroteRow = renderDetailDocumentRowRange(view, document, state, searchMatchRanges, plan.bodyStartRow, plan.bodyEndRow, detailRowRenderOptions{}, wroteRow)
 
 	cursorRow, cursorColumn := state.screenPosition(document)
 	originX := 0
@@ -41,6 +33,28 @@ func renderDetailDocumentRows(view *gocui.View, document detailDocument, state d
 		originX = cursorColumn - innerWidth + 1
 		cursorColumn = innerWidth - 1
 	}
-	view.SetOrigin(originX, verticalOrigin)
-	view.SetCursor(cursorColumn, cursorRow-startRow-verticalOrigin)
+	cursorY := plan.bodyVerticalOrigin + (cursorRow - plan.bodyStartRow)
+	if plan.pinnedKnown && cursorRow >= plan.pinnedStartRow && cursorRow < plan.pinnedEndRow {
+		cursorY = cursorRow - plan.pinnedStartRow
+	}
+	view.SetOrigin(originX, 0)
+	view.SetCursor(cursorColumn, maxInt(cursorY, 0))
+}
+
+func renderDetailDocumentRowRange(view *gocui.View, document detailDocument, state detailViewState, searchMatchRanges map[int][]detailColumnRange, startRow int, endRow int, options detailRowRenderOptions, wroteRow bool) bool {
+	rowCount := document.rowCount()
+	if rowCount == 0 {
+		return wroteRow
+	}
+
+	startRow = clampInt(startRow, 0, rowCount-1)
+	endRow = clampInt(endRow, startRow+1, rowCount)
+	for rowIndex := startRow; rowIndex < endRow; rowIndex++ {
+		if wroteRow {
+			fmt.Fprint(view, "\n")
+		}
+		fmt.Fprint(view, renderDetailRowWithOptions(document, document.rows[rowIndex], searchMatchRanges, state, options))
+		wroteRow = true
+	}
+	return wroteRow
 }

@@ -91,7 +91,7 @@ func (model browserChangesReadModel) syncPlanForThread(threadID string) detailVi
 }
 
 func (model browserChangesReadModel) detailDocument() detailDocument {
-	return newReviewDiffDetailDocumentWithWordWrap(model.renderedRows, maxInt(model.selection.document.width, 1), model.wordWrapEnabled)
+	return newBrowserChangesDetailDocumentWithWordWrap(model.renderedRows, maxInt(model.selection.document.width, 1), model.wordWrapEnabled)
 }
 
 func (model browserChangesReadModel) buildRenderedRows() []reviewDiffRenderedRow {

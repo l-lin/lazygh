@@ -23,12 +23,13 @@ const (
 )
 
 type reviewDiffRenderedRow struct {
-	Kind     reviewDiffRenderedRowKind
-	Text     string
-	FilePath string
-	Anchor   *reviewDiffRenderedRowAnchor
-	Thread   *reviewDiffThread
-	Comment  *githubdomain.PullRequestComment
+	Kind             reviewDiffRenderedRowKind
+	Text             string
+	FilePath         string
+	OwningHeaderLine int
+	Anchor           *reviewDiffRenderedRowAnchor
+	Thread           *reviewDiffThread
+	Comment          *githubdomain.PullRequestComment
 }
 
 const (
@@ -175,6 +176,20 @@ func reviewDiffRenderedRowsText(rows []reviewDiffRenderedRow) string {
 		lines = append(lines, row.Text)
 	}
 	return strings.Join(lines, "\n")
+}
+
+func reviewDiffRowsWithOwningHeaderLine(rows []reviewDiffRenderedRow, owningHeaderLine int) []reviewDiffRenderedRow {
+	if len(rows) == 0 || owningHeaderLine < 0 {
+		return rows
+	}
+
+	updatedRows := make([]reviewDiffRenderedRow, 0, len(rows))
+	for _, row := range rows {
+		updatedRow := row
+		updatedRow.OwningHeaderLine = owningHeaderLine
+		updatedRows = append(updatedRows, updatedRow)
+	}
+	return updatedRows
 }
 
 func reviewDiffFileHeaderRows(file reviewDiffFile, headerText string) []reviewDiffRenderedRow {

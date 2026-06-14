@@ -28,11 +28,12 @@ type detailColumnRange struct {
 }
 
 type detailWrappedRow struct {
-	line        int
-	startColumn int
-	endColumn   int
-	empty       bool
-	text        string
+	line             int
+	startColumn      int
+	endColumn        int
+	empty            bool
+	text             string
+	owningHeaderLine int
 }
 
 type detailDocument struct {

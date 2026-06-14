@@ -6,7 +6,15 @@ import (
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
+type detailRowRenderOptions struct {
+	backgroundOverrideHex string
+}
+
 func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchRanges map[int][]detailColumnRange, state detailViewState) string {
+	return renderDetailRowWithOptions(document, row, searchMatchRanges, state, detailRowRenderOptions{})
+}
+
+func renderDetailRowWithOptions(document detailDocument, row detailWrappedRow, searchMatchRanges map[int][]detailColumnRange, state detailViewState, options detailRowRenderOptions) string {
 	lineMatchRanges := searchMatchRanges[row.line]
 	rowImages := detailImagesOnRow(document.images, row.line)
 	prefixText := renderStyledTextLine(detailRowPrefixLine(document, row))
@@ -26,7 +34,7 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 	if !row.empty && len(line) > 0 {
 		rowRunes = line[row.startColumn : row.endColumn+1]
 	}
-	paddingPrefix := markdownFullWidthLinePaddingPrefix(document.width, lineStylePrefixes, row.startColumn, row.endColumn)
+	paddingPrefix := markdownFullWidthLinePaddingPrefix(document.width, lineStylePrefixes, row.startColumn, row.endColumn, options.backgroundOverrideHex)
 	hasYankHighlight := false
 	for column := row.startColumn; column <= row.endColumn; column++ {
 		if state.isPositionYankHighlighted(document, detailPosition{line: row.line, column: column}) {
@@ -61,7 +69,7 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 			prefix := detailCellStylePrefix(detailCellStyle{
 				selected: state.isPositionSelected(document, position),
 				search:   searchHighlighted,
-			}, foregroundColorEscape(protocol.PlaceholderForegroundHex(imageCell.imageID)))
+			}, foregroundColorEscape(protocol.PlaceholderForegroundHex(imageCell.imageID)), options.backgroundOverrideHex)
 			if prefix != currentPrefix {
 				if currentPrefix != "" {
 					builder.WriteString(ansiReset)
@@ -78,7 +86,7 @@ func renderDetailRow(document detailDocument, row detailWrappedRow, searchMatchR
 			prefix := detailCellStylePrefix(detailCellStyle{
 				selected: state.isPositionSelected(document, position),
 				search:   searchHighlighted,
-			}, detailLineStylePrefix(lineStylePrefixes, column))
+			}, detailLineStylePrefix(lineStylePrefixes, column), options.backgroundOverrideHex)
 			if prefix != currentPrefix {
 				if currentPrefix != "" {
 					builder.WriteString(ansiReset)
@@ -127,15 +135,19 @@ func detailRowPrefixLine(document detailDocument, row detailWrappedRow) styledTe
 	return prefixLine
 }
 
-func detailCellStylePrefix(style detailCellStyle, basePrefix string) string {
+func detailCellStylePrefix(style detailCellStyle, basePrefix string, backgroundOverrideHex string) string {
+	prefix := basePrefix
+	if backgroundOverrideHex != "" {
+		prefix += backgroundColorEscape(backgroundOverrideHex)
+	}
 	if style.selected {
-		return basePrefix + ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
+		return prefix + ansiBold + backgroundColorEscape(theme.SelectedLineBackgroundHex)
 	}
 	if style.search {
-		return basePrefix + backgroundColorEscape(theme.SearchHighlightHex)
+		return prefix + backgroundColorEscape(theme.SearchHighlightHex)
 	}
 
-	return basePrefix
+	return prefix
 }
 
 func detailLineHasStylePrefixes(prefixes []string, startColumn int, endColumn int) bool {
