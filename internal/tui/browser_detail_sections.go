@@ -166,7 +166,8 @@ func browserDescriptionOverviewStartLine(summary any, detail any) int {
 
 func buildPullRequestConversationSections(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail, width int, markdownRenderer MarkdownRenderer, wordWrapEnabled bool, connectedUserLogin string, collapsedSectionStates map[string]bool) []browserDetailSection {
 	pullRequestKey := pullRequestDetailKey(summary.Repository, summary.Number)
-	sections := make([]browserDetailSection, 0, len(detail.Comments)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
+	visibleReviews := visiblePullRequestReviewBodies(detail.Reviews)
+	sections := make([]browserDetailSection, 0, len(detail.Comments)+len(visibleReviews)+maxInt(len(detail.InlineCommentThreads), len(detail.InlineComments)))
 	commentBodyWidth := commentBoxInnerWidth(width)
 	renderWidth := markdownRenderWidthForWordWrap(commentBodyWidth, wordWrapEnabled)
 
@@ -181,6 +182,18 @@ func buildPullRequestConversationSections(summary githubdomain.PullRequest, deta
 			body:      renderPullRequestCommentSectionForViewer(comment, body, width, connectedUserLogin),
 			collapsed: collapsed,
 			comment:   &comment,
+		})
+	}
+	for index, rawReview := range visibleReviews {
+		review := rawReview
+		body := renderMarkdownWithFallback(prepareMarkdownForImageRendering(review.Body, ""), markdownRenderer, renderWidth, "No review body.")
+		sectionID := browserDetailSectionID(pullRequestKey, "review", index, review.ID)
+		collapsed := browserDetailSectionCollapsed(collapsedSectionStates, sectionID, false)
+		sections = append(sections, browserDetailSection{
+			id:        sectionID,
+			header:    renderBrowserDetailSectionHeader(renderPullRequestReviewConversationTitle(review), collapsed, theme.InactiveTitleHex),
+			body:      renderPullRequestReviewSectionForViewer(review, body, width, connectedUserLogin),
+			collapsed: collapsed,
 		})
 	}
 

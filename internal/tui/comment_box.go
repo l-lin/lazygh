@@ -23,6 +23,10 @@ func renderPullRequestCommentSectionForViewer(comment githubdomain.PullRequestCo
 	return renderCommentBoxWithMetadataForViewer(comment.Author, comment.CreatedAt, comment.ReactionGroups, body, width, connectedUserLogin)
 }
 
+func renderPullRequestReviewSectionForViewer(review githubdomain.PullRequestReview, body string, width int, connectedUserLogin string) string {
+	return renderCommentBoxWithMetadataForViewer(review.Author, review.SubmittedAt, nil, body, width, connectedUserLogin)
+}
+
 func renderCommentBoxWithMetadata(author *githubdomain.PullRequestCommentAuthor, createdAt string, reactionGroups []githubdomain.ReactionGroup, body string, width int) string {
 	return renderCommentBoxWithMetadataForViewer(author, createdAt, reactionGroups, body, width, "")
 }

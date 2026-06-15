@@ -84,6 +84,41 @@ func TestBrowserDetailReadModel_GivenAnInlineThreadConversation_WhenResolvingACu
 	}
 }
 
+func TestBrowserDetailReadModel_GivenSubmittedReviewBody_WhenRenderingConversations_ThenItIncludesTheReviewSectionInTheCommentsTab(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{"looks good but I think you missed RecommendedContentProvider": "Rendered review body"}}
+	summary := githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+	})
+	detail := githubcli.ToDomainPullRequestDetail(githubcli.PullRequestDetail{
+		Number: 42,
+		Reviews: []githubcli.PullRequestReview{{
+			ID:          "PRR_1",
+			Author:      &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+			Body:        "looks good but I think you missed RecommendedContentProvider",
+			State:       "COMMENTED",
+			SubmittedAt: "2026-06-15T06:54:59Z",
+		}},
+	})
+	subject := browserDetailReadModel{
+		summary:                summary,
+		detail:                 detail,
+		width:                  80,
+		markdownRenderer:       renderer,
+		wordWrapEnabled:        true,
+		connectedUserLogin:     "octocat",
+		collapsedSectionStates: map[string]bool{},
+	}
+
+	actual := subject.renderConversationsTab()
+
+	for _, expected := range []string{" Commented review", "Rendered review body", "2026-06-15 06:54 UTC"} {
+		if !strings.Contains(actual, expected) {
+			t.Fatalf("expected the comments tab to contain %q, actual %q", expected, actual)
+		}
+	}
+}
+
 func given_textLineContaining(t *testing.T, text string, expectedSegment string) int {
 	t.Helper()
 

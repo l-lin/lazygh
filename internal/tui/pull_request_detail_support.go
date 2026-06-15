@@ -245,6 +245,41 @@ func renderPullRequestApprovalsLine(reviews []githubdomain.PullRequestReview) st
 	return strings.Join(approvals, "  ")
 }
 
+func visiblePullRequestReviewBodies(reviews any) []githubdomain.PullRequestReview {
+	reviewValues := toDomainPullRequestReviews(reviews)
+	if len(reviewValues) == 0 {
+		return nil
+	}
+
+	visibleReviews := make([]githubdomain.PullRequestReview, 0, len(reviewValues))
+	for _, review := range reviewValues {
+		if !pullRequestReviewHasVisibleBody(review) {
+			continue
+		}
+		visibleReviews = append(visibleReviews, review)
+	}
+	return visibleReviews
+}
+
+func pullRequestReviewHasVisibleBody(review githubdomain.PullRequestReview) bool {
+	return strings.TrimSpace(review.Body) != "" && strings.TrimSpace(review.SubmittedAt) != ""
+}
+
+func renderPullRequestReviewConversationTitle(review githubdomain.PullRequestReview) string {
+	switch strings.ToUpper(strings.TrimSpace(review.State)) {
+	case "APPROVED":
+		return "Approved review"
+	case "CHANGES_REQUESTED":
+		return "Changes requested review"
+	case "COMMENTED":
+		return "Commented review"
+	case "DISMISSED":
+		return "Dismissed review"
+	default:
+		return "Review"
+	}
+}
+
 func approvedPullRequestReviewerLogins(reviews any) []string {
 	reviewValues := toDomainPullRequestReviews(reviews)
 	if len(reviewValues) == 0 {

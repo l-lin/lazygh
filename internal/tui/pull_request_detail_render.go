@@ -471,7 +471,7 @@ func pullRequestDetailCommentCount(detail any) int {
 	if !ok {
 		return 0
 	}
-	count := len(detailValue.Comments)
+	count := len(detailValue.Comments) + len(visiblePullRequestReviewBodies(detailValue.Reviews))
 	if len(detailValue.InlineCommentThreads) > 0 {
 		for _, inlineThread := range detailValue.InlineCommentThreads {
 			count += len(inlineThread.Comments)

@@ -223,6 +223,32 @@ func TestGetPullRequestDetail_GivenApprovalReviews_WhenFetching_ThenItReturnsNor
 	}
 }
 
+func TestGetPullRequestDetail_GivenSubmittedReviewBody_WhenFetching_ThenItPreservesTheNormalizedReviewText(t *testing.T) {
+	runner := &fakeRunner{
+		responses: []fakeCommandResponse{
+			{stdout: []byte(`{"title":"Review comments","number":42,"body":"Body","state":"OPEN","reviews":[{"id":" PRR_1 ","author":{"login":" reviewer-one "},"body":"  looks good but I think you missed RecommendedContentProvider  ","state":" COMMENTED ","submittedAt":" 2026-06-15T06:54:59Z "}]}`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"isMergeQueueEnabled":false,"isInMergeQueue":false,"mergeQueueEntry":null}}}}`)},
+			{stdout: []byte(`[]`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reactionGroups":[],"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
+		},
+	}
+	subject := NewPullRequestDetailServiceWithRunner(runner)
+
+	actual, actualErr := subject.GetPullRequestDetail("acme/widgets", 42)
+
+	then_noError(t, actualErr)
+	if len(actual.Reviews) != 1 {
+		t.Fatalf("expected 1 normalized review, actual %d", len(actual.Reviews))
+	}
+	if actualReviewID := actual.Reviews[0].ID; actualReviewID != "PRR_1" {
+		t.Fatalf("expected normalized review id %q, actual %q", "PRR_1", actualReviewID)
+	}
+	if actualBody := actual.Reviews[0].Body; actualBody != "looks good but I think you missed RecommendedContentProvider" {
+		t.Fatalf("expected normalized review body %q, actual %q", "looks good but I think you missed RecommendedContentProvider", actualBody)
+	}
+}
+
 func TestGetPullRequestDetail_GivenPendingInlineReviewComments_WhenFetching_ThenItPreservesTheThreadCommentState(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{

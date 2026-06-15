@@ -150,6 +150,32 @@ func TestPullRequestDetailCommentCount_GivenInlineCommentThreadsAndRestInlineCom
 	}
 }
 
+func TestPullRequestDetailCommentCount_GivenSubmittedReviewBodiesAndInlineCommentThreads_WhenCounting_ThenItIncludesNonEmptyReviewBodiesWithoutCountingEmptyReviews(t *testing.T) {
+	detail := githubcli.PullRequestDetail{
+		Number: 42,
+		Comments: []githubcli.PullRequestComment{{
+			Author:    &githubcli.PullRequestCommentAuthor{Login: "reviewer"},
+			Body:      "General feedback",
+			CreatedAt: "2026-04-18T13:00:00Z",
+		}},
+		Reviews: []githubcli.PullRequestReview{
+			{ID: "PRR_1", Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-two"}, Body: "looks good but I think you missed RecommendedContentProvider", State: "COMMENTED", SubmittedAt: "2026-06-15T06:54:59Z"},
+			{ID: "PRR_2", Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-three"}, Body: "", State: "APPROVED", SubmittedAt: "2026-06-15T07:00:00Z"},
+		},
+		InlineCommentThreads: []githubcli.PullRequestReviewThread{{
+			ID:         "thread-1",
+			IsResolved: true,
+			Comments:   []githubcli.PullRequestComment{{Body: "First inline"}, {Body: "Second inline"}},
+		}},
+	}
+
+	actual := pullRequestDetailCommentCount(detail)
+
+	if actual != 4 {
+		t.Fatalf("expected comment count %d, actual %d", 4, actual)
+	}
+}
+
 func TestRenderPullRequestDetailHeader_GivenChurnCounts_WhenFormatting_ThenItUsesTheDiffPalette(t *testing.T) {
 	summary := githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}
 	detail := githubcli.PullRequestDetail{Number: 42, Additions: 12, Deletions: 3, ChangedFiles: 5}

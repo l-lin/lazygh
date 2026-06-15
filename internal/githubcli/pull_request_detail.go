@@ -148,7 +148,9 @@ type PullRequestCommentAuthor struct {
 }
 
 type PullRequestReview struct {
+	ID          string                    `json:"id"`
 	Author      *PullRequestCommentAuthor `json:"author"`
+	Body        string                    `json:"body"`
 	State       string                    `json:"state"`
 	SubmittedAt string                    `json:"submittedAt"`
 }
@@ -416,6 +418,8 @@ func (author PullRequestCommentAuthor) normalized() PullRequestCommentAuthor {
 }
 
 func (review PullRequestReview) normalized() PullRequestReview {
+	review.ID = strings.TrimSpace(review.ID)
+	review.Body = strings.TrimSpace(review.Body)
 	review.State = strings.TrimSpace(review.State)
 	review.SubmittedAt = strings.TrimSpace(review.SubmittedAt)
 	if review.Author != nil {
