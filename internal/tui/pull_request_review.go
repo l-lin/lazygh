@@ -3,6 +3,8 @@ package tui
 import (
 	"errors"
 	"fmt"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 const (
@@ -36,8 +38,10 @@ func approvePullRequestCommand(repository string, number int) string {
 
 func (program *Program) reviewCommentAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
-	target, ok := program.selectedPullRequestActionTarget()
-	if ok {
+	if pendingTarget, ok := program.selectedPendingPullRequestReviewTarget(); ok {
+		feedbackTarget := program.model.Focus()
+		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestReviewCommentComposerTitle, "", newPendingPullRequestReviewSubmitDescriptor(pendingTarget, githubdomain.PullRequestReviewEventComment, feedbackTarget))}
+	} else if target, ok := program.selectedPullRequestActionTarget(); ok {
 		feedbackTarget := program.model.Focus()
 		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestReviewCommentComposerTitle, "", newPullRequestReviewCommentSubmitDescriptor(target, feedbackTarget))}
 	}
@@ -51,8 +55,10 @@ func (program *Program) reviewCommentAction() actionsPopupAction {
 
 func (program *Program) reviewRequestChangesAction() actionsPopupAction {
 	requested := actionsPopupErrorRequested(errActionsPopupActionUnavailable)
-	target, ok := program.selectedPullRequestActionTarget()
-	if ok {
+	if pendingTarget, ok := program.selectedPendingPullRequestReviewTarget(); ok {
+		feedbackTarget := program.model.Focus()
+		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestRequestChangesComposerTitle, "", newPendingPullRequestReviewSubmitDescriptor(pendingTarget, githubdomain.PullRequestReviewEventRequestChanges, feedbackTarget))}
+	} else if target, ok := program.selectedPullRequestActionTarget(); ok {
 		feedbackTarget := program.model.Focus()
 		requested = MsgModalEditorOpened{Descriptor: newModalEditorOpenDescriptorWithSubmitDescriptor(pullRequestRequestChangesComposerTitle, "", newPullRequestRequestChangesSubmitDescriptor(target, feedbackTarget))}
 	}

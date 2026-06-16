@@ -241,3 +241,87 @@ func TestActionsPopup_GivenReviewModeSubmitRequestChangesActionSelected_WhenSubm
 	then_statusLineDoesNotContain(t, gui, "boom")
 	then_transientErrorPopupContains(t, gui, "boom")
 }
+
+func TestActionsPopup_GivenBrowserChangesTabWithPendingReviewCommentActionSelected_WhenSubmittingWithAnEmptySummary_ThenItSubmitsThePendingReviewAsComment(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details:              map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailForChangesInlineCommentTests()},
+		diffs:                map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+		reviewKeyByPendingID: map[string]string{"PRR_pending": "acme/widgets#42"},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	actualErr := subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestReviewCommentComposerTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestReviewCommentComposerTitle))
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.submitReviewIDs, []string{"PRR_pending"}) {
+		t.Fatalf("expected submitted review ids %v, actual %v", []string{"PRR_pending"}, loader.submitReviewIDs)
+	}
+	if !reflect.DeepEqual(loader.submitReviewEvents, []githubcli.PullRequestReviewEvent{githubcli.PullRequestReviewEventComment}) {
+		t.Fatalf("expected submitted review events %v, actual %v", []githubcli.PullRequestReviewEvent{githubcli.PullRequestReviewEventComment}, loader.submitReviewEvents)
+	}
+	if !reflect.DeepEqual(loader.submitReviewBodies, []string{""}) {
+		t.Fatalf("expected submitted review bodies %v, actual %v", []string{""}, loader.submitReviewBodies)
+	}
+	if len(loader.reviewCommentCalls) != 0 {
+		t.Fatalf("expected no direct review comment calls, actual %v", loader.reviewCommentCalls)
+	}
+	if state, ok := subject.pendingPullRequestReviewCache["acme/widgets#42"]; !ok || state.id != "" {
+		t.Fatalf("expected pending review state to be cleared, actual %+v, known=%v", state, ok)
+	}
+}
+
+func TestActionsPopup_GivenBrowserChangesTabWithPendingReviewRequestChangesActionSelected_WhenSubmittingWithAnEmptySummary_ThenItSubmitsThePendingReviewAsRequestChanges(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details:              map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailForChangesInlineCommentTests()},
+		diffs:                map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+		reviewKeyByPendingID: map[string]string{"PRR_pending": "acme/widgets#42"},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	given_browserChangesDetailFocusForInlineComment(t, gui, subject)
+	actualErr := subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(pullRequestRequestChangesComposerTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), pullRequestRequestChangesComposerTitle))
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	then_currentViewNameIs(t, gui, viewModalEditorName)
+
+	actualHandler := given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyAltEnter)
+	actualErr = actualHandler(gui, nil)
+	then_noError(t, actualErr)
+
+	if !reflect.DeepEqual(loader.submitReviewIDs, []string{"PRR_pending"}) {
+		t.Fatalf("expected submitted review ids %v, actual %v", []string{"PRR_pending"}, loader.submitReviewIDs)
+	}
+	if !reflect.DeepEqual(loader.submitReviewEvents, []githubcli.PullRequestReviewEvent{githubcli.PullRequestReviewEventRequestChanges}) {
+		t.Fatalf("expected submitted review events %v, actual %v", []githubcli.PullRequestReviewEvent{githubcli.PullRequestReviewEventRequestChanges}, loader.submitReviewEvents)
+	}
+	if !reflect.DeepEqual(loader.submitReviewBodies, []string{""}) {
+		t.Fatalf("expected submitted review bodies %v, actual %v", []string{""}, loader.submitReviewBodies)
+	}
+	if len(loader.requestChangesCalls) != 0 {
+		t.Fatalf("expected no direct request changes calls, actual %v", loader.requestChangesCalls)
+	}
+	if state, ok := subject.pendingPullRequestReviewCache["acme/widgets#42"]; !ok || state.id != "" {
+		t.Fatalf("expected pending review state to be cleared, actual %+v, known=%v", state, ok)
+	}
+}

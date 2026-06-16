@@ -36,20 +36,41 @@ func (program *Program) pendingReviewSubmitAction(id string, title string, icon 
 }
 
 func (program *Program) selectedPendingPullRequestReviewTarget() (pendingPullRequestReviewTarget, bool) {
-	if !program.reviewModeActive() {
+	if program.reviewModeActive() {
+		repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
+		pendingReviewID := strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID)
+		if repository == "" || repository == "-" || program.navigationState.reviewSession.summary.Number <= 0 || pendingReviewID == "" {
+			return pendingPullRequestReviewTarget{}, false
+		}
+
+		return pendingPullRequestReviewTarget{
+			repository:      repository,
+			number:          program.navigationState.reviewSession.summary.Number,
+			pendingReviewID: pendingReviewID,
+			sourceFocus:     program.navigationState.reviewSession.sourceFocus,
+		}, true
+	}
+
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
 		return pendingPullRequestReviewTarget{}, false
 	}
 
-	repository := strings.TrimSpace(pullRequestRepositoryName(program.navigationState.reviewSession.summary.Repository))
-	pendingReviewID := strings.TrimSpace(program.navigationState.reviewSession.pendingReviewID)
-	if repository == "" || repository == "-" || program.navigationState.reviewSession.summary.Number <= 0 || pendingReviewID == "" {
+	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
+	if repository == "" || repository == "-" || summary.Number <= 0 {
+		return pendingPullRequestReviewTarget{}, false
+	}
+
+	pendingState, known := program.pendingPullRequestReviewStateForSummary(summary)
+	pendingReviewID := strings.TrimSpace(pendingState.id)
+	if !known || pendingReviewID == "" {
 		return pendingPullRequestReviewTarget{}, false
 	}
 
 	return pendingPullRequestReviewTarget{
 		repository:      repository,
-		number:          program.navigationState.reviewSession.summary.Number,
+		number:          summary.Number,
 		pendingReviewID: pendingReviewID,
-		sourceFocus:     program.navigationState.reviewSession.sourceFocus,
+		sourceFocus:     program.model.Focus(),
 	}, true
 }
