@@ -258,6 +258,13 @@ func updateReactionGroupsInPullRequestDetail(detail *githubdomain.PullRequestDet
 		detail.Comments[index].ReactionGroups = update(detail.Comments[index].ReactionGroups)
 		updated = true
 	}
+	for index := range detail.Reviews {
+		if strings.TrimSpace(detail.Reviews[index].ID) != trimmedSubjectID {
+			continue
+		}
+		detail.Reviews[index].ReactionGroups = update(detail.Reviews[index].ReactionGroups)
+		updated = true
+	}
 	for index := range detail.InlineComments {
 		if strings.TrimSpace(detail.InlineComments[index].ID) != trimmedSubjectID {
 			continue

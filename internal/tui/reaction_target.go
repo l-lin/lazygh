@@ -131,6 +131,19 @@ func (program *Program) selectedBrowserCommentReactionActionTarget(summary githu
 		}, true
 	}
 
+	if sectionAtCursor.section.review != nil {
+		review := *sectionAtCursor.section.review
+		if !hasUsablePullRequestMutationID(review.ID) {
+			return pullRequestReactionActionTarget{}, false
+		}
+		return pullRequestReactionActionTarget{
+			repository:     repository,
+			number:         summary.Number,
+			subjectID:      strings.TrimSpace(review.ID),
+			reactionGroups: append([]githubdomain.ReactionGroup(nil), review.ReactionGroups...),
+		}, true
+	}
+
 	if sectionAtCursor.section.inlineComment != nil {
 		comment := *sectionAtCursor.section.inlineComment
 		if !hasUsablePullRequestMutationID(comment.ID) {

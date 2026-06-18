@@ -24,7 +24,7 @@ func renderPullRequestCommentSectionForViewer(comment githubdomain.PullRequestCo
 }
 
 func renderPullRequestReviewSectionForViewer(review githubdomain.PullRequestReview, body string, width int, connectedUserLogin string) string {
-	return renderCommentBoxWithMetadataForViewer(review.Author, review.SubmittedAt, nil, body, width, connectedUserLogin)
+	return renderCommentBoxWithMetadataForViewer(review.Author, review.SubmittedAt, review.ReactionGroups, body, width, connectedUserLogin)
 }
 
 func renderCommentBoxWithMetadata(author *githubdomain.PullRequestCommentAuthor, createdAt string, reactionGroups []githubdomain.ReactionGroup, body string, width int) string {

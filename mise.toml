@@ -34,7 +34,7 @@ run = "mkdir -p .sandbox/coverage && go test ./... -coverprofile=.sandbox/covera
 description = "Build the lazygh binary"
 run = "mkdir -p bin && go build -o ./bin/lazygh ./cmd/lazygh"
 
-[tasks.fmt]
+[tasks.format]
 description = "Format Go source files"
 run = "gofmt -w ."
 

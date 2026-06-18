@@ -6,7 +6,7 @@ import (
 )
 
 const pullRequestReactionTargetsQuery = `query($owner:String!,$name:String!,$number:Int!,$cursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){id reactionGroups{content viewerHasReacted users{totalCount}} comments(first:100,after:$cursor){pageInfo{hasNextPage endCursor}nodes{id viewerDidAuthor author{login} body createdAt url reactionGroups{content viewerHasReacted users{totalCount}}}}}}}`
-const pullRequestReviewCommentReactionGroupsQuery = `query($ids:[ID!]!){nodes(ids:$ids){... on PullRequestReviewComment{id reactionGroups{content viewerHasReacted users{totalCount}}}}}`
+const pullRequestReviewCommentReactionGroupsQuery = `query($ids:[ID!]!){nodes(ids:$ids){... on PullRequestReviewComment{id reactionGroups{content viewerHasReacted users{totalCount}}}... on PullRequestReview{id reactionGroups{content viewerHasReacted users{totalCount}}}}}`
 
 var (
 	ErrInvalidPullRequestReactionTargetsResponse            = fmt.Errorf("invalid pull request reaction targets response")

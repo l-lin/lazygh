@@ -148,11 +148,12 @@ type PullRequestCommentAuthor struct {
 }
 
 type PullRequestReview struct {
-	ID          string                    `json:"id"`
-	Author      *PullRequestCommentAuthor `json:"author"`
-	Body        string                    `json:"body"`
-	State       string                    `json:"state"`
-	SubmittedAt string                    `json:"submittedAt"`
+	ID             string                    `json:"id"`
+	Author         *PullRequestCommentAuthor `json:"author"`
+	Body           string                    `json:"body"`
+	State          string                    `json:"state"`
+	SubmittedAt    string                    `json:"submittedAt"`
+	ReactionGroups []ReactionGroup           `json:"reactionGroups,omitempty"`
 }
 
 type PullRequestStatusCheck struct {
@@ -215,6 +216,14 @@ func pullRequestInlineCommentReactionTargetIDs(comments []PullRequestInlineComme
 	return ids
 }
 
+func pullRequestReviewReactionTargetIDs(reviews []PullRequestReview) []string {
+	ids := make([]string, 0, len(reviews))
+	for _, review := range reviews {
+		ids = append(ids, strings.TrimSpace(review.ID))
+	}
+	return ids
+}
+
 func mergePullRequestInlineCommentReactionGroups(comments []PullRequestInlineComment, groupsByID map[string][]ReactionGroup) []PullRequestInlineComment {
 	if len(comments) == 0 || len(groupsByID) == 0 {
 		return comments
@@ -228,6 +237,21 @@ func mergePullRequestInlineCommentReactionGroups(comments []PullRequestInlineCom
 		mergedComments = append(mergedComments, comment)
 	}
 	return mergedComments
+}
+
+func mergePullRequestReviewReactionGroups(reviews []PullRequestReview, groupsByID map[string][]ReactionGroup) []PullRequestReview {
+	if len(reviews) == 0 || len(groupsByID) == 0 {
+		return reviews
+	}
+
+	mergedReviews := make([]PullRequestReview, 0, len(reviews))
+	for _, review := range reviews {
+		if reactionGroups, ok := groupsByID[strings.TrimSpace(review.ID)]; ok {
+			review.ReactionGroups = append([]ReactionGroup(nil), reactionGroups...)
+		}
+		mergedReviews = append(mergedReviews, review)
+	}
+	return mergedReviews
 }
 
 func (detail PullRequestDetail) normalized() PullRequestDetail {
@@ -422,6 +446,7 @@ func (review PullRequestReview) normalized() PullRequestReview {
 	review.Body = strings.TrimSpace(review.Body)
 	review.State = strings.TrimSpace(review.State)
 	review.SubmittedAt = strings.TrimSpace(review.SubmittedAt)
+	review.ReactionGroups = normalizeReactionGroups(review.ReactionGroups)
 	if review.Author != nil {
 		normalizedAuthor := review.Author.normalized()
 		review.Author = &normalizedAuthor

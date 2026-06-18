@@ -231,6 +231,7 @@ func TestGetPullRequestDetail_GivenSubmittedReviewBody_WhenFetching_ThenItPreser
 			{stdout: []byte(`[]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reactionGroups":[],"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
+			{stdout: []byte(`{"data":{"nodes":[{"id":"PRR_1","reactionGroups":[]}]}}`)},
 		},
 	}
 	subject := NewPullRequestDetailServiceWithRunner(runner)
@@ -278,12 +279,12 @@ func TestGetPullRequestDetail_GivenPendingInlineReviewComments_WhenFetching_Then
 func TestGetPullRequestDetail_GivenReactionTargets_WhenFetching_ThenItLoadsStableIDsAndReactionGroups(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{
-			{stdout: []byte(`{"title":"Reactions","number":42,"body":"Body","state":"OPEN","comments":[{"id":"IC_kwDOA","author":{"login":"reviewer"},"body":"Looks good","createdAt":"2026-04-18T13:00:00Z","url":"https://github.com/acme/widgets/pull/42#issuecomment-1"}]}`)},
+			{stdout: []byte(`{"title":"Reactions","number":42,"body":"Body","state":"OPEN","comments":[{"id":"IC_kwDOA","author":{"login":"reviewer"},"body":"Looks good","createdAt":"2026-04-18T13:00:00Z","url":"https://github.com/acme/widgets/pull/42#issuecomment-1"}],"reviews":[{"id":"PRR_1","author":{"login":"reviewer-body"},"body":"Needs a follow-up","state":"COMMENTED","submittedAt":"2026-06-15T06:54:59Z"}]}`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"isMergeQueueEnabled":false,"isInMergeQueue":false,"mergeQueueEntry":null}}}}`)},
 			{stdout: []byte(`[[{"node_id":"PRRC_kwDOA","user":{"login":"reviewer-inline"},"body":"Nit: keep spacing","created_at":"2026-04-18T14:00:00Z","html_url":"https://github.com/acme/widgets/pull/42#discussion_r1","path":"internal/tui/render.go","line":12,"original_line":12,"side":"RIGHT","start_side":"RIGHT","subject_type":"LINE","diff_hunk":"@@ -12,1 +12,1 @@\n-old\n+new"}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"id":"PR_kwDOA","reactionGroups":[{"content":"THUMBS_UP","viewerHasReacted":true,"users":{"totalCount":2}},{"content":"HOORAY","viewerHasReacted":false,"users":{"totalCount":1}}],"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"IC_kwDOA","author":{"login":"reviewer"},"body":"Looks good","createdAt":"2026-04-18T13:00:00Z","url":"https://github.com/acme/widgets/pull/42#issuecomment-1","viewerDidAuthor":false,"reactionGroups":[{"content":"EYES","viewerHasReacted":false,"users":{"totalCount":3}}]}]}}}}}`)},
-			{stdout: []byte(`{"data":{"nodes":[{"id":"PRRC_kwDOA","reactionGroups":[{"content":"HEART","viewerHasReacted":true,"users":{"totalCount":1}},{"content":"LAUGH","viewerHasReacted":false,"users":{"totalCount":2}}]}]}}`)},
+			{stdout: []byte(`{"data":{"nodes":[{"id":"PRRC_kwDOA","reactionGroups":[{"content":"HEART","viewerHasReacted":true,"users":{"totalCount":1}},{"content":"LAUGH","viewerHasReacted":false,"users":{"totalCount":2}}]},{"id":"PRR_1","reactionGroups":[{"content":"ROCKET","viewerHasReacted":true,"users":{"totalCount":4}}]}]}}`)},
 		},
 	}
 	subject := NewPullRequestDetailServiceWithRunner(runner)
@@ -297,7 +298,7 @@ func TestGetPullRequestDetail_GivenReactionTargets_WhenFetching_ThenItLoadsStabl
 		{name: "gh", args: []string{"api", "repos/acme/widgets/pulls/42/comments?per_page=100", "--paginate", "--slurp"}},
 		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestReviewThreadsQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "number=42"}},
 		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestReactionTargetsQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "number=42"}},
-		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestReviewCommentReactionGroupsQuery, "-F", "ids[]=PRRC_kwDOA"}},
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestReviewCommentReactionGroupsQuery, "-F", "ids[]=PRRC_kwDOA", "-F", "ids[]=PRR_1"}},
 	})
 	if actual.ID != "PR_kwDOA" {
 		t.Fatalf("expected pull request reaction id %q, actual %q", "PR_kwDOA", actual.ID)
@@ -325,6 +326,13 @@ func TestGetPullRequestDetail_GivenReactionTargets_WhenFetching_ThenItLoadsStabl
 	}
 	if !reflect.DeepEqual(actual.InlineComments[0].ReactionGroups, expectedInlineReactions) {
 		t.Fatalf("expected inline comment reactions %+v, actual %+v", expectedInlineReactions, actual.InlineComments[0].ReactionGroups)
+	}
+	if len(actual.Reviews) != 1 {
+		t.Fatalf("expected 1 review, actual %+v", actual.Reviews)
+	}
+	expectedReviewReactions := []ReactionGroup{{Content: ReactionContentRocket, TotalCount: 4, ViewerHasReacted: true}}
+	if !reflect.DeepEqual(actual.Reviews[0].ReactionGroups, expectedReviewReactions) {
+		t.Fatalf("expected review reactions %+v, actual %+v", expectedReviewReactions, actual.Reviews[0].ReactionGroups)
 	}
 }
 

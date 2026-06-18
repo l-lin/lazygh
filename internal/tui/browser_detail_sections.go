@@ -18,6 +18,7 @@ type browserDetailSection struct {
 	overviewBlockTitle           string
 	overviewEntries              []pullRequestOverviewEntry
 	comment                      *githubdomain.PullRequestComment
+	review                       *githubdomain.PullRequestReview
 	inlineComment                *githubdomain.PullRequestInlineComment
 	inlineThread                 *githubdomain.PullRequestReviewThread
 	inlineThreadBodyCommentIndex []int
@@ -194,6 +195,7 @@ func buildPullRequestConversationSections(summary githubdomain.PullRequest, deta
 			header:    renderBrowserDetailSectionHeader(renderPullRequestReviewConversationTitle(review), collapsed, theme.InactiveTitleHex),
 			body:      renderPullRequestReviewSectionForViewer(review, body, width, connectedUserLogin),
 			collapsed: collapsed,
+			review:    &review,
 		})
 	}
 

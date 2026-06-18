@@ -84,6 +84,56 @@ func TestSelectedPullRequestReactionActionTarget_GivenCommentsTabCursorOnPullReq
 	}
 }
 
+func TestSelectedPullRequestReactionActionTarget_GivenCommentsTabCursorOnSubmittedReviewBody_WhenResolving_ThenItUsesTheReviewID(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:     "PR_kwDOA",
+				Title:  "First PR",
+				Number: 42,
+				Body:   "Body 42",
+				State:  "OPEN",
+				Reviews: []githubcli.PullRequestReview{{
+					ID:             "PRR_1",
+					Author:         &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:           "Review summary",
+					State:          "COMMENTED",
+					SubmittedAt:    "2026-06-15T06:54:59Z",
+					ReactionGroups: []githubcli.ReactionGroup{{Content: githubcli.ReactionContentRocket, TotalCount: 1}},
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Review summary": "Rendered review summary"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered review summary")
+
+	actual, ok := subject.selectedPullRequestReactionActionTarget()
+	if !ok {
+		t.Fatal("expected a submitted review reaction target")
+	}
+	if actual.subjectID != "PRR_1" {
+		t.Fatalf("expected subject id %q, actual %q", "PRR_1", actual.subjectID)
+	}
+	if actual.invalidateDiff {
+		t.Fatal("expected submitted review reactions to avoid diff invalidation")
+	}
+	expectedReactionGroups := toDomainReactionGroups([]githubcli.ReactionGroup{{Content: githubcli.ReactionContentRocket, TotalCount: 1}})
+	if !reflect.DeepEqual(actual.reactionGroups, expectedReactionGroups) {
+		t.Fatalf("expected review reaction groups %+v, actual %+v", expectedReactionGroups, actual.reactionGroups)
+	}
+}
+
 func TestActionsPopup_GivenBrowserChangesCursorOnInlineComment_WhenOpening_ThenItShowsAddReaction(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{
 		details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestDetailWithInlineThreadForReplyTests()},
@@ -681,6 +731,74 @@ func TestAddReaction_GivenCommentsTabCommentReaction_WhenSubmittingOptimisticall
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Rendered general feedback") {
 		t.Fatalf("expected detail buffer to keep the rendered comment, actual %q", detailView.Buffer())
+	}
+	if !strings.Contains(detailView.Buffer(), "👍 1") {
+		t.Fatalf("expected detail buffer to contain the optimistic reaction pill, actual %q", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), string(loadingSpinnerFrames[0])) {
+		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
+	}
+}
+
+func TestAddReaction_GivenCommentsTabSubmittedReviewReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedReviewVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				ID:     "PR_kwDOA",
+				Title:  "First PR",
+				Number: 42,
+				Body:   "Body 42",
+				State:  "OPEN",
+				Reviews: []githubcli.PullRequestReview{{
+					ID:          "PRR_1",
+					Author:      &githubcli.PullRequestCommentAuthor{Login: "reviewer-one"},
+					Body:        "Review summary",
+					State:       "COMMENTED",
+					SubmittedAt: "2026-06-15T06:54:59Z",
+				}},
+			},
+		},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Review summary": "Rendered review summary"}}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+	given_reviewModeDetailCursorOnLineContaining(t, gui, subject, "Rendered review summary")
+
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	if !given_hasActionTitle(subject.currentActionsPopupActions(), reactionPickerTitle) {
+		t.Fatalf("expected actions %v to contain %q", given_actionTitles(subject.currentActionsPopupActions()), reactionPickerTitle)
+	}
+	subject.model.UpdateActionsPopupSearch("add reaction", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "add reaction"))
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	if len(asyncRunner.runs) != 1 {
+		t.Fatalf("expected one queued background refresh, actual %d", len(asyncRunner.runs))
+	}
+	if !reflect.DeepEqual(loader.detailCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected no eager detail refresh before the queued run, actual %v", loader.detailCalls)
+	}
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), "Rendered review summary") {
+		t.Fatalf("expected detail buffer to keep the rendered review, actual %q", detailView.Buffer())
 	}
 	if !strings.Contains(detailView.Buffer(), "👍 1") {
 		t.Fatalf("expected detail buffer to contain the optimistic reaction pill, actual %q", detailView.Buffer())

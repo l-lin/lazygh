@@ -102,11 +102,12 @@ type PullRequestCommentAuthor struct {
 }
 
 type PullRequestReview struct {
-	ID          string                    `json:"id"`
-	Author      *PullRequestCommentAuthor `json:"author"`
-	Body        string                    `json:"body"`
-	State       string                    `json:"state"`
-	SubmittedAt string                    `json:"submittedAt"`
+	ID             string                    `json:"id"`
+	Author         *PullRequestCommentAuthor `json:"author"`
+	Body           string                    `json:"body"`
+	State          string                    `json:"state"`
+	SubmittedAt    string                    `json:"submittedAt"`
+	ReactionGroups []ReactionGroup           `json:"reactionGroups,omitempty"`
 }
 
 func (author PullRequestAuthor) normalized() PullRequestAuthor {

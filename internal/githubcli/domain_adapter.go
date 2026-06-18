@@ -722,7 +722,7 @@ func toDomainPullRequestReviews(reviews []PullRequestReview) []githubdomain.Pull
 	}
 	converted := make([]githubdomain.PullRequestReview, 0, len(reviews))
 	for _, review := range reviews {
-		actual := githubdomain.PullRequestReview{ID: review.ID, Body: review.Body, State: review.State, SubmittedAt: review.SubmittedAt}
+		actual := githubdomain.PullRequestReview{ID: review.ID, Body: review.Body, State: review.State, SubmittedAt: review.SubmittedAt, ReactionGroups: toDomainReactionGroups(review.ReactionGroups)}
 		if review.Author != nil {
 			author := githubdomain.PullRequestCommentAuthor{Login: review.Author.Login}
 			actual.Author = &author
@@ -738,7 +738,7 @@ func pullRequestReviewsFromDomain(reviews []githubdomain.PullRequestReview) []Pu
 	}
 	converted := make([]PullRequestReview, 0, len(reviews))
 	for _, review := range reviews {
-		actual := PullRequestReview{ID: review.ID, Body: review.Body, State: review.State, SubmittedAt: review.SubmittedAt}
+		actual := PullRequestReview{ID: review.ID, Body: review.Body, State: review.State, SubmittedAt: review.SubmittedAt, ReactionGroups: reactionGroupsFromDomain(review.ReactionGroups)}
 		if review.Author != nil {
 			author := PullRequestCommentAuthor{Login: review.Author.Login}
 			actual.Author = &author

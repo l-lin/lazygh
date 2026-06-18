@@ -84,12 +84,14 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 		}
 	}
 	if assembler.ListReviewCommentReactionGroups != nil {
-		inlineCommentReactionGroups, err := assembler.ListReviewCommentReactionGroups(pullRequestInlineCommentReactionTargetIDs(detail.InlineComments))
+		reactionTargetIDs := append(pullRequestInlineCommentReactionTargetIDs(detail.InlineComments), pullRequestReviewReactionTargetIDs(detail.Reviews)...)
+		reactionGroupsByID, err := assembler.ListReviewCommentReactionGroups(reactionTargetIDs)
 		if err != nil {
 			return PullRequestDetail{}, err
 		}
-		if len(inlineCommentReactionGroups) > 0 {
-			detail.InlineComments = mergePullRequestInlineCommentReactionGroups(detail.InlineComments, inlineCommentReactionGroups)
+		if len(reactionGroupsByID) > 0 {
+			detail.InlineComments = mergePullRequestInlineCommentReactionGroups(detail.InlineComments, reactionGroupsByID)
+			detail.Reviews = mergePullRequestReviewReactionGroups(detail.Reviews, reactionGroupsByID)
 		}
 	}
 

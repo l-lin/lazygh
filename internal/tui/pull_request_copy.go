@@ -78,6 +78,7 @@ func clonePullRequestReviews(reviews []githubdomain.PullRequestReview) []githubd
 	cloned := make([]githubdomain.PullRequestReview, 0, len(reviews))
 	for _, review := range reviews {
 		review.Author = clonePullRequestCommentAuthor(review.Author)
+		review.ReactionGroups = append([]githubdomain.ReactionGroup(nil), review.ReactionGroups...)
 		cloned = append(cloned, review)
 	}
 	return cloned
