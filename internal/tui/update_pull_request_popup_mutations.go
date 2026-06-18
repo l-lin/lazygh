@@ -80,6 +80,8 @@ func (program *Program) applyPullRequestMergeQueueMutationRequested(message MsgP
 	}
 
 	snapshot := program.capturePullRequestMergeQueueMutationSnapshot(message.Summary)
+	program.clearPendingSelectionPrefix()
+	program.closeActionsPopupState()
 	program.applyVisiblePullRequestMergeQueueMutation(message.Summary, message.InQueue)
 	return program.queueActionsPopupAsyncRequest(pullRequestMergeQueueMutationPopupRequest{kind: message.Kind, pullRequestID: pullRequestID, summary: message.Summary, inQueue: message.InQueue, successMessage: message.SuccessMessage, feedbackTarget: program.model.Focus(), rollbackSnapshot: snapshot})
 }

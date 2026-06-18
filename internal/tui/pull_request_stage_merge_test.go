@@ -852,6 +852,54 @@ func TestLayout_GivenADisableAutoMergeMutation_WhenRendering_ThenItClearsTheOpti
 	}
 }
 
+func TestActionsPopup_GivenAMergeWhenReadyMutation_WhenTheMutationIsQueued_ThenItClosesThePopupShowsTheLoadingSpinnerAndKeepsTheOptimisticQueuedState(t *testing.T) {
+	summary := given_pullRequestLifecycleSummary("OPEN", false)
+	summary.IsMergeQueueEnabled = true
+	model := given_pullRequestLifecycleModel(summary)
+	model.OpenDetail()
+	loader := &fakePullRequestDetailLoader{details: map[string]githubcli.PullRequestDetail{"acme/widgets#42": given_pullRequestMergeQueueDetail("OPEN", false, false)}}
+	subject := given_pullRequestCommentProgram(model, loader)
+	asyncRunner := &capturingAsyncRunner{}
+	subject.asyncRunner = asyncRunner
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{detail: githubcli.ToDomainPullRequestDetail(given_pullRequestMergeQueueDetail("OPEN", false, false))}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openActionsPopup(gui, nil)
+	then_noError(t, actualErr)
+	subject.model.UpdateActionsPopupSearch(mergeWhenReadyPullRequestActionTitle, matchingActionsPopupIndexes(subject.currentActionsPopupActions(), mergeWhenReadyPullRequestActionTitle))
+	actualErr = subject.afterStateChange(gui)
+	then_noError(t, actualErr)
+
+	queuedRunsBeforeAction := len(asyncRunner.runs)
+	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
+	then_noError(t, actualErr)
+
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
+	if len(asyncRunner.runs) <= queuedRunsBeforeAction {
+		t.Fatalf("expected a queued merge-when-ready mutation, actual before=%d after=%d", queuedRunsBeforeAction, len(asyncRunner.runs))
+	}
+	if len(loader.enqueuePullRequestCalls) != 0 {
+		t.Fatalf("expected the merge-when-ready call to wait for the queued run, actual %v", loader.enqueuePullRequestCalls)
+	}
+	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
+	then_statusLineContains(t, gui, formatRunningCommandStatus(pullRequestMergeQueueMutationCommand(pullRequestMergeQueueMutationEnqueue)))
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
+		t.Fatalf("expected the detail buffer to contain %q during optimistic queueing, actual %q", detailStatusIcon+" QUEUED", detailView.Buffer())
+	}
+	if strings.Contains(detailView.Buffer(), detailStatusIcon+" OPEN") {
+		t.Fatalf("expected the detail buffer to drop %q during optimistic queueing, actual %q", detailStatusIcon+" OPEN", detailView.Buffer())
+	}
+}
+
 func TestLayout_GivenAMergeWhenReadyMutationWithSummaryMissingNodeID_WhenRendering_ThenItUsesTheLoadedDetailIDAndShowsQueuedFeedback(t *testing.T) {
 	summary := given_pullRequestLifecycleSummary("OPEN", false)
 	summary.IsMergeQueueEnabled = true
@@ -1025,7 +1073,9 @@ func TestActionsPopup_GivenAMergeWhenReadyFailure_WhenExecuting_ThenItRollsBackT
 		run()
 	}
 
-	then_currentViewNameIs(t, gui, viewActionsPopupSearchName)
+	then_currentViewNameIs(t, gui, viewDetailName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupName)
+	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
 	then_transientErrorPopupContains(t, gui, "GitHub rejected queueing")
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
