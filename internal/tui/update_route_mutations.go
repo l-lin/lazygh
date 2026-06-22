@@ -16,6 +16,8 @@ func (program *Program) routePullRequestFeatureRequests(msg Msg) updateResult {
 		return handledUpdate(program.applyPullRequestLifecycleMutationRequested(actual))
 	case MsgPullRequestAutoMergeMutationRequested:
 		return handledUpdate(program.applyPullRequestAutoMergeMutationRequested(actual))
+	case MsgPullRequestMergeWhenReadyRequested:
+		return handledUpdate(program.applyPullRequestMergeWhenReadyRequested(actual))
 	case MsgPullRequestMergeQueueMutationRequested:
 		return handledUpdate(program.applyPullRequestMergeQueueMutationRequested(actual))
 	case MsgPullRequestBranchUpdateRequested:
@@ -32,6 +34,9 @@ func (program *Program) routeMutationApplyResultsAndOptimisticFollowUp(msg Msg) 
 		return handledUpdate(nil)
 	case MsgPullRequestAutoMergeApplied:
 		program.applyPullRequestAutoMergeApplied(actual)
+		return handledUpdate(nil)
+	case MsgPullRequestMergeWhenReadyApplied:
+		program.applyPullRequestMergeWhenReadyApplied(actual)
 		return handledUpdate(nil)
 	case MsgPullRequestMergeQueueApplied:
 		program.applyPullRequestMergeQueueApplied(actual)

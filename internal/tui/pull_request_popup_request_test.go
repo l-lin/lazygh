@@ -263,43 +263,48 @@ func TestUpdate_GivenMsgPullRequestAutoMergeMutationRequested_WhenApplyingEnable
 	}
 }
 
-func TestUpdate_GivenMsgPullRequestMergeQueueMutationRequested_WhenApplyingEnqueue_ThenItQueuesAnAsyncOptimisticQueueMutationCmd(t *testing.T) {
+func TestUpdate_GivenMsgPullRequestMergeWhenReadyRequested_WhenApplyingQueueOptimisticState_ThenItQueuesAnAsyncOptimisticMergeWhenReadyCmd(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
 	summary := given_pullRequestMutationSummary("OPEN", false)
 	summary.IsMergeQueueEnabled = true
 
-	actual := Update(subject, MsgPullRequestMergeQueueMutationRequested{
-		Kind:           pullRequestMergeQueueMutationEnqueue,
-		Target:         pullRequestActionTarget{repository: "acme/widgets", number: 42, pullRequestID: "PR_kwDOA"},
-		Summary:        summary,
-		InQueue:        true,
-		SuccessMessage: pullRequestQueuedToMergeSuccessMessage,
+	actual := Update(subject, MsgPullRequestMergeWhenReadyRequested{
+		Target:          pullRequestActionTarget{repository: "acme/widgets", number: 42, pullRequestID: "PR_kwDOA"},
+		Summary:         summary,
+		OptimisticState: pullRequestMergeWhenReadyStateQueue,
+		SuccessMessage:  pullRequestQueuedToMergeSuccessMessage,
 	})
 
 	if len(actual) != 1 {
 		t.Fatalf("expected one queued command, actual %d", len(actual))
 	}
 	command := given_actionsPopupAsyncCommand(t, actual)
-	request, ok := command.request.(pullRequestMergeQueueMutationPopupRequest)
+	request, ok := command.request.(pullRequestMergeWhenReadyPopupRequest)
 	if !ok {
-		t.Fatalf("expected a pullRequestMergeQueueMutationPopupRequest, actual %T", command.request)
+		t.Fatalf("expected a pullRequestMergeWhenReadyPopupRequest, actual %T", command.request)
 	}
 	if !request.asyncRequested() {
-		t.Fatal("expected the merge-queue mutation command to run asynchronously")
+		t.Fatal("expected the merge-when-ready command to run asynchronously")
+	}
+	if actualCommand := request.statusCommand(); actualCommand != mergePullRequestWhenReadyCommand("acme/widgets", 42) {
+		t.Fatalf("expected merge-when-ready command %q, actual %q", mergePullRequestWhenReadyCommand("acme/widgets", 42), actualCommand)
 	}
 
 	actualSuccess, actualErr := request.run(newActionsPopupAsyncCommandDeps(subject))
 	then_noError(t, actualErr)
-	if !reflect.DeepEqual(loader.enqueuePullRequestCalls, []string{"PR_kwDOA"}) {
-		t.Fatalf("expected enqueue calls %v, actual %v", []string{"PR_kwDOA"}, loader.enqueuePullRequestCalls)
+	if !reflect.DeepEqual(loader.mergeWhenReadyCalls, []string{"acme/widgets#42"}) {
+		t.Fatalf("expected merge-when-ready calls %v, actual %v", []string{"acme/widgets#42"}, loader.mergeWhenReadyCalls)
 	}
-	mergeQueueSuccess, ok := actualSuccess.(pullRequestMergeQueueAppliedCompletion)
+	if !reflect.DeepEqual(loader.mergeWhenReadyPullRequestIDs, []string{"PR_kwDOA"}) {
+		t.Fatalf("expected merge-when-ready pull request ids %v, actual %v", []string{"PR_kwDOA"}, loader.mergeWhenReadyPullRequestIDs)
+	}
+	mergeWhenReadySuccess, ok := actualSuccess.(pullRequestMergeWhenReadyAppliedCompletion)
 	if !ok {
-		t.Fatalf("expected merge-queue completion, actual %T", actualSuccess)
+		t.Fatalf("expected merge-when-ready completion, actual %T", actualSuccess)
 	}
-	if !samePullRequestIdentity(mergeQueueSuccess.Summary, summary) || !mergeQueueSuccess.InQueue || mergeQueueSuccess.FeedbackTarget != subject.model.Focus() || mergeQueueSuccess.Message != pullRequestQueuedToMergeSuccessMessage {
-		t.Fatalf("expected merge-queue completion for %v with queued/%q, actual %+v", summary, pullRequestQueuedToMergeSuccessMessage, mergeQueueSuccess)
+	if !samePullRequestIdentity(mergeWhenReadySuccess.Summary, summary) || mergeWhenReadySuccess.OptimisticState != pullRequestMergeWhenReadyStateQueue || mergeWhenReadySuccess.FeedbackTarget != subject.model.Focus() || mergeWhenReadySuccess.Message != pullRequestQueuedToMergeSuccessMessage {
+		t.Fatalf("expected merge-when-ready completion for %v with queued/%q, actual %+v", summary, pullRequestQueuedToMergeSuccessMessage, mergeWhenReadySuccess)
 	}
 }
 

@@ -52,10 +52,10 @@ func (program *Program) currentPullRequestStageAndMergeActions() []actionsPopupA
 	case "OPEN", "QUEUED":
 		actions := []actionsPopupAction{program.convertPullRequestToDraftAction()}
 		switch {
-		case program.currentPullRequestMergeQueueEnabled() && program.currentPullRequestInMergeQueue():
-			actions = append(actions, program.removeFromQueuePullRequestAction())
 		case program.currentPullRequestMergeQueueEnabled():
-			actions = append(actions, program.mergeWhenReadyPullRequestAction())
+			if action, ok := program.currentPullRequestQueueEnabledAction(); ok {
+				actions = append(actions, action)
+			}
 		case program.currentPullRequestShouldOfferAutoMerge():
 			actions = append(actions, program.currentPullRequestAutoMergeAction())
 		default:
@@ -143,12 +143,12 @@ func (program *Program) squashMergePullRequestAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) mergeWhenReadyPullRequestAction() actionsPopupAction {
+func (program *Program) mergeWhenReadyPullRequestAction(optimisticState pullRequestMergeWhenReadyState) actionsPopupAction {
 	return actionsPopupAction{
 		id:        "merge-when-ready-pull-request",
 		title:     mergeWhenReadyPullRequestActionTitle,
 		icon:      actionsPopupReviewApproveIcon,
-		requested: program.requestedPullRequestMergeQueueMutation(pullRequestMergeQueueMutationEnqueue, true, pullRequestQueuedToMergeSuccessMessage),
+		requested: program.requestedPullRequestMergeWhenReady(optimisticState, pullRequestMergeWhenReadySuccessMessage(optimisticState)),
 	}
 }
 
@@ -158,6 +158,28 @@ func (program *Program) removeFromQueuePullRequestAction() actionsPopupAction {
 		title:     removeFromQueuePullRequestActionTitle,
 		icon:      actionsPopupClosePullRequestIcon,
 		requested: program.requestedPullRequestMergeQueueMutation(pullRequestMergeQueueMutationDequeue, false, pullRequestRemovedFromQueueSuccessMessage),
+	}
+}
+
+func pullRequestMergeWhenReadySuccessMessage(optimisticState pullRequestMergeWhenReadyState) string {
+	if optimisticState == pullRequestMergeWhenReadyStateAutoMerge {
+		return pullRequestAutoMergeEnabledSuccessMessage
+	}
+	return pullRequestQueuedToMergeSuccessMessage
+}
+
+func (program *Program) currentPullRequestQueueEnabledAction() (actionsPopupAction, bool) {
+	switch {
+	case program.currentPullRequestInMergeQueue():
+		return program.removeFromQueuePullRequestAction(), true
+	case program.currentPullRequestAutoMergeEnabled():
+		return program.disablePullRequestAutoMergeAction(), true
+	case program.currentPullRequestViewerCanEnableAutoMerge():
+		return program.mergeWhenReadyPullRequestAction(pullRequestMergeWhenReadyStateAutoMerge), true
+	case program.currentPullRequestQueueReadyNow():
+		return program.mergeWhenReadyPullRequestAction(pullRequestMergeWhenReadyStateQueue), true
+	default:
+		return actionsPopupAction{}, false
 	}
 }
 
@@ -209,6 +231,14 @@ func (program *Program) requestedPullRequestAutoMergeMutation(kind pullRequestAu
 		return actionsPopupErrorRequested(err)
 	}
 	return MsgPullRequestAutoMergeMutationRequested{Kind: kind, Target: target, Summary: summary, Enabled: enabled, SuccessMessage: successMessage}
+}
+
+func (program *Program) requestedPullRequestMergeWhenReady(optimisticState pullRequestMergeWhenReadyState, successMessage string) Msg {
+	target, summary, err := program.selectedPullRequestMutationContext()
+	if err != nil {
+		return actionsPopupErrorRequested(err)
+	}
+	return MsgPullRequestMergeWhenReadyRequested{Target: target, Summary: summary, OptimisticState: optimisticState, SuccessMessage: successMessage}
 }
 
 func (program *Program) requestedPullRequestMergeQueueMutation(kind pullRequestMergeQueueMutationKind, inQueue bool, successMessage string) Msg {
@@ -265,6 +295,13 @@ func (program *Program) currentPullRequestHasUnmetMergeRequirements() bool {
 		}
 	}
 	return false
+}
+
+func (program *Program) currentPullRequestQueueReadyNow() bool {
+	if program.currentPullRequestMergeabilityStatus() == pullRequestOverviewStatusFailure {
+		return false
+	}
+	return !program.currentPullRequestHasUnmetMergeRequirements()
 }
 
 func (program *Program) currentPullRequestHasOngoingBuilds() bool {
@@ -434,17 +471,18 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullR
 	result, ok := program.pullRequestDetailCache[key]
 	if !ok || result.err != nil {
 		result = pullRequestDetailResult{detail: githubdomain.PullRequestDetail{
-			Title:               strings.TrimSpace(summary.Title),
-			Number:              summary.Number,
-			URL:                 strings.TrimSpace(summary.URL),
-			Body:                strings.TrimSpace(summary.Body),
-			ReviewDecision:      strings.TrimSpace(summary.ReviewDecision),
-			State:               state,
-			IsDraft:             isDraft,
-			AutoMergeRequest:    autoMergeRequest,
-			IsMergeQueueEnabled: summary.IsMergeQueueEnabled,
-			IsInMergeQueue:      isInMergeQueue,
-			MergeQueueEntry:     mergeQueueEntry,
+			Title:                    strings.TrimSpace(summary.Title),
+			Number:                   summary.Number,
+			URL:                      strings.TrimSpace(summary.URL),
+			Body:                     strings.TrimSpace(summary.Body),
+			ReviewDecision:           strings.TrimSpace(summary.ReviewDecision),
+			State:                    state,
+			IsDraft:                  isDraft,
+			AutoMergeRequest:         autoMergeRequest,
+			IsMergeQueueEnabled:      summary.IsMergeQueueEnabled,
+			IsInMergeQueue:           isInMergeQueue,
+			MergeQueueEntry:          mergeQueueEntry,
+			ViewerCanEnableAutoMerge: summary.ViewerCanEnableAutoMerge,
 		}}
 	} else {
 		result.detail.Title = firstNonEmpty(result.detail.Title, strings.TrimSpace(summary.Title))
@@ -457,6 +495,7 @@ func (program *Program) mutateOrSeedPullRequestDetail(summary githubdomain.PullR
 		result.detail.IsMergeQueueEnabled = result.detail.IsMergeQueueEnabled || summary.IsMergeQueueEnabled
 		result.detail.IsInMergeQueue = isInMergeQueue
 		result.detail.MergeQueueEntry = mergeQueueEntry
+		result.detail.ViewerCanEnableAutoMerge = result.detail.ViewerCanEnableAutoMerge || summary.ViewerCanEnableAutoMerge
 	}
 	if strings.EqualFold(state, "MERGED") {
 		result.detail.ReviewDecision = ""
@@ -478,6 +517,12 @@ func (program *Program) applyVisiblePullRequestAutoMergeMutation(summary githubd
 	}
 
 	program.mutateLoadedPullRequestSummaries(summary, func(current *githubdomain.PullRequest) {
+		current.IsMergeQueueEnabled = current.IsMergeQueueEnabled || summary.IsMergeQueueEnabled
+		if enabled {
+			current.ViewerCanEnableAutoMerge = false
+		} else if current.IsMergeQueueEnabled || summary.IsMergeQueueEnabled {
+			current.ViewerCanEnableAutoMerge = true
+		}
 		current.AutoMergeRequest = clonePullRequestAutoMergeRequest(autoMergeRequest)
 	})
 
@@ -486,6 +531,12 @@ func (program *Program) applyVisiblePullRequestAutoMergeMutation(summary githubd
 		return
 	}
 	if result, ok := program.pullRequestDetailCache[key]; ok && result.err == nil {
+		result.detail.IsMergeQueueEnabled = result.detail.IsMergeQueueEnabled || summary.IsMergeQueueEnabled
+		if enabled {
+			result.detail.ViewerCanEnableAutoMerge = false
+		} else if result.detail.IsMergeQueueEnabled || summary.IsMergeQueueEnabled {
+			result.detail.ViewerCanEnableAutoMerge = true
+		}
 		result.detail.AutoMergeRequest = clonePullRequestAutoMergeRequest(autoMergeRequest)
 		result.sourceUpdatedAt = ""
 		result.needsRefresh = true

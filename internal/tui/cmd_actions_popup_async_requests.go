@@ -181,6 +181,17 @@ type pullRequestAutoMergeMutationPopupRequest struct {
 	feedbackTarget Focus
 }
 
+type pullRequestMergeWhenReadyPopupRequest struct {
+	repository       string
+	number           int
+	pullRequestID    string
+	summary          githubdomain.PullRequest
+	optimisticState  pullRequestMergeWhenReadyState
+	successMessage   string
+	feedbackTarget   Focus
+	rollbackSnapshot pullRequestMergeQueueMutationSnapshot
+}
+
 type pullRequestMergeQueueMutationPopupRequest struct {
 	kind             pullRequestMergeQueueMutationKind
 	pullRequestID    string
@@ -208,6 +219,29 @@ func (request pullRequestAutoMergeMutationPopupRequest) run(deps actionsPopupAsy
 		Enabled:        request.enabled,
 		FeedbackTarget: request.feedbackTarget,
 		Message:        request.successMessage,
+	}, nil
+}
+
+func (request pullRequestMergeWhenReadyPopupRequest) statusCommand() string {
+	return mergePullRequestWhenReadyCommand(request.repository, request.number)
+}
+
+func (pullRequestMergeWhenReadyPopupRequest) asyncRequested() bool {
+	return true
+}
+
+func (request pullRequestMergeWhenReadyPopupRequest) run(deps actionsPopupAsyncCommandDeps) (actionsPopupAsyncCompletion, error) {
+	if deps.pullRequestMutations == nil {
+		return nil, errors.New("github loader is unavailable")
+	}
+	if err := normalizedPullRequestMutationError(deps.pullRequestMutations.MergePullRequestWhenReady(request.repository, request.number, request.pullRequestID), "gh pr merge"); err != nil {
+		return nil, newPullRequestMergeQueueAsyncError(err, request.rollbackSnapshot)
+	}
+	return pullRequestMergeWhenReadyAppliedCompletion{
+		Summary:         request.summary,
+		OptimisticState: request.optimisticState,
+		FeedbackTarget:  request.feedbackTarget,
+		Message:         request.successMessage,
 	}, nil
 }
 

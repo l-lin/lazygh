@@ -53,6 +53,20 @@ type MsgPullRequestAutoMergeMutationRequested struct {
 	SuccessMessage string
 }
 
+type pullRequestMergeWhenReadyState int
+
+const (
+	pullRequestMergeWhenReadyStateQueue pullRequestMergeWhenReadyState = iota
+	pullRequestMergeWhenReadyStateAutoMerge
+)
+
+type MsgPullRequestMergeWhenReadyRequested struct {
+	Target          pullRequestActionTarget
+	Summary         githubdomain.PullRequest
+	OptimisticState pullRequestMergeWhenReadyState
+	SuccessMessage  string
+}
+
 type pullRequestMergeQueueMutationKind int
 
 const (
@@ -161,6 +175,7 @@ func (MsgApprovePullRequestRequested) isMsg()             {}
 func (MsgReRequestPullRequestReviewRequested) isMsg()     {}
 func (MsgPullRequestLifecycleMutationRequested) isMsg()   {}
 func (MsgPullRequestAutoMergeMutationRequested) isMsg()   {}
+func (MsgPullRequestMergeWhenReadyRequested) isMsg()      {}
 func (MsgPullRequestMergeQueueMutationRequested) isMsg()  {}
 func (MsgPullRequestBranchUpdateRequested) isMsg()        {}
 func (MsgActionsPopupClosedWithFeedback) isMsg()          {}

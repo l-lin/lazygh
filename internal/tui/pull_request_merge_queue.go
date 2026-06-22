@@ -40,6 +40,13 @@ func effectivePullRequestInMergeQueue(summary githubdomain.PullRequest, detail g
 	return summary.IsInMergeQueue || summary.MergeQueueEntry != nil
 }
 
+func effectivePullRequestViewerCanEnableAutoMerge(summary githubdomain.PullRequest, detail githubdomain.PullRequestDetail) bool {
+	if detail.ViewerCanEnableAutoMerge {
+		return true
+	}
+	return summary.ViewerCanEnableAutoMerge
+}
+
 func (program *Program) currentPullRequestMergeQueueEnabled() bool {
 	summary, ok := program.currentPullRequestSummary()
 	if !ok {
@@ -62,6 +69,17 @@ func (program *Program) currentPullRequestInMergeQueue() bool {
 	return summary.IsInMergeQueue || summary.MergeQueueEntry != nil
 }
 
+func (program *Program) currentPullRequestViewerCanEnableAutoMerge() bool {
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return false
+	}
+	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
+		return effectivePullRequestViewerCanEnableAutoMerge(summary, result.detail)
+	}
+	return summary.ViewerCanEnableAutoMerge
+}
+
 func optimisticPullRequestMergeQueueEntry(inQueue bool) *githubdomain.PullRequestMergeQueueEntry {
 	if !inQueue {
 		return nil
@@ -76,6 +94,7 @@ func (program *Program) applyVisiblePullRequestMergeQueueMutation(summary github
 		current.IsMergeQueueEnabled = true
 		current.IsInMergeQueue = inQueue
 		current.MergeQueueEntry = clonePullRequestMergeQueueEntry(mergeQueueEntry)
+		current.ViewerCanEnableAutoMerge = false
 		current.AutoMergeRequest = nil
 	})
 
@@ -87,6 +106,7 @@ func (program *Program) applyVisiblePullRequestMergeQueueMutation(summary github
 		result.detail.IsMergeQueueEnabled = true
 		result.detail.IsInMergeQueue = inQueue
 		result.detail.MergeQueueEntry = clonePullRequestMergeQueueEntry(mergeQueueEntry)
+		result.detail.ViewerCanEnableAutoMerge = false
 		result.detail.AutoMergeRequest = nil
 		result.sourceUpdatedAt = ""
 		result.needsRefresh = true
@@ -98,12 +118,22 @@ func (program *Program) applyVisiblePullRequestMergeQueueMutation(summary github
 	program.invalidatePersistentPullRequest(pullRequestRepositoryName(summary.Repository), summary.Number)
 }
 
+func (program *Program) applyVisiblePullRequestMergeWhenReady(summary githubdomain.PullRequest, optimisticState pullRequestMergeWhenReadyState) {
+	switch optimisticState {
+	case pullRequestMergeWhenReadyStateAutoMerge:
+		program.applyVisiblePullRequestAutoMergeMutation(summary, true)
+	case pullRequestMergeWhenReadyStateQueue:
+		program.applyVisiblePullRequestMergeQueueMutation(summary, true)
+	}
+}
+
 func (program *Program) capturePullRequestMergeQueueMutationSnapshot(summary githubdomain.PullRequest) pullRequestMergeQueueMutationSnapshot {
 	snapshot := pullRequestMergeQueueMutationSnapshot{summary: summary}
 	if result, ok := program.pullRequestDetailForSummary(summary); ok && result.err == nil {
 		snapshot.summary.IsMergeQueueEnabled = effectivePullRequestMergeQueueEnabled(summary, result.detail)
 		snapshot.summary.IsInMergeQueue = effectivePullRequestInMergeQueue(summary, result.detail)
 		snapshot.summary.MergeQueueEntry = clonePullRequestMergeQueueEntry(effectivePullRequestMergeQueueEntry(summary, result.detail))
+		snapshot.summary.ViewerCanEnableAutoMerge = effectivePullRequestViewerCanEnableAutoMerge(summary, result.detail)
 		if result.detail.AutoMergeRequest != nil {
 			snapshot.summary.AutoMergeRequest = clonePullRequestAutoMergeRequest(result.detail.AutoMergeRequest)
 		}
@@ -122,6 +152,7 @@ func (program *Program) restorePullRequestMergeQueueMutationSnapshot(snapshot pu
 		current.IsMergeQueueEnabled = snapshot.summary.IsMergeQueueEnabled
 		current.IsInMergeQueue = snapshot.summary.IsInMergeQueue
 		current.MergeQueueEntry = clonePullRequestMergeQueueEntry(snapshot.summary.MergeQueueEntry)
+		current.ViewerCanEnableAutoMerge = snapshot.summary.ViewerCanEnableAutoMerge
 		current.AutoMergeRequest = clonePullRequestAutoMergeRequest(snapshot.summary.AutoMergeRequest)
 	})
 	if !snapshot.hasDetail {

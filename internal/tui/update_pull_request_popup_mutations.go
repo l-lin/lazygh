@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -66,6 +67,24 @@ func (program *Program) applyPullRequestAutoMergeMutationRequested(message MsgPu
 	}
 
 	return program.queueActionsPopupAsyncRequest(pullRequestAutoMergeMutationPopupRequest{kind: message.Kind, repository: repository, number: number, summary: message.Summary, enabled: message.Enabled, successMessage: message.SuccessMessage, feedbackTarget: program.model.Focus()})
+}
+
+func (program *Program) applyPullRequestMergeWhenReadyRequested(message MsgPullRequestMergeWhenReadyRequested) []Cmd {
+	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
+	if !ok || !popupPullRequestSummaryValid(message.Summary) {
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		return nil
+	}
+	if mergePullRequestWhenReadyCommand(repository, number) == "" {
+		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		return nil
+	}
+
+	snapshot := program.capturePullRequestMergeQueueMutationSnapshot(message.Summary)
+	program.clearPendingSelectionPrefix()
+	program.closeActionsPopupState()
+	program.applyVisiblePullRequestMergeWhenReady(message.Summary, message.OptimisticState)
+	return program.queueActionsPopupAsyncRequest(pullRequestMergeWhenReadyPopupRequest{repository: repository, number: number, pullRequestID: strings.TrimSpace(message.Target.pullRequestID), summary: message.Summary, optimisticState: message.OptimisticState, successMessage: message.SuccessMessage, feedbackTarget: program.model.Focus(), rollbackSnapshot: snapshot})
 }
 
 func (program *Program) applyPullRequestMergeQueueMutationRequested(message MsgPullRequestMergeQueueMutationRequested) []Cmd {
@@ -155,6 +174,10 @@ func pullRequestAutoMergeMutationCommand(kind pullRequestAutoMergeMutationKind, 
 	default:
 		return ""
 	}
+}
+
+func mergePullRequestWhenReadyCommand(repository string, number int) string {
+	return formatStatusLineCommand("gh", "pr", "merge", fmt.Sprintf("%d", number), "-R", repository)
 }
 
 func pullRequestMergeQueueMutationCommand(kind pullRequestMergeQueueMutationKind) string {
