@@ -1242,6 +1242,47 @@ func TestLayout_GivenInlineCommentDiff_WhenRendering_ThenTheCommentsTabUsesTreeS
 	then_viewLineSegmentHasBackgroundColor(t, gui, viewDetailName, additionLineIndex, `return Versions.fromString("5.`, given_themeColorHex(t, theme.DiffAdditionBackgroundHex), "inline addition unchanged background")
 }
 
+func TestLayout_GivenInlineCommentTSXDiff_WhenRendering_ThenTheCommentsTabUsesTSXGrammarSyntaxColors(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Title: "Styled PR", Number: 118, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, Body: "fallback body"}),
+	})
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#118": {Title: "Styled PR", Number: 118, Body: "Body 118", BaseRefName: "main", HeadRefName: "feature-118", State: "OPEN", InlineComments: []githubcli.PullRequestInlineComment{{Author: &githubcli.PullRequestCommentAuthor{Login: "reviewer-inline"}, Body: "Inline diff body", CreatedAt: "2026-04-18T10:00:00Z", Path: "web/components/Counter.tsx", Line: 43, OriginalLine: 43, Side: "RIGHT", DiffHunk: "@@ -43,1 +43,1 @@\n-const view = <Button label=\"Count\" onClick={() => setCount(0)} />\n+const view = <Button label=\"Count\" onClick={() => setCount(1)} />"}}},
+		},
+	}
+	subject := given_programWithTestGitHubDeps(model, loader)
+	subject.connectedUserLoadStarted = true
+	subject.myPullRequestsLoadStarted = true
+	subject.requestedPullRequestsLoadStarted = true
+	subject.asyncRunner = inlineAsyncRunner{}
+	subject.uiUpdater = immediateUIUpdater{}
+	subject.markdownRenderer = &fakeMarkdownRenderer{outputs: map[string]string{"Body 118": "Rendered body 118", "Inline diff body": "Rendered inline diff body"}}
+	gui := given_headlessGuiWithSize(t, 120, 50)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+	then_noError(t, actualErr)
+	actualErr = subject.openDetail(gui, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.nextDetailTab(gui, nil)
+	then_noError(t, actualErr)
+
+	detailView, actualErr := gui.View(viewDetailName)
+	then_noError(t, actualErr)
+	deletionLineIndex := given_viewLineIndexContaining(t, detailView, `const view = <Button label="Count" onClick={() => setCount(0)} />`)
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "label", given_themeColorHex(t, theme.SyntaxPropertyHex), "inline tsx deletion property")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, deletionLineIndex, "setCount", given_themeColorHex(t, theme.SyntaxFunctionHex), "inline tsx deletion function")
+
+	additionLineIndex := given_viewLineIndexContaining(t, detailView, `const view = <Button label="Count" onClick={() => setCount(1)} />`)
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "onClick", given_themeColorHex(t, theme.SyntaxPropertyHex), "inline tsx addition property")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, "setCount", given_themeColorHex(t, theme.SyntaxFunctionHex), "inline tsx addition function")
+	then_viewLineSegmentHasForegroundColor(t, gui, viewDetailName, additionLineIndex, `"Count"`, given_themeColorHex(t, theme.SyntaxStringHex), "inline tsx addition string")
+}
+
 func TestLayout_GivenInlineComments_WhenRendering_ThenTheCommentsTabUsesAHighlightedAuthorBadgeInsideTheCommentBox(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()

@@ -103,6 +103,32 @@ func TestReviewDiffTreeSitter_GivenCodeDiffsWithMoreSupportedLanguages_WhenForma
 	}
 }
 
+func TestReviewDiffTreeSitter_GivenTSXCodeDiff_WhenFormatting_ThenItUsesTSXGrammarSyntaxColors(t *testing.T) {
+	file := reviewDiffFile{
+		Path:       "web/components/Counter.tsx",
+		Additions:  1,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -1,0 +1,1 @@",
+			Lines: []reviewDiffLine{{
+				Kind:      reviewDiffAdditionLine,
+				Text:      `const view = <Button label="Count" onClick={() => setCount(1)} />`,
+				RightLine: 1,
+				Side:      reviewDiffLineSideRight,
+			}},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `const view = <Button label="Count" onClick={() => setCount(1)} />`)
+
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "label", foregroundColorEscape(theme.SyntaxPropertyHex), "tsx property")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "onClick", foregroundColorEscape(theme.SyntaxPropertyHex), "tsx property")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "setCount", foregroundColorEscape(theme.SyntaxFunctionHex), "tsx function")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"Count"`, foregroundColorEscape(theme.SyntaxStringHex), "tsx string")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "setCount", backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
+}
+
 func TestReviewDiffTreeSitter_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHardBackgroundOnlyOnChangedSegments(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "src/main/java/com/acme/VersionParser.java",

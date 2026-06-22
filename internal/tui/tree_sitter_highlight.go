@@ -84,6 +84,7 @@ var (
 	treeSitterPythonRuntime     = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_python.Language()), treeSitterPythonHighlightsQuery)
 	treeSitterRubyRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_ruby.Language()), treeSitterRubyHighlightsQuery)
 	treeSitterTOMLRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_toml.Language()), treeSitterTOMLHighlightsQuery)
+	treeSitterTSXRuntime        = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_typescript.LanguageTSX()), treeSitterTypeScriptHighlightsQuery)
 	treeSitterTypeScriptRuntime = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_typescript.LanguageTypescript()), treeSitterTypeScriptHighlightsQuery)
 	treeSitterXMLRuntime        = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_xml.LanguageXML()), treeSitterXMLHighlightsQuery)
 	treeSitterYAMLRuntime       = newTreeSitterLanguageRuntime(tree_sitter.NewLanguage(tree_sitter_yaml.Language()), treeSitterYAMLHighlightsQuery)
@@ -173,6 +174,8 @@ func treeSitterRuntimeForPath(path string) (*treeSitterLanguageRuntime, bool) {
 		return treeSitterTOMLRuntime, true
 	case ".ts", ".cts", ".mts":
 		return treeSitterTypeScriptRuntime, true
+	case ".tsx":
+		return treeSitterTSXRuntime, true
 	case ".xml":
 		return treeSitterXMLRuntime, true
 	case ".yaml", ".yml":
