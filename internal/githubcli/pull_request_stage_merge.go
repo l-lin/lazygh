@@ -66,6 +66,27 @@ func (client *PullRequestMutationService) SquashMergePullRequest(repository stri
 	return nil
 }
 
+func (client *PullRequestMutationService) MergePullRequestWhenReady(repository string, number int, pullRequestID string) error {
+	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
+	if err != nil {
+		return err
+	}
+
+	capabilities, err := client.loadRepositoryMergeCapabilities(trimmedRepository)
+	if err != nil {
+		return err
+	}
+	if !capabilities.AutoMergeAllowed {
+		return client.EnqueuePullRequest(pullRequestID)
+	}
+
+	if _, err := client.execute(rawCommand("pr", "merge", strconv.Itoa(number), "-R", trimmedRepository)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *PullRequestMutationService) EnablePullRequestAutoMerge(repository string, number int) error {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {

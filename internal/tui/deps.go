@@ -42,6 +42,7 @@ type PullRequestMutations interface {
 	ClosePullRequest(repository string, number int) error
 	ReopenPullRequest(repository string, number int) error
 	SquashMergePullRequest(repository string, number int) error
+	MergePullRequestWhenReady(repository string, number int, pullRequestID string) error
 	EnablePullRequestAutoMerge(repository string, number int) error
 	DisablePullRequestAutoMerge(repository string, number int) error
 	EnqueuePullRequest(pullRequestID string) error

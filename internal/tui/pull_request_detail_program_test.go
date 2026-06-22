@@ -1930,6 +1930,9 @@ type fakePullRequestDetailLoader struct {
 	reopenPullRequestErr              error
 	squashMergeCalls                  []string
 	squashMergeErr                    error
+	mergeWhenReadyCalls               []string
+	mergeWhenReadyPullRequestIDs      []string
+	mergeWhenReadyErr                 error
 	enableAutoMergeCalls              []string
 	enableAutoMergeErr                error
 	disableAutoMergeCalls             []string
@@ -2550,6 +2553,61 @@ func (loader *fakePullRequestDetailLoader) SquashMergePullRequest(repository str
 		detail.IsDraft = false
 		detail.Mergeable = ""
 		detail.MergeStateStatus = ""
+		detail.AutoMergeRequest = nil
+	})
+	return nil
+}
+
+func (loader *fakePullRequestDetailLoader) MergePullRequestWhenReady(repository string, number int, pullRequestID string) error {
+	loader.mergeWhenReadyCalls = append(loader.mergeWhenReadyCalls, repository+"#"+strconv.Itoa(number))
+	loader.mergeWhenReadyPullRequestIDs = append(loader.mergeWhenReadyPullRequestIDs, strings.TrimSpace(pullRequestID))
+	if loader.mergeWhenReadyErr != nil {
+		return loader.mergeWhenReadyErr
+	}
+
+	key := repository + "#" + strconv.Itoa(number)
+	viewerCanEnableAutoMerge := false
+	if detail, ok := loader.details[key]; ok {
+		viewerCanEnableAutoMerge = detail.ViewerCanEnableAutoMerge
+	} else {
+		for _, pullRequest := range append(append([]githubcli.PullRequest(nil), loader.myPullRequests...), loader.requestedPullRequests...) {
+			if strings.TrimSpace(pullRequest.Repository.NameWithOwner) == repository && pullRequest.Number == number {
+				viewerCanEnableAutoMerge = pullRequest.ViewerCanEnableAutoMerge
+				break
+			}
+		}
+	}
+
+	if viewerCanEnableAutoMerge {
+		loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+			pullRequest.IsMergeQueueEnabled = true
+			pullRequest.IsInMergeQueue = false
+			pullRequest.MergeQueueEntry = nil
+			pullRequest.ViewerCanEnableAutoMerge = false
+			pullRequest.AutoMergeRequest = &githubcli.PullRequestAutoMergeRequest{}
+		})
+		loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+			detail.IsMergeQueueEnabled = true
+			detail.IsInMergeQueue = false
+			detail.MergeQueueEntry = nil
+			detail.ViewerCanEnableAutoMerge = false
+			detail.AutoMergeRequest = &githubcli.PullRequestAutoMergeRequest{}
+		})
+		return nil
+	}
+
+	loader.updatePullRequestSummary(repository, number, func(pullRequest *githubcli.PullRequest) {
+		pullRequest.IsMergeQueueEnabled = true
+		pullRequest.IsInMergeQueue = true
+		pullRequest.MergeQueueEntry = &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}
+		pullRequest.ViewerCanEnableAutoMerge = false
+		pullRequest.AutoMergeRequest = nil
+	})
+	loader.updatePullRequestDetail(repository, number, func(detail *githubcli.PullRequestDetail) {
+		detail.IsMergeQueueEnabled = true
+		detail.IsInMergeQueue = true
+		detail.MergeQueueEntry = &githubcli.PullRequestMergeQueueEntry{State: "QUEUED"}
+		detail.ViewerCanEnableAutoMerge = false
 		detail.AutoMergeRequest = nil
 	})
 	return nil

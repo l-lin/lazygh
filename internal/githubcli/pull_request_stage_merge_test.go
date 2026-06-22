@@ -76,6 +76,50 @@ func TestDisablePullRequestAutoMerge_GivenRepositoryAndNumber_WhenSubmitting_The
 	then_commandIs(t, runner, "gh", []string{"pr", "merge", "42", "-R", "acme/widgets", "--disable-auto"})
 }
 
+func TestMergePullRequestWhenReady_GivenRepositoryWithAutoMergeAllowed_WhenSubmitting_ThenItRunsGhPrMerge(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`{"data":{"repository":{"autoMergeAllowed":true}}}`)},
+		{},
+	}}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.MergePullRequestWhenReady("acme/widgets", 42, "")
+
+	then_noError(t, actualErr)
+	then_commandsAre(t, runner, []fakeCommandCall{
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + repositoryMergeCapabilitiesQuery, "-F", "owner=acme", "-F", "name=widgets"}},
+		{name: "gh", args: []string{"pr", "merge", "42", "-R", "acme/widgets"}},
+	})
+}
+
+func TestMergePullRequestWhenReady_GivenRepositoryWithAutoMergeDisabled_WhenSubmitting_ThenItBypassesGhPrMergeAndRunsTheQueueMutation(t *testing.T) {
+	runner := &fakeRunner{responses: []fakeCommandResponse{
+		{stdout: []byte(`{"data":{"repository":{"autoMergeAllowed":false}}}`)},
+		{stdout: []byte(`{"data":{"enqueuePullRequest":{"mergeQueueEntry":{"id":"MQE_1","state":"QUEUED","position":1}}}}`)},
+	}}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.MergePullRequestWhenReady("acme/widgets", 42, " PR_kwDOA ")
+
+	then_noError(t, actualErr)
+	then_commandsAre(t, runner, []fakeCommandCall{
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + repositoryMergeCapabilitiesQuery, "-F", "owner=acme", "-F", "name=widgets"}},
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + enqueuePullRequestMutation, "-F", "pullRequestId=PR_kwDOA"}},
+	})
+}
+
+func TestMergePullRequestWhenReady_GivenRepositoryWithAutoMergeDisabledAndMissingPullRequestID_WhenSubmitting_ThenItReturnsTheMissingIDError(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte(`{"data":{"repository":{"autoMergeAllowed":false}}}`)}
+	subject := NewPullRequestMutationServiceWithRunner(runner)
+
+	actualErr := subject.MergePullRequestWhenReady("acme/widgets", 42, "   ")
+
+	if !errors.Is(actualErr, ErrMissingPullRequestID) {
+		t.Fatalf("expected error %v, actual %v", ErrMissingPullRequestID, actualErr)
+	}
+	then_commandsAre(t, runner, []fakeCommandCall{{name: "gh", args: []string{"api", "graphql", "-f", "query=" + repositoryMergeCapabilitiesQuery, "-F", "owner=acme", "-F", "name=widgets"}}})
+}
+
 func TestUpdatePullRequestBranch_GivenRepositoryAndNumber_WhenSubmitting_ThenItRunsGhPrUpdateBranch(t *testing.T) {
 	runner := &fakeRunner{}
 	subject := NewPullRequestMutationServiceWithRunner(runner)
