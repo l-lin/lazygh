@@ -131,7 +131,7 @@ func TestListPullRequests_GivenPullRequestIDs_WhenFetching_ThenItHydratesTheAuto
 func TestListPullRequests_GivenMergeQueueMetadata_WhenFetching_ThenItHydratesTheQueueState(t *testing.T) {
 	runner := &fakeRunner{responses: []fakeCommandResponse{
 		{stdout: []byte(`[{"id":"PR_kwDOA","title":"Queued merge","number":42,"repository":{"nameWithOwner":"acme/widgets"},"state":"OPEN"}]`)},
-		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","isMergeQueueEnabled":true,"isInMergeQueue":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}]}}`)},
+		{stdout: []byte(`{"data":{"nodes":[{"id":"PR_kwDOA","isMergeQueueEnabled":true,"isInMergeQueue":true,"viewerCanEnableAutoMerge":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}]}}`)},
 	}}
 	subject := NewPullRequestListServiceWithRunner(runner)
 
@@ -139,13 +139,14 @@ func TestListPullRequests_GivenMergeQueueMetadata_WhenFetching_ThenItHydratesThe
 
 	then_noError(t, actualErr)
 	expected := []PullRequest{{
-		ID:                  "PR_kwDOA",
-		Title:               "Queued merge",
-		Number:              42,
-		Repository:          Repository{NameWithOwner: "acme/widgets"},
-		State:               "OPEN",
-		IsMergeQueueEnabled: true,
-		IsInMergeQueue:      true,
+		ID:                       "PR_kwDOA",
+		Title:                    "Queued merge",
+		Number:                   42,
+		Repository:               Repository{NameWithOwner: "acme/widgets"},
+		State:                    "OPEN",
+		IsMergeQueueEnabled:      true,
+		IsInMergeQueue:           true,
+		ViewerCanEnableAutoMerge: true,
 		MergeQueueEntry: &PullRequestMergeQueueEntry{
 			ID:                   "MQE_1",
 			State:                "QUEUED",

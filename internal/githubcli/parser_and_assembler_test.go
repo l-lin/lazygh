@@ -33,15 +33,16 @@ func TestParsePullRequestListReviewMetadata_GivenFixture_WhenParsing_ThenItHydra
 }
 
 func TestParsePullRequestListReviewMetadata_GivenMergeQueueFields_WhenParsing_ThenItReturnsNormalizedQueueState(t *testing.T) {
-	subject := []byte(`{"data":{"nodes":[{"id":" PR_kwDOA ","isMergeQueueEnabled":true,"isInMergeQueue":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}]}}`)
+	subject := []byte(`{"data":{"nodes":[{"id":" PR_kwDOA ","isMergeQueueEnabled":true,"isInMergeQueue":true,"viewerCanEnableAutoMerge":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}]}}`)
 
 	actual, actualErr := parsePullRequestListReviewMetadata(subject)
 
 	then_noError(t, actualErr)
 	expected := map[string]pullRequestListReviewMetadata{
 		"PR_kwDOA": {
-			IsMergeQueueEnabled: true,
-			IsInMergeQueue:      true,
+			IsMergeQueueEnabled:      true,
+			IsInMergeQueue:           true,
+			ViewerCanEnableAutoMerge: true,
 			MergeQueueEntry: &PullRequestMergeQueueEntry{
 				ID:                   "MQE_1",
 				State:                "QUEUED",
@@ -52,6 +53,30 @@ func TestParsePullRequestListReviewMetadata_GivenMergeQueueFields_WhenParsing_Th
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected merge queue metadata %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestParsePullRequestListReviewMetadata_GivenQueueReadyAndAutoMergeStates_WhenParsing_ThenItDistinguishesThem(t *testing.T) {
+	subject := []byte(`{"data":{"nodes":[{"id":"PR_queue_ready","isMergeQueueEnabled":true,"isInMergeQueue":false,"viewerCanEnableAutoMerge":false,"autoMergeRequest":null},{"id":"PR_auto_merge_available","isMergeQueueEnabled":true,"isInMergeQueue":false,"viewerCanEnableAutoMerge":true,"autoMergeRequest":null},{"id":"PR_auto_merge_enabled","isMergeQueueEnabled":true,"isInMergeQueue":false,"viewerCanEnableAutoMerge":false,"autoMergeRequest":{"enabledAt":"2026-06-22T18:00:00Z"}}]}}`)
+
+	actual, actualErr := parsePullRequestListReviewMetadata(subject)
+
+	then_noError(t, actualErr)
+	expected := map[string]pullRequestListReviewMetadata{
+		"PR_queue_ready": {
+			IsMergeQueueEnabled: true,
+		},
+		"PR_auto_merge_available": {
+			IsMergeQueueEnabled:      true,
+			ViewerCanEnableAutoMerge: true,
+		},
+		"PR_auto_merge_enabled": {
+			IsMergeQueueEnabled: true,
+			AutoMergeRequest:    &PullRequestAutoMergeRequest{EnabledAt: "2026-06-22T18:00:00Z"},
+		},
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected state-distinguishing metadata %+v, actual %+v", expected, actual)
 	}
 }
 
@@ -450,8 +475,9 @@ func TestPullRequestDetailAssembler_GivenMergeQueueMetadata_WhenAssembling_ThenI
 				t.Fatalf("expected merge queue lookup for %s#%d", "acme/widgets", 42)
 			}
 			return pullRequestMergeQueueMetadata{
-				IsMergeQueueEnabled: true,
-				IsInMergeQueue:      true,
+				IsMergeQueueEnabled:      true,
+				IsInMergeQueue:           true,
+				ViewerCanEnableAutoMerge: true,
 				MergeQueueEntry: &PullRequestMergeQueueEntry{
 					ID:                   " MQE_1 ",
 					State:                " QUEUED ",
@@ -466,10 +492,11 @@ func TestPullRequestDetailAssembler_GivenMergeQueueMetadata_WhenAssembling_ThenI
 
 	then_noError(t, actualErr)
 	expected := PullRequestDetail{
-		Title:               "Ship it",
-		Number:              42,
-		IsMergeQueueEnabled: true,
-		IsInMergeQueue:      true,
+		Title:                    "Ship it",
+		Number:                   42,
+		IsMergeQueueEnabled:      true,
+		IsInMergeQueue:           true,
+		ViewerCanEnableAutoMerge: true,
 		MergeQueueEntry: &PullRequestMergeQueueEntry{
 			ID:                   "MQE_1",
 			State:                "QUEUED",

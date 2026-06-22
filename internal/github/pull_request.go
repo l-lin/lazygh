@@ -21,24 +21,25 @@ type RepositoryRef struct {
 type Repository = RepositoryRef
 
 type PullRequestSummary struct {
-	ID                     string                       `json:"id"`
-	Title                  string                       `json:"title"`
-	Number                 int                          `json:"number"`
-	Repository             RepositoryRef                `json:"repository"`
-	URL                    string                       `json:"url"`
-	Body                   string                       `json:"body"`
-	State                  string                       `json:"state"`
-	IsDraft                bool                         `json:"isDraft"`
-	UpdatedAt              string                       `json:"updatedAt"`
-	ReviewDecision         string                       `json:"reviewDecision"`
-	ReviewRequests         []PullRequestReviewRequest   `json:"reviewRequests"`
-	MergeStateStatus       string                       `json:"mergeStateStatus"`
-	Mergeable              string                       `json:"mergeable"`
-	AutoMergeRequest       *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
-	IsMergeQueueEnabled    bool                         `json:"isMergeQueueEnabled,omitempty"`
-	IsInMergeQueue         bool                         `json:"isInMergeQueue,omitempty"`
-	MergeQueueEntry        *PullRequestMergeQueueEntry  `json:"mergeQueueEntry,omitempty"`
-	StatusCheckRollupState string                       `json:"statusCheckRollupState"`
+	ID                       string                       `json:"id"`
+	Title                    string                       `json:"title"`
+	Number                   int                          `json:"number"`
+	Repository               RepositoryRef                `json:"repository"`
+	URL                      string                       `json:"url"`
+	Body                     string                       `json:"body"`
+	State                    string                       `json:"state"`
+	IsDraft                  bool                         `json:"isDraft"`
+	UpdatedAt                string                       `json:"updatedAt"`
+	ReviewDecision           string                       `json:"reviewDecision"`
+	ReviewRequests           []PullRequestReviewRequest   `json:"reviewRequests"`
+	MergeStateStatus         string                       `json:"mergeStateStatus"`
+	Mergeable                string                       `json:"mergeable"`
+	AutoMergeRequest         *PullRequestAutoMergeRequest `json:"autoMergeRequest,omitempty"`
+	IsMergeQueueEnabled      bool                         `json:"isMergeQueueEnabled,omitempty"`
+	IsInMergeQueue           bool                         `json:"isInMergeQueue,omitempty"`
+	MergeQueueEntry          *PullRequestMergeQueueEntry  `json:"mergeQueueEntry,omitempty"`
+	ViewerCanEnableAutoMerge bool                         `json:"viewerCanEnableAutoMerge,omitempty"`
+	StatusCheckRollupState   string                       `json:"statusCheckRollupState"`
 }
 
 type PullRequest = PullRequestSummary

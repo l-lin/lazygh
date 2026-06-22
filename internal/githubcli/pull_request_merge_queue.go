@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const pullRequestMergeQueueQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){isMergeQueueEnabled isInMergeQueue mergeQueueEntry{id state position estimatedTimeToMerge}}}}`
+const pullRequestMergeQueueQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){isMergeQueueEnabled isInMergeQueue viewerCanEnableAutoMerge mergeQueueEntry{id state position estimatedTimeToMerge}}}}`
 const enqueuePullRequestMutation = `mutation($pullRequestId:ID!){enqueuePullRequest(input:{pullRequestId:$pullRequestId}){mergeQueueEntry{id state position}}}`
 const dequeuePullRequestMutation = `mutation($pullRequestId:ID!){dequeuePullRequest(input:{pullRequestId:$pullRequestId}){mergeQueueEntry{id state position}}}`
 
@@ -23,9 +23,10 @@ type PullRequestMergeQueueEntry struct {
 }
 
 type pullRequestMergeQueueMetadata struct {
-	IsMergeQueueEnabled bool
-	IsInMergeQueue      bool
-	MergeQueueEntry     *PullRequestMergeQueueEntry
+	IsMergeQueueEnabled      bool
+	IsInMergeQueue           bool
+	ViewerCanEnableAutoMerge bool
+	MergeQueueEntry          *PullRequestMergeQueueEntry
 }
 
 type pullRequestMergeQueueMutationPayload struct {
@@ -55,6 +56,7 @@ func applyPullRequestMergeQueueMetadata(detail PullRequestDetail, metadata pullR
 	normalizedMetadata := metadata.normalized()
 	detail.IsMergeQueueEnabled = normalizedMetadata.IsMergeQueueEnabled
 	detail.IsInMergeQueue = normalizedMetadata.IsInMergeQueue
+	detail.ViewerCanEnableAutoMerge = normalizedMetadata.ViewerCanEnableAutoMerge
 	detail.MergeQueueEntry = normalizedMetadata.MergeQueueEntry
 	return detail
 }
@@ -82,9 +84,10 @@ func parsePullRequestMergeQueueMetadata(stdout []byte) (pullRequestMergeQueueMet
 	var response struct {
 		Repository *struct {
 			PullRequest *struct {
-				IsMergeQueueEnabled bool                        `json:"isMergeQueueEnabled"`
-				IsInMergeQueue      bool                        `json:"isInMergeQueue"`
-				MergeQueueEntry     *PullRequestMergeQueueEntry `json:"mergeQueueEntry"`
+				IsMergeQueueEnabled      bool                        `json:"isMergeQueueEnabled"`
+				IsInMergeQueue           bool                        `json:"isInMergeQueue"`
+				ViewerCanEnableAutoMerge bool                        `json:"viewerCanEnableAutoMerge"`
+				MergeQueueEntry          *PullRequestMergeQueueEntry `json:"mergeQueueEntry"`
 			} `json:"pullRequest"`
 		} `json:"repository"`
 	}
@@ -96,9 +99,10 @@ func parsePullRequestMergeQueueMetadata(stdout []byte) (pullRequestMergeQueueMet
 	}
 
 	return pullRequestMergeQueueMetadata{
-		IsMergeQueueEnabled: response.Repository.PullRequest.IsMergeQueueEnabled,
-		IsInMergeQueue:      response.Repository.PullRequest.IsInMergeQueue,
-		MergeQueueEntry:     normalizePullRequestMergeQueueEntry(response.Repository.PullRequest.MergeQueueEntry),
+		IsMergeQueueEnabled:      response.Repository.PullRequest.IsMergeQueueEnabled,
+		IsInMergeQueue:           response.Repository.PullRequest.IsInMergeQueue,
+		ViewerCanEnableAutoMerge: response.Repository.PullRequest.ViewerCanEnableAutoMerge,
+		MergeQueueEntry:          normalizePullRequestMergeQueueEntry(response.Repository.PullRequest.MergeQueueEntry),
 	}, nil
 }
 

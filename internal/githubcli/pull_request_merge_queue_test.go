@@ -7,14 +7,15 @@ import (
 )
 
 func TestParsePullRequestMergeQueueMetadata_GivenWhitespaceAndQueueEntry_WhenParsing_ThenItReturnsNormalizedMetadata(t *testing.T) {
-	subject := []byte(`{"data":{"repository":{"pullRequest":{"isMergeQueueEnabled":true,"isInMergeQueue":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}}}}`)
+	subject := []byte(`{"data":{"repository":{"pullRequest":{"isMergeQueueEnabled":true,"isInMergeQueue":true,"viewerCanEnableAutoMerge":true,"mergeQueueEntry":{"id":" MQE_1 ","state":" QUEUED ","position":2,"estimatedTimeToMerge":15}}}}}`)
 
 	actual, actualErr := parsePullRequestMergeQueueMetadata(subject)
 
 	then_noError(t, actualErr)
 	expected := pullRequestMergeQueueMetadata{
-		IsMergeQueueEnabled: true,
-		IsInMergeQueue:      true,
+		IsMergeQueueEnabled:      true,
+		IsInMergeQueue:           true,
+		ViewerCanEnableAutoMerge: true,
 		MergeQueueEntry: &PullRequestMergeQueueEntry{
 			ID:                   "MQE_1",
 			State:                "QUEUED",
