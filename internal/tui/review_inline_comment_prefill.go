@@ -2,50 +2,15 @@ package tui
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 )
 
-func reviewInlineCommentSuggestionBody(path string, snippet string) string {
+func reviewInlineCommentSuggestionBody(snippet string) string {
 	if snippet == "" {
 		return ""
 	}
 
-	info := "suggestion"
-	if language := reviewInlineCommentSuggestionLanguage(path); language != "" {
-		info = language + " suggestion"
-	}
-
-	return fmt.Sprintf("```%s\n%s\n```", info, strings.ReplaceAll(snippet, "\r", ""))
-}
-
-func reviewInlineCommentSuggestionLanguage(path string) string {
-	normalizedPath := strings.ToLower(strings.TrimSpace(path))
-	if normalizedPath == "" {
-		return ""
-	}
-
-	switch filepath.Ext(normalizedPath) {
-	case ".go":
-		return "go"
-	case ".java":
-		return "java"
-	case ".json":
-		return "json"
-	case ".toml":
-		return "toml"
-	case ".yaml", ".yml":
-		return "yaml"
-	case ".bash", ".sh", ".zsh":
-		return "bash"
-	}
-
-	switch filepath.Base(normalizedPath) {
-	case ".bash_profile", ".bashrc", ".profile", ".zshrc":
-		return "bash"
-	}
-
-	return ""
+	return fmt.Sprintf("```suggestion\n%s\n```", strings.ReplaceAll(snippet, "\r", ""))
 }
 
 func reviewDiffSelectedSnippet(renderedRows []reviewDiffRenderedRow, document detailDocument, state detailViewState) string {

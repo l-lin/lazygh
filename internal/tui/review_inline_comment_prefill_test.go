@@ -32,7 +32,7 @@ func TestPullRequestInlineCommentSelectionFromRenderedRows_GivenALinewiseSelecti
 	actual, actualErr := pullRequestInlineCommentSelectionFromRenderedRows("acme/widgets", 42, "PRR_pending", false, given_renderedRows, given_document, given_state)
 
 	then_noError(t, actualErr)
-	expected := "```java suggestion\nimport com.doctolib.doctoboot.interservices.client.v2.JwtCredentialManagerFactoryV2;\n```"
+	expected := "```suggestion\nimport com.doctolib.doctoboot.interservices.client.v2.JwtCredentialManagerFactoryV2;\n```"
 	if actual.initialBody != expected {
 		t.Fatalf("expected inline comment draft %q, actual %q", expected, actual.initialBody)
 	}

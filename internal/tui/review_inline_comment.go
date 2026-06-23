@@ -122,7 +122,7 @@ func pullRequestInlineCommentSelectionFromRenderedRows(repository string, number
 			threadTarget:  threadTarget,
 			updateDetail:  updateDetail,
 		},
-		initialBody: reviewInlineCommentSuggestionBody(threadTarget.Path, reviewDiffSelectedSnippet(renderedRows, detailDocument, state)),
+		initialBody: reviewInlineCommentSuggestionBody(reviewDiffSelectedSnippet(renderedRows, detailDocument, state)),
 	}, nil
 }
 

@@ -136,7 +136,7 @@ func TestActionsPopup_GivenReviewModeLinewiseSelectionAcrossAddedLines_WhenExecu
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	expected := strings.Join([]string{
-		"```java suggestion",
+		"```suggestion",
 		"System.out.println(\"This is an example\");",
 		"return format(version);",
 		"```",
