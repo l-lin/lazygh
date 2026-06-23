@@ -64,9 +64,9 @@ func newDefaultLightPalette() Palette {
 	pendingHex := "#656D76"
 	pendingBackgroundHex := "#E6E6E6"
 	successHex := "#1A7F37"
-	successBackgroundHex := "#E4F0E7"
+	successBackgroundHex := "#DBEAE1"
 	failureHex := "#CF222E"
-	failureBackgroundHex := "#F9E4E6"
+	failureBackgroundHex := "#F5DEE0"
 	warningHex := "#9A6700"
 	searchHighlightHex := "#F9EAB3"
 	commentAuthorBadgeHex := "#0969DA"
@@ -118,10 +118,10 @@ func newDefaultLightPalette() Palette {
 		PullRequestStatusMergedBackgroundHex: mergedBackgroundHex,
 		DiffAdditionHex:                      successHex,
 		DiffAdditionBackgroundHex:            successBackgroundHex,
-		DiffAdditionHighlightBackgroundHex:   "#D6E8DB",
+		DiffAdditionHighlightBackgroundHex:   "#CADDD2",
 		DiffDeletionHex:                      failureHex,
 		DiffDeletionBackgroundHex:            failureBackgroundHex,
-		DiffDeletionHighlightBackgroundHex:   "#F6D7D9",
+		DiffDeletionHighlightBackgroundHex:   "#EFCED1",
 		DiffLineNumberHex:                    pendingHex,
 		DiffHunkHeaderHex:                    pendingHex,
 		TeamOwnershipHex:                     pendingHex,
