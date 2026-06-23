@@ -6,41 +6,45 @@ import (
 )
 
 const (
-	darkDefaultBackgroundHex                   = ""
-	darkDefaultActiveTextHex                   = "#F0F6FC"
-	darkDefaultSelectedLineBackgroundHex       = "#21262D"
-	darkDefaultMarkdownHeadingHex              = "#F0F6FC"
-	darkDefaultMarkdownHeadingBackgroundHex    = "#58A6FF"
-	darkDefaultPullRequestReferenceHex         = "#8B949E"
-	darkDefaultPullRequestTitleHex             = "#F0F6FC"
-	darkDefaultSuccessHex                      = "#3FB950"
-	darkDefaultSuccessBackgroundHex            = "#033A16"
-	darkDefaultFailureHex                      = "#F85149"
-	darkDefaultFailureBackgroundHex            = "#67060C"
-	darkDefaultPendingHex                      = "#8B949E"
-	darkDefaultPendingBackgroundHex            = "#30363D"
-	darkDefaultMutedHex                        = "#8B949E"
-	darkDefaultWarningHex                      = "#D29922"
-	darkDefaultActionsPopupGroupForegroundHex  = darkDefaultMarkdownHeadingHex
-	darkDefaultTeamOwnershipHex                = "#8B949E"
-	darkDefaultDiffAdditionBackgroundHex       = "#033A16"
-	lightDefaultBackgroundHex                  = ""
-	lightDefaultActiveTextHex                  = "#000000"
-	lightDefaultSelectedLineBackgroundHex      = "#E6E6E6"
-	lightDefaultActionsPopupGroupForegroundHex = "#000000"
-	lightDefaultTeamOwnershipHex               = "#656D76"
-	lightDefaultPullRequestReferenceHex        = "#656D76"
-	lightDefaultPullRequestTitleHex            = "#000000"
-	lightDefaultSuccessHex                     = "#1A7F37"
-	lightDefaultSuccessBackgroundHex           = "#DFF3E4"
-	lightDefaultFailureHex                     = "#CF222E"
-	lightDefaultFailureBackgroundHex           = "#FFE2E5"
-	lightDefaultPendingHex                     = "#656D76"
-	lightDefaultPendingBackgroundHex           = "#E6E6E6"
-	lightDefaultStickyFileHeaderBackgroundHex  = "#E6E6E6"
-	darkDefaultStickyFileHeaderBackgroundHex   = "#30363D"
-	lightDefaultMutedHex                       = "#636363"
-	lightDefaultWarningHex                     = "#9A6700"
+	darkDefaultBackgroundHex                       = ""
+	darkDefaultActiveTextHex                       = "#F0F6FC"
+	darkDefaultSelectedLineBackgroundHex           = "#21262D"
+	darkDefaultMarkdownHeadingHex                  = "#F0F6FC"
+	darkDefaultMarkdownHeadingBackgroundHex        = "#58A6FF"
+	darkDefaultPullRequestReferenceHex             = "#8B949E"
+	darkDefaultPullRequestTitleHex                 = "#F0F6FC"
+	darkDefaultSuccessHex                          = "#3FB950"
+	darkDefaultSuccessBackgroundHex                = "#033A16"
+	darkDefaultFailureHex                          = "#F85149"
+	darkDefaultFailureBackgroundHex                = "#67060C"
+	darkDefaultPendingHex                          = "#8B949E"
+	darkDefaultPendingBackgroundHex                = "#30363D"
+	darkDefaultMutedHex                            = "#8B949E"
+	darkDefaultWarningHex                          = "#D29922"
+	darkDefaultActionsPopupGroupForegroundHex      = darkDefaultMarkdownHeadingHex
+	darkDefaultTeamOwnershipHex                    = "#8B949E"
+	darkDefaultDiffAdditionBackgroundHex           = "#033A16"
+	lightDefaultBackgroundHex                      = ""
+	lightDefaultActiveTextHex                      = "#000000"
+	lightDefaultSelectedLineBackgroundHex          = "#E6E6E6"
+	lightDefaultActionsPopupGroupForegroundHex     = "#000000"
+	lightDefaultTeamOwnershipHex                   = "#656D76"
+	lightDefaultPullRequestReferenceHex            = "#656D76"
+	lightDefaultPullRequestTitleHex                = "#000000"
+	lightDefaultSuccessHex                         = "#1A7F37"
+	lightDefaultSuccessBackgroundHex               = "#E4F0E7"
+	lightDefaultFailureHex                         = "#CF222E"
+	lightDefaultFailureBackgroundHex               = "#F9E4E6"
+	lightDefaultDiffAdditionBackgroundHex          = "#E4F0E7"
+	lightDefaultDiffAdditionHighlightBackgroundHex = "#D6E8DB"
+	lightDefaultDiffDeletionBackgroundHex          = "#F9E4E6"
+	lightDefaultDiffDeletionHighlightBackgroundHex = "#F6D7D9"
+	lightDefaultPendingHex                         = "#656D76"
+	lightDefaultPendingBackgroundHex               = "#E6E6E6"
+	lightDefaultStickyFileHeaderBackgroundHex      = "#E6E6E6"
+	darkDefaultStickyFileHeaderBackgroundHex       = "#30363D"
+	lightDefaultMutedHex                           = "#636363"
+	lightDefaultWarningHex                         = "#9A6700"
 )
 
 func TestDefaultPalette_GivenDarkSystemPolarity_WhenResolving_ThenItUsesDarkDefaults(t *testing.T) {
@@ -111,6 +115,20 @@ func TestResolvePaletteWithPreset_GivenDarkPreset_WhenResolving_ThenItUsesTheDar
 	actual := ResolvePaletteWithPreset(DarkPresetName, Palette{})
 
 	then_paletteUsesDarkDefaults(t, actual)
+}
+
+func TestResolvePaletteWithPreset_GivenLightPreset_WhenResolving_ThenItUsesTheLightPaletteWithoutForcingABackground(t *testing.T) {
+	actual := ResolvePaletteWithPreset(LightPresetName, Palette{})
+
+	then_paletteUsesLightDefaults(t, actual)
+}
+
+func TestResolvePalette_GivenLightSystemPolarityAndNoOverrides_WhenResolving_ThenItUsesLightDefaults(t *testing.T) {
+	given_systemPolarityDetector(t, func() systemPolarity { return systemPolarityLight })
+
+	actual := ResolvePalette(Palette{})
+
+	then_paletteUsesLightDefaults(t, actual)
 }
 
 func TestResolvePaletteWithPreset_GivenBundledThemePreset_WhenResolving_ThenItUsesThePresetBackgroundColor(t *testing.T) {
@@ -493,6 +511,18 @@ func then_paletteUsesLightDefaults(t *testing.T, actual Palette) {
 	}
 	if actual.SuccessBackgroundHex != lightDefaultSuccessBackgroundHex || actual.FailureBackgroundHex != lightDefaultFailureBackgroundHex || actual.PendingBackgroundHex != lightDefaultPendingBackgroundHex {
 		t.Fatalf("expected generic status backgrounds success=%q failure=%q pending=%q, actual success=%q failure=%q pending=%q", lightDefaultSuccessBackgroundHex, lightDefaultFailureBackgroundHex, lightDefaultPendingBackgroundHex, actual.SuccessBackgroundHex, actual.FailureBackgroundHex, actual.PendingBackgroundHex)
+	}
+	if actual.DiffAdditionBackgroundHex != lightDefaultDiffAdditionBackgroundHex {
+		t.Fatalf("expected diff addition background %q, actual %q", lightDefaultDiffAdditionBackgroundHex, actual.DiffAdditionBackgroundHex)
+	}
+	if actual.DiffAdditionHighlightBackgroundHex != lightDefaultDiffAdditionHighlightBackgroundHex {
+		t.Fatalf("expected diff addition highlight background %q, actual %q", lightDefaultDiffAdditionHighlightBackgroundHex, actual.DiffAdditionHighlightBackgroundHex)
+	}
+	if actual.DiffDeletionBackgroundHex != lightDefaultDiffDeletionBackgroundHex {
+		t.Fatalf("expected diff deletion background %q, actual %q", lightDefaultDiffDeletionBackgroundHex, actual.DiffDeletionBackgroundHex)
+	}
+	if actual.DiffDeletionHighlightBackgroundHex != lightDefaultDiffDeletionHighlightBackgroundHex {
+		t.Fatalf("expected diff deletion highlight background %q, actual %q", lightDefaultDiffDeletionHighlightBackgroundHex, actual.DiffDeletionHighlightBackgroundHex)
 	}
 	if actual.StickyFileHeaderBackgroundHex != lightDefaultStickyFileHeaderBackgroundHex {
 		t.Fatalf("expected sticky file header background %q, actual %q", lightDefaultStickyFileHeaderBackgroundHex, actual.StickyFileHeaderBackgroundHex)
