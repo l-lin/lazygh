@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/jesseduffield/gocui"
@@ -95,6 +96,40 @@ func TestMultilineEditor_GivenMixedLineLengths_WhenMovingVertically_ThenItRestor
 	actualColumn, actualRow = subject.CursorXY()
 	if actualColumn != 4 || actualRow != 2 {
 		t.Fatalf("expected cursor 4,2 after the second move, actual %d,%d", actualColumn, actualRow)
+	}
+}
+
+func TestMultilineEditor_GivenMixedLineLengths_WhenApplyingDirectVerticalMovementIntents_ThenTheyMatchArrowKeyNavigation(t *testing.T) {
+	original := newMultilineEditor("12345\n12\n1234")
+	original.cursor = 4
+
+	expected := original.clone()
+	actualHandled := when_applyingMultilineEditorKeyIntent(t, &expected, gocui.KeyArrowDown, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected the first arrow down to be handled")
+	}
+	actualHandled = when_applyingMultilineEditorKeyIntent(t, &expected, gocui.KeyArrowDown, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected the second arrow down to be handled")
+	}
+	actualHandled = when_applyingMultilineEditorKeyIntent(t, &expected, gocui.KeyArrowUp, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected arrow up to be handled")
+	}
+
+	actual := original.clone()
+	if !actual.ApplyIntent(multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorDown}) {
+		t.Fatal("expected the first direct move-down intent to be handled")
+	}
+	if !actual.ApplyIntent(multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorDown}) {
+		t.Fatal("expected the second direct move-down intent to be handled")
+	}
+	if !actual.ApplyIntent(multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorUp}) {
+		t.Fatal("expected the direct move-up intent to be handled")
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected direct movement state %+v, actual %+v", expected, actual)
 	}
 }
 

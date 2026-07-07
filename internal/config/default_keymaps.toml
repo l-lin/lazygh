@@ -105,6 +105,8 @@ submit_selected_picker = "alt+enter"
 [keymaps.modal_editor]
 submit = ["alt+enter", "ctrl+s"]
 submit_line = ["enter", "ctrl+s"]
+move_cursor_down = "ctrl+n"
+move_cursor_up = "ctrl+p"
 open_external_editor = "ctrl+g"
 cancel = "esc"
 

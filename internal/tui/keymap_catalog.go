@@ -119,15 +119,11 @@ func sharedKeybindingDefinitionFor(action string) (sharedKeybindingDefinition, b
 }
 
 func mustDefaultKeymapBindings(scope string, action string) []string {
-	actions, ok := appconfig.DefaultKeymaps()[scope]
-	if !ok {
-		panic("missing default keymap scope " + scope)
-	}
-	bindings, ok := actions[action]
+	bindings, ok := appconfig.DefaultKeymapBindings(scope, action)
 	if !ok {
 		panic("missing default keymap action " + scope + "." + action)
 	}
-	return append([]string(nil), bindings...)
+	return bindings
 }
 
 func configuredKeybindingActionFor(scope string, action string, viewNames []string, handler func(*gocui.Gui, *gocui.View) error) keybindingAction {
@@ -200,6 +196,17 @@ func (program *Program) modalEditorSubmitKeybindingAction() keybindingAction {
 		action = program.overlayState.modalEditor.submitAction()
 	}
 	return configuredKeybindingActionFor(keymapScopeModalEditor, action, []string{viewModalEditorName}, program.submitModalEditor)
+}
+
+func (program *Program) multilineModalEditorMovementKeybindingActions() []keybindingAction {
+	if !program.modalEditorVisible() || program.overlayState.modalEditor.isLineEditor() {
+		return nil
+	}
+
+	return []keybindingAction{
+		configuredKeybindingActionFor(keymapScopeModalEditor, "move_cursor_down", []string{viewModalEditorName}, program.moveModalEditorCursorDown),
+		configuredKeybindingActionFor(keymapScopeModalEditor, "move_cursor_up", []string{viewModalEditorName}, program.moveModalEditorCursorUp),
+	}
 }
 
 func (program *Program) keybindingActions() []keybindingAction {
@@ -388,6 +395,9 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown),
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
 		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp),
+	}
+	if movementActions := program.multilineModalEditorMovementKeybindingActions(); len(movementActions) > 0 {
+		actions = append(actions, movementActions...)
 	}
 	if program.canRemovePastedPullRequest() {
 		actions = append(actions, configuredKeybindingActionFor(keymapScopePullRequests, "remove_pasted_pull_request", []string{viewPullRequestsName}, program.removePastedPullRequestShortcut))

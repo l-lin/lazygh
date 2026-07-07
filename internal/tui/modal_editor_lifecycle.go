@@ -45,3 +45,13 @@ func (program *Program) closeModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 func (program *Program) submitModalEditor(gui *gocui.Gui, _ *gocui.View) error {
 	return program.dispatch(gui, MsgModalEditorSubmitRequested{})
 }
+
+func (program *Program) moveModalEditorCursorDown(gui *gocui.Gui, _ *gocui.View) error {
+	program.captureGUI(gui)
+	return program.dispatchEditorRuntimeMessage(MsgModalEditorMultilineInputRequested{Intent: multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorDown}})
+}
+
+func (program *Program) moveModalEditorCursorUp(gui *gocui.Gui, _ *gocui.View) error {
+	program.captureGUI(gui)
+	return program.dispatchEditorRuntimeMessage(MsgModalEditorMultilineInputRequested{Intent: multilineEditorIntent{kind: multilineEditorIntentKindMoveCursorUp}})
+}

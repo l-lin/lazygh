@@ -23,6 +23,62 @@ func TestKeybindingSpecs_GivenProgram_WhenListingPullRequestCommentBindings_Then
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlS, handler: subject.submitModalEditor})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlG, handler: subject.openModalEditorInExternalEditor})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: subject.closeModalEditor})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlN)
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlP)
+}
+
+func TestKeybindingSpecs_GivenOpenPullRequestCommentComposer_WhenListingBindings_ThenItAddsControlNAndControlPForTheMultilineModalWithoutChangingTheActionsPopupSearchBindings(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+
+	actualErr := subject.openPullRequestCommentComposer(nil, nil)
+	then_noError(t, actualErr)
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlN, handler: subject.moveModalEditorCursorDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlP, handler: subject.moveModalEditorCursorUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlN, handler: subject.moveActionsPopupSelectionDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyCtrlP, handler: subject.moveActionsPopupSelectionUp})
+}
+
+func TestPullRequestCommentComposer_GivenOpenComposer_WhenMovingWithControlNAndControlP_ThenItMatchesArrowNavigation(t *testing.T) {
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+
+	actualErr := subject.openPullRequestCommentComposer(nil, nil)
+	then_noError(t, actualErr)
+	subject.overlayState.modalEditor.editor.SetText("12345\n12\n1234")
+	subject.overlayState.modalEditor.editor.cursor = 4
+	original := subject.overlayState.modalEditor.clone()
+
+	actualHandled := subject.editModalEditor(nil, gocui.KeyArrowDown, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected arrow down to be handled")
+	}
+	actualHandled = subject.editModalEditor(nil, gocui.KeyArrowDown, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected the second arrow down to be handled")
+	}
+	expectedAfterDownDown := subject.overlayState.modalEditor.clone()
+	actualHandled = subject.editModalEditor(nil, gocui.KeyArrowUp, 0, gocui.ModNone)
+	if !actualHandled {
+		t.Fatal("expected arrow up to be handled")
+	}
+	expectedAfterDownDownUp := subject.overlayState.modalEditor.clone()
+
+	subject.overlayState.modalEditor = original.clone()
+	actualErr = subject.moveModalEditorCursorDown(nil, nil)
+	then_noError(t, actualErr)
+	actualErr = subject.moveModalEditorCursorDown(nil, nil)
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(subject.overlayState.modalEditor.editor, expectedAfterDownDown.editor) {
+		t.Fatalf("expected ctrl+n state %+v, actual %+v", expectedAfterDownDown.editor, subject.overlayState.modalEditor.editor)
+	}
+
+	actualErr = subject.moveModalEditorCursorUp(nil, nil)
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(subject.overlayState.modalEditor.editor, expectedAfterDownDownUp.editor) {
+		t.Fatalf("expected ctrl+p state %+v, actual %+v", expectedAfterDownDownUp.editor, subject.overlayState.modalEditor.editor)
+	}
 }
 
 func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShowsACenteredSevenLinePopupAndTakesFocus(t *testing.T) {

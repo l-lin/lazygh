@@ -27,6 +27,22 @@ func DefaultKeymaps() KeymapOverrides {
 	return copyKeymapOverrides(cachedDefaultKeymap)
 }
 
+func DefaultKeymapBindings(scope string, action string) ([]string, bool) {
+	defaultKeymapsOnce.Do(func() {
+		cachedDefaultKeymap = mustLoadDefaultKeymaps(defaultKeymapsTOML)
+	})
+
+	actions, ok := cachedDefaultKeymap[scope]
+	if !ok {
+		return nil, false
+	}
+	bindings, ok := actions[action]
+	if !ok {
+		return nil, false
+	}
+	return append([]string(nil), bindings...), true
+}
+
 func mustLoadDefaultKeymaps(contents string) KeymapOverrides {
 	var raw rawKeymapConfig
 	if _, actualErr := toml.Decode(contents, &raw); actualErr != nil {

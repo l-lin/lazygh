@@ -28,6 +28,8 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 		"modal_editor": {
 			"submit":               {"alt+enter", "ctrl+s"},
 			"submit_line":          {"enter", "ctrl+s"},
+			"move_cursor_down":     {"ctrl+n"},
+			"move_cursor_up":       {"ctrl+p"},
 			"cancel":               {"esc"},
 			"open_external_editor": {"ctrl+g"},
 		},
@@ -72,5 +74,23 @@ func TestDefaultKeymaps_GivenMutatedReturnedValue_WhenLoadingAgain_ThenItReturns
 	expected := []string{"ctrl+c"}
 	if !reflect.DeepEqual(actual["global"]["quit"], expected) {
 		t.Fatalf("expected default quit bindings %v, actual %v", expected, actual["global"]["quit"])
+	}
+}
+
+func TestDefaultKeymapBindings_GivenMutatedReturnedValue_WhenLoadingAgain_ThenItReturnsAFreshCopy(t *testing.T) {
+	first, ok := DefaultKeymapBindings("modal_editor", "move_cursor_down")
+	if !ok {
+		t.Fatal("expected the modal_editor.move_cursor_down default binding")
+	}
+	first[0] = "mutated"
+
+	actual, ok := DefaultKeymapBindings("modal_editor", "move_cursor_down")
+	if !ok {
+		t.Fatal("expected the modal_editor.move_cursor_down default binding on the second lookup")
+	}
+
+	expected := []string{"ctrl+n"}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected default move_cursor_down bindings %v, actual %v", expected, actual)
 	}
 }

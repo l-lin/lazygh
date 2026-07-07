@@ -157,6 +157,57 @@ func TestKeybindingSpecs_GivenModalEditorExternalEditorOverride_WhenListingBindi
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewActionsPopupSearchName, key: gocui.KeyEsc, handler: subject.closeActionsPopup})
 }
 
+func TestKeybindingSpecs_GivenModalEditorMovementOverrides_WhenListingMultilineBindings_ThenTheyReplaceTheDefaults(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"move_cursor_down": {"ctrl+j"},
+			"move_cursor_up":   {"ctrl+k"},
+		},
+	})
+	then_noError(t, subject.openModalEditor(nil, "Prompt", ""))
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlJ, handler: subject.moveModalEditorCursorDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlK, handler: subject.moveModalEditorCursorUp})
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlN)
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlP)
+}
+
+func TestKeybindingSpecs_GivenModalEditorMovementOverrides_WhenListingSingleLineBindings_ThenTheyDoNotRegisterTheMovementActions(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"move_cursor_down": {"ctrl+j"},
+			"move_cursor_up":   {"ctrl+k"},
+		},
+	})
+	then_noError(t, subject.openLineModalEditor(nil, "Prompt", ""))
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlJ)
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlK)
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlN)
+	then_bindingDoesNotExist(t, actual, viewModalEditorName, gocui.KeyCtrlP)
+}
+
+func TestKeybindingSpecs_GivenConflictingModalEditorMovementOverrides_WhenListingMultilineBindings_ThenTheyFallBackToTheDefaults(t *testing.T) {
+	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
+		"modal_editor": {
+			"move_cursor_down": {"ctrl+g"},
+			"move_cursor_up":   {"esc"},
+		},
+	})
+	then_noError(t, subject.openModalEditor(nil, "Prompt", ""))
+
+	actual := subject.keybindingSpecs()
+
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlN, handler: subject.moveModalEditorCursorDown})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlP, handler: subject.moveModalEditorCursorUp})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyCtrlG, handler: subject.openModalEditorInExternalEditor})
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewModalEditorName, key: gocui.KeyEsc, handler: subject.closeModalEditor})
+}
+
 func TestKeybindingSpecs_GivenModalEditorSingleLineSubmitOverride_WhenListingBindings_ThenItAppliesOnlyToSingleLineEditors(t *testing.T) {
 	subject := given_programWithKeymapOverrides(given_model(), appconfig.KeymapOverrides{
 		"modal_editor": {
