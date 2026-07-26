@@ -9,6 +9,7 @@ import (
 
 func TestConfig_ResolvedTheme_GivenBundledPresetNames_WhenResolving_ThenEachPresetProducesItsBundledPalette(t *testing.T) {
 	expectedPresetNames := []string{
+		"grey",
 		"catppuccin-frappe",
 		"catppuccin-latte",
 		"catppuccin-macchiato",
@@ -30,7 +31,14 @@ func TestConfig_ResolvedTheme_GivenBundledPresetNames_WhenResolving_ThenEachPres
 		if reflect.DeepEqual(actual, theme.Palette{}) {
 			t.Fatalf("expected %q to define at least one theme override", presetName)
 		}
-		if actual.BackgroundHex == "" {
+		if presetName == "grey" {
+			if actual.BackgroundHex != "" {
+				t.Fatalf("expected %q to leave %q unset, actual %q", presetName, "background", actual.BackgroundHex)
+			}
+			if !reflect.DeepEqual(actual.SyntaxKeywordStyle, []string{theme.TextStyleBold}) {
+				t.Fatalf("expected %q to define syntax keyword style %v, actual %v", presetName, []string{theme.TextStyleBold}, actual.SyntaxKeywordStyle)
+			}
+		} else if actual.BackgroundHex == "" {
 			t.Fatalf("expected %q to define %q", presetName, "background")
 		}
 		if actual.MarkdownHeadingBackgroundHex == "" {

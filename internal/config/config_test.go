@@ -209,6 +209,27 @@ background = "broken"
 	}
 }
 
+func TestLoad_GivenThemeSyntaxStyleOverrides_WhenLoading_ThenItPreservesOnlyTheValidConfiguredStyles(t *testing.T) {
+	configPath := given_configFile(t, `
+[theme]
+syntax_keyword_style = [" bold ", "underline", "BOLD", "loud"]
+syntax_function_style = []
+syntax_comment_style = [" italic "]
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := Config{Theme: theme.Palette{
+		SyntaxKeywordStyle:  []string{theme.TextStyleBold, theme.TextStyleUnderline},
+		SyntaxFunctionStyle: []string{},
+		SyntaxCommentStyle:  []string{theme.TextStyleItalic},
+	}}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestLoad_GivenAnInvalidThemePreset_WhenLoading_ThenItIgnoresIt(t *testing.T) {
 	configPath := given_configFile(t, `
 [theme]

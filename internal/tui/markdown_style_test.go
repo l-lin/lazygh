@@ -114,6 +114,25 @@ func TestGlamourMarkdownRenderer_GivenDifferentThemeRenders_WhenRenderingCodeFen
 	then_linePrefixContainsBackgroundHex(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `fmt.Println("hi")`, theme.SelectedLineBackgroundHex, "markdown code background after palette reset")
 }
 
+func TestGlamourMarkdownRenderer_GivenThemeSyntaxStyles_WhenRenderingCodeFence_ThenItUsesThemeSyntaxStyles(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{
+		SyntaxKeywordStyle:  []string{theme.TextStyleBold},
+		SyntaxFunctionStyle: []string{theme.TextStyleUnderline},
+		SyntaxStringStyle:   []string{theme.TextStyleItalic},
+	})
+	renderer := glamourMarkdownRenderer{}
+
+	actual, actualErr := renderer.Render("```go\nfunc render() string { return \"x\" }\n```", 80)
+
+	then_noError(t, actualErr)
+	actualDocument := newDetailDocument(actual, 80)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `func render() string { return "x" }`)
+	then_linePrefixContainsStyleToken(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "func", ansiBold, "markdown code keyword bold")
+	then_linePrefixContainsStyleToken(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "render", underlineEscape, "markdown code function underline")
+	then_linePrefixContainsStyleToken(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"x"`, ansiItalic, "markdown code string italic")
+}
+
 func then_linePrefixContainsForegroundHex(t *testing.T, linePrefixes []string, visibleLine string, segment string, expectedHex string, label string) {
 	t.Helper()
 	then_linePrefixContainsTrueColorHex(t, linePrefixes, visibleLine, segment, 38, expectedHex, label)
@@ -200,4 +219,16 @@ func channelMatchesWithinTolerance(actual int, expected int, tolerance int) bool
 		delta = -delta
 	}
 	return delta <= tolerance
+}
+
+func then_linePrefixContainsStyleToken(t *testing.T, linePrefixes []string, visibleLine string, segment string, expectedStyleToken string, label string) {
+	t.Helper()
+
+	segmentStart := given_runeIndexInString(t, visibleLine, segment)
+	for offset := range len([]rune(segment)) {
+		actualStylePrefix := linePrefixes[segmentStart+offset]
+		if !strings.Contains(actualStylePrefix, expectedStyleToken) {
+			t.Fatalf("expected %s prefix to include %q at offset %d, actual %q", label, expectedStyleToken, offset, actualStylePrefix)
+		}
+	}
 }

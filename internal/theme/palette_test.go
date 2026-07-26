@@ -123,6 +123,94 @@ func TestResolvePaletteWithPreset_GivenLightPreset_WhenResolving_ThenItUsesTheLi
 	then_paletteUsesLightDefaults(t, actual)
 }
 
+func TestResolvePaletteWithPreset_GivenGreyPreset_WhenResolving_ThenItMatchesTheApprovedLightPalette(t *testing.T) {
+	actual := ResolvePaletteWithPreset("grey", Palette{})
+
+	if actual.BackgroundHex != "" {
+		t.Fatalf("expected background color %q, actual %q", "", actual.BackgroundHex)
+	}
+	if actual.ActiveBorderHex != "#000000" {
+		t.Fatalf("expected active border color %q, actual %q", "#000000", actual.ActiveBorderHex)
+	}
+	if actual.InactiveBorderHex != "#CCCCCC" {
+		t.Fatalf("expected inactive border color %q, actual %q", "#CCCCCC", actual.InactiveBorderHex)
+	}
+	if actual.SelectedLineBackgroundHex != "#E6E6E6" {
+		t.Fatalf("expected selected line background %q, actual %q", "#E6E6E6", actual.SelectedLineBackgroundHex)
+	}
+	if actual.SearchHighlightHex != "#F9EAB3" {
+		t.Fatalf("expected search highlight color %q, actual %q", "#F9EAB3", actual.SearchHighlightHex)
+	}
+	if actual.MarkdownHeadingBackgroundHex != "#F9EAB3" {
+		t.Fatalf("expected markdown heading background %q, actual %q", "#F9EAB3", actual.MarkdownHeadingBackgroundHex)
+	}
+	if actual.SuccessHex != "#1C5708" {
+		t.Fatalf("expected success color %q, actual %q", "#1C5708", actual.SuccessHex)
+	}
+	if actual.SuccessBackgroundHex != "#DFEACC" {
+		t.Fatalf("expected success background %q, actual %q", "#DFEACC", actual.SuccessBackgroundHex)
+	}
+	if actual.FailureHex != "#C4331D" {
+		t.Fatalf("expected failure color %q, actual %q", "#C4331D", actual.FailureHex)
+	}
+	if actual.FailureBackgroundHex != "#F5DEE0" {
+		t.Fatalf("expected failure background %q, actual %q", "#F5DEE0", actual.FailureBackgroundHex)
+	}
+	if actual.MarkdownLinkHex != "#1561B8" {
+		t.Fatalf("expected markdown link color %q, actual %q", "#1561B8", actual.MarkdownLinkHex)
+	}
+	if actual.SyntaxKeywordHex != "#000000" {
+		t.Fatalf("expected syntax keyword color %q, actual %q", "#000000", actual.SyntaxKeywordHex)
+	}
+	if !reflect.DeepEqual(actual.SyntaxKeywordStyle, []string{TextStyleBold}) {
+		t.Fatalf("expected syntax keyword style %v, actual %v", []string{TextStyleBold}, actual.SyntaxKeywordStyle)
+	}
+	if actual.SyntaxFunctionHex != "#000000" {
+		t.Fatalf("expected syntax function color %q, actual %q", "#000000", actual.SyntaxFunctionHex)
+	}
+	if actual.SyntaxTypeHex != "#000000" {
+		t.Fatalf("expected syntax type color %q, actual %q", "#000000", actual.SyntaxTypeHex)
+	}
+	if actual.SyntaxPropertyHex != "#000000" {
+		t.Fatalf("expected syntax property color %q, actual %q", "#000000", actual.SyntaxPropertyHex)
+	}
+	if actual.SyntaxStringHex != "#1C5708" {
+		t.Fatalf("expected syntax string color %q, actual %q", "#1C5708", actual.SyntaxStringHex)
+	}
+	if actual.SyntaxNumberHex != "#1561B8" {
+		t.Fatalf("expected syntax number color %q, actual %q", "#1561B8", actual.SyntaxNumberHex)
+	}
+	if actual.SyntaxCommentHex != "#5E5E5E" {
+		t.Fatalf("expected syntax comment color %q, actual %q", "#5E5E5E", actual.SyntaxCommentHex)
+	}
+	if actual.DiffAdditionBackgroundHex != "#DFEACC" {
+		t.Fatalf("expected diff addition background %q, actual %q", "#DFEACC", actual.DiffAdditionBackgroundHex)
+	}
+	if actual.DiffAdditionHighlightBackgroundHex != lightDefaultDiffAdditionHighlightBackgroundHex {
+		t.Fatalf("expected diff addition highlight background %q, actual %q", lightDefaultDiffAdditionHighlightBackgroundHex, actual.DiffAdditionHighlightBackgroundHex)
+	}
+	if actual.DiffDeletionBackgroundHex != "#F5DEE0" {
+		t.Fatalf("expected diff deletion background %q, actual %q", "#F5DEE0", actual.DiffDeletionBackgroundHex)
+	}
+	if actual.DiffDeletionHighlightBackgroundHex != lightDefaultDiffDeletionHighlightBackgroundHex {
+		t.Fatalf("expected diff deletion highlight background %q, actual %q", lightDefaultDiffDeletionHighlightBackgroundHex, actual.DiffDeletionHighlightBackgroundHex)
+	}
+}
+
+func TestResolvePaletteWithPreset_GivenGreyPresetAndSyntaxStyleOverrides_WhenResolving_ThenItAllowsClearingAndReplacingStyles(t *testing.T) {
+	actual := ResolvePaletteWithPreset("grey", Palette{
+		SyntaxKeywordStyle:  []string{},
+		SyntaxFunctionStyle: []string{" underline ", "ITALIC", "bold", "italic", "loud"},
+	})
+
+	if actual.SyntaxKeywordStyle == nil || len(actual.SyntaxKeywordStyle) != 0 {
+		t.Fatalf("expected syntax keyword style to be explicitly cleared, actual %v", actual.SyntaxKeywordStyle)
+	}
+	if !reflect.DeepEqual(actual.SyntaxFunctionStyle, []string{TextStyleBold, TextStyleItalic, TextStyleUnderline}) {
+		t.Fatalf("expected syntax function style %v, actual %v", []string{TextStyleBold, TextStyleItalic, TextStyleUnderline}, actual.SyntaxFunctionStyle)
+	}
+}
+
 func TestResolvePalette_GivenLightSystemPolarityAndNoOverrides_WhenResolving_ThenItUsesLightDefaults(t *testing.T) {
 	given_systemPolarityDetector(t, func() systemPolarity { return systemPolarityLight })
 

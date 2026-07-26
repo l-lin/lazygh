@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	ansiReset = "\x1b[0m"
-	ansiBold  = "\x1b[1m"
+	ansiReset  = "\x1b[0m"
+	ansiBold   = "\x1b[1m"
+	ansiItalic = "\x1b[3m"
 )
 
 func highlightSearchMatches(text string, query string) (string, int) {

@@ -153,11 +153,15 @@ By default, it will use the `system` preset if not set:
 preset = "system"
 ```
 
-Available presets include `system`, `light`, and `dark`, plus the additional presets listed in [`preset.go`](internal/theme/preset.go).
+Available presets include `system`, `light`, `dark`, and `grey`, plus the additional presets listed in [`preset.go`](internal/theme/preset.go).
+
+`grey` is a light preset inspired by `nvim-grey`. It keeps the background unset, flattens most syntax colors, and bolds keyword-like structure by default.
 
 You can switch presets from inside the app too. `Change theme` in the actions popup updates the resolved config file immediately.
 
 You can find the list of palette variables in [palette.go](internal/theme/palette.go).
+
+`syntax_*_style` keys accept a list of `"bold"`, `"italic"`, and `"underline"`. Use `[]` to clear a preset's default syntax style for that bucket.
 
 A few palette entries do more than their names suggest:
 
@@ -194,6 +198,7 @@ comment_author_badge_background = "#223249"
 markdown_heading = "#7E9CD8"
 markdown_heading_background = "#223249"
 syntax_keyword = "#957FB8"
+syntax_keyword_style = ["bold"]
 syntax_string = "#98BB6C"
 pull_request_status_merged = "#957FB8"
 pull_request_status_merged_background = "#252535"

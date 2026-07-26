@@ -2,58 +2,71 @@ package theme
 
 import "strings"
 
+const (
+	TextStyleBold      = "bold"
+	TextStyleItalic    = "italic"
+	TextStyleUnderline = "underline"
+)
+
 type Palette struct {
-	BackgroundHex                        string `toml:"background"`
-	ActiveBorderHex                      string `toml:"active_border"`
-	InactiveBorderHex                    string `toml:"inactive_border"`
-	ActiveTextHex                        string `toml:"active_text"`
-	InactiveTextHex                      string `toml:"inactive_text"`
-	InactiveTitleHex                     string `toml:"inactive_title"`
-	SuccessHex                           string `toml:"success"`
-	SuccessBackgroundHex                 string `toml:"success_background"`
-	FailureHex                           string `toml:"failure"`
-	FailureBackgroundHex                 string `toml:"failure_background"`
-	PendingHex                           string `toml:"pending"`
-	PendingBackgroundHex                 string `toml:"pending_background"`
-	StickyFileHeaderBackgroundHex        string `toml:"sticky_file_header_background"`
-	MutedHex                             string `toml:"muted"`
-	WarningHex                           string `toml:"warning"`
-	PullRequestReferenceHex              string `toml:"pull_request_reference"`
-	PullRequestTitleHex                  string `toml:"pull_request_title"`
-	SelectedLineBackgroundHex            string `toml:"selected_line_background"`
-	ActionsPopupGroupForegroundHex       string `toml:"actions_popup_group_foreground"`
-	ActionsPopupGroupBackgroundHex       string `toml:"actions_popup_group_background"`
-	SearchHighlightHex                   string `toml:"search_highlight"`
-	MarkdownHeadingHex                   string `toml:"markdown_heading"`
-	MarkdownHeadingBackgroundHex         string `toml:"markdown_heading_background"`
-	MarkdownLinkHex                      string `toml:"markdown_link"`
-	MarkdownCodeHex                      string `toml:"markdown_code"`
-	SyntaxKeywordHex                     string `toml:"syntax_keyword"`
-	SyntaxFunctionHex                    string `toml:"syntax_function"`
-	SyntaxTypeHex                        string `toml:"syntax_type"`
-	SyntaxPropertyHex                    string `toml:"syntax_property"`
-	SyntaxStringHex                      string `toml:"syntax_string"`
-	SyntaxNumberHex                      string `toml:"syntax_number"`
-	SyntaxCommentHex                     string `toml:"syntax_comment"`
-	CommentAuthorBadgeHex                string `toml:"comment_author_badge"`
-	CommentAuthorBadgeBackgroundHex      string `toml:"comment_author_badge_background"`
-	PullRequestStatusOpenHex             string `toml:"pull_request_status_open"`
-	PullRequestStatusOpenBackgroundHex   string `toml:"pull_request_status_open_background"`
-	PullRequestStatusDraftHex            string `toml:"pull_request_status_draft"`
-	PullRequestStatusDraftBackgroundHex  string `toml:"pull_request_status_draft_background"`
-	PullRequestStatusClosedHex           string `toml:"pull_request_status_closed"`
-	PullRequestStatusClosedBackgroundHex string `toml:"pull_request_status_closed_background"`
-	PullRequestStatusMergedHex           string `toml:"pull_request_status_merged"`
-	PullRequestStatusMergedBackgroundHex string `toml:"pull_request_status_merged_background"`
-	DiffAdditionHex                      string `toml:"diff_addition"`
-	DiffAdditionBackgroundHex            string `toml:"diff_addition_background"`
-	DiffAdditionHighlightBackgroundHex   string `toml:"diff_addition_highlight_background"`
-	DiffDeletionHex                      string `toml:"diff_deletion"`
-	DiffDeletionBackgroundHex            string `toml:"diff_deletion_background"`
-	DiffDeletionHighlightBackgroundHex   string `toml:"diff_deletion_highlight_background"`
-	DiffLineNumberHex                    string `toml:"diff_line_number"`
-	DiffHunkHeaderHex                    string `toml:"diff_hunk_header"`
-	TeamOwnershipHex                     string `toml:"team_ownership"`
+	BackgroundHex                        string   `toml:"background"`
+	ActiveBorderHex                      string   `toml:"active_border"`
+	InactiveBorderHex                    string   `toml:"inactive_border"`
+	ActiveTextHex                        string   `toml:"active_text"`
+	InactiveTextHex                      string   `toml:"inactive_text"`
+	InactiveTitleHex                     string   `toml:"inactive_title"`
+	SuccessHex                           string   `toml:"success"`
+	SuccessBackgroundHex                 string   `toml:"success_background"`
+	FailureHex                           string   `toml:"failure"`
+	FailureBackgroundHex                 string   `toml:"failure_background"`
+	PendingHex                           string   `toml:"pending"`
+	PendingBackgroundHex                 string   `toml:"pending_background"`
+	StickyFileHeaderBackgroundHex        string   `toml:"sticky_file_header_background"`
+	MutedHex                             string   `toml:"muted"`
+	WarningHex                           string   `toml:"warning"`
+	PullRequestReferenceHex              string   `toml:"pull_request_reference"`
+	PullRequestTitleHex                  string   `toml:"pull_request_title"`
+	SelectedLineBackgroundHex            string   `toml:"selected_line_background"`
+	ActionsPopupGroupForegroundHex       string   `toml:"actions_popup_group_foreground"`
+	ActionsPopupGroupBackgroundHex       string   `toml:"actions_popup_group_background"`
+	SearchHighlightHex                   string   `toml:"search_highlight"`
+	MarkdownHeadingHex                   string   `toml:"markdown_heading"`
+	MarkdownHeadingBackgroundHex         string   `toml:"markdown_heading_background"`
+	MarkdownLinkHex                      string   `toml:"markdown_link"`
+	MarkdownCodeHex                      string   `toml:"markdown_code"`
+	SyntaxKeywordHex                     string   `toml:"syntax_keyword"`
+	SyntaxKeywordStyle                   []string `toml:"syntax_keyword_style"`
+	SyntaxFunctionHex                    string   `toml:"syntax_function"`
+	SyntaxFunctionStyle                  []string `toml:"syntax_function_style"`
+	SyntaxTypeHex                        string   `toml:"syntax_type"`
+	SyntaxTypeStyle                      []string `toml:"syntax_type_style"`
+	SyntaxPropertyHex                    string   `toml:"syntax_property"`
+	SyntaxPropertyStyle                  []string `toml:"syntax_property_style"`
+	SyntaxStringHex                      string   `toml:"syntax_string"`
+	SyntaxStringStyle                    []string `toml:"syntax_string_style"`
+	SyntaxNumberHex                      string   `toml:"syntax_number"`
+	SyntaxNumberStyle                    []string `toml:"syntax_number_style"`
+	SyntaxCommentHex                     string   `toml:"syntax_comment"`
+	SyntaxCommentStyle                   []string `toml:"syntax_comment_style"`
+	CommentAuthorBadgeHex                string   `toml:"comment_author_badge"`
+	CommentAuthorBadgeBackgroundHex      string   `toml:"comment_author_badge_background"`
+	PullRequestStatusOpenHex             string   `toml:"pull_request_status_open"`
+	PullRequestStatusOpenBackgroundHex   string   `toml:"pull_request_status_open_background"`
+	PullRequestStatusDraftHex            string   `toml:"pull_request_status_draft"`
+	PullRequestStatusDraftBackgroundHex  string   `toml:"pull_request_status_draft_background"`
+	PullRequestStatusClosedHex           string   `toml:"pull_request_status_closed"`
+	PullRequestStatusClosedBackgroundHex string   `toml:"pull_request_status_closed_background"`
+	PullRequestStatusMergedHex           string   `toml:"pull_request_status_merged"`
+	PullRequestStatusMergedBackgroundHex string   `toml:"pull_request_status_merged_background"`
+	DiffAdditionHex                      string   `toml:"diff_addition"`
+	DiffAdditionBackgroundHex            string   `toml:"diff_addition_background"`
+	DiffAdditionHighlightBackgroundHex   string   `toml:"diff_addition_highlight_background"`
+	DiffDeletionHex                      string   `toml:"diff_deletion"`
+	DiffDeletionBackgroundHex            string   `toml:"diff_deletion_background"`
+	DiffDeletionHighlightBackgroundHex   string   `toml:"diff_deletion_highlight_background"`
+	DiffLineNumberHex                    string   `toml:"diff_line_number"`
+	DiffHunkHeaderHex                    string   `toml:"diff_hunk_header"`
+	TeamOwnershipHex                     string   `toml:"team_ownership"`
 }
 
 var defaultLightPalette = newDefaultLightPalette()
@@ -230,12 +243,19 @@ var (
 	MarkdownLinkHex                      = initialDefaultPalette.MarkdownLinkHex
 	MarkdownCodeHex                      = initialDefaultPalette.MarkdownCodeHex
 	SyntaxKeywordHex                     = initialDefaultPalette.SyntaxKeywordHex
+	SyntaxKeywordStyle                   = copyTextStyles(initialDefaultPalette.SyntaxKeywordStyle)
 	SyntaxFunctionHex                    = initialDefaultPalette.SyntaxFunctionHex
+	SyntaxFunctionStyle                  = copyTextStyles(initialDefaultPalette.SyntaxFunctionStyle)
 	SyntaxTypeHex                        = initialDefaultPalette.SyntaxTypeHex
+	SyntaxTypeStyle                      = copyTextStyles(initialDefaultPalette.SyntaxTypeStyle)
 	SyntaxPropertyHex                    = initialDefaultPalette.SyntaxPropertyHex
+	SyntaxPropertyStyle                  = copyTextStyles(initialDefaultPalette.SyntaxPropertyStyle)
 	SyntaxStringHex                      = initialDefaultPalette.SyntaxStringHex
+	SyntaxStringStyle                    = copyTextStyles(initialDefaultPalette.SyntaxStringStyle)
 	SyntaxNumberHex                      = initialDefaultPalette.SyntaxNumberHex
+	SyntaxNumberStyle                    = copyTextStyles(initialDefaultPalette.SyntaxNumberStyle)
 	SyntaxCommentHex                     = initialDefaultPalette.SyntaxCommentHex
+	SyntaxCommentStyle                   = copyTextStyles(initialDefaultPalette.SyntaxCommentStyle)
 	CommentAuthorBadgeHex                = initialDefaultPalette.CommentAuthorBadgeHex
 	CommentAuthorBadgeBackgroundHex      = initialDefaultPalette.CommentAuthorBadgeBackgroundHex
 	PullRequestStatusOpenHex             = initialDefaultPalette.PullRequestStatusOpenHex
@@ -304,6 +324,12 @@ func mergePalette(base Palette, overrides Palette) Palette {
 	visitPaletteColorPairs(&resolved, &overrides, func(resolvedColorValue *string, overrideColorValue *string) {
 		*resolvedColorValue = resolvedColor(*resolvedColorValue, *overrideColorValue)
 	})
+	visitPaletteTextStylePairs(&resolved, &overrides, func(resolvedStyles *[]string, overrideStyles *[]string) {
+		if *overrideStyles == nil {
+			return
+		}
+		*resolvedStyles = copyTextStyles(*overrideStyles)
+	})
 	return resolved
 }
 
@@ -342,12 +368,19 @@ func applyResolvedPalette(palette Palette) {
 	MarkdownLinkHex = palette.MarkdownLinkHex
 	MarkdownCodeHex = palette.MarkdownCodeHex
 	SyntaxKeywordHex = palette.SyntaxKeywordHex
+	SyntaxKeywordStyle = copyTextStyles(palette.SyntaxKeywordStyle)
 	SyntaxFunctionHex = palette.SyntaxFunctionHex
+	SyntaxFunctionStyle = copyTextStyles(palette.SyntaxFunctionStyle)
 	SyntaxTypeHex = palette.SyntaxTypeHex
+	SyntaxTypeStyle = copyTextStyles(palette.SyntaxTypeStyle)
 	SyntaxPropertyHex = palette.SyntaxPropertyHex
+	SyntaxPropertyStyle = copyTextStyles(palette.SyntaxPropertyStyle)
 	SyntaxStringHex = palette.SyntaxStringHex
+	SyntaxStringStyle = copyTextStyles(palette.SyntaxStringStyle)
 	SyntaxNumberHex = palette.SyntaxNumberHex
+	SyntaxNumberStyle = copyTextStyles(palette.SyntaxNumberStyle)
 	SyntaxCommentHex = palette.SyntaxCommentHex
+	SyntaxCommentStyle = copyTextStyles(palette.SyntaxCommentStyle)
 	CommentAuthorBadgeHex = palette.CommentAuthorBadgeHex
 	CommentAuthorBadgeBackgroundHex = palette.CommentAuthorBadgeBackgroundHex
 	PullRequestStatusOpenHex = palette.PullRequestStatusOpenHex
@@ -374,6 +407,9 @@ func normalizePalette(overrides Palette) Palette {
 	visitPaletteColors(&normalized, func(color *string) {
 		*color = normalizeHexColor(*color)
 	})
+	visitPaletteTextStyles(&normalized, func(styles *[]string) {
+		*styles = normalizeTextStyles(*styles)
+	})
 	return normalized
 }
 
@@ -388,6 +424,20 @@ func visitPaletteColorPairs(left *Palette, right *Palette, visit func(leftColor 
 	rightColors := paletteColorPointers(right)
 	for index := range leftColors {
 		visit(leftColors[index], rightColors[index])
+	}
+}
+
+func visitPaletteTextStyles(palette *Palette, visit func(styles *[]string)) {
+	for _, styles := range paletteTextStylePointers(palette) {
+		visit(styles)
+	}
+}
+
+func visitPaletteTextStylePairs(left *Palette, right *Palette, visit func(leftStyles *[]string, rightStyles *[]string)) {
+	leftStyles := paletteTextStylePointers(left)
+	rightStyles := paletteTextStylePointers(right)
+	for index := range leftStyles {
+		visit(leftStyles[index], rightStyles[index])
 	}
 }
 
@@ -447,6 +497,18 @@ func paletteColorPointers(palette *Palette) []*string {
 	}
 }
 
+func paletteTextStylePointers(palette *Palette) []*[]string {
+	return []*[]string{
+		&palette.SyntaxKeywordStyle,
+		&palette.SyntaxFunctionStyle,
+		&palette.SyntaxTypeStyle,
+		&palette.SyntaxPropertyStyle,
+		&palette.SyntaxStringStyle,
+		&palette.SyntaxNumberStyle,
+		&palette.SyntaxCommentStyle,
+	}
+}
+
 func normalizeHexColor(value string) string {
 	trimmedValue := strings.TrimSpace(value)
 	if !isHexColor(trimmedValue) {
@@ -472,6 +534,42 @@ func isHexColor(value string) bool {
 	}
 
 	return true
+}
+
+func normalizeTextStyles(styles []string) []string {
+	if styles == nil {
+		return nil
+	}
+	if len(styles) == 0 {
+		return []string{}
+	}
+
+	presentStyles := map[string]bool{}
+	for _, style := range styles {
+		normalizedStyle := strings.ToLower(strings.TrimSpace(style))
+		switch normalizedStyle {
+		case TextStyleBold, TextStyleItalic, TextStyleUnderline:
+			presentStyles[normalizedStyle] = true
+		}
+	}
+	if len(presentStyles) == 0 {
+		return nil
+	}
+
+	normalized := make([]string, 0, len(presentStyles))
+	for _, style := range []string{TextStyleBold, TextStyleItalic, TextStyleUnderline} {
+		if presentStyles[style] {
+			normalized = append(normalized, style)
+		}
+	}
+	return normalized
+}
+
+func copyTextStyles(styles []string) []string {
+	if styles == nil {
+		return nil
+	}
+	return append([]string{}, styles...)
 }
 
 func resolvedColor(defaultValue string, overrideValue string) string {

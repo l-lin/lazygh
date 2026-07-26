@@ -358,11 +358,11 @@ func treeSitterCaptureStyleForName(name string) (treeSitterCaptureStyle, bool) {
 	trimmedName := strings.TrimSpace(name)
 	switch trimmedName {
 	case "string.special.key":
-		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, 95), true
+		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, theme.SyntaxPropertyStyle, 95), true
 	case "markup.heading", "text.title":
-		return newTreeSitterCaptureStyle(theme.MarkdownHeadingHex, 80), true
+		return newTreeSitterCaptureStyle(theme.MarkdownHeadingHex, nil, 80), true
 	case "markup.link", "markup.raw", "text.literal", "text.reference", "text.uri":
-		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, 60), true
+		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, theme.SyntaxStringStyle, 60), true
 	}
 
 	primaryName := trimmedName
@@ -372,24 +372,24 @@ func treeSitterCaptureStyleForName(name string) (treeSitterCaptureStyle, bool) {
 
 	switch primaryName {
 	case "attribute", "label", "tag", "type":
-		return newTreeSitterCaptureStyle(theme.SyntaxTypeHex, 80), true
+		return newTreeSitterCaptureStyle(theme.SyntaxTypeHex, theme.SyntaxTypeStyle, 80), true
 	case "boolean", "constant", "number":
-		return newTreeSitterCaptureStyle(theme.SyntaxNumberHex, 70), true
+		return newTreeSitterCaptureStyle(theme.SyntaxNumberHex, theme.SyntaxNumberStyle, 70), true
 	case "comment":
-		return newTreeSitterCaptureStyle(theme.SyntaxCommentHex, 20), true
+		return newTreeSitterCaptureStyle(theme.SyntaxCommentHex, theme.SyntaxCommentStyle, 20), true
 	case "conditional", "exception", "include", "keyword", "operator", "preproc", "repeat":
-		return newTreeSitterCaptureStyle(theme.SyntaxKeywordHex, 85), true
+		return newTreeSitterCaptureStyle(theme.SyntaxKeywordHex, theme.SyntaxKeywordStyle, 85), true
 	case "constructor", "function", "method":
-		return newTreeSitterCaptureStyle(theme.SyntaxFunctionHex, 90), true
+		return newTreeSitterCaptureStyle(theme.SyntaxFunctionHex, theme.SyntaxFunctionStyle, 90), true
 	case "escape", "string":
-		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, 75), true
+		return newTreeSitterCaptureStyle(theme.SyntaxStringHex, theme.SyntaxStringStyle, 75), true
 	case "field", "parameter", "property":
-		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, 80), true
+		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, theme.SyntaxPropertyStyle, 80), true
 	}
 
 	return treeSitterCaptureStyle{}, false
 }
 
-func newTreeSitterCaptureStyle(hexColor string, priority int) treeSitterCaptureStyle {
-	return treeSitterCaptureStyle{prefix: foregroundColorEscape(hexColor), priority: priority}
+func newTreeSitterCaptureStyle(hexColor string, styles []string, priority int) treeSitterCaptureStyle {
+	return treeSitterCaptureStyle{prefix: syntaxColorAndStylePrefix(hexColor, styles), priority: priority}
 }

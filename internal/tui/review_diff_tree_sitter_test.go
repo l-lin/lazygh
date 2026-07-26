@@ -58,6 +58,36 @@ func TestReviewDiffTreeSitter_GivenGoCodeDiff_WhenFormatting_ThenItUsesTreeSitte
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "addedLine", backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
 }
 
+func TestReviewDiffTreeSitter_GivenThemeSyntaxStyles_WhenFormatting_ThenItUsesTreeSitterTextStyles(t *testing.T) {
+	t.Cleanup(theme.ResetPalette)
+	theme.ApplyPalette(theme.Palette{
+		SyntaxKeywordStyle:  []string{theme.TextStyleBold},
+		SyntaxFunctionStyle: []string{theme.TextStyleUnderline},
+		SyntaxStringStyle:   []string{theme.TextStyleItalic},
+	})
+	file := reviewDiffFile{
+		Path:       "internal/tui/render.go",
+		Additions:  1,
+		ChangeType: reviewDiffChangeTypeModified,
+		Hunks: []reviewDiffHunk{{
+			Header: "@@ -1,0 +1,1 @@",
+			Lines: []reviewDiffLine{{
+				Kind:      reviewDiffAdditionLine,
+				Text:      `func addedLine() string { return "x" }`,
+				RightLine: 1,
+				Side:      reviewDiffLineSideRight,
+			}},
+		}},
+	}
+
+	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
+	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `func addedLine() string { return "x" }`)
+
+	then_linePrefixContainsStyleToken(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "func", ansiBold, "go keyword bold")
+	then_linePrefixContainsStyleToken(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "addedLine", underlineEscape, "go function underline")
+	then_linePrefixContainsStyleToken(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"x"`, ansiItalic, "go string italic")
+}
+
 func TestReviewDiffTreeSitter_GivenCodeDiffsWithMoreSupportedLanguages_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
 	testCases := []struct {
 		name          string
