@@ -211,6 +211,14 @@ func TestResolvePaletteWithPreset_GivenGreyPresetAndSyntaxStyleOverrides_WhenRes
 	}
 }
 
+func TestResolvePaletteWithPreset_GivenGreyPresetAndOnlyInvalidSyntaxStyleOverrides_WhenResolving_ThenItClearsThePresetStyle(t *testing.T) {
+	actual := ResolvePaletteWithPreset("grey", Palette{SyntaxKeywordStyle: []string{" loud ", "blink"}})
+
+	if actual.SyntaxKeywordStyle == nil || len(actual.SyntaxKeywordStyle) != 0 {
+		t.Fatalf("expected syntax keyword style to be explicitly cleared, actual %v", actual.SyntaxKeywordStyle)
+	}
+}
+
 func TestResolvePalette_GivenLightSystemPolarityAndNoOverrides_WhenResolving_ThenItUsesLightDefaults(t *testing.T) {
 	given_systemPolarityDetector(t, func() systemPolarity { return systemPolarityLight })
 

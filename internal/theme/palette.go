@@ -553,7 +553,7 @@ func normalizeTextStyles(styles []string) []string {
 		}
 	}
 	if len(presentStyles) == 0 {
-		return nil
+		return []string{}
 	}
 
 	normalized := make([]string, 0, len(presentStyles))
