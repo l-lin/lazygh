@@ -355,21 +355,24 @@ func renderReviewDiffLine(path string, line reviewDiffLine, numberWidth int, cha
 		fmt.Sprintf("%s : %s │ ", diffPreviewLineNumberText(line.LeftLine, numberWidth), diffPreviewLineNumberText(line.RightLine, numberWidth)),
 		numberPrefix,
 	)
-	basePrefix := ""
+	contentPrefix := ""
+	signPrefix := ""
 	sign := " "
 	switch line.Kind {
 	case reviewDiffDeletionLine:
-		basePrefix = foregroundColorEscape(theme.DiffDeletionHex) + backgroundColorEscape(theme.DiffDeletionBackgroundHex)
+		contentPrefix = backgroundColorEscape(theme.DiffDeletionBackgroundHex)
+		signPrefix = foregroundColorEscape(theme.DiffDeletionHex) + contentPrefix
 		sign = "-"
 	case reviewDiffAdditionLine:
-		basePrefix = foregroundColorEscape(theme.DiffAdditionHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+		contentPrefix = backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+		signPrefix = foregroundColorEscape(theme.DiffAdditionHex) + contentPrefix
 		sign = "+"
 	}
 
 	if !syntaxHighlightEnabled || shouldSkipSyntaxHighlight(path, line.Text) {
-		return prefix + styleText(sign, basePrefix) + renderTextWithStyleRanges(line.Text, basePrefix, changedRanges)
+		return prefix + styleText(sign, signPrefix) + renderTextWithStyleRanges(line.Text, contentPrefix, changedRanges)
 	}
-	return prefix + styleText(sign, basePrefix) + renderSyntaxHighlightedCode(path, line.Text, basePrefix, changedRanges)
+	return prefix + styleText(sign, signPrefix) + renderSyntaxHighlightedCode(path, line.Text, contentPrefix, changedRanges)
 }
 
 func reviewDiffSyntaxHighlightEnabled(file reviewDiffFile) bool {

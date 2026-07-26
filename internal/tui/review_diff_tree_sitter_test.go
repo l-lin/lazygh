@@ -30,7 +30,10 @@ func TestReviewDiffTreeSitter_GivenJavaCodeDiff_WhenFormatting_ThenItUsesTreeSit
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "return", foregroundColorEscape(theme.SyntaxKeywordHex), "java keyword")
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.SyntaxFunctionHex), "java method")
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"5.1.0"`, foregroundColorEscape(theme.SyntaxStringHex), "java string")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.DiffAdditionHex), "java method diff foreground")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "(", foregroundColorEscape(theme.DiffAdditionHex), "java punctuation diff foreground")
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `"5.1.0"`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition background")
+	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "(", backgroundColorEscape(theme.DiffAdditionBackgroundHex), "diff addition punctuation background")
 }
 
 func TestReviewDiffTreeSitter_GivenGoCodeDiff_WhenFormatting_ThenItUsesTreeSitterSyntaxColors(t *testing.T) {
@@ -187,7 +190,7 @@ func TestReviewDiffTreeSitter_GivenModifiedJavaLine_WhenFormatting_ThenItUsesHar
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[additionLineIndex], additionVisibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "addition base background")
 }
 
-func TestReviewDiffTreeSitter_GivenUnsupportedFileExtension_WhenFormatting_ThenItFallsBackToPlainDiffColors(t *testing.T) {
+func TestReviewDiffTreeSitter_GivenUnsupportedFileExtension_WhenFormatting_ThenItFallsBackToTheDefaultForegroundWithDiffBackground(t *testing.T) {
 	file := reviewDiffFile{
 		Path:       "notes/version.custom",
 		Additions:  1,
@@ -207,20 +210,20 @@ func TestReviewDiffTreeSitter_GivenUnsupportedFileExtension_WhenFormatting_ThenI
 	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `mysteryValue();`)
 	segmentIndex := given_runeIndexInString(t, visibleLine, "mysteryValue")
 	actualStylePrefix := actualDocument.lineStylePrefixes[lineIndex][segmentIndex]
-	expectedStylePrefix := foregroundColorEscape(theme.DiffAdditionHex) + backgroundColorEscape(theme.DiffAdditionBackgroundHex)
+	expectedStylePrefix := backgroundColorEscape(theme.DiffAdditionBackgroundHex)
 	if actualStylePrefix != expectedStylePrefix {
 		t.Fatalf("expected unsupported file prefix %q, actual %q", expectedStylePrefix, actualStylePrefix)
 	}
 }
 
-func TestRenderReviewDiffLine_GivenVeryLargeInputFile_WhenFormatting_ThenItFallsBackToPlainDiffColorsAndKeepsIntralineHighlights(t *testing.T) {
+func TestRenderReviewDiffLine_GivenVeryLargeInputFile_WhenFormatting_ThenItFallsBackToTheDefaultForegroundAndKeepsIntralineHighlights(t *testing.T) {
 	file := given_veryLargeJavaReviewDiffFile()
 
 	actualDocument := newDetailDocument(renderReviewDiffFile(file, nil, 160), 160)
 	lineIndex, visibleLine := given_detailDocumentLineContaining(t, actualDocument, `return Versions.fromString("5.1.0");`)
 
 	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.SyntaxFunctionHex), "large-file fallback syntax function")
-	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.DiffAdditionHex), "large-file fallback diff foreground")
+	then_linePrefixDoesNotContainColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "fromString", foregroundColorEscape(theme.DiffAdditionHex), "large-file fallback diff foreground")
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, `return Versions.fromString("5.`, backgroundColorEscape(theme.DiffAdditionBackgroundHex), "large-file fallback diff background")
 	then_linePrefixContainsColor(t, actualDocument.lineStylePrefixes[lineIndex], visibleLine, "1.0", backgroundColorEscape(theme.DiffAdditionHighlightBackgroundHex), "large-file fallback intraline background")
 }
