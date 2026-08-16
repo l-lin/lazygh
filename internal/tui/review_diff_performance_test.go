@@ -42,6 +42,30 @@ func TestCurrentDetailDocument_GivenTheSameReviewDiff_WhenBuildingItTwice_ThenIt
 	}
 }
 
+func TestCurrentDetailDocument_GivenTheSameStoryReviewChapter_WhenBuildingItTwice_ThenItReusesTheCachedMarkdownRendering(t *testing.T) {
+	renderer := &fakeMarkdownRenderer{outputs: map[string]string{"# The Renderer Wakes\n\nNarrative body": "Rendered chapter body"}}
+	subject := given_benchmarkStoryReviewProgram()
+	subject.markdownRenderer = renderer
+	storyData := buildReviewStoryData(story.Review{
+		Summary: "A calmer way to review the pull request.",
+		Chapters: []story.Chapter{
+			{ID: "chapter-1", Title: "The Renderer Wakes", Narrative: "Narrative body", Files: []string{"internal/tui/render.go"}},
+		},
+	}, subject.pullRequestDiffCache["acme/widgets#42"].data.Files)
+	subject.startStoryReviewSession(githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}}, "PRR_story", storyData)
+	subject.navigationState.reviewSession.selectedFileTreeRow = 0
+
+	firstDocument := subject.currentDetailDocument(nil)
+	secondDocument := subject.currentDetailDocument(nil)
+
+	if string(firstDocument.text) != string(secondDocument.text) {
+		t.Fatalf("expected cached story chapter text %q, actual %q", string(firstDocument.text), string(secondDocument.text))
+	}
+	if renderer.callCount != 1 {
+		t.Fatalf("expected one markdown render for the cached story chapter document, actual %d", renderer.callCount)
+	}
+}
+
 func TestCurrentDetailDocument_GivenAStoryReviewDiffAlreadyCached_WhenBuildingItRepeatedly_ThenItAvoidsHotPathAllocations(t *testing.T) {
 	subject := given_benchmarkStoryReviewProgram()
 	storyData := buildReviewStoryData(story.Review{

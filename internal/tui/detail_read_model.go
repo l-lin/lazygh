@@ -85,15 +85,34 @@ func (model detailReadModel) documentCacheKey() (pullRequestDetailDocumentCacheK
 	if model.width < 1 || !model.pullRequestSummaryKnown {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
-	if model.reviewSession.isActive() && !model.reviewSession.showsDescription() {
-		return pullRequestDetailDocumentCacheKey{}, false
-	}
-	if !model.pullRequestDetailResultKnown || model.pullRequestDetailResult.err != nil {
-		return pullRequestDetailDocumentCacheKey{}, false
-	}
 
 	pullRequestKey := pullRequestDetailKey(model.pullRequestSummary.Repository, model.pullRequestSummary.Number)
 	if pullRequestKey == "" {
+		return pullRequestDetailDocumentCacheKey{}, false
+	}
+
+	if model.reviewSession.isActive() {
+		if model.reviewSession.showsStoryChapter() {
+			chapter, ok := model.reviewSession.selectedStoryChapter()
+			if !ok {
+				return pullRequestDetailDocumentCacheKey{}, false
+			}
+			chapterIdentity := firstNonEmpty(strings.TrimSpace(chapter.ID), strings.TrimSpace(chapter.Title))
+			if chapterIdentity == "" {
+				return pullRequestDetailDocumentCacheKey{}, false
+			}
+			return pullRequestDetailDocumentCacheKey{
+				pullRequestKey: pullRequestKey,
+				tab:            DescriptionDetailTab,
+				variant:        fmt.Sprintf("story:%s:%s", strings.TrimSpace(model.reviewSession.pendingReviewID), chapterIdentity),
+				width:          model.width,
+			}, true
+		}
+		if !model.reviewSession.showsDescription() {
+			return pullRequestDetailDocumentCacheKey{}, false
+		}
+	}
+	if !model.pullRequestDetailResultKnown || model.pullRequestDetailResult.err != nil {
 		return pullRequestDetailDocumentCacheKey{}, false
 	}
 
