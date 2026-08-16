@@ -39,7 +39,7 @@ func TestStatusStore_GivenFeedbackAndGHCommandStatus_WhenSettingAndClearing_Then
 func TestStatusStore_GivenFeedback_WhenStartingAndFinishingStoryReviewLoading_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	subject := statusStore{feedbackMessage: "stale"}
 
-	started := subject.withStoryReviewLoadingStarted()
+	started := subject.withStoryReviewLoadingStarted(" pi --no-session -p @<prompt_file> ")
 	finished := started.withStoryReviewLoadingFinished()
 
 	if !started.storyReviewLoading {
@@ -48,16 +48,25 @@ func TestStatusStore_GivenFeedback_WhenStartingAndFinishingStoryReviewLoading_Th
 	if actual := started.feedbackMessage; actual != "" {
 		t.Fatalf("expected story review loading to clear feedback, actual %q", actual)
 	}
+	if actual := started.storyReviewLoadingMessage; actual != "Running `pi --no-session -p @<prompt_file>`." {
+		t.Fatalf("expected story review loading message %q, actual %q", "Running `pi --no-session -p @<prompt_file>`.", actual)
+	}
 	if finished.storyReviewLoading {
 		t.Fatal("expected story review loading to finish")
 	}
 	if actual := finished.feedbackMessage; actual != "" {
 		t.Fatalf("expected finished feedback message %q, actual %q", "", actual)
 	}
+	if actual := finished.storyReviewLoadingMessage; actual != "" {
+		t.Fatalf("expected finished story review loading message %q, actual %q", "", actual)
+	}
 	if actual := subject.feedbackMessage; actual != "stale" {
 		t.Fatalf("expected the original feedback message %q, actual %q", "stale", actual)
 	}
 	if subject.storyReviewLoading {
 		t.Fatal("expected the original story review loading flag to stay false")
+	}
+	if actual := subject.storyReviewLoadingMessage; actual != "" {
+		t.Fatalf("expected the original story review loading message %q, actual %q", "", actual)
 	}
 }

@@ -9,9 +9,9 @@ func (program *Program) updateStatusStore(transition func(statusStore) statusSto
 	program.statusStore = &updatedStore
 }
 
-func (program *Program) startStoryReviewLoading() {
+func (program *Program) startStoryReviewLoading(command string) {
 	program.updateStatusStore(func(store statusStore) statusStore {
-		return store.withStoryReviewLoadingStarted()
+		return store.withStoryReviewLoadingStarted(command)
 	})
 }
 

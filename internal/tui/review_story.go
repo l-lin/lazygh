@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	reviewStoryActionTitle           = "Start review as story"
-	storyReviewConfigureAgentMessage = "configure `story_review.agent_command` in ~/.config/lazygh/config.toml before using story review"
-	storyReviewUnavailableMessage    = "story review is unavailable"
+	reviewStoryActionTitle                 = "Start review as story"
+	storyReviewConfigureAgentMessage       = "configure `story_review.agent_command` in ~/.config/lazygh/config.toml before using story review"
+	storyReviewUnavailableMessage          = "story review is unavailable"
+	storyReviewPromptFileStatusPlaceholder = "<prompt_file>"
 )
 
 type reviewStoryGenerator interface {
@@ -76,7 +77,7 @@ func (program *Program) requestStoryReview(summary githubdomain.PullRequest, for
 		program.invalidatePullRequestStoryReview(repository, summary.Number)
 	}
 
-	program.startStoryReviewLoading()
+	program.startStoryReviewLoading(formatStoryReviewCommand(program.runtimeConfig.storyReviewConfig))
 	return []Cmd{storyReviewPrepareCmd{request: pullRequestStoryReviewPrepareRequest{summary: summary}}}
 }
 
@@ -144,4 +145,9 @@ func preferredStoryMetadataValue(primary string, fallback string) string {
 		return trimmedPrimary
 	}
 	return strings.TrimSpace(fallback)
+}
+
+func formatStoryReviewCommand(config story.Config) string {
+	resolvedCommand := story.BuildCommand(story.ResolveConfig(config).AgentCommand, storyReviewPromptFileStatusPlaceholder)
+	return formatStatusLineCommand(resolvedCommand...)
 }

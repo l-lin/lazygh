@@ -1,0 +1,51 @@
+# Goal
+Split this pull request diff into a reviewer-friendly story told as chapters.
+
+## Voice and guidance
+{{.ResolvedPrompt}}
+
+## Output
+Return JSON only. No markdown fences or commentary outside the JSON.
+Markdown inside the `narrative` field is allowed and encouraged.
+Use escaped newlines (\n) inside the JSON string so the rendered chapter can include paragraphs, lists, headings, links, emphasis, blockquotes, and code fences when useful.
+Escape double quotes inside JSON strings with \" so the response stays valid JSON.
+Use this exact schema:
+{
+  "summary": "<2-3 sentence overview of the PR arc>",
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "<short chapter title>",
+      "narrative": "<markdown chapter narrative>",
+      "files": ["path/to/file.go"]
+    }
+  ]
+}
+
+## Rules
+- Use exact repo-relative file paths from the changed-files list.
+- Every changed file should appear exactly once across the named chapters.
+- Prefer 2-7 chapters unless the pull request is tiny.
+- Group files by reviewer intent, behavior change, refactor step, or shared debugging thread.
+- Keep titles concise and specific.
+- Explain what each chapter is about and why it matters for review.
+- When a visual makes the point clearer, include lightweight cues such as pseudocode, call trees, shallow file trees, or ASCII diagrams.
+- Prefer readable markdown structure over dense prose: short paragraphs, bullets, emphasis, links, and code fences are welcome when they help review.
+- The narrative is guidance for a reviewer, not a code review verdict.
+
+# Pull Request #{{.Number}}: {{.Title}}
+Author: {{.Author}}
+Branch: {{.Base}} <- {{.Head}}
+URL: {{.URL}}
+Changes: +{{.Additions}} -{{.Deletions}} across {{.ChangedFiles}} files
+{{if .Body}}
+## PR Description
+{{.Body}}
+{{end}}
+## Changed Files
+{{range .ChangedFilesList}}- {{.}}
+{{end}}
+## Diff
+```diff
+{{.DiffText}}
+```

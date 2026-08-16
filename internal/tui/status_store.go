@@ -23,13 +23,15 @@ func (store statusStore) withGHCommandLoadingCleared() statusStore {
 	return store
 }
 
-func (store statusStore) withStoryReviewLoadingStarted() statusStore {
+func (store statusStore) withStoryReviewLoadingStarted(command string) statusStore {
 	store.feedbackMessage = ""
 	store.storyReviewLoading = true
+	store.storyReviewLoadingMessage = formatRunningCommandStatus(command)
 	return store
 }
 
 func (store statusStore) withStoryReviewLoadingFinished() statusStore {
 	store.storyReviewLoading = false
+	store.storyReviewLoadingMessage = ""
 	return store
 }

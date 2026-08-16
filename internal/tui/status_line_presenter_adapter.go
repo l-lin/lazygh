@@ -14,6 +14,7 @@ func (program *Program) statusLinePresenter() statusLinePresenter {
 		feedbackMessage:                       program.feedbackMessage,
 		loadingSpinner:                        program.loadingSpinnerFrame(),
 		storyReviewLoading:                    program.storyReviewLoading,
+		storyReviewLoadingMessage:             strings.TrimSpace(program.storyReviewLoadingMessage),
 		assigneePickerLoadingMessage:          program.assigneePickerLoadingStatus(),
 		pullRequestBuildRunLoadingMessage:     program.pullRequestBuildRunLoadingStatus(),
 		ghCommandLoadingMessage:               program.ghCommandLoadingStatus(),

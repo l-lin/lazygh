@@ -6,6 +6,7 @@ type statusLinePresenter struct {
 	feedbackMessage                       string
 	loadingSpinner                        string
 	storyReviewLoading                    bool
+	storyReviewLoadingMessage             string
 	assigneePickerLoadingMessage          string
 	pullRequestBuildRunLoadingMessage     string
 	ghCommandLoadingMessage               string
@@ -28,7 +29,7 @@ func (presenter statusLinePresenter) Text() string {
 
 func (presenter statusLinePresenter) loadingText() string {
 	if presenter.storyReviewLoading {
-		return strings.TrimSpace(presenter.loadingSpinner)
+		return presenter.loadingSpinnerStatus(presenter.storyReviewLoadingMessage)
 	}
 
 	for _, message := range []string{
