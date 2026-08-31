@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/jesseduffield/gocui"
@@ -83,14 +84,15 @@ type programViewRuntime struct {
 }
 
 type programShellRuntime struct {
-	asyncRunner            asyncRunner
-	uiUpdater              uiUpdater
-	gui                    *gocui.Gui
-	keybindingRuntime      keybindingRuntimeState
-	persistentCacheRuntime persistentCacheRuntimeState
-	timingState            timingStateModel
-	manualRefreshState     manualRefreshStateModel
-	refreshReadCache       refreshReadCacheState
+	asyncRunner             asyncRunner
+	uiUpdater               uiUpdater
+	loadingSpinnerAnimating atomic.Bool
+	gui                     *gocui.Gui
+	keybindingRuntime       keybindingRuntimeState
+	persistentCacheRuntime  persistentCacheRuntimeState
+	timingState             timingStateModel
+	manualRefreshState      manualRefreshStateModel
+	refreshReadCache        refreshReadCacheState
 }
 
 type Program struct {

@@ -18,6 +18,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 	}
 
 	program.captureGUI(gui)
+	program.publishLoadingSpinnerAnimating()
 	done := make(chan struct{})
 	ticker := time.NewTicker(loadingSpinnerTickInterval)
 	go func() {
@@ -27,7 +28,7 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 			case <-done:
 				return
 			case <-ticker.C:
-				program.dispatchAsyncMessage(MsgLoadingSpinnerTick{})
+				program.tickLoadingSpinner(program.dispatchAsyncMessage)
 			}
 		}
 	}()
@@ -35,6 +36,22 @@ func (program *Program) startLoadingSpinner(gui *gocui.Gui) func() {
 	return func() {
 		close(done)
 	}
+}
+
+func (program *Program) publishLoadingSpinnerAnimating() {
+	if program == nil {
+		return
+	}
+
+	program.loadingSpinnerAnimating.Store(program.shouldAnimateLoadingSpinner())
+}
+
+func (program *Program) tickLoadingSpinner(dispatch func(Msg)) {
+	if program == nil || dispatch == nil || !program.loadingSpinnerAnimating.Load() {
+		return
+	}
+
+	dispatch(MsgLoadingSpinnerTick{})
 }
 
 func (program *Program) shouldAnimateLoadingSpinner() bool {
