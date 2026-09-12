@@ -69,6 +69,16 @@ func (program *Program) configurePullRequestsView(view *gocui.View) {
 	}
 
 	program.configureSelectableListView(view, FocusPullRequestsView, program.pullRequestsViewTitle(), program.model.PullRequestSearchQuery(program.model.ActivePullRequestTab()))
+	if selectedRow, ok := program.model.SelectedPullRequestRow(); ok {
+		for _, segment := range selectedRow.Item.TitleSegments {
+			if segment.BackgroundHex == "" {
+				continue
+			}
+			view.Highlight = false
+			view.HighlightInactive = false
+			break
+		}
+	}
 	view.TitlePrefix = "[2]"
 	view.Tabs = program.pullRequestsTabLabels()
 	view.TabIndex = int(program.model.ActivePullRequestTab())

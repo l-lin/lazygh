@@ -90,7 +90,7 @@ func renderStyledItemTitle(title string, segments []ItemTitleSegment, query stri
 			}
 
 			backgroundHex := strings.TrimSpace(segment.BackgroundHex)
-			if selected {
+			if selected && backgroundHex == "" {
 				backgroundHex = theme.SelectedLineBackgroundHex
 			}
 			if rangeIndex < len(matchRanges) && globalIndex >= matchRanges[rangeIndex].start && globalIndex < matchRanges[rangeIndex].end {

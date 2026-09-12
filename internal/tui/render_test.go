@@ -296,8 +296,9 @@ func TestLayout_GivenSelectedNotifications_WhenRendering_ThenTheReferenceStaysRe
 	then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewNotificationsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "readable selected notification reference")
 }
 
-func TestLayout_GivenSuccessfulMergeChecks_WhenRendering_ThenTheListRowUsesTheSuccessBackground(t *testing.T) {
+func TestLayout_GivenSelectedSuccessfulMergeChecks_WhenRendering_ThenTheSuccessBackgroundTakesPriorityAndTheRowStaysBold(t *testing.T) {
 	model := NewModel(DefaultSeedData())
+	model.FocusPullRequestsView()
 	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{myPullRequestRow(githubcli.PullRequest{
 		Title:                  "Approved PR",
 		Number:                 42,
@@ -316,7 +317,8 @@ func TestLayout_GivenSuccessfulMergeChecks_WhenRendering_ThenTheListRowUsesTheSu
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
 
-	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, iconPullRequest+" acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "approved pull request background")
+	then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, iconPullRequest+" acme/widgets#42 Approved PR", given_themeColorHex(t, theme.SuccessBackgroundHex), "selected approved pull request background")
+	then_viewLineSegmentIsBold(t, gui, viewPullRequestsName, 0, iconPullRequest+" acme/widgets#42 Approved PR")
 }
 
 func TestLayout_GivenBlockedMergeStateWithPassingReviewsAndChecks_WhenRendering_ThenTheListRowKeepsTheDefaultBackground(t *testing.T) {
@@ -416,7 +418,7 @@ func TestLayout_GivenCatppuccinFrappeFailureRowBackground_WhenRendering_ThenTheP
 	then_viewLineSegmentHasForegroundColor(t, gui, viewPullRequestsName, 0, "Blocked PR", given_themeColorHex(t, theme.BackgroundHex), "readable pull request title on bright failure background")
 }
 
-func TestLayout_GivenSelectedFailingRowsOnDarkCatppuccinThemes_WhenRendering_ThenTheStatusIconAndTextStayReadableOnTheSelectedBackground(t *testing.T) {
+func TestLayout_GivenSelectedFailingRowsOnDarkCatppuccinThemes_WhenRendering_ThenTheFailureBackgroundTakesPriorityAndTheRowStaysReadableAndBold(t *testing.T) {
 	for _, presetName := range []string{"catppuccin-frappe", "catppuccin-macchiato", "catppuccin-mocha"} {
 		t.Run(presetName, func(t *testing.T) {
 			t.Cleanup(theme.ResetPalette)
@@ -441,9 +443,11 @@ func TestLayout_GivenSelectedFailingRowsOnDarkCatppuccinThemes_WhenRendering_The
 			actualErr := subject.layout(gui)
 			then_noError(t, actualErr)
 
-			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, iconPullRequest, theme.SelectedLineBackgroundHex, 4.5, "readable selected failure status icon")
-			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "acme/widgets#42", theme.SelectedLineBackgroundHex, 4.5, "readable selected failure reference")
-			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "Blocked PR", theme.SelectedLineBackgroundHex, 4.5, "readable selected failure title")
+			then_viewLineSegmentHasBackgroundColor(t, gui, viewPullRequestsName, 0, iconPullRequest+" acme/widgets#42 Blocked PR", given_themeColorHex(t, theme.FailureBackgroundHex), "selected failing pull request background")
+			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, iconPullRequest, theme.FailureBackgroundHex, 4.5, "readable selected failure status icon")
+			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "acme/widgets#42", theme.FailureBackgroundHex, 4.5, "readable selected failure reference")
+			then_viewLineSegmentHasForegroundContrastAtLeast(t, gui, viewPullRequestsName, 0, "Blocked PR", theme.FailureBackgroundHex, 4.5, "readable selected failure title")
+			then_viewLineSegmentIsBold(t, gui, viewPullRequestsName, 0, iconPullRequest+" acme/widgets#42 Blocked PR")
 		})
 	}
 }
