@@ -116,10 +116,12 @@ Use `[display]` to control how repository names appear in browser list rows.
 - Set `repository_style = "name"` to shorten list rows to `widgets#42`.
 - This only affects browser list rows, including the pasted PR tab.
 - Detail headers, detail metadata, URLs, cache keys, and GitHub commands keep full repository identities.
+- Notifications are hidden by default. Set `notifications_view = true` to enable browser view 3 and its notification loading and actions.
 
 ```toml
 [display]
 repository_style = "name"
+notifications_view = true
 ```
 
 Accepted values:

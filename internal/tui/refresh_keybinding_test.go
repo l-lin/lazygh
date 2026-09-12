@@ -7,12 +7,15 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/story"
 )
 
 func TestRefreshKeybinding_GivenProgram_WhenListingBindings_ThenAltRIsAvailableInEveryMainPane(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 
 	actual := subject.keybindingSpecs()
 
@@ -637,6 +640,7 @@ func TestHelpPopup_GivenNotificationsFocus_WhenTogglingHelp_ThenItShowsTheRefres
 	model := given_model()
 	model.FocusNotificationsView()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

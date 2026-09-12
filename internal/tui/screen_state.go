@@ -204,6 +204,20 @@ func (state ScreenState) ViewByNumber(number int) (ViewState, bool) {
 	return state.SidePanel.viewByNumber(number)
 }
 
+func (state ScreenState) withoutSideView(number int, fallbackNumber int) ScreenState {
+	filteredViews := make([]ViewState, 0, len(state.SidePanel.Views))
+	for _, view := range state.SidePanel.Views {
+		if view.Number != number {
+			filteredViews = append(filteredViews, view)
+		}
+	}
+	state.SidePanel.Views = filteredViews
+	if _, ok := state.SidePanel.viewByNumber(state.SidePanel.ActiveViewNumber); !ok {
+		state.SidePanel.ActiveViewNumber = fallbackNumber
+	}
+	return state
+}
+
 func (panel PanelState) activeView() ViewState {
 	if view, ok := panel.viewByNumber(panel.ActiveViewNumber); ok {
 		return view

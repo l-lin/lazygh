@@ -5,12 +5,14 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/story"
 )
 
 func TestScreenStateAdapter_GivenBrowserModeProgram_WhenProjectingTheCurrentLayout_ThenItKeepsViewsZeroThroughThreeAndThePullRequestTabs(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.model.FocusPullRequestsView()
 
 	actual := subject.screenState()

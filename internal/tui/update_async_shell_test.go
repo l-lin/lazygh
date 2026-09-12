@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -192,6 +193,7 @@ func TestUpdate_GivenMsgRefreshPullRequestRequestedInReviewMode_WhenApplying_The
 
 func TestUpdate_GivenMsgRefreshNotificationsRequested_WhenApplying_ThenItRegistersManualRefreshStateAndReturnsATypedNotificationRefreshCommand(t *testing.T) {
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), &fakePullRequestDetailLoader{})
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 
 	actual := Update(subject, MsgRefreshNotificationsRequested{})
 

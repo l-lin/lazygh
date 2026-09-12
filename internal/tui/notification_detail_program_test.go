@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
@@ -44,6 +46,7 @@ func TestNotificationDetailRouting_GivenPullRequestIssueAndReleaseNotifications_
 		},
 	}
 	subject := given_programWithTestGitHubDeps(model, loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true
@@ -149,6 +152,7 @@ func TestNotificationDetailRouting_GivenAnUnsupportedNotificationType_WhenRender
 		},
 	}})
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -168,6 +172,7 @@ func TestNotificationDetailRouting_GivenAnIssueLoaderFailure_WhenRendering_ThenD
 	model.SetNotificationRows([]NotificationRow{given_issueNotificationRow()})
 	loader := &fakePullRequestDetailLoader{issueDetailErrors: map[string]error{"acme/opencode#3235": githubcli.ErrUnavailable}}
 	subject := given_programWithTestGitHubDeps(model, loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

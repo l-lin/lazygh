@@ -509,6 +509,7 @@ func TestResolvedKeyLabels_GivenTwoStepTabOverrides_WhenResolving_ThenItKeepsThe
 
 func given_programWithKeymapOverrides(model *Model, overrides appconfig.KeymapOverrides) *Program {
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.ApplyKeymapOverrides(overrides)
 	return subject
 }

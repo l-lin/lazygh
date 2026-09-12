@@ -40,7 +40,8 @@ type CacheConfig struct {
 }
 
 type DisplayConfig struct {
-	RepositoryStyle string
+	RepositoryStyle   string
+	NotificationsView bool
 }
 
 const (
@@ -75,7 +76,8 @@ type rawThemeConfig struct {
 }
 
 type rawDisplayConfig struct {
-	RepositoryStyle any `toml:"repository_style"`
+	RepositoryStyle   any `toml:"repository_style"`
+	NotificationsView any `toml:"notifications_view"`
 }
 
 type rawPullRequestConfig struct {
@@ -225,7 +227,7 @@ func ResolveDisplayConfig(config DisplayConfig) DisplayConfig {
 	if style == "" {
 		style = RepositoryStyleOwnerName
 	}
-	return DisplayConfig{RepositoryStyle: style}
+	return DisplayConfig{RepositoryStyle: style, NotificationsView: config.NotificationsView}
 }
 
 func ResolveLinksConfig(config LinksConfig) LinksConfig {
@@ -472,7 +474,11 @@ func normalizeStoryReviewConfig(raw rawStoryReviewConfig) story.Config {
 }
 
 func normalizeDisplayConfig(raw rawDisplayConfig) DisplayConfig {
-	return DisplayConfig{RepositoryStyle: normalizeRepositoryStyle(normalizeOptionalString(raw.RepositoryStyle))}
+	notificationsView, _ := raw.NotificationsView.(bool)
+	return DisplayConfig{
+		RepositoryStyle:   normalizeRepositoryStyle(normalizeOptionalString(raw.RepositoryStyle)),
+		NotificationsView: notificationsView,
+	}
 }
 
 func normalizeRepositoryStyle(value string) string {

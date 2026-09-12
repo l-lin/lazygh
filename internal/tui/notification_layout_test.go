@@ -4,10 +4,25 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
-func TestLayout_GivenBrowserMode_WhenRendering_ThenViewThreeShowsNotificationsAndStartsCollapsed(t *testing.T) {
+func TestLayout_GivenDefaultDisplayConfig_WhenRendering_ThenViewThreeNotificationsIsHidden(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	actualErr := subject.layout(gui)
+
+	then_noError(t, actualErr)
+	then_viewDoesNotExist(t, gui, viewNotificationsName)
+}
+
+func TestLayout_GivenNotificationsViewEnabled_WhenRendering_ThenViewThreeShowsNotificationsAndStartsCollapsed(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -36,6 +51,7 @@ func TestLayout_GivenLoadedNotifications_WhenRendering_ThenViewThreeTitleShowsTh
 	model := NewModel(DefaultSeedData())
 	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow(), given_issueNotificationRow()})
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -54,6 +70,7 @@ func TestFocusNotificationsView_GivenBrowserMode_WhenJumpingToViewThree_ThenTheN
 	model := given_model()
 	model.FocusNotificationsView()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -79,6 +96,7 @@ func TestNotificationsPane_GivenNotificationsFocus_WhenOpeningDetailWithEnter_Th
 	model := given_model()
 	model.FocusNotificationsView()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -104,6 +122,7 @@ func TestNotificationsPane_GivenNotificationsFocus_WhenJumpingToViewZero_ThenItK
 	model := given_model()
 	model.FocusNotificationsView()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -128,6 +147,7 @@ func TestNotificationsPane_GivenNotificationsFocus_WhenJumpingToViewZero_ThenItK
 func TestReviewMode_GivenNotificationsFocusShortcut_WhenHandlingTheBrowserOnlyPane_ThenReviewModeKeepsItsExistingViews(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{startReviewID: "PRR_pending"}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

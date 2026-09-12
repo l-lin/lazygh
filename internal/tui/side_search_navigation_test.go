@@ -1,6 +1,10 @@
 package tui
 
-import "testing"
+import (
+	"testing"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
+)
 
 func TestSideViews_GivenSubmittedSearch_WhenMovingWithJAndK_ThenSelectionMovesAcrossItemsInsteadOfMatches(t *testing.T) {
 	testCases := []struct {
@@ -22,6 +26,9 @@ func TestSideViews_GivenSubmittedSearch_WhenMovingWithJAndK_ThenSelectionMovesAc
 			model := given_sideSearchNavigationModel()
 			focusSideView(model, testCase.focus)
 			subject := NewProgramWithModel(model)
+			if testCase.focus == FocusNotificationsView {
+				subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
+			}
 			gui := given_headlessGui(t)
 			defer gui.Close()
 			subject.configureGUI(gui)
@@ -66,6 +73,9 @@ func TestSideViews_GivenSubmittedSearch_WhenRepeatingWithNAndN_ThenItMovesBetwee
 			model := given_sideSearchNavigationModel()
 			focusSideView(model, testCase.focus)
 			subject := NewProgramWithModel(model)
+			if testCase.focus == FocusNotificationsView {
+				subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
+			}
 			gui := given_headlessGui(t)
 			defer gui.Close()
 			subject.configureGUI(gui)
@@ -150,6 +160,7 @@ func then_sideViewSelectionIs(t *testing.T, subject *Program, focus Focus, expec
 
 func TestKeybindingSpecs_GivenProgram_WhenListingSideSearchFollowBindings_ThenUserAndNotificationsViewsSupportNAndN(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 
 	actual := subject.keybindingSpecs()
 
@@ -163,6 +174,7 @@ func TestSearchPrompt_GivenOpenSearchInNotificationsView_WhenSubmittingThenMovin
 	model := given_sideSearchNavigationModel()
 	model.FocusNotificationsView()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

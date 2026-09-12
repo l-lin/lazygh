@@ -464,6 +464,9 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 }
 
 func (program *Program) applyRefreshNotificationsRequested() []Cmd {
+	if !program.notificationsViewEnabled() {
+		return nil
+	}
 	program.beginManualNotificationsRefresh()
 	return []Cmd{refreshNotificationsCmd{}}
 }

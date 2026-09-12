@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -120,6 +122,7 @@ func TestChangeTheme_GivenExistingNotificationRows_WhenSubmitting_ThenItRestyles
 	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
 	model.FocusNotificationsView()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.themePresetStore = &fakeThemePresetStore{}
 	gui := given_headlessGui(t)
 	defer gui.Close()

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	persistcache "github.com/l-lin/lazygh/internal/cache"
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -578,6 +579,7 @@ func given_notificationActionProgram(notifications []githubcli.Notification, loa
 	model.SetNotificationRows(rows)
 
 	subject := given_programWithTestGitHubDeps(model, loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

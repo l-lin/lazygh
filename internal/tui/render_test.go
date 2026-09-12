@@ -6,6 +6,7 @@ import (
 
 	"github.com/jesseduffield/gocui"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/theme"
 )
@@ -268,6 +269,7 @@ func TestLayout_GivenNotifications_WhenRendering_ThenTheReferenceUsesThePullRequ
 	model := NewModel(DefaultSeedData())
 	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -283,6 +285,7 @@ func TestLayout_GivenSelectedNotifications_WhenRendering_ThenTheReferenceStaysRe
 	model.FocusNotificationsView()
 	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

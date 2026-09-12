@@ -180,6 +180,7 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	model := given_pullRequestCommentModel()
 	model.SetNotificationRows([]NotificationRow{notificationRow(given_cachedNotification("n-cached", "Cached notification"))})
 	subject := given_programWithTestGitHubDeps(model, loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
 	subject.requestedPullRequestsLoadStarted = true

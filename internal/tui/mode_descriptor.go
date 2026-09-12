@@ -39,11 +39,14 @@ func (BrowserMode) Mode() ScreenMode {
 }
 
 func (BrowserMode) SidebarSchema(program *Program) SidebarSchema {
-	return SidebarSchema{Views: copyViewStates(program.model.ScreenState().SidePanel.Views)}
+	return SidebarSchema{Views: copyViewStates(program.screenState().SidePanel.Views)}
 }
 
 func (BrowserMode) ScreenState(program *Program) ScreenState {
 	state := program.model.ScreenState()
+	if !program.notificationsViewEnabled() {
+		state = state.withoutSideView(sidePanelNotificationsViewNumber, sidePanelPullRequestsViewNumber)
+	}
 	if program.browserShowsPullRequestDetailTabs() {
 		state = state.WithViewTabs(mainPanelViewNumber, program.activeDetailTabIndex(), program.detailScreenTabs())
 	}

@@ -4,10 +4,13 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func TestScreenLayout_GivenBrowserMode_WhenPlanningFrames_ThenItKeepsViewsZeroThroughThreeAndTheBottomStatusLine(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 
 	actual := subject.screenLayoutForSize(100, 30)
 
@@ -116,6 +119,7 @@ func TestStatusLinePresenter_GivenFeedbackAndLoading_WhenPresenting_ThenFeedback
 
 func TestScreenComposition_GivenThePlannedLayout_WhenApplyingItToTheGUI_ThenTheVisibleViewsMatchThePureLayoutPlan(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGuiWithSize(t, 100, 30)
 	defer gui.Close()
 	subject.configureGUI(gui)

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/theme"
 )
 
@@ -76,6 +77,7 @@ func TestLayout_GivenSubmittedNotificationsSearchOnTheSelectedRow_WhenRendering_
 	model.UpdateSearchDraft("2")
 	model.SubmitSearch()
 	subject := NewProgramWithModel(model)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

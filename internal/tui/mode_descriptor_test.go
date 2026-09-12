@@ -3,12 +3,14 @@ package tui
 import (
 	"testing"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/story"
 )
 
 func TestModeDescriptor_GivenBrowserMode_WhenDescribingTheSidebar_ThenItKeepsViewsOneTwoAndThreeWithPullRequestTabs(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 
 	descriptor := subject.modeDescriptor()
 	actual := descriptor.SidebarSchema(subject)
@@ -114,6 +116,7 @@ func TestModeDescriptor_GivenBrowserMode_WhenStartingReviewAndExiting_ThenTheSch
 		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
 	}
 	subject := given_pullRequestCommentProgram(given_panelViewContractBrowserModel(), loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -138,6 +141,7 @@ func TestActionContext_GivenReviewModeAndNotificationsView_WhenResolving_ThenItT
 	model := given_model()
 	model.FocusNotificationsView()
 	browser := NewProgramWithModel(model)
+	browser.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 
 	actualBrowser := browser.actionContext()
 	if !actualBrowser.IsNotificationContext() {

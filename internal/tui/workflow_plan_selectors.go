@@ -29,14 +29,14 @@ func (program *Program) pullRequestListReloadPlan(tab PullRequestTab) workflowPl
 }
 
 func (program *Program) notificationLoadPlan() workflowPlan {
-	if program == nil {
+	if program == nil || !program.notificationsViewEnabled() {
 		return workflowPlan{}
 	}
 	return planNotificationLoad(notificationLoadPlanInput{reviewModeActive: program.reviewModeActive(), loadStarted: program.notificationsLoadStarted, hasNotificationQueries: program.hasNotificationQueries()})
 }
 
 func (program *Program) notificationReloadPlan() workflowPlan {
-	if program == nil {
+	if program == nil || !program.notificationsViewEnabled() {
 		return workflowPlan{}
 	}
 	return planNotificationLoad(notificationLoadPlanInput{reviewModeActive: program.reviewModeActive(), hasNotificationQueries: program.hasNotificationQueries(), forceReload: true})
@@ -113,7 +113,7 @@ func (program *Program) pullRequestDiffLoadPlanInput() pullRequestDiffLoadPlanIn
 }
 
 func (program *Program) selectedNotificationDetailLoadPlan() workflowPlan {
-	if program == nil {
+	if program == nil || !program.notificationsViewEnabled() {
 		return workflowPlan{}
 	}
 	return planNotificationDetailLoad(program.notificationDetailLoadPlanInput())

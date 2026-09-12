@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/jesseduffield/gocui"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func TestPanelViewContracts_GivenBrowserModeModel_WhenChangingTheActiveSideViewAndSelection_ThenViewZeroTracksThatSideSelection(t *testing.T) {
@@ -41,6 +43,7 @@ func TestPanelViewContracts_GivenBrowserModeModel_WhenCyclingTheSidePanel_ThenVi
 
 func TestPanelViewContracts_GivenBrowserModeProgram_WhenPressingSideViewKeys_ThenHAndShiftTabMoveLeftWhileLAndTabMoveRight(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -63,6 +66,7 @@ func TestPanelViewContracts_GivenBrowserModeProgram_WhenPressingSideViewKeys_The
 
 func TestPanelViewContracts_GivenBrowserModeProgram_WhenPressingNumberShortcuts_ThenZeroOneTwoAndThreeJumpToTheirPanelViews(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -85,6 +89,7 @@ func TestPanelViewContracts_GivenBrowserModeProgram_WhenPressingNumberShortcuts_
 
 func TestPanelViewContracts_GivenBrowserModeProgram_WhenPressingBrackets_ThenOnlyTabbedViewsUseThemForTheirLocalTabs(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

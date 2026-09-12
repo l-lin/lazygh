@@ -23,9 +23,23 @@ const (
 	keymapScopePullRequestBuildInfo = "pull_request_build_info"
 )
 
-var mainPaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName, viewDetailName}
-var sidePaneViewNames = []string{viewUserName, viewPullRequestsName, viewNotificationsName}
 var reviewPaneViewNames = []string{viewPullRequestsName, viewDetailName}
+
+func (program *Program) mainPaneViewNames() []string {
+	viewNames := []string{viewUserName, viewPullRequestsName}
+	if program.notificationsViewEnabled() {
+		viewNames = append(viewNames, viewNotificationsName)
+	}
+	return append(viewNames, viewDetailName)
+}
+
+func (program *Program) sidePaneViewNames() []string {
+	viewNames := []string{viewUserName, viewPullRequestsName}
+	if program.notificationsViewEnabled() {
+		viewNames = append(viewNames, viewNotificationsName)
+	}
+	return viewNames
+}
 
 var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"toggle_help":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "toggle_help"),
@@ -210,6 +224,8 @@ func (program *Program) multilineModalEditorMovementKeybindingActions() []keybin
 }
 
 func (program *Program) keybindingActions() []keybindingAction {
+	mainPaneViewNames := program.mainPaneViewNames()
+	sidePaneViewNames := program.sidePaneViewNames()
 	actions := []keybindingAction{
 		configuredKeybindingActionFor(keymapScopeGlobal, "quit", []string{""}, program.quit),
 		keybindingActionWithBindingSlice(configuredKeybindingActionFor(keymapScopeGlobal, "next_side_view", []string{""}, program.nextSideView), keybindingBindingSliceFirst),
@@ -218,7 +234,6 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeMain, "toggle_help", mainPaneViewNames, program.toggleHelp),
 		fixedKeybindingActionFor(keymapScopeMain, "focus_user_view", mainPaneViewNames, program.focusUserView, "1"),
 		fixedKeybindingActionFor(keymapScopeMain, "focus_pull_requests_view", mainPaneViewNames, program.focusPullRequestsView, "2"),
-		fixedKeybindingActionFor(keymapScopeMain, "focus_notifications_view", mainPaneViewNames, program.focusNotificationsView, "3"),
 		sharedKeybindingActionFor(keymapScopeMain, "open_search", mainPaneViewNames, program.openSearch),
 		sharedKeybindingActionFor(keymapScopeMain, "refresh", mainPaneViewNames, program.refreshActiveView),
 		sharedKeybindingActionFor(keymapScopeMain, "move_selection_down", mainPaneViewNames, program.moveSelectionDown),
@@ -263,13 +278,6 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_all_folds", []string{viewPullRequestsName}, program.openAllReviewTreeFolds),
 		sharedKeybindingActionFor(keymapScopePullRequests, "next_search_match", []string{viewPullRequestsName}, program.nextPullRequestsSearchMatch),
 		sharedKeybindingActionFor(keymapScopePullRequests, "previous_search_match", []string{viewPullRequestsName}, program.previousPullRequestsSearchMatch),
-
-		sharedKeybindingActionFor(keymapScopeNotifications, "open_detail", []string{viewNotificationsName}, program.openDetail),
-		configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead),
-		configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone),
-		sharedKeybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup),
-		sharedKeybindingActionFor(keymapScopeNotifications, "next_search_match", []string{viewNotificationsName}, program.nextNotificationsSearchMatch),
-		sharedKeybindingActionFor(keymapScopeNotifications, "previous_search_match", []string{viewNotificationsName}, program.previousNotificationsSearchMatch),
 
 		configuredKeybindingActionFor(keymapScopeReview, "previous_file", reviewPaneViewNames, program.previousReviewFile),
 		configuredKeybindingActionFor(keymapScopeReview, "next_file", reviewPaneViewNames, program.nextReviewFile),
@@ -395,6 +403,17 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_down", []string{viewHelpName}, program.fullPageHelpDown),
 		sharedKeybindingActionFor(keymapScopeGlobal, "full_page_up", []string{viewHelpName}, program.fullPageHelpUp),
 		closeKeybindingActionFor(keymapScopeGlobal, []string{viewHelpName}, program.closeHelp),
+	}
+	if program.notificationsViewEnabled() {
+		actions = append(actions,
+			fixedKeybindingActionFor(keymapScopeMain, "focus_notifications_view", mainPaneViewNames, program.focusNotificationsView, "3"),
+			sharedKeybindingActionFor(keymapScopeNotifications, "open_detail", []string{viewNotificationsName}, program.openDetail),
+			configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_read", []string{viewNotificationsName}, program.markNotificationRead),
+			configuredKeybindingActionFor(keymapScopeNotifications, "mark_notification_done", []string{viewNotificationsName}, program.markNotificationDone),
+			sharedKeybindingActionFor(keymapScopeNotifications, "open_actions_popup", []string{viewNotificationsName}, program.openActionsPopup),
+			sharedKeybindingActionFor(keymapScopeNotifications, "next_search_match", []string{viewNotificationsName}, program.nextNotificationsSearchMatch),
+			sharedKeybindingActionFor(keymapScopeNotifications, "previous_search_match", []string{viewNotificationsName}, program.previousNotificationsSearchMatch),
+		)
 	}
 	if movementActions := program.multilineModalEditorMovementKeybindingActions(); len(movementActions) > 0 {
 		actions = append(actions, movementActions...)

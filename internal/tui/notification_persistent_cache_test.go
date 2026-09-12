@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -15,6 +16,7 @@ func TestLayout_GivenCachedNotifications_WhenRendering_ThenItShowsThemBeforeTheB
 	cache := &fakePersistentPullRequestCache{notifications: []githubcli.Notification{cachedNotification}}
 	asyncRunner := &capturingAsyncRunner{}
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true
@@ -43,6 +45,7 @@ func TestLayout_GivenCachedNotificationsAndBackgroundRefreshFailure_WhenRenderin
 	loader := &fakePullRequestDetailLoader{notificationsErr: errors.New("boom")}
 	cache := &fakePersistentPullRequestCache{notifications: []githubcli.Notification{cachedNotification}}
 	subject := given_programWithTestGitHubDeps(NewModel(DefaultSeedData()), loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	subject.pullRequestCache = cache
 	subject.connectedUserLoadStarted = true
 	subject.myPullRequestsLoadStarted = true

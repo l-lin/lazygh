@@ -3,10 +3,13 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
 func TestPanelViewContracts_GivenBrowserModeRender_WhenRendering_ThenViewsZeroThroughThreeKeepTheirVisibleNumbers(t *testing.T) {
 	subject := NewProgramWithModel(given_panelViewContractBrowserModel())
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

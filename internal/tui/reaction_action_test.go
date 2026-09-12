@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -551,6 +552,7 @@ func TestAddReaction_GivenPullRequestNotificationDetailFocus_WhenSubmitting_Then
 	model.SetNotificationRows([]NotificationRow{given_pullRequestNotificationRow()})
 	model.FocusPullRequestsView()
 	subject := given_pullRequestCommentProgram(model, loader)
+	subject.ApplyDisplayConfig(appconfig.DisplayConfig{NotificationsView: true})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)

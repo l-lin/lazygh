@@ -36,6 +36,9 @@ func (program *Program) applyKeymapOverridesApplied(message MsgKeymapOverridesAp
 
 func (program *Program) applyDisplayConfigApplied(message MsgDisplayConfigApplied) {
 	program.setRuntimeDisplayConfig(message.Config)
+	if !program.notificationsViewEnabled() && program.model.Focus() == FocusNotificationsView {
+		program.model.FocusPullRequestsView()
+	}
 	program.restylePullRequestRows()
 	program.restyleNotificationRows()
 }

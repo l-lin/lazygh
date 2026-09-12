@@ -414,6 +414,63 @@ func TestConfig_ResolvedTheme_GivenThemePreset_WhenResolving_ThenItUsesThatPrese
 	}
 }
 
+func TestLoad_GivenNotificationsViewSetting_WhenLoading_ThenItPreservesOnlyABooleanOptIn(t *testing.T) {
+	testCases := []struct {
+		name     string
+		contents string
+		expected DisplayConfig
+	}{
+		{
+			name:     "enabled",
+			contents: "[display]\nnotifications_view = true\n",
+			expected: DisplayConfig{NotificationsView: true},
+		},
+		{
+			name:     "disabled",
+			contents: "[display]\nnotifications_view = false\n",
+			expected: DisplayConfig{},
+		},
+		{
+			name:     "invalid",
+			contents: "[display]\nnotifications_view = \"true\"\n",
+			expected: DisplayConfig{},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			configPath := given_configFile(t, testCase.contents)
+
+			actual, actualErr := when_loading(configPath)
+
+			then_noError(t, actualErr)
+			if !reflect.DeepEqual(actual.Display, testCase.expected) {
+				t.Fatalf("expected display config %+v, actual %+v", testCase.expected, actual.Display)
+			}
+		})
+	}
+}
+
+func TestConfig_ResolvedDisplay_GivenConfiguredNotificationsView_WhenResolving_ThenItKeepsTheOptIn(t *testing.T) {
+	subject := Config{Display: DisplayConfig{NotificationsView: true}}
+
+	actual := subject.ResolvedDisplay()
+
+	expected := DisplayConfig{RepositoryStyle: RepositoryStyleOwnerName, NotificationsView: true}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected resolved display config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestConfig_ResolvedDisplay_GivenMissingNotificationsView_WhenResolving_ThenItDisablesTheView(t *testing.T) {
+	actual := (Config{}).ResolvedDisplay()
+
+	expected := DisplayConfig{RepositoryStyle: RepositoryStyleOwnerName}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected resolved display config %+v, actual %+v", expected, actual)
+	}
+}
+
 func TestConfig_ResolvedDisplay_GivenConfiguredAndInvalidStyles_WhenResolving_ThenItNormalizesOrFallsBackToOwnerName(t *testing.T) {
 	testCases := []struct {
 		name     string
