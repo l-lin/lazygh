@@ -27,7 +27,7 @@ internal/tui
 - `internal/theme`: palette presets and exported runtime color variables.
 - `internal/github`: provider-neutral GitHub models, enums, errors, URL parsing, and shared normalization helpers.
 - `internal/githubcli`: the only transport-aware GitHub adapter layer for `gh` command wiring, payload parsing, and adapter-to-domain mapping.
-- `internal/cache`: SQLite persistence for pull requests, notifications, detail, and diff data.
+- `internal/cache`: SQLite persistence for pull requests, notifications, detail, diff, pull-request freshness, and search membership data.
 - `internal/story`: prompt building, agent execution, and story-review parsing.
 - `internal/clipboard`: clipboard interface and system implementation.
 - `internal/tui`: state, rendering, async orchestration, and interaction handling.
@@ -48,6 +48,7 @@ Smaller state bags follow the same value-transition rule:
 - `assigneePickerState` owns popup assignee selection plus search request/result bookkeeping.
 - `actionsPopupWidgetState` owns popup-local error, confirmation, and picker-open chrome around the popup child surfaces.
 - `manualRefreshStateModel` owns pending refresh targets and completion-feedback counting.
+- `pullRequestListStore` owns pull-request list load generations, identity-based refresh selection support, and in-memory freshness state used to derive unread row markers.
 - `statusStore` owns status-line feedback plus story-review and GH-command loading transitions.
 - `overlayStateModel` owns help visibility, transient error popup lifecycle, recorded errors, and modal editor lifecycle through explicit overlay-state transitions.
 - `navigationStateModel` owns review-session replacement and opened pull-request summary pinning through explicit navigation-state transitions.
@@ -120,7 +121,7 @@ Those snapshots keep footer, help, popup, title, view-0 detail identity or docum
 Shell work now lives behind explicit command files.
 
 - `workflow_session_commands.go`: connected-user load
-- `workflow_pull_request_list_commands.go`: pull-request list load, reload, and cache hydration
+- `workflow_pull_request_list_commands.go`: pull-request list load, reload, cache hydration, and generation-tagged async results
 - `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
 - `commit_diff_commands.go`: single-commit diff load for the optional browser commit-diff tab
 - `workflow_notification_commands.go`: notifications plus issue and release detail loads

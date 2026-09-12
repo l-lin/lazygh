@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/jesseduffield/gocui"
+	persistcache "github.com/l-lin/lazygh/internal/cache"
 	appconfig "github.com/l-lin/lazygh/internal/config"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
@@ -9,8 +10,9 @@ import (
 
 type pullRequestListWorkflowRuntime struct {
 	workflowShellRuntime
-	pullRequestsFromCache func(PullRequestTab) ([]githubdomain.PullRequest, bool)
-	listPullRequests      func(PullRequestTab) ([]githubdomain.PullRequest, error)
+	pullRequestsFromCache         func(PullRequestTab) ([]githubdomain.PullRequest, bool)
+	pullRequestFreshnessFromCache func() ([]persistcache.PullRequestFreshness, bool)
+	listPullRequests              func(PullRequestTab) ([]githubdomain.PullRequest, error)
 }
 
 type loadPullRequestsCmd struct {
@@ -29,6 +31,7 @@ func newPullRequestListWorkflowRuntime(program *Program, gui *gocui.Gui) pullReq
 	runtime := pullRequestListWorkflowRuntime{workflowShellRuntime: newWorkflowShellRuntime(program, gui)}
 	if program != nil {
 		runtime.pullRequestsFromCache = program.pullRequestsFromCache
+		runtime.pullRequestFreshnessFromCache = program.pullRequestFreshnessFromCache
 		if program.pullRequestListQueries != nil {
 			runtime.listPullRequests = newPullRequestListQueryCommand(program.pullRequestListQueries, program.runtimeConfig.pullRequestSearches)
 		}
@@ -54,9 +57,10 @@ func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
 	if runtime.listPullRequests == nil || runtime.dispatchAsyncMessage == nil {
 		return
 	}
+	generation := program.pullRequestLoadGeneration(command.tab)
 	runWorkflowCommandAsync(runtime.runAsync, func() {
 		pullRequests, err := runtime.listPullRequests(command.tab)
-		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err})
+		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation})
 	})
 }
 
@@ -69,7 +73,11 @@ func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *go
 	if !ok {
 		return
 	}
-	runtime.executeUpdate(MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests})
+	var freshness []persistcache.PullRequestFreshness
+	if runtime.pullRequestFreshnessFromCache != nil {
+		freshness, _ = runtime.pullRequestFreshnessFromCache()
+	}
+	runtime.executeUpdate(MsgPullRequestsCacheHydrated{Tab: command.tab, PullRequests: pullRequests, Freshness: freshness})
 }
 
 func (command reloadPullRequestsTabCmd) execute(program *Program, gui *gocui.Gui) {

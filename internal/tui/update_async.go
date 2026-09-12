@@ -7,8 +7,10 @@ import (
 )
 
 func (program *Program) applyPullRequestsCacheHydrated(message MsgPullRequestsCacheHydrated) {
+	program.applyPullRequestFreshnessSnapshot(message.Freshness)
 	program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
 	program.selectOpenedPullRequestRow(message.Tab)
+	program.markCurrentPullRequestSeen()
 }
 
 func (program *Program) applyNotificationsCacheHydrated(message MsgNotificationsCacheHydrated) {
@@ -41,18 +43,35 @@ func (program *Program) applyManualRefreshCompletion(err error) []Cmd {
 }
 
 func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) []Cmd {
+	if message.Generation != 0 && message.Generation != program.pullRequestLoadGeneration(message.Tab) {
+		return nil
+	}
 	program.setPullRequestsLoading(message.Tab, false)
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
+		refreshErrorBelongsToTab := program.pullRequestListStore != nil && program.pullRequestListStore.pullRequestRefreshErrorKnown && program.pullRequestListStore.pullRequestRefreshErrorTab == message.Tab
+		if refreshErrorBelongsToTab {
+			program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+				return store.withoutPullRequestRefreshError()
+			})
+			if strings.HasPrefix(program.feedbackMessage, pullRequestListRefreshErrorPrefix) {
+				program.clearFeedbackMessage()
+			}
+		}
 		program.cachePullRequests(message.Tab, message.PullRequests)
 		program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
 		program.selectOpenedPullRequestRow(message.Tab)
+		program.markCurrentPullRequestSeen()
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
 		}
 		return nil
 	}
 
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		return store.withPullRequestRefreshError(message.Tab)
+	})
+	program.setFeedback(FocusPullRequestsView, pullRequestListRefreshErrorPrefix+strings.TrimSpace(message.Err.Error()))
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
 		program.model.SetPullRequestRows(message.Tab, pullRequestStateRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.pullRequestListState(message.Tab), nil, message.Err))

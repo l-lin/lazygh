@@ -31,6 +31,7 @@ func TestStore_Clear_GivenStoredListsDetailsAndDiffs_WhenClearing_ThenItWipesThe
 	then_noError(t, subject.SavePullRequests(search, expectedPullRequests))
 	then_noError(t, subject.SavePullRequestDetail(summary, expectedDetail))
 	then_noError(t, subject.SavePullRequestDiff(summary, expectedDiff))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, summary.UpdatedAt))
 	then_noError(t, subject.SaveNotifications(expectedNotifications))
 
 	actualErr := subject.Clear()
@@ -53,6 +54,11 @@ func TestStore_Clear_GivenStoredListsDetailsAndDiffs_WhenClearing_ThenItWipesThe
 	}
 	if !reflect.DeepEqual(actualPullRequests, []githubcli.PullRequest(nil)) {
 		t.Fatalf("expected no cached pull requests after clear, actual %+v", actualPullRequests)
+	}
+	actualFreshness, actualErr := subject.PullRequestFreshness()
+	then_noError(t, actualErr)
+	if len(actualFreshness) != 0 {
+		t.Fatalf("expected cleared pull-request freshness, actual %+v", actualFreshness)
 	}
 	actualNotifications, notificationsOK, actualErr := subject.Notifications()
 	then_noError(t, actualErr)

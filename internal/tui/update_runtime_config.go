@@ -50,6 +50,13 @@ func (program *Program) applyLinksConfigApplied(message MsgLinksConfigApplied) {
 
 func (program *Program) applyCacheConfigApplied(message MsgCacheConfigApplied) {
 	program.setPersistentPullRequestCache(message.PullRequestCache)
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		return store.withoutPullRequestFreshness()
+	})
+	if freshness, ok := program.pullRequestFreshnessFromCache(); ok {
+		program.applyPullRequestFreshnessSnapshot(freshness)
+	}
+	program.queuePullRequestSearchMembershipReconciliation()
 	program.setNotificationDoneStore(message.NotificationDoneStore)
 	program.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
 		return state.withPullRequestsLoaded(append([]githubdomain.PullRequest(nil), message.PastedPullRequests...))

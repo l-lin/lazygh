@@ -1,6 +1,9 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	persistcache "github.com/l-lin/lazygh/internal/cache"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 type MsgActionsPopupAsyncGHCommandFinished struct {
 	Err        error
@@ -10,6 +13,7 @@ type MsgActionsPopupAsyncGHCommandFinished struct {
 type MsgPullRequestsCacheHydrated struct {
 	Tab          PullRequestTab
 	PullRequests []githubdomain.PullRequest
+	Freshness    []persistcache.PullRequestFreshness
 }
 
 type MsgNotificationsCacheHydrated struct {

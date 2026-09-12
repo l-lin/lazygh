@@ -6,6 +6,12 @@ import (
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
+type pullRequestFreshnessCache interface {
+	PullRequestFreshness() ([]persistcache.PullRequestFreshness, error)
+	MarkPullRequestSeen(repository string, number int, updatedAt string) error
+	ReconcilePullRequestSearches(searches []appconfig.PullRequestSearch) error
+}
+
 type persistentPullRequestCache interface {
 	PullRequests(search appconfig.PullRequestSearch) ([]githubdomain.PullRequestSummary, bool, error)
 	SavePullRequests(search appconfig.PullRequestSearch, pullRequests []githubdomain.PullRequestSummary) error

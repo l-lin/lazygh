@@ -3,6 +3,7 @@ package tui
 import "github.com/jesseduffield/gocui"
 
 const (
+	pullRequestListRefreshErrorPrefix    = "Pull request list refresh failed: "
 	pullRequestRefreshActionTitle        = "Refresh current PR information"
 	pullRequestRefreshSuccessMessage     = "Pull request refreshed"
 	pullRequestListRefreshActionTitle    = "Refresh PR list"

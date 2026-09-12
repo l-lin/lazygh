@@ -1,6 +1,9 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	persistcache "github.com/l-lin/lazygh/internal/cache"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func (program *Program) pullRequestsFromCache(tab PullRequestTab) ([]githubdomain.PullRequest, bool) {
 	if program.pullRequestCache == nil || !program.canHydratePullRequestsFromCache(tab) {
@@ -17,6 +20,21 @@ func (program *Program) pullRequestsFromCache(tab PullRequestTab) ([]githubdomai
 		return nil, false
 	}
 	return pullRequests, true
+}
+
+func (program *Program) pullRequestFreshnessFromCache() ([]persistcache.PullRequestFreshness, bool) {
+	if program == nil || program.pullRequestCache == nil {
+		return nil, false
+	}
+	freshnessCache, ok := program.pullRequestCache.(pullRequestFreshnessCache)
+	if !ok {
+		return nil, false
+	}
+	freshness, actualErr := freshnessCache.PullRequestFreshness()
+	if actualErr != nil {
+		return nil, false
+	}
+	return freshness, true
 }
 
 func (program *Program) canHydratePullRequestsFromCache(tab PullRequestTab) bool {

@@ -21,6 +21,13 @@ func (program *Program) setPullRequestsLoading(tab PullRequestTab, value bool) {
 	})
 }
 
+func (program *Program) pullRequestLoadGeneration(tab PullRequestTab) uint64 {
+	if program == nil || program.pullRequestListStore == nil {
+		return 0
+	}
+	return program.pullRequestListStore.pullRequestLoadGeneration(tab)
+}
+
 func (program *Program) setPullRequestsCount(tab PullRequestTab, count int, known bool) {
 	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
 		return store.withPullRequestsCount(tab, count, known)

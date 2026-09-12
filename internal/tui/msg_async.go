@@ -11,6 +11,7 @@ type MsgPullRequestsLoaded struct {
 	Tab          PullRequestTab
 	PullRequests []githubdomain.PullRequest
 	Err          error
+	Generation   uint64
 }
 
 type MsgNotificationsLoaded struct {

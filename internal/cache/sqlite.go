@@ -114,6 +114,12 @@ func (store *Store) Clear() error {
 	if _, actualErr = transaction.Exec(`DELETE FROM pull_requests`); actualErr != nil {
 		return actualErr
 	}
+	if _, actualErr = transaction.Exec(`DELETE FROM pull_request_freshness`); actualErr != nil {
+		return actualErr
+	}
+	if _, actualErr = transaction.Exec(`DELETE FROM pull_request_search_memberships`); actualErr != nil {
+		return actualErr
+	}
 
 	if actualErr = transaction.Commit(); actualErr != nil {
 		return actualErr
@@ -168,10 +174,16 @@ func (store *Store) SavePullRequests(search appconfig.PullRequestSearch, pullReq
 		return actualErr
 	}
 
+	if actualErr = reconcilePullRequestSearchMemberships(transaction, search, pullRequests); actualErr != nil {
+		return actualErr
+	}
 	for _, pullRequest := range pullRequests {
 		if actualErr = upsertPullRequestSummary(transaction, pullRequest); actualErr != nil {
 			return actualErr
 		}
+	}
+	if actualErr = deleteUnreferencedPullRequestFreshness(transaction); actualErr != nil {
+		return actualErr
 	}
 
 	if actualErr = transaction.Commit(); actualErr != nil {
@@ -399,6 +411,19 @@ func (store *Store) initialize() error {
 			diff_updated_at TEXT NOT NULL DEFAULT '',
 			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY(repository, number)
+		)`,
+		`CREATE TABLE IF NOT EXISTS pull_request_freshness (
+			repository TEXT NOT NULL,
+			number INTEGER NOT NULL,
+			seen INTEGER NOT NULL DEFAULT 0,
+			seen_updated_at TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY(repository, number)
+		)`,
+		`CREATE TABLE IF NOT EXISTS pull_request_search_memberships (
+			search_key TEXT NOT NULL,
+			repository TEXT NOT NULL,
+			number INTEGER NOT NULL,
+			PRIMARY KEY(search_key, repository, number)
 		)`,
 	}
 

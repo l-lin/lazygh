@@ -205,10 +205,6 @@ func pullRequestLoadingItem(state pullRequestListState) Item {
 	return Item{Title: state.loadingTitle, Detail: state.loadingDetail}
 }
 
-func pullRequestStateRows(state pullRequestListState, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
-	return pullRequestStateRowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, state, pullRequests, err)
-}
-
 func pullRequestStateRowsWithRepositoryStyle(style string, state pullRequestListState, pullRequests []githubdomain.PullRequest, err error) []PullRequestRow {
 	if err != nil {
 		return []PullRequestRow{{Item: pullRequestErrorItem(state, err)}}
@@ -239,6 +235,10 @@ func pullRequestRow(pullRequest any) PullRequestRow {
 }
 
 func pullRequestRowWithRepositoryStyle(style string, pullRequest any) PullRequestRow {
+	return pullRequestRowWithUnread(style, pullRequest, false)
+}
+
+func pullRequestRowWithUnread(style string, pullRequest any, unread bool) PullRequestRow {
 	pullRequestValue, ok := toDomainPullRequestSummary(pullRequest)
 	if !ok {
 		return PullRequestRow{}
@@ -273,18 +273,20 @@ func pullRequestRowWithRepositoryStyle(style string, pullRequest any) PullReques
 	titleSuffix := " " + valueOrDash(pullRequestValue.Title)
 
 	summaryCopy := pullRequestValue
-	return PullRequestRow{
-		Item: Item{
-			Title:  statusIconSegment.Text + titlePrefix + titleSuffix,
-			Detail: strings.Join(detailLines, "\n"),
-			TitleSegments: []ItemTitleSegment{
-				statusIconSegment,
-				{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex) + mergeChecksBackgroundPrefix, ForegroundHex: theme.PullRequestReferenceHex, BackgroundHex: mergeChecksBackgroundHex},
-				{Text: titleSuffix, Prefix: foregroundColorEscape(theme.PullRequestTitleHex) + mergeChecksBackgroundPrefix, ForegroundHex: theme.PullRequestTitleHex, BackgroundHex: mergeChecksBackgroundHex},
-			},
+	item := Item{
+		Title:  statusIconSegment.Text + titlePrefix + titleSuffix,
+		Detail: strings.Join(detailLines, "\n"),
+		TitleSegments: []ItemTitleSegment{
+			statusIconSegment,
+			{Text: titlePrefix, Prefix: foregroundColorEscape(theme.PullRequestReferenceHex) + mergeChecksBackgroundPrefix, ForegroundHex: theme.PullRequestReferenceHex, BackgroundHex: mergeChecksBackgroundHex},
+			{Text: titleSuffix, Prefix: foregroundColorEscape(theme.PullRequestTitleHex) + mergeChecksBackgroundPrefix, ForegroundHex: theme.PullRequestTitleHex, BackgroundHex: mergeChecksBackgroundHex},
 		},
-		Summary: &summaryCopy,
 	}
+	if unread {
+		item = prependPullRequestUnreadMarker(item)
+	}
+
+	return PullRequestRow{Item: item, Summary: &summaryCopy, Unread: unread}
 }
 
 func pullRequestMergeChecksBackgroundHex(pullRequest githubdomain.PullRequest) string {
@@ -298,10 +300,6 @@ func pullRequestMergeChecksBackgroundHex(pullRequest githubdomain.PullRequest) s
 	}
 }
 
-func restyledPullRequestRows(rows []PullRequestRow) []PullRequestRow {
-	return restyledPullRequestRowsWithRepositoryStyle(appconfig.RepositoryStyleOwnerName, rows)
-}
-
 func restyledPullRequestRowsWithRepositoryStyle(style string, rows []PullRequestRow) []PullRequestRow {
 	restyledRows := make([]PullRequestRow, 0, len(rows))
 	for _, row := range rows {
@@ -309,7 +307,7 @@ func restyledPullRequestRowsWithRepositoryStyle(style string, rows []PullRequest
 			restyledRows = append(restyledRows, row)
 			continue
 		}
-		restyledRows = append(restyledRows, pullRequestRowWithRepositoryStyle(style, *row.Summary))
+		restyledRows = append(restyledRows, pullRequestRowWithUnread(style, *row.Summary, row.Unread))
 	}
 	return restyledRows
 }

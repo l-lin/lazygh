@@ -66,6 +66,21 @@ func (store pullRequestListStore) withLoadStateReset() pullRequestListStore {
 	store.additionalPullRequestsLoadStarted = map[PullRequestTab]bool{}
 	store.additionalPullRequestsLoading = map[PullRequestTab]bool{}
 	store.additionalPullRequestsCounts = map[PullRequestTab]pullRequestCountState{}
+	store.pullRequestLoadGenerations = clonePullRequestLoadGenerations(store.pullRequestLoadGenerations)
+	for tab := range store.pullRequestLoadGenerations {
+		store.pullRequestLoadGenerations[tab]++
+	}
+	return store
+}
+
+func (store pullRequestListStore) withPullRequestRefreshError(tab PullRequestTab) pullRequestListStore {
+	store.pullRequestRefreshErrorTab = tab
+	store.pullRequestRefreshErrorKnown = true
+	return store
+}
+
+func (store pullRequestListStore) withoutPullRequestRefreshError() pullRequestListStore {
+	store.pullRequestRefreshErrorKnown = false
 	return store
 }
 

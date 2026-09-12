@@ -5,8 +5,10 @@ func (program *Program) applyConnectedUserLoadPlanned() {
 }
 
 func (program *Program) applyPullRequestsLoadPlanned(message MsgPullRequestsLoadPlanned) {
-	program.setPullRequestsLoadStarted(message.Tab, true)
-	program.setPullRequestsLoading(message.Tab, true)
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		store, _ = store.withNextPullRequestLoadGeneration(message.Tab)
+		return store.withPullRequestsLoadStarted(message.Tab, true).withPullRequestsLoading(message.Tab, true)
+	})
 }
 
 func (program *Program) applyNotificationsLoadPlanned() {

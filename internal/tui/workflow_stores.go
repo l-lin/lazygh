@@ -32,6 +32,13 @@ type pullRequestListStore struct {
 	additionalPullRequestsLoadStarted map[PullRequestTab]bool
 	additionalPullRequestsLoading     map[PullRequestTab]bool
 	additionalPullRequestsCounts      map[PullRequestTab]pullRequestCountState
+	pullRequestFreshness              map[string]pullRequestFreshnessState
+	pullRequestFreshnessTracking      bool
+	pullRequestTabMembership          map[PullRequestTab]map[string]struct{}
+	pullRequestTabMembershipKnown     map[PullRequestTab]bool
+	pullRequestLoadGenerations        map[PullRequestTab]uint64
+	pullRequestRefreshErrorTab        PullRequestTab
+	pullRequestRefreshErrorKnown      bool
 }
 
 func newPullRequestListStore(persistence *persistentCacheStore) *pullRequestListStore {
@@ -40,6 +47,10 @@ func newPullRequestListStore(persistence *persistentCacheStore) *pullRequestList
 		additionalPullRequestsLoadStarted: map[PullRequestTab]bool{},
 		additionalPullRequestsLoading:     map[PullRequestTab]bool{},
 		additionalPullRequestsCounts:      map[PullRequestTab]pullRequestCountState{},
+		pullRequestFreshness:              map[string]pullRequestFreshnessState{},
+		pullRequestTabMembership:          map[PullRequestTab]map[string]struct{}{},
+		pullRequestTabMembershipKnown:     map[PullRequestTab]bool{},
+		pullRequestLoadGenerations:        map[PullRequestTab]uint64{},
 	}
 }
 

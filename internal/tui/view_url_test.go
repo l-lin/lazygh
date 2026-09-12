@@ -330,8 +330,12 @@ func TestOpenPullRequestByURL_GivenClipboardContainsAGitHubPRURL_WhenPressingCtr
 	if actual := subject.model.ActivePullRequestTab(); actual != PullRequestTab(len(expectedLabels)-1) {
 		t.Fatalf("expected the pasted tab index %d, actual %d", len(expectedLabels)-1, actual)
 	}
-	if actual := subject.model.PullRequestRows(MyPullRequestsTab); !reflect.DeepEqual(actual, existingRows) {
-		t.Fatalf("expected the existing My PRs tab rows to stay intact, actual %+v", actual)
+	actualRows := subject.model.PullRequestRows(MyPullRequestsTab)
+	if len(actualRows) != len(existingRows) || len(actualRows) != 1 || actualRows[0].Summary == nil || existingRows[0].Summary == nil || !reflect.DeepEqual(*actualRows[0].Summary, *existingRows[0].Summary) {
+		t.Fatalf("expected the existing My PRs tab summary to stay intact, actual %+v", actualRows)
+	}
+	if actualRows[0].Unread {
+		t.Fatal("expected opening the same pull request in view zero to mark it as read in the existing tab")
 	}
 
 	selectedSummary, ok := subject.model.SelectedPullRequestSummary()

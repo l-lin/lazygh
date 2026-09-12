@@ -167,6 +167,9 @@ func (program *Program) clearCachedData() error {
 	program.invalidatePullRequestDetailDocumentCache()
 	program.invalidateReviewDiffRenderCache()
 	program.resetPullRequestListLoadState()
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		return store.withoutPullRequestFreshness()
+	})
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
 	program.syncPastedPullRequestTab()
 	program.model.SetNotifications([]Item{notificationsLoadingItem()})
@@ -293,6 +296,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 	}
 
 	program.setRuntimePullRequestSearches(searches)
+	program.queuePullRequestSearchMembershipReconciliation()
 	searches = append([]appconfig.PullRequestSearch(nil), program.runtimeConfig.pullRequestSearches...)
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(searches))
 	for tab, rows := range preservedRows {
@@ -396,7 +400,7 @@ func (program *Program) restylePullRequestRows() {
 		if len(rows) == 0 {
 			continue
 		}
-		program.model.SetPullRequestRows(tab, restyledPullRequestRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, rows))
+		program.model.SetPullRequestRows(tab, program.decoratePullRequestRows(rows))
 	}
 }
 
@@ -493,7 +497,7 @@ func (program *Program) mutateLoadedPullRequestSummaries(identity githubdomain.P
 
 			summary := *row.Summary
 			mutate(&summary)
-			updatedRows[index] = pullRequestRowWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, summary)
+			updatedRows[index] = pullRequestRowWithUnread(program.runtimeConfig.displayConfig.RepositoryStyle, summary, row.Unread)
 			updated = true
 		}
 		if updated {

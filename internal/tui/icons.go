@@ -57,6 +57,7 @@ const (
 	iconNotificationRelease     = ""
 	iconNotificationUnread      = "●"
 	iconNotificationRead        = "○"
+	iconPullRequestUnread       = iconNotificationUnread
 
 	iconFileGo         = ""
 	iconFileRuby       = ""

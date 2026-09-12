@@ -64,6 +64,7 @@ func (program *Program) applyOpenDetailRequested() {
 		return
 	}
 	program.model.OpenDetail()
+	program.markCurrentPullRequestSeen()
 }
 
 func (program *Program) applyCloseDetailRequested() {
@@ -182,6 +183,7 @@ func (program *Program) finishOpenPullRequestInBrowserView(sideFocus Focus) {
 
 func (program *Program) applyOpenPullRequestInDetailFullscreen(message MsgOpenPullRequestInDetailFullscreen) {
 	program.model.FocusDetailFullscreenFromSideFocus(message.SideFocus)
+	program.markCurrentPullRequestSeen()
 }
 
 func (program *Program) applyFeedbackSet(message MsgFeedbackSet) {

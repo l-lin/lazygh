@@ -36,6 +36,7 @@ type Item struct {
 type PullRequestRow struct {
 	Item    Item
 	Summary *githubdomain.PullRequest
+	Unread  bool
 }
 
 type NotificationRow struct {

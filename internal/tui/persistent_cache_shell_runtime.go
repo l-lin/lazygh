@@ -39,6 +39,16 @@ type invalidatePullRequestPersistentCacheAction struct {
 	number     int
 }
 
+type markPullRequestSeenPersistentCacheAction struct {
+	repository string
+	number     int
+	updatedAt  string
+}
+
+type reconcilePullRequestSearchesPersistentCacheAction struct {
+	searches []appconfig.PullRequestSearch
+}
+
 func (state persistentCacheRuntimeState) withQueued(action persistentCacheShellAction) persistentCacheRuntimeState {
 	if action == nil {
 		return state
@@ -91,6 +101,22 @@ func (action invalidatePullRequestPersistentCacheAction) sync(cache persistentPu
 		return
 	}
 	_ = cache.InvalidatePullRequest(strings.TrimSpace(action.repository), action.number)
+}
+
+func (action markPullRequestSeenPersistentCacheAction) sync(cache persistentPullRequestCache) {
+	freshnessCache, ok := cache.(pullRequestFreshnessCache)
+	if !ok {
+		return
+	}
+	_ = freshnessCache.MarkPullRequestSeen(strings.TrimSpace(action.repository), action.number, action.updatedAt)
+}
+
+func (action reconcilePullRequestSearchesPersistentCacheAction) sync(cache persistentPullRequestCache) {
+	freshnessCache, ok := cache.(pullRequestFreshnessCache)
+	if !ok {
+		return
+	}
+	_ = freshnessCache.ReconcilePullRequestSearches(append([]appconfig.PullRequestSearch(nil), action.searches...))
 }
 
 func (program *Program) updatePersistentCacheRuntime(update func(persistentCacheRuntimeState) persistentCacheRuntimeState) {

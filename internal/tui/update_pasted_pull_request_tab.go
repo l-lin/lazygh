@@ -6,10 +6,13 @@ func (program *Program) syncPastedPullRequestTab() (PullRequestTab, bool) {
 	}
 
 	seed, hasPastedTab := program.pastedPullRequests.tabSeedWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle)
+	previousPastedTab, hadPastedTab := PullRequestTab(0), false
 	preservedRows := make(map[PullRequestTab][]PullRequestRow, len(program.model.PullRequestTabs()))
 	seeds := make([]PullRequestTabSeed, 0, len(program.model.PullRequestTabs())+1)
 	for _, tab := range program.model.PullRequestTabs() {
 		if program.isPastedPullRequestTab(tab) {
+			previousPastedTab = tab
+			hadPastedTab = true
 			continue
 		}
 		rows := program.model.PullRequestRows(tab)
@@ -25,10 +28,21 @@ func (program *Program) syncPastedPullRequestTab() (PullRequestTab, bool) {
 		program.model.SetPullRequestRows(tab, rows)
 	}
 	if !hasPastedTab {
+		if hadPastedTab {
+			program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+				store = store.withoutPullRequestTabMembership(previousPastedTab)
+				return store.withoutPullRequestFreshnessAbsentFromTabs(configuredPullRequestTabs(program.model))
+			})
+		}
 		return 0, false
 	}
 
 	pastedTab := PullRequestTab(len(seeds) - 1)
-	program.model.SetPullRequestRows(pastedTab, program.pastedPullRequests.rowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle))
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		store = store.withPullRequestFreshnessTrackingEnabled()
+		store = store.withPullRequestTabMembership(pastedTab, program.pastedPullRequests.summaries())
+		return store.withoutPullRequestFreshnessAbsentFromTabs(configuredPullRequestTabs(program.model))
+	})
+	program.model.SetPullRequestRows(pastedTab, program.decoratePullRequestRows(program.pastedPullRequests.rowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle)))
 	return pastedTab, true
 }

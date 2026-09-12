@@ -46,6 +46,116 @@ func TestStore_PullRequests_GivenAStoredSearchResult_WhenReading_ThenItReturnsTh
 	}
 }
 
+func TestStore_PullRequestFreshness_GivenASeenPullRequest_WhenReading_ThenItReturnsThePersistedSeenVersion(t *testing.T) {
+	subject := given_cacheStore(t)
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
+	search := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
+
+	then_noError(t, subject.SavePullRequests(search, []githubcli.PullRequest{summary}))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, summary.UpdatedAt))
+
+	actual, actualErr := subject.PullRequestFreshness()
+
+	then_noError(t, actualErr)
+	if len(actual) != 1 {
+		t.Fatalf("expected one freshness record, actual %d", len(actual))
+	}
+	if actual[0].Repository != "acme/widgets" || actual[0].Number != 42 || !actual[0].Seen || actual[0].SeenUpdatedAt != summary.UpdatedAt {
+		t.Fatalf("expected persisted freshness for acme/widgets#42 at %q, actual %+v", summary.UpdatedAt, actual[0])
+	}
+}
+
+func TestStore_PullRequestFreshness_GivenANewerSeenVersion_WhenAnOlderVersionIsMarkedSeen_ThenItKeepsTheNewerSeenVersion(t *testing.T) {
+	subject := given_cacheStore(t)
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
+	search := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
+
+	then_noError(t, subject.SavePullRequests(search, []githubcli.PullRequest{summary}))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, "2026-05-05T11:00:00Z"))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, "2026-05-05T10:30:00Z"))
+
+	actual, actualErr := subject.PullRequestFreshness()
+
+	then_noError(t, actualErr)
+	if len(actual) != 1 || actual[0].SeenUpdatedAt != "2026-05-05T11:00:00Z" {
+		t.Fatalf("expected the newer seen version to remain persisted, actual %+v", actual)
+	}
+}
+
+func TestStore_PullRequestFreshness_GivenThePullRequestLeavesEverySearch_WhenSavingEmptyResults_ThenItDeletesTheFreshnessRecord(t *testing.T) {
+	subject := given_cacheStore(t)
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
+	search := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
+
+	then_noError(t, subject.SavePullRequests(search, []githubcli.PullRequest{summary}))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, summary.UpdatedAt))
+	then_noError(t, subject.SavePullRequests(search, nil))
+
+	actual, actualErr := subject.PullRequestFreshness()
+
+	then_noError(t, actualErr)
+	if len(actual) != 0 {
+		t.Fatalf("expected freshness to be deleted after the PR leaves every search, actual %+v", actual)
+	}
+}
+
+func TestStore_PullRequestFreshness_GivenThePullRequestLeavesOneSearchButRemainsInAnother_WhenSavingResults_ThenItKeepsTheFreshnessRecord(t *testing.T) {
+	subject := given_cacheStore(t)
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
+	firstSearch := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
+	secondSearch := appconfig.PullRequestSearch{Label: "Review", Command: []string{"search", "prs", "--review-requested", "@me"}}
+
+	then_noError(t, subject.SavePullRequests(firstSearch, []githubcli.PullRequest{summary}))
+	then_noError(t, subject.SavePullRequests(secondSearch, []githubcli.PullRequest{summary}))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, summary.UpdatedAt))
+	then_noError(t, subject.SavePullRequests(firstSearch, nil))
+
+	actual, actualErr := subject.PullRequestFreshness()
+
+	then_noError(t, actualErr)
+	if len(actual) != 1 || actual[0].Number != 42 {
+		t.Fatalf("expected freshness to remain while another search contains the PR, actual %+v", actual)
+	}
+}
+
+func TestStore_PullRequestFreshness_GivenConfiguredSearchesChange_WhenReconcilingMembership_ThenItDeletesRemovedSearchMemberships(t *testing.T) {
+	subject := given_cacheStore(t)
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
+	removedSearch := appconfig.PullRequestSearch{Label: "Removed", Command: []string{"search", "prs", "--author", "@me"}}
+	remainingSearch := appconfig.PullRequestSearch{Label: "Remaining", Command: []string{"search", "prs", "--review-requested", "@me"}}
+
+	then_noError(t, subject.SavePullRequests(removedSearch, []githubcli.PullRequest{summary}))
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, summary.UpdatedAt))
+	then_noError(t, subject.ReconcilePullRequestSearches([]appconfig.PullRequestSearch{remainingSearch}))
+
+	actual, actualErr := subject.PullRequestFreshness()
+
+	then_noError(t, actualErr)
+	if len(actual) != 0 {
+		t.Fatalf("expected freshness to be deleted after its search was removed, actual %+v", actual)
+	}
+}
+
+func TestStore_PullRequestFreshness_GivenAnExistingCachedListWithoutMemberships_WhenReconcilingSearches_ThenItRebuildsTheMembership(t *testing.T) {
+	subject := given_cacheStore(t)
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
+	search := appconfig.PullRequestSearch{Label: "Mine", Command: []string{"search", "prs", "--author", "@me"}}
+
+	then_noError(t, subject.SavePullRequests(search, []githubcli.PullRequest{summary}))
+	if _, actualErr := subject.db.Exec(`DELETE FROM pull_request_search_memberships`); actualErr != nil {
+		t.Fatalf("expected membership setup to succeed, actual error %v", actualErr)
+	}
+	then_noError(t, subject.MarkPullRequestSeen("acme/widgets", 42, summary.UpdatedAt))
+
+	then_noError(t, subject.ReconcilePullRequestSearches([]appconfig.PullRequestSearch{search}))
+
+	actual, actualErr := subject.PullRequestFreshness()
+	then_noError(t, actualErr)
+	if len(actual) != 1 || actual[0].Number != 42 {
+		t.Fatalf("expected freshness to survive membership rebuild, actual %+v", actual)
+	}
+}
+
 func TestStore_Notifications_GivenStoredNotifications_WhenReading_ThenItReturnsTheCachedNotifications(t *testing.T) {
 	subject := given_cacheStore(t)
 	expected := []githubcli.Notification{{

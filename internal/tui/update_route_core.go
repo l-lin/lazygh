@@ -35,7 +35,11 @@ func (program *Program) routeBootstrapFocusAndSidePaneSelection(msg Msg) updateR
 		if program.model.PaneLayoutSize() == PaneLayoutFullscreen && program.model.FullscreenPane() != targetView.Focus {
 			return handledUpdate(nil)
 		}
-		program.applyProjectedScreenState(state.FocusViewNumber(actual.Number))
+		targetState := state.FocusViewNumber(actual.Number)
+		program.applyProjectedScreenState(targetState)
+		if targetView.Focus == FocusDetailView {
+			program.markCurrentPullRequestSeen()
+		}
 		return handledUpdate(nil)
 	case MsgMoveSideSelection:
 		program.applyMoveSideSelection(actual)

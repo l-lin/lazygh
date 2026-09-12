@@ -1,6 +1,10 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	"strings"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 type openedPullRequestNormalization struct {
 	pullRequests              []githubdomain.PullRequest
@@ -20,14 +24,62 @@ func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (gith
 }
 
 func (program *Program) applyLoadedPullRequestRows(tab PullRequestTab, pullRequests []githubdomain.PullRequest) {
+	selectedKey := program.selectedPullRequestKey(tab)
 	normalized := program.normalizeLoadedPullRequests(tab, pullRequests)
+	normalized.pullRequests = sortPullRequests(normalized.pullRequests)
 	if normalized.matchedOpenedSummaryKnown {
 		program.pinOpenedPullRequestSummary(tab, normalized.matchedOpenedSummary)
 	}
 
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		store = store.withPullRequestFreshnessTrackingEnabled()
+		store = store.withPullRequestTabMembership(tab, normalized.pullRequests)
+		return store.withoutPullRequestFreshnessAbsentFromTabs(configuredPullRequestTabs(program.model))
+	})
 	rows := pullRequestStateRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.pullRequestListState(tab), normalized.pullRequests, nil)
+	rows = program.decoratePullRequestRows(rows)
 	program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
 	program.model.SetPullRequestRows(tab, rows)
+	program.selectPullRequestKeyOrFirst(tab, selectedKey)
+	program.markCurrentPullRequestSeen()
+}
+
+func (program *Program) selectedPullRequestKey(tab PullRequestTab) string {
+	if program == nil || program.model == nil {
+		return ""
+	}
+	rows := program.model.PullRequestRows(tab)
+	index := program.model.SelectedPullRequestIndex(tab)
+	if index < 0 || index >= len(rows) || rows[index].Summary == nil {
+		return ""
+	}
+	return pullRequestDetailKey(rows[index].Summary.Repository, rows[index].Summary.Number)
+}
+
+func (program *Program) refreshPullRequestUnreadMarkers() {
+	if program == nil || program.model == nil {
+		return
+	}
+	for _, tab := range program.model.PullRequestTabs() {
+		program.model.SetPullRequestRows(tab, program.decoratePullRequestRows(program.model.PullRequestRows(tab)))
+	}
+}
+
+func (program *Program) selectPullRequestKeyOrFirst(tab PullRequestTab, key string) {
+	rows := program.model.PullRequestRows(tab)
+	if strings.TrimSpace(key) != "" {
+		for index, row := range rows {
+			if row.Summary == nil {
+				continue
+			}
+			actualKey := pullRequestDetailKey(row.Summary.Repository, row.Summary.Number)
+			if actualKey == key {
+				program.model.SelectPullRequestIndex(tab, index)
+				return
+			}
+		}
+	}
+	program.model.SelectPullRequestIndex(tab, 0)
 }
 
 func (program *Program) normalizeLoadedPullRequests(tab PullRequestTab, pullRequests []githubdomain.PullRequest) openedPullRequestNormalization {

@@ -71,7 +71,7 @@ func copyItems(items []Item) []Item {
 func copyPullRequestRows(rows []PullRequestRow) []PullRequestRow {
 	copiedRows := make([]PullRequestRow, 0, len(rows))
 	for _, row := range rows {
-		copiedRow := PullRequestRow{Item: copyItem(row.Item)}
+		copiedRow := PullRequestRow{Item: copyItem(row.Item), Unread: row.Unread}
 		if row.Summary != nil {
 			summaryCopy := *row.Summary
 			copiedRow.Summary = &summaryCopy
