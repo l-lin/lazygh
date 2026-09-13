@@ -21,3 +21,11 @@ type queuedUIUpdater struct{}
 func (queuedUIUpdater) Apply(gui *gocui.Gui, update func(*gocui.Gui) error) {
 	gui.Update(update)
 }
+
+func (queuedUIUpdater) TryApply(gui *gocui.Gui, update func(*gocui.Gui) error) bool {
+	if gui == nil || update == nil {
+		return false
+	}
+	gui.Update(update)
+	return true
+}

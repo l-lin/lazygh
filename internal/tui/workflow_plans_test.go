@@ -42,6 +42,64 @@ func TestPlanPullRequestListLoad_GivenTheActiveTabWithLiveQueries_WhenPlanning_T
 	}
 }
 
+func TestPlanScheduledPullRequestListReload_GivenAConfiguredTarget_WhenPlanning_ThenItTargetsTheTabWithoutCacheHydration(t *testing.T) {
+	actual := planScheduledPullRequestListReload(MyPullRequestsTab, true, true)
+
+	expectedMessageTypes := []string{"tui.MsgPullRequestsLoadPlanned"}
+	if actualMessageTypes := given_workflowPlanMessageTypeNames(actual); !reflect.DeepEqual(actualMessageTypes, expectedMessageTypes) {
+		t.Fatalf("expected message types %v, actual %v", expectedMessageTypes, actualMessageTypes)
+	}
+	expectedCommandTypes := []string{"tui.loadPullRequestsCmd"}
+	if actualCommandTypes := given_workflowPlanCommandTypeNames(actual); !reflect.DeepEqual(actualCommandTypes, expectedCommandTypes) {
+		t.Fatalf("expected command types %v, actual %v", expectedCommandTypes, actualCommandTypes)
+	}
+	actualMessage := actual.messages[0].(MsgPullRequestsLoadPlanned)
+	if actualMessage.Source != pullRequestLoadSourceScheduled {
+		t.Fatalf("expected a scheduled source, actual %v", actualMessage.Source)
+	}
+	actualCommand := actual.commands[0].(loadPullRequestsCmd)
+	if actualCommand.Source != pullRequestLoadSourceScheduled {
+		t.Fatalf("expected a scheduled command source, actual %v", actualCommand.Source)
+	}
+}
+
+func TestPlanScheduledPullRequestListReload_GivenAnUnconfiguredTarget_WhenPlanning_ThenItReturnsNoWork(t *testing.T) {
+	actual := planScheduledPullRequestListReload(MyPullRequestsTab, true, false)
+
+	if len(actual.messages) != 0 || len(actual.commands) != 0 {
+		t.Fatalf("expected no scheduled work for an unconfigured target, actual %+v", actual)
+	}
+}
+
+func TestPlanScheduledPullRequestRefresh_GivenDuplicateAndInFlightTargets_WhenPlanning_ThenItPlansUniqueConcurrentLoads(t *testing.T) {
+	first := given_workflowPlanPullRequestSummary("2026-05-05T10:05:00Z")
+	second := given_workflowPlanPullRequestSummary("2026-05-05T10:04:00Z")
+	second.Number = 43
+	actual := planScheduledPullRequestRefresh(scheduledPullRequestRefreshPlanInput{
+		detailSummaries:    []githubdomain.PullRequest{first, first, second},
+		diffSummaries:      []githubdomain.PullRequest{first, first, second},
+		hasDetailQueries:   true,
+		detailLoadInFlight: map[string]bool{pullRequestDetailKey(second.Repository, second.Number): true},
+		diffLoadInFlight:   map[string]bool{},
+	})
+
+	if len(actual.messages) != 3 || len(actual.commands) != 3 {
+		t.Fatalf("expected two detail and one diff target, actual messages=%d commands=%d", len(actual.messages), len(actual.commands))
+	}
+	if _, ok := actual.messages[0].(MsgPullRequestDetailLoadPlanned); !ok {
+		t.Fatalf("expected detail messages before diff messages, actual %T", actual.messages[0])
+	}
+	if _, ok := actual.messages[1].(MsgPullRequestDiffLoadPlanned); !ok {
+		t.Fatalf("expected diff message after detail messages, actual %T", actual.messages[1])
+	}
+	if _, ok := actual.commands[0].(loadPullRequestDetailCmd); !ok {
+		t.Fatalf("expected detail command first, actual %T", actual.commands[0])
+	}
+	if _, ok := actual.commands[1].(loadPullRequestDiffCmd); !ok {
+		t.Fatalf("expected diff command after detail commands, actual %T", actual.commands[1])
+	}
+}
+
 func TestPlanPullRequestDetailLoad_GivenAVisibleCachedDetailNeedingRefresh_WhenPlanning_ThenItHydratesFirstAndMarksTheRefreshExplicitly(t *testing.T) {
 	summary := given_workflowPlanPullRequestSummary("2026-05-05T10:05:00Z")
 	actual := planPullRequestDetailLoad(pullRequestDetailLoadPlanInput{

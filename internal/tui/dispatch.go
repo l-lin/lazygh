@@ -31,3 +31,26 @@ func (program *Program) dispatchAsyncMessage(msg Msg) {
 		return program.dispatch(gui, msg)
 	})
 }
+
+func newPullRequestRefreshDispatcher(program *Program, gui *gocui.Gui) func(Msg) bool {
+	if program == nil || gui == nil || program.uiUpdater == nil {
+		return nil
+	}
+	updater := program.uiUpdater
+	dispatch := program.dispatch
+	return func(message Msg) bool {
+		if message == nil {
+			return false
+		}
+		update := func(gui *gocui.Gui) error {
+			return dispatch(gui, message)
+		}
+		if tryUpdater, ok := updater.(interface {
+			TryApply(*gocui.Gui, func(*gocui.Gui) error) bool
+		}); ok {
+			return tryUpdater.TryApply(gui, update)
+		}
+		updater.Apply(gui, update)
+		return true
+	}
+}

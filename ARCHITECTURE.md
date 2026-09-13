@@ -63,7 +63,9 @@ Smaller state bags follow the same value-transition rule:
 - `programDeps`: injected ports and services
 - `programStores`: caches, stores, and in-flight trackers
 - `programViewRuntime`: promoted UI runtime state
-- `programShellRuntime`: GUI, timers, async runner, refresh memoization, and shell-only services such as queued persistent-cache sync
+- `programShellRuntime`: GUI, timers, async runner, refresh memoization, queued persistent-cache sync, and the pull-request refresh scheduler
+
+`Program.Run` owns the refresh scheduler lifecycle only. The scheduler owns schedule generations, one-shot timer rearming, and pending-dispatch backpressure; it owns no TUI state. A captured shell dispatcher only enqueues typed due messages through the GUI/UI-updater boundary. The timer goroutine never reads or mutates `Program` state.
 
 This keeps the composition root in one place, but it is still broader than a strict Elm shell.
 Live `*gocui.Gui` capture is centralized on `captureGUI(...)`; startup, render, and post-update entrypoints reuse that seam instead of writing `program.gui` directly.
@@ -77,6 +79,8 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
    Pull-request list hydrate/load messages also normalize opened-summary insertion and durable pinning there instead of hiding it in loader helpers. Shortcut entrypoints now stop at typed request messages, so page-navigation selection, modal-open descriptors, refresh routing, transient error popup state, async popup or modal-submit completion handling, detail/build-popup motion or yank request routing, detail-fold collapse plus sync-plan derivation, link-open feedback preflight, clipboard-preflight teardown, and pending-review cache recording stay in `Update`. The top-level `update.go` router is grouped by message category, and helper files no longer re-enter `Update(program, msg)` for local follow-up work.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, persistent-cache shell sync, shell sync, and redraw only.
+
+The pull-request refresh scheduler follows the same path: its timer emits `MsgScheduledPullRequestRefreshDue`, `Update` rejects stale schedule generations and turns current due messages into scheduled list/detail/diff commands followed by an acknowledgement command, and existing async commands perform GitHub I/O and return typed loaded-result messages. Scheduled list results inspect freshness before applying the normal seen-marking behavior, so background fetching never marks a pull request read.
 
 For the optional browser commit-diff tab, `Update` owns open, retarget, focus, and clear decisions. `commit_diff_commands.go` owns the GitHub fetch only.
 
@@ -121,7 +125,8 @@ Those snapshots keep footer, help, popup, title, view-0 detail identity or docum
 Shell work now lives behind explicit command files.
 
 - `workflow_session_commands.go`: connected-user load
-- `workflow_pull_request_list_commands.go`: pull-request list load, reload, cache hydration, and generation-tagged async results
+- `workflow_pull_request_list_commands.go`: pull-request list load, reload, scheduled refresh, cache hydration, and generation-tagged async results
+- `pull_request_refresh_scheduler.go`: shell-only fixed-cadence scheduling, timer lifecycle, and schedule-generation backpressure
 - `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
 - `commit_diff_commands.go`: single-commit diff load for the optional browser commit-diff tab
 - `workflow_notification_commands.go`: notifications plus issue and release detail loads

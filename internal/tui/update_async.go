@@ -45,6 +45,11 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 	program.finishStatusLineOperation(program.pullRequestListStatusOperationID(message.Tab), message.Err)
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
+		var scheduledUnread []githubdomain.PullRequest
+		if message.Source == pullRequestLoadSourceScheduled {
+			// Freshness must be checked before row application can mark the current detail seen.
+			scheduledUnread = program.unreadPullRequests(message.PullRequests)
+		}
 		refreshErrorBelongsToTab := program.pullRequestListStore != nil && program.pullRequestListStore.pullRequestRefreshErrorKnown && program.pullRequestListStore.pullRequestRefreshErrorTab == message.Tab
 		if refreshErrorBelongsToTab {
 			program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
@@ -55,9 +60,25 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 			}
 		}
 		program.cachePullRequests(message.Tab, message.PullRequests)
-		program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
+		if message.Source == pullRequestLoadSourceScheduled {
+			program.applyLoadedPullRequestRowsWithoutMarkingSeen(message.Tab, message.PullRequests)
+		} else {
+			program.applyLoadedPullRequestRows(message.Tab, message.PullRequests)
+		}
 		program.selectOpenedPullRequestRow(message.Tab)
-		program.markCurrentPullRequestSeen()
+		if message.Source != pullRequestLoadSourceScheduled {
+			program.markCurrentPullRequestSeen()
+		}
+		if message.Source == pullRequestLoadSourceScheduled {
+			commands := []Cmd{scheduledPullRequestRefreshCmd{
+				detailSummaries: append([]githubdomain.PullRequest(nil), scheduledUnread...),
+				diffSummaries:   append([]githubdomain.PullRequest(nil), scheduledUnread...),
+			}}
+			if manualRefresh {
+				commands = append(commands, program.applyManualRefreshCompletion(nil)...)
+			}
+			return commands
+		}
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
 		}

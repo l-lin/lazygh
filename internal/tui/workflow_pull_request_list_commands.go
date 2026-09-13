@@ -16,7 +16,17 @@ type pullRequestListWorkflowRuntime struct {
 }
 
 type loadPullRequestsCmd struct {
+	tab    PullRequestTab
+	Source pullRequestLoadSource
+}
+
+type scheduledPullRequestListReloadCmd struct {
 	tab PullRequestTab
+}
+
+type scheduledPullRequestRefreshCmd struct {
+	detailSummaries []githubdomain.PullRequest
+	diffSummaries   []githubdomain.PullRequest
 }
 
 type reloadPullRequestsTabCmd struct {
@@ -60,8 +70,41 @@ func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
 	generation := program.pullRequestLoadGeneration(command.tab)
 	runWorkflowCommandAsync(runtime.runAsync, func() {
 		pullRequests, err := runtime.listPullRequests(command.tab)
-		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation})
+		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation, Source: command.Source})
 	})
+}
+
+func (command scheduledPullRequestListReloadCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil || program.isPastedPullRequestTab(command.tab) || program.pullRequestsLoading(command.tab) || !program.hasPullRequestListQueries() {
+		return
+	}
+	search, targetConfigured := program.searchBackedPullRequestSearch(command.tab)
+	if !targetConfigured || search.Refresh <= 0 {
+		return
+	}
+
+	runtime := newPullRequestListWorkflowRuntime(program, gui)
+	if runtime.executeWorkflowPlan == nil {
+		return
+	}
+	runtime.executeWorkflowPlan(planScheduledPullRequestListReload(command.tab, true, targetConfigured))
+}
+
+func (command scheduledPullRequestRefreshCmd) execute(program *Program, gui *gocui.Gui) {
+	if program == nil || !program.hasDetailQueries() {
+		return
+	}
+	runtime := newWorkflowShellRuntime(program, gui)
+	if runtime.executeWorkflowPlan == nil {
+		return
+	}
+	runtime.executeWorkflowPlan(planScheduledPullRequestRefresh(scheduledPullRequestRefreshPlanInput{
+		detailSummaries:    append([]githubdomain.PullRequest(nil), command.detailSummaries...),
+		diffSummaries:      append([]githubdomain.PullRequest(nil), command.diffSummaries...),
+		hasDetailQueries:   true,
+		detailLoadInFlight: program.pullRequestDetailLoadInFlight,
+		diffLoadInFlight:   program.pullRequestDiffLoadInFlight,
+	}))
 }
 
 func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {

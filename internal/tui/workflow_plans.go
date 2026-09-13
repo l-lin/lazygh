@@ -74,6 +74,65 @@ func planPullRequestListLoad(input pullRequestListLoadPlanInput) workflowPlan {
 	return actual
 }
 
+func planScheduledPullRequestListReload(tab PullRequestTab, hasPullRequestQueries bool, targetConfigured bool) workflowPlan {
+	if !hasPullRequestQueries || !targetConfigured {
+		return workflowPlan{}
+	}
+
+	return workflowPlan{
+		messages: []Msg{MsgPullRequestsLoadPlanned{Tab: tab, Source: pullRequestLoadSourceScheduled}},
+		commands: []Cmd{loadPullRequestsCmd{tab: tab, Source: pullRequestLoadSourceScheduled}},
+	}
+}
+
+type scheduledPullRequestRefreshPlanInput struct {
+	detailSummaries    []githubdomain.PullRequest
+	diffSummaries      []githubdomain.PullRequest
+	hasDetailQueries   bool
+	detailLoadInFlight map[string]bool
+	diffLoadInFlight   map[string]bool
+}
+
+func planScheduledPullRequestRefresh(input scheduledPullRequestRefreshPlanInput) workflowPlan {
+	if !input.hasDetailQueries {
+		return workflowPlan{}
+	}
+
+	detailSummaries := uniqueScheduledPullRequestSummaries(input.detailSummaries, input.detailLoadInFlight)
+	diffSummaries := uniqueScheduledPullRequestSummaries(input.diffSummaries, input.diffLoadInFlight)
+	actual := workflowPlan{}
+	for _, summary := range detailSummaries {
+		actual.addMessage(MsgPullRequestDetailLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number)})
+	}
+	for _, summary := range diffSummaries {
+		actual.addMessage(MsgPullRequestDiffLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number)})
+	}
+	for _, summary := range detailSummaries {
+		actual.addCommand(loadPullRequestDetailCmd{summary: summary})
+	}
+	for _, summary := range diffSummaries {
+		actual.addCommand(loadPullRequestDiffCmd{summary: summary})
+	}
+	return actual
+}
+
+func uniqueScheduledPullRequestSummaries(summaries []githubdomain.PullRequest, inFlight map[string]bool) []githubdomain.PullRequest {
+	unique := make([]githubdomain.PullRequest, 0, len(summaries))
+	seen := make(map[string]struct{}, len(summaries))
+	for _, summary := range summaries {
+		key := pullRequestDetailKey(summary.Repository, summary.Number)
+		if key == "" || inFlight[key] {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		unique = append(unique, summary)
+	}
+	return unique
+}
+
 type notificationLoadPlanInput struct {
 	reviewModeActive       bool
 	loadStarted            bool

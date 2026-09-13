@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/BurntSushi/toml"
@@ -58,6 +59,7 @@ type KeymapOverrides map[string]map[string][]string
 type PullRequestSearch struct {
 	Label   string
 	Command []string
+	Refresh time.Duration
 }
 
 type rawConfig struct {
@@ -88,6 +90,7 @@ type rawPullRequestSearch struct {
 	Label   string `toml:"label"`
 	Flags   any    `toml:"flags"`
 	Command any    `toml:"command"`
+	Refresh any    `toml:"refresh"`
 }
 
 type rawStoryReviewConfig struct {
@@ -275,7 +278,11 @@ func normalizeResolvedPullRequestSearches(searches []PullRequestSearch) []PullRe
 		if label == "" || len(command) == 0 {
 			continue
 		}
-		normalized = append(normalized, PullRequestSearch{Label: label, Command: command})
+		normalized = append(normalized, PullRequestSearch{
+			Label:   label,
+			Command: command,
+			Refresh: normalizePullRequestRefreshDuration(search.Refresh),
+		})
 	}
 
 	if len(normalized) == 0 {
@@ -306,7 +313,11 @@ func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequ
 		if label == "" || len(command) == 0 {
 			continue
 		}
-		normalized = append(normalized, PullRequestSearch{Label: label, Command: command})
+		normalized = append(normalized, PullRequestSearch{
+			Label:   label,
+			Command: command,
+			Refresh: normalizePullRequestRefresh(rawSearch.Refresh),
+		})
 	}
 
 	if len(normalized) == 0 {
@@ -314,6 +325,31 @@ func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequ
 	}
 
 	return normalized
+}
+
+func normalizePullRequestRefresh(raw any) time.Duration {
+	value, ok := raw.(string)
+	if !ok {
+		return 0
+	}
+
+	value = strings.TrimSpace(value)
+	if strings.EqualFold(value, "manual") {
+		return 0
+	}
+
+	refresh, err := time.ParseDuration(value)
+	if err != nil {
+		return 0
+	}
+	return normalizePullRequestRefreshDuration(refresh)
+}
+
+func normalizePullRequestRefreshDuration(refresh time.Duration) time.Duration {
+	if refresh <= 0 {
+		return 0
+	}
+	return refresh
 }
 
 func normalizePullRequestSearchCommand(raw rawPullRequestSearch) []string {

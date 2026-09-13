@@ -85,15 +85,17 @@ type programViewRuntime struct {
 }
 
 type programShellRuntime struct {
-	asyncRunner             asyncRunner
-	uiUpdater               uiUpdater
-	loadingSpinnerAnimating atomic.Bool
-	gui                     *gocui.Gui
-	keybindingRuntime       keybindingRuntimeState
-	persistentCacheRuntime  persistentCacheRuntimeState
-	timingState             timingStateModel
-	manualRefreshState      manualRefreshStateModel
-	refreshReadCache        refreshReadCacheState
+	asyncRunner                          asyncRunner
+	uiUpdater                            uiUpdater
+	loadingSpinnerAnimating              atomic.Bool
+	gui                                  *gocui.Gui
+	keybindingRuntime                    keybindingRuntimeState
+	persistentCacheRuntime               persistentCacheRuntimeState
+	timingState                          timingStateModel
+	manualRefreshState                   manualRefreshStateModel
+	refreshReadCache                     refreshReadCacheState
+	pullRequestRefreshScheduler          *pullRequestRefreshScheduler
+	pullRequestRefreshScheduleGeneration uint64
 }
 
 type Program struct {
@@ -224,6 +226,14 @@ func (program *Program) Run() error {
 	if err := program.start(gui); err != nil {
 		return err
 	}
+
+	program.pullRequestRefreshScheduleGeneration++
+	scheduler := newPullRequestRefreshScheduler(time.Now, func(delay time.Duration) pullRequestRefreshTimer {
+		return realPullRequestRefreshTimer{timer: time.NewTimer(delay)}
+	}, newPullRequestRefreshDispatcher(program, gui))
+	program.pullRequestRefreshScheduler = scheduler
+	stopPullRequestRefreshScheduler := scheduler.Start(newPullRequestRefreshSchedule(program.runtimeConfig.pullRequestSearches, time.Now(), program.pullRequestRefreshScheduleGeneration))
+	defer stopPullRequestRefreshScheduler()
 
 	if err := gui.MainLoop(); err != nil && !isQuitError(err) {
 		return err

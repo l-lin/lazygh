@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/l-lin/lazygh/internal/story"
 	"github.com/l-lin/lazygh/internal/theme"
@@ -133,6 +134,120 @@ flags = "--search \"label:escalated state:open\" --sort updated --order desc"
 	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)
+	}
+}
+
+func TestLoad_GivenAValidGoRefreshDuration_WhenLoading_ThenItPreservesTheInterval(t *testing.T) {
+	configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "Mine"
+flags = ["--author", "@me"]
+refresh = "10m"
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	expected := []PullRequestSearch{{
+		Label:   "Mine",
+		Command: []string{"search", "prs", "--author", "@me"},
+		Refresh: 10 * time.Minute,
+	}}
+	if !reflect.DeepEqual(actual.PullRequests, expected) {
+		t.Fatalf("expected pull request searches %+v, actual %+v", expected, actual.PullRequests)
+	}
+}
+
+func TestLoad_GivenManualOrOmittedRefresh_WhenLoading_ThenItUsesManualRefresh(t *testing.T) {
+	configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "Manual"
+flags = ["--author", "@me"]
+refresh = " MaNuAl "
+
+[[pull_requests.searches]]
+label = "Omitted"
+flags = ["--review-requested", "@me"]
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	for _, search := range actual.PullRequests {
+		if search.Refresh != 0 {
+			t.Fatalf("expected manual refresh for %q, actual %s", search.Label, search.Refresh)
+		}
+	}
+}
+
+func TestLoad_GivenAnInvalidRefreshValue_WhenLoading_ThenItKeepsTheSearchAndUsesManualRefresh(t *testing.T) {
+	testCases := []struct {
+		name    string
+		refresh string
+	}{
+		{name: "malformed", refresh: "not-a-duration"},
+		{name: "zero", refresh: "0s"},
+		{name: "negative", refresh: "-1m"},
+		{name: "ISO 8601", refresh: "PT10M"},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "Mine"
+flags = ["--author", "@me"]
+refresh = "`+testCase.refresh+`"
+`)
+
+			actual, actualErr := when_loading(configPath)
+
+			then_noError(t, actualErr)
+			if len(actual.PullRequests) != 1 || actual.PullRequests[0].Refresh != 0 {
+				t.Fatalf("expected the search to remain with manual refresh, actual %+v", actual.PullRequests)
+			}
+		})
+	}
+}
+
+func TestLoad_GivenANonStringRefreshValue_WhenLoading_ThenItKeepsTheSearchAndUsesManualRefresh(t *testing.T) {
+	configPath := given_configFile(t, `
+[[pull_requests.searches]]
+label = "Mine"
+flags = ["--author", "@me"]
+refresh = 10
+`)
+
+	actual, actualErr := when_loading(configPath)
+
+	then_noError(t, actualErr)
+	if len(actual.PullRequests) != 1 || actual.PullRequests[0].Refresh != 0 {
+		t.Fatalf("expected the search to remain with manual refresh, actual %+v", actual.PullRequests)
+	}
+}
+
+func TestConfig_ResolvedPullRequestSearches_GivenAProgrammaticNonPositiveRefresh_WhenResolving_ThenItUsesManualRefresh(t *testing.T) {
+	subject := Config{PullRequests: []PullRequestSearch{
+		{Label: "Zero", Command: []string{"search", "prs", "--author", "@me"}},
+		{Label: "Negative", Command: []string{"search", "prs", "--reviewed-by", "@me"}, Refresh: -time.Minute},
+	}}
+
+	actual := subject.ResolvedPullRequestSearches()
+
+	for _, search := range actual {
+		if search.Refresh != 0 {
+			t.Fatalf("expected manual refresh for %q, actual %s", search.Label, search.Refresh)
+		}
+	}
+}
+
+func TestDefaultPullRequestSearches_WhenReadingDefaults_ThenEverySearchUsesManualRefresh(t *testing.T) {
+	actual := DefaultPullRequestSearches()
+
+	for _, search := range actual {
+		if search.Refresh != 0 {
+			t.Fatalf("expected default search %q to use manual refresh, actual %s", search.Label, search.Refresh)
+		}
 	}
 }
 

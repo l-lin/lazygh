@@ -36,7 +36,6 @@
 
 ## Repo skills
 - Project skills live in `.pi/skills/`.
-- Use `lazygh-todo-executor` for tasks that reference `.sandbox/todo-*.md`, `.sandbox/plans/*`, `start todo`, or implementation plans.
 - Use `tui-visual-verifier` for rendering, theme, popup, cursor, markdown, image, or other TUI-acceptance work.
 - Keep durable repo-wide rules in `AGENTS.md`, and keep repeatable task workflows in skills.
 

@@ -48,6 +48,8 @@ func (program *Program) routeWorkflowPlanningAndCacheHydration(msg Msg) updateRe
 
 func (program *Program) routeAsyncLoadResultsAndTimerTicks(msg Msg) updateResult {
 	switch actual := msg.(type) {
+	case MsgScheduledPullRequestRefreshDue:
+		return handledUpdate(program.applyScheduledPullRequestRefreshDue(actual))
 	case MsgConnectedUserLoaded:
 		program.applyConnectedUserLoaded(actual)
 		return handledUpdate(nil)

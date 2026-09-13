@@ -259,6 +259,8 @@ You can find some prompt examples in [`prompts/story-review/`](./prompts/story-r
 
 You can customize your own pull request searches under `[[pull_requests.searches]]`.
 `lazygh` prepends `gh search prs` for you, so each entry only needs the flags.
+Omit `refresh`, or set it to `"manual"`, to disable automatic refresh for a search. Otherwise, `refresh` accepts any strictly positive [Go duration](https://pkg.go.dev/time#ParseDuration), such as `"10m"`; ISO 8601 values such as `"PT10M"` are not accepted.
+The pasted pull-request tab is refreshed every 10 minutes regardless of search configuration.
 
 ```toml
 [[pull_requests.searches]]
@@ -268,6 +270,7 @@ flags = ["--author", "@me", "--state", "open", "--sort", "updated", "--order", "
 [[pull_requests.searches]]
 label = "My reviews"
 flags = ["--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
+refresh = "10m"
 
 [[pull_requests.searches]]
 label = "Requested"

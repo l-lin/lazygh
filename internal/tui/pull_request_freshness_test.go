@@ -285,6 +285,36 @@ func TestApplyLoadedPullRequestRows_GivenTheSelectedPullRequestIsVisibleInViewZe
 	}
 }
 
+func TestPullRequestsLoaded_GivenAScheduledRefreshReturnsAnUnreadPullRequest_WhenApplyingTheResult_ThenItPlansDetailAndDiffWithoutMarkingItSeen(t *testing.T) {
+	subject := NewProgramWithModel(NewModel(SeedData{PullRequestTabs: []PullRequestTabSeed{{Label: "Mine"}}}))
+	subject.model.FocusPullRequestsView()
+	initial := givenFreshnessTestPullRequest(42, "2026-05-05T12:00:00Z")
+	subject.applyLoadedPullRequestRows(MyPullRequestsTab, []githubdomain.PullRequest{initial})
+	subject.model.FocusDetailView()
+	subject.applyPullRequestsLoadPlanned(MsgPullRequestsLoadPlanned{Tab: MyPullRequestsTab, Source: pullRequestLoadSourceScheduled})
+	generation := subject.pullRequestLoadGeneration(MyPullRequestsTab)
+
+	actual := subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{
+		Tab:        MyPullRequestsTab,
+		Generation: generation,
+		Source:     pullRequestLoadSourceScheduled,
+		PullRequests: []githubdomain.PullRequest{
+			givenFreshnessTestPullRequest(42, "2026-05-05T13:00:00Z"),
+		},
+	})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one scheduled fan-out command, actual %d", len(actual))
+	}
+	fanout, ok := actual[0].(scheduledPullRequestRefreshCmd)
+	if !ok || len(fanout.detailSummaries) != 1 || len(fanout.diffSummaries) != 1 {
+		t.Fatalf("expected one detail and diff summary, actual %#v", actual[0])
+	}
+	if state := subject.pullRequestFreshnessFor("acme/widgets#42"); state.seen {
+		t.Fatal("expected scheduled refresh not to mark the pull request seen")
+	}
+}
+
 func TestPullRequestsLoaded_GivenAListLoadIsInvalidated_WhenItsOldResultArrives_ThenItLeavesTheCurrentRowsUntouched(t *testing.T) {
 	subject := NewProgramWithModel(NewModel(SeedData{PullRequestTabs: []PullRequestTabSeed{{Label: "Mine"}}}))
 	subject.applyLoadedPullRequestRows(MyPullRequestsTab, []githubdomain.PullRequest{givenFreshnessTestPullRequest(42, "2026-05-05T12:00:00Z")})

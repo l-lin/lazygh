@@ -24,6 +24,14 @@ func (program *Program) openedPullRequestSummaryForTab(tab PullRequestTab) (gith
 }
 
 func (program *Program) applyLoadedPullRequestRows(tab PullRequestTab, pullRequests []githubdomain.PullRequest) {
+	program.applyLoadedPullRequestRowsWithSeenPolicy(tab, pullRequests, true)
+}
+
+func (program *Program) applyLoadedPullRequestRowsWithoutMarkingSeen(tab PullRequestTab, pullRequests []githubdomain.PullRequest) {
+	program.applyLoadedPullRequestRowsWithSeenPolicy(tab, pullRequests, false)
+}
+
+func (program *Program) applyLoadedPullRequestRowsWithSeenPolicy(tab PullRequestTab, pullRequests []githubdomain.PullRequest, markCurrentSeen bool) {
 	selectedKey := program.selectedPullRequestKey(tab)
 	normalized := program.normalizeLoadedPullRequests(tab, pullRequests)
 	normalized.pullRequests = sortPullRequests(normalized.pullRequests)
@@ -41,7 +49,28 @@ func (program *Program) applyLoadedPullRequestRows(tab PullRequestTab, pullReque
 	program.setPullRequestsCount(tab, pullRequestSummaryRowCount(rows), true)
 	program.model.SetPullRequestRows(tab, rows)
 	program.selectPullRequestKeyOrFirst(tab, selectedKey)
-	program.markCurrentPullRequestSeen()
+	if markCurrentSeen {
+		program.markCurrentPullRequestSeen()
+	}
+}
+
+func (program *Program) unreadPullRequests(pullRequests []githubdomain.PullRequest) []githubdomain.PullRequest {
+	unread := make([]githubdomain.PullRequest, 0, len(pullRequests))
+	seen := make(map[string]struct{}, len(pullRequests))
+	for _, pullRequest := range pullRequests {
+		key := pullRequestDetailKey(pullRequest.Repository, pullRequest.Number)
+		if key == "" {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		if program.pullRequestFreshnessFor(key).isUnread(pullRequest.UpdatedAt) {
+			unread = append(unread, pullRequest)
+		}
+	}
+	return unread
 }
 
 func (program *Program) selectedPullRequestKey(tab PullRequestTab) string {
