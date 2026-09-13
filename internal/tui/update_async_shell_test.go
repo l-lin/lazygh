@@ -4,13 +4,16 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying_ThenItUpdatesThePopupStateAndReturnsATypedExpiryCommand(t *testing.T) {
+func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying_ThenItUpdatesThePopupStateRecordsTheErrorAndReturnsATypedExpiryCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	now := time.Date(2026, time.May, 20, 12, 34, 56, 0, time.UTC)
+	subject.timingState.now = func() time.Time { return now }
 	operationID := subject.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Approving #42", failureLabel: "Approving #42"})
 	subject.ghCommandLoadingMessage = "Running `gh pr ready`."
 
@@ -24,6 +27,10 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying
 	}
 	if !strings.Contains(subject.statusLinePresenter().Text(), iconStatusFailure) {
 		t.Fatalf("expected the status line to show the failure, actual %q", subject.statusLinePresenter().Text())
+	}
+	expectedRecord := recordedErrorMessage{message: "Approving #42: boom", timestamp: now}
+	if len(subject.overlayState.errorMessages) != 1 || subject.overlayState.errorMessages[0] != expectedRecord {
+		t.Fatalf("expected recorded error %+v, actual %v", expectedRecord, subject.overlayState.errorMessages)
 	}
 }
 

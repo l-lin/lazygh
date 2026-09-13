@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jesseduffield/gocui"
 	"github.com/l-lin/lazygh/internal/theme"
@@ -31,34 +32,35 @@ func TestSearchWidgetState_GivenCommandMode_WhenOpeningAndEditing_ThenItUsesTheS
 	}
 }
 
-func TestUpdate_GivenCommandMode_WhenSubmittingMessagesAndClosingPopup_ThenItOpensTheTitledPlaceholderAndClearsCommandState(t *testing.T) {
+func TestUpdate_GivenCommandModeWithRecordedErrors_WhenSubmittingMessagesAndClosingPopup_ThenItOpensTheTimestampedHistoryAndClearsCommandState(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	currentTime := time.Date(2026, time.May, 20, 12, 0, 0, 0, time.UTC)
+	subject.timingState.now = func() time.Time { return currentTime }
+	Update(subject, MsgErrorReported{Message: "First error"})
+	currentTime = currentTime.Add(time.Minute)
+	Update(subject, MsgErrorReported{Message: "Second error"})
 
 	Update(subject, MsgOpenCommandMode{})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('m')})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('e')})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('s')})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('s')})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('a')})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('g')})
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('e')})
+	for _, character := range "messages" {
+		Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent(character)})
+	}
 	if !subject.commandModeActive() {
 		t.Fatal("expected command mode to remain active before submit")
 	}
-	if actual := subject.searchWidget.editor.Text(); actual != "message" {
-		t.Fatalf("expected command text %q before submit, actual %q", "message", actual)
+	if actual := subject.searchWidget.editor.Text(); actual != "messages" {
+		t.Fatalf("expected command text %q before submit, actual %q", "messages", actual)
 	}
-	Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent('s')})
 	Update(subject, MsgSubmitCommand{})
 
 	if subject.pullRequestBuildRunPopup == nil {
-		t.Fatal("expected the messages command to open the placeholder popup")
+		t.Fatal("expected the messages command to open the recorded-errors popup")
 	}
 	if actual := subject.pullRequestBuildRunPopup.title; actual != "messages" {
 		t.Fatalf("expected popup title %q, actual %q", "messages", actual)
 	}
-	if actual := subject.pullRequestBuildRunPopup.body; actual != "" {
-		t.Fatalf("expected an empty popup body, actual %q", actual)
+	expectedBody := "12:00:00 First error\n12:01:00 Second error"
+	if actual := subject.pullRequestBuildRunPopup.body; actual != expectedBody {
+		t.Fatalf("expected timestamped chronological body %q, actual %q", expectedBody, actual)
 	}
 	if actual := subject.pullRequestBuildRunPopup.widthPercent; actual != 90 {
 		t.Fatalf("expected popup width percent %d, actual %d", 90, actual)
@@ -105,6 +107,8 @@ func TestUpdate_GivenCommandMode_WhenSubmittingHistory_ThenItOpensTheHistoryPlac
 
 func TestUpdate_GivenCommandMode_WhenSubmittingUnknownCommandWithOuterWhitespace_ThenItClosesAndReportsTheTrimmedCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
+	now := time.Date(2026, time.May, 20, 14, 6, 6, 0, time.UTC)
+	subject.timingState.now = func() time.Time { return now }
 	Update(subject, MsgOpenCommandMode{})
 	for _, character := range " nope " {
 		Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent(character)})
@@ -121,6 +125,10 @@ func TestUpdate_GivenCommandMode_WhenSubmittingUnknownCommandWithOuterWhitespace
 	expected := formatStatusLineFailure("Unknown command", errors.New("nope"))
 	if actual := subject.statusLinePresenter().Text(); actual != expected {
 		t.Fatalf("expected status feedback %q, actual %q", expected, actual)
+	}
+	expectedRecord := recordedErrorMessage{message: "Unknown command: nope", timestamp: now}
+	if len(subject.overlayState.errorMessages) != 1 || subject.overlayState.errorMessages[0] != expectedRecord {
+		t.Fatalf("expected recorded error %+v, actual %v", expectedRecord, subject.overlayState.errorMessages)
 	}
 
 	gui := given_headlessGui(t)

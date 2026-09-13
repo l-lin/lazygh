@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -10,8 +11,10 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestUpdate_GivenMsgErrorReported_WhenApplying_ThenItRecordsTheMessageShowsThePopupAndReturnsATypedExpiryCommand(t *testing.T) {
+func TestUpdate_GivenMsgErrorReported_WhenApplying_ThenItRecordsTheMessageTimestampShowsThePopupAndReturnsATypedExpiryCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	now := time.Date(2026, time.May, 20, 12, 34, 56, 0, time.UTC)
+	subject.timingState.now = func() time.Time { return now }
 
 	actual := Update(subject, MsgErrorReported{Message: "boom"})
 
@@ -24,8 +27,9 @@ func TestUpdate_GivenMsgErrorReported_WhenApplying_ThenItRecordsTheMessageShowsT
 	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
 		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
 	}
-	if len(subject.overlayState.errorMessages) != 1 || subject.overlayState.errorMessages[0] != "boom" {
-		t.Fatalf("expected recorded errors %v, actual %v", []string{"boom"}, subject.overlayState.errorMessages)
+	expectedRecord := recordedErrorMessage{message: "boom", timestamp: now}
+	if len(subject.overlayState.errorMessages) != 1 || subject.overlayState.errorMessages[0] != expectedRecord {
+		t.Fatalf("expected recorded error %+v, actual %v", expectedRecord, subject.overlayState.errorMessages)
 	}
 }
 
@@ -164,9 +168,12 @@ func TestActionsPopup_GivenRecordedErrors_WhenOpening_ThenItShowsTheRecentErrors
 	}
 }
 
-func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_ThenItOpensTheHistoryPopupWithNewestErrorsFirst(t *testing.T) {
+func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_ThenItOpensTheHistoryPopupInChronologicalOrderWithTimestampedErrors(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	currentTime := time.Date(2026, time.May, 20, 12, 0, 0, 0, time.UTC)
+	subject.timingState.now = func() time.Time { return currentTime }
 	given_transientErrorReported(subject, nil, "First error")
+	currentTime = currentTime.Add(time.Minute)
 	given_transientErrorReported(subject, nil, "Second error")
 	gui := given_headlessGuiWithSize(t, 120, 30)
 	defer gui.Close()
@@ -188,10 +195,79 @@ func TestActionsPopup_GivenRecordedErrors_WhenExecutingTheRecentErrorsAction_The
 	if strings.Index(popupView.Buffer(), "Second error") < 0 || strings.Index(popupView.Buffer(), "First error") < 0 {
 		t.Fatalf("expected the popup buffer to contain both recorded errors, actual %q", popupView.Buffer())
 	}
-	if strings.Index(popupView.Buffer(), "Second error") > strings.Index(popupView.Buffer(), "First error") {
-		t.Fatalf("expected the newest error to render first, actual %q", popupView.Buffer())
+	expectedBody := "12:00:00 First error\n12:01:00 Second error"
+	if actual := subject.pullRequestBuildRunPopup.body; actual != expectedBody {
+		t.Fatalf("expected chronological timestamped body %q, actual %q", expectedBody, actual)
+	}
+	if strings.Index(popupView.Buffer(), "Second error") < strings.Index(popupView.Buffer(), "First error") {
+		t.Fatalf("expected the oldest error to render first, actual %q", popupView.Buffer())
 	}
 	then_viewOccupiesAtLeastPercentOfScreen(t, gui, viewPullRequestBuildInfoName, 90, 90)
+}
+
+func TestRenderRecordedErrorMessages_GivenMultipleRecords_WhenRendering_ThenItUsesAppendOrderAndTimePrefixes(t *testing.T) {
+	records := []recordedErrorMessage{
+		{message: "First error", timestamp: time.Date(2026, time.May, 20, 9, 1, 2, 0, time.UTC)},
+		{message: "Second error", timestamp: time.Date(2026, time.May, 20, 9, 3, 4, 0, time.UTC)},
+	}
+	expected := "09:01:02 First error\n09:03:04 Second error"
+
+	actual := renderRecordedErrorMessages(records)
+
+	if actual != expected {
+		t.Fatalf("expected chronological rendered errors %q, actual %q", expected, actual)
+	}
+}
+
+func TestRenderRecordedErrorMessages_GivenMultilineRecord_WhenRendering_ThenItPrefixesOnlyTheFirstLineAndSeparatesEntries(t *testing.T) {
+	records := []recordedErrorMessage{
+		{message: "First line\nsecond line", timestamp: time.Date(2026, time.May, 20, 10, 11, 12, 0, time.UTC)},
+		{message: "Next error", timestamp: time.Date(2026, time.May, 20, 10, 13, 14, 0, time.UTC)},
+	}
+	expected := "10:11:12 First line\nsecond line\n10:13:14 Next error"
+
+	actual := renderRecordedErrorMessages(records)
+
+	if actual != expected {
+		t.Fatalf("expected multiline rendered errors %q, actual %q", expected, actual)
+	}
+}
+
+func TestRenderRecordedErrorMessages_GivenNoRecords_WhenRendering_ThenItReturnsAnEmptyString(t *testing.T) {
+	actual := renderRecordedErrorMessages(nil)
+
+	if actual != "" {
+		t.Fatalf("expected an empty rendered body, actual %q", actual)
+	}
+}
+
+func TestRecordedErrorMessagesWithAppended_GivenAFullHistory_WhenAppendingARecord_ThenItRetainsTheNewestHundredInReportOrder(t *testing.T) {
+	existing := make([]recordedErrorMessage, maxRecordedErrorMessages)
+	for index := range existing {
+		existing[index] = recordedErrorMessage{
+			message:   fmt.Sprintf("record-%d", index),
+			timestamp: time.Date(2026, time.May, 20, 0, 0, index, 0, time.UTC),
+		}
+	}
+	newTimestamp := time.Date(2026, time.May, 20, 1, 0, 0, 0, time.UTC)
+
+	actual := recordedErrorMessagesWithAppended(existing, "new record", newTimestamp)
+
+	if len(actual) != maxRecordedErrorMessages {
+		t.Fatalf("expected %d records, actual %d", maxRecordedErrorMessages, len(actual))
+	}
+	if actual[0].message != "record-1" {
+		t.Fatalf("expected the oldest retained record %q, actual %q", "record-1", actual[0].message)
+	}
+	if actual[len(actual)-1] != (recordedErrorMessage{message: "new record", timestamp: newTimestamp}) {
+		t.Fatalf("expected the newest appended record %+v, actual %+v", recordedErrorMessage{message: "new record", timestamp: newTimestamp}, actual[len(actual)-1])
+	}
+	for index, record := range actual[:len(actual)-1] {
+		expectedMessage := fmt.Sprintf("record-%d", index+1)
+		if record.message != expectedMessage {
+			t.Fatalf("expected record %d to be %q, actual %q", index, expectedMessage, record.message)
+		}
+	}
 }
 
 func given_transientErrorReported(subject *Program, gui *gocui.Gui, message string) {

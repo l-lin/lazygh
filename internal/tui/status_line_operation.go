@@ -37,6 +37,13 @@ func (store statusStore) withStatusLineOperationStarted(descriptor statusLineOpe
 	return store, store.nextStatusLineOperationID
 }
 
+func (store statusStore) statusLineOperationFailureLabel(operationID uint64) string {
+	if operationID == 0 || store.statusLineOperation.id != operationID {
+		return ""
+	}
+	return store.statusLineOperation.failureLabel
+}
+
 func (store statusStore) withStatusLineOperationFinished(operationID uint64, operationErr error) statusStore {
 	if operationID == 0 || store.statusLineOperation.id != operationID {
 		return store
@@ -57,7 +64,7 @@ func (store statusStore) withStatusLineOperationFinished(operationID uint64, ope
 	return store
 }
 
-func formatStatusLineFailure(action string, operationErr error) string {
+func formatStatusLineFailureContext(action string, operationErr error) string {
 	trimmedAction := strings.TrimSpace(action)
 	if operationErr == nil {
 		return ""
@@ -66,7 +73,15 @@ func formatStatusLineFailure(action string, operationErr error) string {
 	if trimmedAction == "" || trimmedError == "" {
 		return ""
 	}
-	return iconStatusFailure + " " + trimmedAction + ": " + trimmedError
+	return trimmedAction + ": " + trimmedError
+}
+
+func formatStatusLineFailure(action string, operationErr error) string {
+	failureContext := formatStatusLineFailureContext(action, operationErr)
+	if failureContext == "" {
+		return ""
+	}
+	return iconStatusFailure + " " + failureContext
 }
 
 func truncateStatusLineText(text string, availableWidth int) string {
@@ -101,6 +116,19 @@ func (program *Program) startStatusLineOperation(descriptor statusLineOperationD
 }
 
 func (program *Program) finishStatusLineOperation(operationID uint64, operationErr error) {
+	failureLabel := ""
+	shouldRecord := operationID == 0
+	if program != nil && program.statusStore != nil {
+		if operationID != 0 && program.statusStore.statusLineOperation.id != operationID {
+			shouldRecord = false
+		} else if operationID != 0 {
+			shouldRecord = true
+			failureLabel = program.statusStore.statusLineOperationFailureLabel(operationID)
+		}
+	}
+	if shouldRecord {
+		program.recordStatusLineFailure(failureLabel, operationErr)
+	}
 	program.updateStatusStore(func(store statusStore) statusStore {
 		return store.withStatusLineOperationFinished(operationID, operationErr)
 	})

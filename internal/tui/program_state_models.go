@@ -25,7 +25,7 @@ type detailStateModel struct {
 type overlayStateModel struct {
 	helpVisible         bool
 	transientErrorPopup transientErrorPopupState
-	errorMessages       []string
+	errorMessages       []recordedErrorMessage
 	modalEditor         modalEditorState
 }
 

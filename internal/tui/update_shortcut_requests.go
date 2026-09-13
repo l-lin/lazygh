@@ -68,12 +68,14 @@ func (program *Program) applyOpenPullRequestInBrowserShortcutRequested() []Cmd {
 		return state.withPendingPrefixCleared()
 	})
 	if !program.hasPullRequestMutations() {
+		program.recordErrorMessage("github loader is unavailable")
 		program.setFeedback(program.model.Focus(), "github loader is unavailable")
 		return nil
 	}
 
 	target, ok := program.selectedPullRequestActionTarget()
 	if !ok {
+		program.recordErrorMessage(errActionsPopupActionUnavailable.Error())
 		program.setFeedback(program.model.Focus(), errActionsPopupActionUnavailable.Error())
 		return nil
 	}
@@ -95,6 +97,7 @@ func (program *Program) applyOpenDetailPullRequestCommentRequested() {
 	case DetailInputModeReviewInlineComment:
 		selection, err := program.selectedReviewInlineCommentSelection()
 		if err != nil {
+			program.recordError(err)
 			program.setFeedback(FocusDetailView, strings.TrimSpace(err.Error()))
 			return
 		}
@@ -102,6 +105,7 @@ func (program *Program) applyOpenDetailPullRequestCommentRequested() {
 	case DetailInputModeBrowserChangesInlineComment:
 		selection, err := program.selectedBrowserChangesInlineCommentSelection()
 		if err != nil {
+			program.recordError(err)
 			program.setFeedback(FocusDetailView, strings.TrimSpace(err.Error()))
 			return
 		}
@@ -131,6 +135,7 @@ func (program *Program) applyOpenInlineCommentReplyRequested() {
 
 	target, ok := program.selectedPullRequestReviewThreadReplyTarget()
 	if !ok {
+		program.recordErrorMessage(inlineCommentReplyUnavailableMessage)
 		program.setFeedback(FocusDetailView, inlineCommentReplyUnavailableMessage)
 		return
 	}
@@ -150,10 +155,12 @@ func (program *Program) applyToggleInlineCommentResolutionRequested() []Cmd {
 
 	target, ok := program.selectedPullRequestReviewThreadActionTarget()
 	if !ok {
+		program.recordErrorMessage(inlineCommentResolutionUnavailableMessage)
 		program.setFeedback(FocusDetailView, inlineCommentResolutionUnavailableMessage)
 		return nil
 	}
 	if !program.hasReviewMutations() {
+		program.recordErrorMessage("github loader is unavailable")
 		program.setFeedback(FocusDetailView, "github loader is unavailable")
 		return nil
 	}

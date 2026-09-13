@@ -8,7 +8,7 @@ import (
 func TestOverlayStateModel_GivenHelpErrorPopupAndModalTransitions_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	now := time.Date(2026, time.May, 29, 13, 0, 0, 0, time.UTC)
 	subject := overlayStateModel{
-		errorMessages:       []string{"old"},
+		errorMessages:       []recordedErrorMessage{{message: "old", timestamp: now.Add(-time.Minute)}},
 		transientErrorPopup: transientErrorPopupState{message: "stale", generation: 7},
 		modalEditor:         newLineModalEditorState("Prompt", "draft"),
 	}
@@ -31,8 +31,9 @@ func TestOverlayStateModel_GivenHelpErrorPopupAndModalTransitions_WhenUpdating_T
 	if !popup.expiresAt.Equal(now.Add(time.Second)) {
 		t.Fatalf("expected popup expiry %v, actual %v", now.Add(time.Second), popup.expiresAt)
 	}
-	if len(reported.errorMessages) != 2 || reported.errorMessages[1] != "boom" {
-		t.Fatalf("expected recorded errors %v, actual %v", []string{"old", "boom"}, reported.errorMessages)
+	expectedRecordedError := recordedErrorMessage{message: "boom", timestamp: now}
+	if len(reported.errorMessages) != 2 || reported.errorMessages[1] != expectedRecordedError {
+		t.Fatalf("expected recorded errors ending with %+v, actual %v", expectedRecordedError, reported.errorMessages)
 	}
 	if actual := reported.transientErrorPopup.message; actual != "boom" {
 		t.Fatalf("expected reported transient popup message %q, actual %q", "boom", actual)
@@ -52,8 +53,8 @@ func TestOverlayStateModel_GivenHelpErrorPopupAndModalTransitions_WhenUpdating_T
 	if subject.helpVisible {
 		t.Fatal("expected the original help visibility to stay false")
 	}
-	if len(subject.errorMessages) != 1 || subject.errorMessages[0] != "old" {
-		t.Fatalf("expected the original recorded errors %v, actual %v", []string{"old"}, subject.errorMessages)
+	if len(subject.errorMessages) != 1 || subject.errorMessages[0].message != "old" || !subject.errorMessages[0].timestamp.Equal(now.Add(-time.Minute)) {
+		t.Fatalf("expected the original recorded errors to remain unchanged, actual %v", subject.errorMessages)
 	}
 	if actual := subject.transientErrorPopup.message; actual != "stale" {
 		t.Fatalf("expected the original transient popup message %q, actual %q", "stale", actual)

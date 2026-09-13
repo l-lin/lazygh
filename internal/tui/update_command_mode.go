@@ -36,7 +36,14 @@ func (program *Program) applySubmitCommand() {
 	}
 
 	switch command {
-	case commandMessages, commandHistory:
+	case commandMessages:
+		program.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{
+			title:         command,
+			body:          program.renderRecordedErrorsPopupBody(),
+			widthPercent:  pullRequestBuildRunPopupDefaultWidthPercent,
+			heightPercent: pullRequestBuildRunPopupDefaultHeightPercent,
+		})
+	case commandHistory:
 		program.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{
 			title:         command,
 			body:          "",

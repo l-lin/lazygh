@@ -18,6 +18,7 @@ func (program *Program) applyActionsPopupActionErrorHandled(message MsgActionsPo
 	var feedbackErr actionsPopupStatusLineError
 	if errors.As(message.Err, &feedbackErr) {
 		program.clearActionsPopupErrorMessage()
+		program.recordError(message.Err)
 		program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
 		return nil
 	}
@@ -138,6 +139,7 @@ func (program *Program) applyModalEditorExternalEditFinished(message MsgModalEdi
 		return
 	}
 	if message.Err != nil {
+		program.recordError(message.Err)
 		program.setModalEditorErrorMessage(message.Err.Error())
 		return
 	}
@@ -281,6 +283,7 @@ func (program *Program) applyPullRequestBuildRunPopupClosed() {
 
 func (program *Program) applyOpenBrowserURLRequested(message MsgOpenBrowserURLRequested) []Cmd {
 	if strings.TrimSpace(message.URL) == "" {
+		program.recordErrorMessage(message.FailureMessage)
 		program.setFeedback(message.Target, message.FailureMessage)
 		return nil
 	}
@@ -292,6 +295,7 @@ func (program *Program) applyOpenBrowserURLFinished(message MsgOpenBrowserURLFin
 		program.setFeedback(message.Target, message.SuccessMessage)
 		return
 	}
+	program.recordError(message.Err)
 	program.setFeedback(message.Target, message.FailureMessage)
 }
 
@@ -306,6 +310,7 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 		program.setFeedback(message.Target, message.SuccessMessage)
 		return
 	}
+	program.recordError(message.Err)
 	program.setFeedback(message.Target, message.FailureMessage)
 }
 
@@ -356,10 +361,12 @@ func (program *Program) applyOpenPullRequestByURLSubmitRequested(message MsgOpen
 
 func (program *Program) applyPullRequestURLReadFromClipboard(message MsgPullRequestURLReadFromClipboard) {
 	if message.Err != nil {
+		program.recordError(message.Err)
 		program.setFeedback(program.model.Focus(), openPullRequestByClipboardFeedbackMessage(message.Err))
 		return
 	}
 	if err := program.openPullRequestInPastedTabByURL(message.URL); err != nil {
+		program.recordError(err)
 		if errors.Is(err, githubdomain.ErrInvalidPullRequestURL) {
 			program.setFeedback(program.model.Focus(), openPullRequestByClipboardInvalidMessage)
 			return
@@ -395,9 +402,11 @@ func (program *Program) applyOpenPullRequestBuildRunPopupLinkResolved(message Ms
 func (program *Program) applyResolvedLinkOpen(target Focus, url string, linkAvailable bool, openerAvailable bool) []Cmd {
 	switch {
 	case !linkAvailable:
+		program.recordErrorMessage(openLinkUnavailableMessage)
 		program.setFeedback(target, openLinkUnavailableMessage)
 		return nil
 	case !openerAvailable:
+		program.recordErrorMessage(openLinkOpenerUnavailableMessage)
 		program.setFeedback(target, openLinkOpenerUnavailableMessage)
 		return nil
 	default:
@@ -421,6 +430,7 @@ func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequ
 	program.clearDetailPendingPrefix()
 	url, ok := program.selectedPullRequestURL()
 	if !ok {
+		program.recordErrorMessage(yankUnavailableMessage)
 		if program.model != nil && program.model.ActionsPopupVisible() {
 			program.setActionsPopupErrorMessage(yankUnavailableMessage)
 			return nil
@@ -443,6 +453,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	capabilities := program.currentInteractionCapabilitySnapshot()
 	if !capabilities.linkOpenerAvailable {
 		if program.model != nil && program.model.ActionsPopupVisible() {
+			program.recordErrorMessage(openLinkOpenerUnavailableMessage)
 			program.setActionsPopupErrorMessage(openLinkOpenerUnavailableMessage)
 			return nil
 		}
@@ -451,6 +462,7 @@ func (program *Program) applyOpenNotificationInBrowserRequested() []Cmd {
 	browserURL, ok := program.selectedNotificationBrowserURL()
 	if !ok {
 		if program.model != nil && program.model.ActionsPopupVisible() {
+			program.recordErrorMessage(errActionsPopupActionUnavailable.Error())
 			program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
 			return nil
 		}

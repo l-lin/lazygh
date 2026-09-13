@@ -29,6 +29,20 @@ func TestStatusStore_GivenTwoStatusOperations_WhenTheOlderOneFinishesFirst_ThenT
 	}
 }
 
+func TestProgram_GivenTwoStatusOperations_WhenTheOlderOneFailsAfterTheNewerOneStarts_ThenItDoesNotRecordTheStaleError(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	firstOperationID := subject.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Refreshing #1", failureLabel: "Refreshing #1"})
+	subject.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Approving #2", failureLabel: "Approving #2"})
+
+	subject.finishStatusLineOperation(firstOperationID, errors.New("first failed"))
+
+	actual := subject.overlayState.errorMessages
+	expected := []recordedErrorMessage(nil)
+	if len(actual) != len(expected) {
+		t.Fatalf("expected no recorded stale errors, actual %v", actual)
+	}
+}
+
 func TestStatusStore_GivenTheNewestStatusOperation_WhenItFails_ThenItShowsTheFailureWithoutItsTitle(t *testing.T) {
 	subject := *newStatusStore()
 	started, operationID := subject.withStatusLineOperationStarted(statusLineOperationDescriptor{

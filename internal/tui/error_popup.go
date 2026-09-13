@@ -26,17 +26,34 @@ type transientErrorPopupState struct {
 	generation uint64
 }
 
-func recordedErrorMessagesWithAppended(existing []string, message string) []string {
+type recordedErrorMessage struct {
+	message   string
+	timestamp time.Time
+}
+
+func recordedErrorMessagesWithAppended(existing []recordedErrorMessage, message string, timestamp time.Time) []recordedErrorMessage {
 	trimmedMessage := strings.TrimSpace(message)
 	if trimmedMessage == "" {
-		return append([]string(nil), existing...)
+		return append([]recordedErrorMessage(nil), existing...)
 	}
 
-	updated := append(append([]string(nil), existing...), trimmedMessage)
+	updated := append(append([]recordedErrorMessage(nil), existing...), recordedErrorMessage{message: trimmedMessage, timestamp: timestamp})
 	if len(updated) <= maxRecordedErrorMessages {
 		return updated
 	}
-	return append([]string(nil), updated[len(updated)-maxRecordedErrorMessages:]...)
+	return append([]recordedErrorMessage(nil), updated[len(updated)-maxRecordedErrorMessages:]...)
+}
+
+func formatRecordedErrorMessage(record recordedErrorMessage) string {
+	return record.timestamp.Format("15:04:05") + " " + record.message
+}
+
+func renderRecordedErrorMessages(records []recordedErrorMessage) string {
+	formatted := make([]string, 0, len(records))
+	for _, record := range records {
+		formatted = append(formatted, formatRecordedErrorMessage(record))
+	}
+	return strings.Join(formatted, "\n")
 }
 
 func newTransientErrorPopupState(previous transientErrorPopupState, message string, now time.Time, duration time.Duration) transientErrorPopupState {
@@ -68,7 +85,7 @@ func (program *Program) recentErrorsActionsPopupAction() actionsPopupAction {
 	if program.hasRecordedErrors() {
 		requested = MsgPullRequestBuildRunPopupOpened{Content: pullRequestBuildRunPopupContent{
 			title:         recentErrorsPopupTitle,
-			body:          program.renderRecentErrorsPopupBody(),
+			body:          program.renderRecordedErrorsPopupBody(),
 			widthPercent:  recentErrorsPopupWidthPercent,
 			heightPercent: recentErrorsPopupHeightPercent,
 		}}
@@ -81,15 +98,11 @@ func (program *Program) recentErrorsActionsPopupAction() actionsPopupAction {
 	}
 }
 
-func (program *Program) renderRecentErrorsPopupBody() string {
-	if !program.hasRecordedErrors() {
-		return "No recent errors recorded."
+func (program *Program) renderRecordedErrorsPopupBody() string {
+	if program == nil {
+		return ""
 	}
-	messages := make([]string, 0, len(program.overlayState.errorMessages))
-	for index := len(program.overlayState.errorMessages) - 1; index >= 0; index-- {
-		messages = append(messages, program.overlayState.errorMessages[index])
-	}
-	return strings.Join(messages, "\n\n")
+	return renderRecordedErrorMessages(program.overlayState.errorMessages)
 }
 
 func (program *Program) clearExpiredTransientErrorPopup(now time.Time) bool {

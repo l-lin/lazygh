@@ -35,6 +35,11 @@ func (program *Program) setActionsPopupErrorMessage(message string) {
 	})
 }
 
+func (program *Program) setActionsPopupErrorMessageAndRecord(message string) {
+	program.recordErrorMessage(message)
+	program.setActionsPopupErrorMessage(message)
+}
+
 func (program *Program) clearActionsPopupErrorMessage() {
 	program.updateActionsPopupWidgetState(func(state actionsPopupWidgetState) actionsPopupWidgetState {
 		return state.withoutErrorMessage()

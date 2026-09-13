@@ -32,11 +32,11 @@ func (program *Program) applyPullRequestCommentUpdateRequested(message MsgPullRe
 
 func (program *Program) applyPullRequestCommentDeleteRequested(message MsgPullRequestCommentDeleteRequested) []Cmd {
 	if strings.TrimSpace(message.Target.commentID) == "" {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if !program.hasPullRequestMutations() {
-		program.setActionsPopupErrorMessage("github loader is unavailable")
+		program.setActionsPopupErrorMessageAndRecord("github loader is unavailable")
 		return nil
 	}
 
@@ -49,11 +49,11 @@ func (program *Program) applyInlineCommentUpdateRequested(message MsgInlineComme
 
 func (program *Program) applyInlineCommentDeleteRequested(message MsgInlineCommentDeleteRequested) []Cmd {
 	if strings.TrimSpace(message.Target.commentID) == "" {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if !program.hasReviewMutations() {
-		program.setActionsPopupErrorMessage("github loader is unavailable")
+		program.setActionsPopupErrorMessageAndRecord("github loader is unavailable")
 		return nil
 	}
 
@@ -66,11 +66,11 @@ func (program *Program) applyInlineCommentReplySubmitRequested(message MsgInline
 
 func (program *Program) applyInlineCommentResolutionRequested(message MsgInlineCommentResolutionRequested) []Cmd {
 	if strings.TrimSpace(message.Target.threadID) == "" {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if !program.hasReviewMutations() {
-		program.setActionsPopupErrorMessage("github loader is unavailable")
+		program.setActionsPopupErrorMessageAndRecord("github loader is unavailable")
 		return nil
 	}
 
@@ -109,7 +109,7 @@ func pendingReviewSubmitError(event githubdomain.PullRequestReviewEvent, feedbac
 
 func (program *Program) applyReactionRemovalRequested(message MsgReactionRemovalRequested) []Cmd {
 	if strings.TrimSpace(message.Target.subjectID) == "" {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if !reactionGroupViewerHasReacted(message.Target.reactionGroups, message.Target.content) {
@@ -117,7 +117,7 @@ func (program *Program) applyReactionRemovalRequested(message MsgReactionRemoval
 		return nil
 	}
 	if !program.hasReactionMutations() {
-		program.setActionsPopupErrorMessage("github loader is unavailable")
+		program.setActionsPopupErrorMessageAndRecord("github loader is unavailable")
 		return nil
 	}
 
@@ -133,11 +133,11 @@ func (program *Program) applyPullRequestSquashMergeRequested(message MsgPullRequ
 
 	repository, number, ok := popupPullRequestActionTargetIdentity(message.Target)
 	if !ok || !popupPullRequestSummaryValid(message.Summary) {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if !program.hasPullRequestMutations() {
-		program.setActionsPopupErrorMessage("github loader is unavailable")
+		program.setActionsPopupErrorMessageAndRecord("github loader is unavailable")
 		return nil
 	}
 

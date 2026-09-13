@@ -7,8 +7,8 @@ func (state overlayStateModel) withHelpVisible(visible bool) overlayStateModel {
 	return state
 }
 
-func (state overlayStateModel) withRecordedError(message string) overlayStateModel {
-	state.errorMessages = recordedErrorMessagesWithAppended(state.errorMessages, message)
+func (state overlayStateModel) withRecordedError(message string, timestamp time.Time) overlayStateModel {
+	state.errorMessages = recordedErrorMessagesWithAppended(state.errorMessages, message, timestamp)
 	return state
 }
 
@@ -33,7 +33,7 @@ func (state overlayStateModel) withClearedModalEditor() overlayStateModel {
 }
 
 func (state overlayStateModel) withReportedError(message string, now time.Time, duration time.Duration) (overlayStateModel, transientErrorPopupState) {
-	state = state.withRecordedError(message)
+	state = state.withRecordedError(message, now)
 	popup := newTransientErrorPopupState(state.transientErrorPopup, message, now, duration)
 	state = state.withTransientErrorPopup(popup)
 	return state, popup

@@ -243,6 +243,7 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 }
 
 func (program *Program) applyCommitDiffLoaded(message MsgCommitDiffLoaded) {
+	program.recordError(message.Err)
 	key := commitDiffCacheKey(message.PullRequestKey, message.CommitOID)
 	if key == "" {
 		return
@@ -275,6 +276,7 @@ func (program *Program) applyReleaseDetailLoaded(message MsgReleaseDetailLoaded)
 }
 
 func (program *Program) applyCurrentDetailImageHTMLLoaded(message MsgCurrentDetailImageHTMLLoaded) {
+	program.recordError(message.Err)
 	loadFailed := message.Err != nil || strings.TrimSpace(message.RenderedHTML) == ""
 	program.recordDetailImageHTMLLoadFinished(message.Source.key, loadFailed)
 	if loadFailed {
@@ -289,6 +291,7 @@ func (program *Program) applyCurrentDetailImageHTMLLoaded(message MsgCurrentDeta
 }
 
 func (program *Program) applyCurrentDetailImageLoaded(message MsgCurrentDetailImageLoaded) {
+	program.recordError(message.Err)
 	loadFailed := message.Err != nil
 	program.recordDetailImageLoadFinished(message.ImageURL, loadFailed)
 	if loadFailed {

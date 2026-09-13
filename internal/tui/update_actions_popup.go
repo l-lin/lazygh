@@ -127,7 +127,7 @@ func (program *Program) applyActionsPopupActionRequested(message MsgActionsPopup
 
 func (program *Program) applyClearCacheRequested() []Cmd {
 	if program.pullRequestCache == nil {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 	if strings.TrimSpace(program.actionsPopupWidget.pendingConfirmationActionID) != clearCacheActionTitle {
@@ -180,7 +180,7 @@ func (program *Program) applyStartPullRequestReviewRequested(message MsgStartPul
 	summary := message.Summary
 	repository := strings.TrimSpace(pullRequestRepositoryName(summary.Repository))
 	if repository == "" || repository == "-" || summary.Number <= 0 {
-		program.setActionsPopupErrorMessage(errActionsPopupActionUnavailable.Error())
+		program.setActionsPopupErrorMessageAndRecord(errActionsPopupActionUnavailable.Error())
 		return nil
 	}
 
