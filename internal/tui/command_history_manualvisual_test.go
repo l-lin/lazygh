@@ -4,6 +4,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -50,25 +51,37 @@ func TestManualVisual_CommandHistoryPopup(t *testing.T) {
 	}
 
 	stopPolling := make(chan struct{})
+	mainLoopStopped := make(chan struct{})
 	pollingStopped := make(chan struct{})
+	manualVisualErr := make(chan error, 1)
 	go func() {
 		defer close(pollingStopped)
-		if actualErr := runCommandHistoryManualVisualSequence(t, gui, subject, readyToken, stopPolling); actualErr != nil {
-			return
+		sequenceErr := runCommandHistoryManualVisualSequence(t, gui, subject, readyToken, stopPolling)
+		if sequenceErr == nil {
+			doneTokenResult := make(chan error, 1)
+			go func() {
+				doneTokenResult <- waitForTmuxToken(doneToken)
+			}()
+			select {
+			case sequenceErr = <-doneTokenResult:
+			case <-mainLoopStopped:
+			}
 		}
-		if actualErr := waitForTmuxToken(doneToken); actualErr != nil {
-			return
-		}
+		manualVisualErr <- sequenceErr
 		gui.Update(func(*gocui.Gui) error {
 			return gocui.ErrQuit
 		})
 	}()
 
 	actualErr = gui.MainLoop()
+	close(mainLoopStopped)
 	close(stopPolling)
 	<-pollingStopped
 	if actualErr != nil && !errors.Is(actualErr, gocui.ErrQuit) {
 		t.Fatalf("expected no error, actual %v", actualErr)
+	}
+	if visualErr := <-manualVisualErr; visualErr != nil {
+		t.Fatalf("expected manual visual sequence to complete, actual %v", visualErr)
 	}
 }
 
@@ -104,12 +117,12 @@ func runCommandHistoryManualVisualSequence(t *testing.T, gui *gocui.Gui, subject
 				}
 
 				bindings := subject.keybindingSpecs()
-				if actualErr := given_handlerForBinding(t, bindings, viewPullRequestBuildInfoName, 'j')(gui, popupView); actualErr != nil {
+				if actualErr := runCommandHistoryManualVisualBinding(bindings, gui, viewPullRequestBuildInfoName, 'j', popupView); actualErr != nil {
 					ready <- false
 					errCh <- actualErr
 					return actualErr
 				}
-				if actualErr := given_handlerForBinding(t, bindings, viewPullRequestBuildInfoName, '/')(gui, popupView); actualErr != nil {
+				if actualErr := runCommandHistoryManualVisualBinding(bindings, gui, viewPullRequestBuildInfoName, '/', popupView); actualErr != nil {
 					ready <- false
 					errCh <- actualErr
 					return actualErr
@@ -128,7 +141,7 @@ func runCommandHistoryManualVisualSequence(t *testing.T, gui *gocui.Gui, subject
 						return actualErr
 					}
 				}
-				if actualErr := given_handlerForBinding(t, subject.keybindingSpecs(), viewSearchName, gocui.KeyEnter)(gui, searchView); actualErr != nil {
+				if actualErr := runCommandHistoryManualVisualBinding(subject.keybindingSpecs(), gui, viewSearchName, gocui.KeyEnter, searchView); actualErr != nil {
 					ready <- false
 					errCh <- actualErr
 					return actualErr
@@ -142,7 +155,7 @@ func runCommandHistoryManualVisualSequence(t *testing.T, gui *gocui.Gui, subject
 					errCh <- actualErr
 					return actualErr
 				}
-				if actualErr := given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestBuildInfoName, gocui.KeyEsc)(gui, popupView); actualErr != nil {
+				if actualErr := runCommandHistoryManualVisualBinding(subject.keybindingSpecs(), gui, viewPullRequestBuildInfoName, gocui.KeyEsc, popupView); actualErr != nil {
 					ready <- false
 					errCh <- actualErr
 					return actualErr
@@ -194,4 +207,13 @@ func runCommandHistoryManualVisualSequence(t *testing.T, gui *gocui.Gui, subject
 			return nil
 		}
 	}
+}
+
+func runCommandHistoryManualVisualBinding(specs []keybindingSpec, gui *gocui.Gui, viewName string, key any, view *gocui.View) error {
+	for _, spec := range specs {
+		if spec.viewName == viewName && spec.key == key && spec.mod == gocui.ModNone {
+			return spec.handler(gui, view)
+		}
+	}
+	return fmt.Errorf("expected binding for view %q and key %v", viewName, key)
 }
