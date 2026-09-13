@@ -216,10 +216,22 @@ func (client graphQLClient) Query(request GraphQLRequest) (CommandResult, error)
 
 	displayArguments := request.DisplayArgs
 	if len(displayArguments) == 0 {
-		displayArguments = []string{"api", "graphql"}
+		displayArguments = graphQLDisplayArguments(request.Variables)
 	}
 
 	return client.executor.Execute(Command{Args: arguments, DisplayArgs: displayArguments})
+}
+
+func graphQLDisplayArguments(variables []GraphQLVariable) []string {
+	arguments := []string{"api", "graphql"}
+	for _, variable := range variables {
+		flag := "-f"
+		if variable.Typed {
+			flag = "-F"
+		}
+		arguments = append(arguments, flag, strings.TrimSpace(variable.Name)+"="+variable.Value)
+	}
+	return arguments
 }
 
 func (client restClient) Do(request RESTRequest) (CommandResult, error) {

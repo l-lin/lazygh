@@ -153,6 +153,33 @@ func TestGraphQLClient_GivenTypedVariables_WhenQuerying_ThenItBuildsTheGraphQLCo
 	})
 }
 
+func TestGraphQLClient_GivenVariablesWithoutDisplayArguments_WhenQuerying_ThenItObservesTheVariablesInTheDisplayCommand(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte(`{"data":{"viewer":{"login":"octocat"}}}`)}
+	var actualCommand Command
+	observingRunner := NewObservingRunner(runner, CommandObserverFunc(func(command Command) {
+		actualCommand = command
+	}))
+	executor := NewExecutor(observingRunner, NewCommandFormatter(), NewErrorClassifier(NewCommandFormatter()))
+	subject := NewGraphQLClient(executor)
+
+	_, actualErr := subject.Query(GraphQLRequest{
+		Query: `query($owner:String!,$search:String){repository(owner:$owner){id}}`,
+		Variables: []GraphQLVariable{
+			{Name: "owner", Value: "acme", Typed: true},
+			{Name: "search", Value: "bob"},
+		},
+	})
+
+	then_noError(t, actualErr)
+	expectedDisplayArgs := []string{"api", "graphql", "-F", "owner=acme", "-f", "search=bob"}
+	if !reflect.DeepEqual(actualCommand.DisplayArgs, expectedDisplayArgs) {
+		t.Fatalf("expected display arguments %v, actual %v", expectedDisplayArgs, actualCommand.DisplayArgs)
+	}
+	if actual := NewCommandFormatter().Format(actualCommand); actual != "gh api graphql -F owner=acme -f search=bob" {
+		t.Fatalf("expected formatted display command %q, actual %q", "gh api graphql -F owner=acme -f search=bob", actual)
+	}
+}
+
 func TestRESTClient_GivenAPaginatedRequest_WhenExecuting_ThenItAppendsPaginateAndSlurp(t *testing.T) {
 	runner := &fakeRunner{stdout: []byte(`[[{"id":"1001"}]]`)}
 	executor := NewExecutor(runner, NewCommandFormatter(), NewErrorClassifier(NewCommandFormatter()))

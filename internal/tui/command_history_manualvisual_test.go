@@ -28,7 +28,7 @@ func TestManualVisual_CommandHistoryPopup(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	later := time.Date(2026, time.September, 13, 12, 35, 2, 0, time.Local)
 	Update(subject, MsgGHCommandStarted{Command: "gh pr view 42 -R acme/widgets --web", StartedAt: later})
-	Update(subject, MsgGHCommandStarted{Command: "gh api graphql", StartedAt: later.Add(-6 * time.Second)})
+	Update(subject, MsgGHCommandStarted{Command: "gh api graphql -F owner=acme -F name=widgets -F number=42", StartedAt: later.Add(-6 * time.Second)})
 	Update(subject, MsgOpenCommandMode{})
 	for _, character := range "history" {
 		Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent(character)})
@@ -104,7 +104,7 @@ func runCommandHistoryManualVisualSequence(t *testing.T, gui *gocui.Gui, subject
 					errCh <- nil
 					return nil
 				}
-				if popupView.Title != "history" || !strings.Contains(popupView.Buffer(), "12:34:56 gh api graphql") || !strings.Contains(popupView.Buffer(), "12:35:02 gh pr view 42 -R acme/widgets --web") {
+				if popupView.Title != "history" || !strings.Contains(popupView.Buffer(), "12:34:56 gh api graphql -F owner=acme -F name=widgets -F number=42") || !strings.Contains(popupView.Buffer(), "12:35:02 gh pr view 42 -R acme/widgets --web") {
 					ready <- false
 					errCh <- nil
 					return nil
