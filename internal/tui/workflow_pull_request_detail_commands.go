@@ -146,9 +146,9 @@ func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui
 
 func loadPullRequestDetailResult(runtime pullRequestDetailWorkflowRuntime, summary githubdomain.PullRequest) MsgPullRequestDetailLoaded {
 	detail, err := runtime.getPullRequestDetail(summary)
-	pendingReviewState := pendingPullRequestReviewState{}
-	pendingReviewStateKnown := false
-	if runtime.getPendingPullRequestReviewState != nil {
+	pendingReviewState := pendingPullRequestReviewState{id: strings.TrimSpace(detail.PendingReviewID)}
+	pendingReviewStateKnown := detail.PendingReviewStateKnown
+	if !pendingReviewStateKnown && runtime.getPendingPullRequestReviewState != nil {
 		pendingReviewState, pendingReviewStateKnown = runtime.getPendingPullRequestReviewState(summary)
 	}
 	return MsgPullRequestDetailLoaded{

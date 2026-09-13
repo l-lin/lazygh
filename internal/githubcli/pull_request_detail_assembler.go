@@ -6,6 +6,7 @@ type PullRequestDetailAssembler struct {
 	LoadOutOfDateWithBase           func(repository string, detail PullRequestDetail) (bool, error)
 	HydrateBuildLinks               func(repository string, number int, checks []PullRequestStatusCheck) []PullRequestStatusCheck
 	ListInlineComments              func(repository string, number int) ([]PullRequestInlineComment, error)
+	LoadGraphQLData                 func(repository string, number int, detail PullRequestDetail, inlineComments []PullRequestInlineComment) (pullRequestDetailGraphQLData, error)
 	ListReviewThreads               func(repository string, number int) ([]PullRequestReviewThread, error)
 	ListReactionTargets             func(repository string, number int) (pullRequestReactionTargets, error)
 	ListReviewCommentReactionGroups func(ids []string) (map[string][]ReactionGroup, error)
@@ -19,6 +20,7 @@ func newPullRequestDetailAssembler(service *PullRequestDetailService) PullReques
 		LoadOutOfDateWithBase:           service.pullRequestOutOfDateWithBase,
 		HydrateBuildLinks:               builds.HydrateStatusCheckLinks,
 		ListInlineComments:              service.listPullRequestInlineComments,
+		LoadGraphQLData:                 service.loadPullRequestDetailGraphQLData,
 		ListReviewThreads:               service.listPullRequestReviewThreads,
 		ListReactionTargets:             service.listPullRequestReactionTargets,
 		ListReviewCommentReactionGroups: service.listPullRequestReviewCommentReactionGroups,
@@ -34,12 +36,27 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 	if err != nil {
 		return PullRequestDetail{}, err
 	}
-	if assembler.LoadMergeQueueMetadata != nil {
-		mergeQueueMetadata, actualErr := assembler.LoadMergeQueueMetadata(repository, number)
+	if assembler.LoadGraphQLData != nil && assembler.ListInlineComments != nil {
+		inlineComments, actualErr := assembler.ListInlineComments(repository, number)
 		if actualErr != nil {
 			return PullRequestDetail{}, actualErr
 		}
-		detail = applyPullRequestMergeQueueMetadata(detail, mergeQueueMetadata)
+		if len(inlineComments) > 0 {
+			detail.InlineComments = inlineComments
+		}
+		graphQLData, actualErr := assembler.LoadGraphQLData(repository, number, detail, inlineComments)
+		if actualErr != nil {
+			return PullRequestDetail{}, actualErr
+		}
+		detail = applyPullRequestDetailGraphQLData(detail, graphQLData)
+	} else {
+		if assembler.LoadMergeQueueMetadata != nil {
+			mergeQueueMetadata, actualErr := assembler.LoadMergeQueueMetadata(repository, number)
+			if actualErr != nil {
+				return PullRequestDetail{}, actualErr
+			}
+			detail = applyPullRequestMergeQueueMetadata(detail, mergeQueueMetadata)
+		}
 	}
 	if assembler.LoadOutOfDateWithBase != nil {
 		outOfDateWithBase, actualErr := assembler.LoadOutOfDateWithBase(repository, detail)
@@ -50,7 +67,7 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 	if assembler.HydrateBuildLinks != nil && len(detail.StatusCheckRollup) > 0 {
 		detail.StatusCheckRollup = assembler.HydrateBuildLinks(repository, number, detail.StatusCheckRollup)
 	}
-	if assembler.ListInlineComments != nil {
+	if assembler.LoadGraphQLData == nil && assembler.ListInlineComments != nil {
 		inlineComments, err := assembler.ListInlineComments(repository, number)
 		if err != nil {
 			return PullRequestDetail{}, err
@@ -59,7 +76,7 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 			detail.InlineComments = inlineComments
 		}
 	}
-	if assembler.ListReviewThreads != nil {
+	if assembler.LoadGraphQLData == nil && assembler.ListReviewThreads != nil {
 		inlineThreads, err := assembler.ListReviewThreads(repository, number)
 		if err != nil {
 			return PullRequestDetail{}, err
@@ -68,7 +85,7 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 			detail.InlineCommentThreads = inlineThreads
 		}
 	}
-	if assembler.ListReactionTargets != nil {
+	if assembler.LoadGraphQLData == nil && assembler.ListReactionTargets != nil {
 		reactionTargets, err := assembler.ListReactionTargets(repository, number)
 		if err != nil {
 			return PullRequestDetail{}, err
@@ -83,7 +100,7 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 			detail.Comments = reactionTargets.Comments
 		}
 	}
-	if assembler.ListReviewCommentReactionGroups != nil {
+	if assembler.LoadGraphQLData == nil && assembler.ListReviewCommentReactionGroups != nil {
 		reactionTargetIDs := append(pullRequestInlineCommentReactionTargetIDs(detail.InlineComments), pullRequestReviewReactionTargetIDs(detail.Reviews)...)
 		reactionGroupsByID, err := assembler.ListReviewCommentReactionGroups(reactionTargetIDs)
 		if err != nil {
@@ -96,4 +113,27 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 	}
 
 	return detail.normalized(), nil
+}
+
+func applyPullRequestDetailGraphQLData(detail PullRequestDetail, data pullRequestDetailGraphQLData) PullRequestDetail {
+	detail = applyPullRequestMergeQueueMetadata(detail, data.MergeQueueMetadata)
+	detail.PendingReviewID = data.PendingReviewID
+	detail.PendingReviewStateKnown = data.PendingReviewStateKnown
+	if data.ReactionTargets.PullRequestID != "" {
+		detail.ID = data.ReactionTargets.PullRequestID
+	}
+	if len(data.ReactionTargets.ReactionGroups) > 0 {
+		detail.ReactionGroups = data.ReactionTargets.ReactionGroups
+	}
+	if len(data.ReactionTargets.Comments) > 0 {
+		detail.Comments = data.ReactionTargets.Comments
+	}
+	if len(data.ReviewThreads) > 0 {
+		detail.InlineCommentThreads = data.ReviewThreads
+	}
+	if len(data.ReactionGroupsByID) > 0 {
+		detail.InlineComments = mergePullRequestInlineCommentReactionGroups(detail.InlineComments, data.ReactionGroupsByID)
+		detail.Reviews = mergePullRequestReviewReactionGroups(detail.Reviews, data.ReactionGroupsByID)
+	}
+	return detail
 }

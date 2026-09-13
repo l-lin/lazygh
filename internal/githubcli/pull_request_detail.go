@@ -31,6 +31,8 @@ type PullRequestDetail struct {
 	Assignees                []PullRequestAuthor          `json:"assignees"`
 	ReviewDecision           string                       `json:"reviewDecision"`
 	ReviewRequests           []PullRequestReviewRequest   `json:"reviewRequests"`
+	PendingReviewID          string                       `json:"-"`
+	PendingReviewStateKnown  bool                         `json:"-"`
 	BaseRefName              string                       `json:"baseRefName"`
 	HeadRefName              string                       `json:"headRefName"`
 	MergeStateStatus         string                       `json:"mergeStateStatus"`
@@ -265,6 +267,7 @@ func (detail PullRequestDetail) normalized() PullRequestDetail {
 	detail.CreatedAt = strings.TrimSpace(detail.CreatedAt)
 	detail.UpdatedAt = strings.TrimSpace(detail.UpdatedAt)
 	detail.ReviewDecision = strings.TrimSpace(detail.ReviewDecision)
+	detail.PendingReviewID = strings.TrimSpace(detail.PendingReviewID)
 	detail.BaseRefName = strings.TrimSpace(detail.BaseRefName)
 	detail.HeadRefName = strings.TrimSpace(detail.HeadRefName)
 	detail.MergeStateStatus = strings.TrimSpace(detail.MergeStateStatus)

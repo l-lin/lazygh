@@ -18,6 +18,8 @@ type PullRequestDetail struct {
 	Assignees                []PullRequestAuthor          `json:"assignees"`
 	ReviewDecision           string                       `json:"reviewDecision"`
 	ReviewRequests           []PullRequestReviewRequest   `json:"reviewRequests"`
+	PendingReviewID          string                       `json:"-"`
+	PendingReviewStateKnown  bool                         `json:"-"`
 	BaseRefName              string                       `json:"baseRefName"`
 	HeadRefName              string                       `json:"headRefName"`
 	MergeStateStatus         string                       `json:"mergeStateStatus"`

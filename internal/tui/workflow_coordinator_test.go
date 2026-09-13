@@ -187,6 +187,31 @@ func TestExecuteWorkflowCommands_GivenASelectedPullRequestDetailLoadPlan_WhenRun
 	}
 }
 
+func TestLoadPullRequestDetailResult_GivenTheDetailIncludesPendingReviewState_WhenLoading_ThenItSkipsTheSeparatePendingReviewLookup(t *testing.T) {
+	lookupCalls := 0
+	runtime := pullRequestDetailWorkflowRuntime{
+		getPullRequestDetail: func(githubdomain.PullRequest) (githubdomain.PullRequestDetail, error) {
+			return githubdomain.PullRequestDetail{PendingReviewID: "PRR_pending", PendingReviewStateKnown: true}, nil
+		},
+		getPendingPullRequestReviewState: func(githubdomain.PullRequest) (pendingPullRequestReviewState, bool) {
+			lookupCalls++
+			return pendingPullRequestReviewState{id: "stale"}, true
+		},
+	}
+
+	actual := loadPullRequestDetailResult(runtime, githubdomain.PullRequest{Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, Number: 42})
+
+	if actual.Err != nil {
+		t.Fatalf("expected no detail error, actual %v", actual.Err)
+	}
+	if !actual.PendingReviewStateKnown || actual.PendingReviewState.id != "PRR_pending" {
+		t.Fatalf("expected the detail pending review %q to be forwarded, actual %+v", "PRR_pending", actual)
+	}
+	if lookupCalls != 0 {
+		t.Fatalf("expected no separate pending review lookup, actual %d calls", lookupCalls)
+	}
+}
+
 func TestReviewStore_GivenACachedDiffWithoutTeamOwners_WhenPlanningTheSelectedLoad_ThenItHydratesTheDiffAndQueuesOneCommand(t *testing.T) {
 	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", State: "OPEN", UpdatedAt: "2026-05-05T10:00:00Z"}
 	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n@@ -1 +1 @@\n-old\n+new", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}}}
