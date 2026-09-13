@@ -1,6 +1,10 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	"time"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 type MsgConnectedUserLoaded struct {
 	User githubdomain.ConnectedUser
@@ -73,6 +77,11 @@ type MsgTransientErrorPopupExpired struct {
 	Generation uint64
 }
 
+type MsgGHCommandStarted struct {
+	Command   string
+	StartedAt time.Time
+}
+
 func (MsgConnectedUserLoaded) isMsg()          {}
 func (MsgPullRequestsLoaded) isMsg()           {}
 func (MsgNotificationsLoaded) isMsg()          {}
@@ -85,3 +94,4 @@ func (MsgCurrentDetailImageHTMLLoaded) isMsg() {}
 func (MsgCurrentDetailImageLoaded) isMsg()     {}
 func (MsgLoadingSpinnerTick) isMsg()           {}
 func (MsgTransientErrorPopupExpired) isMsg()   {}
+func (MsgGHCommandStarted) isMsg()             {}

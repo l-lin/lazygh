@@ -29,6 +29,45 @@ type Runner interface {
 	RunWithInput(name string, input []byte, args ...string) (CommandResult, error)
 }
 
+type CommandObserver interface {
+	ObserveCommand(Command)
+}
+
+type CommandObserverFunc func(Command)
+
+func (observer CommandObserverFunc) ObserveCommand(command Command) {
+	if observer != nil {
+		observer(command)
+	}
+}
+
+func NewObservingRunner(runner Runner, observer CommandObserver) Runner {
+	if runner == nil {
+		runner = execRunner{}
+	}
+	if observer == nil {
+		return runner
+	}
+	return observingRunner{runner: runner, observer: observer}
+}
+
+type observingRunner struct {
+	runner   Runner
+	observer CommandObserver
+}
+
+func (runner observingRunner) Run(name string, args ...string) (CommandResult, error) {
+	return runner.runner.Run(name, args...)
+}
+
+func (runner observingRunner) RunWithInput(name string, input []byte, args ...string) (CommandResult, error) {
+	return runner.runner.RunWithInput(name, input, args...)
+}
+
+func (runner observingRunner) ObserveCommand(command Command) {
+	runner.observer.ObserveCommand(command)
+}
+
 type execRunner struct{}
 
 func (runner execRunner) Run(name string, args ...string) (CommandResult, error) {

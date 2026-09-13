@@ -138,6 +138,8 @@ Shell work now lives behind explicit command files.
 
 These command files still live in `internal/tui`, but they now build focused runtime bundles at the `Cmd.execute(...)` boundary instead of passing the full shell bag deep into helpers.
 
+Production wraps one shared `githubcli.Runner` and passes it to every `gh` adapter. `githubcli` observes each typed, display-safe command before execution, and the TUI receives `MsgGHCommandStarted` events into a bounded, session-only history store. `internal/tui/pull_request_browser.go` remains a status-command formatter, not the history collection point.
+
 ## Workflow planning
 
 `plannedWorkflow()` is the main post-update planner.

@@ -3,6 +3,7 @@ package githubcli
 import (
 	"errors"
 	"os/exec"
+	"reflect"
 	"testing"
 )
 
@@ -41,6 +42,86 @@ func TestExecutor_GivenAStdinCommand_WhenExecuting_ThenItDelegatesToTheInputRunn
 	then_noError(t, actualErr)
 	then_commandIs(t, runner, "gh", []string{"api", "markdown", "--input", "-"})
 	then_stdinIs(t, runner, "# Ship it")
+	if string(actual.Stdout) != "ok" {
+		t.Fatalf("expected stdout %q, actual %q", "ok", string(actual.Stdout))
+	}
+}
+
+func TestExecutor_GivenACommandWithDisplayArguments_WhenExecuting_ThenItObservesTheDisplayArgumentsBeforeRunningRawArguments(t *testing.T) {
+	runner := &fakeRunner{}
+	var actualCommand Command
+	observer := CommandObserverFunc(func(command Command) {
+		actualCommand = command
+		if len(runner.calls) != 0 {
+			t.Fatalf("expected observation before the runner call, actual calls %+v", runner.calls)
+		}
+	})
+	subject := NewExecutor(NewObservingRunner(runner, observer), NewCommandFormatter(), NewErrorClassifier(NewCommandFormatter()))
+	expectedCommand := Command{
+		Args:        []string{"api", "graphql", "-f", "query=secret"},
+		DisplayArgs: []string{"api", "graphql"},
+	}
+
+	_, actualErr := subject.Execute(expectedCommand)
+
+	then_noError(t, actualErr)
+	if !reflect.DeepEqual(actualCommand, expectedCommand) {
+		t.Fatalf("expected observed command %+v, actual %+v", expectedCommand, actualCommand)
+	}
+	then_commandIs(t, runner, "gh", expectedCommand.Args)
+}
+
+func TestExecutor_GivenAFailingCommand_WhenExecuting_ThenItObservesTheCommandBeforeReturningTheFailure(t *testing.T) {
+	runner := &fakeRunner{err: errors.New("exit status 1")}
+	observed := false
+	subject := NewExecutor(NewObservingRunner(runner, CommandObserverFunc(func(command Command) {
+		observed = true
+	})), NewCommandFormatter(), NewErrorClassifier(NewCommandFormatter()))
+
+	_, actualErr := subject.Execute(Command{Args: []string{"api", "api-error"}, DisplayArgs: []string{"api", "api-error"}})
+
+	if !observed {
+		t.Fatal("expected the failing command to be observed")
+	}
+	if actualErr == nil {
+		t.Fatal("expected the command failure")
+	}
+}
+
+func TestExecutor_GivenAnObservedStdinCommand_WhenExecuting_ThenItObservesBeforeDelegatingInput(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte("ok")}
+	observed := false
+	subject := NewExecutor(NewObservingRunner(runner, CommandObserverFunc(func(command Command) {
+		observed = true
+		if command.Stdin == nil || string(command.Stdin) != "# Ship it" {
+			t.Fatalf("expected observer to receive stdin command, actual %+v", command)
+		}
+		if len(runner.calls) != 0 {
+			t.Fatalf("expected observation before input runner call, actual calls %+v", runner.calls)
+		}
+	})), NewCommandFormatter(), NewErrorClassifier(NewCommandFormatter()))
+
+	actual, actualErr := subject.Execute(Command{Args: []string{"api", "markdown", "--input", "-"}, Stdin: []byte("# Ship it"), DisplayArgs: []string{"api", "markdown"}})
+
+	then_noError(t, actualErr)
+	if !observed {
+		t.Fatal("expected the stdin command to be observed")
+	}
+	then_commandIs(t, runner, "gh", []string{"api", "markdown", "--input", "-"})
+	then_stdinIs(t, runner, "# Ship it")
+	if string(actual.Stdout) != "ok" {
+		t.Fatalf("expected stdout %q, actual %q", "ok", string(actual.Stdout))
+	}
+}
+
+func TestExecutor_GivenAnUnobservedRunner_WhenExecuting_ThenItRetainsTheExistingRunnerBehavior(t *testing.T) {
+	runner := &fakeRunner{stdout: []byte("ok")}
+	subject := NewExecutor(runner, NewCommandFormatter(), NewErrorClassifier(NewCommandFormatter()))
+
+	actual, actualErr := subject.Execute(Command{Args: []string{"api", "user"}})
+
+	then_noError(t, actualErr)
+	then_commandIs(t, runner, "gh", []string{"api", "user"})
 	if string(actual.Stdout) != "ok" {
 		t.Fatalf("expected stdout %q, actual %q", "ok", string(actual.Stdout))
 	}

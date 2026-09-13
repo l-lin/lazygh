@@ -185,6 +185,10 @@ func (classifier errorClassifier) Classify(command Command, result CommandResult
 }
 
 func (executor commandExecutor) Execute(command Command) (CommandResult, error) {
+	if observer, ok := executor.runner.(CommandObserver); ok {
+		observer.ObserveCommand(command)
+	}
+
 	if command.Stdin != nil {
 		result, err := executor.runner.RunWithInput(ghBinaryName, command.Stdin, command.Args...)
 		if err != nil {

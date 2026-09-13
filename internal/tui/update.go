@@ -26,6 +26,7 @@ func (program *Program) routeUpdateCategory(msg Msg, routes ...updateRoute) upda
 
 func (program *Program) routeLifecycleAndEditorMessages(msg Msg) updateResult {
 	return program.routeUpdateCategory(msg,
+		program.routeCommandHistoryMessages,
 		program.routeBootstrapFocusAndSidePaneSelection,
 		program.routeSearchPromptAndDraftUpdate,
 		program.routeRuntimeConfigMessages,

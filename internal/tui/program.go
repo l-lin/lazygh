@@ -59,6 +59,7 @@ type programStores struct {
 	*reviewStore
 	*buildStore
 	*statusStore
+	*commandHistoryStore
 	*optimisticMutationCoordinator
 	*imageLoadCoordinator
 }
@@ -162,6 +163,7 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 			reviewStore:                   reviewState,
 			buildStore:                    newBuildStore(),
 			statusStore:                   newStatusStore(),
+			commandHistoryStore:           newCommandHistoryStore(),
 			optimisticMutationCoordinator: newOptimisticMutationCoordinator(),
 			imageLoadCoordinator:          imageCoordinator,
 		},

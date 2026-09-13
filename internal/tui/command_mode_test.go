@@ -88,7 +88,51 @@ func TestUpdate_GivenCommandModeWithRecordedErrors_WhenSubmittingMessagesAndClos
 	}
 }
 
-func TestUpdate_GivenCommandMode_WhenSubmittingHistory_ThenItOpensTheHistoryPlaceholder(t *testing.T) {
+func TestUpdate_GivenCommandHistory_WhenSubmittingHistory_ThenItOpensAChronologicalReadOnlySnapshotPopup(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	later := time.Date(2026, time.September, 13, 12, 35, 2, 0, time.Local)
+	Update(subject, MsgGHCommandStarted{Command: "gh pr view 42", StartedAt: later})
+	Update(subject, MsgGHCommandStarted{Command: "gh api graphql", StartedAt: later.Add(-6 * time.Second)})
+	Update(subject, MsgOpenCommandMode{})
+	for _, character := range "history" {
+		Update(subject, MsgCommandInputRequested{Intent: newLineEditorInsertRuneIntent(character)})
+	}
+
+	Update(subject, MsgSubmitCommand{})
+	Update(subject, MsgGHCommandStarted{Command: "gh api later", StartedAt: later.Add(time.Minute)})
+
+	if subject.pullRequestBuildRunPopup == nil {
+		t.Fatal("expected the history command to open the read-only popup")
+	}
+	if actual := subject.pullRequestBuildRunPopup.title; actual != "history" {
+		t.Fatalf("expected popup title %q, actual %q", "history", actual)
+	}
+	expectedBody := "12:34:56 gh api graphql\n12:35:02 gh pr view 42"
+	if actual := subject.pullRequestBuildRunPopup.body; actual != expectedBody {
+		t.Fatalf("expected history snapshot body %q, actual %q", expectedBody, actual)
+	}
+	if actual := subject.pullRequestBuildRunPopup.widthPercent; actual != 90 {
+		t.Fatalf("expected popup width percent %d, actual %d", 90, actual)
+	}
+	if actual := subject.pullRequestBuildRunPopup.heightPercent; actual != 90 {
+		t.Fatalf("expected popup height percent %d, actual %d", 90, actual)
+	}
+	if actual := subject.currentViewName(); actual != viewPullRequestBuildInfoName {
+		t.Fatalf("expected the history popup to own focus, actual %q", actual)
+	}
+
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+	then_noError(t, subject.layout(gui))
+	popupView, actualErr := gui.View(viewPullRequestBuildInfoName)
+	then_noError(t, actualErr)
+	if actual := popupView.Buffer(); !strings.Contains(actual, "12:34:56 gh api graphql") || !strings.Contains(actual, "12:35:02 gh pr view 42") {
+		t.Fatalf("expected history lines in the read-only popup, actual %q", actual)
+	}
+}
+
+func TestUpdate_GivenNoCommandHistory_WhenSubmittingHistory_ThenItOpensAnEmptyPopupBody(t *testing.T) {
 	subject := NewProgramWithModel(given_model())
 	Update(subject, MsgOpenCommandMode{})
 	for _, character := range "history" {
@@ -98,10 +142,10 @@ func TestUpdate_GivenCommandMode_WhenSubmittingHistory_ThenItOpensTheHistoryPlac
 	Update(subject, MsgSubmitCommand{})
 
 	if subject.pullRequestBuildRunPopup == nil {
-		t.Fatal("expected the history command to open the placeholder popup")
+		t.Fatal("expected the history command to open the popup")
 	}
-	if actual := subject.pullRequestBuildRunPopup.title; actual != "history" {
-		t.Fatalf("expected popup title %q, actual %q", "history", actual)
+	if actual := subject.pullRequestBuildRunPopup.body; actual != "" {
+		t.Fatalf("expected an empty history popup body, actual %q", actual)
 	}
 }
 

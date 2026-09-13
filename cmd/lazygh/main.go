@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/l-lin/lazygh/internal/app"
 	appconfig "github.com/l-lin/lazygh/internal/config"
@@ -36,7 +37,18 @@ func main() {
 }
 
 func newRunner() configurableRunner {
-	return tui.NewProgramWithModelAndDeps(nil, newAppDepsWithRunner(nil))
+	var program *tui.Program
+	formatter := githubcli.NewCommandFormatter()
+	observer := githubcli.CommandObserverFunc(func(command githubcli.Command) {
+		if program == nil {
+			return
+		}
+		program.ReportGHCommandStarted(formatter.Format(command), time.Now())
+	})
+
+	runner := githubcli.NewObservingRunner(nil, observer)
+	program = tui.NewProgramWithModelAndDeps(nil, newAppDepsWithRunner(runner))
+	return program
 }
 
 // newAppDepsWithRunner is the single app composition root for provider ports:

@@ -46,7 +46,7 @@ func (program *Program) applySubmitCommand() {
 	case commandHistory:
 		program.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{
 			title:         command,
-			body:          "",
+			body:          program.renderCommandHistoryPopupBody(),
 			widthPercent:  pullRequestBuildRunPopupDefaultWidthPercent,
 			heightPercent: pullRequestBuildRunPopupDefaultHeightPercent,
 		})
