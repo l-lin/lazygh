@@ -8,6 +8,12 @@ func (store statusStore) withFeedback(message string) statusStore {
 	return store
 }
 
+func (store statusStore) withFailureFeedback(message string) statusStore {
+	store.feedbackMessage = ""
+	store.statusLineOperation.failureMessage = strings.TrimSpace(message)
+	return store
+}
+
 func (store statusStore) withoutFeedback() statusStore {
 	store.feedbackMessage = ""
 	store.statusLineOperation.failureMessage = ""

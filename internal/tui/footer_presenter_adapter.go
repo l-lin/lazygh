@@ -25,6 +25,7 @@ func (program *Program) footerPresenter() footerPresenter {
 		helpVisible:                      program.overlayState.helpVisible,
 		modalEditorVisible:               program.modalEditorVisible(),
 		searchPromptVisible:              program.searchPromptVisible(),
+		commandMode:                      program.commandModeActive(),
 		pullRequestBuildPopupVisible:     program.pullRequestBuildRunPopupVisible(),
 		assigneePickerVisible:            program.assigneePickerVisible(),
 		notificationSelectionVisible:     notificationSelectionVisible,

@@ -44,6 +44,7 @@ func (program *Program) sidePaneViewNames() []string {
 var sharedKeybindingDefinitions = map[string]sharedKeybindingDefinition{
 	"toggle_help":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "toggle_help"),
 	"open_search":                        sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "open_search"),
+	"command_mode":                       sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "command_mode"),
 	"move_selection_down":                sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "move_selection_down"),
 	"move_selection_up":                  sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "move_selection_up"),
 	"page_down":                          sharedKeybindingDefinitionWithDefaultBindings(keymapScopeGlobal, "page_down"),
@@ -235,6 +236,7 @@ func (program *Program) keybindingActions() []keybindingAction {
 		fixedKeybindingActionFor(keymapScopeMain, "focus_user_view", mainPaneViewNames, program.focusUserView, "1"),
 		fixedKeybindingActionFor(keymapScopeMain, "focus_pull_requests_view", mainPaneViewNames, program.focusPullRequestsView, "2"),
 		sharedKeybindingActionFor(keymapScopeMain, "open_search", mainPaneViewNames, program.openSearch),
+		sharedKeybindingActionFor(keymapScopeGlobal, "command_mode", mainPaneViewNames, program.openCommandMode),
 		sharedKeybindingActionFor(keymapScopeMain, "refresh", mainPaneViewNames, program.refreshActiveView),
 		sharedKeybindingActionFor(keymapScopeMain, "move_selection_down", mainPaneViewNames, program.moveSelectionDown),
 		sharedKeybindingActionFor(keymapScopeMain, "move_selection_up", mainPaneViewNames, program.moveSelectionUp),
@@ -331,8 +333,8 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopeFolds, "open_all_folds", []string{viewDetailName}, program.openAllDetailFolds),
 		closeKeybindingActionFor(keymapScopeGlobal, []string{viewDetailName}, program.closeDetail),
 
-		configuredKeybindingActionFor(keymapScopeSearch, "submit", []string{viewSearchName}, program.submitSearch),
-		configuredKeybindingActionFor(keymapScopeSearch, "cancel", []string{viewSearchName}, program.cancelSearch),
+		program.searchSubmitKeybindingAction(),
+		program.searchCancelKeybindingAction(),
 
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "open_search", []string{viewActionsPopupName}, program.focusActionsPopupSearch),
 		sharedKeybindingActionFor(keymapScopeActionsPopup, "move_selection_down", []string{viewActionsPopupName}, program.moveActionsPopupSelectionDown),

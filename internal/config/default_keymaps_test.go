@@ -13,6 +13,7 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"next_side_view":     {"tab", "l"},
 			"previous_side_view": {"shift+tab", "h"},
 			"refresh":            {"alt+r"},
+			"command_mode":       {":"},
 		},
 		"cursor": {
 			"search_word_under_cursor_forward":  {"*"},

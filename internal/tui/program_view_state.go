@@ -129,11 +129,14 @@ func (program *Program) currentViewName() string {
 		}
 		return viewActionsPopupName
 	}
-	if program.searchPromptVisible() {
+	if program.searchPromptVisible() && !program.commandModeActive() {
 		return viewSearchName
 	}
 	if program.pullRequestBuildRunPopupVisible() {
 		return viewPullRequestBuildInfoName
+	}
+	if program.searchPromptVisible() {
+		return viewSearchName
 	}
 
 	focus := program.screenState().ActiveView().Focus

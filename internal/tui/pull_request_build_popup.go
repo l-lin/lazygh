@@ -10,12 +10,11 @@ import (
 )
 
 const (
-	pullRequestBuildRunPopupFallbackWidth  = 90
-	pullRequestBuildRunPopupMinWidth       = 60
-	pullRequestBuildRunPopupMinHeight      = 16
-	pullRequestBuildLogsPopupWidthPercent  = 90
-	pullRequestBuildLogsPopupHeightPercent = 90
-	pullRequestBuildRunUnknownStepLabel    = "UNKNOWN STEP"
+	pullRequestBuildRunPopupDefaultWidthPercent  = 90
+	pullRequestBuildRunPopupDefaultHeightPercent = 90
+	pullRequestBuildLogsPopupWidthPercent        = 90
+	pullRequestBuildLogsPopupHeightPercent       = 90
+	pullRequestBuildRunUnknownStepLabel          = "UNKNOWN STEP"
 )
 
 type pullRequestBuildRunLoadState struct {
@@ -140,11 +139,9 @@ func renderPullRequestBuildRunPopupContent(content pullRequestBuildRunPopupConte
 		sections = append(sections, "Run: "+runURL)
 	}
 
-	body := strings.TrimSpace(content.body)
-	if body == "" {
-		body = "No build run details available."
+	if body := strings.TrimSpace(content.body); body != "" {
+		sections = append(sections, body)
 	}
-	sections = append(sections, body)
 
 	if renderedJobs := renderPullRequestBuildRunPopupJobs(content.jobs); renderedJobs != "" {
 		sections = append(sections, renderedJobs)

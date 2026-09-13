@@ -4,6 +4,7 @@ next_side_view = ["tab", "l"]
 previous_side_view = ["shift+tab", "h"]
 toggle_help = "?"
 open_search = "/"
+command_mode = ":"
 move_selection_down = ["j", "down"]
 move_selection_up = ["k", "up"]
 page_down = "ctrl+d"

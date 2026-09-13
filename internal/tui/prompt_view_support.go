@@ -24,14 +24,18 @@ func (program *Program) configureBottomPromptView(view *gocui.View, editor gocui
 }
 
 func (program *Program) renderBottomPromptView(view *gocui.View, text string, cursorIndex int) {
+	program.renderBottomPromptViewWithPrefix(view, bottomPromptPrefix, text, cursorIndex)
+}
+
+func (program *Program) renderBottomPromptViewWithPrefix(view *gocui.View, prefix string, text string, cursorIndex int) {
 	if view == nil {
 		return
 	}
 
 	view.Clear()
-	prompt := bottomPromptPrefix + text
+	prompt := prefix + text
 	fmt.Fprint(view, prompt)
-	program.setInputCursor(view, prompt, cursorIndex+utf8.RuneCountInString(bottomPromptPrefix))
+	program.setInputCursor(view, prompt, cursorIndex+utf8.RuneCountInString(prefix))
 }
 
 func (program *Program) setInputCursor(view *gocui.View, value string, cursorIndex int) {

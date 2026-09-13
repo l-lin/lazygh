@@ -31,7 +31,7 @@ func (program *Program) configureSearchView(view *gocui.View) {
 
 func (program *Program) renderSearchView(view *gocui.View) {
 	presenter := program.searchViewPresenter()
-	program.renderBottomPromptView(view, presenter.promptText(), presenter.promptCursor())
+	program.renderBottomPromptViewWithPrefix(view, presenter.promptPrefix(), presenter.promptText(), presenter.promptCursor())
 }
 
 func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) bool {
@@ -43,6 +43,9 @@ func (program *Program) editSearch(view *gocui.View, key gocui.Key, ch rune, mod
 		return false
 	}
 
+	if program.commandModeActive() {
+		return program.dispatchEditorMessage(MsgCommandInputRequested{Intent: intent})
+	}
 	return program.dispatchEditorMessage(MsgSearchEditorInputRequested{Intent: intent})
 }
 

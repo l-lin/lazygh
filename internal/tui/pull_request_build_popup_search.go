@@ -5,7 +5,7 @@ func (program *Program) pullRequestBuildRunPopupSearchActive() bool {
 }
 
 func (program *Program) searchPromptVisible() bool {
-	return program.model.SearchActive() || program.pullRequestBuildRunPopupSearchActive()
+	return program.model.SearchActive() || program.pullRequestBuildRunPopupSearchActive() || program.commandModeActive()
 }
 
 func (program *Program) startPullRequestBuildRunPopupSearch() {

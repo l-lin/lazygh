@@ -26,6 +26,16 @@ type MsgOpenSearch struct {
 	Query string
 }
 
+type MsgOpenCommandMode struct{}
+
+type MsgCommandInputRequested struct {
+	Intent lineEditorIntent
+}
+
+type MsgSubmitCommand struct{}
+
+type MsgCancelCommand struct{}
+
 type MsgSearchDraftChanged struct {
 	Query string
 }
@@ -87,6 +97,10 @@ func (MsgMoveSideSelection) isMsg()                 {}
 func (MsgMoveSideSelectionToTop) isMsg()            {}
 func (MsgMoveSideSelectionToBottom) isMsg()         {}
 func (MsgOpenSearch) isMsg()                        {}
+func (MsgOpenCommandMode) isMsg()                   {}
+func (MsgCommandInputRequested) isMsg()             {}
+func (MsgSubmitCommand) isMsg()                     {}
+func (MsgCancelCommand) isMsg()                     {}
 func (MsgSearchDraftChanged) isMsg()                {}
 func (MsgSearchEditorInputRequested) isMsg()        {}
 func (MsgSubmitSearch) isMsg()                      {}

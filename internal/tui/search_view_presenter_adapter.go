@@ -26,6 +26,7 @@ func (program *Program) searchViewPresenter() searchViewPresenter {
 		showsPullRequestDetailTabs: program.shouldShowPullRequestDetailTabs(),
 		searchText:                 searchText,
 		searchCursor:               searchCursor,
+		commandMode:                program.commandModeActive(),
 		notificationRows:           notificationRows,
 	}
 }

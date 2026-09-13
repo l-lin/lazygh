@@ -57,6 +57,18 @@ func (program *Program) routeBootstrapFocusAndSidePaneSelection(msg Msg) updateR
 
 func (program *Program) routeSearchPromptAndDraftUpdate(msg Msg) updateResult {
 	switch actual := msg.(type) {
+	case MsgOpenCommandMode:
+		program.applyOpenCommandMode()
+		return handledUpdate(nil)
+	case MsgCommandInputRequested:
+		program.applyCommandInputRequested(actual)
+		return handledUpdate(nil)
+	case MsgSubmitCommand:
+		program.applySubmitCommand()
+		return handledUpdate(nil)
+	case MsgCancelCommand:
+		program.applyCancelCommand()
+		return handledUpdate(nil)
 	case MsgOpenSearch:
 		program.clearPendingSelectionPrefix()
 		if program.pullRequestBuildRunPopupVisible() {

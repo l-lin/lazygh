@@ -9,6 +9,7 @@ type footerPresenter struct {
 	helpVisible                      bool
 	modalEditorVisible               bool
 	searchPromptVisible              bool
+	commandMode                      bool
 	pullRequestBuildPopupVisible     bool
 	assigneePickerVisible            bool
 	notificationSelectionVisible     bool
@@ -153,7 +154,7 @@ func (presenter footerPresenter) shouldShowActionsPopupStatusLineKeyHints() bool
 }
 
 func (presenter footerPresenter) searchKeyHintsText() string {
-	if !presenter.shouldShowSearchStatusLineKeyHints() {
+	if presenter.commandMode || !presenter.shouldShowSearchStatusLineKeyHints() {
 		return ""
 	}
 

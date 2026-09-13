@@ -15,6 +15,7 @@ func TestSharedKeybindingDefinitionFor_GivenMutualizedActions_WhenLookingThemUp_
 	}{
 		{name: "toggle help", action: "toggle_help", expectedScope: keymapScopeGlobal, expectedBindings: []string{"?"}, expectedAllowSequences: true},
 		{name: "open search", action: "open_search", expectedScope: keymapScopeGlobal, expectedBindings: []string{"/"}, expectedAllowSequences: true},
+		{name: "command mode", action: "command_mode", expectedScope: keymapScopeGlobal, expectedBindings: []string{":"}, expectedAllowSequences: true},
 		{name: "move selection down", action: "move_selection_down", expectedScope: keymapScopeGlobal, expectedBindings: []string{"j", "down"}, expectedAllowSequences: true},
 		{name: "move selection up", action: "move_selection_up", expectedScope: keymapScopeGlobal, expectedBindings: []string{"k", "up"}, expectedAllowSequences: true},
 		{name: "page down", action: "page_down", expectedScope: keymapScopeGlobal, expectedBindings: []string{"ctrl+d"}, expectedAllowSequences: true},

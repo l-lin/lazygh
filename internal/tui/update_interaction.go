@@ -274,6 +274,9 @@ func (program *Program) applyPullRequestBuildRunPopupClosed() {
 		return
 	}
 	program.closePullRequestBuildRunPopupState()
+	if program.commandModeActive() {
+		program.clearSearchWidgetEditor()
+	}
 }
 
 func (program *Program) applyOpenBrowserURLRequested(message MsgOpenBrowserURLRequested) []Cmd {

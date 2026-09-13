@@ -2,21 +2,40 @@ package tui
 
 import "time"
 
+type searchWidgetPromptKind int
+
+const (
+	searchWidgetPromptNone searchWidgetPromptKind = iota
+	searchWidgetPromptSearch
+	searchWidgetPromptCommand
+)
+
 type searchWidgetState struct {
 	editor         lineEditor
 	editorVisible  bool
+	promptKind     searchWidgetPromptKind
 	detailReversed bool
 }
 
 func (state searchWidgetState) withEditorOpened(text string) searchWidgetState {
 	state.editor = newLineEditor(text)
 	state.editorVisible = true
+	state.promptKind = searchWidgetPromptSearch
+	return state
+}
+
+func (state searchWidgetState) withCommandModeOpened() searchWidgetState {
+	state.editor = newLineEditor("")
+	state.editorVisible = true
+	state.promptKind = searchWidgetPromptCommand
+	state.detailReversed = false
 	return state
 }
 
 func (state searchWidgetState) withEditorCleared() searchWidgetState {
 	state.editor = lineEditor{}
 	state.editorVisible = false
+	state.promptKind = searchWidgetPromptNone
 	return state
 }
 
@@ -39,6 +58,10 @@ func (state searchWidgetState) withDetailSearchDirection(reverse bool) searchWid
 
 func (state searchWidgetState) hasEditor() bool {
 	return state.editorVisible
+}
+
+func (state searchWidgetState) commandModeActive() bool {
+	return state.editorVisible && state.promptKind == searchWidgetPromptCommand
 }
 
 type actionsPopupWidgetState struct {

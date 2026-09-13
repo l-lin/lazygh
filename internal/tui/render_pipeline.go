@@ -242,18 +242,13 @@ func overlayFrameForView(input screenLayoutInput, viewName string, maxX int, max
 }
 
 func pullRequestBuildRunPopupOverlayFrame(layout pullRequestBuildRunPopupLayoutState, maxX int, maxY int) paneFrame {
-	totalWidth := boundedHalfWidth(maxX, pullRequestBuildRunPopupMinWidth, pullRequestBuildRunPopupFallbackWidth)
-	totalHeight := pullRequestBuildRunPopupMinHeight
+	totalWidth := maxInt(10, (maxX*pullRequestBuildRunPopupDefaultWidthPercent)/100)
+	totalHeight := maxInt(3, (maxY*pullRequestBuildRunPopupDefaultHeightPercent)/100)
 	if layout.widthPercent > 0 {
 		totalWidth = maxInt(10, (maxX*layout.widthPercent)/100)
 	}
 	if layout.heightPercent > 0 {
 		totalHeight = maxInt(3, (maxY*layout.heightPercent)/100)
-	} else {
-		totalHeight = maxInt(totalHeight, renderedTextLineCount(strings.TrimSpace(layout.body))+2)
-		if totalHeight > maxY-2 {
-			totalHeight = maxInt(3, maxY-2)
-		}
 	}
 	return centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight)
 }

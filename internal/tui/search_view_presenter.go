@@ -8,6 +8,7 @@ type searchViewPresenter struct {
 	showsPullRequestDetailTabs bool
 	searchText                 string
 	searchCursor               int
+	commandMode                bool
 	notificationRows           []NotificationRow
 }
 
@@ -17,6 +18,13 @@ func (presenter searchViewPresenter) promptText() string {
 
 func (presenter searchViewPresenter) promptCursor() int {
 	return presenter.searchCursor
+}
+
+func (presenter searchViewPresenter) promptPrefix() string {
+	if presenter.commandMode {
+		return commandPromptPrefix
+	}
+	return bottomPromptPrefix
 }
 
 func (presenter searchViewPresenter) userViewTitle() string {
