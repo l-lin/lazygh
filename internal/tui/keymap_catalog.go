@@ -270,7 +270,6 @@ func (program *Program) keybindingActions() []keybindingAction {
 		sharedKeybindingActionFor(keymapScopePullRequests, "copy_pull_request_url", []string{viewPullRequestsName}, program.copyPullRequestURL),
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_pull_request_in_browser", []string{viewPullRequestsName}, program.openPullRequestInBrowserShortcut),
 		sharedKeybindingActionFor(keymapScopePullRequests, "comment_on_pull_request", []string{viewPullRequestsName}, program.openPullRequestCommentComposer),
-		configuredKeybindingActionFor(keymapScopePullRequests, "custom_search", []string{viewPullRequestsName}, program.openPullRequestCustomSearch),
 		configuredKeybindingActionFor(keymapScopePullRequests, "open_pull_request_by_url", []string{viewPullRequestsName}, program.openPullRequestByClipboardShortcut),
 		sharedKeybindingActionFor(keymapScopePullRequests, "open_actions_popup", []string{viewPullRequestsName}, program.openActionsPopup),
 		sharedKeybindingActionFor(keymapScopePullRequests, "toggle_fold", []string{viewPullRequestsName}, program.togglePullRequestFold),

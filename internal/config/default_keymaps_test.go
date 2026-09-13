@@ -35,7 +35,6 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 		},
 		"pull_requests": {
 			"copy_pull_request_url":      {"alt+y"},
-			"custom_search":              {":"},
 			"open_pull_request_by_url":   {"ctrl+v"},
 			"remove_pasted_pull_request": {"d"},
 			"reply_to_inline_comment":    {"r"},

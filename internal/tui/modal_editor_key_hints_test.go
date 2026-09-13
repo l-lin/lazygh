@@ -84,8 +84,7 @@ func TestStatusLineKeyHints_GivenPullRequestCustomSearchEditor_WhenRendering_The
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = subject.openPullRequestCustomSearchEditor(gui)
-	then_noError(t, actualErr)
+	when_customSearchActionIsExecuted(t, subject, gui)
 
 	modalView, actualErr := gui.View(viewModalEditorName)
 	then_noError(t, actualErr)

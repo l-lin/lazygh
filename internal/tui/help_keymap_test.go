@@ -33,7 +33,7 @@ func TestHelpPopup_GivenConfiguredKeyOverrides_WhenTogglingHelp_ThenItShowsTheCo
 	then_helpEntryUsesKey(t, actualBuffer, "Quit", "Ctrl+X")
 }
 
-func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomSearchOpenPRFromURLAndCopyPRURLShortcuts(t *testing.T) {
+func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheOpenPRFromURLAndCopyPRURLShortcutsWithoutCustomSearch(t *testing.T) {
 	model := given_model()
 	model.FocusPullRequestsView()
 	subject := NewProgramWithModel(model)
@@ -48,7 +48,9 @@ func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheCustomS
 
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
-	then_helpEntryUsesKey(t, helpView.Buffer(), "Custom search", ":")
+	if strings.Contains(helpView.Buffer(), "Custom search") {
+		t.Fatalf("expected help to omit the action-only %q entry, actual %q", "Custom search", helpView.Buffer())
+	}
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR in browser", "Alt+B")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Y")

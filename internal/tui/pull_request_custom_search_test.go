@@ -11,14 +11,6 @@ import (
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
-func TestPullRequestCustomSearch_GivenProgram_WhenListingKeybindings_ThenItBindsColonInThePullRequestsView(t *testing.T) {
-	subject := NewProgramWithModel(given_model())
-
-	actual := subject.keybindingSpecs()
-
-	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: ':', handler: subject.openPullRequestCustomSearch})
-}
-
 func TestActionsPopup_GivenPullRequestsView_WhenOpening_ThenItShowsTheCustomSearchAction(t *testing.T) {
 	subject := given_pullRequestCustomSearchProgram(&fakePullRequestDetailLoader{})
 	gui := given_headlessGui(t)
@@ -45,13 +37,7 @@ func TestActionsPopup_GivenPullRequestsView_WhenExecutingCustomSearch_ThenItOpen
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = subject.openActionsPopup(gui, nil)
-	then_noError(t, actualErr)
-	subject.model.UpdateActionsPopupSearch("custom search", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "custom search"))
-	actualErr = subject.afterStateChange(gui)
-	then_noError(t, actualErr)
-	actualErr = subject.executeSelectedActionsPopupAction(gui, nil)
-	then_noError(t, actualErr)
+	when_customSearchActionIsExecuted(t, subject, gui)
 
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
@@ -71,8 +57,7 @@ func TestPullRequestCustomSearch_GivenPullRequestsView_WhenOpening_ThenItPrefill
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ':')(gui, nil)
-	then_noError(t, actualErr)
+	when_customSearchActionIsExecuted(t, subject, gui)
 	then_currentViewNameIs(t, gui, viewModalEditorName)
 
 	if !subject.modalEditorVisible() || !subject.overlayState.modalEditor.isLineEditor() {
@@ -104,8 +89,7 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 
 	actualErr := subject.layout(gui)
 	then_noError(t, actualErr)
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ':')(gui, nil)
-	then_noError(t, actualErr)
+	when_customSearchActionIsExecuted(t, subject, gui)
 	subject.overlayState.modalEditor.lineEditor.SetText("--author @me --state open --label bug")
 	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewModalEditorName, gocui.KeyEnter)(gui, nil)
 	then_noError(t, actualErr)
@@ -124,8 +108,7 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 		t.Fatalf("expected the custom tab rows to load the submitted search, actual %+v", actualRows)
 	}
 
-	actualErr = given_handlerForBinding(t, subject.keybindingSpecs(), viewPullRequestsName, ':')(gui, nil)
-	then_noError(t, actualErr)
+	when_customSearchActionIsExecuted(t, subject, gui)
 	if actual := subject.overlayState.modalEditor.Text(); actual != "--author @me --state open --label bug" {
 		t.Fatalf("expected the active custom search criteria %q, actual %q", "--author @me --state open --label bug", actual)
 	}
@@ -145,6 +128,15 @@ func TestPullRequestCustomSearch_GivenSubmittedCriteria_WhenSubmitting_ThenItCre
 			{"search", "prs", "--author", "@me", "--state", "closed"},
 		}, loader.listPullRequestCommands)
 	}
+}
+
+func when_customSearchActionIsExecuted(t *testing.T, subject *Program, gui *gocui.Gui) {
+	t.Helper()
+
+	then_noError(t, subject.openActionsPopup(gui, nil))
+	subject.model.UpdateActionsPopupSearch("custom search", matchingActionsPopupIndexes(subject.currentActionsPopupActions(), "custom search"))
+	then_noError(t, subject.afterStateChange(gui))
+	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 }
 
 func given_pullRequestCustomSearchProgram(loader *fakePullRequestDetailLoader) *Program {

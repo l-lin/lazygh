@@ -4,8 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
-
 	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
@@ -19,14 +17,6 @@ const (
 var (
 	pullRequestSearchCommandPrefix = []string{"search", "prs"}
 )
-
-func (program *Program) openPullRequestCustomSearch(gui *gocui.Gui, _ *gocui.View) error {
-	return program.dispatch(gui, MsgOpenPullRequestCustomSearchEditorRequested{})
-}
-
-func (program *Program) openPullRequestCustomSearchEditor(gui *gocui.Gui) error {
-	return program.dispatch(gui, MsgOpenPullRequestCustomSearchEditorRequested{})
-}
 
 func (program *Program) pullRequestCustomSearchEditorDescriptor() modalEditorOpenDescriptor {
 	return newLineModalEditorOpenDescriptorWithHeightAndSubmitDescriptor(pullRequestCustomSearchEditorTitle, program.currentPullRequestSearchCriteria(), newPullRequestCustomSearchSubmitDescriptor(), pullRequestCustomSearchEditorHeight)

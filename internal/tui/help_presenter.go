@@ -169,7 +169,6 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 			{Key: presenter.helpKeysOrFallback("<c-b>/pageup", keybindingActionID{scope: keymapScopeMain, action: "full_page_up"}), Description: "Full-page up"},
 			{Key: "+/-", Description: "Resize panes"},
 			{Key: presenter.helpKeysOrFallback("/", keybindingActionID{scope: keymapScopeMain, action: "open_search"}), Description: "Search pull requests"},
-			{Key: presenter.helpKeysOrFallback(":", keybindingActionID{scope: keymapScopePullRequests, action: "custom_search"}), Description: "Custom search"},
 			{Key: presenter.helpKeysOrFallback("<c-v>", keybindingActionID{scope: keymapScopePullRequests, action: "open_pull_request_by_url"}), Description: "Open PR from clipboard"},
 			{Key: presenter.helpKeysOrFallback("n", keybindingActionID{scope: keymapScopePullRequests, action: "next_search_match"}) + "/" + presenter.helpKeysOrFallback("N", keybindingActionID{scope: keymapScopePullRequests, action: "previous_search_match"}), Description: "Next/previous match"},
 			pullRequestBrowserHelpEntry(presenter.keyResolver, keymapScopePullRequests),
