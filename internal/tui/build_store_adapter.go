@@ -21,6 +21,12 @@ func (program *Program) startPullRequestBuildRunJobLogLoad(command string) {
 	})
 }
 
+func (program *Program) setPullRequestBuildRunStatusLine(operationID uint64, label string) {
+	program.updateBuildStore(func(store buildStore) buildStore {
+		return store.withLoadStatusLine(operationID, label)
+	})
+}
+
 func (program *Program) clearPullRequestBuildRunLoad() {
 	program.updateBuildStore(func(store buildStore) buildStore {
 		return store.withLoadCleared()

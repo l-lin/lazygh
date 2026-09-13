@@ -6,8 +6,9 @@ import (
 )
 
 type MsgActionsPopupAsyncGHCommandFinished struct {
-	Err        error
-	Completion actionsPopupAsyncCompletion
+	Err                   error
+	Completion            actionsPopupAsyncCompletion
+	StatusLineOperationID uint64
 }
 
 type MsgPullRequestsCacheHydrated struct {
@@ -29,11 +30,13 @@ type MsgNotificationMutationFinished struct {
 	Snapshot               notificationMutationSnapshot
 	SuccessFeedbackMessage string
 	Err                    error
+	StatusLineOperationID  uint64
 }
 
 type MsgStoryReviewPrepared struct {
-	Prepared preparedStoryReview
-	Err      error
+	Prepared              preparedStoryReview
+	Err                   error
+	StatusLineOperationID uint64
 }
 
 type MsgAssigneePickerSearchLoadingStarted struct {

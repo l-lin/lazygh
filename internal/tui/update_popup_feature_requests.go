@@ -77,9 +77,9 @@ func (program *Program) beginNotificationMutation(optimisticRows []NotificationR
 	}
 
 	snapshot := program.captureNotificationMutationSnapshot()
-	program.applyNotificationMutationStarted(MsgNotificationMutationStarted{OptimisticRows: optimisticRows, LoadingMessage: loadingMessage})
+	statusLineOperationID := program.applyNotificationMutationStarted(MsgNotificationMutationStarted{OptimisticRows: optimisticRows, LoadingMessage: loadingMessage})
 	program.closeActionsPopupForAcceptedRequest()
-	return []Cmd{notificationMutationCmd{Snapshot: snapshot, SuccessFeedbackMessage: successFeedbackMessage, request: request}}
+	return []Cmd{notificationMutationCmd{Snapshot: snapshot, SuccessFeedbackMessage: successFeedbackMessage, StatusLineOperationID: statusLineOperationID, request: request}}
 }
 
 func (program *Program) handleNotificationRequestUnavailable(message string) []Cmd {

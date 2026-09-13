@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
@@ -10,21 +11,19 @@ import (
 
 func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithError_WhenApplying_ThenItUpdatesThePopupStateAndReturnsATypedExpiryCommand(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	operationID := subject.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Approving #42", failureLabel: "Approving #42"})
 	subject.ghCommandLoadingMessage = "Running `gh pr ready`."
 
-	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Err: errors.New("boom")})
+	actual := Update(subject, MsgActionsPopupAsyncGHCommandFinished{Err: errors.New("boom"), StatusLineOperationID: operationID})
 
-	if len(actual) != 1 {
-		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
-	}
-	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
-		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
+	if len(actual) != 0 {
+		t.Fatalf("expected no transient-popup command, actual %d", len(actual))
 	}
 	if actualMessage := subject.ghCommandLoadingMessage; actualMessage != "" {
 		t.Fatalf("expected gh command loading message %q, actual %q", "", actualMessage)
 	}
-	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
-		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
+	if !strings.Contains(subject.statusLinePresenter().Text(), iconStatusFailure) {
+		t.Fatalf("expected the status line to show the failure, actual %q", subject.statusLinePresenter().Text())
 	}
 }
 
@@ -97,8 +96,8 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinishedWithTypedCompletionRet
 	if _, ok := actual[0].(reloadPullRequestsTabCmd); !ok {
 		t.Fatalf("expected a reloadPullRequestsTabCmd, actual %T", actual[0])
 	}
-	if actualMessage := subject.feedbackMessage; actualMessage != pendingPullRequestReviewCanceledMessage {
-		t.Fatalf("expected feedback %q, actual %q", pendingPullRequestReviewCanceledMessage, actualMessage)
+	if actualMessage := subject.feedbackMessage; actualMessage != "" {
+		t.Fatalf("expected feedback %q after a successful operation, actual %q", "", actualMessage)
 	}
 }
 
@@ -221,16 +220,15 @@ func TestUpdate_GivenMsgPullRequestsLoadedAfterManualRefreshFailure_WhenApplying
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	subject.markManualPullRequestListRefresh(subject.model.ActivePullRequestTab())
 	subject.beginManualRefresh(pullRequestListRefreshSuccessMessage, 1)
+	tab := subject.model.ActivePullRequestTab()
+	subject.setPullRequestListStatusOperationID(tab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
 
-	actual := Update(subject, MsgPullRequestsLoaded{Tab: subject.model.ActivePullRequestTab(), Err: errors.New("boom")})
+	actual := Update(subject, MsgPullRequestsLoaded{Tab: tab, Err: errors.New("boom")})
 
-	if len(actual) != 1 {
-		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
+	if len(actual) != 0 {
+		t.Fatalf("expected no transient-popup command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
-		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
-	}
-	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
-		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
+	if !strings.Contains(subject.statusLinePresenter().Text(), iconStatusFailure) {
+		t.Fatalf("expected the status line to show the failure, actual %q", subject.statusLinePresenter().Text())
 	}
 }

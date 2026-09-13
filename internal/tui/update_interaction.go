@@ -109,27 +109,17 @@ func (program *Program) applyModalEditorSubmitFinished(message MsgModalEditorSub
 	}
 
 	program.clearGHCommandLoading()
+	program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
 	modalVisible := program.modalEditorVisible()
 	if message.Err != nil {
-		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-			if modalVisible {
-				program.clearModalEditorErrorMessage()
-			}
-			return program.applyErrorReportedMessage(popupMessage)
-		}
-		var feedbackErr modalEditorStatusLineError
-		if errors.As(message.Err, &feedbackErr) {
-			program.setFeedback(feedbackErr.feedbackTarget, message.Err.Error())
-			return nil
-		}
 		if modalVisible {
 			program.setModalEditorErrorMessage(message.Err.Error())
-			return nil
 		}
-		return program.applyErrorReportedMessage(message.Err.Error())
+		return nil
 	}
 
 	commands := program.applyModalEditorSubmitCompletion(message.Completion)
+	program.clearFeedbackMessage()
 	if modalVisible && !modalEditorRemainsOpenAfterCompletion(message.Completion) {
 		program.clearModalEditorState()
 	}
@@ -210,7 +200,9 @@ func (program *Program) applyPullRequestBuildRunLoadRequested(message MsgPullReq
 	}
 
 	program.clearFeedbackMessage()
+	statusLineOperationID := program.startStatusLineOperation(statusLinePullRequestOperation("Refreshing", target.summary))
 	program.startPullRequestBuildRunLoad(formatPullRequestBuildRunCommand(repository, target.check))
+	program.setPullRequestBuildRunStatusLine(statusLineOperationID, statusLinePullRequestOperation("Refreshing", target.summary).loadingLabel)
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunLoadCmd{Repository: repository, Target: target}}
 }
@@ -226,7 +218,9 @@ func (program *Program) applyPullRequestBuildRunJobLogLoadRequested(message MsgP
 	}
 
 	program.clearFeedbackMessage()
+	statusLineOperationID := program.startStatusLineOperation(statusLinePullRequestOperation("Refreshing", message.Summary))
 	program.startPullRequestBuildRunJobLogLoad(formatPullRequestBuildRunJobsCommand(repository, message.Check))
+	program.setPullRequestBuildRunStatusLine(statusLineOperationID, statusLinePullRequestOperation("Refreshing", message.Summary).loadingLabel)
 	program.closeActionsPopupForAcceptedRequest()
 	return []Cmd{pullRequestBuildRunJobLogLoadCmd{Repository: repository, Check: message.Check}}
 }

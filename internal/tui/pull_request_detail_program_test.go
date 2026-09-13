@@ -1753,7 +1753,7 @@ func TestRefreshViews_GivenInvalidatedPullRequestDetail_WhenGhHasNotReturnedYet_
 
 	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	expectedStatus := string(loadingSpinnerFrames[0]) + " Running `gh pr view 301 -R acme/widgets --json ...`."
+	expectedStatus := string(loadingSpinnerFrames[0]) + " Refreshing #301: First PR"
 	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
 		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}
@@ -1794,7 +1794,7 @@ func TestReloadActivePullRequestsTab_GivenExistingPullRequests_WhenGhHasNotRetur
 
 	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	expectedStatus := string(loadingSpinnerFrames[0]) + " " + myPullRequestsLoadingDetail
+	expectedStatus := string(loadingSpinnerFrames[0]) + " Refreshing PR list"
 	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
 		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}

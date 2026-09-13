@@ -47,9 +47,9 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineCommen
 	if len(asynchronousRunner.runs) != 1 {
 		t.Fatalf("expected one queued async resolution run, actual %d", len(asynchronousRunner.runs))
 	}
-	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
-	if actual := subject.statusLinePresenter().Text(); actual != subject.loadingSpinnerStatus(expectedLoading) {
-		t.Fatalf("expected status line %q, actual %q", subject.loadingSpinnerStatus(expectedLoading), actual)
+	expectedLoading := subject.loadingSpinnerStatus("Resolving comment on #42: First PR")
+	if actual := subject.statusLinePresenter().Text(); actual != expectedLoading {
+		t.Fatalf("expected status line %q, actual %q", expectedLoading, actual)
 	}
 	then_statusLineContains(t, gui, expectedLoading)
 	if strings.Contains(detailView.Buffer(), "Rendered original inline body") {
@@ -65,7 +65,7 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnInlineCommen
 		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
 func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInlineComment_WhenPressingCtrlR_ThenItShowsGHLoadingUnfoldsTheThreadBeforeCompletionAndMarksItUnresolved(t *testing.T) {
@@ -109,7 +109,7 @@ func TestInlineCommentResolutionShortcut_GivenBrowserChangesCursorOnResolvedInli
 		t.Fatalf("expected unresolved thread ids %v, actual %v", []string{"thread-1"}, loader.unresolveReviewThreadIDs)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, inlineCommentUnresolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentUnresolvedSuccessMessage)
 }
 
 func TestKeybindingSpecs_GivenInlineCommentResolutionShortcut_WhenCursorMovesBetweenSupportedAndUnsupportedTargets_ThenCtrlRAppearsOnlyOnInlineComments(t *testing.T) {

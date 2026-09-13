@@ -18,6 +18,7 @@ func (program *Program) applyNotificationsCacheHydrated(message MsgNotifications
 }
 
 func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded) {
+	program.finishStatusLineOperation(program.connectedUserStatusOperationID(), message.Err)
 	connectedUserLogin := ""
 	connectedUserName := ""
 	if message.Err == nil {
@@ -32,13 +33,7 @@ func (program *Program) applyConnectedUserLoaded(message MsgConnectedUserLoaded)
 }
 
 func (program *Program) applyManualRefreshCompletion(err error) []Cmd {
-	completion := program.completeManualRefreshOperation(err)
-	if completion.successMessage != "" {
-		program.setFeedback(FocusDetailView, completion.successMessage)
-	}
-	if completion.popupError != "" {
-		return program.applyErrorReportedMessage(completion.popupError)
-	}
+	program.completeManualRefreshOperation(err)
 	return nil
 }
 
@@ -47,6 +42,7 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 		return nil
 	}
 	program.setPullRequestsLoading(message.Tab, false)
+	program.finishStatusLineOperation(program.pullRequestListStatusOperationID(message.Tab), message.Err)
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
 		refreshErrorBelongsToTab := program.pullRequestListStore != nil && program.pullRequestListStore.pullRequestRefreshErrorKnown && program.pullRequestListStore.pullRequestRefreshErrorTab == message.Tab
@@ -71,7 +67,6 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
 		return store.withPullRequestRefreshError(message.Tab)
 	})
-	program.setFeedback(FocusPullRequestsView, pullRequestListRefreshErrorPrefix+strings.TrimSpace(message.Err.Error()))
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
 		program.model.SetPullRequestRows(message.Tab, pullRequestStateRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.pullRequestListState(message.Tab), nil, message.Err))
@@ -100,6 +95,7 @@ func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
 
 func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded) []Cmd {
 	program.finishNotificationsLoading()
+	program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
 	manualRefresh := program.consumeManualNotificationRefresh()
 	if message.Err == nil {
 		filteredNotifications := program.filterDoneNotifications(message.Notifications)
@@ -129,6 +125,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withPullRequestDetailLoadCleared(key)
 	})
+	program.finishStatusLineOperation(program.pullRequestDetailStatusOperationID(key), message.Err)
 	manualRefresh := program.consumeManualPullRequestDetailRefresh(key)
 	if message.PendingReviewStateKnown {
 		program.updateReviewStore(func(store reviewStore) reviewStore {
@@ -198,6 +195,7 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		return store.withPullRequestDiffLoadCleared(key)
 	})
+	program.finishStatusLineOperation(program.pullRequestDiffStatusOperationID(key), message.Err)
 	manualRefresh := program.consumeManualPullRequestDiffRefresh(key)
 	if message.Err == nil {
 		program.cachePullRequestDiff(message.Summary, message.RawDiff)
@@ -262,6 +260,7 @@ func (program *Program) applyCommitDiffLoaded(message MsgCommitDiffLoaded) {
 
 func (program *Program) applyIssueDetailLoaded(message MsgIssueDetailLoaded) {
 	key := notificationDetailKey(message.Repository, message.Number)
+	program.finishStatusLineOperation(program.issueDetailStatusOperationID(key), message.Err)
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withIssueDetailLoaded(key, issueDetailResult{detail: message.Detail, err: message.Err})
 	})
@@ -269,6 +268,7 @@ func (program *Program) applyIssueDetailLoaded(message MsgIssueDetailLoaded) {
 
 func (program *Program) applyReleaseDetailLoaded(message MsgReleaseDetailLoaded) {
 	key := notificationDetailKey(message.Repository, message.ID)
+	program.finishStatusLineOperation(program.releaseDetailStatusOperationID(key), message.Err)
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withReleaseDetailLoaded(key, releaseDetailResult{detail: message.Detail, err: message.Err})
 	})

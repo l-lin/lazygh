@@ -17,11 +17,13 @@ type storyReviewPreparationRequest interface {
 type notificationMutationCmd struct {
 	Snapshot               notificationMutationSnapshot
 	SuccessFeedbackMessage string
+	StatusLineOperationID  uint64
 	request                notificationMutationRequest
 }
 
 type storyReviewPrepareCmd struct {
-	request storyReviewPreparationRequest
+	request               storyReviewPreparationRequest
+	statusLineOperationID uint64
 }
 
 func newNotificationMutationCommandDeps(program *Program) notificationMutationCommandDeps {
@@ -59,11 +61,17 @@ func (command notificationMutationCmd) execute(program *Program, gui *gocui.Gui)
 	deps := newNotificationMutationCommandDeps(program)
 	run := func() {
 		err := command.request.run(deps)
+		message := MsgNotificationMutationFinished{
+			Snapshot:               command.Snapshot,
+			SuccessFeedbackMessage: command.SuccessFeedbackMessage,
+			Err:                    err,
+			StatusLineOperationID:  command.StatusLineOperationID,
+		}
 		if capturedGUI == nil {
-			_ = program.executeRuntimeMessage(nil, MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err})
+			_ = program.executeRuntimeMessage(nil, message)
 			return
 		}
-		program.dispatchAsyncMessage(MsgNotificationMutationFinished{Snapshot: command.Snapshot, SuccessFeedbackMessage: command.SuccessFeedbackMessage, Err: err})
+		program.dispatchAsyncMessage(message)
 	}
 	if capturedGUI == nil {
 		run()
@@ -81,11 +89,12 @@ func (command storyReviewPrepareCmd) execute(program *Program, gui *gocui.Gui) {
 	deps := newStoryReviewPrepareCommandDeps(program)
 	run := func() {
 		prepared, err := command.request.run(deps)
+		message := MsgStoryReviewPrepared{Prepared: prepared, Err: err, StatusLineOperationID: command.statusLineOperationID}
 		if capturedGUI == nil {
-			_ = program.executeRuntimeMessage(nil, MsgStoryReviewPrepared{Prepared: prepared, Err: err})
+			_ = program.executeRuntimeMessage(nil, message)
 			return
 		}
-		program.dispatchAsyncMessage(MsgStoryReviewPrepared{Prepared: prepared, Err: err})
+		program.dispatchAsyncMessage(message)
 	}
 	if capturedGUI == nil {
 		run()

@@ -144,8 +144,8 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTypedCompletion_WhenApplyin
 	if actual := cachedDetail.detail.Comments[0].Body; actual != "Ship it" {
 		t.Fatalf("expected optimistic comment body %q, actual %q", "Ship it", actual)
 	}
-	if actual := subject.feedbackMessage; actual != pullRequestCommentSuccessMessage {
-		t.Fatalf("expected feedback %q, actual %q", pullRequestCommentSuccessMessage, actual)
+	if actual := subject.feedbackMessage; actual != "" {
+		t.Fatalf("expected feedback %q after a successful operation, actual %q", "", actual)
 	}
 	if len(actual) != 0 {
 		t.Fatalf("expected no follow-up commands, actual %d", len(actual))

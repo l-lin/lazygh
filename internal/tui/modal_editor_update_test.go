@@ -18,11 +18,11 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithStatusLineError_WhenApplyin
 	if !subject.modalEditorVisible() {
 		t.Fatal("expected the modal editor to stay open on a status-line error")
 	}
-	if actual := subject.overlayState.modalEditor.errorMessage; actual != "stale" {
-		t.Fatalf("expected modal editor error message %q, actual %q", "stale", actual)
+	if actual := subject.overlayState.modalEditor.errorMessage; actual != "boom" {
+		t.Fatalf("expected modal editor error message %q, actual %q", "boom", actual)
 	}
-	if actual := subject.feedbackMessage; actual != "boom" {
-		t.Fatalf("expected feedback message %q, actual %q", "boom", actual)
+	if actual := subject.feedbackMessage; actual != "" {
+		t.Fatalf("expected feedback message %q, actual %q", "", actual)
 	}
 }
 

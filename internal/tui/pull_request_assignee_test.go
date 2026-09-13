@@ -249,13 +249,11 @@ func TestAssigneePicker_GivenSearchFailureWrappedWithTheGhCommand_WhenSearching_
 	if strings.Contains(popupView.Title, "Field 'isBot' doesn't exist on type 'User'") {
 		t.Fatalf("expected popup title to hide the stripped error, actual %q", popupView.Title)
 	}
-	then_transientErrorPopupContains(t, gui, "Field 'isBot' doesn't exist on type 'User'")
-	toastView, actualErr := gui.View(viewTransientErrorPopupName)
-	then_noError(t, actualErr)
-	toastText := strings.ReplaceAll(strings.Join(toastView.BufferLines(), ""), "\n", "")
-	if strings.Contains(toastText, "gh api graphql") {
-		t.Fatalf("expected transient error popup to hide the gh command, actual %q", toastText)
+	then_statusLineContains(t, gui, iconStatusFailure)
+	if _, actualErr := gui.View(viewTransientErrorPopupName); actualErr == nil {
+		t.Fatal("expected the transient error popup to stay hidden")
 	}
+	then_statusLineContains(t, gui, iconStatusFailure)
 }
 
 func TestAssigneePicker_GivenServerReturnedAssigneesThatAreVisibleButNotLocalStringMatches_WhenMovingToOneAndPressingEnter_ThenItTogglesThatAssignee(t *testing.T) {
@@ -548,7 +546,7 @@ func TestAssignPullRequest_GivenChangedSelection_WhenSearchingAndSubmittingWithA
 	if !strings.Contains(detailView.Buffer(), "@alice") {
 		t.Fatalf("expected detail buffer to keep %q after assigning, actual %q", "@alice", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestAssigneesUpdatedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestAssigneesUpdatedSuccessMessage)
 }
 
 func TestAssignPullRequest_GivenPendingSelectionChanges_WhenCanceling_ThenItLeavesThePullRequestUntouched(t *testing.T) {

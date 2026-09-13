@@ -115,7 +115,7 @@ func TestEditInlineComment_GivenBrowserChangesTabSubmit_WhenSubmittingOptimistic
 		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
 	}
 	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 3)
-	then_statusLineContains(t, gui, inlineCommentUpdatedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentUpdatedSuccessMessage)
 }
 
 func TestDeleteInlineComment_GivenBrowserChangesTabAction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingBackgroundRefreshes(t *testing.T) {
@@ -173,7 +173,7 @@ func TestDeleteInlineComment_GivenBrowserChangesTabAction_WhenSubmittingOptimist
 		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
 	}
 	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 3)
-	then_statusLineContains(t, gui, inlineCommentDeletedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentDeletedSuccessMessage)
 }
 
 func given_pullRequestDetailWithOwnedInlineThreadForChangesEditTests() githubcli.PullRequestDetail {

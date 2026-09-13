@@ -77,8 +77,9 @@ func (program *Program) requestStoryReview(summary githubdomain.PullRequest, for
 		program.invalidatePullRequestStoryReview(repository, summary.Number)
 	}
 
+	statusLineOperationID := program.startStatusLineOperation(statusLinePullRequestOperation("Creating review story", summary))
 	program.startStoryReviewLoading(formatStoryReviewCommand(program.runtimeConfig.storyReviewConfig))
-	return []Cmd{storyReviewPrepareCmd{request: pullRequestStoryReviewPrepareRequest{summary: summary}}}
+	return []Cmd{storyReviewPrepareCmd{request: pullRequestStoryReviewPrepareRequest{summary: summary}, statusLineOperationID: statusLineOperationID}}
 }
 
 func (program *Program) applyPreparedStoryReview(prepared preparedStoryReview) {

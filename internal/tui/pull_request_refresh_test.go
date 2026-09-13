@@ -87,7 +87,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideRevi
 	if !strings.Contains(pullRequestsView.Buffer(), "Refreshed PR") {
 		t.Fatalf("expected pull requests buffer to contain %q after refreshing, actual %q", "Refreshed PR", pullRequestsView.Buffer())
 	}
-	then_statusLineContains(t, gui, "Pull request refreshed")
+	then_statusLineDoesNotContain(t, gui, "Pull request refreshed")
 }
 
 func TestActionsPopup_GivenRefreshPullRequestListAction_WhenExecuting_ThenItReloadsTheActivePullRequestList(t *testing.T) {
@@ -138,7 +138,7 @@ func TestActionsPopup_GivenRefreshPullRequestListAction_WhenExecuting_ThenItRelo
 	if strings.Contains(pullRequestsView.Buffer(), "First PR") {
 		t.Fatalf("expected pull requests buffer to drop %q after refreshing, actual %q", "First PR", pullRequestsView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestListRefreshSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestListRefreshSuccessMessage)
 }
 
 func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMode_WhenExecuting_ThenItReloadsTheActivePullRequestDetailAndDiff(t *testing.T) {
@@ -216,7 +216,7 @@ func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionInReviewMod
 	if !strings.Contains(detailView.Buffer(), "fresh line") {
 		t.Fatalf("expected detail buffer to contain %q after refreshing, actual %q", "fresh line", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, "Pull request refreshed")
+	then_statusLineDoesNotContain(t, gui, "Pull request refreshed")
 }
 
 func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideReviewMode_WhenTheDetailReloadFails_ThenItShowsATransientErrorPopup(t *testing.T) {

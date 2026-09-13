@@ -8,8 +8,9 @@ func (program *Program) queueActionsPopupAsyncRequest(request actionsPopupAsyncR
 	}
 
 	program.clearActionsPopupErrorMessage()
+	statusLineOperationID := program.startStatusLineOperation(statusLineOperationForActionsPopupRequest(program, request))
 	if statusCommand := strings.TrimSpace(request.statusCommand()); statusCommand != "" {
 		program.startGHCommandLoading(statusCommand)
 	}
-	return []Cmd{actionsPopupAsyncCmd{request: request}}
+	return []Cmd{actionsPopupAsyncCmd{request: request, statusLineOperationID: statusLineOperationID}}
 }

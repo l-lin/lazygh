@@ -10,9 +10,10 @@ type persistentCacheStore struct {
 }
 
 type sessionStore struct {
-	connectedUserLoadStarted bool
-	connectedUserLogin       string
-	connectedUserName        string
+	connectedUserLoadStarted       bool
+	connectedUserStatusOperationID uint64
+	connectedUserLogin             string
+	connectedUserName              string
 }
 
 func newSessionStore() *sessionStore {
@@ -37,6 +38,7 @@ type pullRequestListStore struct {
 	pullRequestTabMembership          map[PullRequestTab]map[string]struct{}
 	pullRequestTabMembershipKnown     map[PullRequestTab]bool
 	pullRequestLoadGenerations        map[PullRequestTab]uint64
+	pullRequestStatusOperationIDs     map[PullRequestTab]uint64
 	pullRequestRefreshErrorTab        PullRequestTab
 	pullRequestRefreshErrorKnown      bool
 }
@@ -51,6 +53,7 @@ func newPullRequestListStore(persistence *persistentCacheStore) *pullRequestList
 		pullRequestTabMembership:          map[PullRequestTab]map[string]struct{}{},
 		pullRequestTabMembershipKnown:     map[PullRequestTab]bool{},
 		pullRequestLoadGenerations:        map[PullRequestTab]uint64{},
+		pullRequestStatusOperationIDs:     map[PullRequestTab]uint64{},
 	}
 }
 
@@ -59,6 +62,7 @@ type notificationStore struct {
 	notificationsLoadStarted          bool
 	notificationsLoading              bool
 	notificationsLoadingDetailMessage string
+	notificationsStatusOperationID    uint64
 	notificationDoneStore             notificationDoneStore
 }
 
@@ -73,13 +77,16 @@ type detailStore struct {
 	persistence                          *persistentCacheStore
 	pullRequestDetailCache               map[string]pullRequestDetailResult
 	pullRequestDetailLoadInFlight        map[string]bool
+	pullRequestDetailStatusOperationIDs  map[string]uint64
 	pullRequestDetailDocumentCache       map[pullRequestDetailDocumentCacheKey]detailDocument
 	pullRequestConversationDocumentCache map[pullRequestDetailDocumentCacheKey]browserConversationDocument
 	pullRequestChangesRenderedRowsCache  map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow
 	issueDetailCache                     map[string]issueDetailResult
 	issueDetailLoadInFlight              map[string]bool
+	issueDetailStatusOperationIDs        map[string]uint64
 	releaseDetailCache                   map[string]releaseDetailResult
 	releaseDetailLoadInFlight            map[string]bool
+	releaseDetailStatusOperationIDs      map[string]uint64
 	browserCollapsedSectionStates        map[string]bool
 }
 
@@ -88,38 +95,43 @@ func newDetailStore(persistence *persistentCacheStore) *detailStore {
 		persistence:                          persistence,
 		pullRequestDetailCache:               map[string]pullRequestDetailResult{},
 		pullRequestDetailLoadInFlight:        map[string]bool{},
+		pullRequestDetailStatusOperationIDs:  map[string]uint64{},
 		pullRequestDetailDocumentCache:       map[pullRequestDetailDocumentCacheKey]detailDocument{},
 		pullRequestConversationDocumentCache: map[pullRequestDetailDocumentCacheKey]browserConversationDocument{},
 		pullRequestChangesRenderedRowsCache:  map[pullRequestDetailDocumentCacheKey][]reviewDiffRenderedRow{},
 		issueDetailCache:                     map[string]issueDetailResult{},
 		issueDetailLoadInFlight:              map[string]bool{},
+		issueDetailStatusOperationIDs:        map[string]uint64{},
 		releaseDetailCache:                   map[string]releaseDetailResult{},
 		releaseDetailLoadInFlight:            map[string]bool{},
+		releaseDetailStatusOperationIDs:      map[string]uint64{},
 		browserCollapsedSectionStates:        map[string]bool{},
 	}
 }
 
 type reviewStore struct {
-	persistence                   *persistentCacheStore
-	pullRequestDiffCache          map[string]pullRequestDiffResult
-	pullRequestDiffLoadInFlight   map[string]bool
-	commitDiffCache               map[string]commitDiffResult
-	commitDiffLoadInFlight        map[string]bool
-	storyReviewCache              map[string]storyReviewResult
-	reviewDiffRenderCache         map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
-	pendingPullRequestReviewCache map[string]pendingPullRequestReviewState
+	persistence                       *persistentCacheStore
+	pullRequestDiffCache              map[string]pullRequestDiffResult
+	pullRequestDiffLoadInFlight       map[string]bool
+	pullRequestDiffStatusOperationIDs map[string]uint64
+	commitDiffCache                   map[string]commitDiffResult
+	commitDiffLoadInFlight            map[string]bool
+	storyReviewCache                  map[string]storyReviewResult
+	reviewDiffRenderCache             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry
+	pendingPullRequestReviewCache     map[string]pendingPullRequestReviewState
 }
 
 func newReviewStore(persistence *persistentCacheStore) *reviewStore {
 	return &reviewStore{
-		persistence:                   persistence,
-		pullRequestDiffCache:          map[string]pullRequestDiffResult{},
-		pullRequestDiffLoadInFlight:   map[string]bool{},
-		commitDiffCache:               map[string]commitDiffResult{},
-		commitDiffLoadInFlight:        map[string]bool{},
-		storyReviewCache:              map[string]storyReviewResult{},
-		reviewDiffRenderCache:         map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
-		pendingPullRequestReviewCache: map[string]pendingPullRequestReviewState{},
+		persistence:                       persistence,
+		pullRequestDiffCache:              map[string]pullRequestDiffResult{},
+		pullRequestDiffLoadInFlight:       map[string]bool{},
+		pullRequestDiffStatusOperationIDs: map[string]uint64{},
+		commitDiffCache:                   map[string]commitDiffResult{},
+		commitDiffLoadInFlight:            map[string]bool{},
+		storyReviewCache:                  map[string]storyReviewResult{},
+		reviewDiffRenderCache:             map[reviewDiffRenderCacheKey]reviewDiffRenderCacheEntry{},
+		pendingPullRequestReviewCache:     map[string]pendingPullRequestReviewState{},
 	}
 }
 
@@ -133,10 +145,13 @@ func newBuildStore() *buildStore {
 }
 
 type statusStore struct {
-	storyReviewLoading        bool
-	storyReviewLoadingMessage string
-	feedbackMessage           string
-	ghCommandLoadingMessage   string
+	storyReviewLoading         bool
+	storyReviewLoadingMessage  string
+	feedbackMessage            string
+	ghCommandLoadingMessage    string
+	nextStatusLineOperationID  uint64
+	statusLineOperationStarted bool
+	statusLineOperation        statusLineOperationState
 }
 
 func newStatusStore() *statusStore {

@@ -1,9 +1,6 @@
 package tui
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 func (program *Program) statusLinePresenter() statusLinePresenter {
 	if program == nil {
@@ -12,6 +9,9 @@ func (program *Program) statusLinePresenter() statusLinePresenter {
 
 	return statusLinePresenter{
 		feedbackMessage:                       program.feedbackMessage,
+		statusLineOperationLoadingMessage:     program.statusLineOperationLoadingStatus(),
+		statusLineOperationFailureMessage:     program.statusLineOperationFailureStatus(),
+		statusLineOperationStarted:            program.statusLineOperationStarted(),
 		loadingSpinner:                        program.loadingSpinnerFrame(),
 		storyReviewLoading:                    program.storyReviewLoading,
 		storyReviewLoadingMessage:             strings.TrimSpace(program.storyReviewLoadingMessage),
@@ -26,20 +26,27 @@ func (program *Program) statusLinePresenter() statusLinePresenter {
 	}
 }
 
+func (program *Program) pullRequestsLoading(tab PullRequestTab) bool {
+	switch tab {
+	case MyPullRequestsTab:
+		return program.myPullRequestsLoading
+	case RequestedPullRequestsTab:
+		return program.requestedPullRequestsLoading
+	default:
+		return program.additionalPullRequestsLoading[tab]
+	}
+}
+
 func (program *Program) activePullRequestsLoadingStatus() string {
 	tab := program.model.ActivePullRequestTab()
 	switch tab {
-	case MyPullRequestsTab:
-		if program.myPullRequestsLoading {
-			return program.pullRequestListState(tab).loadingDetail
-		}
-	case RequestedPullRequestsTab:
-		if program.requestedPullRequestsLoading {
-			return program.pullRequestListState(tab).loadingDetail
+	case MyPullRequestsTab, RequestedPullRequestsTab:
+		if program.pullRequestsLoading(tab) {
+			return statusLineRefreshPullRequestListOperation().loadingLabel
 		}
 	default:
 		if program.additionalPullRequestsLoading[tab] {
-			return program.pullRequestListState(tab).loadingDetail
+			return statusLineRefreshPullRequestListOperation().loadingLabel
 		}
 	}
 
@@ -55,7 +62,7 @@ func (program *Program) selectedPullRequestDetailLoadingStatus() string {
 		return ""
 	}
 
-	return fmt.Sprintf("Running `gh pr view %d -R %s --json ...`.", summary.Number, pullRequestRepositoryName(summary.Repository))
+	return statusLinePullRequestOperation("Refreshing", summary).loadingLabel
 }
 
 func (program *Program) selectedPullRequestDiffLoadingStatus() string {
@@ -67,39 +74,31 @@ func (program *Program) selectedPullRequestDiffLoadingStatus() string {
 		return ""
 	}
 
-	return fmt.Sprintf("Running `gh api repos/%s/pulls/%d -H 'Accept: application/vnd.github.v3.diff'`.", pullRequestRepositoryName(summary.Repository), summary.Number)
+	return statusLinePullRequestOperation("Refreshing", summary).loadingLabel
 }
 
 func (program *Program) notificationsLoadingStatus() string {
 	if !program.notificationsLoading {
 		return ""
 	}
-	if message := strings.TrimSpace(program.notificationsLoadingDetailMessage); message != "" {
-		return message
-	}
-	return notificationsLoadingDetail
+	return statusLineRefreshNotificationsOperation().loadingLabel
 }
 
 func (program *Program) assigneePickerLoadingStatus() string {
 	if !program.assigneePickerVisible() {
 		return ""
 	}
-	trimmedCommand := strings.TrimSpace(program.actionsPopupWidget.assigneePicker.searchCommand)
-	if !program.actionsPopupWidget.assigneePicker.searchLoading || trimmedCommand == "" {
+	if !program.actionsPopupWidget.assigneePicker.searchLoading {
 		return ""
 	}
-	return fmt.Sprintf("Running `%s`.", trimmedCommand)
+	return "Searching assignees"
 }
 
 func (program *Program) pullRequestBuildRunLoadingStatus() string {
 	if program.pullRequestBuildRunLoad == nil {
 		return ""
 	}
-	trimmedCommand := strings.TrimSpace(program.pullRequestBuildRunLoad.command)
-	if trimmedCommand == "" {
-		return ""
-	}
-	return fmt.Sprintf("Running `%s`.", trimmedCommand)
+	return strings.TrimSpace(program.pullRequestBuildRunLoad.statusLineLabel)
 }
 
 func (program *Program) ghCommandLoadingStatus() string {

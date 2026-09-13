@@ -157,7 +157,7 @@ func TestReviewMode_GivenAnInlineCommentSubmit_WhenItSucceeds_ThenItReloadsTheDi
 	if !strings.Contains(detailView.Buffer(), "Please add context") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Please add context", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestReviewInlineCommentSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReviewInlineCommentSuccessMessage)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
@@ -362,10 +362,10 @@ func TestReviewMode_GivenGitHubRejectsTheInlineComment_WhenSubmitting_ThenItKeep
 	if !strings.Contains(composerView.Buffer(), "Draft inline comment") {
 		t.Fatalf("expected composer buffer to contain %q, actual %q", "Draft inline comment", composerView.Buffer())
 	}
-	if strings.Contains(composerView.Title, "line must be part of the diff") {
-		t.Fatalf("expected composer title to hide %q, actual %q", "line must be part of the diff", composerView.Title)
+	if !strings.Contains(composerView.Title, "line must be part of the diff") {
+		t.Fatalf("expected composer title to retain %q, actual %q", "line must be part of the diff", composerView.Title)
 	}
-	then_transientErrorPopupContains(t, gui, "line must be part of the diff")
+	then_statusLineContains(t, gui, iconStatusFailure)
 }
 
 func given_reviewModeDetailCursorOnLineContaining(t *testing.T, gui *gocui.Gui, subject *Program, segment string) {

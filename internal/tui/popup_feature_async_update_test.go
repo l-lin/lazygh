@@ -37,6 +37,9 @@ func TestUpdate_GivenMsgNotificationReadRequestedWithoutExplicitTarget_WhenApply
 	if actual := command.SuccessFeedbackMessage; actual != notificationMarkedReadMessage {
 		t.Fatalf("expected success feedback %q, actual %q", notificationMarkedReadMessage, actual)
 	}
+	if command.StatusLineOperationID == 0 {
+		t.Fatal("expected the notification mutation command to carry its status operation ID")
+	}
 	if !subject.notificationsLoading {
 		t.Fatal("expected notifications loading to start immediately")
 	}
@@ -85,6 +88,9 @@ func TestUpdate_GivenMsgNotificationDoneRequestedWithoutExplicitTarget_WhenApply
 	}
 	if actual := command.SuccessFeedbackMessage; actual != notificationMarkedDoneMessage {
 		t.Fatalf("expected success feedback %q, actual %q", notificationMarkedDoneMessage, actual)
+	}
+	if command.StatusLineOperationID == 0 {
+		t.Fatal("expected the notification mutation command to carry its status operation ID")
 	}
 	if !subject.notificationsLoading {
 		t.Fatal("expected notifications loading to start immediately")

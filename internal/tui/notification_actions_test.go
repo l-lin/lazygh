@@ -72,7 +72,7 @@ func TestNotificationsView_GivenUnreadNotification_WhenPressingR_ThenItMarksTheR
 	if actualRows[0].Notification == nil || actualRows[0].Notification.Unread {
 		t.Fatalf("expected the selected notification to become read immediately, actual %+v", actualRows[0].Notification)
 	}
-	then_statusLineContains(t, gui, notificationReadLoadingMessage)
+	then_statusLineContains(t, gui, "Marking notification as read")
 }
 
 func TestNotificationsView_GivenReadNotification_WhenPressingR_ThenItShowsNoopFeedbackWithoutCallingGitHub(t *testing.T) {
@@ -164,7 +164,7 @@ func TestNotificationsView_GivenSelectedNotification_WhenPressingD_ThenItRemoves
 	if actualRows[0].Notification == nil || actualRows[0].Notification.ID != "n-push-2" {
 		t.Fatalf("expected the remaining notification id %q, actual %+v", "n-push-2", actualRows[0].Notification)
 	}
-	then_statusLineContains(t, gui, notificationDoneLoadingMessage)
+	then_statusLineContains(t, gui, "Marking notification as done")
 }
 
 func TestNotificationsView_GivenNotificationMarkedDone_WhenClearingCacheAndReloading_ThenItKeepsTheThreadHidden(t *testing.T) {
@@ -397,7 +397,7 @@ func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksA
 			t.Fatalf("expected all notification rows to be marked read, actual %+v", actualRows)
 		}
 	}
-	then_statusLineContains(t, gui, notificationMarkedAllReadMessage)
+	then_statusLineDoesNotContain(t, gui, notificationMarkedAllReadMessage)
 }
 
 func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksAllLoadedRowsReadBeforeGitHubConfirmsTheMutation(t *testing.T) {
@@ -437,7 +437,7 @@ func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksA
 			t.Fatalf("expected all notification rows to become read immediately, actual %+v", actualRows)
 		}
 	}
-	then_statusLineContains(t, gui, notificationAllReadLoadingMessage)
+	then_statusLineContains(t, gui, "Marking all notifications as read")
 }
 
 func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemovesAllLoadedNotificationRowsBeforeGitHubConfirmsTheMutation(t *testing.T) {
@@ -475,7 +475,7 @@ func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemove
 	if len(actualRows) != 1 || actualRows[0].Item.Title != notificationsEmptyTitle || actualRows[0].Notification != nil {
 		t.Fatalf("expected the notifications list to become empty immediately, actual %+v", actualRows)
 	}
-	then_statusLineContains(t, gui, "Marking 2 notifications as done...")
+	then_statusLineContains(t, gui, "Marking 2 notifications as done")
 }
 
 func TestActionsPopup_GivenBulkNotificationDoneAction_WhenExecuting_ThenItRemovesAllLoadedNotificationRows(t *testing.T) {

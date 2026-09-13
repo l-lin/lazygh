@@ -79,7 +79,7 @@ func TestActionsPopup_GivenApproveReviewActionSelected_WhenExecuting_ThenItUsesT
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_currentViewNameIs(t, gui, viewPullRequestsName)
-	then_statusLineContains(t, gui, pullRequestReviewSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReviewSuccessMessage)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
@@ -167,8 +167,8 @@ func TestActionsPopup_GivenRequestChangesActionSelected_WhenSubmittingFails_Then
 	if !strings.Contains(composerView.Buffer(), "Needs tests") {
 		t.Fatalf("expected composer buffer to contain %q, actual %q", "Needs tests", composerView.Buffer())
 	}
-	if strings.Contains(composerView.Title, "boom") {
-		t.Fatalf("expected composer title to hide %q, actual %q", "boom", composerView.Title)
+	if !strings.Contains(composerView.Title, "boom") {
+		t.Fatalf("expected composer title to retain %q, actual %q", "boom", composerView.Title)
 	}
 	then_transientErrorPopupContains(t, gui, "boom")
 }

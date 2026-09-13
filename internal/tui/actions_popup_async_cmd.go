@@ -7,7 +7,8 @@ import (
 )
 
 type actionsPopupAsyncCmd struct {
-	request actionsPopupAsyncRequest
+	request               actionsPopupAsyncRequest
+	statusLineOperationID uint64
 }
 
 type saveThemePresetCmd struct {
@@ -24,11 +25,12 @@ func (command actionsPopupAsyncCmd) execute(program *Program, gui *gocui.Gui) {
 	deps := newActionsPopupAsyncCommandDeps(program)
 	run := func() {
 		completion, err := command.request.run(deps)
+		message := MsgActionsPopupAsyncGHCommandFinished{Err: err, Completion: completion, StatusLineOperationID: command.statusLineOperationID}
 		if command.request.asyncRequested() {
-			program.dispatchAsyncMessage(MsgActionsPopupAsyncGHCommandFinished{Err: err, Completion: completion})
+			program.dispatchAsyncMessage(message)
 			return
 		}
-		_ = program.executeRuntimeMessage(capturedGUI, MsgActionsPopupAsyncGHCommandFinished{Err: err, Completion: completion})
+		_ = program.executeRuntimeMessage(capturedGUI, message)
 	}
 	if command.request.asyncRequested() {
 		program.runAsync(run)

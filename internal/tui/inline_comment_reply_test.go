@@ -188,7 +188,7 @@ func TestReplyToInlineComment_GivenBrowserConversationsAction_WhenSubmitting_The
 	if !strings.Contains(detailView.Buffer(), "Rendered browser reply body") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered browser reply body", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestInlineCommentReplySuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestInlineCommentReplySuccessMessage)
 }
 
 func TestReplyToInlineComment_GivenBrowserChangesAction_WhenSubmitting_ThenItRefreshesTheThreadAndShowsFeedback(t *testing.T) {
@@ -246,7 +246,7 @@ func TestReplyToInlineComment_GivenBrowserChangesAction_WhenSubmitting_ThenItRef
 	if !strings.Contains(detailView.Buffer(), "Rendered browser changes reply") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered browser changes reply", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestInlineCommentReplySuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestInlineCommentReplySuccessMessage)
 }
 
 func TestReplyToInlineCommentShortcut_GivenBrowserChangesCursorOnInlineComment_WhenPressingR_ThenItOpensTheReplyComposer(t *testing.T) {
@@ -466,7 +466,7 @@ func TestReplyToInlineComment_GivenReviewModeAction_WhenSubmitting_ThenItAddsThe
 	if !strings.Contains(detailView.Buffer(), "Rendered review reply body") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered review reply body", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestInlineCommentReplySuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestInlineCommentReplySuccessMessage)
 }
 
 func TestReplyToInlineComment_GivenCommentsTabSubmit_WhenPostingReply_ThenItKeepsTheRenderedThreadVisibleWhileQueueingABackgroundRefresh(t *testing.T) {

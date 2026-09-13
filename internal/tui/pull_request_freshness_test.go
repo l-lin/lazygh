@@ -59,6 +59,7 @@ func TestPullRequestsLoaded_GivenAnExistingListAndARefreshError_WhenApplyingTheR
 	subject := NewProgramWithModel(NewModel(SeedData{PullRequestTabs: []PullRequestTabSeed{{Label: "Mine"}}}))
 	subject.model.FocusPullRequestsView()
 	subject.applyLoadedPullRequestRows(MyPullRequestsTab, []githubdomain.PullRequest{givenFreshnessTestPullRequest(42, "2026-05-05T12:00:00Z")})
+	subject.setPullRequestListStatusOperationID(MyPullRequestsTab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
 
 	subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{Tab: MyPullRequestsTab, Err: errors.New("network unavailable")})
 
@@ -66,8 +67,8 @@ func TestPullRequestsLoaded_GivenAnExistingListAndARefreshError_WhenApplyingTheR
 	if !ok || actualRow.Summary == nil || actualRow.Summary.Number != 42 {
 		t.Fatalf("expected the existing PR to remain selected, actual %+v", actualRow)
 	}
-	if subject.feedbackMessage != pullRequestListRefreshErrorPrefix+"network unavailable" {
-		t.Fatalf("expected refresh error feedback, actual %q", subject.feedbackMessage)
+	if !strings.Contains(subject.statusLinePresenter().Text(), iconStatusFailure) {
+		t.Fatalf("expected refresh error status, actual %q", subject.statusLinePresenter().Text())
 	}
 }
 
@@ -390,7 +391,9 @@ func TestPastedPullRequestFreshness_GivenASeenPullRequest_WhenRemovingIt_ThenItR
 
 func TestPullRequestsLoaded_GivenOneTabRefreshFailsAndAnotherSucceeds_WhenApplyingBothResults_ThenItKeepsTheFailedTabErrorVisible(t *testing.T) {
 	subject := NewProgram()
+	subject.setPullRequestListStatusOperationID(MyPullRequestsTab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
 	subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{Tab: MyPullRequestsTab, Err: errors.New("network unavailable")})
+	subject.setPullRequestListStatusOperationID(RequestedPullRequestsTab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
 	subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{
 		Tab: RequestedPullRequestsTab,
 		PullRequests: []githubdomain.PullRequest{
@@ -398,18 +401,19 @@ func TestPullRequestsLoaded_GivenOneTabRefreshFailsAndAnotherSucceeds_WhenApplyi
 		},
 	})
 
-	if subject.feedbackMessage != pullRequestListRefreshErrorPrefix+"network unavailable" {
-		t.Fatalf("expected the failed tab error to remain visible, actual %q", subject.feedbackMessage)
+	if subject.statusLinePresenter().Text() != "" {
+		t.Fatalf("expected the newer successful operation to clear the older failure, actual %q", subject.statusLinePresenter().Text())
 	}
 
+	subject.setPullRequestListStatusOperationID(MyPullRequestsTab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
 	subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{
 		Tab: MyPullRequestsTab,
 		PullRequests: []githubdomain.PullRequest{
 			givenFreshnessTestPullRequest(10, "2026-05-05T10:00:00Z"),
 		},
 	})
-	if subject.feedbackMessage != "" {
-		t.Fatalf("expected the failed tab error to clear after its tab succeeds, actual %q", subject.feedbackMessage)
+	if subject.statusLinePresenter().Text() != "" {
+		t.Fatalf("expected the successful operation to leave the status line clear, actual %q", subject.statusLinePresenter().Text())
 	}
 }
 

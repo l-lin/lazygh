@@ -50,7 +50,8 @@ func executeModalEditorExternalEditCommand(runtime modalEditorCommandRuntime, gu
 }
 
 type modalEditorSubmitCmd struct {
-	request modalEditorSubmitRequest
+	request               modalEditorSubmitRequest
+	statusLineOperationID uint64
 }
 
 func (command modalEditorSubmitCmd) execute(program *Program, gui *gocui.Gui) {
@@ -64,7 +65,7 @@ func executeModalEditorSubmitCommand(runtime modalEditorCommandRuntime, gui *goc
 
 	run := func() {
 		completion, err := command.request.run(runtime.submitDeps)
-		message := MsgModalEditorSubmitFinished{Err: err, Completion: completion}
+		message := MsgModalEditorSubmitFinished{Err: err, Completion: completion, StatusLineOperationID: command.statusLineOperationID}
 		if command.request.asyncRequested() && runtime.dispatchAsyncMessage != nil {
 			runtime.dispatchAsyncMessage(message)
 			return

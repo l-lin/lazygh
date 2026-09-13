@@ -158,7 +158,7 @@ func TestReRequestPullRequestReview_GivenSelectedReviewer_WhenExecuting_ThenItRe
 	if strings.Contains(detailView.Buffer(), "@reviewer-approved "+pullRequestOverviewReRequestReviewIcon) {
 		t.Fatalf("expected the refreshed detail to drop the re-request indicator, actual %q", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestReviewReRequestedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReviewReRequestedSuccessMessage)
 }
 
 func TestReviewMode_GivenDescriptionCursorOnAReRequestableReviewer_WhenOpeningActionsPopup_ThenItShowsTheReRequestReviewAction(t *testing.T) {

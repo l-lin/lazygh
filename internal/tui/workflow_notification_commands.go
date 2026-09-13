@@ -14,7 +14,9 @@ type notificationWorkflowRuntime struct {
 	getReleaseDetail       func(string, int) (githubdomain.ReleaseDetail, error)
 }
 
-type loadNotificationsCmd struct{}
+type loadNotificationsCmd struct {
+	statusLineOperationID uint64
+}
 
 type loadIssueDetailCmd struct {
 	repository string
@@ -41,14 +43,18 @@ func newNotificationWorkflowRuntime(program *Program, gui *gocui.Gui) notificati
 	return runtime
 }
 
-func (loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
+func (command loadNotificationsCmd) execute(program *Program, gui *gocui.Gui) {
 	runtime := newNotificationWorkflowRuntime(program, gui)
 	if runtime.listNotifications == nil || runtime.dispatchAsyncMessage == nil {
 		return
 	}
+	statusLineOperationID := command.statusLineOperationID
+	if statusLineOperationID == 0 && program != nil {
+		statusLineOperationID = program.notificationsStatusLineOperationID()
+	}
 	runWorkflowCommandAsync(runtime.runAsync, func() {
 		notifications, err := runtime.listNotifications()
-		runtime.dispatchAsyncMessage(MsgNotificationsLoaded{Notifications: notifications, Err: err})
+		runtime.dispatchAsyncMessage(MsgNotificationsLoaded{Notifications: notifications, Err: err, StatusLineOperationID: statusLineOperationID})
 	})
 }
 

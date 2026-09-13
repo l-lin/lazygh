@@ -47,8 +47,9 @@ type MsgModalEditorClosed struct{}
 type MsgModalEditorSubmitRequested struct{}
 
 type MsgModalEditorSubmitFinished struct {
-	Err        error
-	Completion modalEditorSubmitCompletion
+	Err                   error
+	Completion            modalEditorSubmitCompletion
+	StatusLineOperationID uint64
 }
 
 type MsgModalEditorExternalEditRequested struct{}

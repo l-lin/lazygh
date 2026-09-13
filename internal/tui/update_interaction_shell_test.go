@@ -59,16 +59,10 @@ func TestUpdate_GivenMsgModalEditorSubmitFinishedWithTransientPopupError_WhenApp
 
 	actual := Update(subject, MsgModalEditorSubmitFinished{Err: newTransientErrorPopupActionError(errors.New("boom"))})
 
-	if len(actual) != 1 {
-		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
+	if len(actual) != 0 {
+		t.Fatalf("expected no transient-popup command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
-		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
-	}
-	if actualMessage := subject.overlayState.modalEditor.errorMessage; actualMessage != "" {
-		t.Fatalf("expected modal editor error message %q, actual %q", "", actualMessage)
-	}
-	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
-		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
+	if actualMessage := subject.overlayState.modalEditor.errorMessage; actualMessage != "boom" {
+		t.Fatalf("expected modal editor error message %q, actual %q", "boom", actualMessage)
 	}
 }

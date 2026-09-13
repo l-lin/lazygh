@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -573,12 +574,30 @@ func TestLayout_GivenPullRequestsLoadingState_WhenRendering_ThenThePanesShowOnly
 
 	statusView, actualErr := gui.View("status-line")
 	then_noError(t, actualErr)
-	expectedStatus := string(loadingSpinnerFrames[0]) + " " + myPullRequestsLoadingDetail
+	expectedStatus := string(loadingSpinnerFrames[0]) + " Refreshing PR list"
 	if actual := strings.TrimSpace(statusView.Buffer()); actual != expectedStatus {
 		t.Fatalf("expected status line %q, actual %q", expectedStatus, actual)
 	}
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
+}
+
+func TestLayout_GivenAStatusLineOperationFails_WhenRendering_ThenTheStatusLineUsesTheThemeFailureColor(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	operationID := subject.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Approving #42: First PR", failureLabel: "Approving #42"})
+	subject.finishStatusLineOperation(operationID, errors.New("permission denied"))
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	statusView, actualErr := gui.View(viewStatusLineName)
+	then_noError(t, actualErr)
+
+	if actual := statusView.FgColor; actual != gocui.GetColor(theme.FailureHex) {
+		t.Fatalf("expected status line failure color %v, actual %v", gocui.GetColor(theme.FailureHex), actual)
+	}
+	then_statusLineContains(t, gui, iconStatusFailure+" Approving #42: permission denied")
 }
 
 func TestRefreshViews_GivenALoadingPullRequestsSpinner_WhenAdvancingTheFrame_ThenTheRenderedSpinnerChanges(t *testing.T) {

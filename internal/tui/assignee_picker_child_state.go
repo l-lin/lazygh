@@ -27,6 +27,7 @@ func (state assigneePickerState) withSearchReset(query string) (assigneePickerSt
 	state.searchResults = nil
 	state.searchLoading = false
 	state.searchCommand = ""
+	state.searchStatusOperationID = 0
 	return state, state.searchRequestID
 }
 
@@ -39,6 +40,7 @@ func (state assigneePickerState) withSearchLoadingStarted(query string) assignee
 func (state assigneePickerState) withSearchLoaded(query string, results []githubdomain.PullRequestAuthor) assigneePickerState {
 	state.searchLoading = false
 	state.searchCommand = ""
+	state.searchStatusOperationID = 0
 	state.searchQuery = strings.TrimSpace(query)
 	state = state.rememberingCandidates(results)
 	state.searchResults = append([]githubdomain.PullRequestAuthor(nil), results...)

@@ -4,6 +4,9 @@ import "strings"
 
 type statusLinePresenter struct {
 	feedbackMessage                       string
+	statusLineOperationLoadingMessage     string
+	statusLineOperationFailureMessage     string
+	statusLineOperationStarted            bool
 	loadingSpinner                        string
 	storyReviewLoading                    bool
 	storyReviewLoadingMessage             string
@@ -18,6 +21,9 @@ type statusLinePresenter struct {
 }
 
 func (presenter statusLinePresenter) Text() string {
+	if message := strings.TrimSpace(presenter.statusLineOperationFailureMessage); message != "" {
+		return message
+	}
 	if message := strings.TrimSpace(presenter.feedbackMessage); message != "" {
 		return message
 	}
@@ -27,11 +33,20 @@ func (presenter statusLinePresenter) Text() string {
 	return ""
 }
 
+func (presenter statusLinePresenter) IsFailure() bool {
+	return strings.TrimSpace(presenter.statusLineOperationFailureMessage) != ""
+}
+
 func (presenter statusLinePresenter) loadingText() string {
+	if message := strings.TrimSpace(presenter.statusLineOperationLoadingMessage); message != "" {
+		return presenter.loadingSpinnerStatus(message)
+	}
+	if presenter.statusLineOperationStarted {
+		return ""
+	}
 	if presenter.storyReviewLoading {
 		return presenter.loadingSpinnerStatus(presenter.storyReviewLoadingMessage)
 	}
-
 	for _, message := range []string{
 		presenter.assigneePickerLoadingMessage,
 		presenter.pullRequestBuildRunLoadingMessage,
@@ -46,7 +61,6 @@ func (presenter statusLinePresenter) loadingText() string {
 			return presenter.loadingSpinnerStatus(trimmedMessage)
 		}
 	}
-
 	return ""
 }
 

@@ -15,6 +15,20 @@ func (program *Program) planConnectedUserLoad() {
 	})
 }
 
+func (program *Program) setConnectedUserStatusOperationID(operationID uint64) {
+	program.updateSessionStore(func(store sessionStore) sessionStore {
+		store.connectedUserStatusOperationID = operationID
+		return store
+	})
+}
+
+func (program *Program) connectedUserStatusOperationID() uint64 {
+	if program == nil || program.sessionStore == nil {
+		return 0
+	}
+	return program.sessionStore.connectedUserStatusOperationID
+}
+
 func (program *Program) setConnectedUser(login string, name string) bool {
 	if program == nil || program.sessionStore == nil {
 		return false

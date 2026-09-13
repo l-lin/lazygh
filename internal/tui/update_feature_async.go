@@ -16,6 +16,7 @@ func (program *Program) closeActionsPopupState() {
 
 func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActionsPopupAsyncGHCommandFinished) []Cmd {
 	program.clearGHCommandLoading()
+	program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
 	if message.Err != nil {
 		if target, previousCollapsed, ok := inlineCommentResolutionRollback(message.Err); ok {
 			program.applyInlineCommentResolutionCollapsed(target, previousCollapsed)
@@ -23,10 +24,11 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 		if snapshot, ok := pullRequestMergeQueueRollback(message.Err); ok {
 			program.restorePullRequestMergeQueueMutationSnapshot(snapshot)
 		}
-		return program.applyErrorReportedMessage(message.Err.Error())
+		return nil
 	}
 
 	commands := program.applyActionsPopupAsyncCompletion(message.Completion)
+	program.clearFeedbackMessage()
 	if program.model != nil && program.model.ActionsPopupVisible() {
 		program.clearPendingSelectionPrefix()
 		program.closeActionsPopupState()
@@ -34,10 +36,14 @@ func (program *Program) applyActionsPopupAsyncGHCommandFinished(message MsgActio
 	return commands
 }
 
-func (program *Program) applyNotificationMutationStarted(message MsgNotificationMutationStarted) {
+func (program *Program) applyNotificationMutationStarted(message MsgNotificationMutationStarted) uint64 {
 	program.model.SetNotificationRows(message.OptimisticRows)
 	program.clearFeedbackMessage()
+	statusLabel := strings.TrimRight(strings.TrimSpace(message.LoadingMessage), ".")
+	statusLineOperationID := program.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: statusLabel, failureLabel: statusLabel})
 	program.startNotificationMutationLoading(message.LoadingMessage)
+	program.setNotificationsStatusLineOperationID(statusLineOperationID)
+	return statusLineOperationID
 }
 
 func (program *Program) restoreNotificationMutationSnapshot(snapshot notificationMutationSnapshot) {
@@ -47,23 +53,21 @@ func (program *Program) restoreNotificationMutationSnapshot(snapshot notificatio
 
 func (program *Program) applyNotificationMutationFinished(message MsgNotificationMutationFinished) []Cmd {
 	program.finishNotificationsLoading()
+	program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
 	if message.Err != nil {
 		program.restoreNotificationMutationSnapshot(message.Snapshot)
-		return program.applyErrorReportedMessage(message.Err.Error())
+		return nil
 	}
 
 	program.cacheNotifications(program.loadedNotifications())
-	program.setFeedback(program.model.Focus(), message.SuccessFeedbackMessage)
+	program.clearFeedbackMessage()
 	return nil
 }
 
 func (program *Program) applyStoryReviewPrepared(message MsgStoryReviewPrepared) []Cmd {
 	program.finishStoryReviewLoading()
+	program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
 	if message.Err != nil {
-		if popupMessage, ok := transientErrorPopupActionMessage(message.Err); ok {
-			return program.applyErrorReportedMessage(popupMessage)
-		}
-		program.setFeedback(program.model.Focus(), strings.TrimSpace(message.Err.Error()))
 		return nil
 	}
 
@@ -76,7 +80,8 @@ func (program *Program) applyAssigneePickerSearchLoadingStarted(message MsgAssig
 	if !program.assigneePickerSearchRequestCurrent(message.RequestID, message.Query) {
 		return
 	}
-	program.markAssigneePickerSearchLoading(message.Query)
+	statusLineOperationID := program.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Searching assignees", failureLabel: "Searching assignees"})
+	program.markAssigneePickerSearchLoading(message.Query, statusLineOperationID)
 }
 
 func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePickerSearchLoaded) []Cmd {
@@ -84,11 +89,13 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 		return nil
 	}
 
+	statusLineOperationID := program.actionsPopupWidget.assigneePicker.searchStatusOperationID
+	program.finishStatusLineOperation(statusLineOperationID, message.Err)
 	if message.Err != nil {
 		program.applyAssigneePickerSearchLoadedState(message.Query, nil)
 		program.clearActionsPopupErrorMessage()
 		program.updateActionsPopupSearch(program.model.ActionsPopupSearchQuery())
-		return program.applyErrorReportedMessage(normalizedAssigneePickerError(message.Err).Error())
+		return nil
 	}
 
 	program.applyAssigneePickerSearchLoadedState(message.Query, message.Results)
@@ -98,25 +105,36 @@ func (program *Program) applyAssigneePickerSearchLoaded(message MsgAssigneePicke
 }
 
 func (program *Program) applyPullRequestBuildRunLoaded(message MsgPullRequestBuildRunLoaded) []Cmd {
+	statusLineOperationID := uint64(0)
+	if program.pullRequestBuildRunLoad != nil {
+		statusLineOperationID = program.pullRequestBuildRunLoad.statusLineOperationID
+	}
+	operationErr := message.Err
+	if operationErr == nil {
+		operationErr = message.JobsErr
+	}
 	program.clearPullRequestBuildRunLoad()
+	program.finishStatusLineOperation(statusLineOperationID, operationErr)
 	if message.Err != nil {
-		return program.applyErrorReportedMessage(normalizeGHCommandError(message.Err).Error())
+		return nil
 	}
 
 	popupContent := message.Target.popupContent
 	popupContent.body = message.RawRunOutput
 	popupContent.jobs = append([]githubdomain.PullRequestBuildRunJob(nil), message.Jobs...)
 	program.openPullRequestBuildRunPopupState(popupContent)
-	if message.JobsErr != nil {
-		return program.applyErrorReportedMessage(normalizeGHCommandError(message.JobsErr).Error())
-	}
 	return nil
 }
 
 func (program *Program) applyPullRequestBuildRunJobLogLoaded(message MsgPullRequestBuildRunJobLogLoaded) []Cmd {
+	statusLineOperationID := uint64(0)
+	if program.pullRequestBuildRunLoad != nil {
+		statusLineOperationID = program.pullRequestBuildRunLoad.statusLineOperationID
+	}
 	program.clearPullRequestBuildRunLoad()
+	program.finishStatusLineOperation(statusLineOperationID, message.Err)
 	if message.Err != nil {
-		return program.applyErrorReportedMessage(normalizeGHCommandError(message.Err).Error())
+		return nil
 	}
 
 	program.openPullRequestBuildRunPopupState(pullRequestBuildRunPopupContent{

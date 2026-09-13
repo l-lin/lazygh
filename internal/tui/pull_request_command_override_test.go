@@ -37,7 +37,7 @@ func TestStatusLineText_GivenCustomAuthoredSearchWhileLoading_WhenReadingTheStat
 
 	actual := subject.statusLinePresenter().Text()
 
-	expected := string(loadingSpinnerFrames[0]) + " Running `gh pr list --search author:@me status:open --json title,number,repository,url,body,state,isDraft,updatedAt,id` to load authored pull requests."
+	expected := string(loadingSpinnerFrames[0]) + " Refreshing PR list"
 	if actual != expected {
 		t.Fatalf("expected status line %q, actual %q", expected, actual)
 	}

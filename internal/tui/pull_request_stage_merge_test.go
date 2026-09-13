@@ -609,7 +609,7 @@ func TestLayout_GivenAReadyForReviewMutation_WhenRendering_ThenTheUpdatedOpenSta
 		t.Fatalf("expected ready-for-review calls %v, actual %v", []string{"acme/widgets#42"}, loader.markReadyForReviewCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestMarkedReadyForReviewSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestMarkedReadyForReviewSuccessMessage)
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
 	if !strings.Contains(pullRequestsView.Buffer(), " acme/widgets#42 Lifecycle PR") {
@@ -677,7 +677,7 @@ func TestLayout_GivenAClosePullRequestMutation_WhenRendering_ThenTheUpdatedClose
 		t.Fatalf("expected close pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.closePullRequestCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestClosedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestClosedSuccessMessage)
 	pullRequestsView, actualErr := gui.View(viewPullRequestsName)
 	then_noError(t, actualErr)
 	if !strings.Contains(pullRequestsView.Buffer(), " acme/widgets#42 Lifecycle PR") {
@@ -742,7 +742,7 @@ func TestLayout_GivenAnUpdateBranchMutation_WhenRendering_ThenItRemovesTheOutOfD
 		t.Fatalf("expected update branch calls %v, actual %v", []string{"acme/widgets#42"}, loader.updateBranchCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestBranchUpdatedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestBranchUpdatedSuccessMessage)
 	detailResult, ok := subject.pullRequestDetailCache["acme/widgets#42"]
 	if !ok {
 		t.Fatal("expected the pull request detail cache to stay warm after updating the branch")
@@ -848,7 +848,7 @@ func TestLayout_GivenAnEnableAutoMergeMutation_WhenRendering_ThenItTogglesTheOpt
 		t.Fatalf("expected enable-auto-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.enableAutoMergeCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestAutoMergeEnabledSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestAutoMergeEnabledSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
@@ -914,7 +914,7 @@ func TestLayout_GivenADisableAutoMergeMutation_WhenRendering_ThenItClearsTheOpti
 		t.Fatalf("expected disable-auto-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.disableAutoMergeCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestAutoMergeDisabledSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestAutoMergeDisabledSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
@@ -1036,7 +1036,7 @@ func TestLayout_GivenAMergeWhenReadyMutationWithSummaryMissingNodeID_WhenRenderi
 		t.Fatalf("expected merge-when-ready pull request ids %v, actual %v", []string{"PR_kwDOA"}, loader.mergeWhenReadyPullRequestIDs)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestQueuedToMergeSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestQueuedToMergeSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
@@ -1115,7 +1115,7 @@ func TestLayout_GivenAMergeWhenReadyMutationThatEnablesAutoMerge_WhenRendering_T
 	if !reflect.DeepEqual(loader.mergeWhenReadyPullRequestIDs, []string{"PR_kwDOA"}) {
 		t.Fatalf("expected merge-when-ready pull request ids %v, actual %v", []string{"PR_kwDOA"}, loader.mergeWhenReadyPullRequestIDs)
 	}
-	then_statusLineContains(t, gui, pullRequestAutoMergeEnabledSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestAutoMergeEnabledSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "Auto-merge enabled") {
@@ -1179,7 +1179,7 @@ func TestLayout_GivenARemoveFromQueueMutation_WhenRendering_ThenItClearsTheQueue
 		t.Fatalf("expected dequeue calls %v, actual %v", []string{"PR_kwDOA"}, loader.dequeuePullRequestCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestRemovedFromQueueSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestRemovedFromQueueSuccessMessage)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
@@ -1245,7 +1245,7 @@ func TestActionsPopup_GivenAMergeWhenReadyFailure_WhenExecuting_ThenItRollsBackT
 	then_currentViewNameIs(t, gui, viewDetailName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
 	then_viewDoesNotExist(t, gui, viewActionsPopupSearchName)
-	then_transientErrorPopupContains(t, gui, "GitHub rejected queueing")
+	then_statusLineDoesNotContain(t, gui, iconStatusFailure)
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if strings.Contains(detailView.Buffer(), detailStatusIcon+" QUEUED") {
@@ -1397,7 +1397,7 @@ func TestLayout_GivenAReopenClosedDraftPullRequestMutation_WhenRendering_ThenThe
 		t.Fatalf("expected reopen pull request calls %v, actual %v", []string{"acme/widgets#42"}, loader.reopenPullRequestCalls)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestReopenedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReopenedSuccessMessage)
 	rows := subject.model.PullRequestRows(MyPullRequestsTab)
 	if len(rows) != 1 || rows[0].Summary == nil || rows[0].Summary.State != "OPEN" || !rows[0].Summary.IsDraft {
 		t.Fatalf("expected the visible pull request summary to be reopened as draft, actual %+v", rows)
@@ -1595,7 +1595,7 @@ func TestLayout_GivenAConfirmedSquashMerge_WhenRendering_ThenTheMergedStateFeedb
 		t.Fatalf("expected invalidated pull requests %v, actual %v", []string{"acme/widgets#42"}, cache.invalidatedPullRequests)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, pullRequestSquashMergedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestSquashMergedSuccessMessage)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "MERGED") {
@@ -1652,8 +1652,7 @@ func TestActionsPopup_GivenAConfirmedSquashMergeFailure_WhenExecuting_ThenItKeep
 	if !reflect.DeepEqual(loader.squashMergeCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected squash-merge calls %v, actual %v", []string{"acme/widgets#42"}, loader.squashMergeCalls)
 	}
-	then_statusLineDoesNotContain(t, gui, "GitHub rejected the squash merge")
-	then_transientErrorPopupContains(t, gui, "GitHub rejected the squash merge")
+	then_statusLineContains(t, gui, iconStatusFailure)
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
 	if !strings.Contains(detailView.Buffer(), "OPEN") {

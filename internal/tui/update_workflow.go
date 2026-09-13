@@ -2,6 +2,7 @@ package tui
 
 func (program *Program) applyConnectedUserLoadPlanned() {
 	program.planConnectedUserLoad()
+	program.setConnectedUserStatusOperationID(program.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Refreshing connected user", failureLabel: "Refreshing connected user"}))
 }
 
 func (program *Program) applyPullRequestsLoadPlanned(message MsgPullRequestsLoadPlanned) {
@@ -9,22 +10,26 @@ func (program *Program) applyPullRequestsLoadPlanned(message MsgPullRequestsLoad
 		store, _ = store.withNextPullRequestLoadGeneration(message.Tab)
 		return store.withPullRequestsLoadStarted(message.Tab, true).withPullRequestsLoading(message.Tab, true)
 	})
+	program.setPullRequestListStatusOperationID(message.Tab, program.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
 }
 
 func (program *Program) applyNotificationsLoadPlanned() {
 	program.planNotificationsLoad()
+	program.setNotificationsStatusLineOperationID(program.startStatusLineOperation(statusLineRefreshNotificationsOperation()))
 }
 
 func (program *Program) applyPullRequestDetailLoadPlanned(message MsgPullRequestDetailLoadPlanned) {
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withPullRequestDetailLoadPlanned(message.Key)
 	})
+	program.setPullRequestDetailStatusOperationID(message.Key, program.startStatusLineOperation(statusLineRefreshPullRequestKeyOperation(program, message.Key)))
 }
 
 func (program *Program) applyPullRequestDiffLoadPlanned(message MsgPullRequestDiffLoadPlanned) {
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		return store.withPullRequestDiffLoadPlanned(message.Key)
 	})
+	program.setPullRequestDiffStatusOperationID(message.Key, program.startStatusLineOperation(statusLineRefreshPullRequestKeyOperation(program, message.Key)))
 }
 
 func (program *Program) applyIssueDetailLoadPlanned(message MsgIssueDetailLoadPlanned) {
@@ -32,6 +37,7 @@ func (program *Program) applyIssueDetailLoadPlanned(message MsgIssueDetailLoadPl
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withIssueDetailLoadPlanned(key)
 	})
+	program.setIssueDetailStatusOperationID(key, program.startStatusLineOperation(statusLineRefreshIssueOperation(message.Repository, message.Number)))
 }
 
 func (program *Program) applyReleaseDetailLoadPlanned(message MsgReleaseDetailLoadPlanned) {
@@ -39,6 +45,7 @@ func (program *Program) applyReleaseDetailLoadPlanned(message MsgReleaseDetailLo
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withReleaseDetailLoadPlanned(key)
 	})
+	program.setReleaseDetailStatusOperationID(key, program.startStatusLineOperation(statusLineRefreshReleaseOperation(message.Repository, message.ID)))
 }
 
 func (program *Program) applyCurrentDetailImageHTMLLoadPlanned(message MsgCurrentDetailImageHTMLLoadPlanned) {

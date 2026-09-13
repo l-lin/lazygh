@@ -4,11 +4,13 @@ import "strings"
 
 func (store statusStore) withFeedback(message string) statusStore {
 	store.feedbackMessage = strings.TrimSpace(message)
+	store.statusLineOperation.failureMessage = ""
 	return store
 }
 
 func (store statusStore) withoutFeedback() statusStore {
 	store.feedbackMessage = ""
+	store.statusLineOperation.failureMessage = ""
 	return store
 }
 

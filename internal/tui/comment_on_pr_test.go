@@ -229,7 +229,7 @@ func TestPullRequestCommentComposer_GivenSuccessfulSubmit_WhenSubmitting_ThenItC
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
 
-	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestCommentSuccessMessage)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewPullRequestsFooterName)
 }
@@ -263,10 +263,10 @@ func TestPullRequestCommentComposer_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	if !strings.Contains(composerView.Buffer(), "Line one\nLine two") {
 		t.Fatalf("expected composer buffer to contain the draft, actual %q", composerView.Buffer())
 	}
-	if strings.Contains(composerView.Title, "boom") {
-		t.Fatalf("expected composer title to hide %q, actual %q", "boom", composerView.Title)
+	if !strings.Contains(composerView.Title, "boom") {
+		t.Fatalf("expected composer title to retain %q, actual %q", "boom", composerView.Title)
 	}
-	then_transientErrorPopupContains(t, gui, "boom")
+	then_statusLineContains(t, gui, iconStatusFailure)
 }
 
 func TestPullRequestCommentComposer_GivenCommentsTabSubmit_WhenPostingComment_ThenItKeepsTheRenderedCommentsVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
@@ -410,7 +410,7 @@ func TestPullRequestCommentComposer_GivenPullRequestDetail_WhenSubmitting_ThenIt
 		t.Fatalf("expected detail refresh calls %v, actual %v", []string{"acme/widgets#42", "acme/widgets#42"}, loader.detailCalls)
 	}
 
-	then_statusLineContains(t, gui, pullRequestCommentSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestCommentSuccessMessage)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }

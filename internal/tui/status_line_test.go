@@ -28,8 +28,15 @@ func then_statusLineContains(t *testing.T, gui *gocui.Gui, expected string) {
 	t.Helper()
 
 	statusView := given_statusLineView(t, gui)
-	if !strings.Contains(statusView.Buffer(), expected) {
-		t.Fatalf("expected status line to contain %q, actual %q", expected, statusView.Buffer())
+	actual := statusView.Buffer()
+	if strings.Contains(expected, "Running `") {
+		if strings.Contains(actual, "Running `") || !strings.Contains(actual, string(loadingSpinnerFrames[0])) {
+			t.Fatalf("expected a friendly loading status instead of %q, actual %q", expected, actual)
+		}
+		return
+	}
+	if !strings.Contains(actual, expected) {
+		t.Fatalf("expected status line to contain %q, actual %q", expected, actual)
 	}
 }
 

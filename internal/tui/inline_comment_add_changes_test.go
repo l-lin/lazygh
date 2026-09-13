@@ -201,7 +201,7 @@ func TestInlineComment_GivenBrowserChangesSubmitWithoutPendingReview_WhenPosting
 		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
 	}
 	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 3)
-	then_statusLineContains(t, gui, pullRequestReviewInlineCommentSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReviewInlineCommentSuccessMessage)
 }
 
 func given_browserChangesDetailFocusForInlineComment(t *testing.T, gui *gocui.Gui, subject *Program) {

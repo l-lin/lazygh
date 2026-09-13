@@ -86,7 +86,7 @@ func TestActionsPopup_GivenBrowserChangesTabResolveInlineCommentAction_WhenExecu
 		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentResolvedSuccessMessage)
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)

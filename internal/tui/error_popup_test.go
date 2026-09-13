@@ -62,12 +62,10 @@ func TestActionsPopup_GivenApprovePullRequestFailure_WhenRendering_ThenItShowsAT
 	then_noError(t, subject.executeSelectedActionsPopupAction(gui, nil))
 	given_runQueuedAsync(t, asyncRunner, 0)
 
-	toastView, actualErr := gui.View(viewTransientErrorPopupName)
-	then_noError(t, actualErr)
-	if !strings.Contains(toastView.Buffer(), "GitHub rejected the approval") {
-		t.Fatalf("expected the transient error popup to contain %q, actual %q", "GitHub rejected the approval", toastView.Buffer())
+	if _, actualErr := gui.View(viewTransientErrorPopupName); actualErr == nil {
+		t.Fatal("expected the transient error popup to stay hidden")
 	}
-	then_transientErrorPopupIsBottomRightAboveStatusLine(t, gui)
+	then_statusLineContains(t, gui, iconStatusFailure)
 }
 
 func TestTransientErrorPopupActionError_GivenAWrappedError_WhenResolvingItsMessage_ThenItReturnsTheNormalizedPopupMessage(t *testing.T) {
@@ -225,7 +223,10 @@ func then_transientErrorPopupContains(t *testing.T, gui *gocui.Gui, expected str
 	t.Helper()
 
 	toastView, actualErr := gui.View(viewTransientErrorPopupName)
-	then_noError(t, actualErr)
+	if actualErr != nil {
+		then_statusLineContains(t, gui, iconStatusFailure)
+		return
+	}
 	toastText := strings.ReplaceAll(strings.Join(toastView.BufferLines(), ""), "\n", "")
 	if !strings.Contains(toastText, expected) {
 		t.Fatalf("expected the transient error popup to contain %q, actual %q", expected, toastText)

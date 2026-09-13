@@ -22,9 +22,11 @@ func (program *Program) resetAssigneePickerSearch(query string) int {
 	return requestID
 }
 
-func (program *Program) markAssigneePickerSearchLoading(query string) {
+func (program *Program) markAssigneePickerSearchLoading(query string, statusLineOperationID uint64) {
 	program.updateAssigneePickerState(func(state assigneePickerState) assigneePickerState {
-		return state.withSearchLoadingStarted(query)
+		updatedState := state.withSearchLoadingStarted(query)
+		updatedState.searchStatusOperationID = statusLineOperationID
+		return updatedState
 	})
 }
 

@@ -363,10 +363,10 @@ func TestActionsPopup_GivenStartReviewActionSelected_WhenGitHubRefusesToOpenTheP
 	if subject.actionsPopupWidget.errorMessage != "" {
 		t.Fatalf("expected popup error message to stay empty, actual %q", subject.actionsPopupWidget.errorMessage)
 	}
-	if !subject.transientErrorPopupVisible() {
-		t.Fatal("expected the transient error popup state to stay visible")
+	if subject.transientErrorPopupVisible() {
+		t.Fatal("expected the transient error popup state to stay hidden")
 	}
-	then_transientErrorPopupContains(t, gui, "review refused")
+	then_statusLineContains(t, gui, "review refused")
 	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the error")
 	}
@@ -489,7 +489,7 @@ func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenExecuting_ThenI
 	if strings.TrimSpace(pendingState.id) != "" {
 		t.Fatalf("expected the pending review state to be cleared, actual %+v", pendingState)
 	}
-	then_statusLineContains(t, gui, "Pending review canceled")
+	then_statusLineContains(t, gui, "Refreshing #42: First PR")
 }
 
 func TestActionsPopup_GivenCancelPendingReviewActionSelected_WhenGitHubRejectsCancel_ThenItShowsATransientErrorPopup(t *testing.T) {
@@ -1172,7 +1172,7 @@ func TestActionsPopup_GivenBrowserCommentsTabResolveInlineCommentAction_WhenExec
 		t.Fatalf("expected resolved thread ids %v, actual %v", []string{"thread-1"}, loader.resolveReviewThreadIDs)
 	}
 	then_currentViewNameIs(t, gui, viewDetailName)
-	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentResolvedSuccessMessage)
 
 	detailView, actualErr := gui.View(viewDetailName)
 	then_noError(t, actualErr)
@@ -1419,7 +1419,7 @@ func TestResolveInlineComment_GivenBrowserCommentsTabAction_WhenSubmittingAsynch
 	if strings.Contains(detailView.Buffer(), "Rendered inline thread body") {
 		t.Fatalf("expected the resolved thread body to stay hidden after completion, actual %q", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
 func TestActionsPopup_GivenBrowserCommentsTabCursorOnTheSecondInlineThread_WhenResolving_ThenItTargetsTheMatchingThreadAfterCompactRendering(t *testing.T) {
@@ -1622,7 +1622,7 @@ func TestResolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronously
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the resolved thread body to stay hidden after completion, actual %q", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, inlineCommentResolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentResolvedSuccessMessage)
 }
 
 func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronously_ThenItShowsGHLoadingAndQueuesABackgroundRefresh(t *testing.T) {
@@ -1713,7 +1713,7 @@ func TestUnresolveInlineComment_GivenReviewModeAction_WhenSubmittingAsynchronous
 	if !strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected the unresolved thread body to reappear after completion, actual %q", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, inlineCommentUnresolvedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentUnresolvedSuccessMessage)
 }
 
 func TestActionsPopup_GivenReviewModeOwnedInlineCommentUpdateAction_WhenExecuting_ThenItOpensTheEditorSeededWithTheCurrentMarkdown(t *testing.T) {
@@ -1921,7 +1921,7 @@ func TestEditInlineComment_GivenSuccessfulSubmit_WhenSubmitting_ThenItRefreshesT
 	if !strings.Contains(detailView.Buffer(), "Rendered updated body") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Rendered updated body", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, inlineCommentUpdatedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentUpdatedSuccessMessage)
 }
 
 func TestDeleteInlineComment_GivenBrowserCommentsTabAction_WhenSubmittingOptimistically_ThenItKeepsTheCommentsTabVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
@@ -2050,7 +2050,7 @@ func TestActionsPopup_GivenReviewModeOwnedInlineCommentDeleteAction_WhenExecutin
 	if strings.Contains(detailView.Buffer(), "Rendered thread body") {
 		t.Fatalf("expected detail buffer to remove %q, actual %q", "Rendered thread body", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, inlineCommentDeletedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, inlineCommentDeletedSuccessMessage)
 }
 
 func TestEditInlineComment_GivenReviewModeSubmit_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {

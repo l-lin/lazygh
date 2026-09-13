@@ -73,10 +73,10 @@ func (program *Program) selectedNotificationDetailLoadingStatus() string {
 		return ""
 	}
 	if repository, number, ok := notification.IssueIdentity(); ok {
-		return fmt.Sprintf("Running `gh api repos/%s/issues/%d`.", repository, number)
+		return statusLineRefreshIssueOperation(repository, number).loadingLabel
 	}
 	if repository, id, ok := notification.ReleaseIdentity(); ok {
-		return fmt.Sprintf("Running `gh api repos/%s/releases/%d`.", repository, id)
+		return statusLineRefreshReleaseOperation(repository, id).loadingLabel
 	}
 	return ""
 }

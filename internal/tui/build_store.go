@@ -16,6 +16,15 @@ func (store buildStore) withLoadStarted(command string) buildStore {
 	return store
 }
 
+func (store buildStore) withLoadStatusLine(operationID uint64, label string) buildStore {
+	if store.pullRequestBuildRunLoad == nil {
+		return store
+	}
+	store.pullRequestBuildRunLoad.statusLineOperationID = operationID
+	store.pullRequestBuildRunLoad.statusLineLabel = strings.TrimSpace(label)
+	return store
+}
+
 func (store buildStore) withLoadCleared() buildStore {
 	store.pullRequestBuildRunLoad = nil
 	return store

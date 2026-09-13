@@ -320,7 +320,8 @@ func (program *Program) applyOpenAssigneePickerRequested(message MsgOpenAssignee
 	program.updateActionsPopupSearch("")
 
 	requestID := program.resetAssigneePickerSearch("")
-	program.markAssigneePickerSearchLoading("")
+	statusLineOperationID := program.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Searching assignees", failureLabel: "Searching assignees"})
+	program.markAssigneePickerSearchLoading("", statusLineOperationID)
 	if requestID <= 0 || !program.hasPullRequestMutations() {
 		return nil
 	}

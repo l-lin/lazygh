@@ -131,7 +131,7 @@ func TestEditPullRequestTitle_GivenSuccessfulSubmit_WhenPressingEnter_ThenItRefr
 	if !strings.Contains(detailView.Buffer(), "Renamed PR") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Renamed PR", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestTitleEditSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestTitleEditSuccessMessage)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
@@ -171,10 +171,10 @@ func TestEditPullRequestTitle_GivenSubmitFailure_WhenPressingEnter_ThenItKeepsTh
 	if !strings.Contains(titleView.Buffer(), "Broken title") {
 		t.Fatalf("expected title buffer to contain %q, actual %q", "Broken title", titleView.Buffer())
 	}
-	if strings.Contains(titleView.Title, "boom") {
-		t.Fatalf("expected title editor title to hide %q, actual %q", "boom", titleView.Title)
+	if !strings.Contains(titleView.Title, "boom") {
+		t.Fatalf("expected title editor title to retain %q, actual %q", "boom", titleView.Title)
 	}
-	then_transientErrorPopupContains(t, gui, "boom")
+	then_statusLineContains(t, gui, iconStatusFailure)
 }
 
 func TestEditPullRequestTitle_GivenControlG_WhenOpeningTheExternalEditor_ThenItReplacesTheDraftWithTheSavedSingleLineText(t *testing.T) {
@@ -384,7 +384,7 @@ func TestEditPullRequestDescription_GivenSuccessfulSubmit_WhenSubmitting_ThenItR
 	if !strings.Contains(detailView.Buffer(), "Updated body") {
 		t.Fatalf("expected detail buffer to contain %q, actual %q", "Updated body", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestDescriptionEditSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestDescriptionEditSuccessMessage)
 	then_statusLineKeyHintsAre(t, gui, "?: help, /: search, a: action")
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
@@ -424,10 +424,10 @@ func TestEditPullRequestDescription_GivenSubmitFailure_WhenSubmitting_ThenItKeep
 	if !strings.Contains(descriptionView.Buffer(), "Broken body") {
 		t.Fatalf("expected description buffer to contain %q, actual %q", "Broken body", descriptionView.Buffer())
 	}
-	if strings.Contains(descriptionView.Title, "boom") {
-		t.Fatalf("expected description editor title to hide %q, actual %q", "boom", descriptionView.Title)
+	if !strings.Contains(descriptionView.Title, "boom") {
+		t.Fatalf("expected description editor title to retain %q, actual %q", "boom", descriptionView.Title)
 	}
-	then_transientErrorPopupContains(t, gui, "boom")
+	then_statusLineContains(t, gui, iconStatusFailure)
 }
 
 type fakeExternalEditor struct {

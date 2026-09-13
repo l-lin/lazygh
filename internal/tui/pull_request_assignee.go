@@ -28,17 +28,18 @@ type pullRequestAssigneePickerTarget struct {
 }
 
 type assigneePickerState struct {
-	target                 pullRequestAssigneePickerTarget
-	selectedLogins         map[string]bool
-	originalSelectedLogins map[string]bool
-	knownCandidates        map[string]githubdomain.PullRequestAuthor
-	viewerLogin            string
-	viewerName             string
-	searchQuery            string
-	searchResults          []githubdomain.PullRequestAuthor
-	searchLoading          bool
-	searchCommand          string
-	searchRequestID        int
+	target                  pullRequestAssigneePickerTarget
+	selectedLogins          map[string]bool
+	originalSelectedLogins  map[string]bool
+	knownCandidates         map[string]githubdomain.PullRequestAuthor
+	viewerLogin             string
+	viewerName              string
+	searchQuery             string
+	searchResults           []githubdomain.PullRequestAuthor
+	searchLoading           bool
+	searchCommand           string
+	searchRequestID         int
+	searchStatusOperationID uint64
 }
 
 type assigneePickerLoadState struct {

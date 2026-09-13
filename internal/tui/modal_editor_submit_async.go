@@ -8,8 +8,9 @@ func (program *Program) queueModalEditorSubmitRequest(request modalEditorSubmitR
 	}
 
 	program.clearModalEditorErrorMessage()
+	statusLineOperationID := program.startStatusLineOperation(statusLineOperationForModalEditorRequest(program, request))
 	if statusCommand := strings.TrimSpace(request.statusCommand()); statusCommand != "" {
 		program.startGHCommandLoading(statusCommand)
 	}
-	return []Cmd{modalEditorSubmitCmd{request: request}}
+	return []Cmd{modalEditorSubmitCmd{request: request, statusLineOperationID: statusLineOperationID}}
 }

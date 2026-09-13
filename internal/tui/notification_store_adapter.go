@@ -21,6 +21,19 @@ func (program *Program) startNotificationMutationLoading(message string) {
 	})
 }
 
+func (program *Program) setNotificationsStatusLineOperationID(operationID uint64) {
+	program.updateNotificationStore(func(store notificationStore) notificationStore {
+		return store.withStatusLineOperationID(operationID)
+	})
+}
+
+func (program *Program) notificationsStatusLineOperationID() uint64 {
+	if program == nil || program.notificationStore == nil {
+		return 0
+	}
+	return program.notificationStore.notificationsStatusOperationID
+}
+
 func (program *Program) finishNotificationsLoading() {
 	program.updateNotificationStore(func(store notificationStore) notificationStore {
 		return store.withLoadingFinished()

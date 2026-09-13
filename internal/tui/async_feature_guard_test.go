@@ -48,8 +48,8 @@ func TestUpdate_GivenMsgActionsPopupAsyncGHCommandFinished_WhenSuccessful_ThenIt
 	if actual := subject.actionsPopupWidget.errorMessage; actual != "" {
 		t.Fatalf("expected popup error message %q, actual %q", "", actual)
 	}
-	if actual := subject.feedbackMessage; actual != "done" {
-		t.Fatalf("expected feedback %q, actual %q", "done", actual)
+	if actual := subject.feedbackMessage; actual != "" {
+		t.Fatalf("expected feedback %q after a successful async operation, actual %q", "", actual)
 	}
 }
 
@@ -63,8 +63,10 @@ func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresT
 	subject.model.SelectNotificationIndex(0)
 	subject.notificationsLoading = true
 	subject.notificationsLoadingDetailMessage = notificationDoneLoadingMessage
+	statusLineOperationID := subject.startStatusLineOperation(statusLineOperationDescriptor{loadingLabel: "Marking notification as done", failureLabel: "Marking notification as done"})
+	subject.notificationsStatusOperationID = statusLineOperationID
 
-	actual := Update(subject, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: "ignored", Err: errors.New("boom")})
+	actual := Update(subject, MsgNotificationMutationFinished{Snapshot: snapshot, SuccessFeedbackMessage: "ignored", Err: errors.New("boom"), StatusLineOperationID: statusLineOperationID})
 
 	if subject.notificationsLoading {
 		t.Fatalf("expected notifications loading to be cleared after the mutation result")
@@ -79,14 +81,11 @@ func TestUpdate_GivenMsgNotificationMutationFinished_WhenFailing_ThenItRestoresT
 	if actualIndex := subject.model.SelectedNotificationIndex(); actualIndex != 1 {
 		t.Fatalf("expected restored selected notification index %d, actual %d", 1, actualIndex)
 	}
-	if len(actual) != 1 {
-		t.Fatalf("expected one transient-popup expiry command, actual %d", len(actual))
+	if len(actual) != 0 {
+		t.Fatalf("expected no transient-popup command, actual %d", len(actual))
 	}
-	if _, ok := actual[0].(transientErrorPopupExpiryCmd); !ok {
-		t.Fatalf("expected a transientErrorPopupExpiryCmd, actual %T", actual[0])
-	}
-	if actualMessage := subject.overlayState.transientErrorPopup.message; actualMessage != "boom" {
-		t.Fatalf("expected transient popup message %q, actual %q", "boom", actualMessage)
+	if !strings.Contains(subject.statusLinePresenter().Text(), iconStatusFailure) {
+		t.Fatalf("expected the status line to show the failure, actual %q", subject.statusLinePresenter().Text())
 	}
 }
 

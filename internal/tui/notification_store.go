@@ -15,9 +15,15 @@ func (store notificationStore) withMutationStarted(message string) notificationS
 	return store
 }
 
+func (store notificationStore) withStatusLineOperationID(operationID uint64) notificationStore {
+	store.notificationsStatusOperationID = operationID
+	return store
+}
+
 func (store notificationStore) withLoadingFinished() notificationStore {
 	store.notificationsLoading = false
 	store.notificationsLoadingDetailMessage = ""
+	store.notificationsStatusOperationID = 0
 	return store
 }
 
@@ -25,6 +31,7 @@ func (store notificationStore) withLoadStateReset() notificationStore {
 	store.notificationsLoadStarted = false
 	store.notificationsLoading = false
 	store.notificationsLoadingDetailMessage = ""
+	store.notificationsStatusOperationID = 0
 	return store
 }
 

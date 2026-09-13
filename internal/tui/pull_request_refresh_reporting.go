@@ -45,7 +45,7 @@ func (program *Program) completeManualRefreshOperation(err error) manualRefreshF
 		clearFeedback = actualClearFeedback
 		return updatedState
 	})
-	if clearFeedback {
+	if clearFeedback && err == nil {
 		program.clearFeedbackMessage()
 	}
 	return completion

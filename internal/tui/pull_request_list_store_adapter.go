@@ -21,6 +21,23 @@ func (program *Program) setPullRequestsLoading(tab PullRequestTab, value bool) {
 	})
 }
 
+func (program *Program) setPullRequestListStatusOperationID(tab PullRequestTab, operationID uint64) {
+	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		if store.pullRequestStatusOperationIDs == nil {
+			store.pullRequestStatusOperationIDs = map[PullRequestTab]uint64{}
+		}
+		store.pullRequestStatusOperationIDs[tab] = operationID
+		return store
+	})
+}
+
+func (program *Program) pullRequestListStatusOperationID(tab PullRequestTab) uint64 {
+	if program == nil || program.pullRequestListStore == nil {
+		return 0
+	}
+	return program.pullRequestListStore.pullRequestStatusOperationIDs[tab]
+}
+
 func (program *Program) pullRequestLoadGeneration(tab PullRequestTab) uint64 {
 	if program == nil || program.pullRequestListStore == nil {
 		return 0

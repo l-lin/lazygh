@@ -15,8 +15,9 @@ type MsgPullRequestsLoaded struct {
 }
 
 type MsgNotificationsLoaded struct {
-	Notifications []githubdomain.Notification
-	Err           error
+	Notifications         []githubdomain.Notification
+	Err                   error
+	StatusLineOperationID uint64
 }
 
 type MsgPullRequestDetailLoaded struct {

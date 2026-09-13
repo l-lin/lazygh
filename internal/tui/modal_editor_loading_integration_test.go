@@ -39,8 +39,8 @@ func TestModalEditorLoading_GivenQueuedPullRequestTitleEditSubmit_WhenSubmitting
 		t.Fatalf("expected one queued async submit, actual %d", actual)
 	}
 
-	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "pr", "edit", "42", "-R", "acme/widgets", "--title", "Renamed PR"))
-	if actual := subject.statusLinePresenter().Text(); actual != subject.loadingSpinnerStatus(expectedLoading) {
+	expectedLoading := subject.loadingSpinnerStatus("Editing #42: First PR")
+	if actual := subject.statusLinePresenter().Text(); actual != expectedLoading {
 		t.Fatalf("expected status line %q, actual %q", subject.loadingSpinnerStatus(expectedLoading), actual)
 	}
 	then_statusLineContains(t, gui, expectedLoading)
@@ -79,8 +79,8 @@ func TestModalEditorLoading_GivenQueuedInlineCommentReplySubmit_WhenSubmitting_T
 		t.Fatalf("expected one queued async submit, actual %d", actual)
 	}
 
-	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
-	if actual := subject.statusLinePresenter().Text(); actual != subject.loadingSpinnerStatus(expectedLoading) {
+	expectedLoading := subject.loadingSpinnerStatus("Replying on #42: First PR")
+	if actual := subject.statusLinePresenter().Text(); actual != expectedLoading {
 		t.Fatalf("expected status line %q, actual %q", subject.loadingSpinnerStatus(expectedLoading), actual)
 	}
 	then_statusLineContains(t, gui, expectedLoading)
@@ -124,8 +124,8 @@ func TestModalEditorLoading_GivenQueuedReviewInlineCommentSubmit_WhenSubmitting_
 		t.Fatalf("expected one queued async submit, actual %d", actual)
 	}
 
-	expectedLoading := formatRunningCommandStatus(formatStatusLineCommand("gh", "api", "graphql"))
-	if actual := subject.statusLinePresenter().Text(); actual != subject.loadingSpinnerStatus(expectedLoading) {
+	expectedLoading := subject.loadingSpinnerStatus("Commenting on #42: First PR")
+	if actual := subject.statusLinePresenter().Text(); actual != expectedLoading {
 		t.Fatalf("expected status line %q, actual %q", subject.loadingSpinnerStatus(expectedLoading), actual)
 	}
 	then_statusLineContains(t, gui, expectedLoading)

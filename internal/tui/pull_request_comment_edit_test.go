@@ -136,7 +136,7 @@ func TestEditPullRequestComment_GivenBrowserCommentsTabSubmit_WhenSubmittingOpti
 		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
 	}
 	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (1)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 1)
-	then_statusLineContains(t, gui, pullRequestCommentUpdatedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestCommentUpdatedSuccessMessage)
 }
 
 func TestDeletePullRequestComment_GivenBrowserCommentsTabAction_WhenSubmittingOptimistically_ThenItKeepsTheCommentsTabVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
@@ -186,7 +186,7 @@ func TestDeletePullRequestComment_GivenBrowserCommentsTabAction_WhenSubmittingOp
 		t.Fatalf("expected detail buffer to avoid the loading spinner %q, actual %q", string(loadingSpinnerFrames[0]), detailView.Buffer())
 	}
 	then_tabsAre(t, detailView, []string{DescriptionDetailTab.Label(), CommentsDetailTab.Label() + " (0)", CommitsDetailTab.Label() + " (0)", ChangesDetailTab.Label()}, 1)
-	then_statusLineContains(t, gui, pullRequestCommentDeletedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestCommentDeletedSuccessMessage)
 }
 
 func given_pullRequestDetailWithOwnedCommentForEditTests() githubcli.PullRequestDetail {

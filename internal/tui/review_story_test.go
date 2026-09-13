@@ -108,8 +108,7 @@ func TestActionsPopup_GivenStoryReviewAction_WhenGitHubRefusesToStartThePendingR
 
 	asyncRunner.runs[0]()
 
-	then_statusLineDoesNotContain(t, gui, "story review refused")
-	then_transientErrorPopupContains(t, gui, "story review refused")
+	then_statusLineContains(t, gui, iconStatusFailure)
 	if subject.navigationState.reviewSession.active {
 		t.Fatal("expected review mode to stay inactive after the GitHub error")
 	}

@@ -491,7 +491,7 @@ func TestAddReaction_GivenPullRequestReactionPickerSelection_WhenSubmitting_Then
 		t.Fatalf("expected detail buffer to contain the refreshed reaction group, actual %q", detailView.Buffer())
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReactionAddedSuccessMessage)
 }
 
 func TestAddReaction_GivenGitHubRejectsTheReaction_WhenSubmitting_ThenItShowsATransientErrorPopup(t *testing.T) {
@@ -638,7 +638,7 @@ func TestAddReaction_GivenReviewModeInlineCommentReactionPickerSelection_WhenSub
 		t.Fatalf("expected detail buffer to contain the refreshed inline reaction group, actual %q", detailView.Buffer())
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReactionAddedSuccessMessage)
 }
 
 func TestAddReaction_GivenViewerAlreadyAddedTheReaction_WhenSubmitting_ThenItShowsANoOpMessageWithoutCallingGitHub(t *testing.T) {
@@ -857,7 +857,7 @@ func TestAddReaction_GivenBrowserChangesInlineCommentReaction_WhenSubmittingOpti
 	if strings.Contains(detailView.Buffer(), "Loading pull request diff...") {
 		t.Fatalf("expected detail buffer to avoid the diff loading state, actual %q", detailView.Buffer())
 	}
-	then_statusLineContains(t, gui, pullRequestReactionAddedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReactionAddedSuccessMessage)
 }
 
 func TestAddReaction_GivenReviewModeInlineCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedDiffVisibleWhileQueueingABackgroundRefresh(t *testing.T) {
@@ -979,7 +979,7 @@ func TestRemoveReaction_GivenPullRequestReactionUnderCursor_WhenSubmitting_ThenI
 		t.Fatalf("expected detail buffer to remove the reaction pill, actual %q", detailView.Buffer())
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	then_statusLineContains(t, gui, pullRequestReactionRemovedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReactionRemovedSuccessMessage)
 }
 
 func TestRemoveReaction_GivenReviewModeInlineCommentReactionUnderCursor_WhenSubmitting_ThenItRemovesTheReactionRefreshesTheDiffAndShowsFeedback(t *testing.T) {
@@ -1040,7 +1040,7 @@ func TestRemoveReaction_GivenReviewModeInlineCommentReactionUnderCursor_WhenSubm
 		t.Fatalf("expected detail buffer to remove the inline reaction pill, actual %q", detailView.Buffer())
 	}
 	then_viewDoesNotExist(t, gui, viewActionsPopupName)
-	then_statusLineContains(t, gui, pullRequestReactionRemovedSuccessMessage)
+	then_statusLineDoesNotContain(t, gui, pullRequestReactionRemovedSuccessMessage)
 }
 
 func TestRemoveReaction_GivenCommentsTabCommentReaction_WhenSubmittingOptimistically_ThenItKeepsTheRenderedCommentVisibleWhileQueueingABackgroundRefresh(t *testing.T) {

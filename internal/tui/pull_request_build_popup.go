@@ -19,7 +19,9 @@ const (
 )
 
 type pullRequestBuildRunLoadState struct {
-	command string
+	command               string
+	statusLineOperationID uint64
+	statusLineLabel       string
 }
 
 type pullRequestBuildRunPopupContent struct {
