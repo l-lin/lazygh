@@ -72,6 +72,30 @@ func TestStatusLinePullRequestOperation_GivenAPullRequestSummary_WhenFormattingT
 	}
 }
 
+func TestStatusLineManualRefreshOperation_GivenStandardReviewModeAndPullRequestRefresh_WhenResolving_ThenItUsesTheReviewLabel(t *testing.T) {
+	actual := statusLineManualRefreshOperation(pullRequestRefreshSuccessMessage, true)
+
+	if actual.loadingLabel != "Refreshing PR" || actual.failureLabel != "Refreshing PR" {
+		t.Fatalf("expected review refresh labels %q, actual loading %q and failure %q", "Refreshing PR", actual.loadingLabel, actual.failureLabel)
+	}
+}
+
+func TestStatusLineManualRefreshOperation_GivenBrowserModeAndPullRequestRefresh_WhenResolving_ThenItUsesThePullRequestListLabel(t *testing.T) {
+	actual := statusLineManualRefreshOperation(pullRequestRefreshSuccessMessage, false)
+
+	if actual.loadingLabel != "Refreshing PR list" || actual.failureLabel != "Refreshing PR list" {
+		t.Fatalf("expected browser refresh labels %q, actual loading %q and failure %q", "Refreshing PR list", actual.loadingLabel, actual.failureLabel)
+	}
+}
+
+func TestStatusLineManualRefreshOperation_GivenNotificationsRefresh_WhenResolving_ThenItUsesTheNotificationsLabel(t *testing.T) {
+	actual := statusLineManualRefreshOperation(notificationsRefreshSuccessMessage, false)
+
+	if actual.loadingLabel != "Refreshing notifications" || actual.failureLabel != "Refreshing notifications" {
+		t.Fatalf("expected notification refresh labels %q, actual loading %q and failure %q", "Refreshing notifications", actual.loadingLabel, actual.failureLabel)
+	}
+}
+
 func TestStatusLinePresenter_GivenTheNewestOperationHasFinished_WhenAnOlderLoadingFlagRemains_ThenItKeepsTheStatusLineClear(t *testing.T) {
 	subject := statusLinePresenter{
 		statusLineOperationStarted:           true,

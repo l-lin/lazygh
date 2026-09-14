@@ -88,6 +88,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				{Key: presenter.reviewTreeToggleHelpKeys(), Description: "Expand/collapse fold"},
 				{Key: presenter.reviewTreeBulkFoldHelpKeys(), Description: "Close/open all folds"},
 				{Key: presenter.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},
+				presenter.refreshHelpEntry("Refresh PR"),
 				{Key: presenter.helpKeysOrFallback("<enter>", keybindingActionID{scope: keymapScopePullRequests, action: "open_detail"}), Description: "Open diff"},
 				{Key: "<esc>/q", Description: "Exit review mode"},
 			}
@@ -98,6 +99,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				pullRequestYankHelpEntry(presenter.keyResolver, keymapScopeUser),
 				pullRequestCommentHelpEntry(presenter.keyResolver, keymapScopeUser),
 				{Key: presenter.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopeUser, action: "open_actions_popup"}), Description: "Actions"},
+				presenter.refreshHelpEntry("Refresh PR"),
 				{Key: presenter.helpKeysOrFallback("0", keybindingActionID{scope: keymapScopeSide, action: "focus_detail_view"}), Description: "Focus diff"},
 				{Key: "<esc>/q", Description: "Exit review mode"},
 			}

@@ -181,7 +181,18 @@ func (program *Program) applyRefreshActiveViewRequested() []Cmd {
 		}
 		return program.requestStoryReview(summary, true)
 	}
+
 	state := program.screenState()
+	if state.Mode == ScreenModeReview {
+		switch state.ActiveView().Number {
+		case mainPanelViewNumber, sidePanelUserViewNumber, sidePanelPullRequestsViewNumber:
+			if program.manualRefreshInProgress() {
+				return nil
+			}
+			return program.applyRefreshCurrentPullRequestRequested()
+		}
+	}
+
 	switch state.ActiveView().Number {
 	case sidePanelUserViewNumber:
 		return nil
@@ -196,18 +207,22 @@ func (program *Program) applyRefreshActiveViewRequested() []Cmd {
 		if !program.actionContext().IsPullRequestContext() {
 			return nil
 		}
-		target, ok := program.selectedPullRequestActionTarget()
-		if !ok {
-			return nil
-		}
-		summary, ok := program.currentPullRequestSummary()
-		if !ok {
-			return nil
-		}
-		return program.applyRefreshPullRequestRequested(MsgRefreshPullRequestRequested{Target: target, Summary: summary})
+		return program.applyRefreshCurrentPullRequestRequested()
 	default:
 		return nil
 	}
+}
+
+func (program *Program) applyRefreshCurrentPullRequestRequested() []Cmd {
+	target, ok := program.selectedPullRequestActionTarget()
+	if !ok {
+		return nil
+	}
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		return nil
+	}
+	return program.applyRefreshPullRequestRequested(MsgRefreshPullRequestRequested{Target: target, Summary: summary})
 }
 
 func (program *Program) applyExecuteSelectedActionsPopupActionRequested() []Cmd {

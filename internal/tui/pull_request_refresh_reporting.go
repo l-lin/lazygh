@@ -31,7 +31,10 @@ func (program *Program) beginManualRefresh(successMessage string, pendingOperati
 		return updatedState
 	})
 	if started {
-		statusOperationID := program.startStatusLineOperation(statusLineManualRefreshOperation(successMessage))
+		statusOperationID := program.startStatusLineOperation(statusLineManualRefreshOperation(
+			successMessage,
+			program.screenState().Mode == ScreenModeReview,
+		))
 		program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
 			return state.withStatusOperationID(statusOperationID)
 		})

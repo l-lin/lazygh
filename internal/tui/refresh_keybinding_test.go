@@ -309,6 +309,161 @@ func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltR_ThenItReloadsTh
 	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
 }
 
+func TestRefreshActiveView_GivenStandardReviewFocusInViewsZeroOneOrTwo_WhenPressingConfiguredRefresh_ThenItReloadsTheWholePullRequest(t *testing.T) {
+	testCases := []struct {
+		name     string
+		focus    Focus
+		viewName string
+	}{
+		{name: "view zero", focus: FocusDetailView, viewName: viewDetailName},
+		{name: "view one", focus: FocusUserView, viewName: viewUserName},
+		{name: "view two", focus: FocusPullRequestsView, viewName: viewPullRequestsName},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			staleDiff := given_reviewSessionPullRequestDiff()
+			loader := &fakePullRequestDetailLoader{
+				startReviewID: "PRR_pending",
+				details: map[string]githubcli.PullRequestDetail{
+					"acme/widgets#42": {
+						Title:       "Stale PR",
+						Number:      42,
+						Body:        "Stale body",
+						BaseRefName: "main",
+						HeadRefName: "feature-old",
+						State:       "OPEN",
+					},
+				},
+				diffs: map[string]githubcli.PullRequestDiff{
+					"acme/widgets#42": staleDiff,
+				},
+			}
+			subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+			gui := given_headlessGui(t)
+			defer gui.Close()
+			subject.configureGUI(gui)
+
+			then_noError(t, subject.layout(gui))
+			then_noError(t, given_startingReviewMode(t, gui, subject))
+			switch testCase.focus {
+			case FocusDetailView:
+				then_noError(t, subject.focusDetailView(gui, nil))
+			case FocusUserView:
+				then_noError(t, subject.focusUserView(gui, nil))
+			case FocusPullRequestsView:
+				then_noError(t, subject.focusPullRequestsView(gui, nil))
+			}
+
+			initialDetailCalls := len(loader.detailCalls)
+			initialDiffCalls := len(loader.diffCalls)
+			activeView := subject.screenState().ActiveView().Number
+			loader.details["acme/widgets#42"] = githubcli.PullRequestDetail{
+				Title:       "Refreshed PR",
+				Number:      42,
+				Body:        "Refreshed body",
+				BaseRefName: "main",
+				HeadRefName: "feature-refresh",
+				State:       "OPEN",
+			}
+			refreshedDiff := staleDiff
+			refreshedDiff.UnifiedDiff = strings.ReplaceAll(refreshedDiff.UnifiedDiff, "+new line", "+fresh line")
+			loader.diffs["acme/widgets#42"] = refreshedDiff
+
+			view, actualErr := gui.View(testCase.viewName)
+			then_noError(t, actualErr)
+			handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), testCase.viewName, 'r', gocui.ModAlt)
+			then_noError(t, handler(gui, view))
+
+			if actual := len(loader.detailCalls); actual != initialDetailCalls+1 {
+				t.Fatalf("expected one additional detail load, initial %d actual %d", initialDetailCalls, actual)
+			}
+			if actual := len(loader.diffCalls); actual != initialDiffCalls+1 {
+				t.Fatalf("expected one additional diff load, initial %d actual %d", initialDiffCalls, actual)
+			}
+			if actual := len(loader.listPullRequestCommands); actual != 0 {
+				t.Fatalf("expected no browser pull request list reloads, actual %d", actual)
+			}
+			if actual := subject.screenState().Mode; actual != ScreenModeReview {
+				t.Fatalf("expected standard review mode to remain active, actual %v", actual)
+			}
+			if actual := subject.screenState().ActiveView().Number; actual != activeView {
+				t.Fatalf("expected active view %d to remain active, actual %d", activeView, actual)
+			}
+			if actual := subject.pullRequestDetailCache["acme/widgets#42"].detail.Body; actual != "Refreshed body" {
+				t.Fatalf("expected refreshed detail body %q, actual %q", "Refreshed body", actual)
+			}
+
+			view, actualErr = gui.View(viewDetailName)
+			then_noError(t, actualErr)
+			if testCase.focus == FocusUserView {
+				if !strings.Contains(view.Buffer(), "Refreshed body") || strings.Contains(view.Buffer(), "Stale body") {
+					t.Fatalf("expected refreshed description to replace stale content, actual %q", view.Buffer())
+				}
+			} else if !strings.Contains(view.Buffer(), "fresh line") || strings.Contains(view.Buffer(), "new line") {
+				t.Fatalf("expected refreshed diff to replace stale content, actual %q", view.Buffer())
+			}
+			then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
+		})
+	}
+}
+
+func TestRefreshActiveView_GivenStandardReviewFocusAndConfiguredRefreshOverride_WhenPressingTheOverride_ThenItReloadsTheWholePullRequest(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "Stale PR",
+				Number:      42,
+				Body:        "Stale body",
+				BaseRefName: "main",
+				HeadRefName: "feature-old",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"global": {
+			"refresh": {"x"},
+		},
+	})
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, given_startingReviewMode(t, gui, subject))
+	then_noError(t, subject.focusUserView(gui, nil))
+	initialDetailCalls := len(loader.detailCalls)
+	initialDiffCalls := len(loader.diffCalls)
+	loader.details["acme/widgets#42"] = githubcli.PullRequestDetail{
+		Title:       "Refreshed PR",
+		Number:      42,
+		Body:        "Refreshed body",
+		BaseRefName: "main",
+		HeadRefName: "feature-refresh",
+		State:       "OPEN",
+	}
+
+	view, actualErr := gui.View(viewUserName)
+	then_noError(t, actualErr)
+	handler := given_handlerForBinding(t, subject.keybindingSpecs(), viewUserName, 'x')
+	then_noError(t, handler(gui, view))
+
+	if actual := len(loader.detailCalls); actual != initialDetailCalls+1 || loader.detailCalls[len(loader.detailCalls)-1] != "acme/widgets#42" {
+		t.Fatalf("expected one configured refresh detail load after %d initial loads, actual %v", initialDetailCalls, loader.detailCalls)
+	}
+	if actual := len(loader.diffCalls); actual != initialDiffCalls+1 {
+		t.Fatalf("expected one configured refresh diff load after %d initial loads, actual %v", initialDiffCalls, loader.diffCalls)
+	}
+	if actual := len(loader.listPullRequestCommands); actual != 0 {
+		t.Fatalf("expected no browser pull request list reloads, actual %d", actual)
+	}
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
+}
+
 func TestRefreshActiveView_GivenPullRequestsFocus_WhenPressingAltRAndTheListReloadIsAsync_ThenItShowsTheCommandUntilTheReloadFinishes(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{myPullRequests: []githubcli.PullRequest{{
 		Title:      "Refreshed list PR",
@@ -515,17 +670,63 @@ func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltRAndTheRefreshIsA
 		t.Fatalf("expected one queued detail refresh and one queued diff refresh, actual %d", len(asyncRunner.runs))
 	}
 	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
-	then_statusLineContains(t, gui, "Refreshing PR list")
+	then_statusLineContains(t, gui, "Refreshing PR")
 	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
 
 	given_runQueuedAsync(t, asyncRunner, 0)
 
-	then_statusLineContains(t, gui, "Refreshing PR list")
+	then_statusLineContains(t, gui, "Refreshing PR")
 	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
 
 	given_runQueuedAsync(t, asyncRunner, 1)
 
 	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
+}
+
+func TestRefreshActiveView_GivenStandardReviewRefreshIsPending_WhenPressingConfiguredRefreshAgain_ThenItDoesNotQueueDuplicateDetailOrDiffLoads(t *testing.T) {
+	loader := &fakePullRequestDetailLoader{
+		startReviewID: "PRR_pending",
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {
+				Title:       "Stale PR",
+				Number:      42,
+				Body:        "Stale body",
+				BaseRefName: "main",
+				HeadRefName: "feature-old",
+				State:       "OPEN",
+			},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{"acme/widgets#42": given_reviewSessionPullRequestDiff()},
+	}
+	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	asyncRunner := &capturingAsyncRunner{}
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	then_noError(t, subject.layout(gui))
+	then_noError(t, given_startingReviewMode(t, gui, subject))
+	subject.asyncRunner = asyncRunner
+	view, actualErr := gui.View(viewPullRequestsName)
+	then_noError(t, actualErr)
+	handler := given_handlerForBindingWithModifier(t, subject.keybindingSpecs(), viewPullRequestsName, 'r', gocui.ModAlt)
+	then_noError(t, handler(gui, view))
+
+	if actual := len(asyncRunner.runs); actual != 2 {
+		t.Fatalf("expected one queued detail and one queued diff load, actual %d", actual)
+	}
+	if subject.manualRefreshState.feedback == nil || subject.manualRefreshState.feedback.pendingOperations != 2 {
+		t.Fatalf("expected two aggregate pending operations, actual %+v", subject.manualRefreshState.feedback)
+	}
+	then_noError(t, handler(gui, view))
+
+	if actual := len(asyncRunner.runs); actual != 2 {
+		t.Fatalf("expected the repeated refresh to keep two queued loads, actual %d", actual)
+	}
+	if actual := subject.manualRefreshState.feedback.pendingOperations; actual != 2 {
+		t.Fatalf("expected repeated refresh to keep two aggregate pending operations, actual %d", actual)
+	}
+	then_statusLineContains(t, gui, "Refreshing PR")
 }
 
 func TestRefreshActiveView_GivenStoryReviewFocus_WhenPressingAltR_ThenItEvictsTheCachedStoryAndReExecutesStoryReviewMode(t *testing.T) {

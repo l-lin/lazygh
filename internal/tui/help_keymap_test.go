@@ -314,6 +314,11 @@ func TestHelpPopup_GivenReviewDescriptionFocus_WhenTogglingHelp_ThenItShowsTheBr
 		},
 	}
 	subject := given_pullRequestCommentProgram(given_pullRequestCommentModel(), loader)
+	subject.ApplyKeymapOverrides(appconfig.KeymapOverrides{
+		"global": {
+			"refresh": {"x"},
+		},
+	})
 	gui := given_headlessGui(t)
 	defer gui.Close()
 	subject.configureGUI(gui)
@@ -330,6 +335,7 @@ func TestHelpPopup_GivenReviewDescriptionFocus_WhenTogglingHelp_ThenItShowsTheBr
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR in browser", "Alt+B")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Refresh PR", "x")
 }
 
 func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileAndCommentMotions(t *testing.T) {
@@ -355,6 +361,7 @@ func TestHelpPopup_GivenReviewFilesFocus_WhenTogglingHelp_ThenItShowsReviewFileA
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Open PR in browser", "Alt+B")
+	then_helpEntryUsesKey(t, actualBuffer, "Refresh PR", "Alt+R")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next unresolved comment", "[C/]C")
@@ -387,6 +394,7 @@ func TestHelpPopup_GivenReviewDiffFocus_WhenTogglingHelp_ThenItShowsReviewFileAn
 	then_noError(t, actualErr)
 	actualBuffer := helpView.Buffer()
 	then_helpEntryUsesKey(t, actualBuffer, "Open PR in browser", "Alt+B")
+	then_helpEntryUsesKey(t, actualBuffer, "Refresh PR", "Alt+R")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next file", "[[/]]")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next comment", "[c/]c")
 	then_helpEntryUsesKey(t, actualBuffer, "Previous/next unresolved comment", "[C/]C")
