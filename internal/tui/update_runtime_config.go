@@ -10,8 +10,8 @@ func (program *Program) routeRuntimeConfigMessages(msg Msg) updateResult {
 	case MsgKeymapOverridesApplied:
 		program.applyKeymapOverridesApplied(actual)
 		return handledUpdate(nil)
-	case MsgPullRequestSearchesApplied:
-		return handledUpdate(program.applyPullRequestSearchesApplied(actual))
+	case MsgPullRequestConfigApplied:
+		return handledUpdate(program.applyPullRequestConfigApplied(actual))
 	case MsgDisplayConfigApplied:
 		program.applyDisplayConfigApplied(actual)
 		return handledUpdate(nil)

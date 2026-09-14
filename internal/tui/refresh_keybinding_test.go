@@ -114,7 +114,7 @@ func TestRefreshActiveView_GivenPullRequestsFocus_WhenPressingAltR_ThenItReloads
 	if strings.Contains(pullRequestsView.Buffer(), "First PR") {
 		t.Fatalf("expected pull requests buffer to drop %q after refreshing, actual %q", "First PR", pullRequestsView.Buffer())
 	}
-	then_statusLineDoesNotContain(t, gui, pullRequestListRefreshSuccessMessage)
+	then_statusLineContains(t, gui, pullRequestListRefreshSuccessMessage)
 }
 
 func TestRefreshActiveView_GivenNotificationsFocus_WhenPressingAltR_ThenItReloadsTheNotificationsList(t *testing.T) {
@@ -147,7 +147,7 @@ func TestRefreshActiveView_GivenNotificationsFocus_WhenPressingAltR_ThenItReload
 	if strings.Contains(notificationsView.Buffer(), "Add notifications") {
 		t.Fatalf("expected notifications buffer to drop %q after refreshing, actual %q", "Add notifications", notificationsView.Buffer())
 	}
-	then_statusLineDoesNotContain(t, gui, notificationsRefreshSuccessMessage)
+	then_statusLineContains(t, gui, "Refreshing issue")
 }
 
 func TestRefreshActiveView_GivenNotificationsFocus_WhenTheReloadFails_ThenItShowsATransientErrorPopup(t *testing.T) {
@@ -239,7 +239,7 @@ func TestRefreshActiveView_GivenPullRequestDetailFocus_WhenPressingAltR_ThenItRe
 	if strings.Contains(detailView.Buffer(), "Old body") {
 		t.Fatalf("expected detail buffer to drop %q after refreshing, actual %q", "Old body", detailView.Buffer())
 	}
-	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
 }
 
 func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltR_ThenItReloadsTheActivePullRequestDetailAndDiff(t *testing.T) {
@@ -306,7 +306,7 @@ func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltR_ThenItReloadsTh
 	if !strings.Contains(detailView.Buffer(), "fresh line") {
 		t.Fatalf("expected detail buffer to contain %q after refreshing, actual %q", "fresh line", detailView.Buffer())
 	}
-	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
 }
 
 func TestRefreshActiveView_GivenPullRequestsFocus_WhenPressingAltRAndTheListReloadIsAsync_ThenItShowsTheCommandUntilTheReloadFinishes(t *testing.T) {
@@ -349,7 +349,7 @@ func TestRefreshActiveView_GivenPullRequestsFocus_WhenPressingAltRAndTheListRelo
 	if len(loader.listPullRequestCommands) != 1 {
 		t.Fatalf("expected one pull request list refresh call after running the queue, actual %d", len(loader.listPullRequestCommands))
 	}
-	then_statusLineDoesNotContain(t, gui, pullRequestListRefreshSuccessMessage)
+	then_statusLineContains(t, gui, pullRequestListRefreshSuccessMessage)
 }
 
 func TestRefreshActiveView_GivenNotificationsFocus_WhenPressingAltRAndTheReloadIsAsync_ThenItShowsTheCommandUntilTheReloadFinishes(t *testing.T) {
@@ -442,13 +442,12 @@ func TestRefreshActiveView_GivenPullRequestDetailFocus_WhenPressingAltRAndTheRef
 		t.Fatalf("expected the pull request detail call to wait for the queued run, actual %v", loader.detailCalls)
 	}
 	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
-	then_statusLineContains(t, gui, subject.selectedPullRequestDetailLoadingStatus())
+	then_statusLineContains(t, gui, "Refreshing PR list")
 	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
 
 	given_runQueuedAsync(t, asyncRunner, 0)
 
-	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
-	then_statusLineContains(t, gui, "Running `gh")
+	then_statusLineContains(t, gui, "Refreshing PR list")
 	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
 
 	given_runQueuedAsync(t, asyncRunner, 1)
@@ -459,7 +458,7 @@ func TestRefreshActiveView_GivenPullRequestDetailFocus_WhenPressingAltRAndTheRef
 	if len(loader.listPullRequestCommands) != 1 {
 		t.Fatalf("expected one pull request list refresh call, actual %d", len(loader.listPullRequestCommands))
 	}
-	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
 }
 
 func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltRAndTheRefreshIsAsync_ThenItShowsTheDiffCommandUntilTheRefreshFinishes(t *testing.T) {
@@ -516,18 +515,17 @@ func TestRefreshActiveView_GivenReviewDiffFocus_WhenPressingAltRAndTheRefreshIsA
 		t.Fatalf("expected one queued detail refresh and one queued diff refresh, actual %d", len(asyncRunner.runs))
 	}
 	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
-	then_statusLineContains(t, gui, subject.selectedPullRequestDetailLoadingStatus())
+	then_statusLineContains(t, gui, "Refreshing PR list")
 	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
 
 	given_runQueuedAsync(t, asyncRunner, 0)
 
-	then_statusLineContains(t, gui, string(loadingSpinnerFrames[0]))
-	then_statusLineContains(t, gui, "Running `gh api repos/acme/widgets/pulls/42 -H 'Accept: application/vnd.github.v3.diff'`.")
+	then_statusLineContains(t, gui, "Refreshing PR list")
 	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
 
 	given_runQueuedAsync(t, asyncRunner, 1)
 
-	then_statusLineDoesNotContain(t, gui, pullRequestRefreshSuccessMessage)
+	then_statusLineContains(t, gui, pullRequestRefreshSuccessMessage)
 }
 
 func TestRefreshActiveView_GivenStoryReviewFocus_WhenPressingAltR_ThenItEvictsTheCachedStoryAndReExecutesStoryReviewMode(t *testing.T) {

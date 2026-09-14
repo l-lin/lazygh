@@ -16,7 +16,7 @@ import (
 
 type configurableRunner interface {
 	ApplyKeymapOverrides(appconfig.KeymapOverrides)
-	ApplyPullRequestSearches([]appconfig.PullRequestSearch)
+	ApplyPullRequestConfig(appconfig.PullRequestConfig)
 	ApplyDisplayConfig(appconfig.DisplayConfig)
 	ApplyLinksConfig(appconfig.LinksConfig)
 	ApplyStoryReviewConfig(story.Config)
@@ -99,7 +99,7 @@ func runWithIO(args []string, stdout io.Writer, version string, loadConfig func(
 
 	runner := newRunner()
 	runner.ApplyKeymapOverrides(configuration.Keymaps)
-	runner.ApplyPullRequestSearches(configuration.PullRequests)
+	runner.ApplyPullRequestConfig(configuration.ResolvedPullRequestConfig())
 	runner.ApplyDisplayConfig(configuration.ResolvedDisplay())
 	runner.ApplyLinksConfig(configuration.ResolvedLinks())
 	runner.ApplyStoryReviewConfig(configuration.ResolvedStoryReview())

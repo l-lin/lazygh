@@ -11,6 +11,7 @@ func (program *Program) statusLinePresenter() statusLinePresenter {
 		feedbackMessage:                       program.feedbackMessage,
 		statusLineOperationLoadingMessage:     program.statusLineOperationLoadingStatus(),
 		statusLineOperationFailureMessage:     program.statusLineOperationFailureStatus(),
+		statusLineOperationSuccessMessage:     program.statusLineOperationSuccessStatus(),
 		statusLineOperationStarted:            program.statusLineOperationStarted(),
 		loadingSpinner:                        program.loadingSpinnerFrame(),
 		storyReviewLoading:                    program.storyReviewLoading,

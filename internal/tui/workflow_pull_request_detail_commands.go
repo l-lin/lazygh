@@ -30,7 +30,8 @@ type hydratePullRequestDetailFromCacheCmd struct {
 }
 
 type loadPullRequestDetailCmd struct {
-	summary githubdomain.PullRequest
+	summary                 githubdomain.PullRequest
+	ScheduledRefreshBatchID uint64
 }
 
 type hydratePullRequestDiffFromCacheCmd struct {
@@ -38,7 +39,8 @@ type hydratePullRequestDiffFromCacheCmd struct {
 }
 
 type loadPullRequestDiffCmd struct {
-	summary githubdomain.PullRequest
+	summary                 githubdomain.PullRequest
+	ScheduledRefreshBatchID uint64
 }
 
 func newPullRequestDetailWorkflowRuntime(program *Program, gui *gocui.Gui) pullRequestDetailWorkflowRuntime {
@@ -133,14 +135,23 @@ func (command hydratePullRequestDetailFromCacheCmd) execute(program *Program, gu
 }
 
 func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
+	if program != nil && command.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(command.ScheduledRefreshBatchID) {
+		program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		return
+	}
 	runtime := newPullRequestDetailWorkflowRuntime(program, gui)
 	if runtime.getPullRequestDetail == nil || runtime.dispatchAsyncMessage == nil {
+		if command.ScheduledRefreshBatchID != 0 {
+			program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		}
 		return
 	}
 
 	summary := command.summary
 	runWorkflowCommandAsync(runtime.runAsync, func() {
-		runtime.dispatchAsyncMessage(loadPullRequestDetailResult(runtime, summary))
+		message := loadPullRequestDetailResult(runtime, summary)
+		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
+		runtime.dispatchAsyncMessage(message)
 	})
 }
 
@@ -176,14 +187,23 @@ func (command hydratePullRequestDiffFromCacheCmd) execute(program *Program, gui 
 }
 
 func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {
+	if program != nil && command.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(command.ScheduledRefreshBatchID) {
+		program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		return
+	}
 	runtime := newPullRequestDiffWorkflowRuntime(program, gui)
 	if runtime.getPullRequestDiff == nil || runtime.dispatchAsyncMessage == nil {
+		if command.ScheduledRefreshBatchID != 0 {
+			program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		}
 		return
 	}
 
 	summary := command.summary
 	runWorkflowCommandAsync(runtime.runAsync, func() {
-		runtime.dispatchAsyncMessage(loadPullRequestDiffResult(runtime, summary))
+		message := loadPullRequestDiffResult(runtime, summary)
+		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
+		runtime.dispatchAsyncMessage(message)
 	})
 }
 

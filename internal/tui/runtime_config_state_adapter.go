@@ -18,9 +18,17 @@ func (program *Program) setRuntimeKeymapOverrides(overrides appconfig.KeymapOver
 	})
 }
 
+func (program *Program) setRuntimePullRequestConfig(config appconfig.PullRequestConfig) {
+	program.updateRuntimeConfig(func(state runtimeConfigState) runtimeConfigState {
+		return state.withPullRequestConfig(config)
+	})
+}
+
 func (program *Program) setRuntimePullRequestSearches(searches []appconfig.PullRequestSearch) {
 	program.updateRuntimeConfig(func(state runtimeConfigState) runtimeConfigState {
-		return state.withPullRequestSearches(searches)
+		config := state.pullRequestConfig
+		config.Searches = append([]appconfig.PullRequestSearch(nil), searches...)
+		return state.withPullRequestConfig(config)
 	})
 }
 

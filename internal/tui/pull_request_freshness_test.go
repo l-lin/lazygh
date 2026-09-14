@@ -431,8 +431,8 @@ func TestPullRequestsLoaded_GivenOneTabRefreshFailsAndAnotherSucceeds_WhenApplyi
 		},
 	})
 
-	if subject.statusLinePresenter().Text() != "" {
-		t.Fatalf("expected the newer successful operation to clear the older failure, actual %q", subject.statusLinePresenter().Text())
+	if actual := subject.statusLinePresenter().Text(); actual != iconStatusSuccess+" Refreshing PR list" {
+		t.Fatalf("expected the newer successful operation to retain success, actual %q", actual)
 	}
 
 	subject.setPullRequestListStatusOperationID(MyPullRequestsTab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
@@ -442,8 +442,8 @@ func TestPullRequestsLoaded_GivenOneTabRefreshFailsAndAnotherSucceeds_WhenApplyi
 			givenFreshnessTestPullRequest(10, "2026-05-05T10:00:00Z"),
 		},
 	})
-	if subject.statusLinePresenter().Text() != "" {
-		t.Fatalf("expected the successful operation to leave the status line clear, actual %q", subject.statusLinePresenter().Text())
+	if actual := subject.statusLinePresenter().Text(); actual != iconStatusSuccess+" Refreshing PR list" {
+		t.Fatalf("expected the successful operation to retain success, actual %q", actual)
 	}
 }
 

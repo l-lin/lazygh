@@ -149,7 +149,7 @@ func (program *Program) applyPersistentCacheCleared(message MsgPersistentCacheCl
 		return program.applyErrorReportedMessage(program.actionsPopupWidget.errorMessage)
 	}
 	program.closeActionsPopupState()
-	program.setFeedback(program.model.Focus(), clearCacheSuccessMessage)
+	program.setSuccessFeedback(program.model.Focus(), clearCacheSuccessMessage)
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (program *Program) clearCachedData() error {
 	program.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
 		return store.withoutPullRequestFreshness()
 	})
-	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestSearches))
+	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(program.runtimeConfig.pullRequestConfig.Searches))
 	program.syncPastedPullRequestTab()
 	program.model.SetNotifications([]Item{notificationsLoadingItem()})
 	return nil
@@ -273,12 +273,13 @@ func (program *Program) applyPullRequestCustomSearchSubmitted(message MsgPullReq
 		return nil
 	}
 
-	customTab := program.upsertPullRequestCustomSearch(appconfig.PullRequestSearch{Label: pullRequestCustomSearchLabel, Command: command})
-	return []Cmd{reloadPullRequestsTabCmd{tab: customTab}}
+	customTab := program.upsertPullRequestCustomSearch(appconfig.PullRequestSearch{Label: pullRequestCustomSearchLabel, Command: command, AutoRefresh: true})
+	return []Cmd{reloadPullRequestsTabCmd{tab: customTab}, program.reconfigurePullRequestRefreshScheduler()}
 }
 
 func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullRequestSearch) PullRequestTab {
-	searches := append([]appconfig.PullRequestSearch(nil), appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)...)
+	program.cancelScheduledPullRequestRefreshBatches()
+	searches := append([]appconfig.PullRequestSearch(nil), appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestConfig.Searches)...)
 	customTab, customTabExists := pullRequestCustomSearchTab(searches)
 	preservedRows := make(map[PullRequestTab][]PullRequestRow, len(program.model.PullRequestTabs()))
 	for _, tab := range program.model.PullRequestTabs() {
@@ -297,7 +298,7 @@ func (program *Program) upsertPullRequestCustomSearch(search appconfig.PullReque
 
 	program.setRuntimePullRequestSearches(searches)
 	program.queuePullRequestSearchMembershipReconciliation()
-	searches = append([]appconfig.PullRequestSearch(nil), program.runtimeConfig.pullRequestSearches...)
+	searches = append([]appconfig.PullRequestSearch(nil), program.runtimeConfig.pullRequestConfig.Searches...)
 	program.model.SetPullRequestTabs(pullRequestTabSeedsForSearches(searches))
 	for tab, rows := range preservedRows {
 		program.model.SetPullRequestRows(tab, rows)
@@ -371,7 +372,7 @@ func (program *Program) applyOpenReactionPickerRequested(message MsgOpenReaction
 func (program *Program) applyAddReactionRequested(message MsgAddReactionRequested) []Cmd {
 	if reactionGroupViewerHasReacted(message.Target.reactionGroups, message.Content) {
 		program.closeActionsPopupState()
-		program.setFeedback(program.model.Focus(), pullRequestReactionAlreadyAddedMessage)
+		program.setSuccessFeedback(program.model.Focus(), pullRequestReactionAlreadyAddedMessage)
 		return nil
 	}
 
@@ -468,13 +469,13 @@ func (program *Program) applyRefreshPullRequestRequested(message MsgRefreshPullR
 
 func (program *Program) applyPullRequestTitleEditApplied(message MsgPullRequestTitleEditApplied) []Cmd {
 	program.optimisticallyUpdatePullRequestTitle(message.Target.repository, message.Target.number, message.Title)
-	program.setFeedback(message.FeedbackTarget, pullRequestTitleEditSuccessMessage)
+	program.setSuccessFeedback(message.FeedbackTarget, pullRequestTitleEditSuccessMessage)
 	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
 }
 
 func (program *Program) applyPullRequestDescriptionEditApplied(message MsgPullRequestDescriptionEditApplied) []Cmd {
 	program.optimisticallyUpdatePullRequestDescription(message.Target.repository, message.Target.number, message.Body)
-	program.setFeedback(message.FeedbackTarget, pullRequestDescriptionEditSuccessMessage)
+	program.setSuccessFeedback(message.FeedbackTarget, pullRequestDescriptionEditSuccessMessage)
 	return []Cmd{reloadPullRequestsTabCmd{tab: program.model.ActivePullRequestTab()}}
 }
 

@@ -121,7 +121,7 @@ func (program *Program) applyPendingPullRequestReviewSubmitted(message MsgPendin
 	program.invalidatePullRequestDiff(target.repository, target.number)
 	program.setPendingPullRequestReviewStateByIdentity(target.repository, target.number, "")
 	program.restorePullRequestBrowserFromReviewMode()
-	program.setFeedback(target.sourceFocus, pullRequestReviewSuccessMessage)
+	program.setSuccessFeedback(target.sourceFocus, pullRequestReviewSuccessMessage)
 }
 
 func popupPullRequestActionTargetIdentity(target pullRequestActionTarget) (string, int, bool) {

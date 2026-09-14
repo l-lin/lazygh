@@ -12,11 +12,12 @@ type MsgConnectedUserLoaded struct {
 }
 
 type MsgPullRequestsLoaded struct {
-	Tab          PullRequestTab
-	PullRequests []githubdomain.PullRequest
-	Err          error
-	Generation   uint64
-	Source       pullRequestLoadSource
+	Tab                     PullRequestTab
+	PullRequests            []githubdomain.PullRequest
+	Err                     error
+	Generation              uint64
+	Source                  pullRequestLoadSource
+	ScheduledRefreshBatchID uint64
 }
 
 type MsgNotificationsLoaded struct {
@@ -31,12 +32,14 @@ type MsgPullRequestDetailLoaded struct {
 	Err                     error
 	PendingReviewState      pendingPullRequestReviewState
 	PendingReviewStateKnown bool
+	ScheduledRefreshBatchID uint64
 }
 
 type MsgPullRequestDiffLoaded struct {
-	Summary githubdomain.PullRequest
-	RawDiff githubdomain.PullRequestDiff
-	Err     error
+	Summary                 githubdomain.PullRequest
+	RawDiff                 githubdomain.PullRequestDiff
+	Err                     error
+	ScheduledRefreshBatchID uint64
 }
 
 type MsgCommitDiffLoaded struct {

@@ -186,7 +186,24 @@ func (program *Program) applyOpenPullRequestInDetailFullscreen(message MsgOpenPu
 	program.markCurrentPullRequestSeen()
 }
 
+func (program *Program) setSuccessFeedback(target Focus, message string) {
+	trimmedMessage := strings.TrimSpace(message)
+	if trimmedMessage == "" {
+		return
+	}
+	if !strings.HasPrefix(trimmedMessage, iconStatusSuccess) {
+		trimmedMessage = iconStatusSuccess + " " + trimmedMessage
+	}
+	program.updateStatusStore(func(store statusStore) statusStore {
+		return store.withFeedback(trimmedMessage)
+	})
+}
+
 func (program *Program) applyFeedbackSet(message MsgFeedbackSet) {
+	if message.Success {
+		program.setSuccessFeedback(message.Target, message.Message)
+		return
+	}
 	program.setFeedback(message.Target, strings.TrimSpace(message.Message))
 }
 

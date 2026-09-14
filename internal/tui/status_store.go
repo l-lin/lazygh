@@ -5,12 +5,14 @@ import "strings"
 func (store statusStore) withFeedback(message string) statusStore {
 	store.feedbackMessage = strings.TrimSpace(message)
 	store.statusLineOperation.failureMessage = ""
+	store.statusLineOperation.successMessage = ""
 	return store
 }
 
 func (store statusStore) withFailureFeedback(message string) statusStore {
 	store.feedbackMessage = ""
 	store.statusLineOperation.failureMessage = strings.TrimSpace(message)
+	store.statusLineOperation.successMessage = ""
 	return store
 }
 

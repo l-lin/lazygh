@@ -10,26 +10,34 @@ func (program *Program) applyPullRequestsLoadPlanned(message MsgPullRequestsLoad
 		store, _ = store.withNextPullRequestLoadGeneration(message.Tab)
 		return store.withPullRequestsLoadStarted(message.Tab, true).withPullRequestsLoading(message.Tab, true)
 	})
-	program.setPullRequestListStatusOperationID(message.Tab, program.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
+	if message.ScheduledRefreshBatchID == 0 && !program.manualRefreshInProgress() {
+		program.setPullRequestListStatusOperationID(message.Tab, program.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
+	}
 }
 
 func (program *Program) applyNotificationsLoadPlanned() {
 	program.planNotificationsLoad()
-	program.setNotificationsStatusLineOperationID(program.startStatusLineOperation(statusLineRefreshNotificationsOperation()))
+	if !program.manualRefreshInProgress() {
+		program.setNotificationsStatusLineOperationID(program.startStatusLineOperation(statusLineRefreshNotificationsOperation()))
+	}
 }
 
 func (program *Program) applyPullRequestDetailLoadPlanned(message MsgPullRequestDetailLoadPlanned) {
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withPullRequestDetailLoadPlanned(message.Key)
 	})
-	program.setPullRequestDetailStatusOperationID(message.Key, program.startStatusLineOperation(statusLineRefreshPullRequestKeyOperation(program, message.Key)))
+	if message.ScheduledRefreshBatchID == 0 && !program.manualRefreshInProgress() {
+		program.setPullRequestDetailStatusOperationID(message.Key, program.startStatusLineOperation(statusLineRefreshPullRequestKeyOperation(program, message.Key)))
+	}
 }
 
 func (program *Program) applyPullRequestDiffLoadPlanned(message MsgPullRequestDiffLoadPlanned) {
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		return store.withPullRequestDiffLoadPlanned(message.Key)
 	})
-	program.setPullRequestDiffStatusOperationID(message.Key, program.startStatusLineOperation(statusLineRefreshPullRequestKeyOperation(program, message.Key)))
+	if message.ScheduledRefreshBatchID == 0 && !program.manualRefreshInProgress() {
+		program.setPullRequestDiffStatusOperationID(message.Key, program.startStatusLineOperation(statusLineRefreshPullRequestKeyOperation(program, message.Key)))
+	}
 }
 
 func (program *Program) applyIssueDetailLoadPlanned(message MsgIssueDetailLoadPlanned) {

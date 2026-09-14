@@ -1,5 +1,7 @@
 package tui
 
+import "time"
+
 import githubdomain "github.com/l-lin/lazygh/internal/github"
 
 type MsgConnectedUserLoadPlanned struct{}
@@ -12,24 +14,28 @@ const (
 )
 
 type MsgPullRequestsLoadPlanned struct {
-	Tab    PullRequestTab
-	Source pullRequestLoadSource
+	Tab                     PullRequestTab
+	Source                  pullRequestLoadSource
+	ScheduledRefreshBatchID uint64
 }
 
 type MsgScheduledPullRequestRefreshDue struct {
 	Tabs          []PullRequestTab
 	RefreshPasted bool
 	Generation    uint64
+	TriggeredAt   time.Time
 }
 
 type MsgNotificationsLoadPlanned struct{}
 
 type MsgPullRequestDetailLoadPlanned struct {
-	Key string
+	Key                     string
+	ScheduledRefreshBatchID uint64
 }
 
 type MsgPullRequestDiffLoadPlanned struct {
-	Key string
+	Key                     string
+	ScheduledRefreshBatchID uint64
 }
 
 type MsgIssueDetailLoadPlanned struct {

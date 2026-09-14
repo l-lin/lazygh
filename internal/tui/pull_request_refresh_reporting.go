@@ -6,11 +6,14 @@ type manualRefreshFeedbackState struct {
 	successMessage    string
 	pendingOperations int
 	failed            bool
+	firstErr          error
 }
 
 type manualRefreshFeedbackCompletion struct {
-	popupError     string
-	successMessage string
+	popupError        string
+	successMessage    string
+	statusOperationID uint64
+	operationErr      error
 }
 
 func (program *Program) beginManualRefresh(successMessage string, pendingOperations int) {
@@ -28,6 +31,10 @@ func (program *Program) beginManualRefresh(successMessage string, pendingOperati
 		return updatedState
 	})
 	if started {
+		statusOperationID := program.startStatusLineOperation(statusLineManualRefreshOperation(successMessage))
+		program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+			return state.withStatusOperationID(statusOperationID)
+		})
 		program.clearFeedbackMessage()
 	}
 }
@@ -48,7 +55,24 @@ func (program *Program) completeManualRefreshOperation(err error) manualRefreshF
 	if clearFeedback && err == nil {
 		program.clearFeedbackMessage()
 	}
+	if completion.statusOperationID != 0 {
+		program.finishStatusLineOperation(completion.statusOperationID, completion.operationErr)
+	}
+	if completion.successMessage != "" && completion.statusOperationID != 0 {
+		program.setSuccessFeedback(program.model.Focus(), completion.successMessage)
+	}
 	return completion
+}
+
+func (program *Program) manualRefreshStatusOperationID() uint64 {
+	if program == nil {
+		return 0
+	}
+	return program.manualRefreshState.statusOperationID
+}
+
+func (program *Program) manualRefreshInProgress() bool {
+	return program != nil && program.manualRefreshState.feedback != nil
 }
 
 func (program *Program) markManualPullRequestListRefresh(tab PullRequestTab) bool {

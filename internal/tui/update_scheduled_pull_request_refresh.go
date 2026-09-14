@@ -1,32 +1,47 @@
 package tui
 
-import githubdomain "github.com/l-lin/lazygh/internal/github"
+import (
+	"time"
+
+	githubdomain "github.com/l-lin/lazygh/internal/github"
+)
 
 func (program *Program) applyScheduledPullRequestRefreshDue(message MsgScheduledPullRequestRefreshDue) []Cmd {
-	commands := make([]Cmd, 0, len(message.Tabs)+2)
-	if message.Generation == program.pullRequestRefreshScheduleGeneration {
-		seenTabs := make(map[PullRequestTab]struct{}, len(message.Tabs))
-		for _, tab := range message.Tabs {
-			if _, seen := seenTabs[tab]; seen {
-				continue
-			}
-			seenTabs[tab] = struct{}{}
-			search, configured := program.searchBackedPullRequestSearch(tab)
-			if !configured || search.Refresh <= 0 || program.isPastedPullRequestTab(tab) {
-				continue
-			}
-			commands = append(commands, scheduledPullRequestListReloadCmd{tab: tab})
-		}
-		if message.RefreshPasted {
-			pasted := program.scheduledPastedPullRequestRefresh()
-			if len(pasted.detailSummaries) > 0 {
-				commands = append(commands, pasted)
-			}
-		}
+	if message.Generation != program.pullRequestRefreshScheduleGeneration || program.runtimeConfig.pullRequestConfig.Refresh <= 0 {
+		return []Cmd{acknowledgePullRequestRefreshDueCmd{generation: message.Generation}}
 	}
 
-	// The scheduler stays backpressured until every refresh command has been planned.
-	return append(commands, acknowledgePullRequestRefreshDueCmd{generation: message.Generation})
+	triggeredAt := message.TriggeredAt
+	if triggeredAt.IsZero() {
+		triggeredAt = time.Now()
+	}
+	batchID := program.beginScheduledPullRequestRefreshBatch(message.Generation, triggeredAt)
+	if batchID == 0 {
+		return []Cmd{acknowledgePullRequestRefreshDueCmd{generation: message.Generation}}
+	}
+
+	commands := make([]Cmd, 0, len(message.Tabs)+2)
+	seenTabs := make(map[PullRequestTab]struct{}, len(message.Tabs))
+	for _, tab := range message.Tabs {
+		if _, seen := seenTabs[tab]; seen {
+			continue
+		}
+		seenTabs[tab] = struct{}{}
+		if program.isPastedPullRequestTab(tab) || !program.pullRequestSearchAutoRefreshEnabled(tab) {
+			continue
+		}
+		commands = append(commands, scheduledPullRequestListReloadCmd{tab: tab, batchID: batchID})
+	}
+	if message.RefreshPasted {
+		pasted := program.scheduledPastedPullRequestRefresh()
+		commands = append(commands, scheduledPullRequestRefreshCmd{
+			detailSummaries: pasted.detailSummaries,
+			diffSummaries:   pasted.diffSummaries,
+			batchID:         batchID,
+		})
+	}
+	commands = append(commands, finishScheduledPullRequestRefreshPlanningCmd{batchID: batchID})
+	return commands
 }
 
 func (program *Program) scheduledPastedPullRequestRefresh() scheduledPullRequestRefreshCmd {

@@ -333,7 +333,7 @@ func (program *Program) queuePullRequestSearchMembershipReconciliation() {
 	if program == nil {
 		return
 	}
-	searches := append([]appconfig.PullRequestSearch(nil), program.runtimeConfig.pullRequestSearches...)
+	searches := append([]appconfig.PullRequestSearch(nil), program.runtimeConfig.pullRequestConfig.Searches...)
 	searches = append(searches, pastedPullRequestsPersistentSearch())
 	program.queuePersistentCacheShellAction(reconcilePullRequestSearchesPersistentCacheAction{searches: searches})
 }

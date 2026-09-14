@@ -116,3 +116,60 @@ func TestTruncateStatusLineText_GivenTextWiderThanTheAvailableWidth_WhenTruncati
 		t.Fatalf("expected truncated status %q, actual %q", expected, actual)
 	}
 }
+
+func TestStatusStore_GivenACompletedSuccessfulOperation_WhenPresentingTheStatusLine_ThenItRetainsTheSuccessLabel(t *testing.T) {
+	subject := *newStatusStore()
+	started, operationID := subject.withStatusLineOperationStarted(statusLineOperationDescriptor{loadingLabel: "Auto-refreshing PRs at 22:08"})
+	actual := started.withStatusLineOperationFinished(operationID, nil)
+
+	expected := iconStatusSuccess + " Auto-refreshing PRs at 22:08"
+	if actual.statusLineOperation.successMessage != expected {
+		t.Fatalf("expected retained success %q, actual %q", expected, actual.statusLineOperation.successMessage)
+	}
+	if actual.statusLineOperationStarted {
+		t.Fatal("expected the completed operation to stop being active")
+	}
+}
+
+func TestStatusLinePresenter_GivenInformationalFeedbackAndAnActiveOperation_WhenPresenting_ThenTheOperationSpinnerTakesPrecedence(t *testing.T) {
+	subject := statusLinePresenter{
+		feedbackMessage:                   "Saved",
+		statusLineOperationLoadingMessage: "Auto-refreshing PRs at 22:08",
+		statusLineOperationStarted:        true,
+		loadingSpinner:                    string(loadingSpinnerFrames[0]),
+	}
+
+	if actual := subject.Text(); actual != string(loadingSpinnerFrames[0])+" Auto-refreshing PRs at 22:08" {
+		t.Fatalf("expected the active operation to win, actual %q", actual)
+	}
+}
+
+func TestProgram_GivenSuccessFeedbackAlreadyHasTheSuccessIcon_WhenSettingIt_ThenItDoesNotDuplicateTheIcon(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	subject.setSuccessFeedback(FocusPullRequestsView, iconStatusSuccess+" Saved")
+
+	if actual := subject.feedbackMessage; actual != iconStatusSuccess+" Saved" {
+		t.Fatalf("expected one success icon, actual %q", actual)
+	}
+}
+
+func TestManualRefresh_GivenMultiplePendingOperations_WhenTheFirstCompletes_ThenTheAggregateOperationStaysActive(t *testing.T) {
+	subject := NewProgramWithModel(given_model())
+	subject.beginManualRefresh("Pull requests refreshed", 2)
+
+	subject.completeManualRefreshOperation(nil)
+	if !subject.statusLineOperationStarted() {
+		t.Fatal("expected the aggregate operation to stay active")
+	}
+	if subject.statusLineOperationSuccessStatus() != "" {
+		t.Fatalf("expected no retained success before the final child, actual %q", subject.statusLineOperationSuccessStatus())
+	}
+
+	subject.completeManualRefreshOperation(nil)
+	if subject.statusLineOperationStarted() {
+		t.Fatal("expected the aggregate operation to finish after the final child")
+	}
+	if actual := subject.feedbackMessage; actual != iconStatusSuccess+" Pull requests refreshed" {
+		t.Fatalf("expected aggregate success feedback, actual %q", actual)
+	}
+}

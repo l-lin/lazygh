@@ -397,7 +397,7 @@ func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksA
 			t.Fatalf("expected all notification rows to be marked read, actual %+v", actualRows)
 		}
 	}
-	then_statusLineDoesNotContain(t, gui, notificationMarkedAllReadMessage)
+	then_statusLineContains(t, gui, notificationMarkedAllReadMessage)
 }
 
 func TestActionsPopup_GivenBulkNotificationReadAction_WhenExecuting_ThenItMarksAllLoadedRowsReadBeforeGitHubConfirmsTheMutation(t *testing.T) {

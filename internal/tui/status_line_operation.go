@@ -15,6 +15,7 @@ type statusLineOperationState struct {
 	loadingLabel   string
 	failureLabel   string
 	failureMessage string
+	successMessage string
 }
 
 func (store statusStore) withStatusLineOperationStarted(descriptor statusLineOperationDescriptor) (statusStore, uint64) {
@@ -50,17 +51,20 @@ func (store statusStore) withStatusLineOperationFinished(operationID uint64, ope
 	}
 
 	operation := store.statusLineOperation
-	store.statusLineOperation = statusLineOperationState{}
+	loadingLabel := operation.loadingLabel
+	operation.loadingLabel = ""
+	store.statusLineOperationStarted = false
 	if operationErr == nil {
-		return store
+		operation.successMessage = iconStatusSuccess + " " + loadingLabel
+		operation.failureMessage = ""
+	} else {
+		operation.successMessage = ""
+		failureLabel := strings.TrimSpace(operation.failureLabel)
+		if failureLabel != "" {
+			operation.failureMessage = formatStatusLineFailure(failureLabel, operationErr)
+		}
 	}
-
-	failureLabel := strings.TrimSpace(operation.failureLabel)
-	if failureLabel == "" {
-		return store
-	}
-
-	store.statusLineOperation.failureMessage = formatStatusLineFailure(failureLabel, operationErr)
+	store.statusLineOperation = operation
 	return store
 }
 
@@ -105,6 +109,13 @@ func (program *Program) startStatusLineOperation(descriptor statusLineOperationD
 	if program == nil || program.statusStore == nil {
 		return 0
 	}
+	program.cancelScheduledPullRequestRefreshBatches()
+	if program.manualRefreshStatusOperationID() != 0 {
+		program.updateManualRefreshState(func(state manualRefreshStateModel) manualRefreshStateModel {
+			state.statusOperationID = 0
+			return state
+		})
+	}
 
 	var operationID uint64
 	program.updateStatusStore(func(store statusStore) statusStore {
@@ -146,6 +157,27 @@ func (program *Program) statusLineOperationFailureStatus() string {
 		return ""
 	}
 	return strings.TrimSpace(program.statusStore.statusLineOperation.failureMessage)
+}
+
+func (program *Program) statusLineOperationSuccessStatus() string {
+	if program == nil || program.statusStore == nil {
+		return ""
+	}
+	return strings.TrimSpace(program.statusStore.statusLineOperation.successMessage)
+}
+
+func (program *Program) cancelStatusLineOperation(operationID uint64) {
+	if program == nil || program.statusStore == nil || operationID == 0 {
+		return
+	}
+	program.updateStatusStore(func(store statusStore) statusStore {
+		if store.statusLineOperation.id != operationID {
+			return store
+		}
+		store.statusLineOperation = statusLineOperationState{}
+		store.statusLineOperationStarted = false
+		return store
+	})
 }
 
 func (program *Program) statusLineOperationStarted() bool {

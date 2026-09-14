@@ -6,6 +6,7 @@ type statusLinePresenter struct {
 	feedbackMessage                       string
 	statusLineOperationLoadingMessage     string
 	statusLineOperationFailureMessage     string
+	statusLineOperationSuccessMessage     string
 	statusLineOperationStarted            bool
 	loadingSpinner                        string
 	storyReviewLoading                    bool
@@ -22,6 +23,12 @@ type statusLinePresenter struct {
 
 func (presenter statusLinePresenter) Text() string {
 	if message := strings.TrimSpace(presenter.statusLineOperationFailureMessage); message != "" {
+		return message
+	}
+	if presenter.statusLineOperationStarted || strings.TrimSpace(presenter.statusLineOperationLoadingMessage) != "" {
+		return presenter.loadingText()
+	}
+	if message := strings.TrimSpace(presenter.statusLineOperationSuccessMessage); message != "" {
 		return message
 	}
 	if message := strings.TrimSpace(presenter.feedbackMessage); message != "" {

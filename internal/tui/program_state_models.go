@@ -37,10 +37,10 @@ type navigationStateModel struct {
 }
 
 type runtimeConfigState struct {
-	keymapOverrides     appconfig.KeymapOverrides
-	pullRequestSearches []appconfig.PullRequestSearch
-	displayConfig       appconfig.DisplayConfig
-	storyReviewConfig   story.Config
+	keymapOverrides   appconfig.KeymapOverrides
+	pullRequestConfig appconfig.PullRequestConfig
+	displayConfig     appconfig.DisplayConfig
+	storyReviewConfig story.Config
 }
 
 type timingStateModel struct {
@@ -56,4 +56,5 @@ type manualRefreshStateModel struct {
 	pullRequestDiffPending   map[string]bool
 	notificationPending      bool
 	feedback                 *manualRefreshFeedbackState
+	statusOperationID        uint64
 }

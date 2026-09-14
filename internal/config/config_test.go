@@ -114,11 +114,15 @@ comment_on_pull_request = "c"
 	}
 }
 
-func TestLoad_GivenPullRequestSearches_WhenLoading_ThenItPreservesConfiguredLabelsAndPrependsSearchPRs(t *testing.T) {
+func TestLoad_GivenPullRequestSearchesAndGlobalRefresh_WhenLoading_ThenItNormalizesTheNestedConfig(t *testing.T) {
 	configPath := given_configFile(t, `
+[pull_requests]
+refresh = "10m"
+
 [[pull_requests.searches]]
 label = "Mine"
 flags = ["--author", "@me", "--state", "open"]
+auto_refresh = false
 
 [[pull_requests.searches]]
 label = "Escalated"
@@ -128,125 +132,103 @@ flags = "--search \"label:escalated state:open\" --sort updated --order desc"
 	actual, actualErr := when_loading(configPath)
 
 	then_noError(t, actualErr)
-	expected := Config{PullRequests: []PullRequestSearch{
-		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}},
-		{Label: "Escalated", Command: []string{"search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"}},
-	}}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("expected config %+v, actual %+v", expected, actual)
-	}
-}
-
-func TestLoad_GivenAValidGoRefreshDuration_WhenLoading_ThenItPreservesTheInterval(t *testing.T) {
-	configPath := given_configFile(t, `
-[[pull_requests.searches]]
-label = "Mine"
-flags = ["--author", "@me"]
-refresh = "10m"
-`)
-
-	actual, actualErr := when_loading(configPath)
-
-	then_noError(t, actualErr)
-	expected := []PullRequestSearch{{
-		Label:   "Mine",
-		Command: []string{"search", "prs", "--author", "@me"},
+	expected := PullRequestConfig{
 		Refresh: 10 * time.Minute,
-	}}
+		Searches: []PullRequestSearch{
+			{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}, AutoRefresh: false},
+			{Label: "Escalated", Command: []string{"search", "prs", "--search", "label:escalated state:open", "--sort", "updated", "--order", "desc"}, AutoRefresh: true},
+		},
+		PastedPRs: PastedPullRequestConfig{},
+	}
 	if !reflect.DeepEqual(actual.PullRequests, expected) {
-		t.Fatalf("expected pull request searches %+v, actual %+v", expected, actual.PullRequests)
+		t.Fatalf("expected pull request config %+v, actual %+v", expected, actual.PullRequests)
 	}
 }
 
-func TestLoad_GivenManualOrOmittedRefresh_WhenLoading_ThenItUsesManualRefresh(t *testing.T) {
-	configPath := given_configFile(t, `
-[[pull_requests.searches]]
-label = "Manual"
-flags = ["--author", "@me"]
-refresh = " MaNuAl "
-
-[[pull_requests.searches]]
-label = "Omitted"
-flags = ["--review-requested", "@me"]
-`)
-
-	actual, actualErr := when_loading(configPath)
-
-	then_noError(t, actualErr)
-	for _, search := range actual.PullRequests {
-		if search.Refresh != 0 {
-			t.Fatalf("expected manual refresh for %q, actual %s", search.Label, search.Refresh)
-		}
-	}
-}
-
-func TestLoad_GivenAnInvalidRefreshValue_WhenLoading_ThenItKeepsTheSearchAndUsesManualRefresh(t *testing.T) {
-	testCases := []struct {
-		name    string
-		refresh string
-	}{
-		{name: "malformed", refresh: "not-a-duration"},
-		{name: "zero", refresh: "0s"},
-		{name: "negative", refresh: "-1m"},
-		{name: "ISO 8601", refresh: "PT10M"},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			configPath := given_configFile(t, `
-[[pull_requests.searches]]
-label = "Mine"
-flags = ["--author", "@me"]
-refresh = "`+testCase.refresh+`"
-`)
-
+func TestLoad_GivenManualOrInvalidGlobalRefresh_WhenLoading_ThenItUsesManualMode(t *testing.T) {
+	for _, refresh := range []string{"manual", " MaNuAl ", "not-a-duration", "0s", "-1m", "PT10M"} {
+		t.Run(refresh, func(t *testing.T) {
+			configPath := given_configFile(t, "[pull_requests]\nrefresh = \""+refresh+"\"\n")
 			actual, actualErr := when_loading(configPath)
-
 			then_noError(t, actualErr)
-			if len(actual.PullRequests) != 1 || actual.PullRequests[0].Refresh != 0 {
-				t.Fatalf("expected the search to remain with manual refresh, actual %+v", actual.PullRequests)
+			if actual.PullRequests.Refresh != 0 {
+				t.Fatalf("expected manual refresh, actual %s", actual.PullRequests.Refresh)
 			}
 		})
 	}
 }
 
-func TestLoad_GivenANonStringRefreshValue_WhenLoading_ThenItKeepsTheSearchAndUsesManualRefresh(t *testing.T) {
+func TestLoad_GivenNonStringGlobalRefresh_WhenLoading_ThenItUsesManualMode(t *testing.T) {
+	configPath := given_configFile(t, "[pull_requests]\nrefresh = 10\n")
+	actual, actualErr := when_loading(configPath)
+	then_noError(t, actualErr)
+	if actual.PullRequests.Refresh != 0 {
+		t.Fatalf("expected manual refresh, actual %s", actual.PullRequests.Refresh)
+	}
+}
+
+func TestLoad_GivenLegacyPerSearchRefresh_WhenLoading_ThenItIgnoresTheObsoleteKey(t *testing.T) {
 	configPath := given_configFile(t, `
 [[pull_requests.searches]]
 label = "Mine"
 flags = ["--author", "@me"]
-refresh = 10
+refresh = "1h"
 `)
-
 	actual, actualErr := when_loading(configPath)
-
 	then_noError(t, actualErr)
-	if len(actual.PullRequests) != 1 || actual.PullRequests[0].Refresh != 0 {
-		t.Fatalf("expected the search to remain with manual refresh, actual %+v", actual.PullRequests)
+	if actual.PullRequests.Refresh != 0 || len(actual.PullRequests.Searches) != 1 || !actual.PullRequests.Searches[0].AutoRefresh {
+		t.Fatalf("expected legacy search refresh to be ignored, actual %+v", actual.PullRequests)
 	}
 }
 
-func TestConfig_ResolvedPullRequestSearches_GivenAProgrammaticNonPositiveRefresh_WhenResolving_ThenItUsesManualRefresh(t *testing.T) {
-	subject := Config{PullRequests: []PullRequestSearch{
-		{Label: "Zero", Command: []string{"search", "prs", "--author", "@me"}},
-		{Label: "Negative", Command: []string{"search", "prs", "--reviewed-by", "@me"}, Refresh: -time.Minute},
-	}}
+func TestLoad_GivenInvalidAutoRefreshValues_WhenLoading_ThenItDefaultsThemToEnabled(t *testing.T) {
+	configPath := given_configFile(t, `
+[pull_requests.pasted_prs]
+auto_refresh = "yes"
 
-	actual := subject.ResolvedPullRequestSearches()
-
-	for _, search := range actual {
-		if search.Refresh != 0 {
-			t.Fatalf("expected manual refresh for %q, actual %s", search.Label, search.Refresh)
-		}
+[[pull_requests.searches]]
+label = "Mine"
+flags = ["--author", "@me"]
+auto_refresh = "yes"
+`)
+	actual, actualErr := when_loading(configPath)
+	then_noError(t, actualErr)
+	if !actual.PullRequests.PastedPRs.AutoRefresh || !actual.PullRequests.Searches[0].AutoRefresh {
+		t.Fatalf("expected invalid auto-refresh values to enable refresh, actual %+v", actual.PullRequests)
 	}
 }
 
-func TestDefaultPullRequestSearches_WhenReadingDefaults_ThenEverySearchUsesManualRefresh(t *testing.T) {
-	actual := DefaultPullRequestSearches()
+func TestLoad_GivenExplicitPastedAutoRefreshFalse_WhenLoading_ThenItPreservesFalse(t *testing.T) {
+	configPath := given_configFile(t, "[pull_requests.pasted_prs]\nauto_refresh = false\n")
+	actual, actualErr := when_loading(configPath)
+	then_noError(t, actualErr)
+	if actual.PullRequests.PastedPRs.AutoRefresh {
+		t.Fatal("expected explicit pasted auto-refresh false to remain disabled")
+	}
+}
 
-	for _, search := range actual {
-		if search.Refresh != 0 {
-			t.Fatalf("expected default search %q to use manual refresh, actual %s", search.Label, search.Refresh)
+func TestConfig_ResolvedPullRequestConfig_GivenAnEmptyConfig_WhenResolving_ThenItUsesTheGlobalAndNestedDefaults(t *testing.T) {
+	actual := (Config{}).ResolvedPullRequestConfig()
+	if actual.Refresh != 0 || !actual.PastedPRs.AutoRefresh {
+		t.Fatalf("expected manual global refresh and enabled pasted refresh, actual %+v", actual)
+	}
+	if !reflect.DeepEqual(actual.Searches, DefaultPullRequestSearches()) {
+		t.Fatalf("expected default searches %+v, actual %+v", DefaultPullRequestSearches(), actual.Searches)
+	}
+}
+
+func TestConfig_ResolvedPullRequestConfig_GivenAnExplicitPastedFalse_WhenResolving_ThenItPreservesFalse(t *testing.T) {
+	subject := Config{PullRequests: PullRequestConfig{PastedPRs: PastedPullRequestConfig{autoRefreshConfigured: true}}}
+	actual := subject.ResolvedPullRequestConfig()
+	if actual.PastedPRs.AutoRefresh {
+		t.Fatal("expected explicit pasted auto-refresh false to remain disabled")
+	}
+}
+
+func TestDefaultPullRequestSearches_WhenReadingDefaults_ThenEverySearchIsEnabled(t *testing.T) {
+	for _, search := range DefaultPullRequestSearches() {
+		if !search.AutoRefresh {
+			t.Fatalf("expected default search %q to enable auto-refresh", search.Label)
 		}
 	}
 }
@@ -265,9 +247,12 @@ command = ["pr", "list", "--search", "reviewed-by:@me status:open"]
 	actual, actualErr := when_loading(configPath)
 
 	then_noError(t, actualErr)
-	expected := Config{PullRequests: []PullRequestSearch{
-		{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}},
-		{Label: "Reviewed", Command: []string{"search", "prs", "--search", "reviewed-by:@me status:open"}},
+	expected := Config{PullRequests: PullRequestConfig{
+		Searches: []PullRequestSearch{
+			{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}, AutoRefresh: true},
+			{Label: "Reviewed", Command: []string{"search", "prs", "--search", "reviewed-by:@me status:open"}, AutoRefresh: true},
+		},
+		PastedPRs: PastedPullRequestConfig{},
 	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)
@@ -472,10 +457,14 @@ flags = 1
 	actual, actualErr := when_loading(configPath)
 
 	then_noError(t, actualErr)
-	expected := Config{PullRequests: []PullRequestSearch{{
-		Label:   "Valid",
-		Command: []string{"search", "prs", "--review-requested", "@me", "--state", "open"},
-	}}}
+	expected := Config{PullRequests: PullRequestConfig{
+		Searches: []PullRequestSearch{{
+			Label:       "Valid",
+			Command:     []string{"search", "prs", "--review-requested", "@me", "--state", "open"},
+			AutoRefresh: true,
+		}},
+		PastedPRs: PastedPullRequestConfig{},
+	}}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected config %+v, actual %+v", expected, actual)
 	}
@@ -485,9 +474,9 @@ func TestDefaultPullRequestSearches_WhenReadingDefaults_ThenTheySortByLastUpdate
 	actual := DefaultPullRequestSearches()
 
 	expected := []PullRequestSearch{
-		{Label: "My PRs", Command: []string{"search", "prs", "--author", "@me", "--sort", "updated", "--order", "desc", "--state", "open"}},
-		{Label: "My reviews", Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}},
-		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}},
+		{Label: "My PRs", Command: []string{"search", "prs", "--author", "@me", "--sort", "updated", "--order", "desc", "--state", "open"}, AutoRefresh: true},
+		{Label: "My reviews", Command: []string{"search", "prs", "--reviewed-by", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}, AutoRefresh: true},
+		{Label: "Requested", Command: []string{"search", "prs", "--review-requested", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}, AutoRefresh: true},
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected searches %+v, actual %+v", expected, actual)

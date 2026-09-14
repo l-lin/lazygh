@@ -60,7 +60,11 @@ func (program *Program) applyNotificationMutationFinished(message MsgNotificatio
 	}
 
 	program.cacheNotifications(program.loadedNotifications())
-	program.clearFeedbackMessage()
+	if strings.TrimSpace(message.SuccessFeedbackMessage) != "" {
+		program.setSuccessFeedback(program.model.Focus(), message.SuccessFeedbackMessage)
+	} else {
+		program.clearFeedbackMessage()
+	}
 	return nil
 }
 

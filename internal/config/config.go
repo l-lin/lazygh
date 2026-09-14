@@ -27,13 +27,25 @@ var (
 
 type Config struct {
 	Keymaps      KeymapOverrides
-	PullRequests []PullRequestSearch
+	PullRequests PullRequestConfig
 	ThemePreset  string
 	Theme        theme.Palette
 	Display      DisplayConfig
 	Links        LinksConfig
 	StoryReview  story.Config
 	Cache        CacheConfig
+}
+
+type PullRequestConfig struct {
+	Searches  []PullRequestSearch
+	Refresh   time.Duration
+	PastedPRs PastedPullRequestConfig
+}
+
+type PastedPullRequestConfig struct {
+	AutoRefresh bool
+
+	autoRefreshConfigured bool
 }
 
 type CacheConfig struct {
@@ -57,9 +69,9 @@ type LinksConfig struct {
 type KeymapOverrides map[string]map[string][]string
 
 type PullRequestSearch struct {
-	Label   string
-	Command []string
-	Refresh time.Duration
+	Label       string
+	Command     []string
+	AutoRefresh bool
 }
 
 type rawConfig struct {
@@ -83,14 +95,20 @@ type rawDisplayConfig struct {
 }
 
 type rawPullRequestConfig struct {
-	Searches []rawPullRequestSearch `toml:"searches"`
+	Searches  []rawPullRequestSearch      `toml:"searches"`
+	Refresh   any                         `toml:"refresh"`
+	PastedPRs *rawPastedPullRequestConfig `toml:"pasted_prs"`
+}
+
+type rawPastedPullRequestConfig struct {
+	AutoRefresh any `toml:"auto_refresh"`
 }
 
 type rawPullRequestSearch struct {
-	Label   string `toml:"label"`
-	Flags   any    `toml:"flags"`
-	Command any    `toml:"command"`
-	Refresh any    `toml:"refresh"`
+	Label       string `toml:"label"`
+	Flags       any    `toml:"flags"`
+	Command     any    `toml:"command"`
+	AutoRefresh any    `toml:"auto_refresh"`
 }
 
 type rawStoryReviewConfig struct {
@@ -141,7 +159,7 @@ func Load(configPath string) (Config, error) {
 
 	return Config{
 		Keymaps:      normalizeKeymapOverrides(raw.Keymaps),
-		PullRequests: normalizePullRequestSearches(raw.PullRequests.Searches),
+		PullRequests: normalizePullRequestConfig(raw.PullRequests),
 		ThemePreset:  theme.NormalizePresetName(raw.Theme.Preset),
 		Theme:        theme.NormalizePalette(raw.Theme.Palette),
 		Display:      normalizeDisplayConfig(raw.Display),
@@ -154,21 +172,24 @@ func Load(configPath string) (Config, error) {
 func DefaultPullRequestSearches() []PullRequestSearch {
 	return []PullRequestSearch{
 		{
-			Label: "My PRs",
+			Label:       "My PRs",
+			AutoRefresh: true,
 			Command: append(
 				pullRequestSearchCommandPrefix,
 				[]string{"--author", "@me", "--sort", "updated", "--order", "desc", "--state", "open"}...,
 			),
 		},
 		{
-			Label: "My reviews",
+			Label:       "My reviews",
+			AutoRefresh: true,
 			Command: append(
 				pullRequestSearchCommandPrefix,
 				[]string{"--reviewed-by", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}...,
 			),
 		},
 		{
-			Label: "Requested",
+			Label:       "Requested",
+			AutoRefresh: true,
 			Command: append(
 				pullRequestSearchCommandPrefix,
 				[]string{"--review-requested", "@me", "--limit", "100", "--sort", "updated", "--order", "desc", "--state", "open"}...,
@@ -177,8 +198,20 @@ func DefaultPullRequestSearches() []PullRequestSearch {
 	}
 }
 
+func (config Config) ResolvedPullRequestConfig() PullRequestConfig {
+	resolved := PullRequestConfig{
+		Searches:  ResolvePullRequestSearches(config.PullRequests.Searches),
+		Refresh:   normalizePullRequestRefreshDuration(config.PullRequests.Refresh),
+		PastedPRs: config.PullRequests.PastedPRs,
+	}
+	if !config.PullRequests.PastedPRs.autoRefreshConfigured {
+		resolved.PastedPRs.AutoRefresh = true
+	}
+	return resolved
+}
+
 func (config Config) ResolvedPullRequestSearches() []PullRequestSearch {
-	return ResolvePullRequestSearches(config.PullRequests)
+	return config.ResolvedPullRequestConfig().Searches
 }
 
 func (config Config) ResolvedTheme() theme.Palette {
@@ -257,6 +290,13 @@ func defaultLinksOpenCommand(goos string) []string {
 	}
 }
 
+func DefaultPullRequestConfig() PullRequestConfig {
+	return PullRequestConfig{
+		Searches:  DefaultPullRequestSearches(),
+		PastedPRs: PastedPullRequestConfig{AutoRefresh: true, autoRefreshConfigured: true},
+	}
+}
+
 func ResolvePullRequestSearches(searches []PullRequestSearch) []PullRequestSearch {
 	normalized := normalizeResolvedPullRequestSearches(searches)
 	if len(normalized) > 0 {
@@ -279,9 +319,9 @@ func normalizeResolvedPullRequestSearches(searches []PullRequestSearch) []PullRe
 			continue
 		}
 		normalized = append(normalized, PullRequestSearch{
-			Label:   label,
-			Command: command,
-			Refresh: normalizePullRequestRefreshDuration(search.Refresh),
+			Label:       label,
+			Command:     command,
+			AutoRefresh: search.AutoRefresh,
 		})
 	}
 
@@ -301,6 +341,19 @@ func FormatGHCommand(arguments []string) string {
 	return "gh " + strings.Join(normalizedArguments, " ")
 }
 
+func normalizePullRequestConfig(raw rawPullRequestConfig) PullRequestConfig {
+	pasted := PastedPullRequestConfig{}
+	if raw.PastedPRs != nil {
+		pasted.AutoRefresh = normalizeAutoRefresh(raw.PastedPRs.AutoRefresh)
+		pasted.autoRefreshConfigured = true
+	}
+	return PullRequestConfig{
+		Searches:  normalizePullRequestSearches(raw.Searches),
+		Refresh:   normalizePullRequestRefresh(raw.Refresh),
+		PastedPRs: pasted,
+	}
+}
+
 func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequestSearch {
 	if len(rawSearches) == 0 {
 		return nil
@@ -314,9 +367,9 @@ func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequ
 			continue
 		}
 		normalized = append(normalized, PullRequestSearch{
-			Label:   label,
-			Command: command,
-			Refresh: normalizePullRequestRefresh(rawSearch.Refresh),
+			Label:       label,
+			Command:     command,
+			AutoRefresh: normalizeAutoRefresh(rawSearch.AutoRefresh),
 		})
 	}
 
@@ -325,6 +378,14 @@ func normalizePullRequestSearches(rawSearches []rawPullRequestSearch) []PullRequ
 	}
 
 	return normalized
+}
+
+func normalizeAutoRefresh(raw any) bool {
+	value, ok := raw.(bool)
+	if !ok {
+		return true
+	}
+	return value
 }
 
 func normalizePullRequestRefresh(raw any) time.Duration {

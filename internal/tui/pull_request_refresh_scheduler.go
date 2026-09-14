@@ -10,83 +10,58 @@ import (
 	appconfig "github.com/l-lin/lazygh/internal/config"
 )
 
-const pastedPullRequestRefreshInterval = 10 * time.Minute
-
-type pullRequestRefreshScheduleEntry struct {
-	tab      PullRequestTab
-	interval time.Duration
-	nextDue  time.Time
-}
-
 type pullRequestRefreshSchedule struct {
-	searches      []pullRequestRefreshScheduleEntry
-	pastedNextDue time.Time
+	interval      time.Duration
+	nextDue       time.Time
+	tabs          []PullRequestTab
+	refreshPasted bool
 	generation    uint64
 }
 
-type pullRequestRefreshDue struct {
-	tabs          []PullRequestTab
-	refreshPasted bool
-}
-
-func newPullRequestRefreshSchedule(searches []appconfig.PullRequestSearch, now time.Time, generation uint64) pullRequestRefreshSchedule {
-	entries := make([]pullRequestRefreshScheduleEntry, 0, len(searches))
-	for index, search := range searches {
-		if search.Refresh <= 0 {
-			continue
+func newPullRequestRefreshSchedule(config appconfig.PullRequestConfig, now time.Time, generation uint64) pullRequestRefreshSchedule {
+	tabs := make([]PullRequestTab, 0, len(config.Searches))
+	for index, search := range config.Searches {
+		if search.AutoRefresh {
+			tabs = append(tabs, PullRequestTab(index))
 		}
-		entries = append(entries, pullRequestRefreshScheduleEntry{
-			tab:      PullRequestTab(index),
-			interval: search.Refresh,
-			nextDue:  now.Add(search.Refresh),
-		})
 	}
-	return pullRequestRefreshSchedule{
-		searches:      entries,
-		pastedNextDue: now.Add(pastedPullRequestRefreshInterval),
+
+	schedule := pullRequestRefreshSchedule{
+		interval:      config.Refresh,
+		tabs:          tabs,
+		refreshPasted: config.PastedPRs.AutoRefresh,
 		generation:    generation,
 	}
+	if schedule.interval > 0 && (len(schedule.tabs) > 0 || schedule.refreshPasted) {
+		schedule.nextDue = now.Add(schedule.interval)
+	}
+	return schedule
 }
 
-func (schedule *pullRequestRefreshSchedule) advance(now time.Time) (pullRequestRefreshDue, time.Time) {
-	if schedule == nil {
-		return pullRequestRefreshDue{}, time.Time{}
+func (schedule *pullRequestRefreshSchedule) advance(now time.Time) (tabs []PullRequestTab, refreshPasted bool, nextDue time.Time) {
+	if schedule == nil || schedule.interval <= 0 || schedule.nextDue.IsZero() {
+		return nil, false, time.Time{}
+	}
+	if schedule.nextDue.After(now) {
+		return nil, false, schedule.nextDue
 	}
 
-	due := pullRequestRefreshDue{}
-	for index := range schedule.searches {
-		entry := &schedule.searches[index]
-		if entry.nextDue.After(now) {
-			continue
-		}
-		due.tabs = append(due.tabs, entry.tab)
-		entry.nextDue = advancePullRequestRefreshDueTime(entry.nextDue, entry.interval, now)
-	}
-	if !schedule.pastedNextDue.After(now) {
-		due.refreshPasted = true
-		schedule.pastedNextDue = advancePullRequestRefreshDueTime(schedule.pastedNextDue, pastedPullRequestRefreshInterval, now)
-	}
-
-	return due, schedule.nextDue()
+	tabs = append([]PullRequestTab(nil), schedule.tabs...)
+	refreshPasted = schedule.refreshPasted
+	schedule.nextDue = advancePullRequestRefreshDueTime(schedule.nextDue, schedule.interval, now)
+	return tabs, refreshPasted, schedule.nextDue
 }
 
 func advancePullRequestRefreshDueTime(nextDue time.Time, interval time.Duration, now time.Time) time.Time {
+	if interval <= 0 {
+		return time.Time{}
+	}
 	elapsed := now.Sub(nextDue)
 	remaining := elapsed % interval
 	if remaining == 0 {
 		return now.Add(interval)
 	}
 	return now.Add(interval - remaining)
-}
-
-func (schedule pullRequestRefreshSchedule) nextDue() time.Time {
-	nextDue := schedule.pastedNextDue
-	for _, entry := range schedule.searches {
-		if nextDue.IsZero() || entry.nextDue.Before(nextDue) {
-			nextDue = entry.nextDue
-		}
-	}
-	return nextDue
 }
 
 type pullRequestRefreshTimer interface {
@@ -199,15 +174,18 @@ func (scheduler *pullRequestRefreshScheduler) run(schedule pullRequestRefreshSch
 		close(scheduler.stoppedCh)
 	}()
 
-	timer := scheduler.newTimer(scheduler.timerDelay(schedule))
-	if timer == nil {
-		<-scheduler.stopCh
-		return
+	var timer pullRequestRefreshTimer
+	if !schedule.nextDue.IsZero() {
+		timer = scheduler.newTimer(scheduler.timerDelay(schedule))
 	}
 	defer stopPullRequestRefreshTimer(timer)
 
 	pending := false
 	for {
+		var timerCh <-chan time.Time
+		if timer != nil {
+			timerCh = timer.C()
+		}
 		select {
 		case <-scheduler.stopCh:
 			return
@@ -215,43 +193,62 @@ func (scheduler *pullRequestRefreshScheduler) run(schedule pullRequestRefreshSch
 			stopPullRequestRefreshTimer(timer)
 			schedule = clonePullRequestRefreshSchedule(nextSchedule)
 			pending = false
-			timer.Reset(scheduler.timerDelay(schedule))
+			timer = nil
+			if !schedule.nextDue.IsZero() {
+				timer = scheduler.newTimer(scheduler.timerDelay(schedule))
+			}
 		case generation := <-scheduler.acknowledgeCh:
 			if generation != schedule.generation || !pending {
 				continue
 			}
 			pending = false
-			now := scheduler.now()
-			_, nextDue := schedule.advance(now)
-			stopPullRequestRefreshTimer(timer)
-			timer.Reset(durationUntil(nextDue, now))
-		case <-timer.C():
-			now := scheduler.now()
-			due, nextDue := schedule.advance(now)
+			if timer == nil && !schedule.nextDue.IsZero() {
+				timer = scheduler.newTimer(scheduler.timerDelay(schedule))
+			} else if timer != nil {
+				stopPullRequestRefreshTimer(timer)
+				timer.Reset(scheduler.timerDelay(schedule))
+			}
+		case tickAt := <-timerCh:
+			now := tickAt
+			if now.IsZero() {
+				now = scheduler.now()
+			}
+			tabs, refreshPasted, nextDue := schedule.advance(now)
+			if timer != nil {
+				stopPullRequestRefreshTimer(timer)
+			}
 			if pending {
+				if nextDue.After(now) && timer != nil {
+					timer.Reset(durationUntil(nextDue, now))
+				}
 				continue
 			}
-			if len(due.tabs) == 0 && !due.refreshPasted {
-				timer.Reset(durationUntil(nextDue, now))
+			if len(tabs) == 0 && !refreshPasted {
+				if nextDue.After(now) && timer != nil {
+					timer.Reset(durationUntil(nextDue, now))
+				}
 				continue
 			}
 
 			pending = true
 			message := MsgScheduledPullRequestRefreshDue{
-				Tabs:          append([]PullRequestTab(nil), due.tabs...),
-				RefreshPasted: due.refreshPasted,
+				Tabs:          tabs,
+				RefreshPasted: refreshPasted,
 				Generation:    schedule.generation,
+				TriggeredAt:   now,
 			}
 			if scheduler.dispatch == nil || !scheduler.dispatch(message) {
 				pending = false
-				timer.Reset(durationUntil(nextDue, now))
+				if nextDue.After(now) && timer != nil {
+					timer.Reset(durationUntil(nextDue, now))
+				}
 			}
 		}
 	}
 }
 
 func (scheduler *pullRequestRefreshScheduler) timerDelay(schedule pullRequestRefreshSchedule) time.Duration {
-	return durationUntil(schedule.nextDue(), scheduler.now())
+	return durationUntil(schedule.nextDue, scheduler.now())
 }
 
 func durationUntil(due time.Time, now time.Time) time.Duration {
@@ -275,12 +272,12 @@ func stopPullRequestRefreshTimer(timer pullRequestRefreshTimer) {
 }
 
 func clonePullRequestRefreshSchedule(schedule pullRequestRefreshSchedule) pullRequestRefreshSchedule {
-	schedule.searches = append([]pullRequestRefreshScheduleEntry(nil), schedule.searches...)
+	schedule.tabs = append([]PullRequestTab(nil), schedule.tabs...)
 	return schedule
 }
 
 type configurePullRequestRefreshSchedulerCmd struct {
-	searches   []appconfig.PullRequestSearch
+	config     appconfig.PullRequestConfig
 	generation uint64
 }
 
@@ -289,7 +286,7 @@ func (command configurePullRequestRefreshSchedulerCmd) execute(program *Program,
 		return
 	}
 	scheduler := program.pullRequestRefreshScheduler
-	schedule := newPullRequestRefreshSchedule(command.searches, scheduler.now(), command.generation)
+	schedule := newPullRequestRefreshSchedule(command.config, scheduler.now(), command.generation)
 	scheduler.Configure(schedule)
 }
 

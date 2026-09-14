@@ -105,8 +105,9 @@ func TestUpdate_GivenMsgPersistentCacheCleared_WhenApplying_ThenItResetsFlagsCou
 	if subject.model.ActionsPopupVisible() {
 		t.Fatal("expected the actions popup to close after a successful cache clear completion")
 	}
-	if actual := subject.feedbackMessage; actual != clearCacheSuccessMessage {
-		t.Fatalf("expected feedback %q, actual %q", clearCacheSuccessMessage, actual)
+	expectedFeedback := iconStatusSuccess + " " + clearCacheSuccessMessage
+	if actual := subject.feedbackMessage; actual != expectedFeedback {
+		t.Fatalf("expected feedback %q, actual %q", expectedFeedback, actual)
 	}
 	if actual := subject.myPullRequestsLoadStarted; actual {
 		t.Fatalf("expected my pull requests load started %v, actual %v", false, actual)
@@ -266,5 +267,5 @@ func TestActionsPopup_GivenConfirmedClearCacheAction_WhenExecuting_ThenItClearsP
 	if strings.Contains(notificationsView.Buffer(), "Cached notification") {
 		t.Fatalf("expected notifications cache clear to remove %q, actual %q", "Cached notification", notificationsView.Buffer())
 	}
-	then_statusLineContains(t, gui, "Cache cleared.")
+	then_statusLineContains(t, gui, "Refreshing notifications")
 }

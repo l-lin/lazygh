@@ -96,6 +96,7 @@ type programShellRuntime struct {
 	refreshReadCache                     refreshReadCacheState
 	pullRequestRefreshScheduler          *pullRequestRefreshScheduler
 	pullRequestRefreshScheduleGeneration uint64
+	scheduledPullRequestRefreshBatches   map[uint64]scheduledPullRequestRefreshBatch
 }
 
 type Program struct {
@@ -176,15 +177,16 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 			navigationState:     navigationStateModel{},
 			listViewportRuntime: newListViewportRuntimeState(),
 			runtimeConfig: runtimeConfigState{
-				pullRequestSearches: appconfig.DefaultPullRequestSearches(),
-				displayConfig:       appconfig.ResolveDisplayConfig(appconfig.DisplayConfig{}),
+				pullRequestConfig: appconfig.DefaultPullRequestConfig(),
+				displayConfig:     appconfig.ResolveDisplayConfig(appconfig.DisplayConfig{}),
 			},
 		},
 		programShellRuntime: programShellRuntime{
-			asyncRunner:        goroutineAsyncRunner{},
-			uiUpdater:          queuedUIUpdater{},
-			timingState:        timingStateModel{now: time.Now, after: time.After, yankHighlightDuration: defaultYankHighlightDuration, transientErrorPopupDuration: defaultTransientErrorPopupDuration},
-			manualRefreshState: manualRefreshStateModel{pullRequestListPending: map[PullRequestTab]bool{}, pullRequestDetailPending: map[string]bool{}, pullRequestDiffPending: map[string]bool{}},
+			asyncRunner:                        goroutineAsyncRunner{},
+			uiUpdater:                          queuedUIUpdater{},
+			timingState:                        timingStateModel{now: time.Now, after: time.After, yankHighlightDuration: defaultYankHighlightDuration, transientErrorPopupDuration: defaultTransientErrorPopupDuration},
+			manualRefreshState:                 manualRefreshStateModel{pullRequestListPending: map[PullRequestTab]bool{}, pullRequestDetailPending: map[string]bool{}, pullRequestDiffPending: map[string]bool{}},
+			scheduledPullRequestRefreshBatches: map[uint64]scheduledPullRequestRefreshBatch{},
 		},
 	}
 }
@@ -232,7 +234,7 @@ func (program *Program) Run() error {
 		return realPullRequestRefreshTimer{timer: time.NewTimer(delay)}
 	}, newPullRequestRefreshDispatcher(program, gui))
 	program.pullRequestRefreshScheduler = scheduler
-	stopPullRequestRefreshScheduler := scheduler.Start(newPullRequestRefreshSchedule(program.runtimeConfig.pullRequestSearches, time.Now(), program.pullRequestRefreshScheduleGeneration))
+	stopPullRequestRefreshScheduler := scheduler.Start(newPullRequestRefreshSchedule(program.runtimeConfig.pullRequestConfig, time.Now(), program.pullRequestRefreshScheduleGeneration))
 	defer stopPullRequestRefreshScheduler()
 
 	if err := gui.MainLoop(); err != nil && !isQuitError(err) {

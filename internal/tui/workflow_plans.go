@@ -74,14 +74,14 @@ func planPullRequestListLoad(input pullRequestListLoadPlanInput) workflowPlan {
 	return actual
 }
 
-func planScheduledPullRequestListReload(tab PullRequestTab, hasPullRequestQueries bool, targetConfigured bool) workflowPlan {
+func planScheduledPullRequestListReload(tab PullRequestTab, hasPullRequestQueries bool, targetConfigured bool, batchID uint64) workflowPlan {
 	if !hasPullRequestQueries || !targetConfigured {
 		return workflowPlan{}
 	}
 
 	return workflowPlan{
-		messages: []Msg{MsgPullRequestsLoadPlanned{Tab: tab, Source: pullRequestLoadSourceScheduled}},
-		commands: []Cmd{loadPullRequestsCmd{tab: tab, Source: pullRequestLoadSourceScheduled}},
+		messages: []Msg{MsgPullRequestsLoadPlanned{Tab: tab, Source: pullRequestLoadSourceScheduled, ScheduledRefreshBatchID: batchID}},
+		commands: []Cmd{loadPullRequestsCmd{tab: tab, Source: pullRequestLoadSourceScheduled, ScheduledRefreshBatchID: batchID}},
 	}
 }
 
@@ -91,6 +91,7 @@ type scheduledPullRequestRefreshPlanInput struct {
 	hasDetailQueries   bool
 	detailLoadInFlight map[string]bool
 	diffLoadInFlight   map[string]bool
+	batchID            uint64
 }
 
 func planScheduledPullRequestRefresh(input scheduledPullRequestRefreshPlanInput) workflowPlan {
@@ -102,16 +103,16 @@ func planScheduledPullRequestRefresh(input scheduledPullRequestRefreshPlanInput)
 	diffSummaries := uniqueScheduledPullRequestSummaries(input.diffSummaries, input.diffLoadInFlight)
 	actual := workflowPlan{}
 	for _, summary := range detailSummaries {
-		actual.addMessage(MsgPullRequestDetailLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number)})
+		actual.addMessage(MsgPullRequestDetailLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number), ScheduledRefreshBatchID: input.batchID})
 	}
 	for _, summary := range diffSummaries {
-		actual.addMessage(MsgPullRequestDiffLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number)})
+		actual.addMessage(MsgPullRequestDiffLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number), ScheduledRefreshBatchID: input.batchID})
 	}
 	for _, summary := range detailSummaries {
-		actual.addCommand(loadPullRequestDetailCmd{summary: summary})
+		actual.addCommand(loadPullRequestDetailCmd{summary: summary, ScheduledRefreshBatchID: input.batchID})
 	}
 	for _, summary := range diffSummaries {
-		actual.addCommand(loadPullRequestDiffCmd{summary: summary})
+		actual.addCommand(loadPullRequestDiffCmd{summary: summary, ScheduledRefreshBatchID: input.batchID})
 	}
 	return actual
 }

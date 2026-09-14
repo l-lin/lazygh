@@ -8,7 +8,7 @@ func (program *Program) applyActionsPopupAsyncCompletion(completion actionsPopup
 		program.applyReviewSessionStarted(MsgReviewSessionStarted(actual))
 		return nil
 	case feedbackSetCompletion:
-		program.applyFeedbackSet(MsgFeedbackSet(actual))
+		program.applyFeedbackSet(MsgFeedbackSet{Target: actual.Target, Message: actual.Message, Success: true})
 		return nil
 	case pullRequestInvalidatedWithFeedbackCompletion:
 		program.applyPullRequestInvalidatedWithFeedback(MsgPullRequestInvalidatedWithFeedback(actual))

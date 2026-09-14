@@ -16,17 +16,20 @@ type pullRequestListWorkflowRuntime struct {
 }
 
 type loadPullRequestsCmd struct {
-	tab    PullRequestTab
-	Source pullRequestLoadSource
+	tab                     PullRequestTab
+	Source                  pullRequestLoadSource
+	ScheduledRefreshBatchID uint64
 }
 
 type scheduledPullRequestListReloadCmd struct {
-	tab PullRequestTab
+	tab     PullRequestTab
+	batchID uint64
 }
 
 type scheduledPullRequestRefreshCmd struct {
 	detailSummaries []githubdomain.PullRequest
 	diffSummaries   []githubdomain.PullRequest
+	batchID         uint64
 }
 
 type reloadPullRequestsTabCmd struct {
@@ -43,7 +46,7 @@ func newPullRequestListWorkflowRuntime(program *Program, gui *gocui.Gui) pullReq
 		runtime.pullRequestsFromCache = program.pullRequestsFromCache
 		runtime.pullRequestFreshnessFromCache = program.pullRequestFreshnessFromCache
 		if program.pullRequestListQueries != nil {
-			runtime.listPullRequests = newPullRequestListQueryCommand(program.pullRequestListQueries, program.runtimeConfig.pullRequestSearches)
+			runtime.listPullRequests = newPullRequestListQueryCommand(program.pullRequestListQueries, program.runtimeConfig.pullRequestConfig.Searches)
 		}
 	}
 	return runtime
@@ -63,48 +66,80 @@ func newPullRequestListQueryCommand(queries PullRequestListQueries, searches []a
 }
 
 func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
+	if program != nil && command.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(command.ScheduledRefreshBatchID) {
+		program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		return
+	}
 	runtime := newPullRequestListWorkflowRuntime(program, gui)
 	if runtime.listPullRequests == nil || runtime.dispatchAsyncMessage == nil {
+		if command.ScheduledRefreshBatchID != 0 {
+			program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		}
 		return
 	}
 	generation := program.pullRequestLoadGeneration(command.tab)
 	runWorkflowCommandAsync(runtime.runAsync, func() {
 		pullRequests, err := runtime.listPullRequests(command.tab)
-		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation, Source: command.Source})
+		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation, Source: command.Source, ScheduledRefreshBatchID: command.ScheduledRefreshBatchID})
 	})
 }
 
 func (command scheduledPullRequestListReloadCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || program.isPastedPullRequestTab(command.tab) || program.pullRequestsLoading(command.tab) || !program.hasPullRequestListQueries() {
+	if program == nil {
 		return
 	}
-	search, targetConfigured := program.searchBackedPullRequestSearch(command.tab)
-	if !targetConfigured || search.Refresh <= 0 {
+	if program.scheduledPullRequestRefreshBatchCancelled(command.batchID) {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
+		return
+	}
+	if program.isPastedPullRequestTab(command.tab) || program.pullRequestsLoading(command.tab) || !program.hasPullRequestListQueries() {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
+		return
+	}
+	_, targetConfigured := program.searchBackedPullRequestSearch(command.tab)
+	if !targetConfigured || program.runtimeConfig.pullRequestConfig.Refresh <= 0 || !program.pullRequestSearchAutoRefreshEnabled(command.tab) {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
 		return
 	}
 
 	runtime := newPullRequestListWorkflowRuntime(program, gui)
 	if runtime.executeWorkflowPlan == nil {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
 		return
 	}
-	runtime.executeWorkflowPlan(planScheduledPullRequestListReload(command.tab, true, targetConfigured))
+	plan := planScheduledPullRequestListReload(command.tab, true, targetConfigured, command.batchID)
+	if len(plan.commands) == 0 {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
+		return
+	}
+	program.addScheduledPullRequestRefreshWork(command.batchID, len(plan.commands))
+	runtime.executeWorkflowPlan(plan)
 }
 
 func (command scheduledPullRequestRefreshCmd) execute(program *Program, gui *gocui.Gui) {
-	if program == nil || !program.hasDetailQueries() {
+	if program == nil {
+		return
+	}
+	if !program.hasDetailQueries() || program.scheduledPullRequestRefreshBatchCancelled(command.batchID) {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
 		return
 	}
 	runtime := newWorkflowShellRuntime(program, gui)
 	if runtime.executeWorkflowPlan == nil {
+		program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
 		return
 	}
-	runtime.executeWorkflowPlan(planScheduledPullRequestRefresh(scheduledPullRequestRefreshPlanInput{
+	plan := planScheduledPullRequestRefresh(scheduledPullRequestRefreshPlanInput{
 		detailSummaries:    append([]githubdomain.PullRequest(nil), command.detailSummaries...),
 		diffSummaries:      append([]githubdomain.PullRequest(nil), command.diffSummaries...),
 		hasDetailQueries:   true,
 		detailLoadInFlight: program.pullRequestDetailLoadInFlight,
 		diffLoadInFlight:   program.pullRequestDiffLoadInFlight,
-	}))
+		batchID:            command.batchID,
+	})
+	program.addScheduledPullRequestRefreshWork(command.batchID, len(plan.commands))
+	runtime.executeWorkflowPlan(plan)
+	program.completeScheduledPullRequestRefreshWork(command.batchID, nil)
 }
 
 func (command hydratePullRequestsFromCacheCmd) execute(program *Program, gui *gocui.Gui) {

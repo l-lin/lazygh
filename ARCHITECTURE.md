@@ -47,13 +47,14 @@ Smaller state bags follow the same value-transition rule:
 
 - `assigneePickerState` owns popup assignee selection plus search request/result bookkeeping.
 - `actionsPopupWidgetState` owns popup-local error, confirmation, and picker-open chrome around the popup child surfaces.
-- `manualRefreshStateModel` owns pending refresh targets and completion-feedback counting.
+- `manualRefreshStateModel` owns pending refresh targets, aggregate status-operation ownership, and completion-feedback counting.
+- `scheduledPullRequestRefreshBatch` state is owned by the shell runtime and tracks tagged list/detail/diff work, cancellation tombstones, first-error aggregation, and delayed scheduler acknowledgement.
 - `pullRequestListStore` owns pull-request list load generations, identity-based refresh selection support, and in-memory freshness state used to derive unread row markers.
-- `statusStore` owns status-line feedback plus story-review and GH-command loading transitions.
+- `statusStore` owns status-line feedback, active operation loading, retained operation success/failure, plus story-review and GH-command loading transitions.
 - `overlayStateModel` owns help visibility, transient error popup lifecycle, recorded errors, and modal editor lifecycle through explicit overlay-state transitions.
 - `navigationStateModel` owns review-session replacement and opened pull-request summary pinning through explicit navigation-state transitions.
 - `startupStateModel` owns app-start and loading-spinner frame advancement through explicit startup-state transitions.
-- `runtimeConfigState` owns keymap overrides, pull-request searches, and story-review config; runtime entrypoints apply it through explicit runtime-config messages or whole-state replacement helpers instead of mutating the bag inline.
+- `runtimeConfigState` owns keymap overrides, one nested pull-request config, and story-review config; runtime entrypoints apply it through explicit runtime-config messages or whole-state replacement helpers instead of mutating the bag inline.
 - `pastedPullRequestTabState` owns clipboard-opened pull-request summaries for the dedicated pasted tab so tab rebuilds can preserve them without hijacking the normal search tabs.
 
 ### Shell
@@ -65,9 +66,9 @@ Smaller state bags follow the same value-transition rule:
 - `programViewRuntime`: promoted UI runtime state
 - `programShellRuntime`: GUI, timers, async runner, refresh memoization, queued persistent-cache sync, and the pull-request refresh scheduler
 
-`Program.Run` owns the refresh scheduler lifecycle only. The scheduler owns schedule generations, one-shot timer rearming, and pending-dispatch backpressure; it owns no TUI state. A captured shell dispatcher only enqueues typed due messages through the GUI/UI-updater boundary. The timer goroutine never reads or mutates `Program` state.
+`Program.Run` owns the refresh scheduler lifecycle only. The scheduler owns one global fixed-cadence schedule, schedule generations, optional timer rearming, and pending-dispatch backpressure; it owns no TUI state. A captured shell dispatcher only enqueues typed due messages through the GUI/UI-updater boundary. The timer goroutine never reads or mutates `Program` state.
 
-This keeps the composition root in one place, but it is still broader than a strict Elm shell.
+The batch/status-line coordinator keeps UI-thread ownership, per-batch cancellation, aggregate manual-refresh ownership, and newest-operation protection in the shell. This keeps the composition root in one place, but it is still broader than a strict Elm shell.
 Live `*gocui.Gui` capture is centralized on `captureGUI(...)`; startup, render, and post-update entrypoints reuse that seam instead of writing `program.gui` directly.
 
 ### Loop
@@ -80,7 +81,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, persistent-cache shell sync, shell sync, and redraw only.
 
-The pull-request refresh scheduler follows the same path: its timer emits `MsgScheduledPullRequestRefreshDue`, `Update` rejects stale schedule generations and turns current due messages into scheduled list/detail/diff commands followed by an acknowledgement command, and existing async commands perform GitHub I/O and return typed loaded-result messages. Scheduled list results inspect freshness before applying the normal seen-marking behavior, so background fetching never marks a pull request read.
+The pull-request refresh scheduler follows the same path: its timer emits `MsgScheduledPullRequestRefreshDue`, `Update` rejects stale schedule generations and turns current due messages into tagged scheduled work, and existing async commands perform GitHub I/O and return typed loaded-result messages. The scheduler acknowledgement is returned only after the tagged scheduled batch settles. Scheduled list results inspect freshness before applying the normal seen-marking behavior, so background fetching never marks a pull request read.
 
 For the optional browser commit-diff tab, `Update` owns open, retarget, focus, and clear decisions. `commit_diff_commands.go` owns the GitHub fetch only.
 
@@ -126,7 +127,7 @@ Shell work now lives behind explicit command files.
 
 - `workflow_session_commands.go`: connected-user load
 - `workflow_pull_request_list_commands.go`: pull-request list load, reload, scheduled refresh, cache hydration, and generation-tagged async results
-- `pull_request_refresh_scheduler.go`: shell-only fixed-cadence scheduling, timer lifecycle, and schedule-generation backpressure
+- `pull_request_refresh_scheduler.go`: shell-only global fixed-cadence scheduling, timer lifecycle, and schedule-generation backpressure
 - `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
 - `commit_diff_commands.go`: single-commit diff load for the optional browser commit-diff tab
 - `workflow_notification_commands.go`: notifications plus issue and release detail loads
@@ -135,7 +136,7 @@ Shell work now lives behind explicit command files.
 - `cmd_modal_editor_submit_requests.go`: modal submit transport
 - `cmd_popup_feature_request_requests.go`: popup feature transport
 - `cmd_interaction_*.go`: split interaction command surfaces by domain — browser/clipboard I/O, navigation/viewport work, detail-search follow-up, link and clipboard preparation, modal-editor execution, build-run loading, and forced refresh execution
-+- `cache_config_runtime.go`: synchronous cache open/close reconfiguration runtime for startup and config reload entrypoints
+- `cache_config_runtime.go`: synchronous cache open/close reconfiguration runtime for startup and config reload entrypoints
 - `cmd_transient_error_popup.go`: transient error popup expiry scheduling
 - `cmd_detail_fold.go`: detail fold and inline-thread live-view lookup
 - `cmd_detail_motion.go`: detail/build-popup motion, repeat-search, and pending-yank live-view sync

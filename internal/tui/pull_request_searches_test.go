@@ -97,7 +97,7 @@ func TestUpdate_GivenPullRequestSearchesAppliedWithAPastedTab_WhenApplying_ThenI
 	summary := githubdomain.PullRequest{Title: "Widgets PR", Number: 13, Repository: githubdomain.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/13", Body: "Body 13", State: "OPEN"}
 
 	Update(subject, MsgOpenPullRequestInPastedTabView{Summary: summary})
-	Update(subject, MsgPullRequestSearchesApplied{Searches: []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}})
+	Update(subject, MsgPullRequestConfigApplied{Config: appconfig.PullRequestConfig{Searches: []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}}})
 
 	if actual := subject.pullRequestsTabLabels(); !reflect.DeepEqual(actual, []string{"Mine", "Pasted (1)"}) {
 		t.Fatalf("expected pull request tab labels %v, actual %v", []string{"Mine", "Pasted (1)"}, actual)

@@ -101,7 +101,7 @@ func (program *Program) applyNotificationFeedbackAndClose(message string) []Cmd 
 	if trimmedMessage == "" || program == nil || program.model == nil {
 		return nil
 	}
-	program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: trimmedMessage})
+	program.applyFeedbackSet(MsgFeedbackSet{Target: program.model.Focus(), Message: trimmedMessage, Success: true})
 	program.closeActionsPopupForAcceptedRequest()
 	return nil
 }

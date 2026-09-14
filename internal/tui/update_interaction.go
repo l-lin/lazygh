@@ -292,7 +292,7 @@ func (program *Program) applyOpenBrowserURLRequested(message MsgOpenBrowserURLRe
 
 func (program *Program) applyOpenBrowserURLFinished(message MsgOpenBrowserURLFinished) {
 	if message.Err == nil {
-		program.setFeedback(message.Target, message.SuccessMessage)
+		program.setSuccessFeedback(message.Target, message.SuccessMessage)
 		return
 	}
 	program.recordError(message.Err)
@@ -307,7 +307,7 @@ func (program *Program) applyClipboardWriteFinished(message MsgClipboardWriteFin
 		case clipboardWriteSelectionBuildPopup:
 			program.activatePullRequestBuildRunPopupYankHighlight(message.Selection)
 		}
-		program.setFeedback(message.Target, message.SuccessMessage)
+		program.setSuccessFeedback(message.Target, message.SuccessMessage)
 		return
 	}
 	program.recordError(message.Err)

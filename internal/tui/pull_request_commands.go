@@ -7,8 +7,22 @@ type pullRequestCountState struct {
 	known bool
 }
 
+func (program *Program) ApplyPullRequestConfig(config appconfig.PullRequestConfig) {
+	_ = program.dispatchRuntimeMessage(MsgPullRequestConfigApplied{Config: config})
+}
+
 func (program *Program) ApplyPullRequestSearches(searches []appconfig.PullRequestSearch) {
-	_ = program.dispatchRuntimeMessage(MsgPullRequestSearchesApplied{Searches: appconfig.ResolvePullRequestSearches(searches)})
+	config := program.runtimeConfig.pullRequestConfig
+	config.Searches = appconfig.ResolvePullRequestSearches(searches)
+	_ = program.dispatchRuntimeMessage(MsgPullRequestConfigApplied{Config: config})
+}
+
+func (program *Program) reconfigurePullRequestRefreshScheduler() Cmd {
+	program.pullRequestRefreshScheduleGeneration++
+	return configurePullRequestRefreshSchedulerCmd{
+		config:     program.runtimeConfig.pullRequestConfig,
+		generation: program.pullRequestRefreshScheduleGeneration,
+	}
 }
 
 func pullRequestTabSeedsForSearches(searches []appconfig.PullRequestSearch) []PullRequestTabSeed {
@@ -38,9 +52,9 @@ func pullRequestSearchCommandForTab(searches []appconfig.PullRequestSearch, tab 
 }
 
 func (program *Program) pullRequestSearch(tab PullRequestTab) appconfig.PullRequestSearch {
-	search, ok := pullRequestSearchForTab(program.runtimeConfig.pullRequestSearches, tab)
+	search, ok := pullRequestSearchForTab(program.runtimeConfig.pullRequestConfig.Searches, tab)
 	if !ok {
-		resolvedSearches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestSearches)
+		resolvedSearches := appconfig.ResolvePullRequestSearches(program.runtimeConfig.pullRequestConfig.Searches)
 		return resolvedSearches[0]
 	}
 	return search
@@ -50,7 +64,7 @@ func (program *Program) searchBackedPullRequestSearch(tab PullRequestTab) (appco
 	if program == nil || program.isPastedPullRequestTab(tab) {
 		return appconfig.PullRequestSearch{}, false
 	}
-	return pullRequestSearchForTab(program.runtimeConfig.pullRequestSearches, tab)
+	return pullRequestSearchForTab(program.runtimeConfig.pullRequestConfig.Searches, tab)
 }
 
 func (program *Program) pullRequestListState(tab PullRequestTab) pullRequestListState {

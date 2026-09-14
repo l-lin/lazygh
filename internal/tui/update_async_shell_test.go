@@ -228,8 +228,6 @@ func TestUpdate_GivenMsgPullRequestsLoadedAfterManualRefreshFailure_WhenApplying
 	subject.markManualPullRequestListRefresh(subject.model.ActivePullRequestTab())
 	subject.beginManualRefresh(pullRequestListRefreshSuccessMessage, 1)
 	tab := subject.model.ActivePullRequestTab()
-	subject.setPullRequestListStatusOperationID(tab, subject.startStatusLineOperation(statusLineRefreshPullRequestListOperation()))
-
 	actual := Update(subject, MsgPullRequestsLoaded{Tab: tab, Err: errors.New("boom")})
 
 	if len(actual) != 0 {

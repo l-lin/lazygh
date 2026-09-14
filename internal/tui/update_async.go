@@ -39,10 +39,15 @@ func (program *Program) applyManualRefreshCompletion(err error) []Cmd {
 
 func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) []Cmd {
 	if message.Generation != 0 && message.Generation != program.pullRequestLoadGeneration(message.Tab) {
+		if message.ScheduledRefreshBatchID != 0 {
+			return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, nil)
+		}
 		return nil
 	}
 	program.setPullRequestsLoading(message.Tab, false)
-	program.finishStatusLineOperation(program.pullRequestListStatusOperationID(message.Tab), message.Err)
+	if message.ScheduledRefreshBatchID == 0 && !program.manualRefreshInProgress() {
+		program.finishStatusLineOperation(program.pullRequestListStatusOperationID(message.Tab), message.Err)
+	}
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
 		var scheduledUnread []githubdomain.PullRequest
@@ -70,10 +75,17 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 			program.markCurrentPullRequestSeen()
 		}
 		if message.Source == pullRequestLoadSourceScheduled {
+			if message.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(message.ScheduledRefreshBatchID) {
+				return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, nil)
+			}
 			commands := []Cmd{scheduledPullRequestRefreshCmd{
 				detailSummaries: append([]githubdomain.PullRequest(nil), scheduledUnread...),
 				diffSummaries:   append([]githubdomain.PullRequest(nil), scheduledUnread...),
+				batchID:         message.ScheduledRefreshBatchID,
 			}}
+			if message.ScheduledRefreshBatchID != 0 {
+				commands = append(commands, program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, nil)...)
+			}
 			if manualRefresh {
 				commands = append(commands, program.applyManualRefreshCompletion(nil)...)
 			}
@@ -91,6 +103,9 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 	if !program.shouldPreservePullRequestRowsOnRefreshError(message.Tab) {
 		program.setPullRequestsCount(message.Tab, 0, false)
 		program.model.SetPullRequestRows(message.Tab, pullRequestStateRowsWithRepositoryStyle(program.runtimeConfig.displayConfig.RepositoryStyle, program.pullRequestListState(message.Tab), nil, message.Err))
+	}
+	if message.ScheduledRefreshBatchID != 0 {
+		return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, message.Err)
 	}
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)
@@ -116,7 +131,9 @@ func (program *Program) selectOpenedPullRequestRow(tab PullRequestTab) {
 
 func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded) []Cmd {
 	program.finishNotificationsLoading()
-	program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
+	if !program.manualRefreshInProgress() {
+		program.finishStatusLineOperation(message.StatusLineOperationID, message.Err)
+	}
 	manualRefresh := program.consumeManualNotificationRefresh()
 	if message.Err == nil {
 		filteredNotifications := program.filterDoneNotifications(message.Notifications)
@@ -140,13 +157,18 @@ func (program *Program) applyNotificationsLoaded(message MsgNotificationsLoaded)
 func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetailLoaded) []Cmd {
 	key := pullRequestDetailKey(message.Summary.Repository, message.Summary.Number)
 	if key == "" {
-		return nil
+		return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, message.Err)
+	}
+	completeScheduled := func(err error) []Cmd {
+		return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, err)
 	}
 
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withPullRequestDetailLoadCleared(key)
 	})
-	program.finishStatusLineOperation(program.pullRequestDetailStatusOperationID(key), message.Err)
+	if message.ScheduledRefreshBatchID == 0 && !program.manualRefreshInProgress() {
+		program.finishStatusLineOperation(program.pullRequestDetailStatusOperationID(key), message.Err)
+	}
 	manualRefresh := program.consumeManualPullRequestDetailRefresh(key)
 	if message.PendingReviewStateKnown {
 		program.updateReviewStore(func(store reviewStore) reviewStore {
@@ -161,6 +183,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		})
 		program.refreshLoadedPullRequestSummaryFromDetail(message.Summary, clonedDetail)
 		program.invalidatePullRequestDetailDocumentCache()
+		if message.ScheduledRefreshBatchID != 0 {
+			return completeScheduled(nil)
+		}
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
 		}
@@ -172,6 +197,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 			return store.withPullRequestDetailCached(key, pullRequestDetailResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
 		})
 		program.invalidatePullRequestDetailDocumentCache()
+		if message.ScheduledRefreshBatchID != 0 {
+			return completeScheduled(message.Err)
+		}
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(message.Err)
 		}
@@ -184,6 +212,9 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withPullRequestDetailCached(key, cachedResult)
 	})
+	if message.ScheduledRefreshBatchID != 0 {
+		return completeScheduled(message.Err)
+	}
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)
 	}
@@ -210,13 +241,18 @@ func (program *Program) refreshLoadedPullRequestSummaryFromDetail(summary github
 func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoaded) []Cmd {
 	key := pullRequestDetailKey(message.Summary.Repository, message.Summary.Number)
 	if key == "" {
-		return nil
+		return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, message.Err)
+	}
+	completeScheduled := func(err error) []Cmd {
+		return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, err)
 	}
 
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		return store.withPullRequestDiffLoadCleared(key)
 	})
-	program.finishStatusLineOperation(program.pullRequestDiffStatusOperationID(key), message.Err)
+	if message.ScheduledRefreshBatchID == 0 && !program.manualRefreshInProgress() {
+		program.finishStatusLineOperation(program.pullRequestDiffStatusOperationID(key), message.Err)
+	}
 	manualRefresh := program.consumeManualPullRequestDiffRefresh(key)
 	if message.Err == nil {
 		program.cachePullRequestDiff(message.Summary, message.RawDiff)
@@ -230,6 +266,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
+		if message.ScheduledRefreshBatchID != 0 {
+			return completeScheduled(nil)
+		}
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(nil)
 		}
@@ -243,6 +282,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
 		program.clampReviewSessionSelection()
+		if message.ScheduledRefreshBatchID != 0 {
+			return completeScheduled(message.Err)
+		}
 		if manualRefresh {
 			return program.applyManualRefreshCompletion(message.Err)
 		}
@@ -257,6 +299,9 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 		return store.withPullRequestDiffCached(key, cachedResult)
 	})
 	program.invalidatePullRequestDetailDocumentCache()
+	if message.ScheduledRefreshBatchID != 0 {
+		return completeScheduled(message.Err)
+	}
 	if manualRefresh {
 		return program.applyManualRefreshCompletion(message.Err)
 	}

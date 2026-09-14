@@ -42,6 +42,13 @@ func statusLineRefreshPullRequestListOperation() statusLineOperationDescriptor {
 	return statusLineOperationDescriptor{loadingLabel: "Refreshing PR list", failureLabel: "Refreshing PR list"}
 }
 
+func statusLineManualRefreshOperation(successMessage string) statusLineOperationDescriptor {
+	if strings.TrimSpace(successMessage) == notificationsRefreshSuccessMessage {
+		return statusLineRefreshNotificationsOperation()
+	}
+	return statusLineRefreshPullRequestListOperation()
+}
+
 func statusLineRefreshNotificationsOperation() statusLineOperationDescriptor {
 	return statusLineOperationDescriptor{loadingLabel: "Refreshing notifications", failureLabel: "Refreshing notifications"}
 }

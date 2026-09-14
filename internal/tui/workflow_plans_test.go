@@ -43,7 +43,7 @@ func TestPlanPullRequestListLoad_GivenTheActiveTabWithLiveQueries_WhenPlanning_T
 }
 
 func TestPlanScheduledPullRequestListReload_GivenAConfiguredTarget_WhenPlanning_ThenItTargetsTheTabWithoutCacheHydration(t *testing.T) {
-	actual := planScheduledPullRequestListReload(MyPullRequestsTab, true, true)
+	actual := planScheduledPullRequestListReload(MyPullRequestsTab, true, true, 0)
 
 	expectedMessageTypes := []string{"tui.MsgPullRequestsLoadPlanned"}
 	if actualMessageTypes := given_workflowPlanMessageTypeNames(actual); !reflect.DeepEqual(actualMessageTypes, expectedMessageTypes) {
@@ -64,7 +64,7 @@ func TestPlanScheduledPullRequestListReload_GivenAConfiguredTarget_WhenPlanning_
 }
 
 func TestPlanScheduledPullRequestListReload_GivenAnUnconfiguredTarget_WhenPlanning_ThenItReturnsNoWork(t *testing.T) {
-	actual := planScheduledPullRequestListReload(MyPullRequestsTab, true, false)
+	actual := planScheduledPullRequestListReload(MyPullRequestsTab, true, false, 0)
 
 	if len(actual.messages) != 0 || len(actual.commands) != 0 {
 		t.Fatalf("expected no scheduled work for an unconfigured target, actual %+v", actual)

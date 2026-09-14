@@ -81,6 +81,11 @@ func (state manualRefreshStateModel) withFeedbackBegun(successMessage string, pe
 	return state, true
 }
 
+func (state manualRefreshStateModel) withStatusOperationID(operationID uint64) manualRefreshStateModel {
+	state.statusOperationID = operationID
+	return state
+}
+
 func (state manualRefreshStateModel) withCompletedOperation(err error) (manualRefreshStateModel, manualRefreshFeedbackCompletion, bool) {
 	if state.feedback == nil {
 		return state, manualRefreshFeedbackCompletion{}, false
@@ -91,7 +96,9 @@ func (state manualRefreshStateModel) withCompletedOperation(err error) (manualRe
 		state.feedback = &updatedFeedback
 		return state, completion, clearFeedback
 	}
+	completion.statusOperationID = state.statusOperationID
 	state.feedback = nil
+	state.statusOperationID = 0
 	return state, completion, clearFeedback
 }
 
@@ -103,6 +110,9 @@ func (state manualRefreshFeedbackState) completed(err error) (manualRefreshFeedb
 			clearFeedback = true
 			completion.popupError = strings.TrimSpace(normalizeGHCommandError(err).Error())
 		}
+		if state.firstErr == nil {
+			state.firstErr = err
+		}
 		state.failed = true
 	}
 	if state.pendingOperations > 0 {
@@ -111,6 +121,7 @@ func (state manualRefreshFeedbackState) completed(err error) (manualRefreshFeedb
 	if state.pendingOperations > 0 {
 		return state, completion, true, clearFeedback
 	}
+	completion.operationErr = state.firstErr
 	if !state.failed && state.successMessage != "" {
 		completion.successMessage = state.successMessage
 	}

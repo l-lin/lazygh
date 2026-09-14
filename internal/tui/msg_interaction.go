@@ -20,6 +20,7 @@ const (
 type MsgFeedbackSet struct {
 	Target  Focus
 	Message string
+	Success bool
 }
 
 type MsgErrorReported struct {

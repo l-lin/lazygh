@@ -75,8 +75,9 @@ func TestUpdate_GivenMsgPendingPullRequestReviewSubmitted_WhenApplying_ThenItRes
 	if len(subject.reviewDiffRenderCache) != 0 {
 		t.Fatalf("expected the review diff render cache to be cleared, actual %d entries", len(subject.reviewDiffRenderCache))
 	}
-	if actual := subject.feedbackMessage; actual != pullRequestReviewSuccessMessage {
-		t.Fatalf("expected feedback %q, actual %q", pullRequestReviewSuccessMessage, actual)
+	expectedFeedback := iconStatusSuccess + " " + pullRequestReviewSuccessMessage
+	if actual := subject.feedbackMessage; actual != expectedFeedback {
+		t.Fatalf("expected feedback %q, actual %q", expectedFeedback, actual)
 	}
 	if actual := subject.model.Focus(); actual != FocusPullRequestsView {
 		t.Fatalf("expected focus %v, actual %v", FocusPullRequestsView, actual)

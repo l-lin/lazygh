@@ -11,10 +11,10 @@ import (
 
 func TestRuntimeConfigState_GivenKeymapsSearchesDisplayAndStoryReviewConfig_WhenUpdating_ThenItReturnsUpdatedCopiesWithoutMutatingTheOriginal(t *testing.T) {
 	subject := runtimeConfigState{
-		keymapOverrides:     appconfig.KeymapOverrides{"global": {"open_search": {"/"}}},
-		pullRequestSearches: []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}},
-		displayConfig:       appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleOwnerName},
-		storyReviewConfig:   story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}, Prompt: "Original prompt"},
+		keymapOverrides:   appconfig.KeymapOverrides{"global": {"open_search": {"/"}}},
+		pullRequestConfig: appconfig.PullRequestConfig{Searches: []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}},
+		displayConfig:     appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleOwnerName},
+		storyReviewConfig: story.Config{AgentCommand: []string{"pi", "-p", "@{{prompt_file}}"}, Prompt: "Original prompt"},
 	}
 	given_overrides := appconfig.KeymapOverrides{"global": {"open_search": {"s"}}}
 	given_searches := []appconfig.PullRequestSearch{{Label: "Team", Command: []string{" search ", " prs ", " --review-requested ", " @me "}}}
@@ -22,7 +22,7 @@ func TestRuntimeConfigState_GivenKeymapsSearchesDisplayAndStoryReviewConfig_When
 	given_storyConfig := story.Config{AgentCommand: []string{" pi ", " -p ", " @{{prompt_file}} "}, Prompt: "  Custom prompt  "}
 
 	keymapsUpdated := subject.withKeymapOverrides(given_overrides)
-	searchesUpdated := keymapsUpdated.withPullRequestSearches(given_searches)
+	searchesUpdated := keymapsUpdated.withPullRequestConfig(appconfig.PullRequestConfig{Searches: given_searches})
 	displayUpdated := searchesUpdated.withDisplayConfig(given_displayConfig)
 	storyUpdated := displayUpdated.withStoryReviewConfig(given_storyConfig)
 	given_overrides["global"]["open_search"][0] = "x"
@@ -34,8 +34,8 @@ func TestRuntimeConfigState_GivenKeymapsSearchesDisplayAndStoryReviewConfig_When
 		t.Fatalf("expected copied keymap override %q, actual %q", "s", actual)
 	}
 	expectedSearches := []appconfig.PullRequestSearch{{Label: "Team", Command: []string{"search", "prs", "--review-requested", "@me"}}}
-	if !reflect.DeepEqual(searchesUpdated.pullRequestSearches, expectedSearches) {
-		t.Fatalf("expected normalized pull request searches %+v, actual %+v", expectedSearches, searchesUpdated.pullRequestSearches)
+	if !reflect.DeepEqual(searchesUpdated.pullRequestConfig.Searches, expectedSearches) {
+		t.Fatalf("expected normalized pull request searches %+v, actual %+v", expectedSearches, searchesUpdated.pullRequestConfig.Searches)
 	}
 	expectedDisplayConfig := appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleName}
 	if !reflect.DeepEqual(displayUpdated.displayConfig, expectedDisplayConfig) {
@@ -48,8 +48,8 @@ func TestRuntimeConfigState_GivenKeymapsSearchesDisplayAndStoryReviewConfig_When
 	if actual := subject.keymapOverrides["global"]["open_search"][0]; actual != "/" {
 		t.Fatalf("expected the original keymap override %q, actual %q", "/", actual)
 	}
-	if !reflect.DeepEqual(subject.pullRequestSearches, []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}) {
-		t.Fatalf("expected the original pull request searches to stay intact, actual %+v", subject.pullRequestSearches)
+	if !reflect.DeepEqual(subject.pullRequestConfig.Searches, []appconfig.PullRequestSearch{{Label: "Mine", Command: []string{"search", "prs", "--author", "@me", "--state", "open"}}}) {
+		t.Fatalf("expected the original pull request searches to stay intact, actual %+v", subject.pullRequestConfig.Searches)
 	}
 	if !reflect.DeepEqual(subject.displayConfig, appconfig.DisplayConfig{RepositoryStyle: appconfig.RepositoryStyleOwnerName}) {
 		t.Fatalf("expected the original display config to stay intact, actual %+v", subject.displayConfig)
@@ -120,12 +120,12 @@ func TestUpdate_GivenMsgPullRequestSearchesApplied_WhenApplying_ThenItCopiesTheS
 	subject := NewProgramWithModel(given_model())
 	given_searches := []appconfig.PullRequestSearch{{Label: "Team", Command: []string{" search ", " prs ", " --review-requested ", " @me "}}}
 
-	Update(subject, MsgPullRequestSearchesApplied{Searches: given_searches})
+	Update(subject, MsgPullRequestConfigApplied{Config: appconfig.PullRequestConfig{Searches: given_searches}})
 	given_searches[0].Label = "Broken"
 
 	expectedSearches := []appconfig.PullRequestSearch{{Label: "Team", Command: []string{"search", "prs", "--review-requested", "@me"}}}
-	if !reflect.DeepEqual(subject.runtimeConfig.pullRequestSearches, expectedSearches) {
-		t.Fatalf("expected copied pull request searches %+v, actual %+v", expectedSearches, subject.runtimeConfig.pullRequestSearches)
+	if !reflect.DeepEqual(subject.runtimeConfig.pullRequestConfig.Searches, expectedSearches) {
+		t.Fatalf("expected copied pull request searches %+v, actual %+v", expectedSearches, subject.runtimeConfig.pullRequestConfig.Searches)
 	}
 	if actual := subject.model.PullRequestTabLabel(MyPullRequestsTab); actual != "Team" {
 		t.Fatalf("expected the first pull request tab label %q, actual %q", "Team", actual)

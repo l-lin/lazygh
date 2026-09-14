@@ -257,12 +257,19 @@ You can find some prompt examples in [`prompts/story-review/`](./prompts/story-r
 
 ### Pull request searches
 
-You can customize your own pull request searches under `[[pull_requests.searches]]`.
-`lazygh` prepends `gh search prs` for you, so each entry only needs the flags.
-Omit `refresh`, or set it to `"manual"`, to disable automatic refresh for a search. Otherwise, `refresh` accepts any strictly positive [Go duration](https://pkg.go.dev/time#ParseDuration), such as `"10m"`; ISO 8601 values such as `"PT10M"` are not accepted.
-The pasted pull-request tab is refreshed every 10 minutes regardless of search configuration.
+Configure one global pull-request refresh interval under `[pull_requests]`. The default is manual. Use `"manual"` or a strictly positive [Go duration](https://pkg.go.dev/time#ParseDuration), such as `"10m"`; malformed, zero, negative, and ISO 8601 values use manual mode.
+
+Each `[[pull_requests.searches]]` entry is refreshed by the global scheduler unless `auto_refresh = false`. Omitted or invalid `auto_refresh` values enable the search. The old per-search `refresh` key is no longer used.
+
+Pasted pull requests use `[pull_requests.pasted_prs].auto_refresh`, which defaults to `true`. This setting has no effect while the global interval is manual. Pasted details refresh on each scheduled cycle, while diffs refresh only for unread pasted pull requests.
 
 ```toml
+[pull_requests]
+refresh = "10m" # or "manual"
+
+[pull_requests.pasted_prs]
+auto_refresh = true
+
 [[pull_requests.searches]]
 label = "My PRs"
 flags = ["--author", "@me", "--state", "open", "--sort", "updated", "--order", "desc"]
@@ -270,7 +277,7 @@ flags = ["--author", "@me", "--state", "open", "--sort", "updated", "--order", "
 [[pull_requests.searches]]
 label = "My reviews"
 flags = ["--reviewed-by", "@me", "--limit", "100", "--state", "open", "--sort", "updated", "--order", "desc"]
-refresh = "10m"
+auto_refresh = false
 
 [[pull_requests.searches]]
 label = "Requested"
