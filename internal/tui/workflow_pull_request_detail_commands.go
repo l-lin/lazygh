@@ -12,6 +12,7 @@ type pullRequestDetailWorkflowRuntime struct {
 	workflowShellRuntime
 	pullRequestDetailFromPersistentCache func(githubdomain.PullRequest) (pullRequestDetailResult, bool)
 	pullRequestDetailCached              func(githubdomain.PullRequest) bool
+	acquirePullRequestRefresh            func(githubdomain.PullRequest) func()
 	getPullRequestDetail                 func(githubdomain.PullRequest) (githubdomain.PullRequestDetail, error)
 	getPendingPullRequestReviewState     func(githubdomain.PullRequest) (pendingPullRequestReviewState, bool)
 }
@@ -20,6 +21,7 @@ type pullRequestDiffWorkflowRuntime struct {
 	workflowShellRuntime
 	pullRequestDiffFromPersistentCache  func(githubdomain.PullRequest) (pullRequestDiffResult, bool)
 	pullRequestDiffCached               func(githubdomain.PullRequest) bool
+	acquirePullRequestRefresh           func(githubdomain.PullRequest) func()
 	getPullRequestDiff                  func(githubdomain.PullRequest) (githubdomain.PullRequestDiff, error)
 	shouldLoadPullRequestDiffTeamOwners bool
 	getPullRequestFileTeamOwners        func(string, int, []string) (map[string][]string, error)
@@ -49,6 +51,12 @@ func newPullRequestDetailWorkflowRuntime(program *Program, gui *gocui.Gui) pullR
 		return runtime
 	}
 
+	runtime.acquirePullRequestRefresh = func(summary githubdomain.PullRequest) func() {
+		if queries, ok := program.detailQueries.(PullRequestRefreshQueries); ok {
+			return queries.AcquirePullRequestRefresh(pullRequestRepositoryName(summary.Repository), summary.Number)
+		}
+		return func() {}
+	}
 	runtime.pullRequestDetailFromPersistentCache = program.pullRequestDetailFromPersistentCache
 	runtime.pullRequestDetailCached = func(summary githubdomain.PullRequest) bool {
 		return pullRequestDetailCachedInMemory(program.pullRequestDetailCache, summary)
@@ -87,6 +95,12 @@ func newPullRequestDiffWorkflowRuntime(program *Program, gui *gocui.Gui) pullReq
 		return runtime
 	}
 
+	runtime.acquirePullRequestRefresh = func(summary githubdomain.PullRequest) func() {
+		if queries, ok := program.detailQueries.(PullRequestRefreshQueries); ok {
+			return queries.AcquirePullRequestRefresh(pullRequestRepositoryName(summary.Repository), summary.Number)
+		}
+		return func() {}
+	}
 	runtime.pullRequestDiffFromPersistentCache = program.pullRequestDiffFromPersistentCache
 	runtime.pullRequestDiffCached = func(summary githubdomain.PullRequest) bool {
 		return pullRequestDiffCachedInMemory(program.pullRequestDiffCache, summary)
@@ -163,7 +177,9 @@ func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui
 	}
 
 	summary := command.summary
+	release := runtime.acquirePullRequestRefresh(summary)
 	runtime.runPullRequestAsync(pullRequestDetailKey(summary.Repository, summary.Number), func() {
+		defer release()
 		message := loadPullRequestDetailResult(runtime, summary)
 		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
 		runtime.dispatchAsyncMessage(message)
@@ -215,7 +231,9 @@ func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) 
 	}
 
 	summary := command.summary
+	release := runtime.acquirePullRequestRefresh(summary)
 	runtime.runPullRequestAsync(pullRequestDetailKey(summary.Repository, summary.Number), func() {
+		defer release()
 		message := loadPullRequestDiffResult(runtime, summary)
 		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
 		runtime.dispatchAsyncMessage(message)

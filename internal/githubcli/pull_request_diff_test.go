@@ -8,9 +8,10 @@ import (
 
 func TestGetPullRequestDiff_GivenValidDiffAndPagedFilesResponses_WhenFetching_ThenItReturnsTheUnifiedDiffAndAllFileStats(t *testing.T) {
 	runner := &fakeRunner{
+		anyOrder: true,
 		responses: []fakeCommandResponse{
-			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\r\n@@ -1 +1 @@\r\n-old\r\n+new\r\n")},
-			{stdout: []byte(`[[{"filename":" internal/tui/render.go ","status":" modified ","additions":1,"deletions":1,"patch":"@@ -1 +1 @@\n-old\n+new"}],[{"filename":" docs/guide.md ","previous_filename":" docs/old-guide.md ","status":" renamed ","additions":0,"deletions":0}]]`)},
+			{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\r\n@@ -1 +1 @@\r\n-old\r\n+new\r\n")},
+			{commandContains: "/files?", stdout: []byte(`[[{"filename":" internal/tui/render.go ","status":" modified ","additions":1,"deletions":1,"patch":"@@ -1 +1 @@\n-old\n+new"}],[{"filename":" docs/guide.md ","previous_filename":" docs/old-guide.md ","status":" renamed ","additions":0,"deletions":0}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}`)},
 		},
 	}
@@ -40,9 +41,10 @@ func TestGetPullRequestDiff_GivenValidDiffAndPagedFilesResponses_WhenFetching_Th
 
 func TestGetPullRequestDiff_GivenInvalidPagedFilesJSON_WhenFetching_ThenItReturnsAnInvalidResponseError(t *testing.T) {
 	runner := &fakeRunner{
+		anyOrder: true,
 		responses: []fakeCommandResponse{
-			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n")},
-			{stdout: []byte(`[{`)},
+			{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n")},
+			{commandContains: "/files?", stdout: []byte(`[{`)},
 		},
 	}
 	subject := NewPullRequestDetailServiceWithRunner(runner)
@@ -56,9 +58,10 @@ func TestGetPullRequestDiff_GivenInvalidPagedFilesJSON_WhenFetching_ThenItReturn
 
 func TestGetPullRequestDiff_GivenPaginatedReviewThreads_WhenFetching_ThenItReturnsEveryThreadWithResolvedStateAndReplies(t *testing.T) {
 	runner := &fakeRunner{
+		anyOrder: true,
 		responses: []fakeCommandResponse{
-			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
-			{stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
+			{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
+			{commandContains: "/files?", stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":true,"endCursor":"THREAD_CURSOR_1"},"nodes":[{"id":" thread-1 ","isResolved":true,"isOutdated":false,"path":" internal/tui/render.go ","line":11,"diffSide":" RIGHT ","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":" reviewer-one "},"body":" First reply ","createdAt":" 2026-04-20T10:00:00Z "},{"author":{"login":" reviewer-two "},"body":" Second reply ","createdAt":" 2026-04-20T10:05:00Z "}]}}]}}}}}`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-2","isResolved":false,"isOutdated":true,"path":"internal/tui/model.go","originalLine":21,"diffSide":"LEFT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"reviewer-three"},"body":"Needs work","createdAt":"2026-04-20T11:00:00Z"}]}}]}}}}}`)},
 		},
@@ -107,9 +110,10 @@ func TestGetPullRequestDiff_GivenPaginatedReviewThreads_WhenFetching_ThenItRetur
 
 func TestGetPullRequestDiff_GivenReviewThreadCommentPagination_WhenFetching_ThenItLoadsEveryReplyInTheThread(t *testing.T) {
 	runner := &fakeRunner{
+		anyOrder: true,
 		responses: []fakeCommandResponse{
-			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
-			{stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
+			{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
+			{commandContains: "/files?", stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":11,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":true,"endCursor":"COMMENT_CURSOR_1"},"nodes":[{"author":{"login":"reviewer-one"},"body":"First reply","createdAt":"2026-04-20T10:00:00Z"}]}}]}}}}}`)},
 			{stdout: []byte(`{"data":{"node":{"comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"author":{"login":"reviewer-two"},"body":"Second reply","createdAt":"2026-04-20T10:05:00Z"}]}}}}`)},
 		},
@@ -137,9 +141,10 @@ func TestGetPullRequestDiff_GivenReviewThreadCommentPagination_WhenFetching_Then
 
 func TestGetPullRequestDiff_GivenPendingInlineReviewComments_WhenFetching_ThenItReturnsTheThreadCommentState(t *testing.T) {
 	runner := &fakeRunner{
+		anyOrder: true,
 		responses: []fakeCommandResponse{
-			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
-			{stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
+			{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
+			{commandContains: "/files?", stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":11,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"PRRC_1","state":" PENDING ","author":{"login":"reviewer-one"},"body":"Draft reply","createdAt":"2026-04-20T10:00:00Z"}]}}]}}}}}`)},
 		},
 	}
@@ -161,9 +166,10 @@ func TestGetPullRequestDiff_GivenPendingInlineReviewComments_WhenFetching_ThenIt
 
 func TestGetPullRequestDiff_GivenThreadCommentReactions_WhenFetching_ThenItNormalizesReactionGroups(t *testing.T) {
 	runner := &fakeRunner{
+		anyOrder: true,
 		responses: []fakeCommandResponse{
-			{stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
-			{stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
+			{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte("diff --git a/internal/tui/render.go b/internal/tui/render.go\n@@ -1 +1 @@\n-old\n+new\n")},
+			{commandContains: "/files?", stdout: []byte(`[[{"filename":"internal/tui/render.go","status":"modified","additions":1,"deletions":1}]]`)},
 			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"thread-1","isResolved":false,"isOutdated":false,"path":"internal/tui/render.go","line":11,"diffSide":"RIGHT","comments":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"id":"PRRC_1","author":{"login":"reviewer-one"},"body":"Reply","createdAt":"2026-04-20T10:00:00Z","reactionGroups":[{"content":"THUMBS_DOWN","viewerHasReacted":true,"users":{"totalCount":1}},{"content":"ROCKET","viewerHasReacted":false,"users":{"totalCount":4}}]}]}}]}}}}}`)},
 		},
 	}

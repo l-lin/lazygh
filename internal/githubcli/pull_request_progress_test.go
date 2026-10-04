@@ -79,8 +79,8 @@ func TestDiffProgressAdapter_GivenEnrichmentFailure_WhenFetching_ThenItPublishes
 	expected := "fresh diff"
 	enrichmentError := errors.New("offline")
 	runner := &fakeRunner{responses: []fakeCommandResponse{
-		{stdout: []byte(expected)},
-		{stdout: []byte(`[[{"filename":"main.go"}]]`)},
+		{commandContains: "Accept: application/vnd.github.v3.diff", stdout: []byte(expected)},
+		{commandContains: "/files?", stdout: []byte(`[[{"filename":"main.go"}]]`)},
 		{err: enrichmentError},
 	}}
 	subject := NewPullRequestDetailAdapterWithRunner(runner)

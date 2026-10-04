@@ -2,11 +2,14 @@ package githubcli
 
 import (
 	"reflect"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 )
 
 type fakeRunner struct {
+	anyOrder  bool
 	mu        sync.Mutex
 	stdout    []byte
 	stderr    []byte
@@ -19,9 +22,10 @@ type fakeRunner struct {
 }
 
 type fakeCommandResponse struct {
-	stdout []byte
-	stderr []byte
-	err    error
+	commandContains string
+	stdout          []byte
+	stderr          []byte
+	err             error
 }
 
 type fakeCommandCall struct {
@@ -68,8 +72,22 @@ func (runner *fakeRunner) nextResponse() fakeCommandResponse {
 		return fakeCommandResponse{stdout: runner.stdout, stderr: runner.stderr, err: runner.err}
 	}
 
-	response := runner.responses[0]
-	runner.responses = runner.responses[1:]
+	responseIndex := -1
+	command := strings.Join(runner.args, " ")
+	for index, response := range runner.responses {
+		if response.commandContains == "" && responseIndex == -1 {
+			responseIndex = index
+		}
+		if response.commandContains != "" && strings.Contains(command, response.commandContains) {
+			responseIndex = index
+			break
+		}
+	}
+	if responseIndex == -1 {
+		return fakeCommandResponse{stdout: runner.stdout, stderr: runner.stderr, err: runner.err}
+	}
+	response := runner.responses[responseIndex]
+	runner.responses = append(runner.responses[:responseIndex], runner.responses[responseIndex+1:]...)
 	return response
 }
 
@@ -92,7 +110,17 @@ func then_stdinIs(t *testing.T, runner *fakeRunner, expected string) {
 func then_commandsAre(t *testing.T, runner *fakeRunner, expected []fakeCommandCall) {
 	t.Helper()
 
-	if !reflect.DeepEqual(runner.calls, expected) {
+	actual := runner.calls
+	if runner.anyOrder {
+		actual = append([]fakeCommandCall(nil), actual...)
+		expected = append([]fakeCommandCall(nil), expected...)
+		compare := func(left, right fakeCommandCall) int {
+			return strings.Compare(strings.Join(left.args, " "), strings.Join(right.args, " "))
+		}
+		slices.SortFunc(actual, compare)
+		slices.SortFunc(expected, compare)
+	}
+	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected command calls %+v, actual %+v", expected, runner.calls)
 	}
 }

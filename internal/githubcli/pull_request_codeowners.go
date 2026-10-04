@@ -9,20 +9,20 @@ import (
 )
 
 var (
-	ErrInvalidPullRequestBaseRefNameResponse = fmt.Errorf("invalid pull request base ref response")
-	ErrInvalidPullRequestCodeownersResponse  = fmt.Errorf("invalid pull request CODEOWNERS response")
-	ErrMissingPullRequestBaseRefName         = fmt.Errorf("missing pull request base ref name")
+	ErrInvalidPullRequestBaseRevisionResponse = fmt.Errorf("invalid pull request base revision response")
+	ErrInvalidPullRequestCodeownersResponse   = fmt.Errorf("invalid pull request CODEOWNERS response")
+	ErrMissingPullRequestBaseRevision         = fmt.Errorf("missing pull request base revision")
 )
 
-const pullRequestBaseRefNameQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){baseRefName}}}`
+const pullRequestBaseRevisionQuery = `query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){baseRefOid}}}`
 
 const pullRequestCodeownersBlobQuery = `query($owner:String!,$name:String!,$dotgithubExpression:String!,$rootExpression:String!,$docsExpression:String!){repository(owner:$owner,name:$name){dotgithub:object(expression:$dotgithubExpression){... on Blob{text}} root:object(expression:$rootExpression){... on Blob{text}} docs:object(expression:$docsExpression){... on Blob{text}}}}`
 
-type pullRequestBaseRefNameResponse struct {
+type pullRequestBaseRevisionResponse struct {
 	Data *struct {
 		Repository *struct {
 			PullRequest *struct {
-				BaseRefName string `json:"baseRefName"`
+				BaseRefOid string `json:"baseRefOid"`
 			} `json:"pullRequest"`
 		} `json:"repository"`
 	} `json:"data"`
@@ -60,12 +60,12 @@ func (client *PullRequestDetailService) GetPullRequestFileTeamOwners(repository 
 		return nil, err
 	}
 
-	baseRefName, err := client.pullRequestBaseRefName(owner, name, number)
+	baseRevision, err := client.pullRequestBaseRevision(owner, name, number)
 	if err != nil {
 		return nil, err
 	}
 
-	codeownersText, found, err := client.pullRequestCodeownersBlob(owner, name, baseRefName)
+	codeownersText, found, err := client.cachedPullRequestCodeownersBlob(owner, name, baseRevision)
 	if err != nil {
 		return nil, err
 	}
@@ -76,30 +76,30 @@ func (client *PullRequestDetailService) GetPullRequestFileTeamOwners(repository 
 	return matchPullRequestCodeownersTeamOwners(codeownersText, normalizedPaths), nil
 }
 
-func (client *PullRequestDetailService) pullRequestBaseRefName(owner string, name string, number int) (string, error) {
-	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestBaseRefNameQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}})
+func (client *PullRequestDetailService) pullRequestBaseRevision(owner string, name string, number int) (string, error) {
+	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestBaseRevisionQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("number", number)}})
 	if err != nil {
 		return "", err
 	}
 
-	var response pullRequestBaseRefNameResponse
+	var response pullRequestBaseRevisionResponse
 	if err := client.transport.decoder.DecodeJSON(result.Stdout, &response); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrInvalidPullRequestBaseRefNameResponse, err)
+		return "", fmt.Errorf("%w: %v", ErrInvalidPullRequestBaseRevisionResponse, err)
 	}
 	if response.Data == nil || response.Data.Repository == nil || response.Data.Repository.PullRequest == nil {
-		return "", ErrInvalidPullRequestBaseRefNameResponse
+		return "", ErrInvalidPullRequestBaseRevisionResponse
 	}
 
-	return validateNonEmptyPullRequestField(response.Data.Repository.PullRequest.BaseRefName, ErrMissingPullRequestBaseRefName)
+	return validateNonEmptyPullRequestField(response.Data.Repository.PullRequest.BaseRefOid, ErrMissingPullRequestBaseRevision)
 }
 
-func (client *PullRequestDetailService) pullRequestCodeownersBlob(owner string, name string, baseRefName string) (string, bool, error) {
-	trimmedBaseRefName := strings.TrimSpace(baseRefName)
-	if trimmedBaseRefName == "" {
-		return "", false, ErrMissingPullRequestBaseRefName
+func (client *PullRequestDetailService) pullRequestCodeownersBlob(owner string, name string, baseRevision string) (string, bool, error) {
+	trimmedBaseRevision := strings.TrimSpace(baseRevision)
+	if trimmedBaseRevision == "" {
+		return "", false, ErrMissingPullRequestBaseRevision
 	}
 
-	refPrefix := "refs/heads/" + trimmedBaseRefName + ":"
+	refPrefix := trimmedBaseRevision + ":"
 	result, err := client.queryGraphQL(GraphQLRequest{Query: pullRequestCodeownersBlobQuery, Variables: []GraphQLVariable{typedGraphQLVariable("owner", strings.TrimSpace(owner)), typedGraphQLVariable("name", strings.TrimSpace(name)), typedGraphQLVariable("dotgithubExpression", refPrefix+".github/CODEOWNERS"), typedGraphQLVariable("rootExpression", refPrefix+"CODEOWNERS"), typedGraphQLVariable("docsExpression", refPrefix+"docs/CODEOWNERS")}})
 	if err != nil {
 		return "", false, err

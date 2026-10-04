@@ -1,5 +1,7 @@
 package githubcli
 
+import "sync"
+
 type SessionService struct {
 	serviceBase
 }
@@ -10,6 +12,10 @@ type PullRequestListService struct {
 
 type PullRequestDetailService struct {
 	serviceBase
+	refreshMutex    sync.Mutex
+	refreshes       map[string]*pullRequestRefresh
+	codeownersMutex sync.Mutex
+	codeowners      map[string]*pullRequestCodeownersEntry
 }
 
 type PullRequestMutationService struct {

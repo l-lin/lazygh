@@ -1,5 +1,7 @@
 package githubcli
 
+import "sync"
+
 type PullRequestDiffAssembler struct {
 	LoadUnifiedDiff   func(repository string, number int) (string, error)
 	LoadDiffFiles     func(repository string, number int) ([]PullRequestDiffFile, error)
@@ -23,14 +25,20 @@ func (assembler PullRequestDiffAssembler) AssembleProgressively(repository strin
 		return PullRequestDiff{}, ErrInvalidPullRequestDiffFilesResponse
 	}
 
-	unifiedDiff, err := assembler.LoadUnifiedDiff(repository, number)
-	if err != nil {
-		return PullRequestDiff{}, err
+	var unifiedDiff string
+	var files []PullRequestDiffFile
+	var diffErr, filesErr error
+	var reads sync.WaitGroup
+	reads.Go(func() { unifiedDiff, diffErr = assembler.LoadUnifiedDiff(repository, number) })
+	reads.Go(func() { files, filesErr = assembler.LoadDiffFiles(repository, number) })
+	reads.Wait()
+	if diffErr != nil {
+		return PullRequestDiff{}, diffErr
 	}
-	files, err := assembler.LoadDiffFiles(repository, number)
-	if err != nil {
-		return PullRequestDiff{}, err
+	if filesErr != nil {
+		return PullRequestDiff{}, filesErr
 	}
+	var err error
 	if publish != nil {
 		publish(PullRequestDiff{UnifiedDiff: unifiedDiff, Files: files})
 	}

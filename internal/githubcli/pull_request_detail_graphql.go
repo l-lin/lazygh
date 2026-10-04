@@ -83,6 +83,32 @@ type pullRequestDetailGraphQLPullRequest struct {
 }
 
 func (client *PullRequestDetailService) loadPullRequestDetailGraphQLData(repository string, number int, detail PullRequestDetail, inlineComments []PullRequestInlineComment) (pullRequestDetailGraphQLData, error) {
+	scope := client.pullRequestRefresh(repository, number)
+	if scope == nil {
+		return client.fetchPullRequestDetailGraphQLData(repository, number, detail, inlineComments, true)
+	}
+	var data pullRequestDetailGraphQLData
+	loadedHere := false
+	threads, err := scope.loadThreads(func() ([]PullRequestReviewThread, error) {
+		loadedHere = true
+		var loadErr error
+		data, loadErr = client.fetchPullRequestDetailGraphQLData(repository, number, detail, inlineComments, true)
+		return data.ReviewThreads, loadErr
+	})
+	if err != nil {
+		return pullRequestDetailGraphQLData{}, err
+	}
+	if !loadedHere {
+		data, err = client.fetchPullRequestDetailGraphQLData(repository, number, detail, inlineComments, false)
+		if err != nil {
+			return pullRequestDetailGraphQLData{}, err
+		}
+	}
+	data.ReviewThreads = threads
+	return data, nil
+}
+
+func (client *PullRequestDetailService) fetchPullRequestDetailGraphQLData(repository string, number int, detail PullRequestDetail, inlineComments []PullRequestInlineComment, includeThreads bool) (pullRequestDetailGraphQLData, error) {
 	trimmedRepository, err := normalizePullRequestIdentity(repository, number)
 	if err != nil {
 		return pullRequestDetailGraphQLData{}, err
@@ -102,6 +128,10 @@ func (client *PullRequestDetailService) loadPullRequestDetailGraphQLData(reposit
 		query = pullRequestDetailGraphQLQuery
 	}
 
+	if !includeThreads {
+		query = strings.Replace(query, "$threadCursor:String", "$threadCursor:String,$includeThreads:Boolean!", 1)
+		query = strings.Replace(query, "reviewThreads(first:100,after:$threadCursor){", "reviewThreads(first:100,after:$threadCursor) @include(if:$includeThreads){", 1)
+	}
 	data := pullRequestDetailGraphQLData{ReactionGroupsByID: map[string][]ReactionGroup{}}
 	threadCursor := ""
 	commentCursor := ""
@@ -111,6 +141,9 @@ func (client *PullRequestDetailService) loadPullRequestDetailGraphQLData(reposit
 			typedGraphQLVariable("name", name),
 			typedGraphQLVariable("number", number),
 		}}
+		if !includeThreads {
+			request.Variables = append(request.Variables, typedGraphQLVariable("includeThreads", false))
+		}
 		if threadCursor != "" {
 			request.Variables = append(request.Variables, typedGraphQLVariable("threadCursor", threadCursor))
 		}

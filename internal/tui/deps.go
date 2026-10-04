@@ -27,6 +27,11 @@ type DetailQueries interface {
 	GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error)
 }
 
+// PullRequestRefreshQueries shares enrichment across queued reads until all release it.
+type PullRequestRefreshQueries interface {
+	AcquirePullRequestRefresh(repository string, number int) func()
+}
+
 // ProgressiveDetailQueries publishes usable content before completing enrichment.
 // Providers without this capability continue to return one complete result.
 type ProgressiveDetailQueries interface {

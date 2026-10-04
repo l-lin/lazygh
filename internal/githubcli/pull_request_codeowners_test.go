@@ -8,7 +8,7 @@ import (
 func TestGetPullRequestFileTeamOwners_GivenBaseBranchCodeowners_WhenFetching_ThenItMatchesChangedFilesToTeams(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{
-			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"baseRefName":"main"}}}}`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"baseRefName":"main","baseRefOid":"base-1"}}}}`)},
 			{stdout: []byte(`{"data":{"repository":{"dotgithub":{"text":"* @acme/Core\n!negated @acme/Nope\n/docs/ @acme/P3C\nREADME.md @octocat\n"},"root":null,"docs":null}}}`)},
 		},
 	}
@@ -18,8 +18,8 @@ func TestGetPullRequestFileTeamOwners_GivenBaseBranchCodeowners_WhenFetching_The
 
 	then_noError(t, actualErr)
 	then_commandsAre(t, runner, []fakeCommandCall{
-		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestBaseRefNameQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "number=42"}},
-		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestCodeownersBlobQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "dotgithubExpression=refs/heads/main:.github/CODEOWNERS", "-F", "rootExpression=refs/heads/main:CODEOWNERS", "-F", "docsExpression=refs/heads/main:docs/CODEOWNERS"}},
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestBaseRevisionQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "number=42"}},
+		{name: "gh", args: []string{"api", "graphql", "-f", "query=" + pullRequestCodeownersBlobQuery, "-F", "owner=acme", "-F", "name=widgets", "-F", "dotgithubExpression=base-1:.github/CODEOWNERS", "-F", "rootExpression=base-1:CODEOWNERS", "-F", "docsExpression=base-1:docs/CODEOWNERS"}},
 	})
 
 	expected := map[string][]string{
@@ -34,7 +34,7 @@ func TestGetPullRequestFileTeamOwners_GivenBaseBranchCodeowners_WhenFetching_The
 func TestGetPullRequestFileTeamOwners_GivenNoCodeownersFile_WhenFetching_ThenItReturnsNoTeamOwners(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{
-			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"baseRefName":"main"}}}}`)},
+			{stdout: []byte(`{"data":{"repository":{"pullRequest":{"baseRefName":"main","baseRefOid":"base-1"}}}}`)},
 			{stdout: []byte(`{"data":{"repository":{"dotgithub":null,"root":null,"docs":null}}}`)},
 		},
 	}

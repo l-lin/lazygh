@@ -1,5 +1,7 @@
 package githubcli
 
+import "sync"
+
 type PullRequestDetailAssembler struct {
 	LoadBaseDetail                  func(repository string, number int) (PullRequestDetail, error)
 	LoadMergeQueueMetadata          func(repository string, number int) (pullRequestMergeQueueMetadata, error)
@@ -43,6 +45,21 @@ func (assembler PullRequestDetailAssembler) AssembleProgressively(repository str
 	if publish != nil {
 		publish(detail.normalized())
 	}
+	// Comparison and build lookup depend only on the base, not comments or GraphQL.
+	var enrichment sync.WaitGroup
+	var outOfDateWithBase bool
+	var comparisonErr error
+	var checks []PullRequestStatusCheck
+	if assembler.LoadOutOfDateWithBase != nil {
+		baseDetail := detail
+		enrichment.Go(func() { outOfDateWithBase, comparisonErr = assembler.LoadOutOfDateWithBase(repository, baseDetail) })
+	}
+	if assembler.HydrateBuildLinks != nil && len(detail.StatusCheckRollup) > 0 {
+		baseChecks := append([]PullRequestStatusCheck(nil), detail.StatusCheckRollup...)
+		enrichment.Go(func() { checks = assembler.HydrateBuildLinks(repository, number, baseChecks) })
+	}
+	// Join even on failure so no request outlives its refresh reservation.
+	defer enrichment.Wait()
 	if assembler.LoadGraphQLData != nil && assembler.ListInlineComments != nil {
 		inlineComments, actualErr := assembler.ListInlineComments(repository, number)
 		if actualErr != nil {
@@ -64,15 +81,6 @@ func (assembler PullRequestDetailAssembler) AssembleProgressively(repository str
 			}
 			detail = applyPullRequestMergeQueueMetadata(detail, mergeQueueMetadata)
 		}
-	}
-	if assembler.LoadOutOfDateWithBase != nil {
-		outOfDateWithBase, actualErr := assembler.LoadOutOfDateWithBase(repository, detail)
-		if actualErr == nil {
-			detail.OutOfDateWithBase = outOfDateWithBase
-		}
-	}
-	if assembler.HydrateBuildLinks != nil && len(detail.StatusCheckRollup) > 0 {
-		detail.StatusCheckRollup = assembler.HydrateBuildLinks(repository, number, detail.StatusCheckRollup)
 	}
 	if assembler.LoadGraphQLData == nil && assembler.ListInlineComments != nil {
 		inlineComments, err := assembler.ListInlineComments(repository, number)
@@ -119,6 +127,13 @@ func (assembler PullRequestDetailAssembler) AssembleProgressively(repository str
 		}
 	}
 
+	enrichment.Wait()
+	if assembler.LoadOutOfDateWithBase != nil && comparisonErr == nil {
+		detail.OutOfDateWithBase = outOfDateWithBase
+	}
+	if assembler.HydrateBuildLinks != nil && len(detail.StatusCheckRollup) > 0 {
+		detail.StatusCheckRollup = checks
+	}
 	return detail.normalized(), nil
 }
 

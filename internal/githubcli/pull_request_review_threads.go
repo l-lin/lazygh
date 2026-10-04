@@ -45,7 +45,13 @@ type pullRequestReviewThreadCommentsPage struct {
 }
 
 func (client *PullRequestDetailService) listPullRequestReviewThreads(repository string, number int) ([]PullRequestReviewThread, error) {
-	return newReviewThreadAssembler(client).List(repository, number)
+	load := func() ([]PullRequestReviewThread, error) {
+		return newReviewThreadAssembler(client).List(repository, number)
+	}
+	if scope := client.pullRequestRefresh(repository, number); scope != nil {
+		return scope.loadThreads(load)
+	}
+	return load()
 }
 
 func (client *PullRequestDetailService) pullRequestReviewThreadsPage(owner string, name string, number int, cursor string) (pullRequestReviewThreadsPage, error) {
