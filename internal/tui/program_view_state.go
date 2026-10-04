@@ -8,6 +8,7 @@ type viewRenderer func(*gocui.View)
 func (program *Program) afterStateChange(gui *gocui.Gui) error {
 	defer program.publishLoadingSpinnerAnimating()
 	program.syncPersistentCacheShellState()
+	program.syncPullRequestAsyncPriority()
 	if gui == nil {
 		return nil
 	}

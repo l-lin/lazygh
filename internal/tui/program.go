@@ -183,7 +183,7 @@ func NewProgramWithModelAndDeps(model *Model, deps AppDeps) *Program {
 			},
 		},
 		programShellRuntime: programShellRuntime{
-			asyncRunner:                        goroutineAsyncRunner{},
+			asyncRunner:                        newPullRequestAsyncRunner(goroutineAsyncRunner{}),
 			uiUpdater:                          queuedUIUpdater{},
 			timingState:                        timingStateModel{now: time.Now, after: time.After, yankHighlightDuration: defaultYankHighlightDuration, transientErrorPopupDuration: defaultTransientErrorPopupDuration},
 			manualRefreshState:                 manualRefreshStateModel{pullRequestListPending: map[PullRequestTab]bool{}, pullRequestDetailPending: map[string]bool{}, pullRequestDiffPending: map[string]bool{}},

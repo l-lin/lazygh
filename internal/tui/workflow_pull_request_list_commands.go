@@ -78,7 +78,11 @@ func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
 		return
 	}
 	generation := program.pullRequestLoadGeneration(command.tab)
-	runWorkflowCommandAsync(runtime.runAsync, func() {
+	runAsync := runtime.runAsync
+	if command.Source == pullRequestLoadSourceScheduled {
+		runAsync = func(run func()) { runtime.runPullRequestAsync("", run) }
+	}
+	runWorkflowCommandAsync(runAsync, func() {
 		pullRequests, err := runtime.listPullRequests(command.tab)
 		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation, Source: command.Source, ScheduledRefreshBatchID: command.ScheduledRefreshBatchID})
 	})
@@ -158,6 +162,7 @@ func (command scheduledPullRequestRefreshCmd) execute(program *Program, gui *goc
 		detailLoadInFlight: program.pullRequestDetailLoadInFlight,
 		diffLoadInFlight:   program.pullRequestDiffLoadInFlight,
 		batchID:            command.batchID,
+		activeKey:          program.activePullRequestLoadKey(),
 	})
 	program.addScheduledPullRequestRefreshWork(command.batchID, len(plan.commands))
 	runtime.executeWorkflowPlan(plan)

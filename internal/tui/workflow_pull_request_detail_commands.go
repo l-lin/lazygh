@@ -148,7 +148,7 @@ func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui
 	}
 
 	summary := command.summary
-	runWorkflowCommandAsync(runtime.runAsync, func() {
+	runtime.runPullRequestAsync(pullRequestDetailKey(summary.Repository, summary.Number), func() {
 		message := loadPullRequestDetailResult(runtime, summary)
 		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
 		runtime.dispatchAsyncMessage(message)
@@ -200,7 +200,7 @@ func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) 
 	}
 
 	summary := command.summary
-	runWorkflowCommandAsync(runtime.runAsync, func() {
+	runtime.runPullRequestAsync(pullRequestDetailKey(summary.Repository, summary.Number), func() {
 		message := loadPullRequestDiffResult(runtime, summary)
 		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
 		runtime.dispatchAsyncMessage(message)

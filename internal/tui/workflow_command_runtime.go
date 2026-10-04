@@ -4,6 +4,7 @@ import "github.com/jesseduffield/gocui"
 
 type workflowShellRuntime struct {
 	runAsync                  func(func())
+	runPullRequestAsync       func(string, func())
 	dispatchAsyncMessage      func(Msg)
 	executeUpdate             func(Msg)
 	executeWorkflowPlan       func(workflowPlan)
@@ -18,6 +19,7 @@ func newWorkflowShellRuntime(program *Program, gui *gocui.Gui) workflowShellRunt
 	capturedGUI := program.captureGUI(gui)
 	return workflowShellRuntime{
 		runAsync:             program.runAsync,
+		runPullRequestAsync:  program.runPullRequestAsync,
 		dispatchAsyncMessage: program.dispatchAsyncMessage,
 		executeUpdate: func(msg Msg) {
 			_ = program.executeRuntimeMessage(capturedGUI, msg)

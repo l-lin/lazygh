@@ -40,7 +40,7 @@ func (command scheduledPullRequestProbeCmd) execute(program *Program, gui *gocui
 			continue
 		}
 		program.addScheduledPullRequestRefreshWork(command.batchID, 1)
-		runWorkflowCommandAsync(runtime.runAsync, func() {
+		runtime.runPullRequestAsync(key, func() {
 			remote, err := queries.GetPullRequestSummary(pullRequestRepositoryName(summary.Repository), summary.Number)
 			if err != nil {
 				remote = summary

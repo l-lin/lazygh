@@ -92,6 +92,7 @@ type scheduledPullRequestRefreshPlanInput struct {
 	detailLoadInFlight map[string]bool
 	diffLoadInFlight   map[string]bool
 	batchID            uint64
+	activeKey          string
 }
 
 func planScheduledPullRequestRefresh(input scheduledPullRequestRefreshPlanInput) workflowPlan {
@@ -108,11 +109,17 @@ func planScheduledPullRequestRefresh(input scheduledPullRequestRefreshPlanInput)
 	for _, summary := range diffSummaries {
 		actual.addMessage(MsgPullRequestDiffLoadPlanned{Key: pullRequestDetailKey(summary.Repository, summary.Number), ScheduledRefreshBatchID: input.batchID})
 	}
-	for _, summary := range detailSummaries {
-		actual.addCommand(loadPullRequestDetailCmd{summary: summary, ScheduledRefreshBatchID: input.batchID})
-	}
-	for _, summary := range diffSummaries {
-		actual.addCommand(loadPullRequestDiffCmd{summary: summary, ScheduledRefreshBatchID: input.batchID})
+	for _, active := range []bool{true, false} {
+		for _, summary := range detailSummaries {
+			if (pullRequestDetailKey(summary.Repository, summary.Number) == input.activeKey) == active {
+				actual.addCommand(loadPullRequestDetailCmd{summary: summary, ScheduledRefreshBatchID: input.batchID})
+			}
+		}
+		for _, summary := range diffSummaries {
+			if (pullRequestDetailKey(summary.Repository, summary.Number) == input.activeKey) == active {
+				actual.addCommand(loadPullRequestDiffCmd{summary: summary, ScheduledRefreshBatchID: input.batchID})
+			}
+		}
 	}
 	return actual
 }
