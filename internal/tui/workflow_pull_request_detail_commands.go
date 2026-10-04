@@ -178,11 +178,14 @@ func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui
 
 	summary := command.summary
 	release := runtime.acquirePullRequestRefresh(summary)
-	runtime.runPullRequestAsync(pullRequestDetailKey(summary.Repository, summary.Number), func() {
+	key := pullRequestDetailKey(summary.Repository, summary.Number)
+	owner := program.refreshCommandOwner(command.ScheduledRefreshBatchID, program.manualRefreshState.pullRequestDetailPending[key], key)
+	runtime.runObservedPullRequestAsync(key, "refresh detail "+key, owner, func() error {
 		defer release()
 		message := loadPullRequestDetailResult(runtime, summary)
 		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
 		runtime.dispatchAsyncMessage(message)
+		return message.Err
 	})
 }
 
@@ -232,11 +235,14 @@ func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) 
 
 	summary := command.summary
 	release := runtime.acquirePullRequestRefresh(summary)
-	runtime.runPullRequestAsync(pullRequestDetailKey(summary.Repository, summary.Number), func() {
+	key := pullRequestDetailKey(summary.Repository, summary.Number)
+	owner := program.refreshCommandOwner(command.ScheduledRefreshBatchID, program.manualRefreshState.pullRequestDiffPending[key], key)
+	runtime.runObservedPullRequestAsync(key, "refresh diff "+key, owner, func() error {
 		defer release()
 		message := loadPullRequestDiffResult(runtime, summary)
 		message.ScheduledRefreshBatchID = command.ScheduledRefreshBatchID
 		runtime.dispatchAsyncMessage(message)
+		return message.Err
 	})
 }
 

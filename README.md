@@ -92,6 +92,16 @@ lazygh review https://github.com/acme/awesome/pull/123
 lazygh story-review https://github.com/acme/awesome/pull/123
 ```
 
+### Performance history
+
+Open command mode with `:`, enter `history`, and press Enter. The read-only popup takes a snapshot of the latest 100 command and refresh entries for this session; reopen it to see new results.
+
+Command rows show running, success, or failure and elapsed execution time. Success means the `gh` process exited successfully, not that its response passed parsing.
+
+Refresh rows show the PR or search-tab index, execution time, queue wait, and ownership at submission: interactive, manual, background, or a scheduled batch ID. Queue wait includes both the PR-read queue and backend scheduling; execution time excludes it. Optional enrichment failures can appear as failed commands within a successful refresh.
+
+These are separate measurements, not per-command refresh attribution. They help distinguish queue pressure from slow commands without changing transport. History retains display-safe command text, not stdout, stderr, stdin, or raw GraphQL queries.
+
 ### Images
 
 `lazygh` renders markdown images and supported HTML `<img>` tags in detail views, only if your terminal support [kitty image protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/).

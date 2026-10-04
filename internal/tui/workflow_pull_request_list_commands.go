@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"fmt"
 	"github.com/jesseduffield/gocui"
 	persistcache "github.com/l-lin/lazygh/internal/cache"
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	"time"
 
 	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
@@ -82,9 +84,11 @@ func (command loadPullRequestsCmd) execute(program *Program, gui *gocui.Gui) {
 	if command.Source == pullRequestLoadSourceScheduled {
 		runAsync = func(run func()) { runtime.runPullRequestAsync("", run) }
 	}
-	runWorkflowCommandAsync(runAsync, func() {
+	owner := program.refreshCommandOwner(command.ScheduledRefreshBatchID, program.manualRefreshState.pullRequestListPending[command.tab], program.activePullRequestLoadKey())
+	runObservedCommandAsync(runAsync, runtime.dispatchAsyncMessage, time.Now, fmt.Sprintf("refresh list tab=%d", command.tab), owner, func() error {
 		pullRequests, err := runtime.listPullRequests(command.tab)
 		runtime.dispatchAsyncMessage(MsgPullRequestsLoaded{Tab: command.tab, PullRequests: pullRequests, Err: err, Generation: generation, Source: command.Source, ScheduledRefreshBatchID: command.ScheduledRefreshBatchID})
+		return err
 	})
 }
 

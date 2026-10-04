@@ -155,7 +155,13 @@ Shell work now lives behind explicit command files.
 
 These command files still live in `internal/tui`, but they now build focused runtime bundles at the `Cmd.execute(...)` boundary instead of passing the full shell bag deep into helpers.
 
-Production wraps one shared `githubcli.Runner` and passes it to every `gh` adapter. `githubcli` observes each typed, display-safe command before execution, and the TUI receives `MsgGHCommandStarted` events into a bounded, session-only history store. `internal/tui/pull_request_browser.go` remains a status-command formatter, not the history collection point.
+Production wraps one shared `githubcli.Runner` and passes it to every `gh` adapter. The executor reports paired, display-safe `github.CommandActivity` events with unique execution IDs, monotonic start/end times, and process exit outcomes. Refresh command shells independently report description, diff, remote-probe, and list job timings, including queue wait and submission-time ownership (interactive, manual, background, or scheduled batch ID).
+
+Queue wait runs from submission to worker entry; job execution excludes it. Workers capture ownership before queueing and never infer it from concurrent mutable state. These job records do not attribute individual subprocesses to refreshes.
+
+`MsgCommandActivity` reduces both streams on the UI thread into the same 100-entry, session-only history; completion updates its existing row, and late starts cannot overwrite completion. The history popup remains a read-only snapshot. Payloads and error text are excluded.
+
+`internal/tui/pull_request_browser.go` remains a status-command formatter, not the history collection point.
 
 ## Workflow planning
 

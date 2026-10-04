@@ -40,12 +40,14 @@ func (command scheduledPullRequestProbeCmd) execute(program *Program, gui *gocui
 			continue
 		}
 		program.addScheduledPullRequestRefreshWork(command.batchID, 1)
-		runtime.runPullRequestAsync(key, func() {
+		owner := program.refreshCommandOwner(command.batchID, false, key)
+		runtime.runObservedPullRequestAsync(key, "refresh probe "+key, owner, func() error {
 			remote, err := queries.GetPullRequestSummary(pullRequestRepositoryName(summary.Repository), summary.Number)
 			if err != nil {
 				remote = summary
 			}
 			runtime.dispatchAsyncMessage(MsgScheduledPullRequestProbed{Summary: remote, Err: err, BatchID: command.batchID})
+			return err
 		})
 	}
 	program.executeCmds(gui, program.completeScheduledPullRequestRefreshWork(command.batchID, nil))

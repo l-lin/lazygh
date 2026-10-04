@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/l-lin/lazygh/internal/app"
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 	"github.com/l-lin/lazygh/internal/story"
 	"github.com/l-lin/lazygh/internal/theme"
@@ -38,15 +38,11 @@ func main() {
 
 func newRunner() configurableRunner {
 	var program *tui.Program
-	formatter := githubcli.NewCommandFormatter()
-	observer := githubcli.CommandObserverFunc(func(command githubcli.Command) {
-		if program == nil {
-			return
+	runner := githubcli.NewActivityObservingRunner(nil, func(activity githubdomain.CommandActivity) {
+		if program != nil {
+			program.ReportCommandActivity(activity)
 		}
-		program.ReportGHCommandStarted(formatter.Format(command), time.Now())
 	})
-
-	runner := githubcli.NewObservingRunner(nil, observer)
 	program = tui.NewProgramWithModelAndDeps(nil, newAppDepsWithRunner(runner))
 	return program
 }

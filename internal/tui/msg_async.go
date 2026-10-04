@@ -94,6 +94,12 @@ type MsgTransientErrorPopupExpired struct {
 	Generation uint64
 }
 
+type MsgCommandActivity struct {
+	Activity githubdomain.CommandActivity
+}
+
+func (MsgCommandActivity) isMsg() {}
+
 type MsgGHCommandStarted struct {
 	Command   string
 	StartedAt time.Time

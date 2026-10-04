@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	appconfig "github.com/l-lin/lazygh/internal/config"
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 )
 
 var ErrInvalidGraphQLResponse = errors.New("invalid GraphQL response")
@@ -92,6 +94,7 @@ type errorClassifier struct {
 
 type commandExecutor struct {
 	runner     Runner
+	formatter  CommandFormatter
 	classifier ErrorClassifier
 }
 
@@ -138,7 +141,7 @@ func NewExecutor(runner Runner, formatter CommandFormatter, classifier ErrorClas
 	if classifier == nil {
 		classifier = NewErrorClassifier(formatter)
 	}
-	return commandExecutor{runner: runner, classifier: classifier}
+	return commandExecutor{runner: runner, formatter: formatter, classifier: classifier}
 }
 
 func NewGraphQLClient(executor Executor) GraphQLClient {
@@ -184,7 +187,22 @@ func (classifier errorClassifier) Classify(command Command, result CommandResult
 	return classifyCommandError(classifier.formatter.Format(command), err, result.Stderr)
 }
 
-func (executor commandExecutor) Execute(command Command) (CommandResult, error) {
+func (executor commandExecutor) Execute(command Command) (result CommandResult, err error) {
+	if observer, ok := executor.runner.(commandActivityObserver); ok {
+		activity := githubdomain.CommandActivity{
+			ID: nextCommandActivityID(), Command: executor.formatter.Format(command),
+			StartedAt: time.Now(), Outcome: githubdomain.CommandRunning,
+		}
+		observer.ObserveActivity(activity)
+		defer func() {
+			activity.FinishedAt = time.Now()
+			activity.Outcome = githubdomain.CommandSucceeded
+			if err != nil {
+				activity.Outcome = githubdomain.CommandFailed
+			}
+			observer.ObserveActivity(activity)
+		}()
+	}
 	if observer, ok := executor.runner.(CommandObserver); ok {
 		observer.ObserveCommand(command)
 	}
@@ -197,7 +215,7 @@ func (executor commandExecutor) Execute(command Command) (CommandResult, error) 
 		return result, nil
 	}
 
-	result, err := executor.runner.Run(ghBinaryName, command.Args...)
+	result, err = executor.runner.Run(ghBinaryName, command.Args...)
 	if err != nil {
 		return CommandResult{}, executor.classifier.Classify(command, result, err)
 	}
