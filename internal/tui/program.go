@@ -97,6 +97,7 @@ type programShellRuntime struct {
 	pullRequestRefreshScheduler          *pullRequestRefreshScheduler
 	pullRequestRefreshScheduleGeneration uint64
 	scheduledPullRequestRefreshBatches   map[uint64]scheduledPullRequestRefreshBatch
+	pullRequestProbeRetries              map[string]pullRequestRefreshRetry
 }
 
 type Program struct {

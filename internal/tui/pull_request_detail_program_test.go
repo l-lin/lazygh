@@ -2078,6 +2078,15 @@ func (loader *fakePullRequestDetailLoader) GetReleaseDetail(repository string, i
 	return githubdomain.ReleaseDetail{}, nil
 }
 
+func (loader *fakePullRequestDetailLoader) GetPullRequestSummary(repository string, number int) (githubdomain.PullRequest, error) {
+	key := repository + "#" + strconv.Itoa(number)
+	if err := loader.detailErrors[key]; err != nil {
+		return githubdomain.PullRequest{}, err
+	}
+	detail := loader.details[key]
+	return githubdomain.PullRequest{Number: number, Repository: githubdomain.Repository{NameWithOwner: repository}, Title: detail.Title, URL: detail.URL, Body: detail.Body, State: detail.State, IsDraft: detail.IsDraft, UpdatedAt: detail.UpdatedAt}, nil
+}
+
 func (loader *fakePullRequestDetailLoader) GetPullRequestDetail(repository string, number int) (githubdomain.PullRequestDetail, error) {
 	key := repository + "#" + strconv.Itoa(number)
 	loader.detailCalls = append(loader.detailCalls, key)

@@ -136,13 +136,13 @@ func (command hydratePullRequestDetailFromCacheCmd) execute(program *Program, gu
 
 func (command loadPullRequestDetailCmd) execute(program *Program, gui *gocui.Gui) {
 	if program != nil && command.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(command.ScheduledRefreshBatchID) {
-		program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		program.executeCmds(gui, program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil))
 		return
 	}
 	runtime := newPullRequestDetailWorkflowRuntime(program, gui)
 	if runtime.getPullRequestDetail == nil || runtime.dispatchAsyncMessage == nil {
 		if command.ScheduledRefreshBatchID != 0 {
-			program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+			program.executeCmds(gui, program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil))
 		}
 		return
 	}
@@ -188,13 +188,13 @@ func (command hydratePullRequestDiffFromCacheCmd) execute(program *Program, gui 
 
 func (command loadPullRequestDiffCmd) execute(program *Program, gui *gocui.Gui) {
 	if program != nil && command.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(command.ScheduledRefreshBatchID) {
-		program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+		program.executeCmds(gui, program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil))
 		return
 	}
 	runtime := newPullRequestDiffWorkflowRuntime(program, gui)
 	if runtime.getPullRequestDiff == nil || runtime.dispatchAsyncMessage == nil {
 		if command.ScheduledRefreshBatchID != 0 {
-			program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil)
+			program.executeCmds(gui, program.completeScheduledPullRequestRefreshWork(command.ScheduledRefreshBatchID, nil))
 		}
 		return
 	}

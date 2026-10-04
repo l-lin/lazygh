@@ -3,6 +3,7 @@ package tui
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	persistcache "github.com/l-lin/lazygh/internal/cache"
@@ -184,6 +185,58 @@ func TestExecuteWorkflowCommands_GivenASelectedPullRequestDetailLoadPlan_WhenRun
 	}
 	if !reflect.DeepEqual(loader.getPendingReviewCalls, []string{"acme/widgets#42"}) {
 		t.Fatalf("expected pending review lookup calls %v, actual %v", []string{"acme/widgets#42"}, loader.getPendingReviewCalls)
+	}
+}
+
+func TestScheduledPullRequestRefresh_GivenPersistentCachedDetailAndDiff_WhenRefreshStarts_ThenItKeepsCachedContentVisibleUntilNetworkCompletes(t *testing.T) {
+	summary := githubcli.PullRequest{Title: "First PR", Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42", Body: "Summary body", State: "OPEN", UpdatedAt: "2026-05-05T10:05:00Z"}
+	cachedDetail := githubcli.PullRequestDetail{Title: "First PR", Number: 42, Body: "Cached body", State: "OPEN"}
+	cachedDiff := githubcli.PullRequestDiff{UnifiedDiff: "diff --git a/main.go b/main.go\n@@ -1 +1 @@\n-old\n+cached", Files: []githubcli.PullRequestDiffFile{{Path: "main.go", ChangeType: "modified", Additions: 1, Deletions: 1}}}
+	loader := &fakePullRequestDetailLoader{
+		details: map[string]githubcli.PullRequestDetail{
+			"acme/widgets#42": {Title: "First PR", Number: 42, Body: "Fresh body", State: "OPEN"},
+		},
+		diffs: map[string]githubcli.PullRequestDiff{
+			"acme/widgets#42": {UnifiedDiff: cachedDiff.UnifiedDiff, Files: cachedDiff.Files},
+		},
+	}
+	cache := &fakePersistentPullRequestCache{
+		details: map[string]persistcache.CachedPullRequestDetail{
+			"acme/widgets#42": given_cachedPersistentPullRequestDetail(cachedDetail, summary.UpdatedAt),
+		},
+		diffs: map[string]persistcache.CachedPullRequestDiff{
+			"acme/widgets#42": given_cachedPersistentPullRequestDiff(cachedDiff, summary.UpdatedAt),
+		},
+	}
+	asyncRunner := &capturingAsyncRunner{}
+	subject := given_workflowProgram(summary, loader)
+	subject.pullRequestCache = cache
+	subject.asyncRunner = asyncRunner
+	gui := given_headlessGui(t)
+	defer gui.Close()
+	subject.configureGUI(gui)
+
+	domainSummary := githubcli.ToDomainPullRequestSummary(summary)
+	domainSummary.UpdatedAt = "2026-05-05T10:10:00Z"
+	scheduledPullRequestRefreshCmd{
+		detailSummaries: []githubdomain.PullRequest{domainSummary},
+		diffSummaries:   []githubdomain.PullRequest{domainSummary},
+	}.execute(subject, gui)
+
+	actualDetail, detailKnown := subject.pullRequestDetailForSummary(domainSummary)
+	if !detailKnown || actualDetail.detail.Body != "Cached body" {
+		t.Fatalf("expected cached detail body %q before the network refresh, actual %+v", "Cached body", actualDetail)
+	}
+	actualDiff, diffKnown := subject.pullRequestDiffForSummary(domainSummary)
+	if !diffKnown || len(actualDiff.data.Files) != 1 || actualDiff.data.Files[0].Path != "main.go" {
+		t.Fatalf("expected cached diff before the network refresh, actual %+v", actualDiff)
+	}
+	subject.model.OpenDetail()
+	if actual := subject.detailViewContent(); !strings.Contains(actual, "Cached body") {
+		t.Fatalf("expected the detail view to keep cached content visible, actual %q", actual)
+	}
+	if len(asyncRunner.runs) != 2 {
+		t.Fatalf("expected one queued detail and diff refresh, actual %d", len(asyncRunner.runs))
 	}
 }
 

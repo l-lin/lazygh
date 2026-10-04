@@ -61,6 +61,7 @@ func (program *Program) pullRequestDetailLoadPlanInput() pullRequestDetailLoadPl
 	input.hasSelection = key != ""
 	input.key = key
 	input.loadInFlight = program.pullRequestDetailLoadInFlight[key]
+	input.retryBlocked = !program.pullRequestDetailCache[key].retry.ready(program.currentTime())
 	if key == "" {
 		return input
 	}
@@ -96,6 +97,7 @@ func (program *Program) pullRequestDiffLoadPlanInput() pullRequestDiffLoadPlanIn
 	input.hasSelection = key != ""
 	input.key = key
 	input.loadInFlight = program.pullRequestDiffLoadInFlight[key]
+	input.retryBlocked = !program.pullRequestDiffCache[key].retry.ready(program.currentTime())
 	if key == "" {
 		return input
 	}

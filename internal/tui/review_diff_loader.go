@@ -8,6 +8,7 @@ import (
 )
 
 type pullRequestDiffResult struct {
+	retry                   pullRequestRefreshRetry
 	data                    reviewDiffData
 	err                     error
 	sourceUpdatedAt         string

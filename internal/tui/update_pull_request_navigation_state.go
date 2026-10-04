@@ -54,8 +54,8 @@ func (program *Program) applyLoadedPullRequestRowsWithSeenPolicy(tab PullRequest
 	}
 }
 
-func (program *Program) unreadPullRequests(pullRequests []githubdomain.PullRequest) []githubdomain.PullRequest {
-	unread := make([]githubdomain.PullRequest, 0, len(pullRequests))
+func (program *Program) pullRequestsNeedingScheduledRefresh(pullRequests []githubdomain.PullRequest) []githubdomain.PullRequest {
+	refreshable := make([]githubdomain.PullRequest, 0, len(pullRequests))
 	seen := make(map[string]struct{}, len(pullRequests))
 	for _, pullRequest := range pullRequests {
 		key := pullRequestDetailKey(pullRequest.Repository, pullRequest.Number)
@@ -66,11 +66,20 @@ func (program *Program) unreadPullRequests(pullRequests []githubdomain.PullReque
 			continue
 		}
 		seen[key] = struct{}{}
-		if program.pullRequestFreshnessFor(key).isUnread(pullRequest.UpdatedAt) {
-			unread = append(unread, pullRequest)
+		detail, detailKnown := program.pullRequestDetailForSummary(pullRequest)
+		if !detailKnown {
+			detail, detailKnown = program.pullRequestDetailFromPersistentCache(pullRequest)
+		}
+		diff, diffKnown := program.pullRequestDiffForSummary(pullRequest)
+		if !diffKnown {
+			diff, diffKnown = program.pullRequestDiffFromPersistentCache(pullRequest)
+		}
+		now := program.currentTime()
+		if (detail.retry.ready(now) && pullRequestDetailNeedsRefresh(pullRequest, detail, detailKnown)) || (diff.retry.ready(now) && pullRequestDiffNeedsRefresh(pullRequest, diff, diffKnown, program.shouldLoadPullRequestDiffTeamOwners())) {
+			refreshable = append(refreshable, pullRequest)
 		}
 	}
-	return unread
+	return refreshable
 }
 
 func (program *Program) selectedPullRequestKey(tab PullRequestTab) string {

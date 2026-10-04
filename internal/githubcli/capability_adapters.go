@@ -158,6 +158,14 @@ func (adapter *NotificationAdapter) MarkAllNotificationsDone(notifications []git
 	return adapter.service.MarkAllNotificationsDone(NotificationsFromDomain(notifications))
 }
 
+func (adapter *PullRequestDetailAdapter) GetPullRequestSummary(repository string, number int) (githubdomain.PullRequest, error) {
+	summary, err := adapter.service.GetPullRequestSummary(repository, number)
+	if err != nil {
+		return githubdomain.PullRequest{}, err
+	}
+	return ToDomainPullRequestSummary(summary), nil
+}
+
 func (adapter *PullRequestDetailAdapter) GetPullRequestDetail(repository string, number int) (githubdomain.PullRequestDetail, error) {
 	detail, err := adapter.service.GetPullRequestDetail(repository, number)
 	if err != nil {

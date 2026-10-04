@@ -81,7 +81,7 @@ The TUI now has explicit `Msg`, `Update`, and `Cmd` types.
 3. `dispatch()` executes those commands.
 4. `afterStateChange()` runs workflow planning, persistent-cache shell sync, shell sync, and redraw only.
 
-The pull-request refresh scheduler follows the same path: its timer emits `MsgScheduledPullRequestRefreshDue`, `Update` rejects stale schedule generations and turns current due messages into tagged scheduled work, and existing async commands perform GitHub I/O and return typed loaded-result messages. The scheduler acknowledgement is returned only after the tagged scheduled batch settles. Scheduled list results inspect freshness before applying the normal seen-marking behavior, so background fetching never marks a pull request read.
+The pull-request refresh scheduler follows the same path: its timer emits `MsgScheduledPullRequestRefreshDue`, `Update` rejects stale schedule generations and turns current due messages into tagged scheduled work, and existing async commands perform GitHub I/O and return typed loaded-result messages. The scheduler acknowledgement is returned only after the tagged scheduled batch settles. Scheduled list results use successfully fetched cache versions, not seen versions, to select missing or stale content. Pasted PRs and the active review use a lightweight remote-summary probe before selecting detail/diff work. Probe retry state belongs to the shell; detail and diff retry state belongs to their cache results. Failed loads preserve successful versions and stale content, with a 30-second exponential retry delay capped at five minutes. Selected-content planning and scheduled work both honor that delay; manual refresh bypasses it. Follow-up work reserves its batch slot before the parent completes, so acknowledgement waits for all remote probes and loads. Background fetching never marks a pull request read.
 
 For the optional browser commit-diff tab, `Update` owns open, retarget, focus, and clear decisions. `commit_diff_commands.go` owns the GitHub fetch only.
 
@@ -128,6 +128,7 @@ Shell work now lives behind explicit command files.
 - `workflow_session_commands.go`: connected-user load
 - `workflow_pull_request_list_commands.go`: pull-request list load, reload, scheduled refresh, cache hydration, and generation-tagged async results
 - `pull_request_refresh_scheduler.go`: shell-only global fixed-cadence scheduling, timer lifecycle, and schedule-generation backpressure
+- `pull_request_refresh_probe.go`: scheduled remote-summary probes and typed results for pasted PRs and the active review
 - `workflow_pull_request_detail_commands.go`: pull-request detail and diff load, cache hydration, and diff team-owner enrichment
 - `commit_diff_commands.go`: single-commit diff load for the optional browser commit-diff tab
 - `workflow_notification_commands.go`: notifications plus issue and release detail loads

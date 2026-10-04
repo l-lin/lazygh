@@ -50,10 +50,10 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 	}
 	manualRefresh := program.consumeManualPullRequestListRefresh(message.Tab)
 	if message.Err == nil {
-		var scheduledUnread []githubdomain.PullRequest
+		var scheduledRefreshTargets []githubdomain.PullRequest
 		if message.Source == pullRequestLoadSourceScheduled {
 			// Freshness must be checked before row application can mark the current detail seen.
-			scheduledUnread = program.unreadPullRequests(message.PullRequests)
+			scheduledRefreshTargets = program.pullRequestsNeedingScheduledRefresh(message.PullRequests)
 		}
 		refreshErrorBelongsToTab := program.pullRequestListStore != nil && program.pullRequestListStore.pullRequestRefreshErrorKnown && program.pullRequestListStore.pullRequestRefreshErrorTab == message.Tab
 		if refreshErrorBelongsToTab {
@@ -78,9 +78,10 @@ func (program *Program) applyPullRequestsLoaded(message MsgPullRequestsLoaded) [
 			if message.ScheduledRefreshBatchID != 0 && program.scheduledPullRequestRefreshBatchCancelled(message.ScheduledRefreshBatchID) {
 				return program.completeScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, nil)
 			}
+			program.addScheduledPullRequestRefreshWork(message.ScheduledRefreshBatchID, 1)
 			commands := []Cmd{scheduledPullRequestRefreshCmd{
-				detailSummaries: append([]githubdomain.PullRequest(nil), scheduledUnread...),
-				diffSummaries:   append([]githubdomain.PullRequest(nil), scheduledUnread...),
+				detailSummaries: append([]githubdomain.PullRequest(nil), scheduledRefreshTargets...),
+				diffSummaries:   append([]githubdomain.PullRequest(nil), scheduledRefreshTargets...),
 				batchID:         message.ScheduledRefreshBatchID,
 			}}
 			if message.ScheduledRefreshBatchID != 0 {
@@ -176,6 +177,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 		})
 	}
 	if message.Err == nil {
+		message.Summary.UpdatedAt = firstNonEmpty(strings.TrimSpace(message.Detail.UpdatedAt), message.Summary.UpdatedAt)
 		clonedDetail := clonePullRequestDetail(message.Detail)
 		program.cachePullRequestDetail(message.Summary, clonedDetail)
 		program.updateDetailStore(func(store detailStore) detailStore {
@@ -194,7 +196,7 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 
 	if !program.canKeepPullRequestDetailOnRefreshError(key) {
 		program.updateDetailStore(func(store detailStore) detailStore {
-			return store.withPullRequestDetailCached(key, pullRequestDetailResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
+			return store.withPullRequestDetailCached(key, pullRequestDetailResult{err: message.Err, needsRefresh: true, retry: program.pullRequestDetailCache[key].retry.afterFailure(program.currentTime())})
 		})
 		program.invalidatePullRequestDetailDocumentCache()
 		if message.ScheduledRefreshBatchID != 0 {
@@ -207,8 +209,8 @@ func (program *Program) applyPullRequestDetailLoaded(message MsgPullRequestDetai
 	}
 
 	cachedResult := program.pullRequestDetailCache[key]
-	cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(message.Summary)
-	cachedResult.needsRefresh = false
+	cachedResult.needsRefresh = true
+	cachedResult.retry = cachedResult.retry.afterFailure(program.currentTime())
 	program.updateDetailStore(func(store detailStore) detailStore {
 		return store.withPullRequestDetailCached(key, cachedResult)
 	})
@@ -277,7 +279,7 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 
 	if !program.canKeepPullRequestDiffOnRefreshError(key) {
 		program.updateReviewStore(func(store reviewStore) reviewStore {
-			return store.withPullRequestDiffCached(key, pullRequestDiffResult{err: message.Err, sourceUpdatedAt: pullRequestSummaryVersion(message.Summary)})
+			return store.withPullRequestDiffCached(key, pullRequestDiffResult{err: message.Err, needsRefresh: true, retry: program.pullRequestDiffCache[key].retry.afterFailure(program.currentTime())})
 		})
 		program.invalidateReviewDiffRenderCache()
 		program.invalidatePullRequestDetailDocumentCache()
@@ -292,9 +294,8 @@ func (program *Program) applyPullRequestDiffLoaded(message MsgPullRequestDiffLoa
 	}
 
 	cachedResult := program.pullRequestDiffCache[key]
-	cachedResult.sourceUpdatedAt = pullRequestSummaryVersion(message.Summary)
-	cachedResult.needsRefresh = false
-	cachedResult.fileTeamOwnersAttempted = cachedResult.fileTeamOwnersAttempted || program.shouldLoadPullRequestDiffTeamOwners()
+	cachedResult.needsRefresh = true
+	cachedResult.retry = cachedResult.retry.afterFailure(program.currentTime())
 	program.updateReviewStore(func(store reviewStore) reviewStore {
 		return store.withPullRequestDiffCached(key, cachedResult)
 	})

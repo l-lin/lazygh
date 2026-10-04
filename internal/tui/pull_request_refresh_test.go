@@ -5,9 +5,105 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	githubdomain "github.com/l-lin/lazygh/internal/github"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
+
+func TestScheduledRefresh_GivenThePullRequestWasCheckedAtTheRemoteVersion_WhenTheListFinishes_ThenItDoesNotPrefetchDetailOrDiff(t *testing.T) {
+	summary := githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+		Title:      "Checked PR",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		UpdatedAt:  "2026-05-05T13:00:00Z",
+	})
+	subject := NewProgramWithModel(given_pullRequestCommentModel())
+	subject.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		return store.withPullRequestSeen("acme/widgets#42", summary.UpdatedAt)
+	})
+
+	subject.pullRequestDetailCache["acme/widgets#42"] = pullRequestDetailResult{sourceUpdatedAt: summary.UpdatedAt}
+	subject.pullRequestDiffCache["acme/widgets#42"] = pullRequestDiffResult{sourceUpdatedAt: summary.UpdatedAt, fileTeamOwnersAttempted: true}
+
+	actual := subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{
+		Source:       pullRequestLoadSourceScheduled,
+		PullRequests: []githubdomain.PullRequest{summary},
+	})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one scheduled refresh command, actual %d", len(actual))
+	}
+	fanout, ok := actual[0].(scheduledPullRequestRefreshCmd)
+	if !ok {
+		t.Fatalf("expected a scheduled refresh command, actual %T", actual[0])
+	}
+	if len(fanout.detailSummaries) != 0 || len(fanout.diffSummaries) != 0 {
+		t.Fatalf("expected no detail or diff prefetch targets, actual detail=%v diff=%v", fanout.detailSummaries, fanout.diffSummaries)
+	}
+}
+
+func TestScheduledRefresh_GivenAListPullRequestWasCheckedBeforeItsLatestUpdate_WhenTheListFinishes_ThenItPrefetchesDescriptionAndDiff(t *testing.T) {
+	initial := githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+		Title:      "Previously checked PR",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		UpdatedAt:  "2026-05-05T12:00:00Z",
+	})
+	latest := initial
+	latest.UpdatedAt = "2026-05-05T13:00:00Z"
+	subject := NewProgramWithModel(NewModel(SeedData{PullRequestTabs: []PullRequestTabSeed{{Label: "Mine"}}}))
+	subject.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		return store.withPullRequestSeen("acme/widgets#42", initial.UpdatedAt)
+	})
+
+	actual := subject.applyPullRequestsLoaded(MsgPullRequestsLoaded{
+		Tab:          MyPullRequestsTab,
+		Source:       pullRequestLoadSourceScheduled,
+		PullRequests: []githubdomain.PullRequest{latest},
+	})
+
+	if len(actual) != 1 {
+		t.Fatalf("expected one scheduled refresh command, actual %d", len(actual))
+	}
+	fanout, ok := actual[0].(scheduledPullRequestRefreshCmd)
+	if !ok {
+		t.Fatalf("expected a scheduled refresh command, actual %T", actual[0])
+	}
+	if len(fanout.detailSummaries) != 1 || len(fanout.diffSummaries) != 1 {
+		t.Fatalf("expected one detail and diff prefetch target, actual detail=%v diff=%v", fanout.detailSummaries, fanout.diffSummaries)
+	}
+	if fanout.detailSummaries[0].UpdatedAt != latest.UpdatedAt || fanout.diffSummaries[0].UpdatedAt != latest.UpdatedAt {
+		t.Fatalf("expected the latest summary in both prefetch targets, actual detail=%v diff=%v", fanout.detailSummaries, fanout.diffSummaries)
+	}
+}
+
+func TestScheduledRefresh_GivenASeenPastedPullRequest_WhenTheScheduleIsDue_ThenItProbesRemoteMetadata(t *testing.T) {
+	summary := githubcli.ToDomainPullRequestSummary(githubcli.PullRequest{
+		Title:      "Checked pasted PR",
+		Number:     42,
+		Repository: githubcli.Repository{NameWithOwner: "acme/widgets"},
+		UpdatedAt:  "2026-05-05T13:00:00Z",
+	})
+	subject := NewProgram()
+	subject.updatePastedPullRequestTabState(func(state pastedPullRequestTabState) pastedPullRequestTabState {
+		return state.withPullRequestsLoaded([]githubdomain.PullRequest{summary})
+	})
+	subject.updatePullRequestListStore(func(store pullRequestListStore) pullRequestListStore {
+		return store.withPullRequestSeen("acme/widgets#42", summary.UpdatedAt)
+	})
+
+	subject.runtimeConfig.pullRequestConfig.Refresh = time.Minute
+	actual := subject.applyScheduledPullRequestRefreshDue(MsgScheduledPullRequestRefreshDue{RefreshPasted: true})
+	expected := 2
+	if len(actual) != expected {
+		t.Fatalf("expected %d commands, actual %v", expected, actual)
+	}
+	probe, ok := actual[0].(scheduledPullRequestProbeCmd)
+	if !ok || len(probe.summaries) != 1 || probe.summaries[0].UpdatedAt != summary.UpdatedAt {
+		t.Fatalf("expected remote probe of seen pasted PR, actual %+v", actual)
+	}
+}
 
 func TestActionsPopup_GivenRefreshCurrentPullRequestInformationActionOutsideReviewMode_WhenExecuting_ThenItReloadsTheSelectedPullRequestSummaryAndDetail(t *testing.T) {
 	loader := &fakePullRequestDetailLoader{

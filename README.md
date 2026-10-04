@@ -261,7 +261,7 @@ Configure one global pull-request refresh interval under `[pull_requests]`. The 
 
 Each `[[pull_requests.searches]]` entry is refreshed by the global scheduler unless `auto_refresh = false`. Omitted or invalid `auto_refresh` values enable the search. The old per-search `refresh` key is no longer used.
 
-Pasted pull requests use `[pull_requests.pasted_prs].auto_refresh`, which defaults to `true`. This setting has no effect while the global interval is manual. Pasted details refresh on each scheduled cycle, while diffs refresh only for unread pasted pull requests.
+Pasted pull requests use `[pull_requests.pasted_prs].auto_refresh`, which defaults to `true`. This setting has no effect while the global interval is manual. Each scheduled cycle probes pasted pull requests and the active review for remote changes, even if they have been marked read. Descriptions and diffs refresh independently when their cached content is missing or stale; unread markers do not control fetching. Failed refreshes keep cached content visible and retain its last successful version. Automatic retries wait 30 seconds, then double up to a five-minute cap; manual refresh bypasses this delay.
 
 ```toml
 [pull_requests]

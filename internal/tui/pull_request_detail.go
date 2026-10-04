@@ -38,6 +38,7 @@ type glamourMarkdownRenderer struct {
 }
 
 type pullRequestDetailResult struct {
+	retry           pullRequestRefreshRetry
 	detail          githubdomain.PullRequestDetail
 	err             error
 	sourceUpdatedAt string

@@ -162,6 +162,7 @@ type pullRequestDetailLoadPlanInput struct {
 	hasSelection             bool
 	key                      string
 	loadInFlight             bool
+	retryBlocked             bool
 	visibleResult            pullRequestDetailResult
 	visibleResultLoaded      bool
 	hydrateVisibleResult     bool
@@ -169,7 +170,7 @@ type pullRequestDetailLoadPlanInput struct {
 }
 
 func planPullRequestDetailLoad(input pullRequestDetailLoadPlanInput) workflowPlan {
-	if !input.hasSelection || input.key == "" || input.loadInFlight {
+	if !input.hasSelection || input.key == "" || input.loadInFlight || input.retryBlocked {
 		return workflowPlan{}
 	}
 
@@ -191,6 +192,7 @@ type pullRequestDiffLoadPlanInput struct {
 	hasSelection           bool
 	key                    string
 	loadInFlight           bool
+	retryBlocked           bool
 	visibleResult          pullRequestDiffResult
 	visibleResultLoaded    bool
 	hydrateVisibleResult   bool
@@ -199,7 +201,7 @@ type pullRequestDiffLoadPlanInput struct {
 }
 
 func planPullRequestDiffLoad(input pullRequestDiffLoadPlanInput) workflowPlan {
-	if !input.hasSelection || input.key == "" || input.loadInFlight {
+	if !input.hasSelection || input.key == "" || input.loadInFlight || input.retryBlocked {
 		return workflowPlan{}
 	}
 

@@ -20,6 +20,7 @@ type NotificationQueries interface {
 }
 
 type DetailQueries interface {
+	GetPullRequestSummary(repository string, number int) (githubdomain.PullRequest, error)
 	GetPullRequestDetail(repository string, number int) (githubdomain.PullRequestDetail, error)
 	GetPullRequestDiff(repository string, number int) (githubdomain.PullRequestDiff, error)
 	GetCommitDiff(repository string, commitOID string) (githubdomain.CommitDiff, error)

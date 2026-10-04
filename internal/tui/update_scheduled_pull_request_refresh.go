@@ -32,22 +32,17 @@ func (program *Program) applyScheduledPullRequestRefreshDue(message MsgScheduled
 		}
 		commands = append(commands, scheduledPullRequestListReloadCmd{tab: tab, batchID: batchID})
 	}
+	var probeSummaries []githubdomain.PullRequest
 	if message.RefreshPasted {
-		pasted := program.scheduledPastedPullRequestRefresh()
-		commands = append(commands, scheduledPullRequestRefreshCmd{
-			detailSummaries: pasted.detailSummaries,
-			diffSummaries:   pasted.diffSummaries,
-			batchID:         batchID,
-		})
+		probeSummaries = program.pastedPullRequests.summaries()
 	}
+	if program.reviewModeActive() {
+		probeSummaries = append(probeSummaries, program.navigationState.reviewSession.summary)
+	}
+	if len(probeSummaries) > 0 {
+		commands = append(commands, scheduledPullRequestProbeCmd{summaries: probeSummaries, batchID: batchID})
+	}
+	program.addScheduledPullRequestRefreshWork(batchID, len(commands))
 	commands = append(commands, finishScheduledPullRequestRefreshPlanningCmd{batchID: batchID})
 	return commands
-}
-
-func (program *Program) scheduledPastedPullRequestRefresh() scheduledPullRequestRefreshCmd {
-	summaries := program.pastedPullRequests.summaries()
-	return scheduledPullRequestRefreshCmd{
-		detailSummaries: append([]githubdomain.PullRequest(nil), summaries...),
-		diffSummaries:   append([]githubdomain.PullRequest(nil), program.unreadPullRequests(summaries)...),
-	}
 }
