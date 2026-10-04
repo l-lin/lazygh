@@ -15,6 +15,10 @@ func newPullRequestDiffAssembler(service *PullRequestDetailService) PullRequestD
 }
 
 func (assembler PullRequestDiffAssembler) Assemble(repository string, number int) (PullRequestDiff, error) {
+	return assembler.AssembleProgressively(repository, number, nil)
+}
+
+func (assembler PullRequestDiffAssembler) AssembleProgressively(repository string, number int, publish func(PullRequestDiff)) (PullRequestDiff, error) {
 	if assembler.LoadUnifiedDiff == nil || assembler.LoadDiffFiles == nil {
 		return PullRequestDiff{}, ErrInvalidPullRequestDiffFilesResponse
 	}
@@ -26,6 +30,9 @@ func (assembler PullRequestDiffAssembler) Assemble(repository string, number int
 	files, err := assembler.LoadDiffFiles(repository, number)
 	if err != nil {
 		return PullRequestDiff{}, err
+	}
+	if publish != nil {
+		publish(PullRequestDiff{UnifiedDiff: unifiedDiff, Files: files})
 	}
 	threads := []PullRequestReviewThread(nil)
 	if assembler.ListReviewThreads != nil {

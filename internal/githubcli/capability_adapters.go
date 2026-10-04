@@ -182,6 +182,24 @@ func (adapter *PullRequestDetailAdapter) GetPullRequestDiff(repository string, n
 	return ToDomainPullRequestDiff(diff), nil
 }
 
+func (adapter *PullRequestDetailAdapter) GetPullRequestDetailProgressively(repository string, number int, publish func(githubdomain.PullRequestDetail)) (githubdomain.PullRequestDetail, error) {
+	detail, err := newPullRequestDetailAssembler(adapter.service).AssembleProgressively(repository, number, func(detail PullRequestDetail) {
+		if publish != nil {
+			publish(ToDomainPullRequestDetail(detail))
+		}
+	})
+	return ToDomainPullRequestDetail(detail), err
+}
+
+func (adapter *PullRequestDetailAdapter) GetPullRequestDiffProgressively(repository string, number int, publish func(githubdomain.PullRequestDiff)) (githubdomain.PullRequestDiff, error) {
+	diff, err := newPullRequestDiffAssembler(adapter.service).AssembleProgressively(repository, number, func(diff PullRequestDiff) {
+		if publish != nil {
+			publish(ToDomainPullRequestDiff(diff))
+		}
+	})
+	return ToDomainPullRequestDiff(diff), err
+}
+
 func (adapter *PullRequestDetailAdapter) GetCommitDiff(repository string, commitOID string) (githubdomain.CommitDiff, error) {
 	diff, err := adapter.service.GetCommitDiff(repository, commitOID)
 	if err != nil {

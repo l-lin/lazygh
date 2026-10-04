@@ -56,6 +56,11 @@ func newPullRequestDetailWorkflowRuntime(program *Program, gui *gocui.Gui) pullR
 	if program.detailQueries != nil {
 		runtime.getPullRequestDetail = func(summary githubdomain.PullRequest) (githubdomain.PullRequestDetail, error) {
 			repository := pullRequestRepositoryName(summary.Repository)
+			if queries, ok := program.detailQueries.(ProgressiveDetailQueries); ok {
+				return queries.GetPullRequestDetailProgressively(repository, summary.Number, func(detail githubdomain.PullRequestDetail) {
+					runtime.dispatchAsyncMessage(MsgPullRequestDetailProgress{Summary: summary, Detail: detail})
+				})
+			}
 			return program.detailQueries.GetPullRequestDetail(repository, summary.Number)
 		}
 	}
@@ -91,8 +96,18 @@ func newPullRequestDiffWorkflowRuntime(program *Program, gui *gocui.Gui) pullReq
 		runtime.getPullRequestFileTeamOwners = program.detailQueries.GetPullRequestFileTeamOwners
 		runtime.getPullRequestDiff = func(summary githubdomain.PullRequest) (githubdomain.PullRequestDiff, error) {
 			repository := pullRequestRepositoryName(summary.Repository)
-			rawDiff, err := program.detailQueries.GetPullRequestDiff(repository, summary.Number)
-			if err == nil {
+			publish := func(rawDiff githubdomain.PullRequestDiff) {
+				runtime.dispatchAsyncMessage(MsgPullRequestDiffProgress{Summary: summary, RawDiff: rawDiff})
+			}
+			var rawDiff githubdomain.PullRequestDiff
+			var err error
+			if queries, ok := program.detailQueries.(ProgressiveDetailQueries); ok {
+				rawDiff, err = queries.GetPullRequestDiffProgressively(repository, summary.Number, publish)
+			} else {
+				rawDiff, err = program.detailQueries.GetPullRequestDiff(repository, summary.Number)
+			}
+			if err == nil && runtime.shouldLoadPullRequestDiffTeamOwners && !rawDiff.FileTeamOwnersAttempted {
+				publish(rawDiff)
 				rawDiff = loadPullRequestDiffFileTeamOwners(runtime, repository, summary.Number, rawDiff)
 			}
 			return rawDiff, err

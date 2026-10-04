@@ -26,6 +26,19 @@ type MsgNotificationsLoaded struct {
 	StatusLineOperationID uint64
 }
 
+type MsgPullRequestDetailProgress struct {
+	Summary githubdomain.PullRequest
+	Detail  githubdomain.PullRequestDetail
+}
+
+type MsgPullRequestDiffProgress struct {
+	Summary githubdomain.PullRequest
+	RawDiff githubdomain.PullRequestDiff
+}
+
+func (MsgPullRequestDetailProgress) isMsg() {}
+func (MsgPullRequestDiffProgress) isMsg()   {}
+
 type MsgPullRequestDetailLoaded struct {
 	Summary                 githubdomain.PullRequest
 	Detail                  githubdomain.PullRequestDetail

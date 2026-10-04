@@ -28,6 +28,10 @@ func newPullRequestDetailAssembler(service *PullRequestDetailService) PullReques
 }
 
 func (assembler PullRequestDetailAssembler) Assemble(repository string, number int) (PullRequestDetail, error) {
+	return assembler.AssembleProgressively(repository, number, nil)
+}
+
+func (assembler PullRequestDetailAssembler) AssembleProgressively(repository string, number int, publish func(PullRequestDetail)) (PullRequestDetail, error) {
 	if assembler.LoadBaseDetail == nil {
 		return PullRequestDetail{}, ErrInvalidPullRequestDetailResponse
 	}
@@ -35,6 +39,9 @@ func (assembler PullRequestDetailAssembler) Assemble(repository string, number i
 	detail, err := assembler.LoadBaseDetail(repository, number)
 	if err != nil {
 		return PullRequestDetail{}, err
+	}
+	if publish != nil {
+		publish(detail.normalized())
 	}
 	if assembler.LoadGraphQLData != nil && assembler.ListInlineComments != nil {
 		inlineComments, actualErr := assembler.ListInlineComments(repository, number)

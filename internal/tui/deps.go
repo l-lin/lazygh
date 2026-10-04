@@ -27,6 +27,13 @@ type DetailQueries interface {
 	GetPullRequestFileTeamOwners(repository string, number int, filePaths []string) (map[string][]string, error)
 }
 
+// ProgressiveDetailQueries publishes usable content before completing enrichment.
+// Providers without this capability continue to return one complete result.
+type ProgressiveDetailQueries interface {
+	GetPullRequestDetailProgressively(repository string, number int, publish func(githubdomain.PullRequestDetail)) (githubdomain.PullRequestDetail, error)
+	GetPullRequestDiffProgressively(repository string, number int, publish func(githubdomain.PullRequestDiff)) (githubdomain.PullRequestDiff, error)
+}
+
 type PullRequestMutations interface {
 	CommentOnPullRequest(repository string, number int, body string) error
 	UpdatePullRequestComment(commentID string, body string) error
