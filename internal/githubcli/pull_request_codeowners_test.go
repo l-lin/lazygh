@@ -31,6 +31,34 @@ func TestGetPullRequestFileTeamOwners_GivenBaseBranchCodeowners_WhenFetching_The
 	}
 }
 
+func TestMatchPullRequestCodeownersTeamOwners_GivenSlashOnlyRule_WhenMatchingFiles_ThenItIgnoresTheRuleAndPreservesOwnership(t *testing.T) {
+	// GIVEN
+	testCases := []struct {
+		name       string
+		codeowners string
+		expected   map[string][]string
+	}{
+		{name: "unowned slash", codeowners: "/\n"},
+		{name: "owned slash", codeowners: "/ @acme/Unused\n"},
+		{name: "slash after fallback", codeowners: "* @acme/Core\n/\n", expected: map[string][]string{"docs/design.md": {"Core"}, ".claude/commands/feature.md": {"Core"}}},
+		{name: "slash with comment", codeowners: "* @acme/Core\n/ # root\n", expected: map[string][]string{"docs/design.md": {"Core"}, ".claude/commands/feature.md": {"Core"}}},
+		{name: "specific directory after slash", codeowners: "* @acme/Core\n/ @acme/Unused\n/docs/ @acme/Docs\n", expected: map[string][]string{"docs/design.md": {"Docs"}, ".claude/commands/feature.md": {"Core"}}},
+		{name: "unowned directory after slash", codeowners: "* @acme/Core\n/\n/docs/\n", expected: map[string][]string{".claude/commands/feature.md": {"Core"}}},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			// WHEN
+			actual := matchPullRequestCodeownersTeamOwners(testCase.codeowners, []string{"docs/design.md", ".claude/commands/feature.md"})
+
+			// THEN
+			expected := testCase.expected
+			if !reflect.DeepEqual(actual, expected) {
+				t.Fatalf("expected team owners %+v, actual %+v", expected, actual)
+			}
+		})
+	}
+}
+
 func TestGetPullRequestFileTeamOwners_GivenNoCodeownersFile_WhenFetching_ThenItReturnsNoTeamOwners(t *testing.T) {
 	runner := &fakeRunner{
 		responses: []fakeCommandResponse{

@@ -180,7 +180,13 @@ func parsePullRequestCodeownersRuleset(codeownersText string) githubcodeowners.R
 		if err != nil || len(parsedRules) == 0 {
 			continue
 		}
-		rules = append(rules, parsedRules...)
+		for _, rule := range parsedRules {
+			// A bare slash matches no files, but codeowners v1.2.1 panics when matching it.
+			if rule.RawPattern() == "/" {
+				continue
+			}
+			rules = append(rules, rule)
+		}
 	}
 	return rules
 }
