@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jesseduffield/gocui"
 	"github.com/l-lin/lazygh/internal/githubcli"
 )
 
@@ -145,6 +146,27 @@ func TestCopyPullRequestURL_GivenClipboardFailure_WhenHandlingTheAction_ThenItSh
 	then_noError(t, actualErr)
 	if strings.Contains(pullRequestsView.TitlePrefix, yankFailureMessage) || strings.Contains(pullRequestsView.Title, yankFailureMessage) {
 		t.Fatalf("expected pull request titles to stay stable, actual title=%q prefix=%q", pullRequestsView.Title, pullRequestsView.TitlePrefix)
+	}
+}
+
+func TestCopyPullRequestURL_GivenVisualSelection_WhenPressingAltShiftY_ThenItCopiesTheURLInsteadOfSelectedText(t *testing.T) {
+	model := given_model()
+	model.FocusPullRequestsView()
+	model.SetPullRequestRows(MyPullRequestsTab, []PullRequestRow{
+		myPullRequestRow(githubcli.PullRequest{Number: 42, Repository: githubcli.Repository{NameWithOwner: "acme/widgets"}, URL: "https://github.com/acme/widgets/pull/42"}),
+	})
+	model.OpenDetail()
+	subject := NewProgramWithModel(model)
+	clipboardWriter := &fakeClipboardWriter{}
+	subject.clipboardWriter = clipboardWriter
+	subject.detailState.viewState.mode = detailVisualMode
+
+	when_pressingBoundKeys(t, nil, subject, nil, viewDetailName, yankMotionTestKeyPress{key: 'Y', mod: gocui.ModAlt})
+
+	actual := clipboardWriter.writes
+	expected := "https://github.com/acme/widgets/pull/42"
+	if len(actual) != 1 || actual[0] != expected {
+		t.Fatalf("expected clipboard text %q, actual %v", expected, actual)
 	}
 }
 

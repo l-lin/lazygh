@@ -303,6 +303,9 @@ flags = ["--search", "label:escalated state:open", "--sort", "updated", "--order
 Press `Ctrl+V` to read a GitHub pull request URL from the clipboard and open it directly in fullscreen view `0`.
 Choose `Open PR from URL` from the actions popup when you want to type or paste the URL manually.
 
+Press `Alt+Y` to copy the selected PR's head branch name, or `Alt+Shift+Y` to copy its URL.
+These shortcuts work in the PR list, detail pane, and review mode. Branch copying requires loaded PR details.
+
 ### Keymap overrides
 
 Use scoped tables under `[keymaps]`.

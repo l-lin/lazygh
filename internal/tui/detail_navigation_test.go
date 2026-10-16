@@ -206,7 +206,7 @@ func TestLayout_GivenDetailVisualSelectionOverASearchMatch_WhenRendering_ThenThe
 	then_viewLineSegmentHasSelectedLineBackground(t, gui, viewDetailName, 3, "Alpha")
 }
 
-func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
+func TestStartDetailYank_GivenDetailLineVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha\nBeta\nGamma"}}})
 	model.OpenDetail()
 	clipboardWriter := &fakeClipboardWriter{}
@@ -230,7 +230,7 @@ func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_Th
 	actualErr = subject.moveSelectionDown(gui, detailView)
 	then_noError(t, actualErr)
 
-	actualErr = subject.copyPullRequestURL(gui, detailView)
+	actualErr = subject.startDetailYank(gui, detailView)
 	then_noError(t, actualErr)
 
 	if actual := clipboardWriter.writes; len(actual) != 1 || actual[0] != "Beta\nGamma" {
@@ -245,7 +245,7 @@ func TestCopyPullRequestURL_GivenDetailLineVisualMode_WhenYankingSelectedText_Th
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
-func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
+func TestStartDetailYank_GivenDetailVisualMode_WhenYankingSelectedText_ThenItUsesTheClipboardAndReturnsToNormalMode(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha Beta"}}})
 	model.OpenDetail()
 	clipboardWriter := &fakeClipboardWriter{}
@@ -271,7 +271,7 @@ func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenIt
 		then_noError(t, actualErr)
 	}
 
-	actualErr = subject.copyPullRequestURL(gui, detailView)
+	actualErr = subject.startDetailYank(gui, detailView)
 	then_noError(t, actualErr)
 
 	if actual := clipboardWriter.writes; len(actual) != 1 || actual[0] != "Alpha" {
@@ -286,7 +286,7 @@ func TestCopyPullRequestURL_GivenDetailVisualMode_WhenYankingSelectedText_ThenIt
 	then_viewDoesNotExist(t, gui, viewDetailFooterName)
 }
 
-func TestCopyPullRequestURL_GivenDetailVisualModeAndClipboardFailure_WhenYankingSelectedText_ThenItShowsFailureFeedbackAndReturnsToNormalMode(t *testing.T) {
+func TestStartDetailYank_GivenDetailVisualModeAndClipboardFailure_WhenYankingSelectedText_ThenItShowsFailureFeedbackAndReturnsToNormalMode(t *testing.T) {
 	model := NewModel(SeedData{Users: []Item{{Title: "Only user", Detail: "Alpha Beta"}}})
 	model.OpenDetail()
 	clipboardWriter := &fakeClipboardWriter{writeErr: ErrClipboardUnavailable}
@@ -312,7 +312,7 @@ func TestCopyPullRequestURL_GivenDetailVisualModeAndClipboardFailure_WhenYanking
 		then_noError(t, actualErr)
 	}
 
-	actualErr = subject.copyPullRequestURL(gui, detailView)
+	actualErr = subject.startDetailYank(gui, detailView)
 	then_noError(t, actualErr)
 
 	if subject.detailState.viewState.mode != detailNormalMode {

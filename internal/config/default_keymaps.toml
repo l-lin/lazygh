@@ -80,7 +80,8 @@ previous_unresolved_comment = "[C"
 next_unresolved_comment = "]C"
 
 [keymaps.pull_requests]
-copy_pull_request_url = "alt+y"
+copy_pull_request_branch = "alt+y"
+copy_pull_request_url = "alt+shift+y"
 open_pull_request_in_browser = "alt+b"
 comment_on_pull_request = "c"
 open_pull_request_by_url = "ctrl+v"

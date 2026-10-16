@@ -414,6 +414,27 @@ func (program *Program) applyResolvedLinkOpen(target Focus, url string, linkAvai
 	}
 }
 
+func (program *Program) applyCopyPullRequestBranchRequested() []Cmd {
+	program.clearPendingSelectionPrefix()
+	if program.overlayState.helpVisible || program.model.SearchActive() {
+		return nil
+	}
+
+	program.clearDetailPendingPrefix()
+	summary, ok := program.currentPullRequestSummary()
+	if !ok {
+		program.setFeedback(program.model.Focus(), yankBranchUnavailableMessage)
+		return nil
+	}
+	result, ok := program.pullRequestDetailForSummary(summary)
+	branch := strings.TrimSpace(result.detail.HeadRefName)
+	if !ok || branch == "" {
+		program.setFeedback(program.model.Focus(), yankBranchUnavailableMessage)
+		return nil
+	}
+	return []Cmd{writeClipboardCmd{Text: branch, SuccessMessage: yankBranchSuccessMessage, FailureMessage: yankFailureMessage, Target: program.model.Focus()}}
+}
+
 func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequestURLRequested) []Cmd {
 	if program == nil {
 		return nil
@@ -423,10 +444,6 @@ func (program *Program) applyCopyPullRequestURLRequested(message MsgCopyPullRequ
 	if program.overlayState.helpVisible || program.model.SearchActive() {
 		return nil
 	}
-	if program.model.Focus() == FocusDetailView && program.detailState.viewState.mode.isVisual() {
-		return []Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}}
-	}
-
 	program.clearDetailPendingPrefix()
 	url, ok := program.selectedPullRequestURL()
 	if !ok {

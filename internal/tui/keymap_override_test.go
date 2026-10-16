@@ -357,7 +357,7 @@ func TestKeybindingSpecs_GivenPullRequestsCopyOverride_WhenListingBindings_ThenI
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'u', handler: subject.copyPullRequestURL})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewPullRequestsName, key: 'u', handler: subject.copyPullRequestURL})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'u', handler: subject.copyPullRequestURL})
-	then_bindingDoesNotExist(t, actual, viewUserName, 'y')
+	then_bindingExists(t, actual, keybindingSpec{viewName: viewUserName, key: 'y', mod: gocui.ModAlt, handler: subject.copyPullRequestBranch})
 	then_bindingExists(t, actual, keybindingSpec{viewName: viewDetailName, key: 'y', handler: subject.startDetailYank})
 }
 

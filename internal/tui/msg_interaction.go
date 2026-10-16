@@ -286,6 +286,8 @@ type MsgOpenPullRequestBuildRunPopupLinkResolved struct {
 
 type MsgCopySelectedDetailTextRequested struct{}
 
+type MsgCopyPullRequestBranchRequested struct{}
+
 type MsgCopyPullRequestURLRequested struct{}
 
 type MsgOpenPullRequestInBrowserShortcutRequested struct{}
@@ -437,6 +439,7 @@ func (MsgOpenLinkUnderCursorResolved) isMsg()                  {}
 func (MsgOpenPullRequestBuildRunPopupLinkRequested) isMsg()    {}
 func (MsgOpenPullRequestBuildRunPopupLinkResolved) isMsg()     {}
 func (MsgCopySelectedDetailTextRequested) isMsg()              {}
+func (MsgCopyPullRequestBranchRequested) isMsg()               {}
 func (MsgCopyPullRequestURLRequested) isMsg()                  {}
 func (MsgOpenPullRequestInBrowserShortcutRequested) isMsg()    {}
 func (MsgCopyPullRequestBuildRunPopupContentRequested) isMsg() {}

@@ -53,7 +53,8 @@ func TestHelpPopup_GivenPullRequestsFocus_WhenTogglingHelp_ThenItShowsTheOpenPRF
 	}
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR in browser", "Alt+B")
-	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Y")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR branch", "Alt+Y")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Shift+Y")
 }
 
 func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsViewportPlacementMotionsAndHalfPageRecentering(t *testing.T) {
@@ -95,7 +96,8 @@ func TestHelpPopup_GivenDetailFocus_WhenTogglingHelp_ThenItShowsYankLinkClipboar
 	helpView, actualErr := gui.View(viewHelpName)
 	then_noError(t, actualErr)
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Start yank with motion", "y")
-	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Y")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR branch", "Alt+Y")
+	then_helpEntryUsesKey(t, helpView.Buffer(), "Copy PR URL", "Alt+Shift+Y")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open link under cursor", "gx")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Open PR from clipboard", "Ctrl+V")
 	then_helpEntryUsesKey(t, helpView.Buffer(), "Search word under cursor", "*/#")

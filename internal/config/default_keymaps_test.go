@@ -35,7 +35,8 @@ func TestDefaultKeymaps_GivenEmbeddedDefaults_WhenLoading_ThenItIncludesTheShare
 			"open_external_editor": {"ctrl+g"},
 		},
 		"pull_requests": {
-			"copy_pull_request_url":      {"alt+y"},
+			"copy_pull_request_branch":   {"alt+y"},
+			"copy_pull_request_url":      {"alt+shift+y"},
 			"open_pull_request_by_url":   {"ctrl+v"},
 			"remove_pasted_pull_request": {"d"},
 			"reply_to_inline_comment":    {"r"},

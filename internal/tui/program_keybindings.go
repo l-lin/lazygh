@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/jesseduffield/gocui"
@@ -562,6 +563,13 @@ func parseConfiguredAltKey(value string) (configuredKeybinding, bool) {
 	}
 
 	keyName := strings.TrimPrefix(normalizedValue, "alt+")
+	if shiftedKeyName, ok := strings.CutPrefix(strings.ReplaceAll(keyName, "shift-", "shift+"), "shift+"); ok && utf8.RuneCountInString(shiftedKeyName) == 1 {
+		key, _ := utf8.DecodeRuneInString(shiftedKeyName)
+		if !unicode.IsLetter(key) {
+			return configuredKeybinding{}, false
+		}
+		return modifiedBinding(unicode.ToUpper(key), gocui.ModAlt, "alt+shift+"+shiftedKeyName), true
+	}
 	switch keyName {
 	case "":
 		return configuredKeybinding{}, false

@@ -55,7 +55,7 @@ func TestDetailYankHighlight_GivenVisualYank_WhenTheHighlightExpires_ThenTheLoad
 	for range 4 {
 		then_noError(t, subject.moveDetailCursorRight(gui, detailView))
 	}
-	then_noError(t, subject.copyPullRequestURL(gui, detailView))
+	then_noError(t, subject.startDetailYank(gui, detailView))
 
 	detailView, actualErr = gui.View(viewDetailName)
 	then_noError(t, actualErr)

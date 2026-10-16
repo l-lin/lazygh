@@ -29,6 +29,9 @@ func TestParseConfiguredKey_GivenSupportedKeyStrings_WhenParsing_ThenItReturnsBi
 		{name: "pagedown", value: "pagedown", expectedKey: gocui.KeyPgdn, expectedMod: gocui.ModNone, expectedLabel: "pagedown"},
 		{name: "alt enter", value: "alt+enter", expectedKey: gocui.KeyAltEnter, expectedMod: gocui.ModNone, expectedLabel: "alt+enter"},
 		{name: "alt y", value: "alt+y", expectedKey: 'y', expectedMod: gocui.ModAlt, expectedLabel: "alt+y"},
+		{name: "alt shift tab", value: "alt+shift+tab", expectedKey: gocui.KeyBacktab, expectedMod: gocui.ModAlt, expectedLabel: "alt+shift+tab"},
+		{name: "alt shift y", value: "alt+shift+y", expectedKey: 'Y', expectedMod: gocui.ModAlt, expectedLabel: "alt+shift+y"},
+		{name: "alt shift alias", value: "<Alt-Shift-y>", expectedKey: 'Y', expectedMod: gocui.ModAlt, expectedLabel: "alt+shift+y"},
 		{name: "space", value: "space", expectedKey: gocui.KeySpace, expectedMod: gocui.ModNone, expectedLabel: "space"},
 	}
 

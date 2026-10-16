@@ -155,6 +155,9 @@ func formatKeySequenceLabelForDisplay(label string) string {
 		}
 		return "Ctrl+" + suffix
 	}
+	if after, ok := strings.CutPrefix(normalizedLabel, "alt+shift+"); ok {
+		return "Alt+Shift+" + formattedModifiedKeySuffix(after)
+	}
 	if after, ok := strings.CutPrefix(normalizedLabel, "alt+"); ok {
 		return "Alt+" + formattedModifiedKeySuffix(after)
 	}
