@@ -249,6 +249,61 @@ func TestRenderVisibleDetailDocumentView_GivenScrolledBrowserDiff_WhenRendering_
 	then_viewLineHasBackgroundColor(t, gui, viewDetailName, 0, given_themeColorHex(t, theme.StickyFileHeaderBackgroundHex), "sticky file header background")
 }
 
+func TestDetailViewState_GivenChangesExceedingTheViewport_WhenNavigatingToTheBottom_ThenTheLastRowAndCursorRemainVisible(t *testing.T) {
+	for _, width := range []int{80, 24} {
+		for _, height := range []int{1, 2, 5, 12} {
+			for _, motion := range []string{"bottom", "down", "scroll"} {
+				t.Run(fmt.Sprintf("width=%d/height=%d/motion=%s", width, height, motion), func(t *testing.T) {
+					// GIVEN a diff whose sticky file header may wrap across several rows.
+					gui := given_headlessGuiWithSize(t, width+2, height+4)
+					defer gui.Close()
+					view, actualErr := gui.SetView(viewDetailName, 0, 0, width+1, height+1, 0)
+					if actualErr != nil && !isUnknownViewError(actualErr) {
+						then_noError(t, actualErr)
+					}
+					rows := buildPullRequestChangesRenderedRowsForViewerWithWordWrap(buildReviewDiffData(given_largeReviewSessionPullRequestDiff()).Files, nil, width, true, nil, nil, "")
+					document := newBrowserChangesDetailDocumentWithWordWrap(rows, width, true)
+					subject := newDetailViewState()
+
+					// WHEN jumping or scrolling past the end, including repeated synchronization.
+					if motion == "bottom" {
+						subject.moveToBottom(document, height)
+					} else {
+						for range document.rowCount() + height {
+							if motion == "down" {
+								subject.moveDown(document, height)
+							} else {
+								subject.scrollDown(document, height)
+							}
+						}
+					}
+					for range 3 {
+						subject.sync(document, height)
+					}
+					renderVisibleDetailDocumentView(view, document, subject)
+
+					// THEN the final diff row is rendered and its cursor is inside the viewport.
+					actual := planVisibleDetailViewport(document, subject.originRow, height).bodyEndRow
+					expected := document.rowCount()
+					if actual != expected {
+						t.Fatalf("expected last visible row %d, actual %d", expected, actual)
+					}
+					if actual := document.rowIndexForPosition(subject.cursor); actual != expected-1 {
+						t.Fatalf("expected cursor on final row %d, actual %d", expected-1, actual)
+					}
+					_, actualY := view.Cursor()
+					if actualY < 0 || actualY >= height {
+						t.Fatalf("expected cursor inside viewport height %d, actual y %d", height, actualY)
+					}
+					if actual := given_withoutANSIEscapeSequences(view.Buffer()); !strings.Contains(actual, "line 40") {
+						t.Fatalf("expected final diff line in buffer, actual %q", actual)
+					}
+				})
+			}
+		}
+	}
+}
+
 func given_numberedDetailBody(lineCount int) string {
 	lines := make([]string, 0, lineCount)
 	for lineNumber := range lineCount {

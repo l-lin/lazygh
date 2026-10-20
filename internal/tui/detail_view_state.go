@@ -16,7 +16,8 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 		state.visualAnchor = state.cursor
 	}
 
-	state.originRow = clampInt(state.originRow, 0, maxInt(0, document.rowCount()-viewportHeight))
+	maximumOrigin := maximumDetailViewportOrigin(document, viewportHeight)
+	state.originRow = clampInt(state.originRow, 0, maximumOrigin)
 	if state.manualViewportScroll {
 		return
 	}
@@ -26,7 +27,17 @@ func (state *detailViewState) sync(document detailDocument, viewportHeight int) 
 	}
 
 	currentRow := document.rowIndexForPosition(state.cursor)
-	state.originRow = visibleViewportOrigin(currentRow, state.originRow, viewportHeight, document.rowCount())
+	plan := planVisibleDetailViewport(document, state.originRow, viewportHeight)
+	bodyHeight := viewportHeight - plan.bodyVerticalOrigin
+	state.originRow = minInt(maximumOrigin, visibleViewportOrigin(currentRow, state.originRow, bodyHeight, document.rowCount()))
+	for {
+		plan = planVisibleDetailViewport(document, state.originRow, viewportHeight)
+		if currentRow < plan.bodyEndRow || state.originRow >= maximumOrigin {
+			break
+		}
+		// Moving into a file can introduce a sticky header after the initial placement.
+		state.originRow = minInt(maximumOrigin, state.originRow+currentRow-plan.bodyEndRow+1)
+	}
 }
 
 func (state *detailViewState) reset() {
@@ -49,9 +60,10 @@ func (state *detailViewState) scroll(document detailDocument, viewportHeight int
 	state.clearPendingPrefix()
 	state.sync(document, viewportHeight)
 	currentRow := document.rowIndexForPosition(state.cursor)
-	newOrigin := clampInt(state.originRow+delta, 0, maxInt(0, document.rowCount()-viewportHeight))
+	newOrigin := clampInt(state.originRow+delta, 0, maximumDetailViewportOrigin(document, viewportHeight))
+	plan := planVisibleDetailViewport(document, newOrigin, viewportHeight)
 	newRow := clampInt(currentRow+delta, 0, maxInt(0, document.rowCount()-1))
-	newRow = clampInt(newRow, newOrigin, minInt(document.rowCount()-1, newOrigin+viewportHeight-1))
+	newRow = clampInt(newRow, newOrigin, maxInt(newOrigin, plan.bodyEndRow-1))
 	state.originRow = newOrigin
 	state.cursor = document.positionForRow(newRow, state.preferredColumn)
 	state.preferredColumn = document.screenColumnForPosition(state.cursor)

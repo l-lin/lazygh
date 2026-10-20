@@ -9,6 +9,18 @@ type detailViewportRenderPlan struct {
 	bodyVerticalOrigin int
 }
 
+func maximumDetailViewportOrigin(document detailDocument, viewportHeight int) int {
+	origin := maxInt(0, document.rowCount()-maxInt(1, viewportHeight))
+	for {
+		plan := planVisibleDetailViewport(document, origin, viewportHeight)
+		if plan.bodyEndRow >= document.rowCount() {
+			return origin
+		}
+		// Pinned headers consume screen rows without advancing the document body.
+		origin++
+	}
+}
+
 func planVisibleDetailViewport(document detailDocument, originRow int, viewportHeight int) detailViewportRenderPlan {
 	rowCount := maxInt(document.rowCount(), 1)
 	if viewportHeight < 1 {
