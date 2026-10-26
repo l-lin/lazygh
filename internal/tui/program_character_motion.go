@@ -4,6 +4,7 @@ import (
 	"sort"
 	"unicode"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/jesseduffield/gocui"
 )
 
@@ -20,6 +21,17 @@ func (program *Program) registeredKeybindingSpecs() []keybindingSpec {
 	specs = append(specs, program.activeDetailCharacterMotionRepeatBindingSpecs()...)
 	specs = append(specs, program.activePullRequestBuildRunPopupCharacterMotionRepeatBindingSpecs()...)
 	specs = append(specs, program.keybindingSpecs()...)
+	for _, binding := range specs {
+		key, ok := binding.key.(rune)
+		if !ok || binding.mod != gocui.ModAlt || !unicode.IsUpper(key) {
+			continue
+		}
+		// Extended keyboard protocols preserve Shift instead of encoding it only in the rune.
+		binding.mod |= gocui.Modifier(tcell.ModShift)
+		specs = append(specs, binding)
+		binding.key = unicode.ToLower(key)
+		specs = append(specs, binding)
+	}
 	return specs
 }
 
