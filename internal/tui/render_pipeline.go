@@ -213,7 +213,10 @@ func overlayFrameForView(input screenLayoutInput, viewName string, maxX int, max
 		if totalHeight < 1 {
 			totalHeight = modalEditorTotalHeight
 		}
-		return screenViewFrame{ViewName: viewName, Frame: centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight), Visible: true, OnTop: true}
+		frame := centeredOverlayFrame(maxX, maxY, totalWidth, totalHeight)
+		frame.y1 -= frame.y0
+		frame.y0 = 0
+		return screenViewFrame{ViewName: viewName, Frame: frame, Visible: true, OnTop: true}
 	case viewPullRequestBuildInfoName:
 		if !input.buildPopup.visible {
 			return screenViewFrame{ViewName: viewName}

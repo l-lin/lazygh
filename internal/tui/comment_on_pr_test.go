@@ -81,7 +81,7 @@ func TestPullRequestCommentComposer_GivenOpenComposer_WhenMovingWithControlNAndC
 	}
 }
 
-func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShowsACenteredSevenLinePopupAndTakesFocus(t *testing.T) {
+func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShowsATopAlignedSevenLinePopupAndTakesFocus(t *testing.T) {
 	subject := NewProgramWithModel(given_pullRequestCommentModel())
 	gui := given_headlessGui(t)
 	defer gui.Close()
@@ -114,8 +114,8 @@ func TestPullRequestCommentComposer_GivenPullRequestsView_WhenOpening_ThenItShow
 	if actual := x1 - x0 + 1; actual != 60 {
 		t.Fatalf("expected composer width 60, actual %d", actual)
 	}
-	if x0 != 30 || y0 != 11 {
-		t.Fatalf("expected composer position (%d,%d), actual (%d,%d)", 30, 11, x0, y0)
+	if x0 != 30 || y0 != 0 {
+		t.Fatalf("expected composer position (%d,%d), actual (%d,%d)", 30, 0, x0, y0)
 	}
 }
 
