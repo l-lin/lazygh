@@ -3,11 +3,11 @@ package tui
 const treeSitterJavaScriptHighlightsQuery = `; Functions
 
 (function_expression
-  name: (identifier) @function)
+  name: (identifier) @function.definition)
 (function_declaration
-  name: (identifier) @function)
+  name: (identifier) @function.definition)
 (method_definition
-  name: (property_identifier) @function.method)
+  name: (property_identifier) @function.definition)
 
 (call_expression
   function: (identifier) @function)
@@ -164,10 +164,32 @@ const treeSitterXMLHighlightsQuery = `; XML declaration
 (Comment) @comment
 `
 
-const treeSitterKotlinHighlightsQuery = `; Functions
+const treeSitterKotlinHighlightsQuery = `; Annotations
+
+(annotation
+  "@" @decorator.marker
+  (user_type (identifier) @decorator) @decorator)
+(annotation
+  "@" @decorator.marker
+  (constructor_invocation
+    (user_type (identifier) @decorator) @decorator))
+(annotation (use_site_target) @decorator)
+
+; Diff lines can end before the annotation arguments.
+(ERROR
+  "@" @decorator.marker
+  (user_type (identifier) @decorator) @decorator
+  "(")
+
+; Functions
 
 (function_declaration
-  name: (identifier) @function)
+  name: (identifier) @function.definition)
+
+; Diff lines can contain an incomplete declaration.
+(ERROR
+  "fun" . (identifier) @function.definition
+  (function_value_parameters))
 
 (call_expression
   (identifier) @function)
@@ -284,14 +306,14 @@ const treeSitterLuaHighlightsQuery = `; Keywords
 
 (function_declaration
   name: [
-    (identifier) @function
+    (identifier) @function.definition
     (dot_index_expression
-      field: (identifier) @function)
+      field: (identifier) @function.definition)
   ])
 
 (function_declaration
   name: (method_index_expression
-    method: (identifier) @method))
+    method: (identifier) @function.definition))
 
 (function_call
   name: [
@@ -419,7 +441,7 @@ const treeSitterPythonHighlightsQuery = `; Identifier naming conventions
 ; Function definitions
 
 (function_definition
-  name: (identifier) @function)
+  name: (identifier) @function.definition)
 
 (attribute attribute: (identifier) @property)
 (type (identifier) @type)
@@ -525,10 +547,13 @@ const treeSitterRubyHighlightsQuery = `(identifier) @variable
 
 ; Function definitions
 
-(alias (identifier) @function.method)
-(setter (identifier) @function.method)
-(method name: [(identifier) (constant)] @function.method)
-(singleton_method name: [(identifier) (constant)] @function.method)
+(alias (identifier) @function.definition)
+(setter (identifier) @function.definition)
+(method name: [(identifier) (constant)] @function.definition)
+(singleton_method name: [(identifier) (constant)] @function.definition)
+
+; Diff lines can contain an incomplete declaration.
+(ERROR "def" . (identifier) @function.definition)
 
 ; Properties
 

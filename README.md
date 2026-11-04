@@ -169,13 +169,21 @@ preset = "system"
 
 Available presets include `system`, `light`, `dark`, and `grey`, plus the additional presets listed in [`preset.go`](internal/theme/preset.go).
 
-`grey` is a light preset inspired by `nvim-grey`. It keeps the background unset, flattens most syntax colors, and bolds keyword-like structure by default.
+`grey` is a light preset based on `nvim-grey`. It leaves the main background unset and uses bold keywords.
+Strings use green foregrounds without syntax backgrounds. Numbers use blue backgrounds, and function definitions use purple backgrounds. Function calls remain black.
+Java and Kotlin annotation names and `@` markers use orange foregrounds without syntax backgrounds.
+Added-line and deleted-line backgrounds override syntax backgrounds. Changed text within a line keeps its stronger diff background.
 
 You can switch presets from inside the app too. `Change theme` in the actions popup updates the resolved config file immediately.
 
 You can find the list of palette variables in [palette.go](internal/theme/palette.go).
 
 `syntax_*_style` keys accept a list of `"bold"`, `"italic"`, and `"underline"`. Use `[]` to clear a preset's default syntax style for that bucket.
+
+Use `syntax_number_background` and `syntax_function_definition_background` to set syntax backgrounds.
+Use `syntax_function_definition` to set the definition foreground. Definitions use `syntax_function` when this value is unset.
+Definitions use the text styles from `syntax_function_style`.
+Use `syntax_decorator` to set the annotation foreground.
 
 A few palette entries do more than their names suggest:
 

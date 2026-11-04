@@ -97,8 +97,14 @@ func renderSyntaxHighlightedCode(path string, text string, basePrefix string, le
 	}
 
 	combinedRanges := make([]styledRuneRange, 0, len(leadingRanges)+len(syntaxRanges))
-	combinedRanges = append(combinedRanges, leadingRanges...)
 	combinedRanges = append(combinedRanges, syntaxRanges...)
+	// Diff backgrounds must override syntax backgrounds, but not intraline backgrounds.
+	for _, backgroundHex := range []string{theme.DiffAdditionBackgroundHex, theme.DiffDeletionBackgroundHex} {
+		if len(syntaxRanges) > 0 && stylePrefixHasBackgroundHex(basePrefix, backgroundHex) {
+			combinedRanges = append(combinedRanges, styledRuneRange{start: 0, end: utf8.RuneCountInString(text), prefix: backgroundColorEscape(backgroundHex)})
+		}
+	}
+	combinedRanges = append(combinedRanges, leadingRanges...)
 	return renderTextWithStyleRanges(text, basePrefix, combinedRanges)
 }
 
@@ -251,7 +257,8 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	if trimmedText == "" {
 		return nil
 	}
-	if cachedRanges, ok := runtime.syntaxRangeCache.Get(text); ok {
+	cacheKey := treeSitterSyntaxThemeKey() + "\x00" + text
+	if cachedRanges, ok := runtime.syntaxRangeCache.Get(cacheKey); ok {
 		return cachedRanges
 	}
 
@@ -316,7 +323,7 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	}
 
 	if len(rangesBySpan) == 0 {
-		runtime.syntaxRangeCache.Put(text, nil)
+		runtime.syntaxRangeCache.Put(cacheKey, nil)
 		return nil
 	}
 
@@ -340,8 +347,23 @@ func (runtime *treeSitterLanguageRuntime) syntaxRanges(text string) []styledRune
 	for _, styleRange := range ranges {
 		result = append(result, styleRange.styledRuneRange)
 	}
-	runtime.syntaxRangeCache.Put(text, result)
+	runtime.syntaxRangeCache.Put(cacheKey, result)
 	return result
+}
+
+func treeSitterSyntaxThemeKey() string {
+	return strings.Join([]string{
+		theme.SyntaxKeywordHex, strings.Join(theme.SyntaxKeywordStyle, ","),
+		theme.SyntaxFunctionHex, strings.Join(theme.SyntaxFunctionStyle, ","),
+		theme.SyntaxDecoratorHex,
+		theme.SyntaxFunctionDefinitionHex, theme.SyntaxFunctionDefinitionBackgroundHex,
+		theme.SyntaxTypeHex, strings.Join(theme.SyntaxTypeStyle, ","),
+		theme.SyntaxPropertyHex, strings.Join(theme.SyntaxPropertyStyle, ","),
+		theme.SyntaxStringHex, strings.Join(theme.SyntaxStringStyle, ","),
+		theme.SyntaxNumberHex, strings.Join(theme.SyntaxNumberStyle, ","), theme.SyntaxNumberBackgroundHex,
+		theme.SyntaxCommentHex, strings.Join(theme.SyntaxCommentStyle, ","),
+		theme.MarkdownHeadingHex,
+	}, "\x00")
 }
 
 func runeRangeForByteRange(text string, startByte int, endByte int) (int, int, bool) {
@@ -357,6 +379,26 @@ func runeRangeForByteRange(text string, startByte int, endByte int) (int, int, b
 func treeSitterCaptureStyleForName(name string) (treeSitterCaptureStyle, bool) {
 	trimmedName := strings.TrimSpace(name)
 	switch trimmedName {
+	case "decorator", "decorator.marker":
+		if theme.SyntaxDecoratorHex != "" {
+			return newTreeSitterCaptureStyle(theme.SyntaxDecoratorHex, nil, 95), true
+		}
+		if trimmedName == "decorator.marker" {
+			return newTreeSitterCaptureStyle(theme.SyntaxKeywordHex, theme.SyntaxKeywordStyle, 95), true
+		}
+		return newTreeSitterCaptureStyle(theme.SyntaxTypeHex, theme.SyntaxTypeStyle, 95), true
+	case "function.definition":
+		hexColor := theme.SyntaxFunctionDefinitionHex
+		if hexColor == "" {
+			hexColor = theme.SyntaxFunctionHex
+		}
+		style := newTreeSitterCaptureStyle(hexColor, theme.SyntaxFunctionStyle, 100)
+		style.prefix += backgroundColorEscape(theme.SyntaxFunctionDefinitionBackgroundHex)
+		return style, true
+	case "number":
+		style := newTreeSitterCaptureStyle(theme.SyntaxNumberHex, theme.SyntaxNumberStyle, 70)
+		style.prefix += backgroundColorEscape(theme.SyntaxNumberBackgroundHex)
+		return style, true
 	case "string.special.key":
 		return newTreeSitterCaptureStyle(theme.SyntaxPropertyHex, theme.SyntaxPropertyStyle, 95), true
 	case "markup.heading", "text.title":

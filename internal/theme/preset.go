@@ -98,6 +98,11 @@ var presetDefinitions = map[string]presetDefinition{
 			DiffLineNumberHex:                    "#5E5E5E",
 			TeamOwnershipHex:                     "#5E5E5E",
 			DiffHunkHeaderHex:                    "#1561B8",
+
+			SyntaxDecoratorHex:                    "#A55000",
+			SyntaxFunctionDefinitionHex:           "#5C21A5",
+			SyntaxFunctionDefinitionBackgroundHex: "#EADFF3",
+			SyntaxNumberBackgroundHex:             "#DCE8F7",
 		},
 	},
 	"catppuccin-latte": {

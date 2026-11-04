@@ -16,10 +16,10 @@ const treeSitterGoHighlightsQuery = `; Function calls
 ; Function definitions
 
 (function_declaration
-  name: (identifier) @function)
+  name: (identifier) @function.definition)
 
 (method_declaration
-  name: (field_identifier) @function.method)
+  name: (field_identifier) @function.definition)
 
 ; Identifiers
 
@@ -132,7 +132,7 @@ const treeSitterJavaHighlightsQuery = `; Variables
 ; Methods
 
 (method_declaration
-  name: (identifier) @function.method)
+  name: (identifier) @function.definition)
 (method_invocation
   name: (identifier) @function.method)
 (super) @function.builtin
@@ -140,9 +140,17 @@ const treeSitterJavaHighlightsQuery = `; Variables
 ; Annotations
 
 (annotation
-  name: (identifier) @attribute)
+  "@" @decorator.marker
+  name: (_) @decorator)
 (marker_annotation
-  name: (identifier) @attribute)
+  "@" @decorator.marker
+  name: (_) @decorator)
+
+; Diff lines can end before the annotation arguments.
+(ERROR
+  "@" @decorator.marker .
+  [(identifier) (scoped_identifier)] @decorator .
+  "(")
 
 "@" @operator
 
@@ -463,7 +471,7 @@ const treeSitterBashHighlightsQuery = `[
 
 (comment) @comment
 
-(function_definition name: (word) @function)
+(function_definition name: (word) @function.definition)
 
 (file_descriptor) @number
 

@@ -168,6 +168,16 @@ func TestResolvePaletteWithPreset_GivenGreyPreset_WhenResolving_ThenItMatchesThe
 	if actual.SyntaxFunctionHex != "#000000" {
 		t.Fatalf("expected syntax function color %q, actual %q", "#000000", actual.SyntaxFunctionHex)
 	}
+	for name, pair := range map[string][2]string{
+		"decorator":                      {actual.SyntaxDecoratorHex, "#A55000"},
+		"function definition":            {actual.SyntaxFunctionDefinitionHex, "#5C21A5"},
+		"function definition background": {actual.SyntaxFunctionDefinitionBackgroundHex, "#EADFF3"},
+		"number background":              {actual.SyntaxNumberBackgroundHex, "#DCE8F7"},
+	} {
+		if pair[0] != pair[1] {
+			t.Errorf("expected %s %q, actual %q", name, pair[1], pair[0])
+		}
+	}
 	if actual.SyntaxTypeHex != "#000000" {
 		t.Fatalf("expected syntax type color %q, actual %q", "#000000", actual.SyntaxTypeHex)
 	}

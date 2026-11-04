@@ -67,6 +67,11 @@ type Palette struct {
 	DiffLineNumberHex                    string   `toml:"diff_line_number"`
 	DiffHunkHeaderHex                    string   `toml:"diff_hunk_header"`
 	TeamOwnershipHex                     string   `toml:"team_ownership"`
+
+	SyntaxDecoratorHex                    string `toml:"syntax_decorator"`
+	SyntaxFunctionDefinitionHex           string `toml:"syntax_function_definition"`
+	SyntaxFunctionDefinitionBackgroundHex string `toml:"syntax_function_definition_background"`
+	SyntaxNumberBackgroundHex             string `toml:"syntax_number_background"`
 }
 
 var defaultLightPalette = newDefaultLightPalette()
@@ -275,6 +280,11 @@ var (
 	DiffLineNumberHex                    = initialDefaultPalette.DiffLineNumberHex
 	DiffHunkHeaderHex                    = initialDefaultPalette.DiffHunkHeaderHex
 	TeamOwnershipHex                     = initialDefaultPalette.TeamOwnershipHex
+
+	SyntaxDecoratorHex                    = initialDefaultPalette.SyntaxDecoratorHex
+	SyntaxFunctionDefinitionHex           = initialDefaultPalette.SyntaxFunctionDefinitionHex
+	SyntaxFunctionDefinitionBackgroundHex = initialDefaultPalette.SyntaxFunctionDefinitionBackgroundHex
+	SyntaxNumberBackgroundHex             = initialDefaultPalette.SyntaxNumberBackgroundHex
 )
 
 func DefaultPalette() Palette {
@@ -379,6 +389,10 @@ func applyResolvedPalette(palette Palette) {
 	SyntaxStringStyle = copyTextStyles(palette.SyntaxStringStyle)
 	SyntaxNumberHex = palette.SyntaxNumberHex
 	SyntaxNumberStyle = copyTextStyles(palette.SyntaxNumberStyle)
+	SyntaxDecoratorHex = palette.SyntaxDecoratorHex
+	SyntaxFunctionDefinitionHex = palette.SyntaxFunctionDefinitionHex
+	SyntaxFunctionDefinitionBackgroundHex = palette.SyntaxFunctionDefinitionBackgroundHex
+	SyntaxNumberBackgroundHex = palette.SyntaxNumberBackgroundHex
 	SyntaxCommentHex = palette.SyntaxCommentHex
 	SyntaxCommentStyle = copyTextStyles(palette.SyntaxCommentStyle)
 	CommentAuthorBadgeHex = palette.CommentAuthorBadgeHex
@@ -474,6 +488,10 @@ func paletteColorPointers(palette *Palette) []*string {
 		&palette.SyntaxPropertyHex,
 		&palette.SyntaxStringHex,
 		&palette.SyntaxNumberHex,
+		&palette.SyntaxDecoratorHex,
+		&palette.SyntaxFunctionDefinitionHex,
+		&palette.SyntaxFunctionDefinitionBackgroundHex,
+		&palette.SyntaxNumberBackgroundHex,
 		&palette.SyntaxCommentHex,
 		&palette.CommentAuthorBadgeHex,
 		&palette.CommentAuthorBadgeBackgroundHex,

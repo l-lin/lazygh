@@ -110,6 +110,10 @@ func applyMarkdownCodeBlockTheme(style *glamouransi.StyleConfig) {
 	applyTextStyles(&style.CodeBlock.Chroma.NameConstant, theme.SyntaxPropertyStyle)
 	style.CodeBlock.Chroma.NameDecorator.Color = stringPtr(theme.SyntaxKeywordHex)
 	applyTextStyles(&style.CodeBlock.Chroma.NameDecorator, theme.SyntaxKeywordStyle)
+	if theme.SyntaxDecoratorHex != "" {
+		style.CodeBlock.Chroma.NameDecorator.Color = stringPtr(theme.SyntaxDecoratorHex)
+		applyTextStyles(&style.CodeBlock.Chroma.NameDecorator, nil)
+	}
 	style.CodeBlock.Chroma.NameException.Color = stringPtr(theme.SyntaxTypeHex)
 	applyTextStyles(&style.CodeBlock.Chroma.NameException, theme.SyntaxTypeStyle)
 	style.CodeBlock.Chroma.NameFunction.Color = stringPtr(theme.SyntaxFunctionHex)
@@ -133,6 +137,16 @@ func applyMarkdownCodeBlockTheme(style *glamouransi.StyleConfig) {
 	style.CodeBlock.Chroma.GenericSubheading.Color = stringPtr(theme.InactiveTitleHex)
 	style.CodeBlock.Chroma.Background.BackgroundColor = stringPtr(theme.SelectedLineBackgroundHex)
 	applyMarkdownCodeBlockBackground(style.CodeBlock.Chroma, theme.SelectedLineBackgroundHex)
+	if theme.SyntaxFunctionDefinitionHex != "" {
+		style.CodeBlock.Chroma.NameFunction.Color = stringPtr(theme.SyntaxFunctionDefinitionHex)
+	}
+	if theme.SyntaxFunctionDefinitionBackgroundHex != "" {
+		style.CodeBlock.Chroma.NameFunction.BackgroundColor = stringPtr(theme.SyntaxFunctionDefinitionBackgroundHex)
+	}
+	if theme.SyntaxNumberBackgroundHex != "" {
+		style.CodeBlock.Chroma.LiteralNumber.BackgroundColor = stringPtr(theme.SyntaxNumberBackgroundHex)
+		style.CodeBlock.Chroma.LiteralDate.BackgroundColor = stringPtr(theme.SyntaxNumberBackgroundHex)
+	}
 }
 
 func applyMarkdownCodeBlockBackground(chroma *glamouransi.Chroma, backgroundHex string) {
