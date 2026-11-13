@@ -87,6 +87,7 @@ func (presenter helpPresenter) localHelpEntries() []helpEntry {
 				pullRequestBranchYankHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 				pullRequestYankHelpEntry(presenter.keyResolver, keymapScopePullRequests),
 				pullRequestCommentHelpEntry(presenter.keyResolver, keymapScopePullRequests),
+				{Key: presenter.helpKeysOrFallback("y", keybindingActionID{scope: keymapScopeReview, action: "copy_file_path"}), Description: "Copy relative path"},
 				{Key: presenter.reviewTreeToggleHelpKeys(), Description: "Expand/collapse fold"},
 				{Key: presenter.reviewTreeBulkFoldHelpKeys(), Description: "Close/open all folds"},
 				{Key: presenter.helpKeysOrFallback("a", keybindingActionID{scope: keymapScopePullRequests, action: "open_actions_popup"}), Description: "Actions"},

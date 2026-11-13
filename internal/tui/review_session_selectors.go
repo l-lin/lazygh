@@ -1,5 +1,23 @@
 package tui
 
+import "strings"
+
+func reviewSessionSelectedPath(state reviewSessionState, diffData reviewDiffData) string {
+	row, _, files, ok := reviewSessionSelectedTreeRow(state, diffData)
+	if !ok {
+		return ""
+	}
+	switch row.Kind {
+	case reviewDiffTreeRowKindDirectory:
+		return strings.TrimPrefix(row.ID, "dir:")
+	case reviewDiffTreeRowKindFile:
+		if row.FileIndex >= 0 && row.FileIndex < len(files) {
+			return files[row.FileIndex].Path
+		}
+	}
+	return ""
+}
+
 func (program *Program) reviewSessionDiffData() (reviewDiffData, bool) {
 	state := program.navigationState.reviewSession
 	if !state.active {

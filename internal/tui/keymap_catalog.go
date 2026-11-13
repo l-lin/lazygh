@@ -423,6 +423,9 @@ func (program *Program) keybindingActions() []keybindingAction {
 	if movementActions := program.multilineModalEditorMovementKeybindingActions(); len(movementActions) > 0 {
 		actions = append(actions, movementActions...)
 	}
+	if program.reviewModeActive() {
+		actions = append(actions, configuredKeybindingActionFor(keymapScopeReview, "copy_file_path", []string{viewPullRequestsName}, program.copyReviewFilePath))
+	}
 	if program.canRemovePastedPullRequest() {
 		actions = append(actions, configuredKeybindingActionFor(keymapScopePullRequests, "remove_pasted_pull_request", []string{viewPullRequestsName}, program.removePastedPullRequestShortcut))
 	}

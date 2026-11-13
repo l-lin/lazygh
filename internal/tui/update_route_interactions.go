@@ -57,6 +57,8 @@ func (program *Program) routeURLClipboardBrowserAndLinkFollowUps(msg Msg) update
 		return handledUpdate(program.applyOpenPullRequestBuildRunPopupLinkResolved(actual))
 	case MsgCopySelectedDetailTextRequested:
 		return handledUpdate([]Cmd{prepareSelectedDetailClipboardWriteCmd{Target: program.model.Focus()}})
+	case MsgCopyReviewFilePathRequested:
+		return handledUpdate(program.applyCopyReviewFilePathRequested())
 	case MsgCopyPullRequestBranchRequested:
 		return handledUpdate(program.applyCopyPullRequestBranchRequested())
 	case MsgCopyPullRequestURLRequested:

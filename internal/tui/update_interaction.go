@@ -414,6 +414,24 @@ func (program *Program) applyResolvedLinkOpen(target Focus, url string, linkAvai
 	}
 }
 
+func (program *Program) applyCopyReviewFilePathRequested() []Cmd {
+	if !program.reviewModeActive() || program.model.Focus() != FocusPullRequestsView || len(program.visibleScreenOverlays()) > 0 {
+		return nil
+	}
+	program.clearPendingSelectionPrefix()
+	data, ok := program.reviewSessionDiffData()
+	if !ok {
+		program.setFeedback(FocusPullRequestsView, yankPathUnavailableMessage)
+		return nil
+	}
+	path := reviewSessionSelectedPath(program.navigationState.reviewSession, data)
+	if path == "" {
+		program.setFeedback(FocusPullRequestsView, yankPathUnavailableMessage)
+		return nil
+	}
+	return []Cmd{writeClipboardCmd{Text: path, SuccessMessage: yankPathSuccessMessage, FailureMessage: yankFailureMessage, Target: FocusPullRequestsView}}
+}
+
 func (program *Program) applyCopyPullRequestBranchRequested() []Cmd {
 	program.clearPendingSelectionPrefix()
 	if program.overlayState.helpVisible || program.model.SearchActive() {

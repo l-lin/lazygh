@@ -72,6 +72,7 @@ close_all_folds = "zM"
 open_all_folds = "zR"
 
 [keymaps.review]
+copy_file_path = "y"
 previous_file = "[["
 next_file = "]]"
 previous_comment = "[c"
